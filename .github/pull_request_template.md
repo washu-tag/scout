@@ -1,4 +1,4 @@
-[Reference the ticket you are addressing and provide a succinct and descriptive title for the pull request, e.g., "SCOUT-12 Improve caching mechanism for API calls"]
+# [Reference the ticket you are addressing and provide a succinct and descriptive title for the pull request, e.g., "SCOUT-12 Improve caching mechanism for API calls"]
 
 ## Type of change
 - [ ] New feature
@@ -8,10 +8,12 @@
 - [ ] Documentation update
 - [ ] Test update
 
-## Product description
+## Description
+
+### Product
 [Provide a summary explanation of your changes from a product/user perspective. More details should be found in your updates to the user docs.]
 
-## Technical description
+### Technical
 [Provide a summary explanation of your changes from a technical perspective. More details should be found in your updates to the technical docs.]
 
 ## Impact
@@ -33,7 +35,7 @@
 ### Backward compatibility
 [Any changes to the data model, APIs, dependencies?]
 
-## Test description
+## Testing
 [Detail the testing you have performed to ensure that these changes function as intended. Include information about the test automation you've added, as well as the manual testing you've performed. Be sure to reference areas of impact, above.]
 
 ## Note for reviewers
