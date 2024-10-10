@@ -1,12 +1,17 @@
 # [Reference the ticket you are addressing and provide a succinct and descriptive title for the pull request, e.g., "SCOUT-12 Improve caching mechanism for API calls"]
 
 ## Type of change
+- [ ] Work behind a feature flag
 - [ ] New feature
 - [ ] Improvement
 - [ ] Bug fix
-- [ ] Refactor
+- [ ] Refactor (code improvement with no functional changes)
 - [ ] Documentation update
 - [ ] Test update
+
+If this pull request is for work that is behind a feature flag, or for documentation or test updates, most of the details below are not required; The level of attention to each is left to the discretion of the developer. 
+
+For all other change types, the developer should attempt to provide as much detail as is reasonable.
 
 ## Description
 
