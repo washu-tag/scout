@@ -1,6 +1,3 @@
-# Pull request template
-
-## Title
 [Reference the ticket you are addressing and provide a succinct and descriptive title for the pull request, e.g., "SCOUT-12 Improve caching mechanism for API calls"]
 
 ## Type of change
@@ -18,7 +15,6 @@
 [Provide a summary explanation of your changes from a technical perspective. More details should be found in your updates to the technical docs.]
 
 ## Impact
-[Discuss the impact of your changes on the project.]
 
 ### Security 
 
@@ -49,4 +45,4 @@
 - [ ] I have added or updated user documentation, if appropriate.
 - [ ] I have added or updated technical documentation, including an architectural decision record, if appropriate.
 - [ ] I have added unit tests, unless this is a test code PR.
-- [ ] I have added end-to-end tests.
+- [ ] I have added end-to-end tests, unless this is a documentation-only PR.
