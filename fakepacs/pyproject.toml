@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fakepacs"
+version = "0.3.0"
+description = "Return static data from the /studies DICOMweb endpoint"
+readme = "README.md"
+authors = [
+    {name = "John Flavin", email = "jflavin@wustl.edu"},
+]
+maintainers = [
+    {name = "John Flavin", email = "jflavin@wustl.edu"},
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 4 - Beta",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "fastapi",
+    "gunicorn",
+    "httpx",
+    "pandas",
+    "pyarrow",
+    "starlette",
+    "uvicorn-worker",
+]
+license = {file = "LICENSE"}
