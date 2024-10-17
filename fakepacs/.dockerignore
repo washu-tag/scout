@@ -1,0 +1,7 @@
+.idea/
+.venv/
+__pycache__/
+charts/
+*.egg-info/
+.tox
+.git/

@@ -1,0 +1,15 @@
+# Test your FastAPI endpoints
+
+###
+GET http://localhost:8080/studies
+Accept: application/json
+
+###
+GET http://localhost:8080/studies/123456/metadata
+Accept: application/json
+
+###
+GET http://localhost:8080/studies/123456/metadata
+Accept: application/json
+
+###
