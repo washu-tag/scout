@@ -1,4 +1,4 @@
-package edu.washu.tag.temporaljava;
+package edu.washu.tag.temporal;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
