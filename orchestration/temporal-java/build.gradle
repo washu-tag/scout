@@ -17,9 +17,14 @@ repositories {
 	mavenCentral()
 }
 
+def temporalVersion = "1.27.0"
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+    implementation "io.temporal:temporal-sdk:${temporalVersion}"
+    implementation "io.temporal:temporal-spring-boot-starter:${temporalVersion}"
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

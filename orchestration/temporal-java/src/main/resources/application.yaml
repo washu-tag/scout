@@ -1,3 +1,9 @@
 spring:
   application:
     name: temporal-java
+  temporal:
+    connection: "localhost:7233"
+    workers-auto-discovery:
+      packages:
+        - edu.washu.tag.temporal.activity
+        - edu.washu.tag.temporal.workflow
