@@ -40,7 +40,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
         // Split log file
         var splitLogFileOutputPath = scratchDir + "/split";
-        var splitHl7LogInput = new SplitHl7LogActivityInput(findHl7LogFileOutput.logFilePath(), splitLogFileOutputPath);
+        var splitHl7LogInput = new SplitHl7LogActivityInput(findHl7LogFileOutput.logFileAbsPath(), splitLogFileOutputPath);
         var splitHl7LogOutput = hl7LogActivity.splitHl7Log(splitHl7LogInput);
 
         // Fan out
