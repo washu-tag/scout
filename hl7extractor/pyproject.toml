@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hl7extractor"
+version = "0.1.0"
+description = "Extract Radiology Reports from HL7 Messages and write to Delta Lake"
+readme = "README.md"
+authors = [
+    {name = "John Flavin", email = "jflavin@wustl.edu"},
+]
+maintainers = [
+    {name = "John Flavin", email = "jflavin@wustl.edu"},
+]
+license = {file = "LICENSE"}
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+]
+requires-python = ">= 3.12"
+dependencies = [
+    "deltalake",
+    "hl7",
+    "pandas",
+    "pyarrow",
+    "pydantic",
+    "s3fs",
+]
+
+[project.scripts]
+hl7deltalake = "hl7extractor.hl7deltalake:main_cli"

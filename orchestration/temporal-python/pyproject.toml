@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "temporalpy"
+version = "0.1.0"
+description = "Scout temporal orchestrations in python"
+readme = "README.md"
+authors = [
+    {name = "John Flavin", email = "jflavin@wustl.edu"},
+]
+maintainers = [
+    {name = "John Flavin", email = "jflavin@wustl.edu"},
+]
+license = {file = "LICENSE"}
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+]
+requires-python = ">= 3.8"  # Lower limit is a guess
+dependencies = [
+    "deltalake",
+    "httpx",
+    "pandas",
+    "requests",
+    "s3fs",
+    "temporalio",
+]
+
+[project.scripts]
+#run-ct-clip-worker = "ctclipembeddings.run_embeddings_worker:main"
+#run-workflow-worker = "ctclipembeddings.run_workflow_worker:main"
