@@ -46,13 +46,15 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     @Override
     public SplitHl7LogActivityOutput splitHl7Log(SplitHl7LogActivityInput input) {
-        String stdout = runScript(Path.of(input.outputPath()).toFile(), "/usr/local/bin/split-hl7-log.sh", input.logFilePath());
+        // TODO configure the path to the script
+        String stdout = runScript(Path.of(input.outputPath()).toFile(), "/app/scripts/split-hl7-log.sh", input.logFilePath());
         return new SplitHl7LogActivityOutput(input.outputPath(), Arrays.stream(stdout.split("\n")).toList());
     }
 
     @Override
     public TransformSplitHl7LogOutput transformSplitHl7Log(TransformSplitHl7LogInput input) {
-        String stdout = runScript(Path.of(input.rootOutputPath()).toFile(), "/usr/local/bin/transform-split-hl7-log.sh", input.splitLogFile());
+        // TODO configure the path to the script
+        String stdout = runScript(Path.of(input.rootOutputPath()).toFile(), "/app/scripts/transform-split-hl7-log.sh", input.splitLogFile());
         return new TransformSplitHl7LogOutput(input.rootOutputPath(), stdout);
     }
 }
