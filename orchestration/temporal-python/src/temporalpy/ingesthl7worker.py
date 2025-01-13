@@ -32,6 +32,7 @@ async def main(argv=None):
     parser.add_argument(
         "temporal_address",
         help="Temporal service address",
+        default="temporal-frontend.temporal:7233",
     )
     parser.add_argument(
         "namespace",
