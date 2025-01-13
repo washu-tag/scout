@@ -2,7 +2,7 @@ spring:
   application:
     name: temporal-java
   temporal:
-    connection: "localhost:7233"
+    connection: "temporal-frontend.temporal:7233"
     workers-auto-discovery:
       packages:
         - edu.washu.tag.temporal.activity
