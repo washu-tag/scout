@@ -28,7 +28,3 @@ dependencies = [
     "s3fs",
     "temporalio",
 ]
-
-[project.scripts]
-#run-ct-clip-worker = "ctclipembeddings.run_embeddings_worker:main"
-#run-workflow-worker = "ctclipembeddings.run_workflow_worker:main"
