@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 
-@ActivityImpl(workers = "ingest-hl7-log")
+@ActivityImpl(taskQueues = "ingest-hl7-log")
 public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private String runScript(File cwd, String... command) {
         try {

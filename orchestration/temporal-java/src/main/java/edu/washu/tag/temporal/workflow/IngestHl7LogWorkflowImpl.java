@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-@WorkflowImpl(workers = "ingest-hl7-log")
+@WorkflowImpl(taskQueues = "ingest-hl7-log")
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private final SplitHl7LogActivity hl7LogActivity =
             Workflow.newActivityStub(SplitHl7LogActivity.class,
