@@ -1,5 +1,5 @@
 # Use an official OpenJDK 21 runtime as a parent image
-FROM openjdk:21-jdk-alpine AS build
+FROM amazoncorretto:21-alpine AS build
 
 # Set the working directory in the container
 WORKDIR /app
@@ -18,10 +18,13 @@ RUN chmod +x gradlew
 RUN ./gradlew build
 
 # Use a smaller base image for the final stage
-FROM openjdk:21-jdk-alpine
+FROM amazoncorretto:21-alpine
 
 # Set the working directory in the container
 WORKDIR /app
+
+# This is necessary for some of the scripts to work
+RUN apk add coreutils
 
 # Copy the built JAR file from the build stage
 COPY --from=build /app/build/libs/*.jar app.jar
