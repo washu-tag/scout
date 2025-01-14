@@ -2,7 +2,10 @@ spring:
   application:
     name: temporal-java
   temporal:
-    connection: "temporal-frontend.temporal:7233"
+    connection:
+      target: "temporal-frontend.temporal:7233"
+    namespace: default
+    start-workers: true
     workers-auto-discovery:
       packages:
         - edu.washu.tag.temporal.activity
