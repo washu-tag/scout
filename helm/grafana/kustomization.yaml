@@ -12,3 +12,6 @@ configMapGenerator:
 
 - name: grafana-dashboard
   files: [ dashboards/grafana-dashboard.json ]
+
+- name: jaeger-dashboard
+  files: [ dashboards/jaeger-dashboard.json ]

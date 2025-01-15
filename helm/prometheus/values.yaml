@@ -1,5 +1,3 @@
-# Prometheus configuration
-
 alertmanager:
   enabled: false
 kube-state-metrics:
@@ -26,3 +24,23 @@ extraScrapeConfigs: |
     metrics_path: /grafana/metrics
     static_configs:
       - targets: ['grafana.grafana.svc.cluster.local:80']
+
+  - job_name: 'jaeger-agent'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['jaeger-agent.jaeger.svc.cluster.local:14271']
+
+  - job_name: 'jaeger-collector'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['jaeger-collector.jaeger.svc.cluster.local:14269']
+
+  - job_name: 'jaeger-query'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['jaeger-query.jaeger.svc.cluster.local:16687']
+
+  - job_name: 'jaeger-ingester'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['jaeger-ingester.jaeger.svc.cluster.local:14270']

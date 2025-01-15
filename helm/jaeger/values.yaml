@@ -1,0 +1,34 @@
+provisionDataStore:
+    cassandra: false
+    elasticsearch: true
+
+storage:
+  type: elasticsearch
+
+elasticsearch:
+  master:
+    masterOnly: false
+    replicaCount: 1
+    persistence:
+      enabled: true
+      existingClaim: "jaeger-elasticsearch-pvc"
+      existingVolume: "jaeger-elasticsearch-pv"
+  data:
+    replicaCount: 0
+  coordinating:
+    replicaCount: 0
+  ingest:
+    replicaCount: 0
+    
+collector:
+  service:
+    otlp:
+      grpc:
+        name: otlp-grpc
+        port: 4317
+      http:
+        name: otlp-http
+        port: 4318
+
+query:
+  basepath: /jaeger

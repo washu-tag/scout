@@ -73,5 +73,4 @@ Dashboards are stored as JSON files and can be managed with Git. Unfortunately, 
 
 ## Dashboard Sources
 
-The 
-- [Jaeger Dashboard](https://github.com/jaegertracing/jaeger/blob/main/monitoring/jaeger-mixin/dashboard-for-grafana.json)
+[Jaeger Dashboard](https://github.com/jaegertracing/jaeger/blob/main/monitoring/jaeger-mixin/dashboard-for-grafana.json)
