@@ -23,7 +23,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             int exitCode = p.waitFor();
             if (exitCode != 0) {
                 String stderr = new String(p.getErrorStream().readAllBytes());
-                throw Activity.wrap(new RuntimeException(command[0] + " failed with exit code " + exitCode + ". stderr: " + stderr));
+                String commandName = command.length > 0 ? command[0] : "<unknown>";
+                throw Activity.wrap(new RuntimeException(commandName + " failed with exit code " + exitCode + ". stderr: " + stderr));
             }
             return new String(p.getInputStream().readAllBytes());
         } catch (IOException | InterruptedException e) {
