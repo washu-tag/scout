@@ -12,9 +12,6 @@ import io.temporal.activity.ActivityMethod;
 @ActivityInterface
 public interface SplitHl7LogActivity {
     @ActivityMethod
-    FindHl7LogFileOutput findHl7LogFile(FindHl7LogFileInput input);
-
-    @ActivityMethod
     SplitHl7LogActivityOutput splitHl7Log(SplitHl7LogActivityInput input);
 
     @ActivityMethod

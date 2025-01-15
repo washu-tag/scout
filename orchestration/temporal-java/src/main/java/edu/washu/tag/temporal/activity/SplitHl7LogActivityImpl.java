@@ -4,8 +4,6 @@ import edu.washu.tag.temporal.model.SplitHl7LogActivityInput;
 import edu.washu.tag.temporal.model.SplitHl7LogActivityOutput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
-import edu.washu.tag.temporal.model.FindHl7LogFileInput;
-import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
 import io.temporal.activity.Activity;
 import io.temporal.spring.boot.ActivityImpl;
 
@@ -31,17 +29,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         } catch (IOException | InterruptedException e) {
             throw Activity.wrap(e);
         }
-    }
-
-    @Override
-    public FindHl7LogFileOutput findHl7LogFile(FindHl7LogFileInput input) {
-        File logsDir = Path.of(input.logsDir()).toFile();
-        File[] logFiles = logsDir.listFiles((dir, name) -> name.contains(input.date()));
-        if (logFiles == null || logFiles.length != 1) {
-            throw Activity.wrap(new RuntimeException("Expected exactly one file with date " + input.date() + " in " + input.logsDir() + ". Found " + (logFiles == null ? 0 : logFiles.length)));
-        }
-
-        return new FindHl7LogFileOutput(logFiles[0].getAbsolutePath());
     }
 
     @Override

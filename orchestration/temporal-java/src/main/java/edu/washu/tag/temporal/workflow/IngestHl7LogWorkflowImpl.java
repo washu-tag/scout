@@ -34,13 +34,9 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         var workflowInfo = Workflow.getInfo();
         var scratchDir = input.scratchSpaceRootPath() + "/" + workflowInfo.getWorkflowId();
 
-        // Find log file by date
-        var findHl7LogFileInput = new FindHl7LogFileInput(input.date(), input.logsRootPath());
-        var findHl7LogFileOutput = hl7LogActivity.findHl7LogFile(findHl7LogFileInput);
-
         // Split log file
         var splitLogFileOutputPath = scratchDir + "/split";
-        var splitHl7LogInput = new SplitHl7LogActivityInput(findHl7LogFileOutput.logFileAbsPath(), splitLogFileOutputPath);
+        var splitHl7LogInput = new SplitHl7LogActivityInput(input.logPath(), splitLogFileOutputPath);
         var splitHl7LogOutput = hl7LogActivity.splitHl7Log(splitHl7LogInput);
 
         // Fan out
