@@ -1,0 +1,22 @@
+# Prometheus configuration
+
+alertmanager:
+  enabled: false
+kube-state-metrics:
+  enabled: true
+prometheus-node-exporter:
+  enabled: true
+prometheus-pushgateway:
+  enabled: false
+
+server:
+  extraFlags:
+    - web.enable-otlp-receiver
+    - web.enable-lifecycle
+  service:
+    servicePort: 9090
+  persistentVolume:
+    enabled: true
+    volumeName: prometheus-pv
+    existingClaim: prometheus-pvc
+  retention: 15d
