@@ -20,8 +20,5 @@ dest="$directory/$timestamp.hl7"
 # Write new file to timestamped directory
 tail -n +3 $f | sed \$d | sed 's/<R>$//' | tr $'\n' $'\r' > $dest
 
-# Remove split file
-rm $f
-
 # output new file relative path
 echo $dest
