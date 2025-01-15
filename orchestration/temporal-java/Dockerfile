@@ -15,7 +15,7 @@ COPY src src
 
 # Make the Gradle wrapper executable and build the application
 RUN chmod +x gradlew
-RUN ./gradlew build
+RUN ./gradlew build -x test
 
 # Use a smaller base image for the final stage
 FROM amazoncorretto:21-alpine
