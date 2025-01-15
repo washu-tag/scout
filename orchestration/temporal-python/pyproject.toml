@@ -23,6 +23,7 @@ requires-python = ">= 3.8"  # Lower limit is a guess
 dependencies = [
     "deltalake",
     "httpx",
+    "hl7",
     "pandas",
     "requests",
     "s3fs",
