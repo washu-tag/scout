@@ -18,6 +18,7 @@ dest="$directory/$timestamp.hl7"
 #   3. Remove <R> at the end of lines
 #   4. Replace \n with \r (yes, this is a requirement for HL7)
 # Write new file to timestamped directory
+# TODO sed -e to use sed once
 tail -n +3 $f | sed \$d | sed 's/<R>$//' | tr $'\n' $'\r' > $dest
 
 # output new file relative path
