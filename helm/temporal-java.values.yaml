@@ -1,0 +1,4 @@
+nameOverride: temporal-java
+image:
+  repository: local/temporal-java
+  tag: latest

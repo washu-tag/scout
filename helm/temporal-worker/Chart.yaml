@@ -1,0 +1,8 @@
+apiVersion: v2
+name: temporal-worker
+description: Chart for all scout temporal workers
+type: application
+version: 0.1.0
+
+# Placeholder application version
+appVersion: "0.1.0"

@@ -1,0 +1,4 @@
+nameOverride: temporal-python
+image:
+  repository: local/temporal-python
+  tag: latest
