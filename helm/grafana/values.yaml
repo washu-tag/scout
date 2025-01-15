@@ -1,0 +1,39 @@
+grafana.ini:
+  auth:
+    disable_login_form: true
+  auth.anonymous:
+    enabled: true
+    org_name: Main Org.
+    org_role: Admin
+  server:
+    root_url: "%(protocol)s://%(domain)s:%(http_port)s/grafana"
+    serve_from_sub_path: true
+  metrics:
+    enabled: true
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: 'http://prometheus-server.prometheus.svc.cluster.local:9090'
+        editable: false
+        isDefault: true
+
+      - name: Jaeger
+        type: jaeger
+        url: 'http://jaeger-query.jaeger.svc.cluster.local:80'
+        editable: true
+        isDefault: false
+        
+sidecar:
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    labelValue: "1"
+    watchMethod: SLEEP
+
+persistence:
+  enabled: true
+  existingClaim: grafana-pvc

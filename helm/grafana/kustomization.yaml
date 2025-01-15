@@ -1,0 +1,14 @@
+# Global options
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"
+
+# Generate a ConfigMap for each dashboard
+configMapGenerator:
+
+- name: k8s-dashboard
+  files: [ dashboards/k8s-dashboard.json ]
+
+- name: grafana-dashboard
+  files: [ dashboards/grafana-dashboard.json ]

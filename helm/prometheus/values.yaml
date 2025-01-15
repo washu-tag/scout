@@ -20,3 +20,9 @@ server:
     volumeName: prometheus-pv
     existingClaim: prometheus-pvc
   retention: 15d
+
+extraScrapeConfigs: |
+  - job_name: 'grafana'
+    metrics_path: /grafana/metrics
+    static_configs:
+      - targets: ['grafana.grafana.svc.cluster.local:80']
