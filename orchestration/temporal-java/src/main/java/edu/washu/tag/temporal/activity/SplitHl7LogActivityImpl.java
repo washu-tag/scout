@@ -10,6 +10,8 @@ import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.spring.boot.ActivityImpl;
+import io.temporal.workflow.Workflow;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +23,8 @@ import java.util.List;
 
 @ActivityImpl(taskQueues = "ingest-hl7-log")
 public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
+    private static final Logger logger = Workflow.getLogger(SplitHl7LogActivityImpl.class);
+
     // Autowire FileHandler
     private final FileHandler fileHandler;
 
@@ -84,13 +88,20 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String stdout = runScript(tempdir.toFile(), "/app/scripts/split-hl7-log.sh", input.logFilePath());
         List<Path> relativePaths = Arrays.stream(stdout.split("\n")).map(Path::of).toList();
 
+        List<String> destinationPaths;
         try {
-            List<String> destinationPaths = fileHandler.put(relativePaths, tempdir, destination);
-            fileHandler.deleteDir(tempdir);
-            return new SplitHl7LogActivityOutput(input.rootOutputPath(), destinationPaths);
+            destinationPaths = fileHandler.put(relativePaths, tempdir, destination);
         } catch (IOException e) {
             throw Activity.wrap(e);
         }
+
+        try {
+            fileHandler.deleteDir(tempdir);
+        } catch (IOException ignored) {
+            logger.warn("Failed to delete temp dir {}", tempdir);
+        }
+
+        return new SplitHl7LogActivityOutput(input.rootOutputPath(), destinationPaths);
     }
 
     @Override
@@ -109,12 +120,18 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         // TODO configure the path to the script
         String relativePath = runScript(tempdir.toFile(), "/app/scripts/transform-split-hl7-log.sh", input.splitLogFile());
+        String destinationPath;
         try {
-            String destinationPath = fileHandler.put(Path.of(relativePath), tempdir, destination);
-            fileHandler.deleteDir(tempdir);
-            return new TransformSplitHl7LogOutput(input.rootOutputPath(), destinationPath);
+            destinationPath = fileHandler.put(Path.of(relativePath), tempdir, destination);
         } catch (IOException e) {
             throw Activity.wrap(e);
         }
+
+        try {
+            fileHandler.deleteDir(tempdir);
+        } catch (IOException ignored) {
+            logger.warn("Failed to delete temp dir {}", tempdir);
+        }
+        return new TransformSplitHl7LogOutput(input.rootOutputPath(), destinationPath);
     }
 }
