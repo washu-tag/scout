@@ -9,6 +9,7 @@ import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
+import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.ActivityImpl;
 import io.temporal.workflow.Workflow;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     }
 
     private String runScript(File cwd, String... command) {
+        String commandName = command.length > 0 ? command[0] : "<unknown>";
         try {
             Process p = new ProcessBuilder()
                     .directory(cwd)
@@ -43,12 +45,11 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             int exitCode = p.waitFor();
             if (exitCode != 0) {
                 String stderr = new String(p.getErrorStream().readAllBytes());
-                String commandName = command.length > 0 ? command[0] : "<unknown>";
-                throw Activity.wrap(new RuntimeException(commandName + " failed with exit code " + exitCode + ". stderr: " + stderr));
+                throw ApplicationFailure.newFailure("Command " + commandName + " failed with exit code " + exitCode + ". stderr: " + stderr, "type");
             }
             return new String(p.getInputStream().readAllBytes());
         } catch (IOException | InterruptedException e) {
-            throw Activity.wrap(e);
+            throw ApplicationFailure.newFailureWithCause("Command " + commandName + " failed", "type", e);
         }
     }
 
@@ -68,7 +69,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             }
         }
         if (logFiles == null || logFiles.length != 1) {
-            throw Activity.wrap(new RuntimeException("Expected exactly one file with date " + input.date() + " in " + input.logsDir() + ". Found " + (logFiles == null ? 0 : logFiles.length)));
+            throw ApplicationFailure.newFailure("Expected exactly one file with date " + input.date() + " in " + input.logsDir() + ". Found " + (logFiles == null ? 0 : logFiles.length), "type");
         }
 
         return new FindHl7LogFileOutput(logFiles[0].getAbsolutePath());
@@ -86,7 +87,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             tempdir = Files.createTempDirectory(tempdirPrefix);
         } catch (IOException e) {
-            throw Activity.wrap(e);
+            throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
         }
         // TODO configure the path to the script
         String stdout = runScript(tempdir.toFile(), "/app/scripts/split-hl7-log.sh", input.logFilePath());
@@ -96,7 +97,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             destinationPaths = fileHandler.put(relativePaths, tempdir, destination);
         } catch (IOException e) {
-            throw Activity.wrap(e);
+            throw ApplicationFailure.newFailureWithCause("Could not put files to " + destination, "type", e);
         }
 
         try {
@@ -120,7 +121,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             tempdir = Files.createTempDirectory(tempdirPrefix);
         } catch (IOException e) {
-            throw Activity.wrap(e);
+            throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
         }
 
         // TODO configure the path to the script
@@ -129,7 +130,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             destinationPath = fileHandler.put(Path.of(relativePath), tempdir, destination);
         } catch (IOException e) {
-            throw Activity.wrap(e);
+            throw ApplicationFailure.newFailureWithCause("Could not put files to " + destination, "type", e);
         }
 
         try {
