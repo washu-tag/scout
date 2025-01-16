@@ -127,8 +127,17 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
         }
 
+        // Download input file
+        Path localFile;
+        try {
+            localFile = fileHandler.get(URI.create(input.splitLogFile()), tempdir);
+        } catch (IOException e) {
+            throw ApplicationFailure.newFailureWithCause("Could not get input file " + input.splitLogFile(), "type", e);
+        }
+
         // TODO configure the path to the script
-        String relativePath = runScript(tempdir.toFile(), "/app/scripts/transform-split-hl7-log.sh", input.splitLogFile());
+        String stdout = runScript(tempdir.toFile(), "/app/scripts/transform-split-hl7-log.sh", localFile.toString());
+        String relativePath = stdout.trim();
         String destinationPath;
         try {
             destinationPath = fileHandler.put(Path.of(relativePath), tempdir, destination);

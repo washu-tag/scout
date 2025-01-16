@@ -74,6 +74,29 @@ public class FileHandlerImpl implements FileHandler {
     }
 
     @Override
+    public Path get(URI source, Path destination) throws IOException {
+        if (S3.equals(source.getScheme())) {
+            // Download from S3
+            String bucket = source.getHost();
+            String key = source.getPath();
+            if (destination.toFile().isDirectory()) {
+                destination = destination.resolve(Path.of(key).getFileName());
+            }
+            logger.debug("Downloading file from S3 bucket {} key {} to {}", bucket, key, destination);
+            s3Client.getObject(builder -> builder.bucket(bucket).key(key), destination);
+        } else {
+            // Copy local files
+            Path sourcePath = Path.of(source);
+            if (destination.toFile().isDirectory()) {
+                destination = destination.resolve(sourcePath.getFileName());
+            }
+            logger.debug("Copying file {} to {}", sourcePath, destination);
+            Files.copy(sourcePath, destination);
+        }
+        return destination;
+    }
+
+    @Override
     public void deleteDir(Path dir) throws IOException {
         Files.walk(dir)
             .sorted(Comparator.reverseOrder()) // Sort in reverse order to delete files before directories
