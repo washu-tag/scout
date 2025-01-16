@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 hl7log_fullpath=${1:?Pass path to .log file as input}
 hl7log=$(basename $hl7log_fullpath)

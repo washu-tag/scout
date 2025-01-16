@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 f=${1:?Provide absolute path to split log file as first argument}
 
