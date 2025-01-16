@@ -18,6 +18,7 @@ import io.temporal.workflow.Async;
 import io.temporal.workflow.Promise;
 import io.temporal.workflow.Workflow;
 import io.temporal.workflow.WorkflowInfo;
+import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -25,6 +26,8 @@ import java.util.List;
 
 @WorkflowImpl(taskQueues = "ingest-hl7-log")
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
+    private static final Logger logger = Workflow.getLogger(IngestHl7LogWorkflowImpl.class);
+
     private final SplitHl7LogActivity hl7LogActivity =
             Workflow.newActivityStub(SplitHl7LogActivity.class,
                     ActivityOptions.newBuilder()
@@ -39,6 +42,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     @Override
     public IngestHl7LogWorkflowOutput ingestHl7Log(IngestHl7LogWorkflowInput input) {
         WorkflowInfo workflowInfo = Workflow.getInfo();
+        logger.info("Ingesting HL7 log for workflowId: " + workflowInfo.getWorkflowId());
 
         String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
 
