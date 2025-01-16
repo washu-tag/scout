@@ -50,7 +50,17 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     @Override
     public FindHl7LogFileOutput findHl7LogFile(FindHl7LogFileInput input) {
         File logsDir = Path.of(input.logsDir()).toFile();
+
+        // First try to find file in this dir
         File[] logFiles = logsDir.listFiles((dir, name) -> name.contains(input.date()));
+        if (logFiles == null || logFiles.length == 0) {
+            // We didn't find file in root dir. Try to find file in a year subdirectory.
+            String year = input.date().substring(0, 4);
+            File[] yearDirs = logsDir.listFiles((dir, name) -> name.equals(year));
+            if (yearDirs != null && yearDirs.length == 1) {
+                logFiles = yearDirs[0].listFiles((dir, name) -> name.contains(input.date()));
+            }
+        }
         if (logFiles == null || logFiles.length != 1) {
             throw Activity.wrap(new RuntimeException("Expected exactly one file with date " + input.date() + " in " + input.logsDir() + ". Found " + (logFiles == null ? 0 : logFiles.length)));
         }
