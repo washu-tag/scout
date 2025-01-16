@@ -2,3 +2,16 @@ nameOverride: temporal-java
 image:
   repository: local/temporal-java
   tag: latest
+envFrom:
+  - secretRef:
+      name: s3-secret
+  - configMapRef:
+      name: s3-env
+volumes:
+  - name: hl7logs
+    hostPath:
+      path: /ceph/tag/home/test_data_v3/hl7ish_logs
+volumeMounts:
+  - name: hl7logs
+    mountPath: /hl7logs
+    readOnly: true
