@@ -12,6 +12,7 @@ import io.temporal.activity.ActivityInfo;
 import io.temporal.spring.boot.ActivityImpl;
 import io.temporal.workflow.Workflow;
 import org.slf4j.Logger;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +22,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
+@Component
 @ActivityImpl(taskQueues = "ingest-hl7-log")
 public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private static final Logger logger = Workflow.getLogger(SplitHl7LogActivityImpl.class);
