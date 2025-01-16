@@ -34,7 +34,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     public IngestHl7LogWorkflowOutput ingestHl7Log(IngestHl7LogWorkflowInput input) {
         WorkflowInfo workflowInfo = Workflow.getInfo();
 
-        var scratchDir = input.scratchSpaceRootPath() + "/" + workflowInfo.getWorkflowId();
+        var scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
 
         // Find log file by date
         var findHl7LogFileInput = new FindHl7LogFileInput(input.date(), input.logsRootPath());

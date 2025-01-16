@@ -82,7 +82,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             throw Activity.wrap(e);
         }
         // TODO configure the path to the script
-        String stdout = runScript(tempdir.toFile(), "/app/scripts/split-hl7-log.sh", input.logFilePath());;
+        String stdout = runScript(tempdir.toFile(), "/app/scripts/split-hl7-log.sh", input.logFilePath());
         List<Path> relativePaths = Arrays.stream(stdout.split("\n")).map(Path::of).toList();
 
         try {
