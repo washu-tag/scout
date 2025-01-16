@@ -2,7 +2,6 @@ package edu.washu.tag.temporal.workflow;
 
 import edu.washu.tag.temporal.activity.IngestHl7FilesToDeltaLakeActivity;
 import edu.washu.tag.temporal.activity.SplitHl7LogActivity;
-import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowOutput;
@@ -11,6 +10,7 @@ import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.Workflow;
+import io.temporal.workflow.WorkflowInfo;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,7 +31,8 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
     @Override
     public IngestHl7LogWorkflowOutput ingestHl7Log(IngestHl7LogWorkflowInput input) {
-        var workflowInfo = Workflow.getInfo();
+        WorkflowInfo workflowInfo = Workflow.getInfo();
+
         var scratchDir = input.scratchSpaceRootPath() + "/" + workflowInfo.getWorkflowId();
 
         // Split log file

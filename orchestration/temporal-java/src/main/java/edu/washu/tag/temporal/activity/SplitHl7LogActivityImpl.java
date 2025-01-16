@@ -4,16 +4,29 @@ import edu.washu.tag.temporal.model.SplitHl7LogActivityInput;
 import edu.washu.tag.temporal.model.SplitHl7LogActivityOutput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
+import edu.washu.tag.temporal.util.FileHandler;
 import io.temporal.activity.Activity;
+import io.temporal.activity.ActivityInfo;
 import io.temporal.spring.boot.ActivityImpl;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 
 @ActivityImpl(taskQueues = "ingest-hl7-log")
 public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
+    // Autowire FileHandler
+    private final FileHandler fileHandler;
+
+    public SplitHl7LogActivityImpl(FileHandler fileHandler) {
+        this.fileHandler = fileHandler;
+    }
+
     private String runScript(File cwd, String... command) {
         try {
             Process p = new ProcessBuilder()
@@ -34,15 +47,52 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     @Override
     public SplitHl7LogActivityOutput splitHl7Log(SplitHl7LogActivityInput input) {
+        ActivityInfo info = Activity.getExecutionContext().getInfo();
+
+        URI destination = URI.create(input.rootOutputPath());
+
+        String tempdirPrefix = "split-hl7-log-" + info.getWorkflowId() + "-" + info.getActivityId();
+        Path tempdir;
+        try {
+            tempdir = Files.createTempDirectory(tempdirPrefix);
+        } catch (IOException e) {
+            throw Activity.wrap(e);
+        }
         // TODO configure the path to the script
-        String stdout = runScript(Path.of(input.outputPath()).toFile(), "/app/scripts/split-hl7-log.sh", input.logFilePath());
-        return new SplitHl7LogActivityOutput(input.outputPath(), Arrays.stream(stdout.split("\n")).toList());
+        String stdout = runScript(tempdir.toFile(), "/app/scripts/split-hl7-log.sh", input.logFilePath());;
+        List<Path> relativePaths = Arrays.stream(stdout.split("\n")).map(Path::of).toList();
+
+        try {
+            List<String> destinationPaths = fileHandler.put(relativePaths, tempdir, destination);
+            fileHandler.deleteDir(tempdir);
+            return new SplitHl7LogActivityOutput(input.rootOutputPath(), destinationPaths);
+        } catch (IOException | URISyntaxException e) {
+            throw Activity.wrap(e);
+        }
     }
 
     @Override
     public TransformSplitHl7LogOutput transformSplitHl7Log(TransformSplitHl7LogInput input) {
+        ActivityInfo info = Activity.getExecutionContext().getInfo();
+
+        URI destination = URI.create(input.rootOutputPath());
+
+        String tempdirPrefix = "transform-split-hl7-log-" + info.getWorkflowId() + "-" + info.getActivityId();
+        Path tempdir;
+        try {
+            tempdir = Files.createTempDirectory(tempdirPrefix);
+        } catch (IOException e) {
+            throw Activity.wrap(e);
+        }
+
         // TODO configure the path to the script
-        String stdout = runScript(Path.of(input.rootOutputPath()).toFile(), "/app/scripts/transform-split-hl7-log.sh", input.splitLogFile());
-        return new TransformSplitHl7LogOutput(input.rootOutputPath(), stdout);
+        String relativePath = runScript(tempdir.toFile(), "/app/scripts/transform-split-hl7-log.sh", input.splitLogFile());
+        try {
+            String destinationPath = fileHandler.put(Path.of(relativePath), tempdir, destination);
+            fileHandler.deleteDir(tempdir);
+            return new TransformSplitHl7LogOutput(input.rootOutputPath(), destinationPath);
+        } catch (IOException | URISyntaxException e) {
+            throw Activity.wrap(e);
+        }
     }
 }
