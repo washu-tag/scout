@@ -1,3 +1,3 @@
 package edu.washu.tag.temporal.model;
 
-public record IngestHl7LogWorkflowInput(String logPath, String scratchSpaceRootPath, String outputRootPath) { }
+public record IngestHl7LogWorkflowInput(String date, String logsRootPath, String scratchSpaceRootPath, String outputRootPath) { }

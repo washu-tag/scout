@@ -2,6 +2,7 @@ package edu.washu.tag.temporal.workflow;
 
 import edu.washu.tag.temporal.activity.IngestHl7FilesToDeltaLakeActivity;
 import edu.washu.tag.temporal.activity.SplitHl7LogActivity;
+import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowOutput;
@@ -35,9 +36,13 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
         var scratchDir = input.scratchSpaceRootPath() + "/" + workflowInfo.getWorkflowId();
 
+        // Find log file by date
+        var findHl7LogFileInput = new FindHl7LogFileInput(input.date(), input.logsRootPath());
+        var findHl7LogFileOutput = hl7LogActivity.findHl7LogFile(findHl7LogFileInput);
+
         // Split log file
         var splitLogFileOutputPath = scratchDir + "/split";
-        var splitHl7LogInput = new SplitHl7LogActivityInput(input.logPath(), splitLogFileOutputPath);
+        var splitHl7LogInput = new SplitHl7LogActivityInput(findHl7LogFileOutput.logFileAbsPath(), splitLogFileOutputPath);
         var splitHl7LogOutput = hl7LogActivity.splitHl7Log(splitHl7LogInput);
 
         // Fan out
