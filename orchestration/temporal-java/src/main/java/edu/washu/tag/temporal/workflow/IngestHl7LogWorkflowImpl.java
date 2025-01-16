@@ -14,6 +14,8 @@ import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.spring.boot.WorkflowImpl;
+import io.temporal.workflow.Async;
+import io.temporal.workflow.Promise;
 import io.temporal.workflow.Workflow;
 import io.temporal.workflow.WorkflowInfo;
 
@@ -51,14 +53,20 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
         // Fan out
         String hl7RootPath = input.hl7OutputPath().endsWith("/") ? input.hl7OutputPath().substring(0, input.hl7OutputPath().length() - 1) : input.hl7OutputPath();
-        final List<String> hl7RelativePaths = new ArrayList<>();
+        List<Promise<TransformSplitHl7LogOutput>> transformSplitHl7LogOutputPromises = new ArrayList<>();
         for (String splitLogFileRelativePath : splitHl7LogOutput.relativePaths()) {
-            // Transform split log file into HL7
+            // Async call to transform split log file into HL7
             String splitLogFilePath = splitHl7LogOutput.rootPath() + "/" + splitLogFileRelativePath;
             TransformSplitHl7LogInput transformSplitHl7LogInput = new TransformSplitHl7LogInput(splitLogFilePath, hl7RootPath);
-            TransformSplitHl7LogOutput transformSplitHl7LogOutput = hl7LogActivity.transformSplitHl7Log(transformSplitHl7LogInput);
-            hl7RelativePaths.add(transformSplitHl7LogOutput.relativePath());
+            Promise<TransformSplitHl7LogOutput> transformSplitHl7LogOutputPromise =
+                    Async.function(hl7LogActivity::transformSplitHl7Log, transformSplitHl7LogInput);
+            transformSplitHl7LogOutputPromises.add(transformSplitHl7LogOutputPromise);
         }
+        // Collect async results
+        final List<String> hl7RelativePaths = transformSplitHl7LogOutputPromises.stream()
+                .map(Promise::get)
+                .map(TransformSplitHl7LogOutput::relativePath)
+                .toList();
 
         // Ingest HL7 into delta lake
         IngestHl7FilesToDeltaLakeInput ingestHl7FilesToDeltaLakeInput = new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), hl7RelativePaths);
