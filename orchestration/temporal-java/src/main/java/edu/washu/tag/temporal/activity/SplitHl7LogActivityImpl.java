@@ -55,7 +55,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     @Override
     public FindHl7LogFileOutput findHl7LogFile(FindHl7LogFileInput input) {
-        logger.debug("Finding HL7 log file for date {}", input.date());
+        logger.info("Finding HL7 log file for date {}", input.date());
         File logsDir = Path.of(input.logsDir()).toFile();
 
         // First try to find file in this dir
@@ -77,7 +77,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     @Override
     public SplitHl7LogActivityOutput splitHl7Log(SplitHl7LogActivityInput input) {
-        logger.debug("Splitting HL7 log file {}", input.logFilePath());
+        logger.info("Splitting HL7 log file {}", input.logFilePath());
         ActivityInfo info = Activity.getExecutionContext().getInfo();
 
         URI destination = URI.create(input.rootOutputPath());
@@ -111,7 +111,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     @Override
     public TransformSplitHl7LogOutput transformSplitHl7Log(TransformSplitHl7LogInput input) {
-        logger.debug("Transforming split HL7 log file {}", input.splitLogFile());
+        logger.info("Transforming split HL7 log file {}", input.splitLogFile());
         ActivityInfo info = Activity.getExecutionContext().getInfo();
 
         URI destination = URI.create(input.rootOutputPath());
