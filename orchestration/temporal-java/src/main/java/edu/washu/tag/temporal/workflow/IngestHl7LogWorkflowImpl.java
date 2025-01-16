@@ -48,7 +48,8 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
 
         // Find log file by date
-        FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(input.date(), input.logsRootPath());
+        String date = input.date().replace("-", "");
+        FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(date, input.logsRootPath());
         FindHl7LogFileOutput findHl7LogFileOutput = hl7LogActivity.findHl7LogFile(findHl7LogFileInput);
 
         // Split log file
