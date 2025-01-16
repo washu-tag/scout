@@ -1,6 +1,13 @@
 #!/bin/sh
 
 hl7log_fullpath=${1:?Pass path to .log file as input}
+
+# Check if file exists
+if [ ! -f $hl7log_fullpath ]; then
+    echo "File not found: $hl7log_fullpath" >&2
+    exit 1
+fi
+
 hl7log=$(basename $hl7log_fullpath)
 prefix=${hl7log%.*}
 

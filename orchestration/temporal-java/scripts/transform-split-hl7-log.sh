@@ -2,6 +2,12 @@
 
 f=${1:?Provide absolute path to split log file as first argument}
 
+# Check if file exists
+if [ ! -f $f ]; then
+    echo "File not found: $f" >&2
+    exit 1
+fi
+
 # Read header from file to get 18-digit timestamp
 # Format: %Y%m%d%H%M%S%f in python strftime notation
 timestamp=$(head -c 24 $f | tr -C -d \[:digit:\])
