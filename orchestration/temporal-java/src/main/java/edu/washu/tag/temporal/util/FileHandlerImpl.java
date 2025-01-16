@@ -1,5 +1,7 @@
 package edu.washu.tag.temporal.util;
 
+import io.temporal.workflow.Workflow;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -13,6 +15,8 @@ import java.util.List;
 
 @Component
 public class FileHandlerImpl implements FileHandler {
+    private static final Logger logger = Workflow.getLogger(FileHandlerImpl.class);
+
     private final static String S3 = "s3";
     private final S3Client s3Client;
 
@@ -22,6 +26,7 @@ public class FileHandlerImpl implements FileHandler {
 
     @Override
     public String put(Path filePath, Path filePathsRoot, URI destination) throws IOException {
+        logger.debug("Put called: filePath {} filePathsRoot {} destination {}", filePath, filePathsRoot, destination);
         Path relativeFilePath;
         Path absoluteFilePath;
         if (filePath.isAbsolute()) {
@@ -35,11 +40,13 @@ public class FileHandlerImpl implements FileHandler {
             // Upload to S3
             String bucket = destination.getHost();
             String key = destination.getPath() + "/" + relativeFilePath;
+            logger.debug("Uploading file {} to S3 bucket {} key {}", absoluteFilePath, bucket, key);
             s3Client.putObject(builder -> builder.bucket(bucket).key(key), absoluteFilePath);
         } else {
             // Copy local files
             Path absDestination = Path.of(destination).resolve(relativeFilePath);
             absDestination.toFile().mkdirs();
+            logger.debug("Copying file {} to {}", absoluteFilePath, absDestination);
             Files.copy(absoluteFilePath, absDestination);
         }
         return relativeFilePath.toString();

@@ -38,6 +38,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private String runScript(File cwd, String... command) {
         String commandName = command.length > 0 ? command[0] : "<unknown>";
         try {
+            logger.debug("Running script {}", (Object) command);
             Process p = new ProcessBuilder()
                     .directory(cwd)
                     .command(command)
@@ -47,7 +48,9 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 String stderr = new String(p.getErrorStream().readAllBytes());
                 throw ApplicationFailure.newFailure("Command " + commandName + " failed with exit code " + exitCode + ". stderr: " + stderr, "type");
             }
-            return new String(p.getInputStream().readAllBytes());
+            var stdout = new String(p.getInputStream().readAllBytes());
+            logger.debug("Script output: {}", stdout);
+            return stdout;
         } catch (IOException | InterruptedException e) {
             throw ApplicationFailure.newFailureWithCause("Command " + commandName + " failed", "type", e);
         }
