@@ -50,7 +50,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         SplitHl7LogActivityOutput splitHl7LogOutput = hl7LogActivity.splitHl7Log(splitHl7LogInput);
 
         // Fan out
-        String hl7RootPath = scratchDir + "/hl7";
+        String hl7RootPath = input.hl7OutputPath().endsWith("/") ? input.hl7OutputPath().substring(0, input.hl7OutputPath().length() - 1) : input.hl7OutputPath();
         final List<String> hl7RelativePaths = new ArrayList<>();
         for (String splitLogFileRelativePath : splitHl7LogOutput.relativePaths()) {
             // Transform split log file into HL7
@@ -61,7 +61,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         }
 
         // Ingest HL7 into delta lake
-        IngestHl7FilesToDeltaLakeInput ingestHl7FilesToDeltaLakeInput = new IngestHl7FilesToDeltaLakeInput(input.outputRootPath(), hl7RelativePaths);
+        IngestHl7FilesToDeltaLakeInput ingestHl7FilesToDeltaLakeInput = new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), hl7RelativePaths);
         IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.ingestHl7FilesToDeltaLake(ingestHl7FilesToDeltaLakeInput);
 
         return new IngestHl7LogWorkflowOutput();
