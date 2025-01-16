@@ -14,7 +14,6 @@ import io.temporal.spring.boot.ActivityImpl;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -89,7 +88,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             List<String> destinationPaths = fileHandler.put(relativePaths, tempdir, destination);
             fileHandler.deleteDir(tempdir);
             return new SplitHl7LogActivityOutput(input.rootOutputPath(), destinationPaths);
-        } catch (IOException | URISyntaxException e) {
+        } catch (IOException e) {
             throw Activity.wrap(e);
         }
     }
@@ -114,7 +113,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             String destinationPath = fileHandler.put(Path.of(relativePath), tempdir, destination);
             fileHandler.deleteDir(tempdir);
             return new TransformSplitHl7LogOutput(input.rootOutputPath(), destinationPath);
-        } catch (IOException | URISyntaxException e) {
+        } catch (IOException e) {
             throw Activity.wrap(e);
         }
     }

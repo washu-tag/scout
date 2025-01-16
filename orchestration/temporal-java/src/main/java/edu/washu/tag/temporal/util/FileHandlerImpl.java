@@ -5,7 +5,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -22,7 +21,7 @@ public class FileHandlerImpl implements FileHandler {
     }
 
     @Override
-    public String put(Path filePath, Path filePathsRoot, URI destination) throws IOException, URISyntaxException {
+    public String put(Path filePath, Path filePathsRoot, URI destination) throws IOException {
         Path relativeFilePath;
         Path absoluteFilePath;
         if (filePath.isAbsolute()) {
@@ -59,7 +58,7 @@ public class FileHandlerImpl implements FileHandler {
      * @throws IOException
      */
     @Override
-    public List<String> put(List<Path> filePaths, Path filePathsRoot, URI destination) throws IOException, URISyntaxException {
+    public List<String> put(List<Path> filePaths, Path filePathsRoot, URI destination) throws IOException {
         List<String> destFiles = new ArrayList<>();
         for (Path filePath : filePaths) {
             destFiles.add(put(filePath, filePathsRoot, destination));
