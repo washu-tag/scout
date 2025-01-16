@@ -7,14 +7,17 @@ WORKDIR /app
 # Copy the Gradle wrapper and build files
 COPY gradlew .
 COPY gradle gradle
-COPY build.gradle .
-COPY settings.gradle .
+
+# Make the Gradle wrapper executable and download gradle
+RUN chmod +x gradlew
+RUN ./gradlew --version
 
 # Copy the source code
+COPY build.gradle .
+COPY settings.gradle .
 COPY src src
 
-# Make the Gradle wrapper executable and build the application
-RUN chmod +x gradlew
+# Build application
 RUN ./gradlew build -x test
 
 # Use a smaller base image for the final stage
