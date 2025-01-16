@@ -24,7 +24,13 @@ datasources:
       - name: Jaeger
         type: jaeger
         url: 'http://jaeger-query.jaeger.svc.cluster.local:80'
-        editable: true
+        editable: false
+        isDefault: false
+
+      - name: Loki
+        type: loki
+        url: 'http://loki-gateway.loki.svc.cluster.local/'
+        editable: false
         isDefault: false
         
 sidecar:

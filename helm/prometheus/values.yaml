@@ -40,7 +40,35 @@ extraScrapeConfigs: |
     static_configs:
       - targets: ['jaeger-query.jaeger.svc.cluster.local:16687']
 
-  - job_name: 'jaeger-ingester'
+  - job_name: 'loki'
     metrics_path: /metrics
     static_configs:
-      - targets: ['jaeger-ingester.jaeger.svc.cluster.local:14270']
+      - targets: ['loki.loki.svc.cluster.local:3100']
+ 
+  - job_name: minio-cluster
+    bearer_token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwcm9tZXRoZXVzIiwiZXhwIjo0ODkwNjY0NzIzfQ.YGtt_4OG5flAQDaalu_49ZjpV6oID5MjFdbpvxg5Ta6s2gWupJiAHAHuAZTQOlGenKfb0oBUSZ84KFToD8YRXg
+    metrics_path: /minio/v2/metrics/cluster
+    scheme: http
+    static_configs:
+      - targets: ['minio.minio.svc.cluster.local:9000']
+
+  - job_name: minio-bucket
+    bearer_token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwcm9tZXRoZXVzIiwiZXhwIjo0ODkwNjY1MDcwfQ.PkRvlK_Jkq2BfGnwV4i0LEvxVBVztVFAbHHB2hoNg2zeJfFqErwTrhgi2_ndZ8BqioTRdefbvPsis9KkdMnAWA
+    metrics_path: /minio/v2/metrics/bucket
+    scheme: http
+    static_configs:
+      - targets: ['minio.minio.svc.cluster.local:9000']
+
+  - job_name: minio-node
+    bearer_token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwcm9tZXRoZXVzIiwiZXhwIjo0ODkwNjY3ODAxfQ.MtxCtVwdE463hO2CLnDKDAKGSCnEpUHc-qkjgZZcctSG6XgKdONW60a7zbrZxBU5B3Zn78sLTfOn1dOpOVH18g
+    metrics_path: /minio/v2/metrics/node
+    scheme: http
+    static_configs:
+    - targets: ['minio.minio.svc.cluster.local:9000']
+
+  - job_name: minio-resource
+    bearer_token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwcm9tZXRoZXVzIiwiZXhwIjo0ODkwNjY4MjY0fQ.IK0i4lfwCUKFUu_CyW0hD0Z1UyL5FocfSTkP4P8qbcJVnWuF9Wr8sDWzJTAfZ3a1Gvm-Z11RLKCTAAljhw4xnw
+    metrics_path: /minio/v2/metrics/resource
+    scheme: http
+    static_configs:
+    - targets: ['minio.minio.svc.cluster.local:9000']
