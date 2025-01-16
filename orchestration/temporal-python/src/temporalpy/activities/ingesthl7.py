@@ -3,7 +3,7 @@ from temporalio import activity
 from temporalpy.hl7extractor.deltalake import import_hl7_files_to_deltalake
 
 
-TASK_QUEUE_NAME = "ingest-hl7-log"
+TASK_QUEUE_NAME = "ingest-hl7-delta-lake"
 
 
 @activity.dataclass(frozen=True)

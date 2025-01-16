@@ -36,6 +36,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private final IngestHl7FilesToDeltaLakeActivity ingestActivity =
             Workflow.newActivityStub(IngestHl7FilesToDeltaLakeActivity.class,
                     ActivityOptions.newBuilder()
+                            .setTaskQueue("ingest-hl7-delta-lake")
                             .setStartToCloseTimeout(Duration.ofSeconds(30))
                             .build());
 
