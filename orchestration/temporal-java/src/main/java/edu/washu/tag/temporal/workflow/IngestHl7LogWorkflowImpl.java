@@ -43,7 +43,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     @Override
     public IngestHl7LogWorkflowOutput ingestHl7Log(IngestHl7LogWorkflowInput input) {
         WorkflowInfo workflowInfo = Workflow.getInfo();
-        logger.info("Ingesting HL7 log for workflowId: " + workflowInfo.getWorkflowId());
+        logger.info("Ingesting HL7 log for workflowId {}", workflowInfo.getWorkflowId());
 
         String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
 
