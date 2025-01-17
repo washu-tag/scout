@@ -12,6 +12,7 @@ import edu.washu.tag.temporal.model.SplitHl7LogActivityOutput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
 import io.temporal.activity.ActivityOptions;
+import io.temporal.common.RetryOptions;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.ActivityStub;
 import io.temporal.workflow.Async;
@@ -40,6 +41,9 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             ActivityOptions.newBuilder()
                     .setTaskQueue("ingest-hl7-delta-lake")
                     .setStartToCloseTimeout(Duration.ofSeconds(30))
+                    .setRetryOptions(RetryOptions.newBuilder()
+                            .setMaximumAttempts(5)
+                            .build())
                     .build());
 
     @Override
