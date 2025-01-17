@@ -23,9 +23,9 @@ async def run_worker(temporal_address: str, namespace: str) -> None:
             activity_executor = pool,
         )
 
-    log.info("Starting worker...")
-    await worker.run()
-    log.info("Worker stopped")
+        log.info("Starting worker...")
+        await worker.run()
+        log.info("Worker stopped")
 
 
 async def main(argv=None):
