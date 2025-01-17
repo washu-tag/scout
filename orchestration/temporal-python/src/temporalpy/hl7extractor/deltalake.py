@@ -59,15 +59,15 @@ def read_hl7_s3(s3path: str, cache: Optional[set[str]] = None) -> Iterator[Messa
             except Exception as e:
                 raise ApplicationError(f"Error extracting {path}") from e
 
-    if s3path.endswith("/"):
-        for p in s3filesystem.glob(s3path + "**/*.hl7"):
+    if s3path.endswith(".hl7"):
+        cache.add(s3path)
+        yield read_hl7_file_from_s3(s3path)
+    else:
+        for p in s3filesystem.glob(s3path + "**.hl7"):
             if p in cache:
                 continue
             cache.add(p)
             yield read_hl7_file_from_s3(p)
-    else:
-        cache.add(s3path)
-        yield read_hl7_file_from_s3(s3path)
 
 
 def read_hl7_input(hl7input: Iterable[str]) -> Iterator[MessageData]:
