@@ -1,6 +1,5 @@
 package edu.washu.tag.temporal.workflow;
 
-import edu.washu.tag.temporal.activity.IngestHl7FilesToDeltaLakeActivity;
 import edu.washu.tag.temporal.activity.SplitHl7LogActivity;
 import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
@@ -14,6 +13,7 @@ import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.spring.boot.WorkflowImpl;
+import io.temporal.workflow.ActivityStub;
 import io.temporal.workflow.Async;
 import io.temporal.workflow.Promise;
 import io.temporal.workflow.Workflow;
@@ -33,12 +33,14 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                     ActivityOptions.newBuilder()
                             .setStartToCloseTimeout(Duration.ofSeconds(10))
                             .build());
-    private final IngestHl7FilesToDeltaLakeActivity ingestActivity =
-            Workflow.newActivityStub(IngestHl7FilesToDeltaLakeActivity.class,
-                    ActivityOptions.newBuilder()
-                            .setTaskQueue("ingest-hl7-delta-lake")
-                            .setStartToCloseTimeout(Duration.ofSeconds(30))
-                            .build());
+
+    private static final String INGEST_ACTIVITY_NAME = "ingest_hl7_files_to_delta_lake_activity";
+    private final ActivityStub ingestActivity =
+        Workflow.newUntypedActivityStub(
+            ActivityOptions.newBuilder()
+                    .setTaskQueue("ingest-hl7-delta-lake")
+                    .setStartToCloseTimeout(Duration.ofSeconds(30))
+                    .build());
 
     @Override
     public IngestHl7LogWorkflowOutput ingestHl7Log(IngestHl7LogWorkflowInput input) {
@@ -75,8 +77,12 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                 .toList();
 
         // Ingest HL7 into delta lake
-        IngestHl7FilesToDeltaLakeInput ingestHl7FilesToDeltaLakeInput = new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), hl7RelativePaths);
-        IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.ingestHl7FilesToDeltaLake(ingestHl7FilesToDeltaLakeInput);
+        // We execute the activity using the untyped stub because the activity is implemented in a different language
+        IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
+                INGEST_ACTIVITY_NAME,
+                IngestHl7FilesToDeltaLakeOutput.class,
+                new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), hl7RelativePaths)
+        );
 
         return new IngestHl7LogWorkflowOutput();
     }
