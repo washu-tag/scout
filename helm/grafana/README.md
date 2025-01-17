@@ -65,12 +65,8 @@ kubectl port-forward svc/grafana 3000:80 -n grafana
 
 The login page is disabled and allows anonymous access with the default role of Admin.
 
-Any changes to the Grafana configuration can be made in the `values.yaml` file. The Grafana UI can also be used to make changes to the configuration but we will ne
+Any changes to the Grafana configuration can be made in the `values.yaml` file. The Grafana UI can also be used to make changes to the configuration but ideally the `values.yaml` file should be used to make changes. 
 
 ## Working with Dashboards
 
 Dashboards are stored as JSON files and can be managed with Git. Unfortunately, the Grafana UI doesn't support Git integration. Grafana is setup to persist between restarts, so you won't lose your dashboards if the pod is restarted. But some core dashboards we will want to manage with Git. To do this, dashboards are developed in the Grafana UI, exported as JSON, and then stored in the `dashboards` directory. The `kustomization.yaml` file will build the ConfigMap for the dashboards and the Grafana sidecar will load the dashboards into Grafana. To save or update a dashboard in our Git repository, export the dashboard as JSON and save it in the `dashboards` directory. If it's a new dashboard, update the `kustomization.yaml` file to include the new dashboard. The redeploy the dashboard config maps with `kubectl apply -k . -n grafana`.
-
-## Dashboard Sources
-
-[Jaeger Dashboard](https://github.com/jaegertracing/jaeger/blob/main/monitoring/jaeger-mixin/dashboard-for-grafana.json)
