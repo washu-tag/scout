@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import Optional, TextIO
 
 import hl7
@@ -202,7 +202,7 @@ def extract_data(message: hl7.Message, path: Optional[str] = None) -> MessageDat
         msh_7_message_timestamp=extract_field(message, "MSH", 7),
         msh_10_message_control_id=extract_field(message, "MSH", 10),
         msh_12_version_id=extract_field(message, "MSH", 12),
-        pid_3_patient_id=json.dumps(extract_patient_identifiers(message)),
+        pid_3_patient_id=json.dumps(list(map(asdict, extract_patient_identifiers(message) or []))),
         pid_7_date_time_of_birth=extract_field(message, "PID", 7),
         pid_8_administrative_sex=extract_field(message, "PID", 8),
         pid_10_race=extract_field(message, "PID", 10),
