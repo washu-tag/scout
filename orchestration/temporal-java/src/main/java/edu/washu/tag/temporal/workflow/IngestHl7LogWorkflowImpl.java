@@ -71,9 +71,10 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             transformSplitHl7LogOutputPromises.add(transformSplitHl7LogOutputPromise);
         }
         // Collect async results
-        final List<String> hl7RelativePaths = transformSplitHl7LogOutputPromises.stream()
+        final List<String> hl7AbsolutePaths = transformSplitHl7LogOutputPromises.stream()
                 .map(Promise::get)
                 .map(TransformSplitHl7LogOutput::relativePath)
+                .map(relativePath -> hl7RootPath + "/" + relativePath)
                 .toList();
 
         // Ingest HL7 into delta lake
@@ -81,7 +82,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
                 INGEST_ACTIVITY_NAME,
                 IngestHl7FilesToDeltaLakeOutput.class,
-                new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), hl7RelativePaths)
+                new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), hl7AbsolutePaths)
         );
 
         return new IngestHl7LogWorkflowOutput();
