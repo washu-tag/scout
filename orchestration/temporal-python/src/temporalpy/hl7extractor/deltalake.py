@@ -8,12 +8,16 @@ from typing import Optional, Iterable
 
 import pandas as pd
 import pyarrow.compute as pc
+import s3fs
 from deltalake import DeltaTable, write_deltalake
 
-from temporalpy.hl7extractor.hl7 import MessageData, read_hl7_message
+from temporalpy.hl7extractor.hl7 import MessageData, read_hl7_message, extract_data, parse_hl7_message
 
 log = logging.getLogger(__name__)
 storage_options = {"conditional_put": "etag"}
+
+
+s3filesystem = None
 
 
 def read_hl7_directory(directory: str, cache: Optional[set[str]] = None) -> Iterator[MessageData]:
@@ -34,12 +38,43 @@ def read_hl7_directory(directory: str, cache: Optional[set[str]] = None) -> Iter
     cache.add(directory)
 
 
+def read_hl7_s3(s3path: str, cache: Optional[set[str]] = None) -> Iterator[MessageData]:
+    """Read HL7 messages from S3."""
+    cache = cache or set()
+    if s3path in cache:
+        return
+
+    global s3filesystem
+    if s3filesystem is None:
+        s3filesystem = s3fs.S3FileSystem()
+
+    def read_hl7_file_from_s3(path_: str) -> MessageData:
+        log.debug("Reading HL7 message from %s", path_)
+        with s3filesystem.open(path_, "rb") as f:
+            try:
+                return extract_data(parse_hl7_message(f), path_)
+            except Exception as e:
+                log.error("Error extracting %s: %s", path_, e)
+
+    if s3path.endswith("/"):
+        for path in s3filesystem.glob(s3path + "**/*.hl7"):
+            if path in cache:
+                continue
+            cache.add(path)
+            yield read_hl7_file_from_s3(path)
+    else:
+        cache.add(s3path)
+        yield read_hl7_file_from_s3(s3path)
+
+
 def read_hl7_input(hl7input: Iterable[str]) -> Iterator[MessageData]:
     """Read HL7 messages from input files or directories."""
     cache = set()
     for path in hl7input:
         if path in cache:
             continue
+        if path.startswith("s3://"):
+            yield from read_hl7_s3(path, cache=cache)
         if os.path.isdir(path):
             yield from read_hl7_directory(path, cache=cache)
         else:

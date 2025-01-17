@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, TextIO
 
 import hl7
 
@@ -52,7 +52,11 @@ def _read_hl7_message(filename: str) -> hl7.Message:
     """Read HL7 message from file."""
     log.info("Reading HL7 message from %s", filename)
     with open(filename, "r", encoding="latin-1", newline="\r") as f:
-        return hl7.parse(f.read())
+        return parse_hl7_message(f)
+
+
+def parse_hl7_message(data: TextIO) -> hl7.Message:
+    return hl7.parse(data.read())
 
 
 def read_hl7_message(path: str) -> MessageData:
