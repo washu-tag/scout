@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 26,
+  "id": 29,
   "links": [],
   "panels": [
     {
@@ -1173,7 +1173,7 @@
         "x": 0,
         "y": 16
       },
-      "id": 9,
+      "id": 8,
       "maxDataPoints": 100,
       "options": {
         "colorMode": "value",
@@ -1202,19 +1202,19 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum by (instance) (minio_s3_traffic_sent_bytes)",
+          "expr": "sum by (instance) (minio_s3_traffic_received_bytes)",
           "format": "table",
           "hide": false,
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "",
+          "legendFormat": "{{instance}}",
           "metric": "process_start_time_seconds",
           "refId": "A",
           "step": 60
         }
       ],
-      "title": "Total S3 Egress",
+      "title": "Total S3 Ingress",
       "type": "stat"
     },
     {
@@ -1455,7 +1455,7 @@
         "x": 0,
         "y": 20
       },
-      "id": 8,
+      "id": 9,
       "maxDataPoints": 100,
       "options": {
         "colorMode": "value",
@@ -1484,19 +1484,19 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum by (instance) (minio_s3_traffic_received_bytes)",
+          "expr": "sum by (instance) (minio_s3_traffic_sent_bytes)",
           "format": "table",
           "hide": false,
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "",
           "metric": "process_start_time_seconds",
           "refId": "A",
           "step": 60
         }
       ],
-      "title": "Total S3 Ingress",
+      "title": "Total S3 Egress",
       "type": "stat"
     },
     {
@@ -1665,6 +1665,6 @@
   "timezone": "browser",
   "title": "MinIO",
   "uid": "ceaa3illt1nuob",
-  "version": 5,
+  "version": 1,
   "weekStart": ""
 }
