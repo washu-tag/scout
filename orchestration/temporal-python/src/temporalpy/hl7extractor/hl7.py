@@ -4,6 +4,8 @@ import os
 from dataclasses import dataclass, asdict
 from typing import Optional, TextIO
 
+from temporalio.exceptions import ApplicationError
+
 import hl7
 
 log = logging.getLogger(__name__)
@@ -62,9 +64,11 @@ def parse_hl7_message(data: TextIO) -> hl7.Message:
 def read_hl7_message(path: str) -> MessageData:
     """Read HL7 message from file."""
     try:
-        return extract_data(_read_hl7_message(path), path)
+        message = _read_hl7_message(path)
+        log.debug("Successfully read HL7 message from %s", path)
+        return extract_data(message, path)
     except Exception as e:
-        log.error("Error extracting %s: %s", path, e)
+        raise ApplicationError(f"Error extracting {path}") from e
 
 
 def extract_patient_identifiers(

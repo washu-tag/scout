@@ -10,6 +10,7 @@ import pandas as pd
 import pyarrow.compute as pc
 import s3fs
 from deltalake import DeltaTable, write_deltalake
+from temporalio.exceptions import ApplicationError
 
 from temporalpy.hl7extractor.hl7 import MessageData, read_hl7_message, extract_data, parse_hl7_message
 
@@ -48,21 +49,22 @@ def read_hl7_s3(s3path: str, cache: Optional[set[str]] = None) -> Iterator[Messa
     if s3filesystem is None:
         s3filesystem = s3fs.S3FileSystem()
 
-    def read_hl7_file_from_s3(path_: str) -> MessageData:
-        log.info("Reading HL7 message from S3 file %s", path_)
-        with s3filesystem.open(path_, "rb") as f:
-            message = parse_hl7_message(f)
+    def read_hl7_file_from_s3(path: str) -> MessageData:
+        log.info("Reading HL7 message from S3 file %s", path)
+        with s3filesystem.open(path, "rb") as f:
             try:
-                return extract_data(message, path_)
+                message = parse_hl7_message(f)
+                log.debug("Successfully read HL7 message from %s", path)
+                return extract_data(message, path)
             except Exception as e:
-                log.error("Error extracting %s: %s", path_, e)
+                raise ApplicationError(f"Error extracting {path}") from e
 
     if s3path.endswith("/"):
-        for path in s3filesystem.glob(s3path + "**/*.hl7"):
-            if path in cache:
+        for p in s3filesystem.glob(s3path + "**/*.hl7"):
+            if p in cache:
                 continue
-            cache.add(path)
-            yield read_hl7_file_from_s3(path)
+            cache.add(p)
+            yield read_hl7_file_from_s3(p)
     else:
         cache.add(s3path)
         yield read_hl7_file_from_s3(s3path)
@@ -86,9 +88,15 @@ def read_hl7_input(hl7input: Iterable[str]) -> Iterator[MessageData]:
 def import_hl7_files_to_deltalake(delta_table: str, hl7_input: list[str]) -> Optional[str]:
     """Extract data from HL7 messages and write to Delta Lake."""
     log.info(f"Reading HL7 messages from {hl7_input}")
+    if not hl7_input:
+        raise ApplicationError("No HL7 input files or directories provided")
+
     df = pd.DataFrame.from_records(asdict(message) for message in read_hl7_input(hl7_input) if message is not None).astype(dtype=str)
 
     log.info(f"Extracted data from {len(df)} HL7 messages")
+
+    if df.empty:
+        raise ApplicationError("No data extracted from HL7 messages")
 
     # Extract time column for partitioning
     timestamp = pd.to_datetime(df["msh_7_message_timestamp"], errors="coerce", format="%Y%m%d%H%M%S%f")
