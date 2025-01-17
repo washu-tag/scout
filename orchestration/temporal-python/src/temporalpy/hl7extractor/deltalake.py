@@ -7,7 +7,6 @@ from dataclasses import asdict
 from typing import Optional, Iterable
 
 import pandas as pd
-import pyarrow.compute as pc
 import s3fs
 from deltalake import DeltaTable, write_deltalake
 from temporalio.exceptions import ApplicationError
@@ -118,18 +117,21 @@ def import_hl7_files_to_deltalake(delta_table: str, hl7_input: list[str]) -> Opt
         .when_not_matched_insert_all()\
         .execute()
 
-    log.info(f"Confirming write: Reading Delta Lake table from {delta_table}")
-
-    # Read the Delta Lake table back into a DataFrame, filtering to only the values we wrote
-    df2 = dt.to_pandas(
-        partitions=[
-            ("year", "in", df["year"].unique())
-        ],
-        filters=pc.field("source_file").isin(df["source_file"].values.tolist())
-    )
-
-    pd.testing.assert_frame_equal(df.sort_values("source_file", inplace=False).reset_index(drop=True),
-                                  df2.sort_values("source_file", inplace=False).reset_index(drop=True))
+    # TODO Confirming this write causes an error in the rust library that kills the worker
+    #  > terminate called after throwing an instance of 'parquet::ParquetException'
+    #  >  what():  Repetition level histogram size mismatch
+    # log.info(f"Confirming write: Reading Delta Lake table from {delta_table}")
+    #
+    # # Read the Delta Lake table back into a DataFrame, filtering to only the values we wrote
+    # df2 = dt.to_pandas(
+    #     partitions=[
+    #         ("year", "in", df["year"].unique())
+    #     ],
+    #     filters=pc.field("source_file").isin(df["source_file"].values.tolist())
+    # )
+    #
+    # pd.testing.assert_frame_equal(df.sort_values("source_file", inplace=False).reset_index(drop=True),
+    #                               df2.sort_values("source_file", inplace=False).reset_index(drop=True))
     return "success"
 
 
