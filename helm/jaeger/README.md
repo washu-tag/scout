@@ -52,6 +52,8 @@ To access Jaeger, run:
 kubectl port-forward svc/jaeger-query 16685:80 -n jaeger
 ```
 
+Jaegar can also be accessed through Grafana.
+
 ## Storage backend for Jaeger
 
-Jaeger supports multiple storage backends. The default storage backend is [*currently*](https://github.com/jaegertracing/helm-charts/tree/main/charts/jaeger#storage) Cassandra, but Elasticsearch or OpenSearch is [recommended](https://www.jaegertracing.io/docs/2.2/faq/#what-is-the-recommended-storage-backend) by the Jaeger team over Cassandra. The default backend for Jaeger could change in the future. 
+Jaeger supports multiple storage backends. The default storage backend is [*currently*](https://github.com/jaegertracing/helm-charts/tree/main/charts/jaeger#storage) Cassandra, but Elasticsearch or OpenSearch is [recommended](https://www.jaegertracing.io/docs/2.2/faq/#what-is-the-recommended-storage-backend) by the Jaeger team over Cassandra. The default backend for Jaeger could change in the future. Our values.yaml file is configured to use Elasticsearch as the storage backend.

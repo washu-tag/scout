@@ -71,4 +71,6 @@ Uninstall Promtail with:
 helm uninstall promtail --namespace loki
 ```
 
+## Accessing Loki
 
+Loki can be accessed through Grafana.
