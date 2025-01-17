@@ -49,10 +49,11 @@ def read_hl7_s3(s3path: str, cache: Optional[set[str]] = None) -> Iterator[Messa
         s3filesystem = s3fs.S3FileSystem()
 
     def read_hl7_file_from_s3(path_: str) -> MessageData:
-        log.debug("Reading HL7 message from %s", path_)
+        log.info("Reading HL7 message from S3 file %s", path_)
         with s3filesystem.open(path_, "rb") as f:
+            message = parse_hl7_message(f)
             try:
-                return extract_data(parse_hl7_message(f), path_)
+                return extract_data(message, path_)
             except Exception as e:
                 log.error("Error extracting %s: %s", path_, e)
 
@@ -75,7 +76,7 @@ def read_hl7_input(hl7input: Iterable[str]) -> Iterator[MessageData]:
             continue
         if path.startswith("s3://"):
             yield from read_hl7_s3(path, cache=cache)
-        if os.path.isdir(path):
+        elif os.path.isdir(path):
             yield from read_hl7_directory(path, cache=cache)
         else:
             yield read_hl7_message(path)

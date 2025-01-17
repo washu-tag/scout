@@ -50,7 +50,7 @@ class MessageData:
 
 def _read_hl7_message(filename: str) -> hl7.Message:
     """Read HL7 message from file."""
-    log.info("Reading HL7 message from %s", filename)
+    log.info("Reading HL7 message from local file %s", filename)
     with open(filename, "r", encoding="latin-1", newline="\r") as f:
         return parse_hl7_message(f)
 
