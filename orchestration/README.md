@@ -7,8 +7,12 @@ Deploy helm chart to kubernetes.
 helm repo add temporal https://go.temporal.io/helm-charts
 helm repo update temporal
 kubectl create ns temporal
-helm upgrade --install -n temporal temporal temporal/temporal
+helm upgrade --install -n temporal temporal temporal/temporal --set-json server.additionalEnv='[{"TEMPORAL_CSRF_COOKIE_INSECURE":"true"}]'
 ```
+
+The last option instructs Temporal to use the CSRF token even on non-TLS HTTP connections.
+We need that setting to avoid errors in anything in the UI that modifies data.
+But once we have a deploy with TLS and a reverse proxy, we will not need this setting.
 
 ## Build images
 This will hopefully soon be unnecessary as we intend to build and deploy the images in CI.
