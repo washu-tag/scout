@@ -7,7 +7,7 @@ Deploy helm chart to kubernetes.
 helm repo add temporal https://go.temporal.io/helm-charts
 helm repo update temporal
 kubectl create ns temporal
-helm upgrade --install -n temporal temporal temporal/temporal --set-json server.additionalEnv='[{"TEMPORAL_CSRF_COOKIE_INSECURE":"true"}]'
+helm upgrade --install -n temporal temporal temporal/temporal --set-json web.additionalEnv='[{"TEMPORAL_CSRF_COOKIE_INSECURE":"true"}]'
 ```
 
 The last option instructs Temporal to use the CSRF token even on non-TLS HTTP connections.
@@ -35,7 +35,7 @@ helm upgrade --install -n orchestration-workers temporal-java helm/orchestration
 helm upgrade --install -n orchestration-workers temporal-python helm/orchestration/temporal-worker -f helm/orchestration/temporal-python.values.yaml
 ```
 
-# Launch a Workflow
+# Launch a Workflow via the CLI
 ## Make temporal alias
 To interact with Temporal we use their CLI tools. But we don't need to install them locally, we need only `exec` a command into a pod that runs as part of the Temporal kubernetes installation which contains the CLI tools. Use your shell to alias this command to some name:
 ```shell
@@ -61,3 +61,20 @@ ktemporal workflow start \
   --type IngestHl7LogWorkflow \
   --input '{"deltaLakePath":"<deltaLakePath>", "hl7OutputPath":"<hl7OutputPath>", "scratchSpaceRootPath":"<scratchSpaceRootPath>", "logsRootPath": "<logsRootPath>", "date":"<YYYYMMDD>"}'
 ```
+# Launch a Workflow via the Temporal UI
+## Access Temporal UI
+We don't currently expose the Temporal service outside the cluster so you'll need to forward the port.
+```shell
+kubectl port-forward -n temporal service/temporal-web 8080
+```
+Then navigate your browser to the Temporal UI at [localhost:8080](http://localhost:8080).
+## Prepare Input Values
+See the Prepare Input Values section above.
+
+## Launch Workflow
+On the [Workflows](http://localhost:8080/namespaces/default/workflows) page, click "Start Workflow".
+
+- Workflow ID: Click the "Random UUID" button
+- Task Queue: `ingest-hl7-log`
+- Workflow Type: `IngestHl7LogWorkflow`
+- Input: Insert values into the input JSON `{"deltaLakePath":"<deltaLakePath>", "hl7OutputPath":"<hl7OutputPath>", "scratchSpaceRootPath":"<scratchSpaceRootPath>", "logsRootPath": "<logsRootPath>", "date":"<YYYYMMDD>"}` and paste that into the "Data" field.
