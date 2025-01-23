@@ -8,7 +8,10 @@ import sys
 from temporalio.client import Client
 from temporalio.worker import Worker
 
-from temporalpy.activities.ingesthl7 import TASK_QUEUE_NAME, ingest_hl7_files_to_delta_lake_activity
+from temporalpy.activities.ingesthl7 import (
+    TASK_QUEUE_NAME,
+    ingest_hl7_files_to_delta_lake_activity,
+)
 
 log = logging.getLogger("workflow_worker")
 
@@ -20,7 +23,7 @@ async def run_worker(temporal_address: str, namespace: str) -> None:
             client,
             task_queue=TASK_QUEUE_NAME,
             activities=[ingest_hl7_files_to_delta_lake_activity],
-            activity_executor = pool,
+            activity_executor=pool,
         )
 
         log.info("Starting worker...")
@@ -43,7 +46,9 @@ async def main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    temporal_address = os.environ.get("TEMPORAL_ADDRESS", "temporal-frontend.temporal:7233")
+    temporal_address = os.environ.get(
+        "TEMPORAL_ADDRESS", "temporal-frontend.temporal:7233"
+    )
     temporal_namespace = os.environ.get("TEMPORAL_NAMESPACE", "default")
 
     logging.basicConfig(

@@ -145,14 +145,21 @@ def extract_report_status_from_obx11(message: hl7.Message) -> Optional[str]:
 
 
 def extract_field(
-    message: hl7.Message, segment: str, field: int, repeat: int = 1, component: int = 1, subcomponent: int = 1
+    message: hl7.Message,
+    segment: str,
+    field: int,
+    repeat: int = 1,
+    component: int = 1,
+    subcomponent: int = 1,
 ) -> Optional[str]:
     """Extract a simple field from an HL7 message."""
     log.debug(f"Extracting {segment}-{field} ({repeat}:{component}:{subcomponent})")
     try:
         return message.extract_field(segment, 1, field, repeat, component, subcomponent)
     except LookupError:
-        log.error(f"{segment}-{field} ({repeat}:{component}:{subcomponent}) not found in message")
+        log.error(
+            f"{segment}-{field} ({repeat}:{component}:{subcomponent}) not found in message"
+        )
         return None
 
 
@@ -206,7 +213,9 @@ def extract_data(message: hl7.Message, path: Optional[str] = None) -> MessageDat
         msh_7_message_timestamp=extract_field(message, "MSH", 7),
         msh_10_message_control_id=extract_field(message, "MSH", 10),
         msh_12_version_id=extract_field(message, "MSH", 12),
-        pid_3_patient_id=json.dumps(list(map(asdict, extract_patient_identifiers(message) or []))),
+        pid_3_patient_id=json.dumps(
+            list(map(asdict, extract_patient_identifiers(message) or []))
+        ),
         pid_7_date_time_of_birth=extract_field(message, "PID", 7),
         pid_8_administrative_sex=extract_field(message, "PID", 8),
         pid_10_race=extract_field(message, "PID", 10),
@@ -215,9 +224,15 @@ def extract_data(message: hl7.Message, path: Optional[str] = None) -> MessageDat
         obr_2_placer_order_number=extract_field(message, "OBR", 2),
         orc_3_filler_order_number=extract_field(message, "ORC", 3),
         obr_3_filler_order_number=extract_field(message, "OBR", 3),
-        obr_4_universal_service_identifier_id=extract_field(message, "OBR", 4, component=1),
-        obr_4_universal_service_identifier_text=extract_field(message, "OBR", 4, component=2),
-        obr_4_universal_service_identifier_coding_system=extract_field(message, "OBR", 4, component=3),
+        obr_4_universal_service_identifier_id=extract_field(
+            message, "OBR", 4, component=1
+        ),
+        obr_4_universal_service_identifier_text=extract_field(
+            message, "OBR", 4, component=2
+        ),
+        obr_4_universal_service_identifier_coding_system=extract_field(
+            message, "OBR", 4, component=3
+        ),
         obr_6_requested_datetime=extract_field(message, "OBR", 6),
         obr_7_observation_datetime=extract_field(message, "OBR", 7),
         obr_8_observation_end_datetime=extract_field(message, "OBR", 8),
@@ -228,7 +243,9 @@ def extract_data(message: hl7.Message, path: Optional[str] = None) -> MessageDat
         obx_11_observation_result_status=extract_report_status_from_obx11(message),
         dg1_3_diagnosis_code_identifier=extract_field(message, "DG1", 3, component=1),
         dg1_3_diagnosis_code_text=extract_field(message, "DG1", 3, component=2),
-        dg1_3_diagnosis_code_coding_system=extract_field(message, "DG1", 3, component=3),
+        dg1_3_diagnosis_code_coding_system=extract_field(
+            message, "DG1", 3, component=3
+        ),
         zds_1_study_instance_uid=extract_field(message, "ZDS", 1),
     )
 

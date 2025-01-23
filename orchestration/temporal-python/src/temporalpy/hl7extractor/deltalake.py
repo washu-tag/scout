@@ -11,7 +11,12 @@ import s3fs
 from deltalake import DeltaTable, write_deltalake
 from temporalio.exceptions import ApplicationError
 
-from temporalpy.hl7extractor.hl7 import MessageData, read_hl7_message, extract_data, parse_hl7_message
+from temporalpy.hl7extractor.hl7 import (
+    MessageData,
+    read_hl7_message,
+    extract_data,
+    parse_hl7_message,
+)
 
 log = logging.getLogger(__name__)
 storage_options = {"conditional_put": "etag"}
@@ -20,7 +25,9 @@ storage_options = {"conditional_put": "etag"}
 s3filesystem = None
 
 
-def read_hl7_directory(directory: str, cache: Optional[set[str]] = None) -> Iterator[MessageData]:
+def read_hl7_directory(
+    directory: str, cache: Optional[set[str]] = None
+) -> Iterator[MessageData]:
     """Read HL7 messages from directory."""
     cache = cache or set()
     if directory in cache:
@@ -84,13 +91,17 @@ def read_hl7_input(hl7input: Iterable[str]) -> Iterator[MessageData]:
             cache.add(path)
 
 
-def import_hl7_files_to_deltalake(delta_table: str, hl7_input: list[str]) -> Optional[str]:
+def import_hl7_files_to_deltalake(
+    delta_table: str, hl7_input: list[str]
+) -> Optional[str]:
     """Extract data from HL7 messages and write to Delta Lake."""
     log.info(f"Reading HL7 messages from {hl7_input}")
     if not hl7_input:
         raise ApplicationError("No HL7 input files or directories provided")
 
-    df = pd.DataFrame.from_records(asdict(message) for message in read_hl7_input(hl7_input) if message is not None).astype(dtype=str)
+    df = pd.DataFrame.from_records(
+        asdict(message) for message in read_hl7_input(hl7_input) if message is not None
+    ).astype(dtype=str)
 
     log.info(f"Extracted data from {len(df)} HL7 messages")
 
@@ -98,7 +109,9 @@ def import_hl7_files_to_deltalake(delta_table: str, hl7_input: list[str]) -> Opt
         raise ApplicationError("No data extracted from HL7 messages")
 
     # Extract time column for partitioning
-    timestamp = pd.to_datetime(df["msh_7_message_timestamp"], errors="coerce", format="%Y%m%d%H%M%S%f")
+    timestamp = pd.to_datetime(
+        df["msh_7_message_timestamp"], errors="coerce", format="%Y%m%d%H%M%S%f"
+    )
     df["year"] = timestamp.dt.year.astype(str)
     df["date"] = timestamp.dt.strftime("%Y-%m-%d")
 
@@ -106,16 +119,24 @@ def import_hl7_files_to_deltalake(delta_table: str, hl7_input: list[str]) -> Opt
 
     if not table_exists:
         log.info(f"Creating Delta Lake table {delta_table}")
-        write_deltalake(delta_table, df, partition_by=["year"], mode="overwrite", storage_options=storage_options)
+        write_deltalake(
+            delta_table,
+            df,
+            partition_by=["year"],
+            mode="overwrite",
+            storage_options=storage_options,
+        )
         return "success"
 
     dt = DeltaTable(delta_table, storage_options=storage_options)
 
     log.info(f"Merging data to Delta Lake table {delta_table}")
-    dt.merge(df, predicate="s.source_file = t.source_file", source_alias="s", target_alias="t")\
-        .when_matched_update_all()\
-        .when_not_matched_insert_all()\
-        .execute()
+    dt.merge(
+        df,
+        predicate="s.source_file = t.source_file",
+        source_alias="s",
+        target_alias="t",
+    ).when_matched_update_all().when_not_matched_insert_all().execute()
 
     # TODO Confirming this write causes an error in the rust library that kills the worker
     #  > terminate called after throwing an instance of 'parquet::ParquetException'
