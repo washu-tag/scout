@@ -7,6 +7,9 @@ envFrom:
       name: s3-secret
   - configMapRef:
       name: s3-env
+env:
+  - name: TZ
+    value: "US/Central"
 volumes:
   - name: hl7logs
     hostPath:

@@ -13,6 +13,8 @@ import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
+import io.temporal.common.SearchAttributeKey;
+import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.ActivityStub;
 import io.temporal.workflow.Async;
@@ -22,12 +24,20 @@ import io.temporal.workflow.WorkflowInfo;
 import org.slf4j.Logger;
 
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 @WorkflowImpl(taskQueues = "ingest-hl7-log")
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private static final Logger logger = Workflow.getLogger(IngestHl7LogWorkflowImpl.class);
+
+    private static final SearchAttributeKey<OffsetDateTime> SCHEDULED_START_TIME =
+            SearchAttributeKey.forOffsetDateTime("TemporalScheduledStartTime");
+    private static final DateTimeFormatter YYYYMMDD_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final SplitHl7LogActivity hl7LogActivity =
             Workflow.newActivityStub(SplitHl7LogActivity.class,
@@ -49,12 +59,20 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     @Override
     public IngestHl7LogWorkflowOutput ingestHl7Log(IngestHl7LogWorkflowInput input) {
         WorkflowInfo workflowInfo = Workflow.getInfo();
-        logger.info("Ingesting HL7 log for workflowId {}", workflowInfo.getWorkflowId());
+        logger.info("Beginning workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
+
+        // Log input values
+        logger.debug("Input: {}", input);
+
+        // Determine date
+        String date = determineDate(input.date());
+
+        // Validate input
+        throwOnInvalidInput(input, date);
 
         String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
 
         // Find log file by date
-        String date = input.date().replace("-", "");
         FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(date, input.logsRootPath());
         FindHl7LogFileOutput findHl7LogFileOutput = hl7LogActivity.findHl7LogFile(findHl7LogFileInput);
 
@@ -90,5 +108,72 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         );
 
         return new IngestHl7LogWorkflowOutput();
+    }
+
+    private static void throwOnInvalidInput(IngestHl7LogWorkflowInput input, String date) {
+        boolean hasLogsRootPath = input.logsRootPath() != null && !input.logsRootPath().isBlank();
+        boolean hasScratchSpaceRootPath = input.scratchSpaceRootPath() != null && !input.scratchSpaceRootPath().isBlank();
+        boolean hasHl7OutputPath = input.hl7OutputPath() != null && !input.hl7OutputPath().isBlank();
+        boolean hasDeltaLakePath = input.deltaLakePath() != null && !input.deltaLakePath().isBlank();
+        boolean hasDate = date != null;
+
+        if (!(hasLogsRootPath && hasScratchSpaceRootPath && hasHl7OutputPath && hasDeltaLakePath && hasDate)) {
+            // We know something is missing
+            List<String> missingInputs = new ArrayList<>();
+            if (!hasLogsRootPath) {
+                missingInputs.add("logsRootPath");
+            }
+            if (!hasScratchSpaceRootPath) {
+                missingInputs.add("scratchSpaceRootPath");
+            }
+            if (!hasHl7OutputPath) {
+                missingInputs.add("hl7OutputPath");
+            }
+            if (!hasDeltaLakePath) {
+                missingInputs.add("deltaLakePath");
+            }
+            if (!hasDate) {
+                missingInputs.add("date");
+            }
+            String plural = missingInputs.size() == 1 ? "" : "s";
+            String missingInputsStr = String.join(", ", missingInputs);
+            throw ApplicationFailure.newNonRetryableFailure("Missing required input" + plural + ": " + missingInputsStr, "type");
+        }
+    }
+
+    /**
+     * Determine the date to use for the workflow.
+     * If the input date is null, use the scheduled start time of the workflow minus one day—i.e. "yesterday".
+     * @param dateInput The date value from the workflow inputs
+     * @return Date to use for the workflow
+     */
+    private static String determineDate(String dateInput) {
+        String date;
+        if (dateInput == null) {
+            // Get the date from the time the workflow was scheduled to start
+            // Note that there isn't a good API for this in the SDK. We have to use a
+            //  search attribute.
+            // See https://docs.temporal.io/workflows#action for docs on the search attribute.
+            // See also https://github.com/temporalio/features/issues/243 where someone asks
+            //  for a better API for this in the SDK.
+            OffsetDateTime scheduledTimeUtc = Workflow.getTypedSearchAttributes().get(SCHEDULED_START_TIME);
+
+            if (scheduledTimeUtc == null) {
+                logger.debug("No date input, and scheduled start time not found in search attributes.");
+                date = null;
+            } else {
+                // Ingest logs from "yesterday" which we define as the day before the scheduled time in the local timezone
+                ZoneId localTz = ZoneOffset.systemDefault();
+                OffsetDateTime scheduledTimeLocal = scheduledTimeUtc.atZoneSameInstant(localTz).toOffsetDateTime();
+                OffsetDateTime yesterday = scheduledTimeLocal.minusDays(1);
+                date = yesterday.format(YYYYMMDD_FORMAT);
+                logger.debug("Using date {} from scheduled workflow start time {} ({} in TZ {}) minus one day", date, scheduledTimeUtc, scheduledTimeLocal, localTz);
+            }
+        } else {
+            // Use the input date, removing any hyphens
+            date = dateInput.replace("-", "");
+            logger.debug("Using date {} from input value {}", date, dateInput);
+        }
+        return date;
     }
 }
