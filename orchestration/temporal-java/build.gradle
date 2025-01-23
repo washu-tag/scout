@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.4.1'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'checkstyle'
 }
 
 group = 'edu.washu.tag'
@@ -19,6 +20,11 @@ repositories {
 
 def temporalVersion = "1.27.0"
 def s3Version = "2.20.0"
+def checkstyleVersion = "10.18.1"
+
+configurations {
+	checkstyleConf
+}
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
@@ -30,8 +36,16 @@ dependencies {
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	checkstyleConf("com.puppycrawl.tools:checkstyle:${checkstyleVersion}") {
+		transitive = false
+	}
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+checkstyle {
+	toolVersion checkstyleVersion
+	config = resources.text.fromArchiveEntry(configurations.checkstyleConf, 'google_checks.xml')
 }
