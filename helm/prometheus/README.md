@@ -57,5 +57,4 @@ Prometheus can also be accessed through Grafana.
 
 ### Minio
 
-The [Monitoring and Alerting using Prometheus](https://min.io/docs/minio/linux/operations/monitoring/collect-minio-metrics-using-prometheus.html) describes how to configure Minio to export metrics to Prometheus. Note that if `MINIO_PROMETHEUS_AUTH_TYPE` is not set to `public` you will need to create a secret 
-containing a bearer token for Prometheus to access the Minio metrics endpoint.
+[Monitoring and Alerting using Prometheus](https://min.io/docs/minio/linux/operations/monitoring/collect-minio-metrics-using-prometheus.html) describes how to configure Minio to export metrics to Prometheus. Note that if `MINIO_PROMETHEUS_AUTH_TYPE` is not set to `public` you will need to create a secret containing a bearer token for Prometheus to access the Minio metrics endpoint.
