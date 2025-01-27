@@ -1,0 +1,60 @@
+{
+  "Configuration": {
+    "Appenders": {
+      "Console": {
+        "name": "CONSOLE",
+        "PatternLayout": {
+          "pattern": "%d{HH:mm:ss.SSS} [%p] - %m%n"
+        }
+      }
+    },
+    "Loggers": {
+      "Root": {
+        "level": "INFO",
+        "AppenderRef": [
+          {
+            "ref": "CONSOLE"
+          }
+        ]
+      },
+      "Logger": [
+        {
+          "name": "org.apache.spark",
+          "level": "WARN",
+          "AppenderRef": [
+            {
+              "ref": "CONSOLE"
+            }
+          ]
+        },
+        {
+          "name": "org.sparkproject",
+          "level": "WARN",
+          "AppenderRef": [
+            {
+              "ref": "CONSOLE"
+            }
+          ]
+        },
+        {
+          "name": "org.apache.hadoop",
+          "level": "WARN",
+          "AppenderRef": [
+            {
+              "ref": "CONSOLE"
+            }
+          ]
+        },
+        {
+          "name": "org.apache.parquet",
+          "level": "WARN",
+          "AppenderRef": [
+            {
+              "ref": "CONSOLE"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

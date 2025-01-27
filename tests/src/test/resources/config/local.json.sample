@@ -1,0 +1,11 @@
+{
+  "sparkConfig": {
+    "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+    "spark.hadoop.fs.s3a.access.key": "admin",
+    "spark.hadoop.fs.s3a.secret.key": "password",
+    "spark.hadoop.fs.s3a.endpoint": "http://10.27.107.3:9000",
+    "spark.hadoop.fs.s3a.endpoint.region": "us-east-1",
+    "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider"
+  },
+  "deltaLakeUrl": "s3a://synthetic/delta/hl7_v3"
+}

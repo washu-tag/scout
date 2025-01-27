@@ -1,0 +1,165 @@
+{
+  "viewName": "syntheticdata",
+  "testQueries": [
+    {
+      "expectedQueryResult": {
+        "type": ".ExactNumberObjectsResult",
+        "expectedNumResults": 408,
+        "additionalValidation": {
+          "type": ".FixedColumnsValidator",
+          "fixedColumns": {
+            "pid_8_administrative_sex": [
+              "F"
+            ]
+          }
+        }
+      },
+      "sql": "SELECT * FROM syntheticdata WHERE pid_8_administrative_sex='F'",
+      "id": "sex_equals"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".ExactNumberObjectsResult",
+        "expectedNumResults": 397,
+        "additionalValidation": {
+          "type": ".FixedColumnsValidator",
+          "fixedColumns": {
+            "zds_1_study_instance_uid": [
+              "None"
+            ],
+            "msh_12_version_id": [
+              "2.4"
+            ]
+          }
+        }
+      },
+      "sql": "SELECT * FROM syntheticdata WHERE zds_1_study_instance_uid='None'",
+      "id": "uid_missing"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".ExactNumberObjectsResult",
+        "expectedNumResults": 128,
+        "additionalValidation": {
+          "type": ".DateComparisonValidation",
+          "description": "patient born after 1990-12-31",
+          "columnName": "pid_7_date_time_of_birth",
+          "truncation": 8,
+          "comparisonValue": 19901231,
+          "comparisonOperator": "GT"
+        }
+      },
+      "sql": "SELECT * FROM syntheticdata WHERE SUBSTRING(pid_7_date_time_of_birth, 1, 8) > '19901231'",
+      "id": "dob_greater"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".ExactNumberObjectsResult",
+        "expectedNumResults": 397,
+        "additionalValidation": {
+          "type": ".FixedColumnsValidator",
+          "fixedColumns": {
+            "orc_2_placer_order_number": [
+              "None"
+            ],
+            "msh_12_version_id": [
+              "2.4"
+            ]
+          }
+        }
+      },
+      "sql": "SELECT * FROM syntheticdata WHERE orc_2_placer_order_number='None'",
+      "id": "placer_order_missing"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".ExactNumberObjectsResult",
+        "expectedNumResults": 114,
+        "additionalValidation": {
+          "type": ".FixedColumnsValidator",
+          "fixedColumns": {
+            "pid_8_administrative_sex": [
+              "F"
+            ],
+            "pid_10_race": [
+              "B",
+              "BLACK"
+            ]
+          }
+        }
+      },
+      "sql": "SELECT * FROM syntheticdata WHERE pid_8_administrative_sex='F' AND pid_10_race IN ('BLACK', 'B')",
+      "id": "sex_and_race_list_inclusion"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".GroupedAggregationResult",
+        "result": {
+          "DX": {
+            "male_count": 22,
+            "female_count": 24,
+            "total_count": 46
+          },
+          "NM": {
+            "male_count": 17,
+            "female_count": 17,
+            "total_count": 34
+          },
+          "MR": {
+            "male_count": 78,
+            "female_count": 45,
+            "total_count": 123
+          },
+          "XR": {
+            "male_count": 1,
+            "female_count": 2,
+            "total_count": 3
+          },
+          "CR": {
+            "male_count": 19,
+            "female_count": 13,
+            "total_count": 32
+          },
+          "MG": {
+            "male_count": 0,
+            "female_count": 42,
+            "total_count": 42
+          },
+          "US": {
+            "male_count": 20,
+            "female_count": 16,
+            "total_count": 36
+          },
+          "XA": {
+            "male_count": 19,
+            "female_count": 14,
+            "total_count": 33
+          },
+          "CT": {
+            "male_count": 23,
+            "female_count": 21,
+            "total_count": 44
+          },
+          "OT": {
+            "male_count": 3,
+            "female_count": 5,
+            "total_count": 8
+          },
+          "SC": {
+            "male_count": 0,
+            "female_count": 2,
+            "total_count": 2
+          }
+        },
+        "primaryColumnName": "primary_modality",
+        "secondaryColumns": [
+          "male_count",
+          "female_count",
+          "total_count"
+        ]
+      },
+      "sql": "SELECT obr_24_diagnostic_serv_sect_id as primary_modality, COUNT(CASE WHEN pid_8_administrative_sex='M' THEN 1 END) as male_count, COUNT(CASE WHEN pid_8_administrative_sex='F' THEN 1 END) as female_count, COUNT(*) as total_count FROM syntheticdata WHERE msh_12_version_id='2.7' GROUP BY obr_24_diagnostic_serv_sect_id ORDER BY obr_24_diagnostic_serv_sect_id",
+      "id": "modality_grouping"
+    }
+  ]
+}

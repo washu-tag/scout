@@ -1,0 +1,91 @@
+plugins {
+    id 'java'
+    id 'checkstyle'
+}
+
+group = 'edu.washu.tag'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://maven.dcm4che.org/'
+    }
+    maven {
+        url 'https://raw.github.com/nroduit/mvn-repo/master/' // needed for dcm4che
+    }
+    maven {
+        url 'https://nrgxnat.jfrog.io/nrgxnat/libs-release'
+    }
+    maven {
+        url 'https://nrgxnat.jfrog.io/nrgxnat/libs-snapshot'
+    }
+}
+
+final String vQuerySpec = '1.0-SNAPSHOT'
+final String vCheckstyle = '10.18.1'
+final String vLog4j2Bridge = '2.24.2'
+final String vSparkSql = '3.5.4'
+final String vDeltaSpark = '3.1.0'
+final String vHadoop = '3.2.0'
+
+configurations {
+    all*.exclude group: 'ch.qos.logback', module: 'logback-classic'
+    all*.exclude group: 'ch.qos.logback', module: 'logback-core'
+
+    checkstyleConf
+}
+
+test {
+    systemProperties System.getProperties()
+
+    useTestNG() {
+        testName = 'scout_tests'
+        suiteName = testName
+    }
+
+    testLogging {
+        events 'FAILED', 'PASSED', 'SKIPPED', 'STANDARD_OUT', 'STARTED'
+    }
+
+    // TODO: from https://github.com/apache/spark/blob/master/launcher/src/main/java/org/apache/spark/launcher/JavaModuleOptions.java
+    // Is there not a better way?
+    jvmArgs([
+        '--add-opens=java.base/java.lang=ALL-UNNAMED',
+        '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+        '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
+        '--add-opens=java.base/java.io=ALL-UNNAMED',
+        '--add-opens=java.base/java.net=ALL-UNNAMED',
+        '--add-opens=java.base/java.nio=ALL-UNNAMED',
+        '--add-opens=java.base/java.util=ALL-UNNAMED',
+        '--add-opens=java.base/java.util.concurrent=ALL-UNNAMED',
+        '--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED',
+        '--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED',
+        '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED',
+        '--add-opens=java.base/sun.nio.cs=ALL-UNNAMED',
+        '--add-opens=java.base/sun.security.action=ALL-UNNAMED',
+        '--add-opens=java.base/sun.util.calendar=ALL-UNNAMED',
+        '--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED'
+    ])
+}
+
+dependencies {
+    testImplementation("edu.washu.tag:query-spec:${vQuerySpec}")
+    testImplementation("org.apache.logging.log4j:log4j-slf4j2-impl:${vLog4j2Bridge}")
+    testImplementation("org.apache.spark:spark-sql_2.12:${vSparkSql}")
+    testImplementation("io.delta:delta-spark_2.12:${vDeltaSpark}")
+    testImplementation("org.apache.hadoop:hadoop-aws:${vHadoop}")
+
+    checkstyleConf("com.puppycrawl.tools:checkstyle:${vCheckstyle}") {
+        transitive = false
+    }
+}
+
+java {
+    sourceCompatibility = '21'
+}
+
+checkstyle {
+    toolVersion vCheckstyle
+    config = resources.text.fromArchiveEntry(configurations.checkstyleConf, 'google_checks.xml')
+}
