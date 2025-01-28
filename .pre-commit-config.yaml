@@ -6,10 +6,12 @@ repos:
       - id: check-merge-conflict
       - id: detect-private-key
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: "v4.0.0-alpha.8"
+    rev: 'v4.0.0-alpha.8'
     hooks:
       - id: prettier
-        files: \.([jt]sx?|css)$  # *.js, *.jsx, *.ts, *.tsx, and *.css
+        additional_dependencies:
+          - prettier@3.4.2
+        files: \.([jt]sx?|css|json|yml|yaml)$ # *.js, *.jsx, *.ts, *.tsx, *.css, ...
         types: [file]
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: 'v9.12.0'
