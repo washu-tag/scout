@@ -38,3 +38,9 @@ repos:
         verbose: true
         pass_filenames: false
         entry: bash -c 'cd orchestration/temporal-java && ./gradlew clean checkstyleMain checkstyleTest'
+      - id: checkstyle-tests
+        name: checkstyle
+        language: system
+        verbose: true
+        pass_filenames: false
+        entry: bash -c 'cd tests && ./gradlew clean checkstyleMain checkstyleTest'
