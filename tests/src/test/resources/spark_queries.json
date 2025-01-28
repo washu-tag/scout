@@ -8,9 +8,7 @@
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
-            "pid_8_administrative_sex": [
-              "F"
-            ]
+            "pid_8_administrative_sex": ["F"]
           }
         }
       },
@@ -24,12 +22,8 @@
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
-            "zds_1_study_instance_uid": [
-              "None"
-            ],
-            "msh_12_version_id": [
-              "2.4"
-            ]
+            "zds_1_study_instance_uid": ["None"],
+            "msh_12_version_id": ["2.4"]
           }
         }
       },
@@ -59,12 +53,8 @@
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
-            "orc_2_placer_order_number": [
-              "None"
-            ],
-            "msh_12_version_id": [
-              "2.4"
-            ]
+            "orc_2_placer_order_number": ["None"],
+            "msh_12_version_id": ["2.4"]
           }
         }
       },
@@ -78,13 +68,8 @@
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
-            "pid_8_administrative_sex": [
-              "F"
-            ],
-            "pid_10_race": [
-              "B",
-              "BLACK"
-            ]
+            "pid_8_administrative_sex": ["F"],
+            "pid_10_race": ["B", "BLACK"]
           }
         }
       },
@@ -152,11 +137,7 @@
           }
         },
         "primaryColumnName": "primary_modality",
-        "secondaryColumns": [
-          "male_count",
-          "female_count",
-          "total_count"
-        ]
+        "secondaryColumns": ["male_count", "female_count", "total_count"]
       },
       "sql": "SELECT obr_24_diagnostic_serv_sect_id as primary_modality, COUNT(CASE WHEN pid_8_administrative_sex='M' THEN 1 END) as male_count, COUNT(CASE WHEN pid_8_administrative_sex='F' THEN 1 END) as female_count, COUNT(*) as total_count FROM syntheticdata WHERE msh_12_version_id='2.7' GROUP BY obr_24_diagnostic_serv_sect_id ORDER BY obr_24_diagnostic_serv_sect_id",
       "id": "modality_grouping"

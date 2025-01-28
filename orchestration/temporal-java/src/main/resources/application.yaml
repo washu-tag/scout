@@ -3,7 +3,7 @@ spring:
     name: temporal-java
   temporal:
     connection:
-      target: "temporal-frontend.temporal:7233"
+      target: 'temporal-frontend.temporal:7233'
     namespace: default
     start-workers: true
     workers-auto-discovery:
@@ -11,5 +11,5 @@ spring:
         - edu.washu.tag.temporal.activity
         - edu.washu.tag.temporal.workflow
 s3:
-  endpoint: "http://minio.minio:9000"
+  endpoint: 'http://minio.minio:9000'
   region: us-east-1

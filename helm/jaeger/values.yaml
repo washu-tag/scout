@@ -1,6 +1,6 @@
 provisionDataStore:
-    cassandra: false
-    elasticsearch: true
+  cassandra: false
+  elasticsearch: true
 
 storage:
   type: elasticsearch
@@ -11,15 +11,15 @@ elasticsearch:
     replicaCount: 1
     persistence:
       enabled: true
-      existingClaim: "jaeger-elasticsearch-pvc"
-      existingVolume: "jaeger-elasticsearch-pv"
+      existingClaim: 'jaeger-elasticsearch-pvc'
+      existingVolume: 'jaeger-elasticsearch-pv'
   data:
     replicaCount: 0
   coordinating:
     replicaCount: 0
   ingest:
     replicaCount: 0
-    
+
 collector:
   service:
     otlp:

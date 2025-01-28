@@ -6,7 +6,7 @@ grafana.ini:
     org_name: Main Org.
     org_role: Admin
   server:
-    root_url: "%(protocol)s://%(domain)s:%(http_port)s/grafana"
+    root_url: '%(protocol)s://%(domain)s:%(http_port)s/grafana'
     serve_from_sub_path: true
   metrics:
     enabled: true
@@ -32,12 +32,12 @@ datasources:
         url: 'http://loki-gateway.loki.svc.cluster.local/'
         editable: false
         isDefault: false
-        
+
 sidecar:
   dashboards:
     enabled: true
     label: grafana_dashboard
-    labelValue: "1"
+    labelValue: '1'
     watchMethod: SLEEP
 
 persistence:

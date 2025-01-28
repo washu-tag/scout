@@ -9,7 +9,7 @@ envFrom:
       name: s3-env
 env:
   - name: TZ
-    value: "US/Central"
+    value: 'US/Central'
 volumes:
   - name: hl7logs
     hostPath:
