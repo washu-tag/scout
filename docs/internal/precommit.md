@@ -32,11 +32,11 @@ A few out-of-the-box hooks from [pre-commit-hooks](https://github.com/pre-commit
 1. check-merge-conflict
 1. detect-private-key
 
-## Prettier (Javascript, Typescript, CSS)
+## Prettier (Javascript, Typescript, CSS, JSON, YAML)
 
-From the hook defined in [mirrors-prettier](https://github.com/pre-commit/mirrors-prettier), *Javascript*, *Typescript*, and *CSS* files are reformatted
-using [Prettier](https://prettier.io/). The configuration used for prettier is defined in [.prettierrc.json](.prettierrc.json). This code
-formatting will apply automatically to any microservices or other projects within the monorepo.
+From the hook defined in [mirrors-prettier](https://github.com/pre-commit/mirrors-prettier), *Javascript*, *Typescript*,
+*CSS*, *JSON*, and *YAML* files are reformatted using [Prettier](https://prettier.io/). The configuration used for prettier is defined
+in [.prettierrc.json](.prettierrc.json). This code formatting will apply automatically to any microservices or other projects within the monorepo.
 
 ## ESLint (Javascript, Typescript)
 
