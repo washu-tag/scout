@@ -45,10 +45,11 @@ test {
     }
 
     testLogging {
-        events 'FAILED', 'PASSED', 'SKIPPED', 'STANDARD_OUT', 'STARTED'
+        events 'FAILED', 'PASSED', 'SKIPPED', 'STANDARD_ERROR', 'STANDARD_OUT', 'STARTED'
         exceptionFormat 'full'
         showCauses true
         showStackTraces true
+        showStandardStreams true
     }
 
     // TODO: from https://github.com/apache/spark/blob/master/launcher/src/main/java/org/apache/spark/launcher/JavaModuleOptions.java
