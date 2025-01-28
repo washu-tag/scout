@@ -21,13 +21,11 @@ public class TestScoutQueries extends BaseTest {
 
   @DataProvider(name = "known_queries")
   public Object[][] knownQueries() {
-    return new Object[][]{
-        exportedQueries
-            .getTestQueries()
-            .stream()
-            .map(TestQuery::getId)
-            .toArray()
-    };
+    return exportedQueries
+        .getTestQueries()
+        .stream()
+        .map(query -> new Object[]{ query.getId() })
+        .toArray(Object[][]::new);
   }
 
   @Test(dataProvider = "known_queries")
