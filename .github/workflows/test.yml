@@ -22,3 +22,18 @@ jobs:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
       - uses: pre-commit/action@v3.0.1
+
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    needs: [lint]
+    steps:
+      - name: 'Build/Push Image - Explorer'
+        uses: ./.github/actions/docker-build-push-action
+        with:
+          subproject: orchestration/temporal-java
+          image-name: temporal-java
