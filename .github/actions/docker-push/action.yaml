@@ -1,9 +1,6 @@
 name: 'Docker push'
 description: 'Downloads docker image and pushes to ghcr'
 inputs:
-  subproject:
-    description: 'Subdirectory for microservice'
-    required: true
   image-name:
     description: 'Name for docker image'
     required: true
@@ -18,5 +15,4 @@ runs:
     - name: Push image
       shell: bash
       run: |
-        fullimage=$(docker load --input ${{ runner.temp }}/${{ inputs.image-name }}.tar | sed -e 's/.*: //g')
-        docker push ${fullimage}
+        docker push $(docker load --input ${{ runner.temp }}/${{ inputs.image-name }}.tar | sed -e 's/.*: //g')

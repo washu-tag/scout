@@ -4,8 +4,7 @@ on:
   pull_request:
     types: [opened, reopened]
   push:
-    branches:
-      - ci
+    branches: [ci]
 
 env:
   JAVA_DIST: 'zulu'
@@ -26,11 +25,10 @@ jobs:
   #          java-version: ${{ ENV.JAVA_VERSION }}
   #      - uses: pre-commit/action@v3.0.1
   #
-  build:
+  build-and-upload-artifact:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      #packages: write
       attestations: write
       id-token: write
     #needs: [lint]
@@ -49,15 +47,20 @@ jobs:
         with:
           subproject: orchestration/temporal-python
           image-name: temporal-python
-
+  deploy-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitHub Action
+        uses: actions/checkout@v4.2.1
   deploy:
+    if: ${{ GITHUB_REF_NAME == 'ci' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
-    needs: [build]
+    needs: [build-and-upload-artifact]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
@@ -70,5 +73,4 @@ jobs:
       - name: 'Push Image - temporal-java'
         uses: ./.github/actions/docker-push
         with:
-          subproject: orchestration/temporal-java
           image-name: temporal-java
