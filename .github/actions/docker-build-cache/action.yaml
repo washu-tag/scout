@@ -28,3 +28,9 @@ runs:
         context: ${{ inputs.subproject }}
         tags: ${{ ENV.REGISTRY }}/washu-tag/${{ inputs.image-name }}:${{ steps.detect-version.outputs.VERSION }}
         outputs: type=docker,dest=${{ runner.temp }}/${{ inputs.image-name }}.tar
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.image-name }}
+        path: ${{ runner.temp }}/${{ inputs.image-name }}.tar
