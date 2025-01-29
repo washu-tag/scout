@@ -75,3 +75,7 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: temporal-java
+      - name: 'Push Image - temporal-python'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: temporal-python
