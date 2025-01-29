@@ -49,6 +49,7 @@ jobs:
           image-name: temporal-python
   deploy-and-test:
     runs-on: ubuntu-latest
+    needs: [build-and-upload-artifact]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
