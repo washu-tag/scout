@@ -19,4 +19,4 @@ runs:
       shell: bash
       run: |
         docker load --input ${{ runner.temp }}/${{ inputs.image-name }}.tar
-        docker push ghcr.io/washu-tag/temporal-java
+        docker push ghcr.io/washu-tag/${{ inputs.image-name }}:1.0.0-SNAPSHOT
