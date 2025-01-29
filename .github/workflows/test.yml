@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      #packages: write
       attestations: write
       id-token: write
     #needs: [lint]
@@ -39,8 +39,21 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
-      - name: 'Build/Push Image - Explorer'
+      - name: 'Build/Cache Image - temporal-java'
         uses: ./.github/actions/docker-build-cache
         with:
           subproject: orchestration/temporal-java
           image-name: temporal-java
+      - name: 'Build/Cache Image - temporal-python'
+        uses: ./.github/actions/docker-build-cache
+        with:
+          subproject: orchestration/temporal-python
+          image-name: temporal-python
+
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write

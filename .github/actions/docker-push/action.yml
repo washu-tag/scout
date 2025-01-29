@@ -1,0 +1,28 @@
+name: 'Docker push'
+description: 'Downloads docker image and pushes to ghcr'
+inputs:
+  subproject:
+    description: 'Subdirectory for microservice'
+    required: true
+  image-name:
+    description: 'Name for docker image'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.image-name }}
+        path: ${{ runner.temp }}
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3.3.0
+      with:
+        registry: ghcr.io # TODO: dont hardcode?
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Push image
+      shell: bash
+      run: |
+        docker load --input ${{ runner.temp }}/${{ inputs.image-name }}.tar
+        docker push
