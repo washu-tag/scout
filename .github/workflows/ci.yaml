@@ -54,7 +54,7 @@ jobs:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
   publish:
-    if: github.ref_name == 'ci'
+    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
