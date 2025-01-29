@@ -52,15 +52,15 @@ jobs:
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
-  deploy:
-    if: ${{ GITHUB_REF_NAME == 'ci' }}
+  publish:
+    if: ${{ $GITHUB_REF_NAME == 'ci' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
-    needs: [build-and-upload-artifact]
+    needs: [deploy-and-test]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
