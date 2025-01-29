@@ -33,7 +33,7 @@ jobs:
     needs: [lint]
     steps:
       - name: 'Build/Push Image - Explorer'
-        uses: ./.github/actions/docker-build-push-action
+        uses: ./.github/actions/docker-build-cache
         with:
           subproject: orchestration/temporal-java
           image-name: temporal-java
