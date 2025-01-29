@@ -3,6 +3,9 @@ name: Post-Commit Tasks
 on:
   pull_request:
     types: [opened, reopened]
+  push:
+    branches:
+      - ci
 
 env:
   JAVA_DIST: 'zulu'
