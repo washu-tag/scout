@@ -18,7 +18,5 @@ runs:
     - name: Push image
       shell: bash
       run: |
-        tag=$(docker load --input ${{ runner.temp }}/${{ inputs.image-name }}.tar --quiet | awk '{print $NF}')
-        echo "Loaded image tag: $tag"
-      # docker load --input ${{ runner.temp }}/${{ inputs.image-name }}.tar
-      # docker push ghcr.io/washu-tag/${{ inputs.image-name }}:1.0.0-SNAPSHOT
+        fullimage=$(docker load --input ${{ runner.temp }}/${{ inputs.image-name }}.tar | sed -e 's/Loaded image\\: /')
+        docker push ${fullimage}
