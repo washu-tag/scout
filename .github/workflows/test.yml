@@ -57,3 +57,9 @@ jobs:
       packages: write
       attestations: write
       id-token: write
+    steps:
+      - name: 'Push Image - temporal-java'
+        uses: ./.github/actions/docker-push
+        with:
+          subproject: orchestration/temporal-java
+          image-name: temporal-java
