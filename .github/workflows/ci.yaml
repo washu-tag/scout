@@ -12,26 +12,25 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  #  lint:
-  #    runs-on: ubuntu-latest
-  #    steps:
-  #      - uses: actions/checkout@v4.2.1
-  #      - uses: actions/setup-python@v5.2.0
-  #        with:
-  #          python-version: '3.12'
-  #      - uses: actions/setup-java@v4
-  #        with:
-  #          distribution: ${{ ENV.JAVA_DIST }}
-  #          java-version: ${{ ENV.JAVA_VERSION }}
-  #      - uses: pre-commit/action@v3.0.1
-  #
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.1
+      - uses: actions/setup-python@v5.2.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: ${{ ENV.JAVA_DIST }}
+          java-version: ${{ ENV.JAVA_VERSION }}
+      - uses: pre-commit/action@v3.0.1
   build-and-upload-artifact:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       attestations: write
       id-token: write
-    #needs: [lint]
+    needs: [lint]
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -52,9 +51,9 @@ jobs:
     needs: [build-and-upload-artifact]
     steps:
       - name: Checkout GitHub Action
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@v4.2.1 # TODO: the rest
   publish:
-    if: github.ref_name == 'main'
+    if: github.ref_name == 'ci'
     runs-on: ubuntu-latest
     permissions:
       contents: read
