@@ -101,7 +101,7 @@ def import_hl7_files_to_deltalake(
 
     df = pd.DataFrame.from_records(
         asdict(message) for message in read_hl7_input(hl7_input) if message is not None
-    ).astype(dtype=str)
+    ).astype(dtype="string[pyarrow]")
 
     log.info(f"Extracted data from {len(df)} HL7 messages")
 
