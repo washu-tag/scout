@@ -155,9 +155,12 @@ def extract_field(
     """Extract a simple field from an HL7 message."""
     log.debug(f"Extracting {segment}-{field} ({repeat}:{component}:{subcomponent})")
     try:
-        return message.extract_field(segment, 1, field, repeat, component, subcomponent)
+        return (
+            message.extract_field(segment, 1, field, repeat, component, subcomponent)
+            or None
+        )
     except LookupError:
-        log.error(
+        log.warning(
             f"{segment}-{field} ({repeat}:{component}:{subcomponent}) not found in message"
         )
         return None
