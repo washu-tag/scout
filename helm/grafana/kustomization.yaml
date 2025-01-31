@@ -28,14 +28,16 @@ configMapGenerator:
       labels:
         grafana_dashboard: "1"
 
-  - name: email-contact-point
-    files: [ alerts/contact-points/email-contact-point.json ]
-    options:
-      labels:
-        grafana_alert: "1"  
-
   - name: high-root-volume-usage-alert
     files: [ alerts/alert-rules/high-root-volume-usage-alert.json ]
+    options:
+      labels:
+        grafana_alert: "1"
+
+# Generate secrects for Grafana contact points
+secretGenerator:
+  - name: slack-contact-point
+    files: [ alerts/contact-points/slack-contact-point.json ]
     options:
       labels:
         grafana_alert: "1"

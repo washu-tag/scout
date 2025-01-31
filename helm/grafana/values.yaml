@@ -10,12 +10,6 @@ grafana.ini:
     serve_from_sub_path: true
   metrics:
     enabled: true
-  smtp:
-    enabled: true
-    host: mailhog-service.mailhog.svc.cluster.local:1025
-    from_address: 'grafana-alerts@scout.io'
-    from_name: 'Scout Grafana Alerts'
-    skip_verify: true
 
 datasources:
   datasources.yaml:

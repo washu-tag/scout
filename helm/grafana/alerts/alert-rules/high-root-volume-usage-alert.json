@@ -118,7 +118,7 @@
           "labels": {},
           "isPaused": false,
           "notification_settings": {
-            "receiver": "email"
+            "receiver": "slack-scout"
           }
         }
       ]
