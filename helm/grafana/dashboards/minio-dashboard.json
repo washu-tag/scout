@@ -18,13 +18,12 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 29,
   "links": [],
   "panels": [
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "description": "",
       "fieldConfig": {
@@ -82,7 +81,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -103,7 +102,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -168,7 +167,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -187,7 +186,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -252,7 +251,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -271,7 +270,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "description": "",
       "fieldConfig": {
@@ -365,7 +364,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -381,7 +380,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -399,7 +398,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -519,7 +518,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -537,7 +536,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "description": "",
       "fieldConfig": {
@@ -581,7 +580,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -600,7 +599,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -619,7 +618,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "description": "",
       "fieldConfig": {
@@ -666,7 +665,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -685,7 +684,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -704,7 +703,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -760,7 +759,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -779,7 +778,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -835,7 +834,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -854,7 +853,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -968,7 +967,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -986,7 +985,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1100,7 +1099,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1118,7 +1117,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "description": "",
       "fieldConfig": {
@@ -1176,7 +1175,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1198,7 +1197,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1280,7 +1279,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1298,7 +1297,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1380,7 +1379,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1398,7 +1397,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "description": "",
       "fieldConfig": {
@@ -1456,7 +1455,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1478,7 +1477,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1529,7 +1528,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1546,7 +1545,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1606,7 +1605,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -1627,7 +1626,16 @@
   "schemaVersion": 40,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      }
+    ]
   },
   "time": {
     "from": "now-6h",
@@ -1636,7 +1644,8 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "MinIO",
-  "uid": "ceaa3illt1nuob",
+  "uid": "scout_minio_dashbaord_01",
+  "id": null,
   "version": 1,
   "weekStart": ""
 }

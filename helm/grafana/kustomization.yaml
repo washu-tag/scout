@@ -1,17 +1,41 @@
 # Global options
 generatorOptions:
   disableNameSuffixHash: true
-  labels:
-    grafana_dashboard: "1"
 
-# Generate a ConfigMap for each dashboard
+# Generate a ConfigMap for each dashboard and alert
 configMapGenerator:
+  - name: k8s-dashboard
+    files: [ dashboards/k8s-dashboard.json ]
+    options:
+      labels:
+        grafana_dashboard: "1"
 
-- name: k8s-dashboard
-  files: [ dashboards/k8s-dashboard.json ]
+  - name: grafana-dashboard
+    files: [ dashboards/grafana-dashboard.json ]
+    options:
+      labels:
+        grafana_dashboard: "1"
 
-- name: grafana-dashboard
-  files: [ dashboards/grafana-dashboard.json ]
+  - name: minio-dashboard
+    files: [ dashboards/minio-dashboard.json ]
+    options:
+      labels:
+        grafana_dashboard: "1"
 
-- name: minio-dashboard
-  files: [ dashboards/minio-dashboard.json ]
+  - name: node-exporter-dashboard
+    files: [ dashboards/node-exporter-dashboard.json ]
+    options:
+      labels:
+        grafana_dashboard: "1"
+
+  - name: email-contact-point
+    files: [ alerts/contact-points/email-contact-point.json ]
+    options:
+      labels:
+        grafana_alert: "1"  
+
+  - name: high-root-volume-usage-alert
+    files: [ alerts/alert-rules/high-root-volume-usage-alert.json ]
+    options:
+      labels:
+        grafana_alert: "1"

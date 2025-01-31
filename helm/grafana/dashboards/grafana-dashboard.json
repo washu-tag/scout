@@ -24,7 +24,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 10,
   "links": [],
   "panels": [
     {
@@ -483,10 +482,6 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "text": "Prometheus",
-          "value": "PBFA97CFB590B2093"
-        },
         "includeAll": false,
         "name": "datasource",
         "options": [],
@@ -546,7 +541,8 @@
   },
   "timezone": "utc",
   "title": "Grafana",
-  "uid": "6be0s85Mk",
-  "version": 5,
+  "uid": "scout_grafana_dashboard_01",
+  "id": null,
+  "version": 1,
   "weekStart": ""
 }

@@ -10,6 +10,12 @@ grafana.ini:
     serve_from_sub_path: true
   metrics:
     enabled: true
+  smtp:
+    enabled: true
+    host: mailhog-service.mailhog.svc.cluster.local:1025
+    from_address: 'grafana-alerts@scout.io'
+    from_name: 'Scout Grafana Alerts'
+    skip_verify: true
 
 datasources:
   datasources.yaml:
@@ -17,28 +23,38 @@ datasources:
     datasources:
       - name: Prometheus
         type: prometheus
+        uid: prometheus_datasource_01
         url: 'http://prometheus-server.prometheus.svc.cluster.local:9090'
         editable: false
         isDefault: true
 
       - name: Jaeger
         type: jaeger
+        uid: jaeger_datasource_01
         url: 'http://jaeger-query.jaeger.svc.cluster.local:80'
         editable: false
         isDefault: false
 
       - name: Loki
         type: loki
+        datasourceUid: loki_datasource_01
         url: 'http://loki-gateway.loki.svc.cluster.local/'
         editable: false
         isDefault: false
 
 sidecar:
+  alerts:
+    enabled: true
+    label: grafana_alert
+    labelValue: '1'
+    watchMethod: SLEEP
   dashboards:
     enabled: true
     label: grafana_dashboard
     labelValue: '1'
     watchMethod: SLEEP
+    provider:
+      folder: Scout
 
 persistence:
   enabled: true
