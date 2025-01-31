@@ -31,13 +31,20 @@ kubectl apply -f grafana-pv.yaml -n grafana
 kubectl apply -f grafana-pvc.yaml -n grafana
 ```
 
-(Optional) To build the dashboard configmaps and output to stdout:
+(Optional) If using the Slack contact point for alerts, `alerts/contact-points/slack-contact-point.json`, then replace the `SLACK_TOKEN` and `SLACK_RECIPIENT` values in the file with your Slack API token and channel id respectively. See more details below.
+
+```bash
+sed -i 's/SLACK_TOKEN/<your-slack-token>/g' alerts/contact-points/slack-contact-point.json
+sed -i 's/SLACK_RECIPIENT/<your-slack-channel-id>/g' alerts/contact-points/slack-contact-point.json
+```
+
+(Optional) To build the dashboard and alert configmaps and secrets and output them to stdout:
 
 ```bash
 kubectl kustomize .
 ```
 
-Build and deploy the dashboard configmaps:
+Build and deploy the dashboard and alert configmaps and secrets:
 
 ```bash
 kubectl apply -k . -n grafana
@@ -76,4 +83,4 @@ Note the JSON objects for dashboards and alerts contain a `uid`. If adding a new
 ### Slack Alerts
 
 Grafana documentation for [Configure Slack for Alerting](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/manage-contact-points/integrations/configure-slack/#configure-slack-for-alerting) gives the option of using a Slack App + API Token or a Webhook. We are using the token method with the scope set to`chat:write`.
-After obtaining the token and channel id, you can replace the `SLACK_TOKEN` and `SLACK_RECIPIENT` values in the `alerts/contact-points/slack-contact-point.json` file respectively. The slack contact point will be deployed as a secret when running `kubectl apply -k . -n grafana`.
+After obtaining the token and channel id, you can replace the `SLACK_TOKEN` and `SLACK_RECIPIENT` values in the `alerts/contact-points/slack-contact-point.json` file respectively. The Slack contact point will be deployed as a secret when running `kubectl apply -k . -n grafana`.
