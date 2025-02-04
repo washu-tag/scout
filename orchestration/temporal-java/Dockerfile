@@ -17,8 +17,8 @@ COPY build.gradle .
 COPY settings.gradle .
 COPY src src
 
-# Build application
-RUN ./gradlew build -x test
+# Build application, ignoring test and linting jobs
+RUN ./gradlew build -x test -x checkstyleMain -x checkstyleTest
 
 # Use a smaller base image for the final stage
 FROM amazoncorretto:21-alpine
