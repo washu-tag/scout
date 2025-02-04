@@ -69,7 +69,7 @@ The login page is disabled and allows anonymous access with the default role of 
 
 Any changes to the Grafana configuration can be made in the `values.yaml` file. The Grafana UI can also be used to make changes to the configuration but ideally the `values.yaml` file should be used to make changes. 
 
-## Working with Dashboards and Alerts
+## Provisioning Dashboards and Alerts
 
 Dashboards and alerts are stored as JSON files which we can be manage with Git. Unfortunately, the Grafana UI doesn't support Git integration. Grafana is setup to persist between restarts, so you won't lose your dashboards or alerts if the pod is restarted or the helm chart is uninstalled. But some core dashboards and alerts we will want to manage with Git. To do this, dashboards and alerts are developed in the Grafana UI, exported as JSON, and then stored in the `dashboards` or `alerts` directory. The `kustomization.yaml` file will build the ConfigMap for the dashboards and alerts and the Grafana sidecar will load them into Grafana. To save or update a dashboard in our Git repository, export the dashboard as JSON and save it in the `dashboards` directory. If it's a new dashboard or alert, update the `kustomization.yaml` file to include the new JSON file. Then redeploy the config maps with `kubectl apply -k . -n grafana`.
 
