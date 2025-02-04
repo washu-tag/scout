@@ -2,7 +2,7 @@ name: Post-Commit Tasks
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, edited, synchronize]
   push:
     branches: [main]
 
