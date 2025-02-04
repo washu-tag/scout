@@ -33,11 +33,6 @@ kubectl apply -f grafana-pvc.yaml -n grafana
 
 (Optional) If using the Slack contact point for alerts, `alerts/contact-points/slack-contact-point.json`, then replace the `SLACK_TOKEN` and `SLACK_RECIPIENT` values in the file with your Slack API token and channel id respectively. See more details below.
 
-```bash
-sed -i 's/SLACK_TOKEN/<your-slack-token>/g' alerts/contact-points/slack-contact-point.json
-sed -i 's/SLACK_RECIPIENT/<your-slack-channel-id>/g' alerts/contact-points/slack-contact-point.json
-```
-
 (Optional) To build the dashboard and alert configmaps and secrets and output them to stdout:
 
 ```bash

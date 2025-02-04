@@ -28,8 +28,20 @@ configMapGenerator:
       labels:
         grafana_dashboard: "1"
 
-  - name: high-root-volume-usage-alert
-    files: [ alerts/alert-rules/high-root-volume-usage-alert.json ]
+  - name: high-node-disk-usage-alert
+    files: [ alerts/alert-rules/high-node-disk-usage-alert.json ]
+    options:
+      labels:
+        grafana_alert: "1"
+
+  - name: high-node-memory-usage-alert
+    files: [ alerts/alert-rules/high-node-memory-usage-alert.json ]
+    options:
+      labels:
+        grafana_alert: "1"
+
+  - name: high-node-cpu-usage-alert
+    files: [ alerts/alert-rules/high-node-cpu-usage-alert.json ]
     options:
       labels:
         grafana_alert: "1"

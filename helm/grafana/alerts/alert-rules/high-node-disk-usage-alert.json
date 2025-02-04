@@ -8,9 +8,9 @@
       "interval": "1m",
       "rules": [
         {
-          "uid": "high_root_volume_usage_alert_01",
-          "title": "High Root Volume Usage",
-          "condition": "C",
+          "uid": "high_node_disk_usage_alert_01",
+          "title": "High Disk Usage on Node",
+          "condition": "B",
           "data": [
             {
               "refId": "A",
@@ -21,7 +21,7 @@
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"rootfs\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"rootfs\"})",
+                "expr": "(1 - (avg by(node, mountpoint) (node_filesystem_free_bytes{fstype!~\"tmpfs|rootfs\"}) / avg by(node, mountpoint) (node_filesystem_size_bytes{fstype!~\"tmpfs|rootfs\"}))) * 100",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
@@ -41,18 +41,18 @@
                 "conditions": [
                   {
                     "evaluator": {
-                      "params": [],
+                      "params": [70],
                       "type": "gt"
                     },
                     "operator": {
                       "type": "and"
                     },
                     "query": {
-                      "params": ["B"]
+                      "params": []
                     },
                     "reducer": {
                       "params": [],
-                      "type": "last"
+                      "type": "avg"
                     },
                     "type": "query"
                   }
@@ -64,46 +64,7 @@
                 "expression": "A",
                 "intervalMs": 1000,
                 "maxDataPoints": 43200,
-                "reducer": "last",
                 "refId": "B",
-                "type": "reduce"
-              }
-            },
-            {
-              "refId": "C",
-              "relativeTimeRange": {
-                "from": 0,
-                "to": 0
-              },
-              "datasourceUid": "__expr__",
-              "model": {
-                "conditions": [
-                  {
-                    "evaluator": {
-                      "params": [70],
-                      "type": "gt"
-                    },
-                    "operator": {
-                      "type": "and"
-                    },
-                    "query": {
-                      "params": ["C"]
-                    },
-                    "reducer": {
-                      "params": [],
-                      "type": "last"
-                    },
-                    "type": "query"
-                  }
-                ],
-                "datasource": {
-                  "type": "__expr__",
-                  "uid": "__expr__"
-                },
-                "expression": "B",
-                "intervalMs": 1000,
-                "maxDataPoints": 43200,
-                "refId": "C",
                 "type": "threshold"
               }
             }
@@ -112,8 +73,8 @@
           "execErrState": "Error",
           "for": "1m",
           "annotations": {
-            "description": "Root volume usage is above 70% on instance {{ $labels.node }}. Current value: {{ $values.B.Value }}%",
-            "summary": "Instance {{ $labels.node }} has high root volume usage"
+            "summary": "Node {{ $labels.node }} has high disk usage",
+            "description": "Disk usage is above 70% on node {{ $labels.node }} for mountpoint {{ $labels.mountpoint }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
           },
           "labels": {},
           "isPaused": false,
