@@ -20,11 +20,7 @@ repositories {
 
 def temporalVersion = "1.27.0"
 def s3Version = "2.20.0"
-def checkstyleVersion = "10.18.1"
-
-configurations {
-	checkstyleConf
-}
+def checkstyleVersion = "10.21.2"
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
@@ -36,9 +32,6 @@ dependencies {
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	checkstyleConf("com.puppycrawl.tools:checkstyle:${checkstyleVersion}") {
-		transitive = false
-	}
 }
 
 tasks.named('test') {
@@ -47,5 +40,5 @@ tasks.named('test') {
 
 checkstyle {
 	toolVersion checkstyleVersion
-	config = resources.text.fromArchiveEntry(configurations.checkstyleConf, 'google_checks.xml')
+	configFile = file('../../linting_java_checkstyle.xml')
 }
