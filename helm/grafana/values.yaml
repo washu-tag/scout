@@ -52,4 +52,7 @@ sidecar:
 
 persistence:
   enabled: true
-  existingClaim: grafana-pvc
+  storageClassName: local-path-retain
+
+service:
+  port: 3000

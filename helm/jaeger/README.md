@@ -17,21 +17,6 @@ Create the Jaeger namespace:
 kubectl create namespace jaeger
 ```
 
-Create directory for Jaeger / Elasticsearch data (this only needs to be done once):
-
-```bash
-sudo mkdir -p /ceph/tag/home/jaeger/elasticsearch
-sudo chmod +777 /ceph/tag/home/jaeger
-sudo chmod +777 /ceph/tag/home/jaeger/elasticsearch
-```
-
-Create the Persistent Volume and Persistent Volume Claim for Jaeger / Elasticsearch (this only needs to be done once):
-
-```bash
-kubectl apply -f jaeger-elasticsearch-pv.yaml -n jaeger
-kubectl apply -f jaeger-elasticsearch-pvc.yaml -n jaeger
-```
-
 Install Jaeger with:
 
 ```bash

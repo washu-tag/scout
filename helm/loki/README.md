@@ -17,20 +17,6 @@ Create the Loki namespace:
 kubectl create namespace loki
 ```
 
-Create directory for Loki data (this only needs to be done once):
-
-```bash
-sudo mkdir /ceph/tag/home/loki
-sudo chmod +777 /ceph/tag/home/loki
-```
-
-Create the Persistent Volume and Persistent Volume Claim for Loki (this only needs to be done once):
-
-```bash
-kubectl apply -f loki-pv.yaml -n loki
-kubectl apply -f loki-pvc.yaml -n loki
-```
-
 Loki dependes on Minio for storage. In an existing Minio deployment, login to the Minio console and create the following buckets:
 
 - loki-chunks

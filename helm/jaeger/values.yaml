@@ -11,8 +11,7 @@ elasticsearch:
     replicaCount: 1
     persistence:
       enabled: true
-      existingClaim: 'jaeger-elasticsearch-pvc'
-      existingVolume: 'jaeger-elasticsearch-pv'
+      storageClass: local-path-retain
   data:
     replicaCount: 0
   coordinating:
