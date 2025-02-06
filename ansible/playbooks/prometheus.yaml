@@ -1,0 +1,25 @@
+---
+- name: Install Prometheus
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: "{{ helm_plugins_dir }}"
+    KUBECONFIG: "{{ kubeconfig_yaml }}"
+
+  tasks:
+    - name: Add Prometheus Helm repository
+      kubernetes.core.helm_repository:
+        name: prometheus-community
+        repo_url: https://prometheus-community.github.io/helm-charts
+
+    - name: Install Prometheus using Helm
+      kubernetes.core.helm:
+        name: prometheus
+        chart_ref: prometheus-community/prometheus
+        release_namespace: prometheus
+        create_namespace: true
+        update_repo_cache: true
+        chart_version: 26.1.0
+        values_files:
+          - "{{ scout_repo_dir }}/helm/prometheus/values.yaml"
+        state: present

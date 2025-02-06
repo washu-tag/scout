@@ -1,0 +1,25 @@
+---
+- name: Install Jaeger
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: "{{ helm_plugins_dir }}"
+    KUBECONFIG: "{{ kubeconfig_yaml }}"
+
+  tasks:
+    - name: Add Jaeger Helm repository
+      kubernetes.core.helm_repository:
+        name: jaegertracing
+        repo_url: https://jaegertracing.github.io/helm-charts
+
+    - name: Install Jaeger using Helm
+      kubernetes.core.helm:
+        name: jaeger
+        chart_ref: jaegertracing/jaeger
+        release_namespace: jaeger
+        create_namespace: true
+        update_repo_cache: true
+        chart_version: 3.3.3
+        values_files:
+          - "{{ scout_repo_dir }}/helm/jaeger/values.yaml"
+        state: present

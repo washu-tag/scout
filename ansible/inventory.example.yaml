@@ -1,0 +1,33 @@
+---
+k3s_cluster:
+  children:
+    server:
+      hosts:
+        leader:
+          ansible_connection: local
+          ansible_python_interpreter: /usr/bin/python3
+          ip: 10.27.107.1
+          k3s_control_node: true
+    agents:
+      hosts:
+        worker-1:
+          ansible_connection: local
+          ansible_python_interpreter: /usr/bin/python3
+          k3s_control_node: false
+  vars:
+    s3_username: "minio"
+    s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file /vault/pwd.txt)
+    s3_region: "us-east-1"
+    k3s_token: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file /vault/pwd.txt)
+    slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file /vault/pwd.txt)
+    slack_channel_id: "<Replace with your channel id>"
+    base_dir: "<Path to directory where your persistent data will be stored. Should be able to accommodate TB of data>"
+    scout_repo_dir: "{{ base_dir }}/scout"
+    helm_plugins_dir: "~/.local/share/helm/plugins"
+    kubeconfig_yaml: "/etc/rancher/k3s/k3s.yaml"
+    # Do not change the values below, they are hard-coded various places
+    orchestration_worker_namespace: orchestration-workers
+    minio_tenant_namespace: minio-scout
+    grafana_namespace: grafana
+    loki_namespace: loki
+    # End do not change

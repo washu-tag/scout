@@ -1,0 +1,69 @@
+---
+- name: Install Minio
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: "{{ helm_plugins_dir }}"
+    KUBECONFIG: "{{ kubeconfig_yaml }}"
+
+  tasks:
+    - name: Add storage class
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ scout_repo_dir }}/helm/minio/storageclass.yaml"
+        wait: yes
+        wait_timeout: 60
+
+    - name: Add Minio Helm repository
+      kubernetes.core.helm_repository:
+        name: minio-operator
+        repo_url: https://operator.min.io
+
+    - name: Install/Upgrade Minio Operator
+      kubernetes.core.helm:
+        name: minio-operator
+        chart_ref: minio-operator/operator
+        release_namespace: minio-operator
+        create_namespace: true
+        release_state: present
+        update_repo_cache: true
+        wait: true
+        wait_timeout: 1m
+        atomic: true
+
+    - name: Create namespace
+      kubernetes.core.k8s:
+        name: "{{ minio_tenant_namespace }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Set up env secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: minio-scout-env-configuration
+            namespace: "{{ minio_tenant_namespace }}"
+          type: Opaque
+          stringData:
+            config.env: |
+              export MINIO_ROOT_USER={{ s3_username }}
+              export MINIO_ROOT_PASSWORD={{ s3_password }}
+              export MINIO_REGION_NAME=us-east-1
+              export MINIO_REGION=us-east-1
+
+    - name: Install/Upgrade Minio Tenant
+      kubernetes.core.helm:
+        name: "{{ minio_tenant_namespace }}"
+        chart_ref: minio-operator/tenant
+        release_namespace: "{{ minio_tenant_namespace }}"
+        release_state: present
+        update_repo_cache: true
+        wait: true
+        wait_timeout: 5m
+        atomic: true
+        values_files:
+          - "{{ scout_repo_dir }}/helm/minio/values.yaml"

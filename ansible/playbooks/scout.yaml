@@ -1,0 +1,11 @@
+---
+- name: Clone scout
+  hosts: server
+  gather_facts: false
+
+  tasks:
+    - name: Clone repository
+      git:
+        repo: https://github.com/washu-tag/scout.git
+        dest: "{{ scout_repo_dir }}"
+        version: main

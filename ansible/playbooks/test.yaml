@@ -1,0 +1,12 @@
+---
+- name: Install Loki, Promtail, and Grafana
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: "{{ helm_plugins_dir }}"
+    KUBECONFIG: "{{ kubeconfig_yaml }}"
+  vars:
+    slack_contact_point_j2: "/helm/grafana/alerts/contact-points/slack-contact-point.json.j2"
+
+  tasks:
+
