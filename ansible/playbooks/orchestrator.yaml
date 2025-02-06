@@ -3,8 +3,8 @@
   hosts: server
   gather_facts: false
   environment:
-    HELM_PLUGINS: "{{ helm_plugins_dir }}"
-    KUBECONFIG: "{{ kubeconfig_yaml }}"
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
     - name: Add Temporal Helm repository
       kubernetes.core.helm_repository:
@@ -40,11 +40,11 @@
           web:
             additionalEnv:
               - name: TEMPORAL_CSRF_COOKIE_INSECURE
-                value: "true"
+                value: 'true'
 
     - name: Create namespace
       kubernetes.core.k8s:
-        name: "{{ orchestration_worker_namespace }}"
+        name: '{{ orchestration_worker_namespace }}'
         api_version: v1
         kind: Namespace
         state: present
@@ -60,11 +60,11 @@
           kind: Secret
           metadata:
             name: s3-secret
-            namespace: "{{ orchestration_worker_namespace }}"
+            namespace: '{{ orchestration_worker_namespace }}'
           type: Opaque
           stringData:
-            AWS_ACCESS_KEY_ID: "{{ s3_username }}"
-            AWS_SECRET_ACCESS_KEY: "{{ s3_password }}"
+            AWS_ACCESS_KEY_ID: '{{ s3_username }}'
+            AWS_SECRET_ACCESS_KEY: '{{ s3_password }}'
 
     - name: Create S3 configmap
       kubernetes.core.k8s:
@@ -74,19 +74,19 @@
           kind: ConfigMap
           metadata:
             name: s3-env
-            namespace: "{{ orchestration_worker_namespace }}"
+            namespace: '{{ orchestration_worker_namespace }}'
           data:
-            AWS_ENDPOINT_URL: "http://minio.{{ minio_tenant_namespace }}.svc.cluster.local:9000"
-            AWS_ALLOW_HTTP: "true"
-            AWS_REGION: "{{ s3_region }}"
+            AWS_ENDPOINT_URL: 'http://minio.{{ minio_tenant_namespace }}.svc.cluster.local:9000'
+            AWS_ALLOW_HTTP: 'true'
+            AWS_REGION: '{{ s3_region }}'
 
     - name: Deploy Java worker
       kubernetes.core.helm:
         name: temporal-java
-        chart_ref: "{{ scout_repo_dir }}/helm/orchestration/temporal-worker"
+        chart_ref: '{{ scout_repo_dir }}/helm/orchestration/temporal-worker'
         values_files:
-          - "{{ scout_repo_dir }}/helm/orchestration/temporal-java.values.yaml"
-        release_namespace: "{{ orchestration_worker_namespace }}"
+          - '{{ scout_repo_dir }}/helm/orchestration/temporal-java.values.yaml'
+        release_namespace: '{{ orchestration_worker_namespace }}'
         release_state: present
         wait: true
         wait_timeout: 5m
@@ -95,10 +95,10 @@
     - name: Deploy Python worker
       kubernetes.core.helm:
         name: temporal-python
-        chart_ref: "{{ scout_repo_dir }}/helm/orchestration/temporal-worker"
+        chart_ref: '{{ scout_repo_dir }}/helm/orchestration/temporal-worker'
         values_files:
-          - "{{ scout_repo_dir }}/helm/orchestration/temporal-python.values.yaml"
-        release_namespace: "{{ orchestration_worker_namespace }}"
+          - '{{ scout_repo_dir }}/helm/orchestration/temporal-python.values.yaml'
+        release_namespace: '{{ orchestration_worker_namespace }}'
         release_state: present
         wait: true
         wait_timeout: 5m

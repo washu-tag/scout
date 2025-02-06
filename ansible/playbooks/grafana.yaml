@@ -3,10 +3,10 @@
   hosts: server
   gather_facts: false
   environment:
-    HELM_PLUGINS: "{{ helm_plugins_dir }}"
-    KUBECONFIG: "{{ kubeconfig_yaml }}"
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
   vars:
-    slack_contact_point_j2: "/helm/grafana/alerts/contact-points/slack-contact-point.json.j2"
+    slack_contact_point_j2: '/helm/grafana/alerts/contact-points/slack-contact-point.json.j2'
 
   tasks:
     - name: Add Grafana Helm repository
@@ -16,7 +16,7 @@
 
     - name: Create Loki namespace
       kubernetes.core.k8s:
-        name: "{{ loki_namespace }}"
+        name: '{{ loki_namespace }}'
         api_version: v1
         kind: Namespace
         state: present
@@ -29,43 +29,43 @@
           kind: Secret
           metadata:
             name: loki-secrets
-            namespace: "{{ loki_namespace }}"
+            namespace: '{{ loki_namespace }}'
           type: Opaque
           stringData:
-            AWS_ACCESS_KEY_ID: "{{ s3_username }}"
-            AWS_SECRET_ACCESS_KEY: "{{ s3_password }}"
+            AWS_ACCESS_KEY_ID: '{{ s3_username }}'
+            AWS_SECRET_ACCESS_KEY: '{{ s3_password }}'
 
     - name: Install Loki using Helm
       kubernetes.core.helm:
         name: loki
         chart_ref: grafana/loki
-        release_namespace: "{{ loki_namespace }}"
+        release_namespace: '{{ loki_namespace }}'
         update_repo_cache: true
         chart_version: 6.24.0
         values_files:
-          - "{{ scout_repo_dir }}/helm/loki/loki-values.yaml"
+          - '{{ scout_repo_dir }}/helm/loki/loki-values.yaml'
         state: present
 
     - name: Install Promtail using Helm
       kubernetes.core.helm:
         name: promtail
         chart_ref: grafana/promtail
-        release_namespace: "{{ loki_namespace }}"
+        release_namespace: '{{ loki_namespace }}'
         update_repo_cache: true
         chart_version: 6.16.6
         values_files:
-          - "{{ scout_repo_dir }}/helm/loki/promtail-values.yaml"
+          - '{{ scout_repo_dir }}/helm/loki/promtail-values.yaml'
         state: present
 
     - name: Create Grafana namespace
       kubernetes.core.k8s:
-        name: "{{ grafana_namespace }}"
+        name: '{{ grafana_namespace }}'
         api_version: v1
         kind: Namespace
         state: present
 
     - name: Apply Grafana dashboard configmaps
-      command: "kubectl apply -k {{ scout_repo_dir }}/helm/grafana -n {{ grafana_namespace }}"
+      command: 'kubectl apply -k {{ scout_repo_dir }}/helm/grafana -n {{ grafana_namespace }}'
 
     - name: Create Slack contact point secret
       kubernetes.core.k8s:
@@ -75,9 +75,9 @@
           kind: Secret
           metadata:
             name: slack-contact-point
-            namespace: "{{ grafana_namespace }}"
+            namespace: '{{ grafana_namespace }}'
             labels:
-              grafana_alert: "1"
+              grafana_alert: '1'
           type: Opaque
           data:
             slack-contact-point.json: "{{ lookup('template', scout_repo_dir + slack_contact_point_j2) | to_nice_json | b64encode}}"
@@ -86,9 +86,9 @@
       kubernetes.core.helm:
         name: grafana
         chart_ref: grafana/grafana
-        release_namespace: "{{ grafana_namespace }}"
+        release_namespace: '{{ grafana_namespace }}'
         update_repo_cache: true
         chart_version: 8.8.2
         values_files:
-          - "{{ scout_repo_dir }}/helm/grafana/values.yaml"
+          - '{{ scout_repo_dir }}/helm/grafana/values.yaml'
         state: present
