@@ -9,6 +9,7 @@ import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
@@ -23,6 +24,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,10 +37,14 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private final FileHandler fileHandler;
     private final MeterRegistry meterRegistry;
 
-    private Counter splitFileCounter;
-    private Counter transformFileCounter;
-    private Counter transformFileFailedCounter;
-    private Counter transformFileSuccessCounter;
+    private Counter findActivityCounter;
+    private Counter findActivityErrorCounter;
+    private Counter splitActivityCounter;
+    private Counter splitActivityErrorCounter;
+    private Counter splitActivityFileCounter;
+    private Timer splitActivityTimer;
+    private Counter transformActivityCounter;
+    private Counter transformActivityErrorCounter;
 
     public SplitHl7LogActivityImpl(FileHandler fileHandler,
                                    MeterRegistry meterRegistry) {
@@ -48,21 +54,37 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     @PostConstruct
     public void init() {
-        splitFileCounter = Counter.builder("split.hl7.files.created.total")
-                                  .description("Number of files created after splitting HL7 log")
-                                  .register(meterRegistry);
+        findActivityCounter = Counter.builder("scout.activity.find.hl7.log.runs.total")
+                                    .description("Number of times the find HL7 log activity ran")
+                                    .register(meterRegistry);
 
-        transformFileCounter = Counter.builder("transform.split.hl7.files.total")
-                                      .description("Number of files transformed from split HL7 log, including errors")
+        findActivityErrorCounter = Counter.builder("scout.activity.find.hl7.log.errors.total")
+                                          .description("Number of errors in find HL7 log activity")
+                                          .register(meterRegistry);
+
+        splitActivityCounter = Counter.builder("scout.activity.split.hl7.log.runs.total")
+                                      .description("Number of times the split HL7 log activity ran")
                                       .register(meterRegistry);
 
-        transformFileFailedCounter = Counter.builder("transform.split.hl7.files.failed.total")
-                                            .description("Number of files transformed from split HL7 log with errors")
-                                            .register(meterRegistry);
+        splitActivityErrorCounter = Counter.builder("scout.activity.split.hl7.log.errors.total")
+                                           .description("Number of errors in split HL7 log activity")
+                                           .register(meterRegistry);
 
-        transformFileSuccessCounter = Counter.builder("transform.split.hl7.files.success.total")
-                                             .description("Number of files transformed from split HL7 log without errors")
-                                             .register(meterRegistry);
+        splitActivityFileCounter = Counter.builder("scout.activity.split.hl7.log.files.created.total")
+                                          .description("Number of files created after splitting HL7 log")
+                                          .register(meterRegistry);
+
+        splitActivityTimer = Timer.builder("scout.activity.split.hl7.duration")
+                                  .description("Duration of split HL7 log activity")
+                                  .register(meterRegistry);
+
+        transformActivityCounter = Counter.builder("scout.activity.transform.split.hl7.log.runs.total")
+                                          .description("Number of transformed split HL7 log files, including errors")
+                                          .register(meterRegistry);
+
+        transformActivityErrorCounter = Counter.builder("scout.activity.transform.split.hl7.log.error.total")
+                                               .description("Number of errors transforming split HL7 log files")
+                                               .register(meterRegistry);
     }
 
     private String runScript(File cwd, String... command) {
@@ -89,6 +111,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     @Override
     public FindHl7LogFileOutput findHl7LogFile(FindHl7LogFileInput input) {
         logger.info("Finding HL7 log file for date {}", input.date());
+        findActivityCounter.increment();
         File logsDir = Path.of(input.logsDir()).toFile();
 
         // First try to find file in this dir
@@ -102,6 +125,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             }
         }
         if (logFiles == null || logFiles.length != 1) {
+            findActivityErrorCounter.increment();
             throw ApplicationFailure.newFailure("Expected exactly one file with date " + input.date() + " in " + input.logsDir() + ". Found " + (logFiles == null ? 0 : logFiles.length), "type");
         }
 
@@ -111,6 +135,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     @Override
     public SplitHl7LogActivityOutput splitHl7Log(SplitHl7LogActivityInput input) {
         logger.info("Splitting HL7 log file {}", input.logFilePath());
+        splitActivityCounter.increment();
+        long startTime = System.nanoTime();
         ActivityInfo info = Activity.getExecutionContext().getInfo();
 
         URI destination = URI.create(input.rootOutputPath());
@@ -120,17 +146,20 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             tempdir = Files.createTempDirectory(tempdirPrefix);
         } catch (IOException e) {
+            Activity.getExecutionContext().doNotCompleteOnReturn();
+            splitActivityErrorCounter.increment();
             throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
         }
         // TODO configure the path to the script
         String stdout = runScript(tempdir.toFile(), "/app/scripts/split-hl7-log.sh", input.logFilePath());
         List<Path> relativePaths = Arrays.stream(stdout.split("\n")).map(Path::of).toList();
-        splitFileCounter.increment(relativePaths.size());
+        splitActivityFileCounter.increment(relativePaths.size());
 
         List<String> destinationPaths;
         try {
             destinationPaths = fileHandler.put(relativePaths, tempdir, destination);
         } catch (IOException e) {
+            splitActivityErrorCounter.increment();
             throw ApplicationFailure.newFailureWithCause("Could not put files to " + destination, "type", e);
         }
 
@@ -140,13 +169,16 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             logger.warn("Failed to delete temp dir {}", tempdir);
         }
 
+        long endTime = System.nanoTime();
+        splitActivityTimer.record(Duration.ofNanos(endTime - startTime));
+
         return new SplitHl7LogActivityOutput(input.rootOutputPath(), destinationPaths);
     }
 
     @Override
     public TransformSplitHl7LogOutput transformSplitHl7Log(TransformSplitHl7LogInput input) {
         logger.info("Transforming split HL7 log file {}", input.splitLogFile());
-        transformFileCounter.increment();
+        transformActivityCounter.increment();
         ActivityInfo info = Activity.getExecutionContext().getInfo();
 
         URI destination = URI.create(input.rootOutputPath());
@@ -156,7 +188,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             tempdir = Files.createTempDirectory(tempdirPrefix);
         } catch (IOException e) {
-            transformFileFailedCounter.increment();
+            transformActivityErrorCounter.increment();
             throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
         }
 
@@ -165,7 +197,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             localFile = fileHandler.get(URI.create(input.splitLogFile()), tempdir);
         } catch (IOException e) {
-            transformFileFailedCounter.increment();
+            transformActivityErrorCounter.increment();
             throw ApplicationFailure.newFailureWithCause("Could not get input file " + input.splitLogFile(), "type", e);
         }
 
@@ -176,18 +208,17 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             destinationPath = fileHandler.put(Path.of(relativePath), tempdir, destination);
         } catch (IOException e) {
-            transformFileFailedCounter.increment();
+            transformActivityErrorCounter.increment();
             throw ApplicationFailure.newFailureWithCause("Could not put files to " + destination, "type", e);
         }
 
         try {
             fileHandler.deleteDir(tempdir);
         } catch (IOException ignored) {
-            transformFileFailedCounter.increment();
+            transformActivityErrorCounter.increment();
             logger.warn("Failed to delete temp dir {}", tempdir);
         }
 
-        transformFileSuccessCounter.increment();
         return new TransformSplitHl7LogOutput(input.rootOutputPath(), destinationPath);
     }
 }

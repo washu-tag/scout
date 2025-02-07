@@ -10,6 +10,11 @@ spring:
       packages:
         - edu.washu.tag.temporal.activity
         - edu.washu.tag.temporal.workflow
+management:
+  otlp:
+    metrics:
+      export:
+        url: 'http://prometheus-server.prometheus.svc.cluster.local:9090/api/v1/otlp/v1/metrics'
 s3:
   endpoint: 'http://minio.minio:9000'
   region: us-east-1
