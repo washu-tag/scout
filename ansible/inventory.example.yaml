@@ -16,15 +16,19 @@ k3s_cluster:
           k3s_control_node: false
   vars:
     s3_username: 'minio'
-    s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file /vault/pwd.txt)
+    s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file /vault/pwd.sh)
     s3_region: 'us-east-1'
-    k3s_token: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file /vault/pwd.txt)
-    slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file /vault/pwd.txt)
+    k3s_token: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file /vault/pwd.sh)
+    slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file /vault/pwd.sh)
     slack_channel_id: '<Replace with your channel id>'
     base_dir: '<Path to directory where your persistent data will be stored. Should be able to accommodate TB of data>'
     scout_repo_dir: '{{ base_dir }}/scout'
+
+    # You probably don't want to change these unless you know these items will be
+    # stored in different locations on your system
     helm_plugins_dir: '~/.local/share/helm/plugins'
     kubeconfig_yaml: '/etc/rancher/k3s/k3s.yaml'
+
     # Do not change the values below, they are hard-coded various places
     orchestration_worker_namespace: orchestration-workers
     minio_tenant_namespace: minio-scout

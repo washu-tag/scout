@@ -19,3 +19,11 @@
 
   roles:
     - role: xanmanning.k3s
+
+  post_tasks:
+    - name: Add storage class
+      kubernetes.core.k8s:
+        state: present
+        src: '{{ scout_repo_dir }}/helm/storageclass.yaml'
+        wait: yes
+        wait_timeout: 60

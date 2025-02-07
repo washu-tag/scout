@@ -7,13 +7,6 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
-    - name: Add storage class
-      kubernetes.core.k8s:
-        state: present
-        src: '{{ scout_repo_dir }}/helm/minio/storageclass.yaml'
-        wait: yes
-        wait_timeout: 60
-
     - name: Add Minio Helm repository
       kubernetes.core.helm_repository:
         name: minio-operator
