@@ -1,0 +1,29 @@
+---
+- name: Build a cluster with a single control node
+  hosts: server
+  vars:
+    server_ip: "{{ hostvars[groups['server'][0]].ip }}"
+    k3s_server:
+      disable:
+        - traefik
+      default-local-storage-path: '{{ base_dir }}'
+    k3s_registration_address: '{{ server_ip }}'
+    k3s_control_token: '{{ k3s_token }}'
+
+  pre_tasks:
+    - name: Create directory for K3s data
+      file:
+        path: '{{ base_dir }}'
+        state: directory
+        mode: '0755'
+
+  roles:
+    - role: xanmanning.k3s
+
+  post_tasks:
+    - name: Add storage class
+      kubernetes.core.k8s:
+        state: present
+        src: '{{ scout_repo_dir }}/helm/storageclass.yaml'
+        wait: yes
+        wait_timeout: 60
