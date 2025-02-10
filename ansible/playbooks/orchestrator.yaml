@@ -76,7 +76,7 @@
             name: s3-env
             namespace: '{{ orchestration_worker_namespace }}'
           data:
-            AWS_ENDPOINT_URL: 'http://minio.{{ minio_tenant_namespace }}.svc.cluster.local:9000'
+            AWS_ENDPOINT_URL: 'http://minio.{{ minio_tenant_namespace }}'
             AWS_ALLOW_HTTP: 'true'
             AWS_REGION: '{{ s3_region }}'
 
@@ -91,6 +91,12 @@
         wait: true
         wait_timeout: 5m
         atomic: true
+        values:
+          config:
+            application:
+              s3:
+                endpoint: 'http://minio.{{ minio_tenant_namespace }}'
+                region: '{{ s3_region }}'
 
     - name: Deploy Python worker
       kubernetes.core.helm:
