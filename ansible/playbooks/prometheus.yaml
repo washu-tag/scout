@@ -19,7 +19,7 @@
         release_namespace: prometheus
         create_namespace: true
         update_repo_cache: true
-        chart_version: 26.1.0
+        chart_version: ^26.0.0
         values_files:
           - '{{ scout_repo_dir }}/helm/prometheus/values.yaml'
         state: present

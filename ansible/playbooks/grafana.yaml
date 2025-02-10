@@ -41,7 +41,7 @@
         chart_ref: grafana/loki
         release_namespace: '{{ loki_namespace }}'
         update_repo_cache: true
-        chart_version: 6.24.0
+        chart_version: ^6.0.0
         values_files:
           - '{{ scout_repo_dir }}/helm/loki/loki-values.yaml'
         state: present
@@ -52,7 +52,7 @@
         chart_ref: grafana/promtail
         release_namespace: '{{ loki_namespace }}'
         update_repo_cache: true
-        chart_version: 6.16.6
+        chart_version: ^6.0.0
         values_files:
           - '{{ scout_repo_dir }}/helm/loki/promtail-values.yaml'
         state: present
@@ -88,7 +88,7 @@
         chart_ref: grafana/grafana
         release_namespace: '{{ grafana_namespace }}'
         update_repo_cache: true
-        chart_version: 8.8.2
+        chart_version: ^8.0.0
         values_files:
           - '{{ scout_repo_dir }}/helm/grafana/values.yaml'
         state: present

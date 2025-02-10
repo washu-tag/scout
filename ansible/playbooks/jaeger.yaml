@@ -19,7 +19,7 @@
         release_namespace: jaeger
         create_namespace: true
         update_repo_cache: true
-        chart_version: 3.3.3
+        chart_version: ^3.0.0
         values_files:
           - '{{ scout_repo_dir }}/helm/jaeger/values.yaml'
         state: present

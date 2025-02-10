@@ -16,6 +16,7 @@
       kubernetes.core.helm:
         name: minio-operator
         chart_ref: minio-operator/operator
+        chart_version: ^7.0.0
         release_namespace: minio-operator
         create_namespace: true
         release_state: present
@@ -52,6 +53,7 @@
       kubernetes.core.helm:
         name: '{{ minio_tenant_namespace }}'
         chart_ref: minio-operator/tenant
+        chart_version: ^7.0.0
         release_namespace: '{{ minio_tenant_namespace }}'
         release_state: present
         update_repo_cache: true
