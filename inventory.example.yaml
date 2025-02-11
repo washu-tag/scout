@@ -16,10 +16,10 @@ k3s_cluster:
           k3s_control_node: false
   vars:
     s3_username: 'minio'
-    s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file /vault/pwd.sh)
+    s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     s3_region: 'us-east-1'
-    k3s_token: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file /vault/pwd.sh)
-    slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file /vault/pwd.sh)
+    k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     slack_channel_id: '<Replace with your channel id>'
     base_dir: '<Path to directory where your persistent data will be stored. Should be able to accommodate TB of data>'
     scout_repo_dir: '{{ base_dir }}/scout'
