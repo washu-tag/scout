@@ -45,3 +45,9 @@ configMapGenerator:
     options:
       labels:
         grafana_alert: "1"
+
+  - name: slack-notification-template
+    files: [ alerts/notification-templates/slack-notification-template.json ]
+    options:
+      labels:
+        grafana_alert: "1"

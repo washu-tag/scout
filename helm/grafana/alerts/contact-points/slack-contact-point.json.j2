@@ -10,8 +10,8 @@
           "type": "slack",
           "settings": {
             "recipient": "{{ slack_channel_id }}",
-            "text": "{% raw %}{{ define \"slack_message\" }}\n{{ if gt (len .Alerts.Firing) 0 }}\n{{ range .Alerts.Firing }} {{ template \"slack_alert_firing\" .}} {{ end }} {{ end }}\n{{ if gt (len .Alerts.Resolved) 0 }}\n{{ range .Alerts.Resolved }} {{ template \"slack_alert_resolved\" .}} {{ end }} {{ end }}\n{{ end }}  \n{{ define \"slack_alert_firing\" }}\n*{{ .Labels.alertname }}*\n{{ .Annotations.summary }}\n{{ if .DashboardURL }}<{{ .DashboardURL }}|Go to Dashboard>{{ end }}\n{{ end }}\n{{ define \"slack_alert_resolved\" }}\n*{{ .Labels.alertname }}*\n{{ .Annotations.summary }}\n{{ if .DashboardURL }}<{{ .DashboardURL }}|Go to Dashboard>{{ end }}\n{{ end }}\n{{ template \"slack_message\" . }}{% endraw %}",
-            "title": "{% raw %}{{ if gt (len .Alerts.Firing) 0 }} \u26a0 {{ len .Alerts.Firing }} alert(s) firing {{ end }}{{ if gt (len .Alerts.Resolved) 0 }} \u2705 {{ len .Alerts.Resolved }} alert(s) resolved {{ end }}{% endraw %}",
+            "text": "{% raw %}{{ template \"slack_message\" . }}{% endraw %}",
+            "title": "{% raw %}{{ template \"slack_title\" . }}{% endraw %}",
             "token": "{{ slack_token }}"
           },
           "disableResolveMessage": false
