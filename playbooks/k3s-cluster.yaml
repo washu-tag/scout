@@ -2,12 +2,10 @@
 - name: Build a cluster with a single control node
   hosts: server
   vars:
-    server_ip: "{{ hostvars[groups['server'][0]].ip }}"
     k3s_server:
       disable:
         - traefik
       default-local-storage-path: '{{ base_dir }}'
-    k3s_registration_address: '{{ server_ip }}'
     k3s_control_token: '{{ k3s_token }}'
 
   pre_tasks:
