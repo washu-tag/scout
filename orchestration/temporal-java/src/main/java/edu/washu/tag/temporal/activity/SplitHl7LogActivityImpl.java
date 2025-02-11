@@ -70,6 +70,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                                            .description("Number of errors in split HL7 log activity")
                                            .register(meterRegistry);
 
+        // TODO: Tags/Labels to account for multiple workers running the same activity?
         splitActivityFileCounter = Counter.builder("scout.activity.split.hl7.log.files.created.total")
                                           .description("Number of files created after splitting HL7 log")
                                           .register(meterRegistry);
@@ -153,6 +154,9 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         // TODO configure the path to the script
         String stdout = runScript(tempdir.toFile(), "/app/scripts/split-hl7-log.sh", input.logFilePath());
         List<Path> relativePaths = Arrays.stream(stdout.split("\n")).map(Path::of).toList();
+
+//        Activity.getExecutionContext().getInfo().getAttempt()
+
         splitActivityFileCounter.increment(relativePaths.size());
 
         List<String> destinationPaths;
