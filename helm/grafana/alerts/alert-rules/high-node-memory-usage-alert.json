@@ -41,7 +41,7 @@
                 "conditions": [
                   {
                     "evaluator": {
-                      "params": [70],
+                      "params": [90],
                       "type": "gt"
                     },
                     "operator": {
@@ -71,10 +71,10 @@
           ],
           "noDataState": "NoData",
           "execErrState": "Error",
-          "for": "5m",
+          "for": "10m",
           "annotations": {
             "summary": "Node {{ $labels.node }} has high memory usage",
-            "description": "Memory usage is above 70% on node {{ $labels.node }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
+            "description": "Memory usage is above 90% on node {{ $labels.node }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
           },
           "labels": {},
           "isPaused": false,

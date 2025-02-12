@@ -41,7 +41,7 @@
                 "conditions": [
                   {
                     "evaluator": {
-                      "params": [70],
+                      "params": [85],
                       "type": "gt"
                     },
                     "operator": {
@@ -71,10 +71,10 @@
           ],
           "noDataState": "NoData",
           "execErrState": "Error",
-          "for": "5m",
+          "for": "10m",
           "annotations": {
             "summary": "Node {{ $labels.node }} has high disk usage",
-            "description": "Disk usage is above 70% on node {{ $labels.node }} for mountpoint {{ $labels.mountpoint }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
+            "description": "Disk usage is above 85% on node {{ $labels.node }} for mountpoint {{ $labels.mountpoint }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
           },
           "labels": {},
           "isPaused": false,
