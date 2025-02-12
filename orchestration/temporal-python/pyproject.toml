@@ -28,4 +28,7 @@ dependencies = [
     "requests",
     "s3fs",
     "temporalio",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp",
 ]

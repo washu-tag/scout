@@ -11,6 +11,8 @@ import s3fs
 from deltalake import DeltaTable, write_deltalake
 from temporalio.exceptions import ApplicationError
 
+from temporalpy.otel.config import meter
+
 from temporalpy.hl7extractor.hl7 import (
     MessageData,
     read_hl7_message,
@@ -23,6 +25,11 @@ storage_options = {"conditional_put": "etag"}
 
 
 s3filesystem = None
+
+extracted_rows_counter = meter.create_counter(
+    name="scout.extracted.hl7.rows.total",
+    description="Counts the number of extracted data rows from HL7 messages",
+)
 
 
 def read_hl7_directory(
