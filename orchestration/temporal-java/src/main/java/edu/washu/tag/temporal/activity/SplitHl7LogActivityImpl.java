@@ -45,10 +45,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     @PostConstruct
     public void init() {
-        String hostname = System.getenv("HOSTNAME");
         splitHl7LogsCounter = Counter.builder("scout.split.hl7.logs.total")
                                      .description("Number of HL7 logs split")
-                                     .tag("hostname", hostname == null ? "unknown" : hostname)
                                      .register(meterRegistry);
     }
 
