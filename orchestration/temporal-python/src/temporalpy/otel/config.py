@@ -1,4 +1,3 @@
-import os
 from opentelemetry import metrics
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
@@ -14,7 +13,6 @@ metric_reader = PeriodicExportingMetricReader(exporter)
 resource = Resource(
     attributes={
         SERVICE_NAME: "temporal-python",
-        "hostname": os.getenv("HOSTNAME", "unknown"),
     }
 )
 

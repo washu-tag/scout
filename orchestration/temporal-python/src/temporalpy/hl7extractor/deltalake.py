@@ -115,7 +115,12 @@ def import_hl7_files_to_deltalake(
 
     # Only increment metric on first activity attempt
     if activity.info().attempt == 1:
-        extracted_rows_counter.add(len(df))
+        extracted_rows_counter.add(
+            len(df),
+            {
+                "hostname": os.environ.get("HOSTNAME", "unknown"),
+            },
+        )
 
     if df.empty:
         raise ApplicationError("No data extracted from HL7 messages")
