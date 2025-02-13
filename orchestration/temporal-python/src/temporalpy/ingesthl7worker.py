@@ -7,6 +7,7 @@ import sys
 
 from temporalio.client import Client
 from temporalio.worker import Worker
+from temporalio.contrib.opentelemetry import TracingInterceptor
 
 from temporalpy.activities.ingesthl7 import (
     TASK_QUEUE_NAME,
@@ -17,7 +18,11 @@ log = logging.getLogger("workflow_worker")
 
 
 async def run_worker(temporal_address: str, namespace: str) -> None:
-    client = await Client.connect(temporal_address, namespace=namespace)
+    client = await Client.connect(
+        temporal_address,
+        namespace=namespace,
+        interceptors=[TracingInterceptor()],
+    )
     with concurrent.futures.ThreadPoolExecutor() as pool:
         worker = Worker(
             client,

@@ -7,3 +7,6 @@ envFrom:
       name: s3-secret
   - configMapRef:
       name: s3-env
+env:
+  - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+    value: 'http://jaeger-collector.jaeger.svc.cluster.local:4318/v1/traces'
