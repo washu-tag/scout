@@ -7,14 +7,11 @@ import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
 import edu.washu.tag.temporal.util.FileHandler;
 import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.ActivityImpl;
 import io.temporal.workflow.Workflow;
-import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -33,21 +30,9 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     // Autowire FileHandler
     private final FileHandler fileHandler;
-    private final MeterRegistry meterRegistry;
 
-    private Counter splitHl7LogsCounter;
-
-    public SplitHl7LogActivityImpl(FileHandler fileHandler,
-                                   MeterRegistry meterRegistry) {
+    public SplitHl7LogActivityImpl(FileHandler fileHandler) {
         this.fileHandler = fileHandler;
-        this.meterRegistry = meterRegistry;
-    }
-
-    @PostConstruct
-    public void init() {
-        splitHl7LogsCounter = Counter.builder("scout.orchestration.hl7.ingest.split.total")
-                                     .description("Number of HL7 logs split")
-                                     .register(meterRegistry);
     }
 
     private String runScript(File cwd, String... command) {
@@ -124,7 +109,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             logger.warn("Failed to delete temp dir {}", tempdir);
         }
 
-        splitHl7LogsCounter.increment(relativePaths.size());
         return new SplitHl7LogActivityOutput(input.rootOutputPath(), destinationPaths);
     }
 

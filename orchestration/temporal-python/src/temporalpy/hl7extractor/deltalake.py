@@ -10,9 +10,6 @@ import pandas as pd
 import s3fs
 from deltalake import DeltaTable, write_deltalake
 from temporalio.exceptions import ApplicationError
-from temporalio import activity
-
-from temporalpy.otel.config import meter
 
 from temporalpy.hl7extractor.hl7 import (
     MessageData,
@@ -26,11 +23,6 @@ storage_options = {"conditional_put": "etag"}
 
 
 s3filesystem = None
-
-extracted_rows_counter = meter.create_counter(
-    name="scout.extracted.hl7.rows.total",
-    description="Counts the number of extracted data rows from HL7 messages",
-)
 
 
 def read_hl7_directory(
@@ -112,10 +104,6 @@ def import_hl7_files_to_deltalake(
     ).astype(dtype="string[pyarrow]")
 
     log.info(f"Extracted data from {len(df)} HL7 messages")
-
-    # Only increment metric on first activity attempt
-    if activity.info().attempt == 1:
-        extracted_rows_counter.add(len(df))
 
     if df.empty:
         raise ApplicationError("No data extracted from HL7 messages")

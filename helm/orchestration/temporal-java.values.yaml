@@ -10,12 +10,6 @@ envFrom:
 env:
   - name: TZ
     value: 'US/Central'
-  - name: OTEL_SERVICE_NAME
-    value: 'temporal-java'
-  - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
-    value: 'http://prometheus-server.prometheus.svc.cluster.local:9090/api/v1/otlp/v1/metrics'
-  - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
-    value: 'http://jaeger-collector.jaeger.svc.cluster.local:4318/v1/traces'
 volumes:
   - name: hl7logs
     hostPath:
@@ -24,4 +18,3 @@ volumeMounts:
   - name: hl7logs
     mountPath: /hl7logs
     readOnly: true
-replicaCount: 2

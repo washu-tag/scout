@@ -28,10 +28,8 @@ configurations {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'io.opentelemetry:opentelemetry-api'
-	implementation 'io.opentelemetry:opentelemetry-opentracing-shim'
-	implementation 'io.micrometer:micrometer-registry-otlp'
+//	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
     implementation "io.temporal:temporal-sdk:${temporalVersion}"
     implementation "io.temporal:temporal-spring-boot-starter:${temporalVersion}"
 	implementation "software.amazon.awssdk:s3:${s3Version}"
