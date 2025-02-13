@@ -45,7 +45,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     @PostConstruct
     public void init() {
-        splitHl7LogsCounter = Counter.builder("scout.split.hl7.logs.total")
+        splitHl7LogsCounter = Counter.builder("scout.orchestration.hl7.ingest.split.total")
                                      .description("Number of HL7 logs split")
                                      .register(meterRegistry);
     }
@@ -111,10 +111,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String stdout = runScript(tempdir.toFile(), "/app/scripts/split-hl7-log.sh", input.logFilePath());
         List<Path> relativePaths = Arrays.stream(stdout.split("\n")).map(Path::of).toList();
 
-        if (info.getAttempt() == 1) {
-            splitHl7LogsCounter.increment(relativePaths.size());
-        }
-
         List<String> destinationPaths;
         try {
             destinationPaths = fileHandler.put(relativePaths, tempdir, destination);
@@ -128,6 +124,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             logger.warn("Failed to delete temp dir {}", tempdir);
         }
 
+        splitHl7LogsCounter.increment(relativePaths.size());
         return new SplitHl7LogActivityOutput(input.rootOutputPath(), destinationPaths);
     }
 

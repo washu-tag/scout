@@ -24,3 +24,4 @@ volumeMounts:
   - name: hl7logs
     mountPath: /hl7logs
     readOnly: true
+replicaCount: 2
