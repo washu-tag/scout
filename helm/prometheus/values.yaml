@@ -15,15 +15,14 @@ server:
     servicePort: 9090
   persistentVolume:
     enabled: true
-    volumeName: prometheus-pv
-    existingClaim: prometheus-pvc
+    storageClass: local-path-retain
   retention: 15d
 
 extraScrapeConfigs: |
   - job_name: 'grafana'
     metrics_path: /grafana/metrics
     static_configs:
-      - targets: ['grafana.grafana.svc.cluster.local:80']
+      - targets: ['grafana.grafana.svc.cluster.local:3000']
 
   - job_name: 'jaeger-agent'
     metrics_path: /metrics
@@ -49,22 +48,22 @@ extraScrapeConfigs: |
     metrics_path: /minio/v2/metrics/cluster
     scheme: http
     static_configs:
-      - targets: ['minio.minio.svc.cluster.local:9000']
+      - targets: ['minio.minio-scout.svc.cluster.local']
 
   - job_name: minio-bucket
     metrics_path: /minio/v2/metrics/bucket
     scheme: http
     static_configs:
-      - targets: ['minio.minio.svc.cluster.local:9000']
+      - targets: ['minio.minio-scout.svc.cluster.local']
 
   - job_name: minio-node
     metrics_path: /minio/v2/metrics/node
     scheme: http
     static_configs:
-    - targets: ['minio.minio.svc.cluster.local:9000']
+    - targets: ['minio.minio-scout.svc.cluster.local']
 
   - job_name: minio-resource
     metrics_path: /minio/v2/metrics/resource
     scheme: http
     static_configs:
-    - targets: ['minio.minio.svc.cluster.local:9000']
+    - targets: ['minio.minio-scout.svc.cluster.local']

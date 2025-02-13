@@ -95,3 +95,21 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+config:
+  application:
+    spring:
+      application:
+        name: temporal-java
+      temporal:
+        connection:
+          target: 'temporal-frontend.temporal:7233'
+        namespace: default
+        start-workers: true
+        workers-auto-discovery:
+          packages:
+            - edu.washu.tag.temporal.activity
+            - edu.washu.tag.temporal.workflow
+    s3:
+      endpoint: 'http://minio.minio-scout'
+      region: us-east-1

@@ -17,20 +17,6 @@ Create the Prometheus namespace:
 kubectl create namespace prometheus
 ```
 
-Create directory for Prometheus data (this only needs to be done once):
-
-```bash
-sudo mkdir /ceph/tag/home/prometheus
-sudo chmod +777 /ceph/tag/home/prometheus
-```
-
-Create the Persistent Volume and Persistent Volume Claim for Prometheus (this only needs to be done once):
-
-```bash
-kubectl apply -f prometheus-pv.yaml -n prometheus
-kubectl apply -f prometheus-pvc.yaml -n prometheus
-```
-
 Install Prometheus with:
 
 ```bash

@@ -42,10 +42,13 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
+          {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
+            - name: config-volume
+              mountPath: /app/application.yaml
+              subPath: application.yaml
           {{- with .Values.env }}
           env:
             {{- toYaml . | nindent 12 }}
@@ -54,10 +57,13 @@ spec:
           envFrom:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.volumes }}
       volumes:
+      {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
+        - name: config-volume
+          configMap:
+            name: {{ include "temporal-worker.fullname" . }}-config
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: temporal-java
+  temporal:
+    connection:
+      target: 127.0.0.1:7233
+      target.namespace: default
+    start-workers: true
+    workers-auto-discovery:
+      packages:
+        - edu.washu.tag.temporal.activity
+        - edu.washu.tag.temporal.workflow
+    test-server:
+      enabled: true
+s3:
+  endpoint: 'http://minio.minio:9000'
+  region: us-east-1

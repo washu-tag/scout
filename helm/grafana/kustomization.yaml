@@ -51,11 +51,3 @@ configMapGenerator:
     options:
       labels:
         grafana_alert: "1"
-
-# Generate secrects for Grafana contact points
-secretGenerator:
-  - name: slack-contact-point
-    files: [ alerts/contact-points/slack-contact-point.json ]
-    options:
-      labels:
-        grafana_alert: "1"

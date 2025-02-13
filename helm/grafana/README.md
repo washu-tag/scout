@@ -17,20 +17,6 @@ Create the Grafana namespace:
 kubectl create namespace grafana
 ```
 
-Create directory for Grafana data (this only needs to be done once):
-
-```bash
-sudo mkdir /ceph/tag/home/grafana
-sudo chmod +777 /ceph/tag/home/grafana
-```
-
-Create the Persistent Volume and Persistent Volume Claim for Grafana (this only needs to be done once):
-
-```bash
-kubectl apply -f grafana-pv.yaml -n grafana
-kubectl apply -f grafana-pvc.yaml -n grafana
-```
-
 (Optional) If using the Slack contact point for alerts, `alerts/contact-points/slack-contact-point.json`, then replace the `SLACK_TOKEN` and `SLACK_RECIPIENT` values in the file with your Slack API token and channel id respectively. See more details below.
 
 (Optional) To build the dashboard and alert configmaps and secrets and output them to stdout:
