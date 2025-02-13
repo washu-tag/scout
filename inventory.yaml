@@ -7,8 +7,13 @@ k3s_cluster:
           ansible_connection: local
           ansible_python_interpreter: /usr/bin/python3
           k3s_control_node: true
+    agents:
+      hosts:
+        tag-big-[02:03].nrg.wustl.edu:
+          ansible_connection: local
+          ansible_python_interpreter: /usr/bin/python3
   vars:
-    s3_username: "minio"
+    s3_username: 'minio'
     s3_password: !vault |
       $ANSIBLE_VAULT;1.1;AES256
       63393864363234346436363835313362646331653139313066363739333836333639366432386231
@@ -16,7 +21,7 @@ k3s_cluster:
       64656633303436633735346131613163356536363265353434343562353738326463343137343330
       6363326561313330310a383163623030663865316363306531643733303230303139393365333562
       3261
-    s3_region: "us-east-1"
+    s3_region: 'us-east-1'
     k3s_token: !vault |
       $ANSIBLE_VAULT;1.1;AES256
       34386464356430383539396664303038363661646332663934356162653638306335656231653162
@@ -41,8 +46,9 @@ k3s_cluster:
       39366336306539366266663538666239343032366530313732313938303565333334386132653964
       3430366438323235310a353635663838396536653230366364643734396363313439363761656132
       3161
-    base_dir: "/ceph/tag/home/scout-slc-dev"
-    scout_repo_dir: "{{ base_dir }}/scout"
+    base_dir: '/ceph/tag/home/scout-slc-dev'
+    scout_repo_dir: '{{ base_dir }}/scout'
+    kubeconfig_group: 'nrg-tag-admin'
 
     # You probably don't want to change these unless you know these items will be
     # stored in different locations on your system

@@ -3,6 +3,7 @@
   hosts: server
   vars:
     k3s_server:
+      write-kubeconfig-mode: '0640'
       disable:
         - traefik
       default-local-storage-path: '{{ base_dir }}'
@@ -19,9 +20,18 @@
     - role: xanmanning.k3s
 
   post_tasks:
+    - name: Update kubeconfig group permissions since write-kubeconfig-group isn't exposed via the role
+      file:
+        path: '{{ kubeconfig_yaml }}'
+        state: file
+        mode: '0640'
+        group: '{{ kubeconfig_group }}'
+
     - name: Add storage class
       kubernetes.core.k8s:
         state: present
         src: '{{ scout_repo_dir }}/helm/storageclass.yaml'
         wait: yes
         wait_timeout: 60
+      delegate_to: '{{ groups["server"][0] }}'
+      run_once: true

@@ -12,7 +12,9 @@ Start by copying `inventory.example.yaml` to `inventory.yaml`. You will want to 
 `vars` section with the values that are appropriate for your installation. Note that `helm_plugins_dir` and `kubeconfig_yaml`
 are default locations that you probably want to leave alone. 
 
-Some of these values in `inventory.yaml` should be treated as secrets, which you can manage with Ansible vault. For example, if you put a script that returns a password in `vault/pwd.sh`:
+Some of these values in `inventory.yaml` should be treated as secrets, which you can manage with Ansible vault. 
+For example, if you put a script that returns a password in `vault/pwd.sh` (make sure this file is executable: 
+`chmod 755 vault/pwd.sh`):
 ```bash
 #!/bin/bash
 # Silly example, you could just put this in a file called password.txt and remove the echo
@@ -33,7 +35,7 @@ bw get password "AnsibleVault" 2>/dev/null
 ```
 
 
-Then you can run, for example:
+Then you can run, e.g.:
 
 ```bash
 openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
@@ -43,7 +45,7 @@ which will give you an encoded secret string that you can then place in the `inv
 appropriate var. When you run Ansible to install the playbook, this secret will be decoded using the vault 
 password script (so be sure that's accessible from where ever you are running Ansible).
 
-To read more, see the [Ansible documentation on managing vault passwords](https://docs.ansible.com/ansible/latest/vault_guide/vault_managing_passwords.html).
+There is plenty more you can do with Ansible Vault. To read more, please see the [Ansible documentation on managing vault passwords](https://docs.ansible.com/ansible/latest/vault_guide/vault_managing_passwords.html).
 
 ## Execution
 Once your inventory.yaml is set up, you should run:

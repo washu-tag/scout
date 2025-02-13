@@ -1,6 +1,6 @@
-.PHONY: all deps install-k3s install-helm clone-scout install-minio install-orchestrator install-prometheus install-jaeger install-grafana
+.PHONY: all deps install-k3s install-k3s-agent install-helm clone-scout install-minio install-orchestrator install-prometheus install-jaeger install-grafana
 
-all: deps clone-scout install-k3s install-helm install-minio install-orchestrator install-prometheus install-jaeger install-grafana
+all: deps clone-scout install-k3s install-k3s-agent install-helm install-minio install-orchestrator install-prometheus install-jaeger install-grafana
 
 deps:
 	ansible-galaxy install -r collections/requirements.yaml
@@ -10,6 +10,9 @@ clone-scout:
 
 install-k3s:
 	ansible-playbook -v -i inventory.yaml --diff playbooks/k3s-cluster.yaml --vault-password-file vault/pwd.sh -l $$(hostnamectl --static)
+
+install-k3s-agent:
+	ansible-playbook -v -i inventory.yaml --diff playbooks/k3s-agent.yaml --vault-password-file vault/pwd.sh -l $$(hostnamectl --static)
 
 install-helm:
 	ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml --vault-password-file vault/pwd.sh -l $$(hostnamectl --static)
