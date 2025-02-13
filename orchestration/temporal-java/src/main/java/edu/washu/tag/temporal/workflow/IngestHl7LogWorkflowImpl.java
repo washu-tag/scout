@@ -11,11 +11,6 @@ import edu.washu.tag.temporal.model.SplitHl7LogActivityInput;
 import edu.washu.tag.temporal.model.SplitHl7LogActivityOutput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Scope;
-import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.common.SearchAttributeKey;
@@ -27,9 +22,6 @@ import io.temporal.workflow.Promise;
 import io.temporal.workflow.Workflow;
 import io.temporal.workflow.WorkflowInfo;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.wavefront.WavefrontProperties;
-import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -39,7 +31,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
 @WorkflowImpl(taskQueues = "ingest-hl7-log")
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private static final Logger logger = Workflow.getLogger(IngestHl7LogWorkflowImpl.class);
@@ -65,71 +56,56 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                             .build())
                     .build());
 
-    private final Tracer tracer;
-
-    @Autowired
-    public IngestHl7LogWorkflowImpl(OpenTelemetry openTelemetry) {
-        tracer = openTelemetry.getTracer("ingest-hl7-log-workflow");
-    }
-
     @Override
     public IngestHl7LogWorkflowOutput ingestHl7Log(IngestHl7LogWorkflowInput input) {
-        Span span = tracer.spanBuilder("ingestHl7Log").startSpan();
-        span.setAttribute("workflowId", Workflow.getInfo().getWorkflowId());
-        try (Scope scope = span.makeCurrent()) {
-            WorkflowInfo workflowInfo = Workflow.getInfo();
-            logger.info("Beginning workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
-            span.addEvent("workflow.start");
+        WorkflowInfo workflowInfo = Workflow.getInfo();
+        logger.info("Beginning workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
 
-            // Log input values
-            logger.debug("Input: {}", input);
+        // Log input values
+        logger.debug("Input: {}", input);
 
-            // Determine date
-            String date = determineDate(input.date());
+        // Determine date
+        String date = determineDate(input.date());
 
-            // Validate input
-            throwOnInvalidInput(input, date);
+        // Validate input
+        throwOnInvalidInput(input, date);
 
-            String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
+        String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
 
-            // Find log file by date
-            FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(date, input.logsRootPath());
-            FindHl7LogFileOutput findHl7LogFileOutput = hl7LogActivity.findHl7LogFile(findHl7LogFileInput);
+        // Find log file by date
+        FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(date, input.logsRootPath());
+        FindHl7LogFileOutput findHl7LogFileOutput = hl7LogActivity.findHl7LogFile(findHl7LogFileInput);
 
-            // Split log file
-            String splitLogFileOutputPath = scratchDir + "/split";
-            SplitHl7LogActivityInput splitHl7LogInput = new SplitHl7LogActivityInput(findHl7LogFileOutput.logFileAbsPath(), splitLogFileOutputPath);
-            SplitHl7LogActivityOutput splitHl7LogOutput = hl7LogActivity.splitHl7Log(splitHl7LogInput);
+        // Split log file
+        String splitLogFileOutputPath = scratchDir + "/split";
+        SplitHl7LogActivityInput splitHl7LogInput = new SplitHl7LogActivityInput(findHl7LogFileOutput.logFileAbsPath(), splitLogFileOutputPath);
+        SplitHl7LogActivityOutput splitHl7LogOutput = hl7LogActivity.splitHl7Log(splitHl7LogInput);
 
-            // Fan out
-            String hl7RootPath = input.hl7OutputPath().endsWith("/") ? input.hl7OutputPath().substring(0, input.hl7OutputPath().length() - 1) : input.hl7OutputPath();
-            List<Promise<TransformSplitHl7LogOutput>> transformSplitHl7LogOutputPromises = new ArrayList<>();
-            for (String splitLogFileRelativePath : splitHl7LogOutput.relativePaths()) {
-                // Async call to transform split log file into HL7
-                String splitLogFilePath = splitHl7LogOutput.rootPath() + "/" + splitLogFileRelativePath;
-                TransformSplitHl7LogInput transformSplitHl7LogInput = new TransformSplitHl7LogInput(splitLogFilePath, hl7RootPath);
-                Promise<TransformSplitHl7LogOutput> transformSplitHl7LogOutputPromise =
-                        Async.function(hl7LogActivity::transformSplitHl7Log, transformSplitHl7LogInput);
-                transformSplitHl7LogOutputPromises.add(transformSplitHl7LogOutputPromise);
-            }
-            // Collect async results
-            final List<String> hl7AbsolutePaths = transformSplitHl7LogOutputPromises.stream()
-                                                                                    .map(Promise::get)
-                                                                                    .map(TransformSplitHl7LogOutput::relativePath)
-                                                                                    .map(relativePath -> hl7RootPath + "/" + relativePath)
-                                                                                    .toList();
-
-            // Ingest HL7 into delta lake
-            // We execute the activity using the untyped stub because the activity is implemented in a different language
-            IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
-                    INGEST_ACTIVITY_NAME,
-                    IngestHl7FilesToDeltaLakeOutput.class,
-                    new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), hl7AbsolutePaths)
-            );
-        } finally {
-            span.addEvent("workflow.end");
-            span.end();
+        // Fan out
+        String hl7RootPath = input.hl7OutputPath().endsWith("/") ? input.hl7OutputPath().substring(0, input.hl7OutputPath().length() - 1) : input.hl7OutputPath();
+        List<Promise<TransformSplitHl7LogOutput>> transformSplitHl7LogOutputPromises = new ArrayList<>();
+        for (String splitLogFileRelativePath : splitHl7LogOutput.relativePaths()) {
+            // Async call to transform split log file into HL7
+            String splitLogFilePath = splitHl7LogOutput.rootPath() + "/" + splitLogFileRelativePath;
+            TransformSplitHl7LogInput transformSplitHl7LogInput = new TransformSplitHl7LogInput(splitLogFilePath, hl7RootPath);
+            Promise<TransformSplitHl7LogOutput> transformSplitHl7LogOutputPromise =
+                    Async.function(hl7LogActivity::transformSplitHl7Log, transformSplitHl7LogInput);
+            transformSplitHl7LogOutputPromises.add(transformSplitHl7LogOutputPromise);
         }
+        // Collect async results
+        final List<String> hl7AbsolutePaths = transformSplitHl7LogOutputPromises.stream()
+                .map(Promise::get)
+                .map(TransformSplitHl7LogOutput::relativePath)
+                .map(relativePath -> hl7RootPath + "/" + relativePath)
+                .toList();
+
+        // Ingest HL7 into delta lake
+        // We execute the activity using the untyped stub because the activity is implemented in a different language
+        IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
+                INGEST_ACTIVITY_NAME,
+                IngestHl7FilesToDeltaLakeOutput.class,
+                new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), hl7AbsolutePaths)
+        );
 
         return new IngestHl7LogWorkflowOutput();
     }
