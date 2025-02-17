@@ -1,0 +1,22 @@
+---
+- name: Join a cluster
+  hosts: agents
+  vars:
+    uninstall_script: '/usr/local/bin/k3s-agent-uninstall.sh'
+  tasks:
+    - name: Download k3s installer
+      ansible.builtin.uri:
+        url: https://get.k3s.io
+        return_content: true
+      register: k3s_installer
+
+    - name: Install k3s agent
+      ansible.builtin.command:
+        cmd: bash
+        stdin: '{{ k3s_installer.content }}'
+        creates: '{{ uninstall_script }}'
+      environment:
+        INSTALL_K3S_VERSION: "{{ k3s_version | default('') }}"
+        K3S_URL: 'https://{{ groups["server"][0] }}:6443'
+        K3S_TOKEN: '{{ k3s_token }}'
+        UNINSTALL_K3S_SH: '{{ uninstall_script }}'

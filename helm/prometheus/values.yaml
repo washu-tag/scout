@@ -4,6 +4,7 @@ kube-state-metrics:
   enabled: true
 prometheus-node-exporter:
   enabled: true
+  hostNetwork: false
 prometheus-pushgateway:
   enabled: false
 
