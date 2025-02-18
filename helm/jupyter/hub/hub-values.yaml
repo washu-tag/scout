@@ -1,0 +1,21 @@
+proxy:
+  service:
+    type: ClusterIP
+
+hub:
+  baseUrl: /jupyter
+
+ingress:
+  enabled: true
+  hosts:
+    - big-03.minmi-algol.ts.net
+
+singleuser:
+  image:
+    name: local/pyspark-notebook
+    tag: latest
+  cmd: null
+
+prePuller:
+  hook:
+    enabled: false

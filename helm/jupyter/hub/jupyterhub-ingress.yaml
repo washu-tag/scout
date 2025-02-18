@@ -1,0 +1,13 @@
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: big-03.minmi-algol.ts.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: proxy-public
+                port:
+                  name: http
+            path: /jupyter
+            pathType: Prefix

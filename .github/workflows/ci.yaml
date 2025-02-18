@@ -45,6 +45,11 @@ jobs:
         with:
           subproject: orchestration/temporal-python
           image-name: temporal-python
+      - name: 'Build/Cache Image - pyspark-notebook'
+        uses: ./.github/actions/docker-build-cache
+        with:
+          subproject: helm/jupyter/image
+          image-name: pyspark-notebook
   unit-test:
     runs-on: ubuntu-latest
     steps:
