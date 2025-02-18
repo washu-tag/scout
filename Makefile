@@ -1,6 +1,7 @@
 .PHONY: all deps install-k3s install-helm clone-scout install-minio install-orchestrator install-prometheus install-jaeger install-grafana
 
-all: deps clone-scout install-k3s install-helm install-minio install-orchestrator install-prometheus install-jaeger install-grafana
+all: deps
+	ansible-playbook -v -i $(INVENTORY_FILE) --diff playbooks/main.yaml $(VAULT_PASSWORD_ARG) -l $(FQDN)
 
 deps:
 	ansible-galaxy install -r collections/requirements.yaml
