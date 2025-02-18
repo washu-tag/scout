@@ -4,6 +4,12 @@
   vars:
     uninstall_script: "/usr/local/bin/k3s-uninstall.sh"
   tasks:
+    - name: Create /root/bin directory
+      ansible.builtin.file:
+        path: /root/bin
+        state: directory
+        mode: "0700"
+
     - name: Download K3s installation script
       ansible.builtin.get_url:
         url: https://get.k3s.io
