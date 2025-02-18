@@ -32,8 +32,6 @@
         path: '{{ base_dir }}'
         state: directory
         mode: '0755'
-      when: inventory_hostname in groups["server"]
-
 
     - name: Install k3s server
       ansible.builtin.command:
