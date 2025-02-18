@@ -93,3 +93,7 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: temporal-python
+      - name: 'Push Image - pyspark-notebook'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: pyspark-notebook
