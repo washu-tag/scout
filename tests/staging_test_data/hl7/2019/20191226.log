@@ -1,0 +1,24 @@
+2019-12-26 12:10:05.1518|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20191226121005|TBD|ORU^R01|2.25.45827489794346617486005099159521183108|P|2.7<R>
+PID|1||ABC451121^^^ABC^MR||SMITH^MINDY^TERA^^^^D||19741018|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084888|||||||||||||||||||||||||20191226121005|||||||V<R>
+ORC|RE|2086256^SYS|7795083286||Final||^^^20191226121004^20191226121005^O||20191226121005|T6530148^GROSS^CARLY||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2086256^SYS|7795083286|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20191223092000|||||Hosp Perf||||^^^BREAST|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20191226121005||MG|Final||^^^20191226121004^20191226121005^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20191226121005||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view Mammogram||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|No evidence of malignancy on current mammogram. The breast tissue||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|demonstrates stable density with no abnormal findings or changes||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|compared to previous studies. The mammogram performed on December 23,||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|2019, reveals heterogeneously dense breast tissue. No suspicious||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|masses or calcifications are identified, and there is no focal||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|asymmetry noted. The skin and nipple are unremarkable; lymph nodes in||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|the axillary region appear normal. Compared to prior imaging studies,||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|there have been no new developments or areas of concern. Overall,||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|there is stability in breast density, which can predispose to masking||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|of potential subtle findings but remains unremarkable at this time.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Final|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.17915741096468535952946659761011612458^EPIC^APPLICATION^DICOM<R>
+<EB>

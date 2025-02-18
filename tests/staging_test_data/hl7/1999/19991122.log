@@ -1,0 +1,11 @@
+1999-11-22 16:17:11.5598|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19991122161711|TBD|ORU^R01|2.25.106626566853464660279498694875860737634|P|2.4<R>
+PID|1||ABC451186^^^ABC^MR~EPIC4485945^^^EPIC^MRN||JOHNSON^STACIE^SARA^^^^D||19471012000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451186^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457101^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3356092^SYS|7795083541|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||19991119085925|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|19991122161711||BHC|||1^^^19991122161711^^U^^URGENT|       |||^Chest pain|D7823240^PARSONS^ERNESTO^J.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|1062565||ERNESTO PARSONS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|1062565||ACC#  Date Time  Exam~~7795083541 Nov 22 1999 04:17PM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The mammogram demonstrates symmetrical breast tissue architecture~with no significant architectural distortion. The breast parenchyma~is predominantly fibroglandular, which is not unexpected in a patient~of this age. No masses, calcifications, or other abnormalities are~identified. Skin and nipple appearance are unremarkable, with a~smooth contour and no evidence of retraction or abnormal vascularity.~No axillary lymphadenopathy is noted.~~IMPRESSION:~Overall, the mammogram findings are benign with normal breast~parenchyma and no evidence of malignancy or other abnormalities.||||||F<R>
+OBX|3|TX|1062565||Requested By: Reese,Amber J. M.D.~~Dictated By: Ernesto Parsons, M.D. on Nov 22 1999 04:17PM~~This document has been electronically signed by: Ernesto Parsons,~M.D. on Nov 22 1999 04:17PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|1062565|4|7795083541^UK^ZB||||||F<R>
+<EB>

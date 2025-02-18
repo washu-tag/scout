@@ -1,0 +1,31 @@
+2006-07-06 20:34:39.8816|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060706203439|TBD|ORU^R01|2.25.14245007663019804529791372162927602068|P|2.7<R>
+PID|1||ABC451003^^^ABC^MR||JONES^MICHAEL^JAMES^^^^D||19881103|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084918|||||||||||||||||||||||||20060706203439|||||||V<R>
+ORC|RE|7127284^SYS|7795082810||Final||^^^20060706203438^20060706203439^O||20060706203439|T6530151^WATERS^JESSICA||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7127284^SYS|7795082810|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20060705090926|||||Hosp Perf||||^^^HEART|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060706203439||MR|Final||^^^20060706203438^20060706203439^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20060706203439||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|The imaging study reveals normal cardiac anatomy and function, with||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|an ejection fraction indicative of preserved cardiac output and no||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|evidence of ischemic heart disease or structural dysfunction.||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|Magnetic resonance imaging of the heart demonstrates normal chamber||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|sizes, with the left ventricle exhibiting appropriate contractile||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|function (ejection fraction approximately 60%). No regional wall||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|motion abnormalities are noted. The right ventricle is of normal||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|morphology, and the interventricular septum appears intact with no||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|evidence of hypertrophy. MRI sequences reveal a normal pericardium||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|and mediastinal structures without signs of effusion. There is no||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|evidence of myocardial edema or scarring on late gadolinium||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|enhancement sequences, indicating no past ischemic events. The||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|coronary artery territories appear well-perfused. No significant||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|18|ST|&IMP|2|valvular pathology is demonstrated across the mitral, aortic,||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|19|ST|&IMP|2|tricuspid, or pulmonary valves. Conclusion: The heart MRI yields a||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|20|ST|&IMP|2|generally favorable assessment of myocardial and structural health||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|21|ST|&IMP|2|without significant abnormalities.||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|22|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Final|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.143219954408880236250910174967751757452^EPIC^APPLICATION^DICOM<R>
+<EB>

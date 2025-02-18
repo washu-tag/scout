@@ -1,0 +1,11 @@
+2008-08-18 12:34:03.2642|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20080818123403|TBD|ORU^R01|2.25.145578140226490837684556972024353780911|P|2.4<R>
+PID|1||ABC451098^^^ABC^MR~EPIC4485857^^^EPIC^MRN||SANCHEZ^SHANE^SAUL^^^^D||19760531000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451098^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457207^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8156644^SYS|7795083192|IMG5021^5021 PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV|URGENT||20080817094320|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||5021^Brain Petct AC NAC|20080818123403||IMG|||1^^^20080818123403^^U^^URGENT|       |||^Chest pain|D7823234^DONOVAN^WILLIAM^C.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||5021<R>
+OBX|1|TX|8870069||WILLIAM DONOVAN, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|8870069||ACC#  Date Time  Exam~~7795083192 Aug 18 2008 12:34PM IMG5021 PET/CT FDG BRAIN TUMOR~METABOLIC EVALUATION~~EXAMINATION:~Brain PET-CT~~FINDINGS:~The examination demonstrates normal metabolic activity in the~cerebral cortex, basal ganglia, and cerebellar structures. There is~no evidence of abnormal hypermetabolism or hypometabolism within the~examined regions. The white matter appears intact, although slight~age-related changes are noted with minimal periventricular white~matter hyperintensities on the CT sequences. The pituitary gland and~other midline structures appear within normal limits. No focal~lesions are detected, and the ventricles are of normal size and~configuration. In comparison to the previous PET-MR from 1998, there~are no significant changes in cerebral metabolism.~~IMPRESSION:~1. Normal brain metabolic activity without any focal lesions. 2. Mild~age-related white matter changes as previously noted. No progression~of any cerebral pathology since the prior study.||||||F<R>
+OBX|3|TX|8870069||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: William Donovan, M.D. on Aug 18 2008 12:34PM~~This document has been electronically signed by: William Donovan,~M.D. on Aug 18 2008 12:34PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8870069|4|7795083192^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,25 @@
+2015-10-17 15:07:02.4357|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20151017150702|TBD|ORU^R01|2.25.58025383596260649450682311121657080483|P|2.7<R>
+PID|1||ABC451058^^^ABC^MR||KIM^JI-MIN^^^^^D||19940508|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085016|||||||||||||||||||||||||20151017150702|||||||V<R>
+ORC|RE|4003975^SYS|7795083032||Wet Read||^^^20151017150701^20151017150702^O||20151017150702|T6530154^ROBERTS^RICARDO||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4003975^SYS|7795083032|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20151013170429|||||Hosp Perf||||^^^BREAST|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20151017150702||MG|Wet Read||^^^20151017150701^20151017150702^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20151017150702||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|The imaging findings from October 2015 are comparable to the 2012||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|mammogram study. No significant change in breast pathology is||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|observed, and the results remain stable without radiological evidence||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|of malignancy. Continued routine screening is recommended in||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|alignment with prevailing guidelines. The mammogram from October||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|13th, 2015, again reveals a heterogeneously dense breast, comparable||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|to the previous study from July 2012. However, there is a slight||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|increase in density with no new masses, architectural distortions, or||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|new microcalcifications noted compared to the prior imaging. The||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|axillae remain free of any enlarged lymph nodes. The skin and||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|surrounding tissues show no abnormal features or changes.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.13448943146026756863411747916325974020^EPIC^APPLICATION^DICOM<R>
+<EB>

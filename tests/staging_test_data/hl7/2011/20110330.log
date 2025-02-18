@@ -1,0 +1,30 @@
+2011-03-30 11:47:51.6304|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110330114751|TBD|ORU^R01|2.25.94269754988854216308780570581999899557|P|2.7<R>
+PID|1||ABC451095^^^ABC^MR||YATES^STEPHEN^ROBERT^^^^D||19580114|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823219^LOGAN^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084704|||||||||||||||||||||||||20110330114751|||||||V<R>
+ORC|RE|3344048^SYS|7795083178||Wet Read||^^^20110330114750^20110330114751^O||20110330114751|T6530140^HARDY^JAY||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3344048^SYS|7795083178|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20110329114113|||||Hosp Perf|||||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20110330114751||XA|Wet Read||^^^20110330114750^20110330114751^O||||^Chest pain||D7823219^LOGAN^MICHAEL^D.^^^^^ABC^^^^HOSP|T6530140^HARDY^JAY||20110330114751||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography of the thoracic vessels||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|5|ST|&IMP|2|This angiographic evaluation suggests a stable thoracic vascular||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|6|ST|&IMP|2|architecture with no acute signs of vascular compromise or||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|7|ST|&IMP|2|significant atherosclerotic changes in coronary territories. These||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|8|ST|&IMP|2|findings remain consistent with previous imaging studies performed||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|9|ST|&IMP|2|and reinforce the conclusion that there have been no significant||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|10|ST|&IMP|2|cardiovascular changes since the last imaging study. The X-ray||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|11|ST|&IMP|2|angiography performed on 2011-03-29 illustrates an intact thoracic||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|12|ST|&IMP|2|vascular system. The coronary arteries demonstrate normal morphology||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|13|ST|&IMP|2|with no stenosis or calcifications. The aorta is patent and shows no||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|14|ST|&IMP|2|evidence of dissection. Branch vessels to the lungs and other||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|15|ST|&IMP|2|thoracic structures are also visualized clearly, demonstrating no||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|16|ST|&IMP|2|significant occlusions or structural abnormalities. There is an||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|17|ST|&IMP|2|absence of collateral circulation, which further confirms the lack of||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|18|ST|&IMP|2|significant disease process. Additionally, both the right and left||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|19|ST|&IMP|2|pulmonary arteries are patent without evidence of thromboembolic||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|20|ST|&IMP|2|phenomena.||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|21|ST|&IMP|2|Dictated by: Michael Logan Interpreter, M.D.||||||Wet Read|||||T6530140^HARDY^JAY<R>
+ZDS|2.25.156749520747562515584766196046705446761^EPIC^APPLICATION^DICOM<R>
+<EB>

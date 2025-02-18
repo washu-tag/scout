@@ -1,0 +1,11 @@
+2010-03-26 00:46:52.2394|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100326004652|TBD|ORU^R01|2.25.115508188763148918194854152864175264848|P|2.4<R>
+PID|1||ABC451103^^^ABC^MR~EPIC4485862^^^EPIC^MRN||COLLINS^NICKOLAS^LARRY^^^^D||19511215000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451103^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457320^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5402471^SYS|7795083215|SM71550CH0^715500 MR CHEST WO^UNKDEV|URGENT||20100323172929|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||715500^Chest PtMr|20100326004652||SMCH|||1^^^20100326004652^^U^^URGENT|       |||^Chest pain|D7823241^SANDERS^LISA^A.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||715500<R>
+OBX|1|TX|6345697||LISA SANDERS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6345697||ACC#  Date Time  Exam~~7795083215 Mar 26 2010 12:46AM SM71550CH0 MR CHEST WO~~EXAMINATION:~Chest PET-MR~~FINDINGS:~Chest PET-MR demonstrates unremarkable findings with no areas of~abnormal metabolic activity or lesions. All lung lobes appear clear~with no evidence of mass lesions or significant lymphadenopathy. The~heart, within the thoracic cavity, shows no perfusion abnormalities.~The vascular structures visualized maintain normal morphology with no~steno-occlusive disease detected. Pulmonary vasculature appears free~of any embolic events or infiltrative processes. Overall, the PET-MR~shows a coherent evaluation with no pathological effects in the~thoracic region.~~IMPRESSION:~1. PET-MR shows no abnormalities involving the chest; findings are~within the range of normal imaging specifications. 2. No signs of~metabolic or neoplastic processes were identified.||||||F<R>
+OBX|3|TX|6345697||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Lisa Sanders, M.D. on Mar 26 2010 12:46AM~~This document has been electronically signed by: Lisa Sanders, M.D.~on Mar 26 2010 12:46AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6345697|4|7795083215^UK^ZB||||||F<R>
+<EB>

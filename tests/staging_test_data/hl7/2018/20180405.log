@@ -1,0 +1,24 @@
+2018-04-05 19:35:53.8578|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180405193553|TBD|ORU^R01|2.25.137339134198223835412292579690705915207|P|2.7<R>
+PID|1||ABC451110^^^ABC^MR||THOMPSON^KEVIN^FRANK^Sr.^^^D||19900127|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084978|||||||||||||||||||||||||20180405193553|||||||V<R>
+ORC|RE|6587566^SYS|7795083241||Final||^^^20180405193552^20180405193553^O||20180405193553|T6530150^NEAL^EMILY||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6587566^SYS|7795083241|M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR|O|20180404170321|||||Hosp Perf||||^^^PELVIS|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20180405193553||MR|Final||^^^20180405193552^20180405193553^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20180405193553||||||||M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Pelvis PET-MR||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|The pelvic PET-MR study from April 04, 2018, displays normal findings||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|with no evidence of acute or chronic infectious, inflammatory, or||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|neoplastic processes. The study indicates no areas of concern in the||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|pelvis. The PET-MR examination of the pelvis shows homogeneous uptake||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|in normal tissue, with no focal areas of hypermetabolic activity to||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|suggest malignancy. The anatomical structures of the pelvis including||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|the bladder, prostate, and surrounding soft tissue appear within||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|normal limits. There are no significant lymphadenopathies, and the||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|skeletal structures demonstrate normal signal characteristics with no||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|lesions or metastatic disease present.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Final|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.95261978388291526400076222305603942634^EPIC^APPLICATION^DICOM<R>
+<EB>

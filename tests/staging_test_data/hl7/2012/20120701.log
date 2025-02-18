@@ -1,0 +1,11 @@
+2012-07-01 13:01:35.9767|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120701130135|TBD|ORU^R01|2.25.183678090804240485821189814488298776670|P|2.4<R>
+PID|1||ABC451070^^^ABC^MR~EPIC4485829^^^EPIC^MRN||BAILEY^CHRISTOPHER^FIDEL^^^^D||19470612000000|M||I|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451070^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457145^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9616492^SYS|7795083081|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20120628143908|||PSCRIB|||||^^^^ |D7823235^SANCHEZ^GUY^JEFFREY^M.D.^^^^ABC|||||2816^Ultrasound|20120701130135||IMG|||1^^^20120701130135^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823234^DONOVAN^WILLIAM^C.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|5139008||KIMBERLY HANSON, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|5139008||ACC#  Date Time  Exam~~7795083081 Jul 01 2012 01:01PM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Ultrasound Abdomen~~FINDINGS:~Comparison to the previous ultrasound dated 2006-05-10 indicates no~major changes in abdominal anatomy. The liver remains within normal~limits with no new lesions detected. The gallbladder is still~non-distended without calculi, and no noteworthy biliary duct~dilation is observed. Renal echogenicity is consistent with prior~imaging, with both kidneys appearing normal in size and~configuration. The pancreas retains its normal echotexture, and~splenomegaly or abnormalities are absent. Importantly, slight~enlargement of a previously noted periportal lymph node has been~observed, although this remains within normal size ranges, with no~signs of additional lymphadenopathy.~~IMPRESSION:~Overall, there has been stability in abdominal structures since the~last ultrasound on 2006-05-10. The slight enlargement of the lymph~node is recommended for follow-up in subsequent imaging to ensure~stability. No acute abdominal pathology is evident.||||||P<R>
+OBX|3|TX|5139008||Requested By: Sanchez,Guy J. M.D.~~Dictated By: Kimberly Hanson, M.D. on Jul 01 2012 01:01PM~~Pending review by: William Donovan, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5139008|4|7795083081^UK^ZB||||||P<R>
+<EB>

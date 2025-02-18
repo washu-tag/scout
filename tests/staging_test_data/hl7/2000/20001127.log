@@ -1,0 +1,23 @@
+2000-11-27 14:03:56.0833|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20001127140356|TBD|ORU^R01|2.25.254068888010108648776448756007922006451|P|2.7<R>
+PID|1||ABC451051^^^ABC^MR||WHITE^JACOB^OSCAR^^^^D||19430325|M||UNABLE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084869|||||||||||||||||||||||||20001127140356|||||||V<R>
+ORC|RE|9055106^SYS|7795083004||Wet Read||^^^20001127140355^20001127140356^O||20001127140356|T6530153^MORAN^JOSHUA||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9055106^SYS|7795083004|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20001125093728|||||Hosp Perf||||^^^CHEST|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20001127140356||CR|Wet Read||^^^20001127140355^20001127140356^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||20001127140356||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|Stable chest X-ray since the previous examination on 1995-11-15, with||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|no new findings of clinical significance. Comparative analysis with||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|the prior chest X-ray dated 1995-11-15 reveals no significant changes||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|in the lung parenchyma. The lung fields remain clear, and the||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|vascular patterns appear stable. The cardiac silhouette is within||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|normal limits, with no evidence of cardiomegaly. There continues to||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|be no signs of pleural effusion or pneumothorax. Bony structures||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|remain intact with no acute changes noted. Overall, this study||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|suggests a stable respiratory condition without acute anomalies.||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.116930247052211644874709592198237858277^EPIC^APPLICATION^DICOM<R>
+<EB>

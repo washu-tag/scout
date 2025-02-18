@@ -1,0 +1,25 @@
+2001-12-19 09:15:37.3299|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20011219091537|TBD|ORU^R01|2.25.309435015853621285291699141847014516727|P|2.7<R>
+PID|1||ABC451102^^^ABC^MR||BAKER^LLOYD^DANNY^^^^D||19820325|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084843|||||||||||||||||||||||||20011219091537|||||||V<R>
+ORC|RE|6858835^SYS|7795083206||Final||^^^20011219091536^20011219091537^O||20011219091537|T6530149^VASQUEZ^MISTY||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6858835^SYS|7795083206|BED71010^71010 Chest 1 view Frontal^UNKDEV^^CHEST 1 VIEW DX XRAY|O|20011216120528|||||Hosp Perf||||^^^CHEST|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20011219091537||DX|Final||^^^20011219091536^20011219091537^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20011219091537||||||||BED71010^71010 Chest 1 view Frontal^UNKDEV^^CHEST 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|1. No acute cardiopulmonary process identified. 2. The chest X-ray is||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|within normal limits with no abnormalities detected when compared to||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|any prior imaging. The frontal and lateral chest radiographs reveal||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|well-aerated lung fields bilaterally, without focal consolidative||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|opacities or pleural effusions. The cardiac silhouette is within||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|normal limits, maintaining normal size and contour. The bony||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|structures appear intact with no evidence of acute osseous pathology.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|The mediastinum is midline with clear vascular outlines bilaterally.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|Notably, there is no evidence of hilar lymphadenopathy or chest wall||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|masses. The diaphragm is intact and well-positioned. The study is||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|unremarkable for acute cardiopulmonary disease.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.235718070943560383398588634701818544112^EPIC^APPLICATION^DICOM<R>
+<EB>

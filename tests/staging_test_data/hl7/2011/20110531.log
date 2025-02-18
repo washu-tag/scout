@@ -1,0 +1,36 @@
+2011-05-31 07:08:13.5432|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110531070813|TBD|ORU^R01|2.25.34593681479345439389679390457372188063|P|2.7<R>
+PID|1||ABC451088^^^ABC^MR||PACHECO^CAROLINA^THERESA^^^^D||19541127|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084809|||||||||||||||||||||||||20110531070813|||||||V<R>
+ORC|RE|8568820^SYS|7795083150||Wet Read||^^^20110531070812^20110531070813^O||20110531070813|||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8568820^SYS|7795083150|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20110527165920|||||Hosp Perf|||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20110531070813||XR|Wet Read||^^^20110531070812^20110531070813^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|||20110531070813||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray.||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|The X-ray findings correspond positively with established chest||||||Wet Read<R>
+OBX|6|ST|&IMP|2|health, without any signs of acute distress. Continue routine chest||||||Wet Read<R>
+OBX|7|ST|&IMP|2|X-ray screenings as part of ongoing health evaluations to ensure||||||Wet Read<R>
+OBX|8|ST|&IMP|2|early detection of potential changes. The chest X-ray demonstrates||||||Wet Read<R>
+OBX|9|ST|&IMP|2|clear pulmonary fields with no evidence of acute cardiopulmonary||||||Wet Read<R>
+OBX|10|ST|&IMP|2|disease. The heart is normal in size and silhouette, with no||||||Wet Read<R>
+OBX|11|ST|&IMP|2|enlargement or displacement noted. The pleurae are free of effusion||||||Wet Read<R>
+OBX|12|ST|&IMP|2|and there are no bony abnormalities. The mediastinal contours are||||||Wet Read<R>
+OBX|13|ST|&IMP|2|symmetrical with no apparent masses. The diaphragms are well||||||Wet Read<R>
+OBX|14|ST|&IMP|2|positioned without any signs of elevation or herniation.||||||Wet Read<R>
+OBX|15|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.315028040140487520244113470429526626442^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2011-05-31 11:33:06.0214|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110531113306|TBD|ORU^R01|2.25.108210034478414671271428407523312125319|P|2.4<R>
+PID|1||ABC451075^^^ABC^MR~EPIC4485834^^^EPIC^MRN||BRIDGES^DAVID^JEREMY^^^^D||19900607000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451075^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457108^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9627607^SYS|7795083098|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20110527080248|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||^Xr Sing View|20110531113306||MDXREVNT|||1^^^20110531113306^^U^^URGENT|       |||^Chest pain|D7823238^HUNT^APRIL^M.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB<R>
+OBX|1|TX|3274829||APRIL HUNT, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|3274829||ACC#  Date Time  Exam~~7795083098 May 31 2011 11:33AM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~The single-view X-ray of the chest shows clear lung fields without~pleural effusion or infiltrates. The cardiac silhouette is~unremarkable, and there are no signs of cardiomegaly. Bony structures~visualized within the thoracic cavity appear intact, and there are no~acute bony fractures or lesions. The diaphragm is well-positioned,~and no air under the diaphragm is noted. Bronchovascular markings are~within normal limits with no evident focal consolidations or masses.~~IMPRESSION:~1. Clear lung fields and normal cardiac silhouette; no acute~findings. 2. The study indicates a stable appearance compared to~previous chest imaging, with no significant interval changes in~thoracic structures. 3. Maintain routine surveillance for any~pulmonary or cardiac developments as necessary.||||||F<R>
+OBX|3|TX|3274829||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: April Hunt, M.D. on May 31 2011 11:33AM~~This document has been electronically signed by: April Hunt, M.D. on~May 31 2011 11:33AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3274829|4|7795083098^UK^ZB||||||F<R>
+<EB>

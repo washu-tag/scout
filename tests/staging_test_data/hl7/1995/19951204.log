@@ -1,0 +1,11 @@
+1995-12-04 09:57:16.6602|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19951204095716|TBD|ORU^R01|2.25.187128958700097992899391237845751480738|P|2.4<R>
+PID|1||ABC451053^^^ABC^MR~EPIC4485812^^^EPIC^MRN||HILL^EDWARD^WYATT^^^^D||19660723000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451053^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457351^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||894295^SYS|7795083013|MRI1133^1133 MRI W WO ABDOMEN^UNKDEV|URGENT||19951203114314|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||1133^ABDOMEN MRI|19951204095716||MRI|||1^^^19951204095716^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||1133<R>
+OBX|1|TX|3590443||AMBER REESE, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|3590443||ACC#  Date Time  Exam~~7795083013 Dec 04 1995 09:57AM MRI1133 MRI W WO ABDOMEN~~EXAMINATION:~Abdomen MRI~~FINDINGS:~The abdominal MRI reveals normal liver size and signal, with no focal~lesions. The gallbladder is visualized without stones or wall~thickening. The pancreas appears unremarkable. Renal parenchyma is of~normal appearance without hydronephrosis or masses. Notably, the~abdominal aorta displays moderate atherosclerotic changes, but no~significant occlusions are detected. In the retroperitoneum, lymph~nodes are unremarkable regarding size and morphology.~~IMPRESSION:~The study demonstrates a stable abdominal anatomy with no acute~findings or suspicious lesions. The moderate atherosclerotic changes~in the aorta may need monitoring given the patient's age.||||||F<R>
+OBX|3|TX|3590443||Requested By: Wright,Jessica M. M.D.~~Dictated By: Amber Reese, M.D. on Dec 04 1995 09:57AM~~This document has been electronically signed by: Amber Reese, M.D. on~Dec 04 1995 09:57AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3590443|4|7795083013^UK^ZB||||||F<R>
+<EB>

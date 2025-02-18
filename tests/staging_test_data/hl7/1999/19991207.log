@@ -1,0 +1,11 @@
+1999-12-07 04:31:02.8732|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19991207043102|TBD|ORU^R01|2.25.309428150852763139259459179344762867053|P|2.4<R>
+PID|1||ABC451169^^^ABC^MR~EPIC4485928^^^EPIC^MRN||WHITE^KRISTINA^ALICIA^^^^D||19770108000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451169^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457128^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4351155^SYS|7795083475|IMG5021^5021 PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV|URGENT||19991203192808|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||5021^Brain Petct AC NAC|19991207043102||IMG|||1^^^19991207043102^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB|||||||||5021<R>
+OBX|1|TX|9570637||RUSSELL GALLAGHER, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|9570637||ACC#  Date Time  Exam~~7795083475 Dec 07 1999 04:31AM IMG5021 PET/CT FDG BRAIN TUMOR~METABOLIC EVALUATION~~EXAMINATION:~Brain PET-CT~~FINDINGS:~Compared to the previous head PET-CT from 1994-12-27, there is no~significant change in the overall integrity of the brain parenchyma.~FDG uptake within the cortical and subcortical regions remains~homogeneous, with no focal hypermetabolic lesions identified. The~brainstem and cerebellum are also within normal limits. No new areas~of increased uptake indicative of pathology are noted, and the signs~of aging present are non-specific. These findings remain consistent~with the normal metabolic activity observed previously.~~IMPRESSION:~The brain PET-CT demonstrates stable metabolic patterns with no~evidence of neoplasia or other intracranial abnormalities. The~findings are consistent with a stable clinical course.||||||F<R>
+OBX|3|TX|9570637||Requested By: Marks,Michael R. M.D.~~Dictated By: Russell Gallagher, M.D. on Dec 07 1999 04:31AM~~This document has been electronically signed by: Russell Gallagher,~M.D. on Dec 07 1999 04:31AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9570637|4|7795083475^UK^ZB||||||F<R>
+<EB>

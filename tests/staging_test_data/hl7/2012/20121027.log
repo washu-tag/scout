@@ -1,0 +1,11 @@
+2012-10-27 18:55:11.0654|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20121027185511|TBD|ORU^R01|2.25.301993746037556281365629101540534830347|P|2.4<R>
+PID|1||ABC451124^^^ABC^MR~EPIC4485883^^^EPIC^MRN||COLLINS^JOEY^MARIO^^^^D||19241031000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451124^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457372^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1627035^SYS|7795083294|OMHEADWO^ MRI BRAIN WITHOUT CONTRAST^UNKDEV|URGENT||20121027134133|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||^HEAD MRI Expedited|20121027185511||OMHEADWO|||1^^^20121027185511^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|760363||AMBER REESE, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|760363||ACC#  Date Time  Exam~~7795083294 Oct 27 2012 06:55PM OMHEADWO MRI BRAIN WITHOUT CONTRAST~~EXAMINATION:~MRI of the brain without contrast~~FINDINGS:~The MRI of the brain demonstrates no evidence of acute intracranial~hemorrhage or mass effect. There is a subtle hyperintensity noted in~the periventricular white matter on T2-weighted images, which could~represent chronic ischemic changes or leukoaraiosis, reflective of~the patient's age. The ventricles are mildly enlarged, consistent~with age-related changes, and the cortical sulci appear prominent but~without acute findings. No abnormal enhancing lesions are identified.~The midline structures are unshifted, and the basilar cisterns are~patent.~~IMPRESSION:~In summary, the head MRI exhibits mild periventricular hyperintensity~suggesting chronic ischemic change, likely age-related leukoaraiosis.~There are no acute intracranial findings such as hemorrhage or mass~lesions. Given the patient's advanced age, these findings are not~unexpected. No significant changes are noted compared to the previous~study dated 2011-10-15, where similar age-related findings were also~documented.||||||P<R>
+OBX|3|TX|760363||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Amber Reese, M.D. on Oct 27 2012 06:55PM~~Pending review by: Joe Medrano, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|760363|4|7795083294^UK^ZB||||||P<R>
+<EB>

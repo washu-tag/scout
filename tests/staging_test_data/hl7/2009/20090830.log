@@ -1,0 +1,11 @@
+2009-08-30 03:21:08.1201|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090830032108|TBD|ORU^R01|2.25.111874492023046324445560138087596607077|P|2.4<R>
+PID|1||ABC451180^^^ABC^MR~EPIC4485939^^^EPIC^MRN||NGUYEN^FREDERICK^JOSHUA^^^^D||19390120000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451180^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457116^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5295584^SYS|7795083519|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20090829192846|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||^Xr Sing View|20090830032108||MDXREVNT|||1^^^20090830032108^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB<R>
+OBX|1|TX|42192||CURTIS HAWKINS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|42192||ACC#  Date Time  Exam~~7795083519 Aug 30 2009 03:21AM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~The single-view chest X-ray demonstrates clear lung fields~bilaterally with normal vascular markings. The heart silhouette is~within normal limits, and the pleural spaces are free of effusion.~The mediastinal contour appears normal without any shift. The spine~shows mild degenerative changes consistent with age, but no acute~fractures or destructive lesions are noted. Gastric air is visible in~the upper abdomen without evidence of pathology.~~IMPRESSION:~The chest X-ray is unremarkable, consistent with the patient’s~maintained pulmonary function and absence of acute thoracic issues.~Continued monitoring of the degenerative changes is suggested.||||||F<R>
+OBX|3|TX|42192||Requested By: Reese,Amber J. M.D.~~Dictated By: Curtis Hawkins, M.D. on Aug 30 2009 03:21AM~~This document has been electronically signed by: Curtis Hawkins, M.D.~on Aug 30 2009 03:21AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|42192|4|7795083519^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,28 @@
+1999-04-21 21:17:34.0797|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19990421211734|TBD|ORU^R01|2.25.247283734236066096132141547243036441422|P|2.7<R>
+PID|1||ABC451172^^^ABC^MR||LEWIS^NOEMI^TERESA^^^^D||19380330|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084755|||||||||||||||||||||||||19990421211734|||||||V<R>
+ORC|RE|445039^SYS|7795083484||Wet Read||^^^19990421211733^19990421211734^O||19990421211734|T6530150^NEAL^EMILY||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|445039^SYS|7795083484|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|19990420193430|||||Hosp Perf|||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19990421211734||US|Wet Read||^^^19990421211733^19990421211734^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||19990421211734||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound of Abdomen||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|Ultrasound findings corroborate with the presence of liver disease,||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|suggesting hepatic steatosis with possible infiltrative disease||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|processes. Correlation with laboratory markers of liver function and||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|follow-up imaging advised for comprehensive assessment of the liver||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|lesions. The ultrasound examination performed on 1999-04-20 shows a||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|heterogeneous echogenicity of the liver consistent with steatosis,||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|alongside ill-defined hypoechoic lesions in the liver consistent with||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|the previously noted hypermetabolic areas from PET-MR. The||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|gallbladder is distended but without stones; the common bile duct||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|measures within normal limits. Further evaluation of the pancreas is||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|recommended due to the previously identified changes seen in prior||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|exams. Splenic size is normal, and there are no significant||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|lymphadenopathy or free fluid accumulation evident in the abdominal||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|18|ST|&IMP|2|cavity.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|19|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.170406764405077264140877117134406711959^EPIC^APPLICATION^DICOM<R>
+<EB>

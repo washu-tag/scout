@@ -1,0 +1,11 @@
+2006-06-17 19:34:08.1930|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060617193408|TBD|ORU^R01|2.25.336447069651118361484058962684821358813|P|2.4<R>
+PID|1||ABC451031^^^ABC^MR~EPIC4485790^^^EPIC^MRN||SANCHEZ^AMBER^REBEKAH^^^^D||19211130000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451031^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457329^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6486092^SYS|7795082921|BED72020^72020 72020 Spine Single View^UNKDEV|URGENT||20060613164715|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||72020^Spine 1 View Dx Xray|20060617193408||BED|||1^^^20060617193408^^U^^URGENT|       |||^Chest pain|D7823231^SMITH^CLARA^T.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB|||||||||72020<R>
+OBX|1|TX|4428245||CLARA SMITH, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4428245||ACC#  Date Time  Exam~~7795082921 Jun 17 2006 07:34PM BED72020 72020 Spine Single View~~EXAMINATION:~Spine X-ray~~FINDINGS:~The thoracic and lumbar spine X-rays reveal a mild levoconvex~curvature primarily noted in the thoracic segments accompanied by~degenerative changes with scattered endplate sclerosis and a few~small wedge deformities in the mid-thoracic region. The lumbar region~exhibits disc space narrowing primarily at L2-L3 and L4-L5 with mild~posterior protrusion without significant central canal stenosis. No~acute fractures, dislocations, or significant aortic calcifications~are noted. Compared to the 2004-11-22 cervical X-ray, this study~shows a progression of degenerative changes in the thoracolumbar~region.~~IMPRESSION:~Chronic degenerative changes with mild scoliosis of the thoracic~spine and localized disc degeneration at lumbar levels L2-L3 and~L4-L5. The associated changes may be indicative of age-related~degeneration but warrant clinical follow-up.||||||F<R>
+OBX|3|TX|4428245||Requested By: Sanders,Lisa A. M.D.~~Dictated By: Clara Smith, M.D. on Jun 17 2006 07:34PM~~This document has been electronically signed by: Clara Smith, M.D. on~Jun 17 2006 07:34PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4428245|4|7795082921^UK^ZB||||||F<R>
+<EB>

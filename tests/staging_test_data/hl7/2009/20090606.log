@@ -1,0 +1,11 @@
+2009-06-06 13:45:42.6376|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090606134542|TBD|ORU^R01|2.25.112538604824102546139022363908851173132|P|2.4<R>
+PID|1||ABC451017^^^ABC^MR~EPIC4485776^^^EPIC^MRN||WOOD^WILLIAM^JUSTIN^^^^D||19890323000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451017^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457464^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3343363^SYS|7795082863|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20090603060904|||PSCRIB|||||^^^^ |D7823227^WOOD^MELISSA^CHASITY^M.D.^^^^ABC|||||4185^XRay Angiography|20090606134542||IMG|||1^^^20090606134542^^U^^URGENT|       |||^Chest pain|D7823226^KENNEDY^JERI^A.^^^M.D.|D7823221^MAXWELL^MICHAEL^R.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|9029946||JERI KENNEDY, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|9029946||ACC#  Date Time  Exam~~7795082863 Jun 06 2009 01:45PM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray angiography~~FINDINGS:~A comprehensive X-ray angiography study reveals normal arterial~anatomy with no evidence of significant stenosis or occlusion within~the major vessels assessed. There is adequate opacification of the~aorta and its major branches, demonstrating a smooth vascular contour~and normal flow dynamics. No abnormal vascular formations or~aneurysms are noted. The venous drainage appears competent, and there~are no signs of thrombus formation or varicosities detected in the~visualized segments. There are mild calcifications noted in the~vascular wall, consistent with age-related changes, but these do not~appear to be significant in impacting vascular patency.~~IMPRESSION:~Overall, the angiography demonstrates normal vascular anatomy with no~acute abnormalities noted. No action is required at this time.||||||F<R>
+OBX|3|TX|9029946||Requested By: Wood,Melissa C. M.D.~~Dictated By: Jeri Kennedy, M.D. on Jun 06 2009 01:45PM~~This document has been electronically signed by: Jeri Kennedy, M.D.~on Jun 06 2009 01:45PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9029946|4|7795082863^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,25 @@
+2004-06-11 23:49:29.8175|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20040611234929|TBD|ORU^R01|2.25.188827739305899417616736690877210491601|P|2.7<R>
+PID|1||ABC451019^^^ABC^MR||WILLIAMS^ERIN^KELLY^^^^D||19380422|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084750|||||||||||||||||||||||||20040611234929|||||||V<R>
+ORC|RE|1885904^SYS|7795082871||Final||^^^20040611234928^20040611234929^O||20040611234929|T6530145^RUIZ^TARA||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1885904^SYS|7795082871|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20040608132748|||||Hosp Perf||||^^^ABDOMEN|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20040611234929||CR|Final||^^^20040611234928^20040611234929^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20040611234929||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdominal X-ray||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|The abdominal X-ray presents a normal appearance with no evidence of||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|pathological findings. The bowel gas distribution is typical, and no||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|additional concerns are raised from this imaging. The abdominal X-ray||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|performed reveals a normal bowel gas pattern with no signs of||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|obstruction. No free air under the diaphragm, suggesting no||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|perforated viscus. The liver and spleen are within normal limits in||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|terms of size, and no calcifications are detected. The renal shadows||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|are also unremarkable, and the lumbar spine appears normal with no||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|significant degenerative changes identified. The overall silhouette||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|of the abdomen is well-defined, with no visible masses or foreign||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|bodies present.||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Final|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.142810229929665322216891423294882904549^EPIC^APPLICATION^DICOM<R>
+<EB>

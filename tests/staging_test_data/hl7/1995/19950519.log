@@ -1,0 +1,11 @@
+1995-05-19 00:52:57.6829|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19950519005257|TBD|ORU^R01|2.25.50341030694189340417848617703513233132|P|2.4<R>
+PID|1||ABC451079^^^ABC^MR~EPIC4485838^^^EPIC^MRN||COLEMAN^KATE^MARY^^^^D||19261102000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451079^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457141^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5121746^SYS|7795083116|BHC76140^76140 76140 Outside Exam^UNKDEV|URGENT||19950517140957|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||76140^Outside Mammogram|19950519005257||BHC|||1^^^19950519005257^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB|||||||||76140<R>
+OBX|1|TX|4805938||JOE MEDRANO, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|4805938||ACC#  Date Time  Exam~~7795083116 May 19 1995 12:52AM BHC76140 76140 Outside Exam~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The mammogram demonstrates a breast density classified as~heterogeneously dense, which may limit the sensitivity of~mammographic detection of small masses. No discrete masses,~calcifications, or architectural distortions are noted in the left or~right breast. The skin and subcutaneous tissues appear unremarkable.~No abnormal lymphadenopathy is identified in the axillary regions.~Compared to the prior examination from 1995-01-10, there is stability~in breast composition without intervals of new findings. Overall,~there is no evidence of malignancy at this time.~~IMPRESSION:~1. No suspicious masses or calcifications noted in the breast tissue.~2. Heterogeneously dense breast tissue; continued routine screening~is recommended. 3. Stability compared to prior exam dated 1995-01-10.||||||F<R>
+OBX|3|TX|4805938||Requested By: Marks,Michael R. M.D.~~Dictated By: Joe Medrano, M.D. on May 19 1995 12:52AM~~This document has been electronically signed by: Joe Medrano, M.D. on~May 19 1995 12:52AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4805938|4|7795083116^UK^ZB||||||F<R>
+<EB>

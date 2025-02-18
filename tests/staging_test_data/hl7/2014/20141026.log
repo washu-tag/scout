@@ -1,0 +1,26 @@
+2014-10-26 15:34:24.6770|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20141026153424|TBD|ORU^R01|2.25.84855394501245737676601343464991443102|P|2.7<R>
+PID|1||ABC451153^^^ABC^MR||COLEMAN^ANTHONY^RYAN^^^^D||19620626|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084896|||||||||||||||||||||||||20141026153424|||||||V<R>
+ORC|RE|373897^SYS|7795083410||Wet Read||^^^20141026153423^20141026153424^O||20141026153424|T6530154^ROBERTS^RICARDO||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|373897^SYS|7795083410|BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY|O|20141025091213|||||Hosp Perf||||^^^SPINE|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20141026153424||DX|Wet Read||^^^20141026153423^20141026153424^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20141026153424||||||||BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray of the lumbar spine||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|Stable lumbar spine radiograph with mild degenerative changes at||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|L5-S1, otherwise unremarkable for the patient's age. Continued||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|monitoring may be advisable. The lumbar spine X-ray illustrates||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|normal vertebral height with well-defined cortical margins. No||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|evidence of osteophytes or spondylosis is observed, and the||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|intervertebral disc spaces appear preserved. There is no significant||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|anterolisthesis or retrolisthesis noted. There are some mild||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|degenerative changes present at the L5-S1 level, which are consistent||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|with age-related changes, but no acute fractures or significant bone||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|marrow edema is seen. Compared to the previous X-ray dated||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|2000-02-16, the lumbar spine shows a stable appearance over the years||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|with minimal degenerative changes.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.293580750795274951839071952460388721762^EPIC^APPLICATION^DICOM<R>
+<EB>

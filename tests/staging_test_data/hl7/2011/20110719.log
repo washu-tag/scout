@@ -1,0 +1,24 @@
+2011-07-19 20:01:22.9649|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110719200122|TBD|ORU^R01|2.25.124473937219621062845465498288523380826|P|2.7<R>
+PID|1||ABC451149^^^ABC^MR||FOLEY^HEATHER^CASSIE^^^^D||19930826|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084829|||||||||||||||||||||||||20110719200122|||||||V<R>
+ORC|RE|9002529^SYS|7795083397||Prelim||^^^20110719200121^20110719200122^O||20110719200122|T6530149^VASQUEZ^MISTY||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9002529^SYS|7795083397|BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL|O|20110718084709|||||Hosp Perf||||^^^BREAST|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20110719200122||MG|Prelim||^^^20110719200121^20110719200122^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20110719200122||||||||BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Four-view mammogram||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|Mammogram findings are stable relative to the previous study dated||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|2009-09-21. No suspicious changes warranting further investigation||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|are observed. Comparison to the prior mammogram from 2009-09-21||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|reveals no significant changes in breast composition. The current||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|mammogram exhibits radiologically dense breast tissue but remains||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|within the normal limits for glandular density. There are no new||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|masses, calcifications, or architectural distortions noted||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|bilaterally. All lymph nodes remain unremarkable, and there is no||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|evidence of inflammatory changes or skin thickening. Overall, the||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|morphologies remain stable when mapped against previous images.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.223315638721161881542204850141563490140^EPIC^APPLICATION^DICOM<R>
+<EB>

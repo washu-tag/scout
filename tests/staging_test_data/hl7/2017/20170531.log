@@ -1,0 +1,11 @@
+2017-05-31 09:00:41.3228|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170531090041|TBD|ORU^R01|2.25.253704380686890082491771129630126296264|P|2.4<R>
+PID|1||ABC451060^^^ABC^MR~EPIC4485819^^^EPIC^MRN||BEASLEY^JESSICA^JESSICA^III^^^D||19880405000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451060^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457463^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4704477^SYS|7795083037|EDXETSP1V^1 XR Thoracic Spine 1 View^UNKDEV|URGENT||20170527064531|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||1^Thoracic spine 1 View Dx Xray|20170531090041||EDXETSPV|||1^^^20170531090041^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB|||||||||1<R>
+OBX|1|TX|4355418||JOE MEDRANO, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4355418||ACC#  Date Time  Exam~~7795083037 May 31 2017 09:00AM EDXETSP1V XR Thoracic Spine 1 View~~EXAMINATION:~T-spine X-ray~~FINDINGS:~The thoracic spine X-ray demonstrates normal alignment of the~thoracic vertebrae from T1 to T12, with well-preserved disc spaces.~However, there is a slight decrease in the height of the T7 vertebral~body observed, which may suggest a historical compression fracture;~vertebrae above and below display normal morphology. No sclerosis or~significant osteophyte formation is evident. The paravertebral soft~tissue is unremarkable, with no shadows indicating any masses or~other lesions. Compared to the previous X-ray, evidence from 2012,~there is no new progressive deformity or acute processes evident.~~IMPRESSION:~The thoracic spine X-ray performed on 05/27/2017 shows an overall~normal thoracic spine morphology with prior changes at T7 suggestive~of an old compression fracture but stable. There are no acute bony~abnormalities or significant degenerative changes at this time.~Recommend clinical correlation for any ongoing symptomatology.||||||F<R>
+OBX|3|TX|4355418||Requested By: Medrano,Joe J. M.D.~~Dictated By: Joe Medrano, M.D. on May 31 2017 09:00AM~~This document has been electronically signed by: Joe Medrano, M.D. on~May 31 2017 09:00AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4355418|4|7795083037^UK^ZB||||||F<R>
+<EB>

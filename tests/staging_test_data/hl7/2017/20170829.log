@@ -1,0 +1,11 @@
+2017-08-29 07:08:43.6021|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170829070843|TBD|ORU^R01|2.25.101573917014984491695318873375799092096|P|2.4<R>
+PID|1||ABC451118^^^ABC^MR~EPIC4485877^^^EPIC^MRN||WILLIS^PATRICK^STEPHEN^^^^D||20000430000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451118^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457262^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2365031^SYS|7795083270|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20170825085653|||PSCRIB|||||^^^^ |D7823224^MORGAN^JOHN^JEREMY^M.D.^^^^ABC|||||4185^XRay Angiography|20170829070843||IMG|||1^^^20170829070843^^U^^URGENT|       |||^Chest pain|D7823222^POWELL^CARRIE^J.^^^M.D.|D7823224^MORGAN^JOHN^J.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|844078||CARRIE POWELL, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|844078||ACC#  Date Time  Exam~~7795083270 Aug 29 2017 07:08AM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray angiography study~~FINDINGS:~The X-ray angiography demonstrates patency of the major intracranial~vessels without any evidence of significant stenosis or occlusion.~The right middle cerebral artery (MCA) is well visualized, with no~signs of aneurysm or vascular malformation. The posterior circulation~is intact, with both vertebrobasilar systems contributing adequately,~showing no irregularities. Comparison with prior studies suggests a~stable vascular architecture, and there are no notable shifts in~vascular flow dynamics since the last examination. The surrounding~osseous structures present no abnormalities, and the soft tissues~exhibit normal attenuation without signs of mass effect.~~IMPRESSION:~The findings are consistent with a normal X-ray angiography, showing~preserved vasculature without evidence of ischemia or structural~anomaly. This study shows no significant change when compared to the~previous available imaging studies, indicating stable intracranial~hemodynamics.||||||P<R>
+OBX|3|TX|844078||Requested By: Morgan,John J. M.D.~~Dictated By: Carrie Powell, M.D. on Aug 29 2017 07:08AM~~Pending review by: John Morgan, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|844078|4|7795083270^UK^ZB||||||P<R>
+<EB>

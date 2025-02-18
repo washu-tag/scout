@@ -1,0 +1,11 @@
+2015-09-22 00:41:36.7158|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150922004136|TBD|ORU^R01|2.25.246306547859287755216986630517022671586|P|2.4<R>
+PID|1||ABC451158^^^ABC^MR~EPIC4485917^^^EPIC^MRN||MATTHEWS^ANDRES^MATTHEW^M.D.^^^D||19260816000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451158^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457225^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8702403^SYS|7795083430|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20150920060457|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||^Xr Sing View|20150922004136||MDXREVNT|||1^^^20150922004136^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|7970541||JESSICA WRIGHT, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7970541||ACC#  Date Time  Exam~~7795083430 Sep 22 2015 12:41AM MDXREVNT Radiology Event~~EXAMINATION:~Single-view Chest X-ray~~FINDINGS:~The chest X-ray reveals mild cardiomegaly and moderate aortic~calcification. Lung fields are clear without any evidence of acute~infiltrates or pleural effusions. The mediastinum is within normal~limits, and the diaphragm appears intact. There are no bones~abnormalities noted in the thoracic spine and ribs.~~IMPRESSION:~Mild cardiomegaly consistent with chronically elevated blood~pressures. Calcific aortic disease noted, further evaluation may be~required based on clinical symptoms.||||||F<R>
+OBX|3|TX|7970541||Requested By: Reese,Amber J. M.D.~~Dictated By: Jessica Wright, M.D. on Sep 22 2015 12:41AM~~This document has been electronically signed by: Jessica Wright, M.D.~on Sep 22 2015 12:41AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7970541|4|7795083430^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,25 @@
+1995-04-23 05:05:43.0268|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19950423050543|TBD|ORU^R01|2.25.277925783016110679800284540754706200312|P|2.7<R>
+PID|1||ABC451080^^^ABC^MR||ΜΙΧΌΠΟΥΛΟΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19621029|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084693|||||||||||||||||||||||||19950423050543|||||||V<R>
+ORC|RE|2146740^SYS|7795083119||Final||^^^19950423050542^19950423050543^O||19950423050543|T6530149^VASQUEZ^MISTY||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2146740^SYS|7795083119|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|19950419144311|||||Hosp Perf||||^^^BREAST|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19950423050543||MG|Final||^^^19950423050542^19950423050543^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||19950423050543||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|The examination reveals no radiographic evidence of malignancy or||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|significant pathology in the breast tissue. Routine follow-up is||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|recommended according to standard screening guidelines. The||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|single-view mammogram demonstrates dense glandular breast tissue with||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|a heterogeneous appearance, consistent with normal breast development||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|for a female of this age group. There are no distinct masses,||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|calcifications, or architectural distortions noted. The skin and||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|subcutaneous tissues appear unremarkable. No suspicious findings are||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|identified, and the glandular tissue does not exhibit any||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|abnormalities that warrant further investigation. Overall, the||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|mammogram is interpreted as BI-RADS category 1 (negative).||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.133198572772804252402557366680046827647^EPIC^APPLICATION^DICOM<R>
+<EB>

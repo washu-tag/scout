@@ -1,0 +1,11 @@
+2009-01-19 09:49:30.3800|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090119094930|TBD|ORU^R01|2.25.253950758502154643736486251905647132855|P|2.4<R>
+PID|1||ABC451102^^^ABC^MR~EPIC4485861^^^EPIC^MRN||BAKER^LLOYD^DANNY^^^^D||19820325000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451102^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457281^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9708555^SYS|7795083207|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20090117170256|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||2816^Ultrasound|20090119094930||IMG|||1^^^20090119094930^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823243^HAWKINS^CURTIS^K.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|4473369||KIMBERLY HANSON, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|4473369||ACC#  Date Time  Exam~~7795083207 Jan 19 2009 09:49AM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Ultrasound of the abdomen~~FINDINGS:~Abdominal ultrasound reveals normal size and echogenicity of the~liver, gallbladder is unremarkable without evidence of gallstones or~wall thickening. The common bile duct measures normal with no~dilation observed. Pancreas shows homogenous echotexture, devoid of~masses. The spleen is of normal size. Renal ultrasound shows both~kidneys normal in size and echogenicity with no hydronephrosis or~renal calculi evident. No free fluid is present in the peritoneal~cavity. Normal bowel gas pattern evident, without transudate or~organomegaly.~~IMPRESSION:~1. The abdominal ultrasound is within normal limits with no~significant acute or chronic findings. 2. No changes noted in the~hepatic or renal structure, comparable to any prior imaging to the~best of available records.||||||F<R>
+OBX|3|TX|4473369||Requested By: Marks,Michael R. M.D.~~Dictated By: Kimberly Hanson, M.D. on Jan 19 2009 09:49AM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on Jan 19 2009 09:49AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4473369|4|7795083207^UK^ZB||||||F<R>
+<EB>

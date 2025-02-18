@@ -1,0 +1,23 @@
+2015-07-31 13:12:39.4330|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150731131239|TBD|ORU^R01|2.25.327273081481453093439093730016346503873|P|2.7<R>
+PID|1||ABC451092^^^ABC^MR||MAY^KENNETH^CHAD^^^^D||19850929|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084847|||||||||||||||||||||||||20150731131239|||||||V<R>
+ORC|RE|2682869^SYS|7795083168||Prelim||^^^20150731131238^20150731131239^O||20150731131239|||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2682869^SYS|7795083168|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20150730185407|||||Hosp Perf|||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20150731131239||XR|Prelim||^^^20150731131238^20150731131239^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|||20150731131239||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Prelim<R>
+OBX|3|ST|&GDT|1|||||||Prelim<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim<R>
+OBX|5|ST|&IMP|2|Normal chest findings with no evidence of acute cardiopulmonary||||||Prelim<R>
+OBX|6|ST|&IMP|2|disease. The single-view chest X-ray demonstrates clear lung fields||||||Prelim<R>
+OBX|7|ST|&IMP|2|bilaterally with no acute infiltrates or effusions. The cardiac||||||Prelim<R>
+OBX|8|ST|&IMP|2|silhouette is within normal limits without any signs of cardiomegaly.||||||Prelim<R>
+OBX|9|ST|&IMP|2|The bony thorax shows no acute osseous abnormalities. The diaphragms||||||Prelim<R>
+OBX|10|ST|&IMP|2|are properly positioned, and no significant mediastinal widening is||||||Prelim<R>
+OBX|11|ST|&IMP|2|evident. The visualized soft tissues demonstrate no masses or||||||Prelim<R>
+OBX|12|ST|&IMP|2|abnormal calcifications. Overall, the study depicts a normal clinical||||||Prelim<R>
+OBX|13|ST|&IMP|2|appearance of the thoracic cavity.||||||Prelim<R>
+OBX|14|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.248432276342727356350085885297817335845^EPIC^APPLICATION^DICOM<R>
+<EB>

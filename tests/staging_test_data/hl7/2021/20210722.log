@@ -1,0 +1,32 @@
+2021-07-22 02:17:08.4913|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210722021708|TBD|ORU^R01|2.25.198397210351626508706200956211327775277|P|2.7<R>
+PID|1||ABC451166^^^ABC^MR||LAMB^CLINTON^SCOTTY^^^^D||19961003|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084973|||||||||||||||||||||||||20210722021708|||||||V<R>
+ORC|RE|5053060^SYS|7795083462||Prelim||^^^20210722021707^20210722021708^O||20210722021708|T6530145^RUIZ^TARA||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5053060^SYS|7795083462|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20210720122010|||||Hosp Perf|||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210722021708||US|Prelim||^^^20210722021707^20210722021708^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20210722021708||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound examination of the abdomen||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|1. Normal abdominal ultrasound without evidence of hepatobiliary or||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|renal pathology.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|2. Stable abdominal anatomy compared to the ultrasound examination||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|dated 2021-01-15, with no significant changes observed. The||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|ultrasound examination of the abdomen reveals normal echogenicity of||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|the liver, with no focal lesions or abnormal biliary ducts detected.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|Gallbladder is visualized, exhibiting a normal contour and is free of||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|gallstones. The pancreas appears unremarkable, with no evidence of||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|edema or mass lesions. The spleen is of normal size and echotexture,||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|with no splenomegaly or focal lesions identified.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|The kidneys are bilaterally normal in size and echogenicity, with no||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|hydronephrosis or renal stones observed. The bladder is adequately||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|distended and shows no wall thickening or irregularities. No free||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|19|ST|&IMP|2|fluid is noted in the abdominal cavity. In comparing to previous||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|20|ST|&IMP|2|imaging dated 2021-01-15, there is stability in the appearance and||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|21|ST|&IMP|2|structure of the abdominal viscera, confirming no new pathologies or||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|22|ST|&IMP|2|progression of previously documented benign findings.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|23|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.205635595590494974091382886858853399869^EPIC^APPLICATION^DICOM<R>
+<EB>

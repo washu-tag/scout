@@ -1,0 +1,11 @@
+2017-04-24 10:57:53.2445|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170424105753|TBD|ORU^R01|2.25.60301200034004238317996868728742603445|P|2.4<R>
+PID|1||ABC451106^^^ABC^MR~EPIC4485865^^^EPIC^MRN||HUNT^JENNIFER^HEATHER^^^^D||19980310000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451106^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457345^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4310012^SYS|7795083226|CTCHEST^ CT THORAX^UNKDEV|URGENT||20170421095218|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||^Thorax Petct AC NAC|20170424105753||CTCHEST|||1^^^20170424105753^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|170272||GUY SANCHEZ, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|170272||ACC#  Date Time  Exam~~7795083226 Apr 24 2017 10:57AM CTCHEST CT THORAX~~EXAMINATION:~Thorax PET-CT~~FINDINGS:~PET-CT scan of the thorax was performed demonstrating increased~fluorodeoxyglucose (FDG) uptake in the right upper lobe lesion,~consistent with the previously observed MRI finding. The standard~uptake value (SUV) max was calculated at 8.2, which suggests a high~likelihood of malignancy. Surrounding bronchial structures show mild~inflammatory changes but no acute obstruction is present. There is~notable hypermetabolic activity in several mediastinal lymph nodes,~measuring up to 1.5 cm, warranting further assessment due to~suspected metastatic involvement. The left lung and pleural space are~within normal limits without significant uptake or effusion.~~IMPRESSION:~1. Increased FDG uptake in the right lung lesion noted on prior MRI,~indicative of potential malignancy, requiring biopsy for~histopathological confirmation. 2. Hypermetabolic mediatinal lymph~nodes suspicious for metastatic disease. 3. Correlate with thoracic~surgery for potential intervention.||||||F<R>
+OBX|3|TX|170272||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Guy Sanchez, M.D. on Apr 24 2017 10:57AM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Apr 24 2017 10:57AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|170272|4|7795083226^UK^ZB||||||F<R>
+<EB>

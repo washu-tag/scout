@@ -1,0 +1,11 @@
+2016-05-07 06:39:43.6159|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20160507063943|TBD|ORU^R01|2.25.308803651689758587551329596131149953917|P|2.4<R>
+PID|1||ABC451115^^^ABC^MR~EPIC4485874^^^EPIC^MRN||QUINTERO^NICHOLAS^ERIC^^^^D||19340113000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451115^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457429^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9904715^SYS|7795083255|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20160503082921|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||2816^Ultrasound|20160507063943||IMG|||1^^^20160507063943^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823243^HAWKINS^CURTIS^K.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|4683249||AMBER REESE, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|4683249||ACC#  Date Time  Exam~~7795083255 May 07 2016 06:39AM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Abdominal ultrasound~~FINDINGS:~The abdominal ultrasound provides dynamic images of the liver,~kidneys, and bladder. The liver demonstrates normal echogenicity,~with no signs of steatosis or focal lesions. The gallbladder is~visualized without calculi or wall thickening. Renal echogenicity is~within normal limits, with no hydronephrosis or renal calculi~observed. The bladder is of normal capacity with good wall margins.~There are no abnormalities in the bowel loops, with normal~peristalsis noted. All major vascular structures are unremarkable,~with no signs of thrombosis or aneurysm.~~IMPRESSION:~The abdominal ultrasound reveals normal anatomy and no evidence of~significant pathology. The findings indicate stable abdominal health,~with no abnormalities detected.||||||P<R>
+OBX|3|TX|4683249||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Amber Reese, M.D. on May 07 2016 06:39AM~~Pending review by: Curtis Hawkins, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|4683249|4|7795083255^UK^ZB||||||P<R>
+<EB>

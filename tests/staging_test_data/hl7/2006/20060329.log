@@ -1,0 +1,28 @@
+2006-03-29 23:58:09.5065|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060329235809|TBD|ORU^R01|2.25.193082117775838941413374055258123420822|P|2.7<R>
+PID|1||ABC451018^^^ABC^MR||SANCHEZ^LISA^SARAH^^^^D||19850515|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084724|||||||||||||||||||||||||20060329235809|||||||V<R>
+ORC|RE|5599599^SYS|7795082868||Prelim||^^^20060329235808^20060329235809^O||20060329235809|T6530149^VASQUEZ^MISTY||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5599599^SYS|7795082868|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC|O|20060326112648|||||Hosp Perf||||^^^ABDOMEN|D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060329235809||CT|Prelim||^^^20060329235808^20060329235809^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20060329235809||||||||CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-CT||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|The presence of hypermetabolic activity in the right mid abdomen||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|raises the concern for possible underlying pathology, potentially||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|indicating neoplasia. Recommend a follow-up with dedicated imaging of||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|the renal area and consideration for a biopsy. The PET-CT of the||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|abdomen reveals a subtle hypermetabolic focus in the right mid||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|abdomen corresponding to a region in the right renal area. The uptake||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|measured was significantly greater than background absorption. The||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|liver, pancreas, and spleen appear unremarkable with no evidence of||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|metastatic disease. Additionally, the adjoining lymphatic structures||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|do not reveal any hypermetabolic activity. There are no significant||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|abdominal or pelvic masses observed compared to photos from||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|2001-06-02. This hypermetabolic activity warrants careful correlation||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|with further modalities or histologic verification to rule out any||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|18|ST|&IMP|2|malignancy.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|19|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.2216833687044029726223095080134914701^EPIC^APPLICATION^DICOM<R>
+<EB>

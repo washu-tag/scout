@@ -1,0 +1,11 @@
+2023-09-11 00:32:16.4569|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230911003216|TBD|ORU^R01|2.25.82642117113555981032481323769239880643|P|2.4<R>
+PID|1||ABC451069^^^ABC^MR~EPIC4485828^^^EPIC^MRN||GONZALEZ^MICHAEL^STEPHEN^^^^D||19961009000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451069^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457114^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5158599^SYS|7795083076|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20230909105110|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20230911003216||IMG|||1^^^20230911003216^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|5111879||KIMBERLY HANSON, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5111879||ACC#  Date Time  Exam~~7795083076 Sep 11 2023 12:32AM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdomen X-ray demonstrates a gas-filled bowel with no evidence of~obstruction. The liver, spleen, and kidneys appeared normal in size~and configuration. The silhouette of the bowel is unremarkable, with~no abnormal masses or calcifications identifiable. Mild~subdiaphragmatic air is noted, which may suggest prior surgery but~does not indicate any acute pathology. No free air or fluid levels~suggestive of perforation or abscess formation are observed.~~IMPRESSION:~The findings are unremarkable with no acute abdominal pathology. The~presence of mild subdiaphragmatic air warrants clinical correlation~regarding any surgical history. Overall, there are no significant~abnormalities detected.||||||F<R>
+OBX|3|TX|5111879||Requested By: Sanders,Lisa A. M.D.~~Dictated By: Kimberly Hanson, M.D. on Sep 11 2023 12:32AM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on Sep 11 2023 12:32AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5111879|4|7795083076^UK^ZB||||||F<R>
+<EB>

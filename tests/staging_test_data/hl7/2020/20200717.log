@@ -1,0 +1,23 @@
+2020-07-17 01:35:15.8969|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200717013515|TBD|ORU^R01|2.25.55239126902157728742079943995945277321|P|2.7<R>
+PID|1||ABC451032^^^ABC^MR||FLETCHER^LAUREN^KRISTINA^^^^D||20001225|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084942|||||||||||||||||||||||||20200717013515|||||||V<R>
+ORC|RE|7284899^SYS|7795082930||Final||^^^20200717013514^20200717013515^O||20200717013515|T6530154^ROBERTS^RICARDO||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7284899^SYS|7795082930|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20200714084520|||||Hosp Perf||||^^^ABDOMEN|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20200717013515||CR|Final||^^^20200717013514^20200717013515^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20200717013515||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|Unremarkable abdominal X-ray. No visible pathology observed; the||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|findings are consistent with a normal abdominal study. The abdominal||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|X-ray demonstrates normal silhouette of the abdominal organs. No||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|evidence of bowel obstruction is seen. The gas pattern is consistent||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|with normal physiological distribution. No calcifications or abnormal||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|masses are identified in the abdominal cavity. The liver shadow||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|appears unremarkable, as do the kidneys without evidence of||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|hydronephrosis. Diaphragm and psoas contours are normal without any||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|signs of free air under the diaphragm.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.179427804382216010411594702216836261569^EPIC^APPLICATION^DICOM<R>
+<EB>

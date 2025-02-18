@@ -1,0 +1,11 @@
+2004-11-24 11:39:54.2366|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20041124113954|TBD|ORU^R01|2.25.100235417125406876027954028942131682442|P|2.4<R>
+PID|1||ABC451031^^^ABC^MR~EPIC4485790^^^EPIC^MRN||SANCHEZ^AMBER^REBEKAH^^^^D||19211130000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451031^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457330^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7455334^SYS|7795082923|BED72040^72040 72040 Spine Cerv 3views or less^UNKDEV|URGENT||20041122170347|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||72040^Cervical spine 1 View Dx Xray|20041124113954||BED|||1^^^20041124113954^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||72040<R>
+OBX|1|TX|9653294||AMBER REESE, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|9653294||ACC#  Date Time  Exam~~7795082923 Nov 24 2004 11:39AM BED72040 72040 Spine Cerv 3views or~less~~EXAMINATION:~Cervical spine X-ray~~FINDINGS:~Cervical spine radiographs demonstrate a significant narrowing at the~C4-C5 and C5-C6 intervertebral disc spaces, suggesting degenerative~changes. There is moderate anterior osteophyte formation at C5 and~C6, which may be contributing to foraminal encroachment. Alignment~appears to be maintained with no evidence of translation or fracture.~No acute process is observed. The surrounding soft tissues are~unremarkable. Compared to the previous imaging from 2003-01-16, there~is evidence of progression of the degenerative changes noted in the~cervical region, particularly at C4-C5 and C5-C6.~~IMPRESSION:~Findings consistent with cervical spondylosis with marked disc space~narrowing and osteophyte formation at C4-C5 and C5-C6. Recommend~clinical correlation and consideration for MRI if the neurological~symptoms develop.||||||F<R>
+OBX|3|TX|9653294||Requested By: Medrano,Joe J. M.D.~~Dictated By: Amber Reese, M.D. on Nov 24 2004 11:39AM~~This document has been electronically signed by: Amber Reese, M.D. on~Nov 24 2004 11:39AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9653294|4|7795082923^UK^ZB||||||F<R>
+<EB>

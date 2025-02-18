@@ -1,0 +1,32 @@
+2023-07-03 16:49:58.3510|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230703164958|TBD|ORU^R01|2.25.335462143088605662361229350485011385374|P|2.7<R>
+PID|1||ABC451084^^^ABC^MR||ΞΕΝΆΚΗΣ^ΧΡΙΣΤΙΑΝΌΣ^^^^^D||19990329|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084780|||||||||||||||||||||||||20230703164958|||||||V<R>
+ORC|RE|5328310^SYS|7795083133||Final||^^^20230703164957^20230703164958^O||20230703164958|T6530154^ROBERTS^RICARDO||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5328310^SYS|7795083133|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20230630200411|||||Hosp Perf||||^^^BRAIN|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230703164958||MR|Final||^^^20230703164957^20230703164958^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20230703164958||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|The brain MRI from 2023-06-30 reveals stable findings when compared||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|to the prior MRI dated 2020-08-15, with no new intracranial||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|abnormalities. The subtle changes observed in the perivascular spaces||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|suggest a benign process. The previously noted hyperintensities||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|remain unchanged and do not raise concern for progression of any||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|neurological condition. The overall assessment is one of stability in||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|the CNS imaging. The brain MRI performed on 2023-06-30 demonstrates||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|stable appearances of the brain without any new lesions. The brain||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|parenchyma is symmetrical with no evidence of new mass effect or||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|edema. The ventricles remain of normal caliber. Unlike the prior MRI,||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|there is now a subtle increase in prominence of perivascular spaces||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|in the bilateral frontal regions, which may reflect a normal aging||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|change or leukoaraiosis. There is no evidence of active||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|18|ST|&IMP|2|demyelination. T2-weighted images show a few small non-specific||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|19|ST|&IMP|2|hyperintensities in the white matter, which remain unchanged from the||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|20|ST|&IMP|2|previous MRI dated 2020-08-15. The basal ganglia, thalamus, and||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|21|ST|&IMP|2|cerebellum appear normal. No extra-axial mass or notable flow voids||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|22|ST|&IMP|2|are identified.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|23|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.100958933146861764319016443587558755458^EPIC^APPLICATION^DICOM<R>
+<EB>

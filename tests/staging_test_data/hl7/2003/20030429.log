@@ -1,0 +1,24 @@
+2003-04-29 08:42:59.3339|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20030429084259|TBD|ORU^R01|2.25.210623143399180498199156957281300447190|P|2.7<R>
+PID|1||ABC451096^^^ABC^MR||CHUNG^SEO-JOON^^^^^D||19710928|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084734|||||||||||||||||||||||||20030429084259|||||||V<R>
+ORC|RE|6303203^SYS|7795083183||Wet Read||^^^20030429084258^20030429084259^O||20030429084259|T6530151^WATERS^JESSICA||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6303203^SYS|7795083183|BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY|O|20030428194200|||||Hosp Perf||||^^^SPINE|D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20030429084259||DX|Wet Read||^^^20030429084258^20030429084259^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20030429084259||||||||BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Spine X-ray||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|1. Mild spondylotic changes at the L5-S1 level. 2. No evidence of||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|acute fracture or significant degenerative disease at this time. The||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|anteroposterior and lateral views demonstrate normal vertebral body||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|heights and alignment. The intervertebral spaces are well maintained,||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|indicating no significant disc degenerative changes. Mild osteophyte||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|formation is observed at the L5-S1 level, which could suggest early||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|spondylotic changes. The spinal canal appears patent with no evidence||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|of significant stenosis, and surrounding soft tissues are||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|unremarkable. No acute fractures or destructive lesions are seen, and||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|the bony trabecular pattern appears typical for age.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.27664206257844677449562553369466258719^EPIC^APPLICATION^DICOM<R>
+<EB>

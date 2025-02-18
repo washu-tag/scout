@@ -1,0 +1,28 @@
+2021-02-11 09:36:55.3689|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210211093655|TBD|ORU^R01|2.25.7718002924298497525452823409049116018|P|2.7<R>
+PID|1||ABC451138^^^ABC^MR||PARK^CARRIE^JESSICA^^^^D||19940427|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085023|||||||||||||||||||||||||20210211093655|||||||V<R>
+ORC|RE|8692526^SYS|7795083349||Final||^^^20210211093654^20210211093655^O||20210211093655|T6530148^GROSS^CARLY||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8692526^SYS|7795083349|SM71550CH0^MR CHEST WO^UNKDEV^^CHEST PTMR|O|20210207071840|||||Hosp Perf||||^^^CHEST|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210211093655||MR|Final||^^^20210211093654^20210211093655^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20210211093655||||||||SM71550CH0^MR CHEST WO^UNKDEV^^CHEST PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest PET-MR||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|An unremarkable chest PET-MR demonstrates no evidence of malignant||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|transformation or acute respiratory distress. These findings suggest||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|an ongoing stability within the thoracic architecture, with no||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|significant changes noted from prior studies. The chest PET-MR||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|reveals the lungs with clear visualization, showing normal perfusion||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|and ventilation patterns without any abnormalities. No masses or||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|nodules are noted in the pulmonary parenchyma, and the mediastinal||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|structures appear unremarkable. The cardiac silhouette is within||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|normal limits, and the great vessels are patent without significant||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|atherosclerosis. Pleural spaces are clear of effusion. Comparatively,||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|the PET-MR imaging mirrors prior studies, with no evident metabolic||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|changes, illnesses, or new lesions detected. Importantly, no evidence||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|of malignancy is noted, supporting an overall stable thoracic||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|condition.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Final|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.40262609803005114298294634022413934425^EPIC^APPLICATION^DICOM<R>
+<EB>

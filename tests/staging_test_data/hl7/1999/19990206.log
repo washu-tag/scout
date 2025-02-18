@@ -1,0 +1,24 @@
+1999-02-06 07:34:28.3098|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19990206073428|TBD|ORU^R01|2.25.118335633450203987557238202054258106032|P|2.7<R>
+PID|1||ABC451066^^^ABC^MR||NEAL^KATHLEEN^KATHRYN^^^^D||19550405|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085046|||||||||||||||||||||||||19990206073428|||||||V<R>
+ORC|RE|2313498^SYS|7795083059||Wet Read||^^^19990206073427^19990206073428^O||19990206073428|||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2313498^SYS|7795083059|BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM|O|19990203150451|||||Hosp Perf||||^^^BREAST|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19990206073428||SC|Wet Read||^^^19990206073427^19990206073428^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|||19990206073428||||||||BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|1. No significant abnormalities detected. 2. Stable breast tissue||||||Wet Read<R>
+OBX|6|ST|&IMP|2|density since previous study with no evidence of malignancy. The||||||Wet Read<R>
+OBX|7|ST|&IMP|2|single-view mammogram demonstrates breast tissue that appears||||||Wet Read<R>
+OBX|8|ST|&IMP|2|predominantly heterogeneously dense. No suspicious||||||Wet Read<R>
+OBX|9|ST|&IMP|2|microcalcifications or masses are identified. There are no||||||Wet Read<R>
+OBX|10|ST|&IMP|2|architectural distortions, and the skin and subcutaneous tissue||||||Wet Read<R>
+OBX|11|ST|&IMP|2|appear normal. The axillary regions are included and clear. Comparing||||||Wet Read<R>
+OBX|12|ST|&IMP|2|to prior mammograms, no new findings or abnormalities are noted that||||||Wet Read<R>
+OBX|13|ST|&IMP|2|would suggest malignancy. Overall, the examination appears stable||||||Wet Read<R>
+OBX|14|ST|&IMP|2|with an absence of concerning lesions.||||||Wet Read<R>
+OBX|15|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.210078275376979184220420969115671456488^EPIC^APPLICATION^DICOM<R>
+<EB>

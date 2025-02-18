@@ -1,0 +1,27 @@
+2015-08-13 14:05:36.5877|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150813140536|TBD|ORU^R01|2.25.283237768046474680209001356524579411903|P|2.7<R>
+PID|1||ABC451190^^^ABC^MR||CROSS^ROGER^LARRY^^^^D||19230502|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823283^FOX^DANNY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084743|||||||||||||||||||||||||20150813140536|||||||V<R>
+ORC|RE|2461218^SYS|7795083559||Wet Read||^^^20150813140535^20150813140536^O||20150813140536|T6530209^OLSON^RICHARD||D7823282^HARRELL^YOEL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2461218^SYS|7795083559|IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED|O|20150810073856|||||Hosp Perf||||^^^BRAIN|D7823282^HARRELL^YOEL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20150813140536||MR|Wet Read||^^^20150813140535^20150813140536^O||||^Chest pain||D7823277^ALLEN^JOSEPH^B.^^^^^ABC^^^^HOSP|T6530209^OLSON^RICHARD||20150813140536||||||||IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|5|ST|&IMP|2|Mild age-related cerebral changes with no acute pathologies apparent.||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|6|ST|&IMP|2|Periventricular white matter changes compatible with chronic vascular||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|7|ST|&IMP|2|disease. No need for immediate intervention; suggest routine||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|8|ST|&IMP|2|follow-up. The brain MRI showcases cortical and subcortical||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|9|ST|&IMP|2|appearances that are consistent with mild age-related changes. There||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|10|ST|&IMP|2|is moderate periventricular white matter hyperintensity on||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|11|ST|&IMP|2|T2-weighted images, which may suggest chronic ischemic changes but||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|12|ST|&IMP|2|lacks acute ischemic strokes or major vascular insults. There is no||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|13|ST|&IMP|2|evidence of mass lesions, midline shift, or ventricular enlargement.||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|14|ST|&IMP|2|The cerebellum and brainstem demonstrate normal morphology. Inherent||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|15|ST|&IMP|2|vascular structures are noted to be intact without any notable||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|16|ST|&IMP|2|anatomic deviations. No meningiomas or significant calcifications||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|17|ST|&IMP|2|have been seen on imaging, which is reassuring.||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|18|ST|&IMP|2|Dictated by: Joseph Allen Interpreter, M.D.||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+ZDS|2.25.133082329668779838444418999763855786386^EPIC^APPLICATION^DICOM<R>
+<EB>

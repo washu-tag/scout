@@ -1,0 +1,26 @@
+2021-12-26 17:46:29.9116|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20211226174629|TBD|ORU^R01|2.25.243096639816538761987038868787046068418|P|2.7<R>
+PID|1||ABC451058^^^ABC^MR||KIM^JI-MIN^^^^^D||19940508|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085014|||||||||||||||||||||||||20211226174629|||||||V<R>
+ORC|RE|9498139^SYS|7795083028||Final||^^^20211226174628^20211226174629^O||20211226174629|T6530148^GROSS^CARLY||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9498139^SYS|7795083028|CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI|O|20211226062117|||||Hosp Perf||||^^^BRAIN|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20211226174629||MR|Final||^^^20211226174628^20211226174629^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20211226174629||||||||CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|The MRI shows mild chronic ischemic changes, likely secondary to||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|small vessel disease; however, this should be correlated with||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|clinical status. The patterned findings indicate no active pathology,||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|and routine follow-up imaging may be necessary based on clinical||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|symptoms. On December 26, 2021, the brain MRI reveals no acute||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|intracranial hemorrhage. The cortical and subcortical structures are||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|intact. Interestingly, there is a subtle periventricular white matter||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|hyperintensity noted, which may suggest mild chronic ischemic||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|changes, but no other focal lesions are observed. Ventricular size||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|appears within normal limits, and there is no midline shift or signs||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|of hydrocephalus. The cerebral vasculature visualized appears normal||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|without evidence of stenosis or aneurysm.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Final|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.309243143933986750308690678108027206705^EPIC^APPLICATION^DICOM<R>
+<EB>

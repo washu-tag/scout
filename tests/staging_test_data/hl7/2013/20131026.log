@@ -1,0 +1,11 @@
+2013-10-26 13:41:55.4914|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20131026134155|TBD|ORU^R01|2.25.138324243978866536201762538179456178616|P|2.4<R>
+PID|1||ABC451135^^^ABC^MR~EPIC4485894^^^EPIC^MRN||ΑΣΤΡΙΝΊΔΗΣ^ΈΛΙΣΆΒΕΤ^^^^^D||19470414000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451135^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457433^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4295206^SYS|7795083338|BHC77057^77057 77057 Screening Mamm Bilat^UNKDEV|URGENT||20131022183223|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||77057^Screening Mammogram Bilateral|20131026134155||BHC|||1^^^20131026134155^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823243^HAWKINS^CURTIS^K.^^^M.D.||PSCRIB|||||||||77057<R>
+OBX|1|TX|7457358||KIMBERLY HANSON, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7457358||ACC#  Date Time  Exam~~7795083338 Oct 26 2013 01:41PM BHC77057 77057 Screening Mamm Bilat~~EXAMINATION:~Four-view mammogram~~FINDINGS:~Comprehensive four-view mammography reveals an area of concern~correlating with the previously noted asymmetry, which upon further~imaging demonstrates a small irregular shaped mass in the upper left~quadrant, now consistent with 8 mm in size. The mass shows~microcalcifications on the magnification view, appearing suspicious.~No regional lymphadenopathy is detected. The breast density is~heterogeneously dense, which may obscure small lesions. Bilaterally,~the breast parenchyma appears well-defined without significant~abnormalities.~~IMPRESSION:~The findings suggest a high suspicion for malignancy, with the~presence of a mass with associated microcalcifications.~Recommendation for biopsy of the left breast lesion is critical given~the patient's history. This examination is a change since the initial~single-view mammogram on May 5, 2012.||||||F<R>
+OBX|3|TX|7457358||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Kimberly Hanson, M.D. on Oct 26 2013 01:41PM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on Oct 26 2013 01:41PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7457358|4|7795083338^UK^ZB||||||F<R>
+<EB>

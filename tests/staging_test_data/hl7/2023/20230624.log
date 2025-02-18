@@ -1,0 +1,28 @@
+2023-06-24 13:32:41.2805|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230624133241|TBD|ORU^R01|2.25.331251061185429838817319286710605956705|P|2.7<R>
+PID|1||ABC451118^^^ABC^MR||WILLIS^PATRICK^STEPHEN^^^^D||20000430|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084826|||||||||||||||||||||||||20230624133241|||||||V<R>
+ORC|RE|155780^SYS|7795083273||Prelim||^^^20230624133240^20230624133241^O||20230624133241|T6530152^ADKINS^MELLISSA||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|155780^SYS|7795083273|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20230622110601|||||Hosp Perf||||^^^BRAIN|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230624133241||MR|Prelim||^^^20230624133240^20230624133241^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20230624133241||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|The MRI findings continue to support a diagnosis of chronic||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|microangiopathy with stable characteristics, with no evidence of||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|acute ischemic events. The imaging from 2023-06-22 is comparably||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|indicative of a stable clinical condition, suggesting effective||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|management of cerebrovascular health. The brain MRI conducted on||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|2023-06-22 indicates stable appeared anatomy with no new significant||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|lesions identified. However, the previously noted mild||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|periventricular hyperintensity persists but shows no increase in||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|extent or severity, indicating a consistent pattern of chronic||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|microvascular ischemic changes. The subcortical structures remain||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|normal, and the integrity of the corpus callosum is maintained. DWI||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|shows no evidence of acute infarction. Surrounding soft tissue||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|17|ST|&IMP|2|structures are also within normal limits with no evident inflammatory||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|18|ST|&IMP|2|changes.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|19|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.188372724375006171305918789956915789048^EPIC^APPLICATION^DICOM<R>
+<EB>

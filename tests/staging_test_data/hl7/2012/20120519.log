@@ -1,0 +1,30 @@
+2012-05-19 12:38:35.6903|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120519123835|TBD|ORU^R01|2.25.72638895913318350817882400366307599066|P|2.7<R>
+PID|1||ABC451144^^^ABC^MR||MARTINEZ^MATTHEW^DAVID^^^^D||19920501|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823246^SANCHEZ^LESLIE^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084685|||||||||||||||||||||||||20120519123835|||||||V<R>
+ORC|RE|1281552^SYS|7795083372||Prelim||^^^20120519123834^20120519123835^O||20120519123835|T6530160^NUNEZ^JENNIFER||D7823256^MILLER^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1281552^SYS|7795083372|IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED|O|20120518125653|||||Hosp Perf||||^^^BRAIN|D7823256^MILLER^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20120519123835||MR|Prelim||^^^20120519123834^20120519123835^O||||^Chest pain||D7823255^HARVEY^MARK^W.^^^^^ABC^^^^HOSP|T6530160^NUNEZ^JENNIFER||20120519123835||||||||IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|5|ST|&IMP|2|The stable appearance of the left frontal mass reinforces the||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|6|ST|&IMP|2|suspicion for a high-grade glioma versus metastatic lesion.||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|7|ST|&IMP|2|Continuous monitoring is imperative, given the initial hypermetabolic||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|8|ST|&IMP|2|state. Further oncological evaluation and potential therapeutic||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|9|ST|&IMP|2|interventions should be discussed in a multidisciplinary team||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|10|ST|&IMP|2|meeting. The brain MRI dated 2012-05-18 provides additional insights||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|11|ST|&IMP|2|into the left frontal lesion identified in the previous PET-MR. It||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|12|ST|&IMP|2|reaffirms the presence of the 3.2 cm heterogeneous mass in the left||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|13|ST|&IMP|2|frontal lobe with necrotic areas visible on post-contrast T1-weighted||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|14|ST|&IMP|2|sequences. Surrounding vasogenic edema extends to the parietal||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|15|ST|&IMP|2|region, causing slight mass effect on adjacent structures. No||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|16|ST|&IMP|2|significant midline shift is noted, and the posterior circulation||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|17|ST|&IMP|2|appears preserved. Other cerebral and cerebellar structures maintain||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|18|ST|&IMP|2|normal morphology and signal characteristics. Expectant imaging has||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|19|ST|&IMP|2|shown stability in the prior months when compared to the PET-MR||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|20|ST|&IMP|2|study, indicating no rapid progression at this time.||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|21|ST|&IMP|2|Dictated by: Mark Harvey Interpreter, M.D.||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+ZDS|2.25.15111417718133428945634636295319818380^EPIC^APPLICATION^DICOM<R>
+<EB>

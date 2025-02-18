@@ -1,0 +1,11 @@
+2000-02-20 00:11:54.4991|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000220001154|TBD|ORU^R01|2.25.143810541005121001874484436797604493123|P|2.4<R>
+PID|1||ABC451167^^^ABC^MR~EPIC4485926^^^EPIC^MRN||LIM^HYUN-JUN^^^^^D||19420728000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451167^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457436^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3513399^SYS|7795083465|IMG1259^1259 XR CHEST 1 VIEW^UNKDEV|URGENT||20000217154845|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||1259^Chest 1 View Xray|20000220001154||IMG|||1^^^20000220001154^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB|||||||||1259<R>
+OBX|1|TX|1856841||RUSSELL GALLAGHER, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|1856841||ACC#  Date Time  Exam~~7795083465 Feb 20 2000 12:11AM IMG1259 XR CHEST 1 VIEW~~EXAMINATION:~Chest X-ray~~FINDINGS:~The chest X-ray demonstrates clear lung fields bilaterally without~evidence of acute infiltrates or consolidations. Cardiac silhouette~remains within normal limits, demonstrating no enlargement. The~mediastinum appears to be midline without any signs of shift nor~notable hilar enlargement. The costophrenic angles are sharp,~indicating absence of pleural effusion. Pulmonary vasculature is~unremarkable with no evidence of pulmonary edema or hypervascularity.~There is a small calcified granuloma visualized in the left lower~lobe, likely representing a resolved prior infection and no acute~pathology noted.~~IMPRESSION:~The chest X-ray findings are largely unremarkable, consistent with a~healthy lung status post aged 57 years. The calcified granuloma is an~incidental finding, consistent with old inflammation, but no signs of~active disease are present. Recommend routine follow-up radiography~as clinically indicated.||||||F<R>
+OBX|3|TX|1856841||Requested By: Sanders,Lisa A. M.D.~~Dictated By: Russell Gallagher, M.D. on Feb 20 2000 12:11AM~~This document has been electronically signed by: Russell Gallagher,~M.D. on Feb 20 2000 12:11AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|1856841|4|7795083465^UK^ZB||||||F<R>
+<EB>

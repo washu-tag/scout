@@ -1,0 +1,11 @@
+2011-10-09 00:27:31.5913|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20111009002731|TBD|ORU^R01|2.25.223842996955444709262617951494603495796|P|2.4<R>
+PID|1||ABC451139^^^ABC^MR~EPIC4485898^^^EPIC^MRN||SMITH^LISA^CRYSTAL^^^^D||19830918000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451139^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457467^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6348213^SYS|7795083356|IMG1259^1259 XR CHEST 1 VIEW^UNKDEV|URGENT||20111004162013|||PSCRIB|||||^^^^ |D7823231^SMITH^CLARA^TAMIKA^M.D.^^^^ABC|||||1259^Chest 1 View Xray|20111009002731||IMG|||1^^^20111009002731^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||1259<R>
+OBX|1|TX|5423299||JOE MEDRANO, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5423299||ACC#  Date Time  Exam~~7795083356 Oct 09 2011 12:27AM IMG1259 XR CHEST 1 VIEW~~EXAMINATION:~Chest X-ray~~FINDINGS:~The frontal and lateral chest X-ray demonstrates clear lung fields~with no evidence of consolidation, effusion, or masses. The heart~size and contour are within normal limits, with no signs of~cardiomegaly. The mediastinum appears centrally located, and the~diaphragms are domed and well-defined. Bony structures including the~ribs and thoracic spine show no evidence of acute fractures or lytic~lesions. The pleural surfaces are free of effusion or thickening. No~significant interstitial markings suggestive of pulmonary pathology~are observed. Seasonal allergic changes cannot be completely ruled~out but are not impacting the radiological findings.~~IMPRESSION:~The chest X-ray is interpreted as normal with no acute~cardiopulmonary abnormalities noted. There are no significant changes~compared to previous films, particularly from the time of the last~report on 2011-10-04. Clinical correlation is suggested to evaluate~any subjective symptoms that the patient may present.||||||F<R>
+OBX|3|TX|5423299||Requested By: Smith,Clara T. M.D.~~Dictated By: Joe Medrano, M.D. on Oct 09 2011 12:27AM~~This document has been electronically signed by: Joe Medrano, M.D. on~Oct 09 2011 12:27AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5423299|4|7795083356^UK^ZB||||||F<R>
+<EB>

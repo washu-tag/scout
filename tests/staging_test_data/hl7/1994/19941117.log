@@ -1,0 +1,11 @@
+1994-11-17 23:30:31.3392|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19941117233031|TBD|ORU^R01|2.25.62231300040873851496692753342541064292|P|2.4<R>
+PID|1||ABC451135^^^ABC^MR~EPIC4485894^^^EPIC^MRN||ΑΣΤΡΙΝΊΔΗΣ^ΈΛΙΣΆΒΕΤ^^^^^D||19470414000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451135^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823302^GIBBS^ERIC^M.^M.D.^^^^^^^^HOSP|^^|^^|RAD|||||||||V56457434^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4149798^SYS|7795083340|IMG1021^1021 MRI TRANSFER OF OUTSIDE FILMS^UNKDEV|URGENT||19941115083845|||PSCRIB|||||^^^^ |D7823293^HOGAN^SHERI^TIFFANY^M.D.|||||1021^MRI generic|19941117233031||IMG|||1^^^19941117233031^^U^^URGENT|       |||^Chest pain|D7823291^KLEIN^ANNA^A.^^^M.D.|D7823304^MORALES^MARIA^L.^^^M.D.||PSCRIB|||||||||1021<R>
+OBX|1|TX|2061212||ANNA KLEIN, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|2061212||ACC#  Date Time  Exam~~7795083340 Nov 17 1994 11:30PM IMG1021 MRI TRANSFER OF OUTSIDE FILMS~~EXAMINATION:~Chest MRI~~FINDINGS:~The MRI reveals normal pulmonary parenchyma with no evidence of~significant mass lesions. The lung bases appear clear, and there are~no consolidations or pleural effusions noted. The mediastinal~structures are unremarkable, with no signs of enlarged~lymphadenopathy. There are small, linear lesions observed within the~lungs, which are likely related to prior inflammatory changes, rather~than any acute process. Additionally, the heart size is within normal~limits and the great vessels exhibit no abnormality. The costophrenic~angles are well defined and free of fluid.~~IMPRESSION:~Overall, the MRI suggests benign lung changes with no acute disease.~There is no evidence of malignancy, lesions, or operative~complications. Follow-up may be warranted for monitoring the~benign-appearing lung nodules, particularly if there are changes in~clinical status.||||||F<R>
+OBX|3|TX|2061212||Requested By: Hogan,Sheri T. M.D.~~Dictated By: Anna Klein, M.D. on Nov 17 1994 11:30PM~~This document has been electronically signed by: Anna Klein, M.D. on~Nov 17 1994 11:30PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2061212|4|7795083340^UK^ZB||||||F<R>
+<EB>

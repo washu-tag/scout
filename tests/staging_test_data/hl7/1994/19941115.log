@@ -1,0 +1,30 @@
+1994-11-15 02:43:51.5809|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19941115024351|TBD|ORU^R01|2.25.159445930023991245960642141167147194160|P|2.7<R>
+PID|1||ABC451129^^^ABC^MR||ALVARADO^SABRINA^AUTUMN^^^^D||19460913|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085018|||||||||||||||||||||||||19941115024351|||||||V<R>
+ORC|RE|8288032^SYS|7795083313||Prelim||^^^19941115024350^19941115024351^O||19941115024351|||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8288032^SYS|7795083313|BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM|O|19941112163024|||||Hosp Perf||||^^^BREAST|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19941115024351||MG|Prelim||^^^19941115024350^19941115024351^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|||19941115024351||||||||BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Prelim<R>
+OBX|3|ST|&GDT|1|||||||Prelim<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim<R>
+OBX|5|ST|&IMP|2|The imaging findings are stable compared to the previous mammogram||||||Prelim<R>
+OBX|6|ST|&IMP|2|performed on 1994-11-12. The observed asymmetrical density could||||||Prelim<R>
+OBX|7|ST|&IMP|2|represent a benign process, but continued surveillance is recommended||||||Prelim<R>
+OBX|8|ST|&IMP|2|to rule out any significant pathology. Annual screening mammography||||||Prelim<R>
+OBX|9|ST|&IMP|2|is advised, with consideration for bilateral diagnostic evaluation if||||||Prelim<R>
+OBX|10|ST|&IMP|2|there are any changes or if the patient develops new symptomatology.||||||Prelim<R>
+OBX|11|ST|&IMP|2|The mammogram demonstrates asymmetrical densities in the upper outer||||||Prelim<R>
+OBX|12|ST|&IMP|2|quadrant of the left breast. The density has not changed appreciably||||||Prelim<R>
+OBX|13|ST|&IMP|2|since the previous assessment in 1994-11-12, with notable features||||||Prelim<R>
+OBX|14|ST|&IMP|2|including a round opacity measuring approximately 2.5 cm, which may||||||Prelim<R>
+OBX|15|ST|&IMP|2|represent a benign lesion, such as a cyst or fibroadenoma. No||||||Prelim<R>
+OBX|16|ST|&IMP|2|microcalcifications or architectural distortions are noted. The||||||Prelim<R>
+OBX|17|ST|&IMP|2|breast parenchyma appears predominantly dense, characteristic of a||||||Prelim<R>
+OBX|18|ST|&IMP|2|young breast patient, with no evidence of new or concerning masses.||||||Prelim<R>
+OBX|19|ST|&IMP|2|The axillary lymph nodes are unremarkable, and there is no evidence||||||Prelim<R>
+OBX|20|ST|&IMP|2|of skin changes or pleural effusions.||||||Prelim<R>
+OBX|21|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.283641819455629992628625074088983991374^EPIC^APPLICATION^DICOM<R>
+<EB>

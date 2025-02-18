@@ -1,0 +1,27 @@
+2023-03-25 22:14:09.5621|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230325221409|TBD|ORU^R01|2.25.262863106913261034907656205889881743426|P|2.7<R>
+PID|1||ABC451145^^^ABC^MR||MILLER^JENNIE^ELIZABETH^^^^D||19530208|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084740|||||||||||||||||||||||||20230325221409|||||||V<R>
+ORC|RE|9376603^SYS|7795083380||Wet Read||^^^20230325221408^20230325221409^O||20230325221409|T6530148^GROSS^CARLY||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9376603^SYS|7795083380|BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY|O|20230324115952|||||Hosp Perf||||^^^ABDOMEN|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230325221409||DX|Wet Read||^^^20230325221408^20230325221409^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20230325221409||||||||BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|1. No abdominal abnormalities, suggesting stable findings compared to||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|past imaging studies. 2. Appropriate bowel aeration with no evidence||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|of obstruction or acute pathology. 3. Recommend continued monitoring||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|and routine screenings as appropriate. Recent abdominal X-ray||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|demonstrates a well-aerated bowel pattern with no signs of||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|obstruction. The gastric air-fluid levels are normal, and the liver||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|and spleen are within normal size parameters, showing no unusual||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|calcifications or masses. The kidneys are well delineated, and no||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|renal calculi are noted. There are no free air or significant||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|effusions present that would suggest acute abdominal processes.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|Segments of the colon exhibit normal peristaltic movements. This||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|imaging indicates stability when compared with previous abdominal||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|evaluations.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.330167450954665936648790690452035464484^EPIC^APPLICATION^DICOM<R>
+<EB>

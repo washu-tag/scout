@@ -1,0 +1,29 @@
+2003-06-27 13:17:49.1934|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20030627131749|TBD|ORU^R01|2.25.151060755741200192554829702745158042923|P|2.7<R>
+PID|1||ABC451134^^^ABC^MR||YIM^YE-JUN^^^^^D||19761104|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084974|||||||||||||||||||||||||20030627131749|||||||V<R>
+ORC|RE|8977745^SYS|7795083334||Wet Read||^^^20030627131748^20030627131749^O||20030627131749|T6530154^ROBERTS^RICARDO||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8977745^SYS|7795083334|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC|O|20030623151616|||||Hosp Perf||||^^^ABDOMEN|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20030627131749||CT|Wet Read||^^^20030627131748^20030627131749^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20030627131749||||||||CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-CT||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|Findings are consistent with new metastatic liver lesions likely||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|representing progression of known malignancy as indicated by previous||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|imaging studies. Recommendation for oncological evaluation and||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|discussion for possible intervention or systemic therapy. The PET-CT||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|scan of the abdomen demonstrates diffusely increased FDG uptake in||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|the liver with multiple hypermetabolic lesions, suggesting metastatic||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|disease. The largest lesion measures approximately 3.8 cm in diameter||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|in the right lobe, displaying a high degree of metabolic activity||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|with a standard uptake value (SUV) of 9.5. Additional smaller lesions||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|are present in segment IV and VI of the liver. The kidneys appear||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|unremarkable without significant FDG uptake. No evidence of biliary||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|obstruction or abnormal lymphadenopathy is noted in the major||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|retroperitoneal, mesenteric, or aortocaval regions. This examination||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|18|ST|&IMP|2|shows a significant metabolic burden when compared to the prior||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|19|ST|&IMP|2|studies, indicative of disease progression.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|20|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.316495106477775759166008208176939289209^EPIC^APPLICATION^DICOM<R>
+<EB>

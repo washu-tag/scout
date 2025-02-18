@@ -1,0 +1,28 @@
+2003-08-12 18:49:25.3498|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20030812184925|TBD|ORU^R01|2.25.97306525144020312067667649767071111683|P|2.7<R>
+PID|1||ABC451180^^^ABC^MR||NGUYEN^FREDERICK^JOSHUA^^^^D||19390120|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084677|||||||||||||||||||||||||20030812184925|||||||V<R>
+ORC|RE|3143968^SYS|7795083516||Wet Read||^^^20030812184924^20030812184925^O||20030812184925|T6530148^GROSS^CARLY||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3143968^SYS|7795083516|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20030809113917|||||Hosp Perf||||^^^ABDOMEN|D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20030812184925||CR|Wet Read||^^^20030812184924^20030812184925^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20030812184925||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|The findings indicate improvement in bowel function since the||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|previous study. However, the new evidence of gastric wall thickening||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|and peritoneal soft tissue density necessitates clinical correlation||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|and possibly an endoscopic evaluation to rule out malignancy or||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|significant gastritis. Compared to the prior abdomen X-ray on||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|1995-09-15, this current study shows improved bowel motility with||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|reduced gaseous distention throughout the bowel loops. However, a||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|notable area of localized thickening of the gastric wall is||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|identified, potentially indicating gastritis or an inflammatory||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|process. The liver size appears unchanged, with no new lesions noted.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|The kidneys remain normal in size with no calculi, and bony||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|structures are within normal limits with no acute changes observed.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|Notable is a mild increase in soft tissue density in the peritoneal||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|cavity, warranting further investigation.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.221732930571213451611503560479559654686^EPIC^APPLICATION^DICOM<R>
+<EB>

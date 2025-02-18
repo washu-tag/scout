@@ -1,0 +1,39 @@
+2019-06-08 02:38:00.6375|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190608023800|TBD|ORU^R01|2.25.161409512232037637949895383099211150769|P|2.7<R>
+PID|1||ABC451126^^^ABC^MR||BAILEY^WILLIAM^NICHOLAS^^^^D||19460323|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084972|||||||||||||||||||||||||20190608023800|||||||V<R>
+ORC|RE|6463467^SYS|7795083301||Final||^^^20190608023759^20190608023800^O||20190608023800|T6530154^ROBERTS^RICARDO||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6463467^SYS|7795083301|OMHEADWWO^MRI BRAIN W W/O CONTRAST^UNKDEV^^HEAD MRI|O|20190607204114|||||Hosp Perf||||^^^HEAD|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20190608023800||MR|Final||^^^20190608023759^20190608023800^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20190608023800||||||||OMHEADWWO^MRI BRAIN W W/O CONTRAST^UNKDEV^^HEAD MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head MRI||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|In summary, the head MRI findings align with expected degenerative||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|changes attributable to aging. No acute or significant intracranial||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|pathology is noted, but the chronic microvascular changes may suggest||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|a need for clinical monitoring. The MRI of the head dated 2019-06-07||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|demonstrates clear and well-defined cerebral structures. No signs of||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|acute intracranial hemorrhage or mass effect are observed. There is a||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|mild age-related atrophy, particularly in the frontal and temporal||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|lobes, but this is a common finding for the patient's age cohort. The||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|ventricles are symmetrically dilated without evidence of obstructive||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|hydrocephalus. The diffusion-weighted imaging shows no restricted||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|diffusion, indicating no acute ischemic lesions. However, there is a||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|few small nonspecific white matter hyperintensities consistent with||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|chronic microvascular ischemia.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|18|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.6625674004827985113697305849267153841^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2019-06-08 19:37:07.9138|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190608193707|TBD|ORU^R01|2.25.245260422803998757967275433418309684514|P|2.4<R>
+PID|1||ABC451009^^^ABC^MR~EPIC4485768^^^EPIC^MRN||WILLIAMS^JAMES^RAUL^^^^D||20001116000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451009^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457335^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3128090^SYS|7795082834|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20190605184656|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20190608193707||IMG|||1^^^20190608193707^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|7385771||KIMBERLY HANSON, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|7385771||ACC#  Date Time  Exam~~7795082834 Jun 08 2019 07:37PM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdominal X-ray exhibits normal bowel gas patterns with no signs~of bowel obstruction or significant distention. The liver, spleen,~kidneys, and other abdominal organs are not enlarged, and there is no~visible renal calculus or significant soft tissue mass. There are no~free air under the diaphragms, which suggests no perforation in the~gastrointestinal tract. The bony pelvis appears intact without any~acute fractures noted.~~IMPRESSION:~The abdominal X-ray is within normal limits with no acute findings.~The absence of any obstructive pattern is reassuring. This image~correlates well with previous studies, demonstrating stable abdominal~anatomy over time.||||||F<R>
+OBX|3|TX|7385771||Requested By: Hunt,April M. M.D.~~Dictated By: Kimberly Hanson, M.D. on Jun 08 2019 07:37PM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on Jun 08 2019 07:37PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7385771|4|7795082834^UK^ZB||||||F<R>
+<EB>

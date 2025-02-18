@@ -1,0 +1,23 @@
+1995-11-19 09:23:02.0526|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19951119092302|TBD|ORU^R01|2.25.179822251436437901275365220495876414510|P|2.7<R>
+PID|1||ABC451051^^^ABC^MR||WHITE^JACOB^OSCAR^^^^D||19430325|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084868|||||||||||||||||||||||||19951119092302|||||||V<R>
+ORC|RE|5526115^SYS|7795083002||Prelim||^^^19951119092301^19951119092302^O||19951119092302|T6530150^NEAL^EMILY||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5526115^SYS|7795083002|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|19951115175144|||||Hosp Perf||||^^^CHEST|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19951119092302||CR|Prelim||^^^19951119092301^19951119092302^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||19951119092302||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|Normal chest X-ray examination. No acute findings noted. The frontal||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|and lateral views demonstrate clear lung fields with no evidence of||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|acute infiltrates, masses, or pleural effusions. The cardiac||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|silhouette is normal in size and contour; no mediastinal shift is||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|noted. The bony thorax shows normal anatomy without any acute bony||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|abnormalities. There is no significant hilar enlargement, and the||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|diaphragm is well positioned bilaterally. Overall, there is an||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|absence of acute cardiopulmonary pathology, and the pulmonary||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|vasculature appears unremarkable.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.311063332586130085086666846902006272211^EPIC^APPLICATION^DICOM<R>
+<EB>

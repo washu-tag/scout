@@ -1,0 +1,11 @@
+2010-02-28 05:06:19.1660|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100228050619|TBD|ORU^R01|2.25.213024090708975730755565590211049107183|P|2.4<R>
+PID|1||ABC451104^^^ABC^MR~EPIC4485863^^^EPIC^MRN||PARK^SEO-HYEON^^^^^D||19210313000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451104^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457331^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||685506^SYS|7795083216|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20100227185912|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||^Xr Sing View|20100228050619||MDXREVNT|||1^^^20100228050619^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB<R>
+OBX|1|TX|4975526||JENNIFER SMITH, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|4975526||ACC#  Date Time  Exam~~7795083216 Feb 28 2010 05:06AM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray of the chest~~FINDINGS:~The single-view chest X-ray conducted on February 27, 2010, reveals~clear lung fields bilaterally without any signs of consolidation or~effusion. The cardiac silhouette is within normal limits, and there~are no obvious bony abnormalities in the thoracic cage. The~mediastinal contour appears unremarkable. There are no acute~pulmonary findings, and vascular markings are unremarkable for age.~Based on the prior examination dated March 28, 2000, there is no~evidence of progression regarding pulmonary or cardiac pathology.~~IMPRESSION:~Normal chest X-ray; no significant changes compared to previous~imaging.||||||P<R>
+OBX|3|TX|4975526||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Jennifer Smith, M.D. on Feb 28 2010 05:06AM~~Pending review by: Kimberly Hanson, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|4975526|4|7795083216^UK^ZB||||||P<R>
+<EB>

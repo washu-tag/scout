@@ -1,0 +1,40 @@
+2015-12-13 10:55:39.8364|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20151213105539|TBD|ORU^R01|2.25.113149760048098542123778742419696549693|P|2.4<R>
+PID|1||ABC451120^^^ABC^MR~EPIC4485879^^^EPIC^MRN||YOUNG^ANGIE^BRANDY^^^^D||19970929000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451120^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457295^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8367347^SYS|7795083277|M755570^755570 MR CARDIAC MRPH FUNC W/O^UNKDEV|URGENT||20151209115921|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||755570^HEART MRI Expedited|20151213105539||M|||1^^^20151213105539^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB|||||||||755570<R>
+OBX|1|TX|5645746||JESSICA WRIGHT, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|5645746||ACC#  Date Time  Exam~~7795083277 Dec 13 2015 10:55AM M755570 MR CARDIAC MRPH FUNC W/O~~EXAMINATION:~Cardiac MRI~~FINDINGS:~The cardiac MRI reveals normal left and right ventricular function~with an ejection fraction within normal limits. Myocardial wall~thickness is homogeneous, without areas of hyperenhancement~indicative of ischemia or fibrosis. The great vessels are~unremarkable, and there are no signs of valvular insufficiency or~stenosis. Coronary artery assessment shows no luminal narrowing, and~perfusion is adequate throughout all myocardial territories. No~pericardial effusion is noted, and the pericardium is intact. The~right atrium and left atrium dimensions are within normal limits, and~there are no atrial thrombi or septal defects.~~IMPRESSION:~Normal cardiac MRI with no evidence of ischemic heart disease or~structural abnormalities. Ejection fraction is preserved.||||||P<R>
+OBX|3|TX|5645746||Requested By: Wright,Jessica M. M.D.~~Dictated By: Jessica Wright, M.D. on Dec 13 2015 10:55AM~~Pending review by: Michael Marks, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5645746|4|7795083277^UK^ZB||||||P<R>
+<EB><R>
+
+2015-12-13 21:10:39.8137|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20151213211039|TBD|ORU^R01|2.25.29746076041002405977415503531743251878|P|2.7<R>
+PID|1||ABC451056^^^ABC^MR||KIM^EUN-SEO^^^^^D||19940213|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084985|||||||||||||||||||||||||20151213211039|||||||V<R>
+ORC|RE|1100199^SYS|7795083024||Prelim||^^^20151213211038^20151213211039^O||20151213211039|||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1100199^SYS|7795083024|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20151210201523|||||Hosp Perf|||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20151213211039||XR|Prelim||^^^20151213211038^20151213211039^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|||20151213211039||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray||||||Prelim<R>
+OBX|3|ST|&GDT|1|||||||Prelim<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim<R>
+OBX|5|ST|&IMP|2|1. Stable mild degenerative changes in the thoracic spine. 2. No||||||Prelim<R>
+OBX|6|ST|&IMP|2|acute findings. This study reaffirms stability of the thoracic spine||||||Prelim<R>
+OBX|7|ST|&IMP|2|compared to the X-ray dated 2015-07-08, without interval changes||||||Prelim<R>
+OBX|8|ST|&IMP|2|noted. The lateral view of the thoracic spine demonstrates preserved||||||Prelim<R>
+OBX|9|ST|&IMP|2|vertebral heights with no acute osseous abnormalities. There is||||||Prelim<R>
+OBX|10|ST|&IMP|2|chronic degenerative change consistent with earlier findings,||||||Prelim<R>
+OBX|11|ST|&IMP|2|including mild disc space narrowing at the T5-6 level, but this||||||Prelim<R>
+OBX|12|ST|&IMP|2|remains stable since the prior exam dated 2015-07-08. Anteroposterior||||||Prelim<R>
+OBX|13|ST|&IMP|2|alignment is satisfactory, with no signs of spondylolisthesis||||||Prelim<R>
+OBX|14|ST|&IMP|2|identified. In addition, the visualized soft tissues demonstrate no||||||Prelim<R>
+OBX|15|ST|&IMP|2|pathology and there are no acute pleural or pulmonary changes evident||||||Prelim<R>
+OBX|16|ST|&IMP|2|in the capture area. An impression of mild chronic degeneration||||||Prelim<R>
+OBX|17|ST|&IMP|2|remains consistent in this follow-up imaging, with no new concerning||||||Prelim<R>
+OBX|18|ST|&IMP|2|discoveries.||||||Prelim<R>
+OBX|19|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.261502147061351036043532000732440943826^EPIC^APPLICATION^DICOM<R>
+<EB>

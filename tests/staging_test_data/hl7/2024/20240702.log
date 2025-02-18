@@ -1,0 +1,24 @@
+2024-07-02 16:04:37.7586|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240702160437|TBD|ORU^R01|2.25.290365664561351019120868389895288414838|P|2.7<R>
+PID|1||ABC451106^^^ABC^MR||HUNT^JENNIFER^HEATHER^^^^D||19980310|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084908|||||||||||||||||||||||||20240702160437|||||||V<R>
+ORC|RE|634438^SYS|7795083227||Wet Read||^^^20240702160436^20240702160437^O||20240702160437|T6530154^ROBERTS^RICARDO||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|634438^SYS|7795083227|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20240630084554|||||Hosp Perf||||^^^CHEST|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20240702160437||CR|Wet Read||^^^20240702160436^20240702160437^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20240702160437||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|1. Significant normal study with no acute cardiopulmonary findings.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|2. Routine follow-up as clinically indicated. The chest X-ray||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|examination reveals clear lung fields bilaterally without evidence of||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|acute infiltration, effusion, or pneumothorax. The cardiac silhouette||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|is within normal limits, with no signs of cardiomegaly. Bilateral||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|costophrenic angles are sharp, and no bony abnormalities are detected||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|in the thoracic skeleton. There is no evidence of mediastinal||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|widening, and the trachea is midline without deviation. Overall, the||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|examination is largely unremarkable with no acute abnormalities||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|noted.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.53157070916866419892689544774292570011^EPIC^APPLICATION^DICOM<R>
+<EB>

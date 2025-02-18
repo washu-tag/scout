@@ -1,0 +1,24 @@
+2014-01-22 21:47:18.7347|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140122214718|TBD|ORU^R01|2.25.13708002866206394500859126869550503164|P|2.7<R>
+PID|1||ABC451000^^^ABC^MR||ISHIKAWA^SOUMA^^^^^D||19910125|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823261^YAMAGUCHI^MINATO^^^^^^^^^^HOSP|||RAD|||||||||V42084811|||||||||||||||||||||||||20140122214718|||||||V<R>
+ORC|RE|7233567^SYS|7795082795||Prelim||^^^20140122214717^20140122214718^O||20140122214718|T6530170^SUZUKI^RIKU||D7823266^SUZUKI^ASAHI^^^^^^^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7233567^SYS|7795082795|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20140121162434|||||Hosp Perf||||^^^SPINE|D7823266^SUZUKI^ASAHI^^^^^^^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20140122214718||DX|Prelim||^^^20140122214717^20140122214718^O||||^Chest pain||D7823267^SUZUKI^AN^^^^^^^^^^HOSP|T6530170^SUZUKI^RIKU||20140122214718||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Spine X-ray||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|5|ST|&IMP|2|Degenerative changes in the lumbosacral spine without acute findings.||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|6|ST|&IMP|2|Clinical correlation may be considered for any pain symptoms||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|7|ST|&IMP|2|described. Lumbosacral spine radiographs reveal evidence of mild||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|8|ST|&IMP|2|degenerative changes consistent with age-related spondylosis.||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|9|ST|&IMP|2|Notably, there is a mild disc height loss observed at L4-L5 and L5-S1||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|10|ST|&IMP|2|levels. Osteophyte formation at the anterior and lateral aspects of||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|11|ST|&IMP|2|the vertebrae is evident without significant foraminal narrowing. The||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|12|ST|&IMP|2|alignment of the vertebral bodies appears intact, and no acute||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|13|ST|&IMP|2|fracture or subluxation is seen. No soft tissue abnormalities or||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|14|ST|&IMP|2|calcification along the psoas region are identified.||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+OBX|15|ST|&IMP|2|Dictated by: An Suzuki Interpreter, M.D.||||||Prelim|||||T6530170^SUZUKI^RIKU<R>
+ZDS|2.25.86140011365676745324341008981297425214^EPIC^APPLICATION^DICOM<R>
+<EB>

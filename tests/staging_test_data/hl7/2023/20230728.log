@@ -1,0 +1,11 @@
+2023-07-28 23:01:27.0963|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230728230127|TBD|ORU^R01|2.25.306938754326108028251330520974378123005|P|2.4<R>
+PID|1||ABC451058^^^ABC^MR~EPIC4485817^^^EPIC^MRN||KIM^JI-MIN^^^^^D||19940508000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451058^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457453^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9392018^SYS|7795083033|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||20230728073442|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||70553^Brain dMRI|20230728230127||CMRP|||1^^^20230728230127^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|3753667||KIMBERLY HANSON, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|3753667||ACC#  Date Time  Exam~~7795083033 Jul 28 2023 11:01PM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~Brain MRI~~FINDINGS:~In the MRI taken on July 28, 2023, comparisons with the previous~brain MRI from December 2021 reveal unchanged status regarding the~periventricular white matter hyperintensity. There are no new lesions~identified. The overall morphology of the brain remains consistent~with prior normal studies. Cerebellar and brainstem structures are~intact, with no evidence of mass effect or new vascular changes. No~acute intracranial pathology is present.~~IMPRESSION:~The stability of findings from the previous study in December 2021 to~July 2023 indicates a chronic process without apparent progression.~Continuation of routine neurological evaluations is recommended, but~no immediate intervention is necessary based on current imaging.||||||P<R>
+OBX|3|TX|3753667||Requested By: Medrano,Joe J. M.D.~~Dictated By: Kimberly Hanson, M.D. on Jul 28 2023 11:01PM~~Pending review by: Joe Medrano, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|3753667|4|7795083033^UK^ZB||||||P<R>
+<EB>

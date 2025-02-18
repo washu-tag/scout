@@ -1,0 +1,11 @@
+2018-10-03 15:20:55.2367|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20181003152055|TBD|ORU^R01|2.25.223390231196250867880934571636566068485|P|2.4<R>
+PID|1||ABC451002^^^ABC^MR~EPIC4485761^^^EPIC^MRN||HARMON^QUINTIN^IAN^^^^D||19680722000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451002^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457297^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3247264^SYS|7795082805|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||20180929123509|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|20181003152055||IMG|||1^^^20181003152055^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|4974458||JESSICA WRIGHT, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4974458||ACC#  Date Time  Exam~~7795082805 Oct 03 2018 03:20PM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~The chest MRI reveals no significant pulmonary nodules or masses~within the lung parenchyma. The bronchial tree appears patent, and~vascular structures are normal without signs of thromboembolic~disease. The thoracic aorta shows no evidence of dissection or~aneurysm formation. However, there is mild fibrotic scarring in the~left lower lobe extending from previous infections, with no acute~process evident currently. The heart and mediastinal structures are~again noted to be within normal limits as assessed previously.~Compared to the 2002 X-ray, this MRI provides additional detail~regarding previously noted fibrotic changes.~~IMPRESSION:~The chest MRI shows stable changes consistent with prior lung~scarring, with no acute pulmonary processes identified. The thoracic~vasculature and cardiac structures remain unremarkable. No~significant intervention is recommended, but routine monitoring of~previously noted pulmonary scarring may be useful.||||||F<R>
+OBX|3|TX|4974458||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Jessica Wright, M.D. on Oct 03 2018 03:20PM~~This document has been electronically signed by: Jessica Wright, M.D.~on Oct 03 2018 03:20PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4974458|4|7795082805^UK^ZB||||||F<R>
+<EB>

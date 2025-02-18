@@ -1,0 +1,23 @@
+2010-01-31 00:43:25.6865|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100131004325|TBD|ORU^R01|2.25.153373723492084642843885554504915300492|P|2.7<R>
+PID|1||ABC451159^^^ABC^MR||HAMMOND^MICHAEL^ALLAN^^^^D||19900930|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084814|||||||||||||||||||||||||20100131004325|||||||V<R>
+ORC|RE|9981950^SYS|7795083435||Prelim||^^^20100131004324^20100131004325^O||20100131004325|T6530146^MOORE^CURTIS||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9981950^SYS|7795083435|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20100127174155|||||Hosp Perf||||^^^ABDOMEN|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20100131004325||CR|Prelim||^^^20100131004324^20100131004325^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20100131004325||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|The abdominal X-ray is within normal limits with no acute or chronic||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|pathology identified. No signs of obstructive processes or underlying||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|disease. This study provides no concerning findings. The abdominal||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|X-ray reveals a normal gas pattern throughout the gastrointestinal||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|tract. There is no evidence of bowel obstruction, perforation, or||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|significant free air under the diaphragm. The liver, spleen, kidneys,||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|and other solid organs are not visualized but there are no||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|calcifications or abnormal gas collections. The visualized bones and||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|soft tissues appear normal, with no signs of acute osseous injury.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.91742444061895094867445267845860884464^EPIC^APPLICATION^DICOM<R>
+<EB>

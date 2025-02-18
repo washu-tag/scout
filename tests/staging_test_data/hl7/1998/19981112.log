@@ -1,0 +1,26 @@
+1998-11-12 12:56:33.6544|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19981112125633|TBD|ORU^R01|2.25.27403153860509729569247479700903405396|P|2.7<R>
+PID|1||ABC451008^^^ABC^MR||THOMPSON^AMANDA^NOELLE^^^^D||19720809|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084877|||||||||||||||||||||||||19981112125633|||||||V<R>
+ORC|RE|7166877^SYS|7795082828||Prelim||^^^19981112125632^19981112125633^O||19981112125633|T6530143^FELIX^REBECCA||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7166877^SYS|7795082828|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|19981110165430|||||Hosp Perf||||^^^HEART|D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19981112125633||NM|Prelim||^^^19981112125632^19981112125633^O||||^Chest pain||D7823221^MAXWELL^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530143^FELIX^REBECCA||19981112125633||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|5|ST|&IMP|2|Compared to the December 8, 1997, study, there is improved myocardial||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|6|ST|&IMP|2|perfusion and ejection fraction, indicating a favorable trend in||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|7|ST|&IMP|2|cardiac function and absence of ischemic changes. In the cardiac NM||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|8|ST|&IMP|2|study dated November 10, 1998, there is a noted significant||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|9|ST|&IMP|2|improvement in the overall cardiac perfusion compared to the previous||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|10|ST|&IMP|2|study from December 1997. The left ventricular ejection fraction has||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|11|ST|&IMP|2|increased to 65%. Myocardial perfusion appears homogeneously||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|12|ST|&IMP|2|distributed, with sustained normal perfusion across the anterior,||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|13|ST|&IMP|2|lateral, inferior walls, and apex. Additionally, no new perfusion||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|14|ST|&IMP|2|abnormalities were identified and the pulmonary uptake indicators||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|15|ST|&IMP|2|were also normal, remaining consistent with findings from the||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|16|ST|&IMP|2|previous study.||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|17|ST|&IMP|2|Dictated by: Michael Maxwell Interpreter, M.D.||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+ZDS|2.25.43852005884517621214568459906226134376^EPIC^APPLICATION^DICOM<R>
+<EB>

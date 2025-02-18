@@ -1,0 +1,24 @@
+2020-12-13 21:26:10.9509|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20201213212610|TBD|ORU^R01|2.25.320485714014645931832648789748292920097|P|2.7<R>
+PID|1||ABC451090^^^ABC^MR||THOMAS^LISA^KRISTIN^^Capt.^^D||19411017|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084854|||||||||||||||||||||||||20201213212610|||||||V<R>
+ORC|RE|7607333^SYS|7795083156||Wet Read||^^^20201213212609^20201213212610^O||20201213212610|T6530148^GROSS^CARLY||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7607333^SYS|7795083156|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20201210102350|||||Hosp Perf||||^^^BREAST|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20201213212610||MG|Wet Read||^^^20201213212609^20201213212610^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20201213212610||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|This recent mammogram dated December 2020 is stable when compared to||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|the study performed in 1998. No new abnormalities have developed, and||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|the findings remain within the benign spectrum, suggesting continuity||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|in overall breast health. The single-view mammogram demonstrates||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|significant breast tissue density with no signs of lesions or||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|abnormalities. It compares favorably to the earlier 1998 study, with||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|no masses, calcifications, or architectural distortions identified.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|Normal breast parenchyma is visualized, with symmetric glandular||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|structures and no skin or nipple abnormalities. The examination||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|remains consistent with typical age-related changes.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.245000306164615846125367674341227602953^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,50 @@
+2012-10-21 12:48:33.0732|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20121021124833|TBD|ORU^R01|2.25.50481609283050489376637304638087459764|P|2.7<R>
+PID|1||ABC451107^^^ABC^MR||DIAZ^STEPHANIE^VERONICA^^^^D||19500326|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084915|||||||||||||||||||||||||20121021124833|||||||V<R>
+ORC|RE|231017^SYS|7795083228||Final||^^^20121021124832^20121021124833^O||20121021124833|T6530146^MOORE^CURTIS||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|231017^SYS|7795083228|CTCHEST^CT THORAX^UNKDEV^^THORAX PETCT AC NAC|O|20121018183703|||||Hosp Perf||||^^^THORAX|D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20121021124833||CT|Final||^^^20121021124832^20121021124833^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20121021124833||||||||CTCHEST^CT THORAX^UNKDEV^^THORAX PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Thorax PET-CT performed||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|In summary, the PET-CT findings reveal concerning hypermetabolism in||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|a left upper lobe lesion, which raises suspicion for a malignancy||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|that warrants further evaluation through biopsy and possibly a||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|follow-up CT for better anatomical assessment. The hypermetabolic||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|mediastinal lymphadenopathy suggests possible nodal involvement that||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|should prompt oncological consultation. Additionally, the observed||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|ground-glass opacities require clinical correlation to determine||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|their etiology. The degenerative changes of the thoracic spine are||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|consistent with the patient's age and do not currently display any||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|acute processes. The study demonstrates several areas of abnormal||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|hypermetabolic activity within the thoracic cavity. Notably, there is||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|a hot spot in the left upper lobe measuring approximately 2.5 cm with||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|an SUVmax of 8.4, suggestive of potential malignancy, correlating||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|with a previous mass noted in the 2011 imaging studies. Additionally,||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|19|ST|&IMP|2|mediastinal lymph nodes exhibit moderately elevated metabolic||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|20|ST|&IMP|2|activity, particularly at the region of the hilar nodes, with SUV||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|21|ST|&IMP|2|values averaging around 4.7. There is no evidence of malignant||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|22|ST|&IMP|2|pleural effusion, though there are patches of ground-glass opacities||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|23|ST|&IMP|2|within both lower lobes, likely representing early stages of||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|24|ST|&IMP|2|interstitial lung disease or post-inflammatory changes. Furthermore,||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|25|ST|&IMP|2|the spinal column exhibits mild degenerative changes, predominantly||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|26|ST|&IMP|2|osteophyte formation at the lower cervical and thoracic regions,||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|27|ST|&IMP|2|which may correlate with the patient's age and history of chronic||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|28|ST|&IMP|2|back pain.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|29|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.149945247348839477094248564520304991235^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2012-10-21 19:54:22.4852|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20121021195422|TBD|ORU^R01|2.25.253733195439312114043221405667863830558|P|2.4<R>
+PID|1||ABC451182^^^ABC^MR~EPIC4485941^^^EPIC^MRN||TAKAHASHI^MEI^^^^^D||19480612000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451182^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457156^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5349775^SYS|7795083525|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20121021093101|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||^Xr Sing View|20121021195422||MDXREVNT|||1^^^20121021195422^^U^^URGENT|       |||^Chest pain|D7823240^PARSONS^ERNESTO^J.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB<R>
+OBX|1|TX|3294364||ERNESTO PARSONS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|3294364||ACC#  Date Time  Exam~~7795083525 Oct 21 2012 07:54PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray of the chest~~FINDINGS:~This single-view chest X-ray illustrates retained normal pulmonary~architecture akin to the previous study on 2005-05-24. The lung~fields are clear, free from any nodular lesions or mass effects. The~cardiovascular silhouette is within normal size parameters, and there~is an absence of mediastinal shift. Cardiophrenic angles are sharp,~indicating no effusion. The bony structures adjoining the thorax are~also intact and unremarkable.~~IMPRESSION:~Compared to the previous X-ray from 2005, this imaging study presents~a stable appearance of the thoracic structures with no emergent or~progressive pathology. Continued monitoring is advised but current~findings suggest transient normalcy.||||||F<R>
+OBX|3|TX|3294364||Requested By: Sanders,Lisa A. M.D.~~Dictated By: Ernesto Parsons, M.D. on Oct 21 2012 07:54PM~~This document has been electronically signed by: Ernesto Parsons,~M.D. on Oct 21 2012 07:54PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3294364|4|7795083525^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,31 @@
+2024-03-07 18:31:53.0455|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240307183153|TBD|ORU^R01|2.25.234872190720910464190135768073527105044|P|2.7<R>
+PID|1||ABC451159^^^ABC^MR||HAMMOND^MICHAEL^ALLAN^^^^D||19900930|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823249^OLIVER^JASON^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084815|||||||||||||||||||||||||20240307183153|||||||V<R>
+ORC|RE|139210^SYS|7795083437||Wet Read||^^^20240307183152^20240307183153^O||20240307183153|T6530160^NUNEZ^JENNIFER||D7823247^WARREN^MARY^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|139210^SYS|7795083437|IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED|O|20240305062932|||||Hosp Perf||||^^^BRAIN|D7823247^WARREN^MARY^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20240307183153||MR|Wet Read||^^^20240307183152^20240307183153^O||||^Chest pain||D7823253^NIXON^MELISSA^D.^^^^^ABC^^^^HOSP|T6530160^NUNEZ^JENNIFER||20240307183153||||||||IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|5|ST|&IMP|2|When compared to the MRI from February 2, 2023, there is evident||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|6|ST|&IMP|2|progression of underlying white matter changes along with the new||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|7|ST|&IMP|2|involvement of basal ganglia. These findings indicate a concerning||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|8|ST|&IMP|2|trend that may correlate with vascular etiology. A vascular||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|9|ST|&IMP|2|evaluation and discussion regarding potential risk factors for||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|10|ST|&IMP|2|further cerebral microvascular ischemia should be considered, along||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|11|ST|&IMP|2|with close follow-up imaging. The brain MRI performed on March 5,||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|12|ST|&IMP|2|2024 shows further progression in the periventricular and subcortical||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|13|ST|&IMP|2|white matter lesions noted in the previous studies, with additional||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|14|ST|&IMP|2|new foci of hyperintensity now evident. This development raises||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|15|ST|&IMP|2|concern for increased small vessel disease; however, there is no||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|16|ST|&IMP|2|evidence of acute infarction or hemorrhage. The ventricular system||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|17|ST|&IMP|2|remains stable in size, with no new mass lesions and overall||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|18|ST|&IMP|2|gray-white matter differentiation persisting. There is still no||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|19|ST|&IMP|2|evidence of mass effect; however, the basal ganglia shows increased||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|20|ST|&IMP|2|signal changes which were not previously present. The anterior||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|21|ST|&IMP|2|circulation appears to have preserved flow on angiographic sequences.||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|22|ST|&IMP|2|Dictated by: Melissa Nixon Interpreter, M.D.||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+ZDS|2.25.261788145726754760875589175487348137995^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,27 @@
+2005-09-05 00:59:22.7685|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20050905005922|TBD|ORU^R01|2.25.164226450599173971887704541662948312525|P|2.7<R>
+PID|1||ABC451132^^^ABC^MR||SMITH^DAVID^JARON^^^^D||19621015|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084916|||||||||||||||||||||||||20050905005922|||||||V<R>
+ORC|RE|4100492^SYS|7795083325||Prelim||^^^20050905005921^20050905005922^O||20050905005922|T6530151^WATERS^JESSICA||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4100492^SYS|7795083325|EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY|O|20050904115201|||||Hosp Perf||||^^^TSPINE|D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20050905005922||DX|Prelim||^^^20050905005921^20050905005922^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20050905005922||||||||EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Thoracic spine X-ray||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|No significant abnormalities identified in this thoracic spine X-ray.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|The alignment is normal, and there are no acute fractures, disc||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|herniation, or signs of degenerative disc disease. This study is||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|essentially unremarkable, supporting a benign thoracic spine status||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|at this time. The thoracic spine demonstrates normal alignment||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|without evidence of malalignment or scoliosis. The vertebral bodies||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|appear intact and symmetrical, with no signs of acute fractures||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|noted. The disc spaces maintain height, and there are no visible||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|abnormalities or sign of disc herniation. The costovertebral and||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|costotransverse joints exhibit normal appearances. There is no||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|periosteal reaction observed, and the surrounding soft tissues appear||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|normal with no signs of acute pathology. Overall, there is no acute||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|process identified in the thoracic spine upon review of the imaging.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|18|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.310401229471097423112144489772615388821^EPIC^APPLICATION^DICOM<R>
+<EB>

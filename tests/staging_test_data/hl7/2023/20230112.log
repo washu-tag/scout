@@ -1,0 +1,26 @@
+2023-01-12 07:58:54.8666|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230112075854|TBD|ORU^R01|2.25.270702168232669503984632705238533062496|P|2.7<R>
+PID|1||ABC451011^^^ABC^MR||FISHER^CHRISTOPHER^MIGUEL^^^^D||19340331|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084926|||||||||||||||||||||||||20230112075854|||||||V<R>
+ORC|RE|228639^SYS|7795082839||Wet Read||^^^20230112075853^20230112075854^O||20230112075854|T6530152^ADKINS^MELLISSA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|228639^SYS|7795082839|BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY|O|20230108114513|||||Hosp Perf||||^^^CSPINE|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230112075854||DX|Wet Read||^^^20230112075853^20230112075854^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20230112075854||||||||BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: C-spine X-ray||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|Degenerative changes at C5-C6 level noted, consistent with the||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|patient's age but without acute findings. No significant change in||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|the trajectory of cervical spine degeneration was observed compared||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|to earlier imaging, indicating a chronic yet stable course. The||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|cervical spine X-ray visualizes alignment and articulation of the||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|cervical vertebrae, revealing no significant subluxation or abnormal||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|curvature. Noteworthy for mild degenerative disc disease at C5-C6,||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|with slight disc space narrowing and osteophyte formation present but||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|no acute fractures. The adjacent neural foramina are patent with||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|clear visualisation of the exiting nerve roots at the lower cervical||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|levels. No significant paravertebral soft tissue swelling or abnormal||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|calcification detected in the surrounding musculature.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|17|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.249569523406853514978186553758593970917^EPIC^APPLICATION^DICOM<R>
+<EB>

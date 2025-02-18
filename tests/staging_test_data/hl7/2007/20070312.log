@@ -1,0 +1,36 @@
+2007-03-12 00:42:44.7816|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20070312004244|TBD|ORU^R01|2.25.315360515881219912851980344641986695884|P|2.4<R>
+PID|1||ABC451096^^^ABC^MR~EPIC4485855^^^EPIC^MRN||CHUNG^SEO-JOON^^^^^D||19710928000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451096^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457173^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2130830^SYS|7795083186|BED74000^74000 74000 Abdomen single view AP^UNKDEV|URGENT||20070309090358|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||74000^Abdomen 1 View Dx Xray|20070312004244||BED|||1^^^20070312004244^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823234^DONOVAN^WILLIAM^C.^^^M.D.||PSCRIB|||||||||74000<R>
+OBX|1|TX|659716||JESSICA WRIGHT, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|659716||ACC#  Date Time  Exam~~7795083186 Mar 12 2007 12:42AM BED74000 74000 Abdomen single view AP~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The supine abdominal X-ray demonstrates normal intestinal gas~patterns with no signs of obstruction. The liver, spleen, and kidney~contours are well-defined, with no evidence of calcifications or~masses. The bowel appears adequately distended, and no free air is~present under the diaphragm to suggest perforation. Gastric and~colonic contents appear normal. The visualized bones are unremarkable~without any suggestive lytic or blastic lesions, and soft tissue~structures are not indicative of significant pathological processes.~~IMPRESSION:~1. No acute abdominal process. 2. Normal gas pattern without~obstruction and no significant abdominal organ abnormalities.||||||F<R>
+OBX|3|TX|659716||Requested By: Medrano,Joe J. M.D.~~Dictated By: Jessica Wright, M.D. on Mar 12 2007 12:42AM~~This document has been electronically signed by: Jessica Wright, M.D.~on Mar 12 2007 12:42AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|659716|4|7795083186^UK^ZB||||||F<R>
+<EB><R>
+
+2007-03-12 16:53:05.1625|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20070312165305|TBD|ORU^R01|2.25.154858384248459983954700930994331786598|P|2.7<R>
+PID|1||ABC451064^^^ABC^MR||ΑΡΓΎΡΗΣ^ΈΛΙΣΆΒΕΤ^^^^^D||19890111|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085042|||||||||||||||||||||||||20070312165305|||||||V<R>
+ORC|RE|7140783^SYS|7795083051||Prelim||^^^20070312165304^20070312165305^O||20070312165305|T6530151^WATERS^JESSICA||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7140783^SYS|7795083051|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20070312130403|||||Hosp Perf||||^^^BREAST|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20070312165305||MG|Prelim||^^^20070312165304^20070312165305^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20070312165305||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|The examination exhibits normal findings without any evidence of||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|malignancy or significant abnormalities. Further screening is||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|recommended in accordance with routine guidelines. The mammogram||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|demonstrates symmetrical breast parenchyma with no focal masses||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|identified in any region of the breasts. The bilateral breast tissue||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|demonstrates normal glandular density consistent with a patient of||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|this age group. No microcalcifications, architectural distortions, or||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|significant density asymmetries are seen. There are no||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|lymphadenopathies observed in the axillary regions. Overall, the||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|findings appear consistent with benign breast tissue.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.104780077927799665137103600458092536539^EPIC^APPLICATION^DICOM<R>
+<EB>

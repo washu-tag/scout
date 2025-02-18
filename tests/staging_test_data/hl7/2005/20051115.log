@@ -1,0 +1,28 @@
+2005-11-15 10:33:12.3374|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20051115103312|TBD|ORU^R01|2.25.50281361946409259731541577763742374465|P|2.7<R>
+PID|1||ABC450998^^^ABC^MR||JANG^JI-WOO^^^^^D||19440924|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084778|||||||||||||||||||||||||20051115103312|||||||V<R>
+ORC|RE|767482^SYS|7795082791||Prelim||^^^20051115103311^20051115103312^O||20051115103312|T6530151^WATERS^JESSICA||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|767482^SYS|7795082791|MABDOMENWO^MR ABD WO^UNKDEV^^ABDOMEN PTMR|O|20051114134126|||||Hosp Perf||||^^^ABDOMEN|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20051115103312||MR|Prelim||^^^20051115103311^20051115103312^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20051115103312||||||||MABDOMENWO^MR ABD WO^UNKDEV^^ABDOMEN PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-MR||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|The PET-MR findings are concerning for hepatic malignancy given the||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|hypermetabolic lesions observed, which have developed since the prior||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|imaging study from 1996. Further evaluation and referral to oncology||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|for management and possible biopsy are recommended. The combined||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|PET-MR study of the abdomen demonstrates a heterogeneous enhancement||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|pattern in the liver, with multiple hypodense lesions displaying||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|increased metabolic activity on PET, consistent with neoplastic||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|process. The largest lesion measures approximately 3.5 cm in the||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|right lobe of the liver. There is no evidence of biliary obstruction.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|The kidneys appear normal, with no hydronephrosis or renal masses||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|visualized. The pancreas is unremarkable, and there is no||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|lymphadenopathy noted in the para-aortic or pericaval regions.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|Compared to the previous imaging completed on 1996-07-25, there is a||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|18|ST|&IMP|2|new appearance of lesions in the liver not noted in the X-ray.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|19|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.53904134095490410306079653775082600482^EPIC^APPLICATION^DICOM<R>
+<EB>

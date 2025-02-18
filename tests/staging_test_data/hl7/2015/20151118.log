@@ -1,0 +1,34 @@
+2015-11-18 04:39:07.5539|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20151118043907|TBD|ORU^R01|2.25.108331728865015815965250315290029392457|P|2.7<R>
+PID|1||ABC451181^^^ABC^MR||SIMON^AMY^LINDSAY^^^^D||19810112|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084700|||||||||||||||||||||||||20151118043907|||||||V<R>
+ORC|RE|6184469^SYS|7795083524||Prelim||^^^20151118043906^20151118043907^O||20151118043907|T6530148^GROSS^CARLY||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6184469^SYS|7795083524|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20151115195229|||||Hosp Perf|||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20151118043907||XA|Prelim||^^^20151118043906^20151118043907^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20151118043907||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|1. Unremarkable X-ray angiography of the coronary arteries||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|demonstrating normal vascular anatomy without evidence of stenosis,||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|occlusion, or atherosclerotic changes. 2. Normal venous drainage||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|without evidential thrombosis. 3. No significant pathology detected||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|in the vascular system, consistent with an intact vascular supply.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|The patient's vascular architecture is preserved, with no suggestion||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|of acute or chronic ischemia. Overall, findings are highly suggestive||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|of a healthy cardiovascular status. The X-ray angiography study||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|demonstrates a normal arterial tree with no significant stenosis or||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|occlusions noted. The major vessels visualized, including the right||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|and left coronary arteries, are patent with smooth, unobstructed||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|luminal contours. There is no evidence of atherosclerotic disease,||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|and the branch vessels arise appropriately from the main arterial||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|trunks. Additionally, the venous structures exhibit normal anatomy||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|with no thrombosis observed. The filling defect is absent, and no||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|20|ST|&IMP|2|collateral circulation is noted, suggesting adequate blood supply to||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|21|ST|&IMP|2|the territories supplied by the viewed arteries. The aortic arch||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|22|ST|&IMP|2|shows normal curvature and patency, without any signs of dissection||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|23|ST|&IMP|2|or aneurysm. The study was well-performed with excellent contrast||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|24|ST|&IMP|2|enhancement.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|25|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.295511646418973603231728867607752386749^EPIC^APPLICATION^DICOM<R>
+<EB>

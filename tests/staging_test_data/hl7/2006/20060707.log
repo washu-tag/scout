@@ -1,0 +1,11 @@
+2006-07-07 17:10:48.8678|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060707171048|TBD|ORU^R01|2.25.66255700249254691647316385824392971768|P|2.4<R>
+PID|1||ABC451101^^^ABC^MR~EPIC4485860^^^EPIC^MRN||ΑΡΓΎΡΗΣ^ΜΆΡΘΑ^^^^^D||19761103000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451101^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823248^RODRIGUEZ^NICOLE^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457259^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8572869^SYS|7795083201|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||20060703094637|||PSCRIB|||||^^^^ |D7823258^BRYANT^DAVID^TIMOTHY^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|20060707171048||IMG|||1^^^20060707171048^^U^^URGENT|       |||^Chest pain|D7823251^CALLAHAN^SCOTT^A.^^^M.D.|D7823258^BRYANT^DAVID^T.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|9195473||SCOTT CALLAHAN, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|9195473||ACC#  Date Time  Exam~~7795083201 Jul 07 2006 05:10PM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~The chest MRI conducted on July 3, 2006, reveals well-defined~structures within the pulmonary and mediastinal regions. The lungs~are clear bilaterally, with no evidence of consolidations or~infiltrates. The cardiac silhouette is unremarkable, with no~pericardial effusion. Chest wall and pleural surfaces appear intact~with no masses or nodulations. Notable is a small area of mild~enhancement in the right lower lobe, which may represent a focal area~of inflammation, though no significant lymphadenopathy is observed.~Given the resolution of structures, this examination demonstrates the~integrity and health of the chest space.~~IMPRESSION:~Normal chest MRI findings with the exception of a mild focus of~enhancement in the right lower lobe. These findings necessitate a~follow-up ultrasound if symptoms persist. Clinical correlation is~advised.||||||P<R>
+OBX|3|TX|9195473||Requested By: Bryant,David T. M.D.~~Dictated By: Scott Callahan, M.D. on Jul 07 2006 05:10PM~~Pending review by: David Bryant, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|9195473|4|7795083201^UK^ZB||||||P<R>
+<EB>

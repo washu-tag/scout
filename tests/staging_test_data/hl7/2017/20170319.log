@@ -1,0 +1,11 @@
+2017-03-19 17:48:19.3028|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170319174819|TBD|ORU^R01|2.25.155826137553740317461669109729130107928|P|2.4<R>
+PID|1||ABC451175^^^ABC^MR~EPIC4485934^^^EPIC^MRN||OCONNOR^JEREMY^JOSHUA^^^^D||19931118000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451175^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457186^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6287029^SYS|7795083497|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20170315120536|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||2816^Ultrasound|20170319174819||IMG|||1^^^20170319174819^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|3418709||KIMBERLY HANSON, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|3418709||ACC#  Date Time  Exam~~7795083497 Mar 19 2017 05:48PM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Ultrasound of the abdomen~~FINDINGS:~The abdominal ultrasound reveals no evidence of hepatomegaly or~splenomegaly. The liver demonstrates a homogeneous echotexture with~normal vascular flow. The gallbladder is visualized and appears to be~free of stones with no wall thickening noted. The kidneys show normal~size and shape, with no signs of hydronephrosis. There are no cysts~or masses present. The pancreas is identifiable and appears normal~without any abnormalities. No significant lymphadenopathy is noted,~and the aorta and inferior vena cava are unremarkable.~~IMPRESSION:~The abdominal ultrasound shows unremarkable findings with no signs of~pathology. The liver, gallbladder, kidneys, and pancreas appear~within normal limits. These results are consistent with previous~evaluations, indicating stable abdominal anatomy.||||||F<R>
+OBX|3|TX|3418709||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Kimberly Hanson, M.D. on Mar 19 2017 05:48PM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on Mar 19 2017 05:48PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3418709|4|7795083497^UK^ZB||||||F<R>
+<EB>

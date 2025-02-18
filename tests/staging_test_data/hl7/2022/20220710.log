@@ -1,0 +1,11 @@
+2022-07-10 03:12:12.1101|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220710031212|TBD|ORU^R01|2.25.147810698325450918745659302047097181929|P|2.4<R>
+PID|1||ABC451137^^^ABC^MR~EPIC4485896^^^EPIC^MRN||STONE^JOHN^JAMES^^^^D||19910722000000|M||U|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451137^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457445^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4103419^SYS|7795083343|OMHEADWWO^ MRI BRAIN W W/O CONTRAST^UNKDEV|URGENT||20220707181337|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||^HEAD MRI|20220710031212||OMHEADWWO|||1^^^20220710031212^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|9112747||JOE MEDRANO, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|9112747||ACC#  Date Time  Exam~~7795083343 Jul 10 2022 03:12AM OMHEADWWO MRI BRAIN W W/O CONTRAST~~EXAMINATION:~Head MRI~~FINDINGS:~The head MRI exhibits similar findings to the previous studies, with~an overall structure suggesting a mild degree of global atrophy. The~previously identified left temporal lesion remains unchanged with~stable morphology. There is mild dilation of the lateral and third~ventricles. No additional lesions or acute findings are newly~appreciated, and the cerebral cortical architecture appears~remarkably consistent with prior evaluations.~~IMPRESSION:~The longitudinal imaging reveals no changes in the left temporal~lesion since the last MRI on 2021-08-19. The findings remain stable,~continuing to warrant monitoring for any future developments.||||||F<R>
+OBX|3|TX|9112747||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Joe Medrano, M.D. on Jul 10 2022 03:12AM~~This document has been electronically signed by: Joe Medrano, M.D. on~Jul 10 2022 03:12AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9112747|4|7795083343^UK^ZB||||||F<R>
+<EB>

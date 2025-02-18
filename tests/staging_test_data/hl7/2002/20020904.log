@@ -1,0 +1,30 @@
+2002-09-04 07:35:37.9513|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020904073537|TBD|ORU^R01|2.25.101091140321875809717218536775111130289|P|2.7<R>
+PID|1||ABC451102^^^ABC^MR||BAKER^LLOYD^DANNY^^^^D||19820325|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084844|||||||||||||||||||||||||20020904073537|||||||V<R>
+ORC|RE|5382238^SYS|7795083208||Prelim||^^^20020904073536^20020904073537^O||20020904073537|T6530151^WATERS^JESSICA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5382238^SYS|7795083208|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20020901171041|||||Hosp Perf||||^^^BRAIN|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20020904073537||MR|Prelim||^^^20020904073536^20020904073537^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20020904073537||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|1. Unremarkable brain MRI with no evidence of acute intracranial||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|abnormality. 2. Chronic small vessel ischemic changes possibly noted;||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|correlation with clinical symptoms may be necessary. 3. No||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|significant changes noted compared to prior imaging on 2001-12-16.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|MRI of the brain demonstrates a normal configuration of the cerebral||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|and cerebellar hemispheres. The ventricles appear symmetric and||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|within normal size without evidence of hydrocephalus. There are no||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|acute ischemic changes or acute hemorrhage visualized on T1-weighted||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|or T2-weighted sequences. No mass effect is noted. The basal ganglia||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|and thalamic structures appear normal. There are few scattered||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|hyperintense lesions noted in the periventricular white matter on||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|FLAIR sequences which may represent mild chronic small vessel||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|ischemic changes or demyelinating processes; correlation with||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|18|ST|&IMP|2|clinical history is recommended. No enhancement is noted following||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|19|ST|&IMP|2|contrast administration. The midline structures remain midline with||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|20|ST|&IMP|2|no significant deviation or abnormality.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|21|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.313474341147664974331518913508532037172^EPIC^APPLICATION^DICOM<R>
+<EB>

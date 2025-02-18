@@ -1,0 +1,26 @@
+2004-12-17 23:25:30.9121|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20041217232530|TBD|ORU^R01|2.25.97107125775659895332608243207684999671|P|2.7<R>
+PID|1||ABC451047^^^ABC^MR||ΓΙΑΝΝΑΡΆΣ^ΊΩΣΉΦ^^^^^D||19680418|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823245^MOORE^BRIAN^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084760|||||||||||||||||||||||||20041217232530|||||||V<R>
+ORC|RE|6630310^SYS|7795082986||Prelim||^^^20041217232529^20041217232530^O||20041217232530|T6530162^DUNN^MELANIE||D7823257^ROBINSON^RALPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6630310^SYS|7795082986|IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED|O|20041216174718|||||Hosp Perf||||^^^CHEST|D7823257^ROBINSON^RALPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20041217232530||MR|Prelim||^^^20041217232529^20041217232530^O||||^Chest pain||D7823250^ROBERTSON^MICHELLE^D.^^^^^ABC^^^^HOSP|T6530162^DUNN^MELANIE||20041217232530||||||||IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest MRI without contrast||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|5|ST|&IMP|2|No significant acute or chronic pathological findings in the chest||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|6|ST|&IMP|2|MRI. The study appears within normal limits, demonstrating normal||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|7|ST|&IMP|2|pulmonary parenchyma and cardiovascular structures. The MRI of the||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|8|ST|&IMP|2|chest demonstrates clear lung fields with no evidence of focal||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|9|ST|&IMP|2|lesions, consolidations, or pleural effusions. The heart is midline||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|10|ST|&IMP|2|in position, and its contours appear normal on all sequences. The||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|11|ST|&IMP|2|vascular structures show no signs of thrombosis or embolism. The||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|12|ST|&IMP|2|mediastinum is unremarkable, and the hilar regions are normal. No||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|13|ST|&IMP|2|evidence of enlarged lymph nodes is visualized within the mediastinal||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|14|ST|&IMP|2|or hilar structures, and the thoracic aorta is normal in caliber. The||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|15|ST|&IMP|2|diaphragm is intact and functions normally, and the visualized||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|16|ST|&IMP|2|portions of the upper abdomen reveal no abnormalities.||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+OBX|17|ST|&IMP|2|Dictated by: Michelle Robertson Interpreter, M.D.||||||Prelim|||||T6530162^DUNN^MELANIE<R>
+ZDS|2.25.134991676912364750432951274924326505995^EPIC^APPLICATION^DICOM<R>
+<EB>

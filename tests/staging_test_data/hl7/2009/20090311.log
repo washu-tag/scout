@@ -1,0 +1,19 @@
+2009-03-11 02:41:38.6543|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090311024138|TBD|ORU^R01|2.25.6000660582427590574528042216259674409|P|2.4<R>
+PID|1||ABC451092^^^ABC^MR~EPIC4485851^^^EPIC^MRN||MAY^KENNETH^CHAD^^^^D||19850929000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451092^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457283^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7272570^SYS|7795083165|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||20090307125610|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||2361^Brain MRI|20090311024138||IMG|||1^^^20090311024138^^U^^URGENT|       |||^Chest pain|D7823240^PARSONS^ERNESTO^J.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|1210192||ERNESTO PARSONS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|1210192||ACC#  Date Time  Exam~~7795083165 Mar 11 2009 02:41AM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The MRI of the brain reveals an intact midline with symmetrical~cortical and subcortical structures. No gross abnormalities in the~gray-white matter differentiation are noted. Ventricular size is~within normal limits, and there is no evidence of midline shift or~mass effect. There are patchy hyperintensities observed in the~periventricular white matter on T2-weighted images, suggestive of~mild chronic microvascular ischemic changes, a finding not uncommon~given the patient’s age. No significant enhancing lesions were~identified to suggest neoplasm or infectious etiology. The cerebellum~and brainstem are unremarkable. Overall, the study appears stable,~with minimal incidental note of age-appropriate findings.~~IMPRESSION:~Conclusions suggest the presence of mild chronic microvascular~ischemic changes. No acute intracranial pathology is detected. The~structural integrity of the brain remains largely preserved with no~new emergences of clinically significant lesions.||||||P<R>
+OBX|3|TX|1210192||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Ernesto Parsons, M.D. on Mar 11 2009 02:41AM~~Pending review by: April Hunt, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|1210192|4|7795083165^UK^ZB||||||P<R>
+<EB><R>
+
+2009-03-11 17:45:42.9081|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090311174542|TBD|ORU^R01|2.25.21023639044782944981683970460279241796|P|2.4<R>
+PID|1||ABC451055^^^ABC^MR~EPIC4485814^^^EPIC^MRN||GREEN^RYAN^JASON^^^^D||19741230000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451055^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823255^HARVEY^MARK^W.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457403^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2113201^SYS|7795083021|IMG2347^2347 MRI BRAIN WO CONTRAST^UNKDEV|URGENT||20090308203512|||PSCRIB|||||^^^^ |D7823252^NICHOLS^ISAAC^VICTOR^M.D.^^^^ABC|||||2347^BRAIN MRI Expedited|20090311174542||IMG|||1^^^20090311174542^^U^^URGENT|       |||^Chest pain|D7823258^BRYANT^DAVID^T.^^^M.D.|D7823251^CALLAHAN^SCOTT^A.^^^M.D.||PSCRIB|||||||||2347<R>
+<EB>

@@ -1,0 +1,26 @@
+2013-11-20 11:40:24.2676|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20131120114024|TBD|ORU^R01|2.25.255426510519484195623352558599309478874|P|2.7<R>
+PID|1||ABC451176^^^ABC^MR||CALLAHAN^DEBRA^AMANDA^^^^D||19861204|F||OTHER|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084772|||||||||||||||||||||||||20131120114024|||||||V<R>
+ORC|RE|9062459^SYS|7795083504||Prelim||^^^20131120114023^20131120114024^O||20131120114024|||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9062459^SYS|7795083504|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20131118142915|||||Hosp Perf|||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20131120114024||DX|Prelim||^^^20131120114023^20131120114024^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|||20131120114024||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray||||||Prelim<R>
+OBX|3|ST|&GDT|1|||||||Prelim<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim<R>
+OBX|5|ST|&IMP|2|The X-ray findings exhibit no acute or chronic pulmonary||||||Prelim<R>
+OBX|6|ST|&IMP|2|abnormalities and reveal a normal thoracic structure. There is no||||||Prelim<R>
+OBX|7|ST|&IMP|2|indication of acute respiratory issues. Recommendations for routine||||||Prelim<R>
+OBX|8|ST|&IMP|2|follow-up imaging can be considered based on clinical guidelines. The||||||Prelim<R>
+OBX|9|ST|&IMP|2|single-view X-ray performed on November 18, 2013, was targeted to||||||Prelim<R>
+OBX|10|ST|&IMP|2|assess the thoracic region. The visualization reveals normal lung||||||Prelim<R>
+OBX|11|ST|&IMP|2|fields with no evidence of infiltrates, consolidations, or pleural||||||Prelim<R>
+OBX|12|ST|&IMP|2|effusions. The cardiac silhouette is unremarkable, and no||||||Prelim<R>
+OBX|13|ST|&IMP|2|cardiomegaly is observed. The bony structures of the thoracic cage||||||Prelim<R>
+OBX|14|ST|&IMP|2|demonstrate normal morphology without evidence of recent fractures or||||||Prelim<R>
+OBX|15|ST|&IMP|2|degenerative changes. There are no significant mediastinal or hilar||||||Prelim<R>
+OBX|16|ST|&IMP|2|abnormalities noted in this view.||||||Prelim<R>
+OBX|17|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.300116493565202866302956138076067255794^EPIC^APPLICATION^DICOM<R>
+<EB>

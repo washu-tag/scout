@@ -1,0 +1,26 @@
+2009-12-02 07:59:44.6377|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20091202075944|TBD|ORU^R01|2.25.72315130219142536825108089995057575339|P|2.7<R>
+PID|1||ABC451033^^^ABC^MR||ΚΛΟΚΊΔΗΣ^ΓΑΒΡΙΉΛ^^^^^D||19910304|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084959|||||||||||||||||||||||||20091202075944|||||||V<R>
+ORC|RE|7077829^SYS|7795082934||Wet Read||^^^20091202075943^20091202075944^O||20091202075944|||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7077829^SYS|7795082934|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20091128061124|||||Hosp Perf|||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20091202075944||SC|Wet Read||^^^20091202075943^20091202075944^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|||20091202075944||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view chest X-ray||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|Normal single-view chest X-ray。There are no significant abnormalities||||||Wet Read<R>
+OBX|6|ST|&IMP|2|noted. The lung fields and cardiac silhouette appear unremarkable,||||||Wet Read<R>
+OBX|7|ST|&IMP|2|with no signs of acute pathological changes. This study serves as an||||||Wet Read<R>
+OBX|8|ST|&IMP|2|excellent baseline for comparison with future imaging. The||||||Wet Read<R>
+OBX|9|ST|&IMP|2|single-view X-ray demonstrates clear lung fields bilaterally, with no||||||Wet Read<R>
+OBX|10|ST|&IMP|2|evidence of infiltrates, pleural effusions, or lesions. The cardiac||||||Wet Read<R>
+OBX|11|ST|&IMP|2|silhouette is within normal limits, and there are no visible bone||||||Wet Read<R>
+OBX|12|ST|&IMP|2|abnormalities noted in the thoracic spine or ribs. The diaphragm is||||||Wet Read<R>
+OBX|13|ST|&IMP|2|intact, with no lower lung zone pathology visible. No signs of||||||Wet Read<R>
+OBX|14|ST|&IMP|2|pulmonary vascular congestion or other acute processes are present.||||||Wet Read<R>
+OBX|15|ST|&IMP|2|Overall, the radiographic appearance is consistent with normal||||||Wet Read<R>
+OBX|16|ST|&IMP|2|pulmonary anatomy and physiology.||||||Wet Read<R>
+OBX|17|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.260920169195172319471766162418610173094^EPIC^APPLICATION^DICOM<R>
+<EB>

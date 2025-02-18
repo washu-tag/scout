@@ -1,0 +1,11 @@
+2021-03-23 03:48:24.9924|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210323034824|TBD|ORU^R01|2.25.263220864936760480206410286077624005021|P|2.4<R>
+PID|1||ABC451176^^^ABC^MR~EPIC4485935^^^EPIC^MRN||CALLAHAN^DEBRA^AMANDA^^^^D||19861204000000|F||R|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451176^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457209^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4155242^SYS|7795083503|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||20210319060649|||PSCRIB|||||^^^^ |D7823240^PARSONS^ERNESTO^JOHN^M.D.^^^^ABC|||||70553^Brain dMRI|20210323034824||CMRP|||1^^^20210323034824^^U^^URGENT|       |||^Chest pain|D7823240^PARSONS^ERNESTO^J.^^^M.D.|D7823243^HAWKINS^CURTIS^K.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|8945288||ERNESTO PARSONS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|8945288||ACC#  Date Time  Exam~~7795083503 Mar 23 2021 03:48AM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI conducted on March 19, 2021, highlights a well-defined~lesion located in the left temporal lobe that demonstrates~hyperintense signal on T2-weighted images and hypointense on~T1-weighted images, suggestive of a possible glioma. The surrounding~edema is also observed, indicating localized mass effect with subtle~midline shift. No significant vascular abnormalities or acute~ischemic changes are noted. The ventricles are symmetrically enlarged~indicating some degree of atrophy. The posterior fossa appears~unremarkable with normal cerebellar architecture.~~IMPRESSION:~The findings indicate a likely neoplastic process in the left~temporal lobe, with associated edema and mass effect. An MRI with~contrast is recommended for further characterization of the lesion.~Consideration for neurosurgical evaluation may be prudent given the~possibility of a glioma.||||||F<R>
+OBX|3|TX|8945288||Requested By: Parsons,Ernesto J. M.D.~~Dictated By: Ernesto Parsons, M.D. on Mar 23 2021 03:48AM~~This document has been electronically signed by: Ernesto Parsons,~M.D. on Mar 23 2021 03:48AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8945288|4|7795083503^UK^ZB||||||F<R>
+<EB>

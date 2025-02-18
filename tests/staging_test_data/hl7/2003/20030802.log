@@ -1,0 +1,11 @@
+2003-08-02 17:47:54.2626|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20030802174754|TBD|ORU^R01|2.25.142755736620334896784353145991073692067|P|2.4<R>
+PID|1||ABC451103^^^ABC^MR~EPIC4485862^^^EPIC^MRN||COLLINS^NICKOLAS^LARRY^^^^D||19511215000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451103^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457318^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3531248^SYS|7795083211|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20030802094045|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||^Xr Sing View|20030802174754||MDXREVNT|||1^^^20030802174754^^U^^URGENT|       |||^Chest pain|D7823241^SANDERS^LISA^A.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB<R>
+OBX|1|TX|1495652||LISA SANDERS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|1495652||ACC#  Date Time  Exam~~7795083211 Aug 02 2003 05:47PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray of the chest~~FINDINGS:~The single-view chest X-ray demonstrates clear visualization of the~lung fields with soft tissue structures delineated adequately. There~is no radiographic evidence of acute cardiopulmonary disease. The~heart size appears to be within normal limits. No infiltrates,~effusions, or masses are noted in the visualized thoracic structures.~The costophrenic angles are sharp, indicating no pleural effusion.~The mediastinum is normative in contour and width, with no masses or~lymphadenopathy appreciated. The bony thorax shows degenerative~changes in the spine consistent with age-related changes, but no~acute fracture or abnormal mineralization is observed.~~IMPRESSION:~1. Unremarkable single-view chest X-ray. 2. Although mild~degenerative changes are noted in the thoracic spine, they are~age-appropriate and not associated with any acute process. No~evidence of cardiopulmonary pathology detected.||||||F<R>
+OBX|3|TX|1495652||Requested By: Hunt,April M. M.D.~~Dictated By: Lisa Sanders, M.D. on Aug 02 2003 05:47PM~~This document has been electronically signed by: Lisa Sanders, M.D.~on Aug 02 2003 05:47PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|1495652|4|7795083211^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,24 @@
+2022-11-27 03:48:50.5756|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20221127034850|TBD|ORU^R01|2.25.326176702662315943378272698793480563210|P|2.7<R>
+PID|1||ABC451096^^^ABC^MR||CHUNG^SEO-JOON^^^^^D||19710928|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084735|||||||||||||||||||||||||20221127034850|||||||V<R>
+ORC|RE|1813566^SYS|7795083185||Final||^^^20221127034849^20221127034850^O||20221127034850|T6530152^ADKINS^MELLISSA||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1813566^SYS|7795083185|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20221126092321|||||Hosp Perf||||^^^BRAIN|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20221127034850||MR|Final||^^^20221127034849^20221127034850^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20221127034850||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|1. Unremarkable brain MRI, with no evidence of pathology. 2. Stable||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|findings, consistent with previous examinations. The brain MRI||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|demonstrates normal anatomy with no focal lesions or masses. The gray||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|and white matter differentiation is preserved, and no signs of||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|demyelinating disease are present. Diffusion-weighted imaging is||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|clear of acute ischemia. Vascular structures are intact with no||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|evidence of significant stenosis. There are no abnormal signal||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|intensities in the brain parenchyma, and the ventricular and||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|cisternal systems appear normal in size and configuration. The orbits||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|are unremarkable with normal optic nerves bilaterally.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.211533147967824464083983141162382176897^EPIC^APPLICATION^DICOM<R>
+<EB>

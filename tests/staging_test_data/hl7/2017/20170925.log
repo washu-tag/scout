@@ -1,0 +1,11 @@
+2017-09-25 08:26:22.4160|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170925082622|TBD|ORU^R01|2.25.266478225170654087811057136884798553838|P|2.4<R>
+PID|1||ABC451096^^^ABC^MR~EPIC4485855^^^EPIC^MRN||CHUNG^SEO-JOON^^^^^D||19710928000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451096^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457171^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1259156^SYS|7795083182|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20170924110137|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||^Xr Sing View|20170925082622||MDXREVNT|||1^^^20170925082622^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB<R>
+OBX|1|TX|2648933||MICHAEL MARKS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|2648933||ACC#  Date Time  Exam~~7795083182 Sep 25 2017 08:26AM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~The single-view chest X-ray displays clear lung fields with no focal~opacities or pleural effusions. The cardiac silhouette is within~normal limits, and the hilar regions are unremarkable. There is no~evidence of acute infiltrates or consolidations, and the diaphragm~contours are smooth and well-defined. The bony thorax appears intact~without any obvious fractures or lesions. Soft tissues are~unremarkable, with no acute chest wall pathology observed.~~IMPRESSION:~1. Clear lung fields with no evidence of acute chest pathology. 2.~Normal heart size and unchanged thoracic structures.||||||F<R>
+OBX|3|TX|2648933||Requested By: Marks,Michael R. M.D.~~Dictated By: Michael Marks, M.D. on Sep 25 2017 08:26AM~~This document has been electronically signed by: Michael Marks, M.D.~on Sep 25 2017 08:26AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2648933|4|7795083182^UK^ZB||||||F<R>
+<EB>

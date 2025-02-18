@@ -1,0 +1,30 @@
+2023-03-31 11:56:29.5640|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230331115629|TBD|ORU^R01|2.25.73122231388573292038771690545874406135|P|2.7<R>
+PID|1||ABC451084^^^ABC^MR||ΞΕΝΆΚΗΣ^ΧΡΙΣΤΙΑΝΌΣ^^^^^D||19990329|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084781|||||||||||||||||||||||||20230331115629|||||||V<R>
+ORC|RE|5311263^SYS|7795083135||Prelim||^^^20230331115628^20230331115629^O||20230331115629|T6530145^RUIZ^TARA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5311263^SYS|7795083135|IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC|O|20230330113526|||||Hosp Perf||||^^^BRAIN|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230331115629||CT|Prelim||^^^20230331115628^20230331115629^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20230331115629||||||||IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain PET-CT||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|The brain PET-CT performed on 2023-03-30 reveals no abnormal cerebral||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|glucose metabolism that would indicate malignancy or acute||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|neurological disease. The study is notable for the presence of mild||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|inflammatory changes in the paranasal sinus region, which may warrant||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|clinical correlation. Overall, this imaging is consistent with stable||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|intracranial findings compared to the previous MRI from 2020-08-15.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|The PET-CT scan shows homogeneous uptake in the cerebral glucose||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|metabolism with no focal hypermetabolic or hypometabolic lesions||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|identified. The bilateral frontal, parietal, occipital, and temporal||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|lobes demonstrate normal metabolic activity, suggesting no evidence||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|of malignancy or neurodegenerative changes. No abnormal||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|lymphadenopathy or unexpected soft tissue masses are detected in the||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|neck, thorax, or abdomen. The intracranial vasculature appears to be||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|normal, and the perfusion of the brain is intact without signs of||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|19|ST|&IMP|2|ischemia. However, mild inflammatory changes were noted within the||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|20|ST|&IMP|2|right maxillary sinus, potentially indicating sinusitis.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|21|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.172249110342151937442928823311998162509^EPIC^APPLICATION^DICOM<R>
+<EB>

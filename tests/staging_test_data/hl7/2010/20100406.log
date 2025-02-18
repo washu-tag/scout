@@ -1,0 +1,11 @@
+2010-04-06 19:12:05.1320|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100406191205|TBD|ORU^R01|2.25.177641227974686593239842331055240396047|P|2.4<R>
+PID|1||ABC451177^^^ABC^MR~EPIC4485936^^^EPIC^MRN||PIERCE^ALLEN^DESHAWN^^^^D||19501013000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451177^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457227^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2272687^SYS|7795083506|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20100403184533|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||^Xr Sing View|20100406191205||MDXREVNT|||1^^^20100406191205^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB<R>
+OBX|1|TX|3554919||GUY SANCHEZ, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|3554919||ACC#  Date Time  Exam~~7795083506 Apr 06 2010 07:12PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray Study~~FINDINGS:~The single-view X-ray study of the chest reveals clear lung fields~with no evidence of acute infiltrates, consolidation, or pleural~effusion. Cardiac silhouette is within normal limits, and the~thoracic cage appears structurally intact. There are no significant~bony abnormalities seen, though mild degenerative changes of the~thoracic spine are noted, which could be attributed to the patient’s~age and history of osteoarthritis. Overall, this examination appears~stable when compared with the prior chest imaging from 2010-04-03.~~IMPRESSION:~Chest X-ray appears unremarkable with no evidence of acute pathology.~Mild degenerative changes of the thoracic spine are noted, consistent~with expected age-related findings. Stable compared to previous study~on 2010-04-03.||||||F<R>
+OBX|3|TX|3554919||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Guy Sanchez, M.D. on Apr 06 2010 07:12PM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Apr 06 2010 07:12PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3554919|4|7795083506^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,26 @@
+2013-02-17 03:47:25.5689|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130217034725|TBD|ORU^R01|2.25.48462439229775132567938657478741218533|P|2.7<R>
+PID|1||ABC451011^^^ABC^MR||FISHER^CHRISTOPHER^MIGUEL^^^^D||19340331|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084928|||||||||||||||||||||||||20130217034725|||||||V<R>
+ORC|RE|2164714^SYS|7795082843||Prelim||^^^20130217034724^20130217034725^O||20130217034725|||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2164714^SYS|7795082843|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20130215172748|||||Hosp Perf|||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20130217034725||DX|Prelim||^^^20130217034724^20130217034725^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|||20130217034725||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray||||||Prelim<R>
+OBX|3|ST|&GDT|1|||||||Prelim<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim<R>
+OBX|5|ST|&IMP|2|Normal findings of the chest X-ray with no pathological change||||||Prelim<R>
+OBX|6|ST|&IMP|2|identified. The absence of acute pulmonary or cardiac findings is||||||Prelim<R>
+OBX|7|ST|&IMP|2|consistent with the patient's stable clinical status. No significant||||||Prelim<R>
+OBX|8|ST|&IMP|2|variation is noted compared to previous vascular studies. The||||||Prelim<R>
+OBX|9|ST|&IMP|2|single-view plain radiograph of the chest shows normal cardiac||||||Prelim<R>
+OBX|10|ST|&IMP|2|silhouette with no cardiomegaly noted. The pulmonary vasculature is||||||Prelim<R>
+OBX|11|ST|&IMP|2|unremarkable with no signs of congestion. Lung fields are clear||||||Prelim<R>
+OBX|12|ST|&IMP|2|bilaterally, without evidence of infiltrates, effusions, or mass||||||Prelim<R>
+OBX|13|ST|&IMP|2|lesions. Costophrenic angles are sharp and free of fluid. The bony||||||Prelim<R>
+OBX|14|ST|&IMP|2|architecture is intact with no signs of acute fracture or destructive||||||Prelim<R>
+OBX|15|ST|&IMP|2|bone pathology, though mild degenerative changes of the thoracic||||||Prelim<R>
+OBX|16|ST|&IMP|2|spine are evident.||||||Prelim<R>
+OBX|17|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.157231477381447532498927454747500032480^EPIC^APPLICATION^DICOM<R>
+<EB>

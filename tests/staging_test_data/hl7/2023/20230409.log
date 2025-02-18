@@ -1,0 +1,26 @@
+2023-04-09 05:34:46.9200|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230409053446|TBD|ORU^R01|2.25.186066017450910252561600585896998129001|P|2.7<R>
+PID|1||ABC451118^^^ABC^MR||WILLIS^PATRICK^STEPHEN^^^^D||20000430|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084824|||||||||||||||||||||||||20230409053446|||||||V<R>
+ORC|RE|3666903^SYS|7795083269||Wet Read||^^^20230409053445^20230409053446^O||20230409053446|T6530149^VASQUEZ^MISTY||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3666903^SYS|7795083269|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20230408190742|||||Hosp Perf|||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230409053446||US|Wet Read||^^^20230409053445^20230409053446^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20230409053446||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|The ultrasound findings indicate a structurally normal abdomen with||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|no significant anomalies. Ongoing assessment of pancreatic||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|echogenicity may be warranted, considering lifestyle factors||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|impacting digestive health. The ultrasound examination of the abdomen||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|reveals normal echogenicity of the liver, spleen, and kidneys without||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|any focal lesions or cysts. The gallbladder is normal in size, with||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|no evidence of cholelithiasis. The pancreas appears unremarkable with||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|a heterogeneous echotexture that could be related to edematous||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|changes possibly from recent dietary habits. No fluid collections are||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|identified in the peritoneal cavity. Vascular structures including||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|the aorta and inferior vena cava appear patent with no thrombi.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|Overall, the abdominal organs present normal anatomy and morphology.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.261077933839283398235017779847509489339^EPIC^APPLICATION^DICOM<R>
+<EB>

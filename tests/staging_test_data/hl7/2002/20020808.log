@@ -1,0 +1,26 @@
+2002-08-08 21:28:47.2409|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020808212847|TBD|ORU^R01|2.25.253857228280740002979220827711076840603|P|2.7<R>
+PID|1||ABC451002^^^ABC^MR||HARMON^QUINTIN^IAN^^^^D||19680722|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084860|||||||||||||||||||||||||20020808212847|||||||V<R>
+ORC|RE|3391354^SYS|7795082806||Wet Read||^^^20020808212846^20020808212847^O||20020808212847|||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3391354^SYS|7795082806|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20020806143512|||||Hosp Perf|||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20020808212847||CR|Wet Read||^^^20020808212846^20020808212847^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|||20020808212847||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|The chest X-ray shows no acute abnormalities. The cardiothoracic||||||Wet Read<R>
+OBX|6|ST|&IMP|2|ratio is within normal limits, and the findings are stable compared||||||Wet Read<R>
+OBX|7|ST|&IMP|2|to prior imaging. Continued routine chest imaging is not recommended||||||Wet Read<R>
+OBX|8|ST|&IMP|2|unless symptomatic changes develop. This single-view chest X-ray does||||||Wet Read<R>
+OBX|9|ST|&IMP|2|not demonstrate any acute cardiopulmonary findings. The lung fields||||||Wet Read<R>
+OBX|10|ST|&IMP|2|are clear bilaterally without evidence of infiltrates, effusions, or||||||Wet Read<R>
+OBX|11|ST|&IMP|2|consolidation. The cardiac silhouette is within normal limits, and||||||Wet Read<R>
+OBX|12|ST|&IMP|2|the mediastinal structures appear unremarkable. The diaphragm is||||||Wet Read<R>
+OBX|13|ST|&IMP|2|well-defined, with no signs of free air under the diaphragm.||||||Wet Read<R>
+OBX|14|ST|&IMP|2|Peripheral vascular markings are normal, and there are no suspicious||||||Wet Read<R>
+OBX|15|ST|&IMP|2|bone lesions observed in the visible thoracic structures. Compared to||||||Wet Read<R>
+OBX|16|ST|&IMP|2|the previous imaging from 1995, no significant changes are noted.||||||Wet Read<R>
+OBX|17|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.290803818928048964966484762536552090197^EPIC^APPLICATION^DICOM<R>
+<EB>

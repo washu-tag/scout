@@ -1,0 +1,29 @@
+2020-07-06 19:32:18.5112|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200706193218|TBD|ORU^R01|2.25.123669799352018006153999549452680613036|P|2.7<R>
+PID|1||ABC451039^^^ABC^MR||ITO^ASAHI^^^^^D||19990224|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084960|||||||||||||||||||||||||20200706193218|||||||V<R>
+ORC|RE|3722020^SYS|7795082954||Final||^^^20200706193217^20200706193218^O||20200706193218|T6530146^MOORE^CURTIS||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3722020^SYS|7795082954|BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY|O|20200702095145|||||Hosp Perf||||^^^CSPINE|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20200706193218||DX|Final||^^^20200706193217^20200706193218^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20200706193218||||||||BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: C-spine X-ray||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|1. Normal cervical spine alignment without acute bony injury. 2. Mild||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|degenerative changes with anterior osteophytes present but no||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|neurologic compromise. 3. Continued monitoring recommended to assess||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|any progression of degenerative changes. The cervical spine X-ray||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|depicts a well-aligned cervical column with normal curvature. No||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|fractures or subluxations are noted. The intervertebral disc spaces||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|appear preserved without significant height loss. There is mild||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|posterior osteophyte formation seen at C5-C6, but this does not||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|appear to cause any significant foraminal narrowing or spinal canal||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|stenosis. The overall degenerative changes are consistent with an||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|active lifestyle. The visualization of the soft tissues suggests no||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|mass or significant swelling. Importantly, no acute osseous injuries||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|were identified. This imaging is consistent with age-related changes.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|Previous X-rays did not show significant degenerative evolution||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|19|ST|&IMP|2|during the interval.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|20|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.247471955049396659098836526560806505265^EPIC^APPLICATION^DICOM<R>
+<EB>

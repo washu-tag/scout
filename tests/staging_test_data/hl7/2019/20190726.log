@@ -1,0 +1,22 @@
+2019-07-26 03:06:15.7312|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190726030615|TBD|ORU^R01|2.25.1923856047247789806742461544177015195|P|2.7<R>
+PID|1||ABC451178^^^ABC^MR||CHOI^SU-BIN^^^^^D||19671008|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084831|||||||||||||||||||||||||20190726030615|||||||V<R>
+ORC|RE|664180^SYS|7795083511||Final||^^^20190726030614^20190726030615^O||20190726030615|||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|664180^SYS|7795083511|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20190722093218|||||Hosp Perf|||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20190726030615||OT|Final||^^^20190726030614^20190726030615^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|||20190726030615||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|Steady-state findings in the chest X-ray indicate absence of new or||||||Final<R>
+OBX|6|ST|&IMP|2|progressive cardiac and pulmonary abnormalities since the previous||||||Final<R>
+OBX|7|ST|&IMP|2|study in 2006. The degenerative changes are consistent with expected||||||Final<R>
+OBX|8|ST|&IMP|2|age-related alterations. Comparison with the previous X-ray study||||||Final<R>
+OBX|9|ST|&IMP|2|from 2006-12-29 reveals no significant change in cardiac silhouette||||||Final<R>
+OBX|10|ST|&IMP|2|and pulmonary vasculature. The lungs remain clear with unchanged soft||||||Final<R>
+OBX|11|ST|&IMP|2|tissue contours. Mild degenerative changes are noted in the thoracic||||||Final<R>
+OBX|12|ST|&IMP|2|spine, but they appear stable over the intervening years.||||||Final<R>
+OBX|13|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Final<R>
+ZDS|2.25.108073543854652911200886252137974450175^EPIC^APPLICATION^DICOM<R>
+<EB>

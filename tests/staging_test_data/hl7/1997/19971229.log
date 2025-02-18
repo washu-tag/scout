@@ -1,0 +1,11 @@
+1997-12-29 13:38:34.2183|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19971229133834|TBD|ORU^R01|2.25.235138780876965253627782743372721272812|P|2.4<R>
+PID|1||ABC450997^^^ABC^MR~EPIC4485756^^^EPIC^MRN||BOYD^MEGAN^CONNIE^^^^D||19391212000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC450997^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457201^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9664381^SYS|7795082789|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||19971225111452|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|19971229133834||BHC|||1^^^19971229133834^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|6568214||JESSICA WRIGHT, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6568214||ACC#  Date Time  Exam~~7795082789 Dec 29 1997 01:38PM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The mammogram reveals a relatively symmetrical breast tissue~composition with no visible abnormalities. The density of the breast~parenchyma is predominantly fatty, which is indicative of a normal~aging process, consistent for this patient's age. There are no~discernible masses, calcifications, or architectural distortions~present. The skin overlying the breast shows normal thickness without~any suggestive signs of edema or skin lesions. Lymph nodes in the~axillary regions appear unremarkable with no pathological enlargement~noted, contributing to a comprehensive impression of no acute~findings within the breast.~~IMPRESSION:~The mammographic evaluation is normal, exhibiting no signs of~malignancy, and remaining consistent with expected findings for a~post-menopausal female of this age (77 years old). Future screening~should continue as per standard guidelines.||||||F<R>
+OBX|3|TX|6568214||Requested By: Donovan,William C. M.D.~~Dictated By: Jessica Wright, M.D. on Dec 29 1997 01:38PM~~This document has been electronically signed by: Jessica Wright, M.D.~on Dec 29 1997 01:38PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6568214|4|7795082789^UK^ZB||||||F<R>
+<EB>

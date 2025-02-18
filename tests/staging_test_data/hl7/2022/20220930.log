@@ -1,0 +1,11 @@
+2022-09-30 09:55:55.4293|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220930095555|TBD|ORU^R01|2.25.194370975922264186736718430964444596018|P|2.4<R>
+PID|1||ABC451101^^^ABC^MR~EPIC4485860^^^EPIC^MRN||ΑΡΓΎΡΗΣ^ΜΆΡΘΑ^^^^^D||19761103000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451101^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457261^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2282963^SYS|7795083205|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20220926071640|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20220930095555||BHC|||1^^^20220930095555^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|6589012||JOSEPH BARAJAS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6589012||ACC#  Date Time  Exam~~7795083205 Sep 30 2022 09:55AM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram comparison~~FINDINGS:~On the single-view mammogram performed on September 26, 2022, there~is a notable stability in breast parenchyma composition when compared~with the previous examination conducted on March 5, 2014. The breast~density remains similar, demonstrating primarily fatty tissue with no~new masses or microcalcifications. The previously identified cysts in~the right breast are unchanged in size and appearance. No signs of~malignancy or regional lymphadenopathy are observed. The mammographic~features remain benign, with the skin and subcutaneous tissues~appearing normal without evidence of edema or inflammatory changes.~~IMPRESSION:~The findings of the 2022 mammogram are consistent with the previous~exam from March 2014, showing BI-RADS 1: Negative status. Monitoring~remains appropriate, with no significant development over the last~eight years. Routine follow-up is advised as per screening~guidelines.||||||F<R>
+OBX|3|TX|6589012||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Joseph Barajas, M.D. on Sep 30 2022 09:55AM~~This document has been electronically signed by: Joseph Barajas, M.D.~on Sep 30 2022 09:55AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6589012|4|7795083205^UK^ZB||||||F<R>
+<EB>

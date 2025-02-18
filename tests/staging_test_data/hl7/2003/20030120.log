@@ -1,0 +1,28 @@
+2003-01-20 21:54:39.6462|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20030120215439|TBD|ORU^R01|2.25.107291890464189075870289019172915956768|P|2.7<R>
+PID|1||ABC451031^^^ABC^MR||SANCHEZ^AMBER^REBEKAH^^^^D||19211130|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823227^WOOD^MELISSA^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084892|||||||||||||||||||||||||20030120215439|||||||V<R>
+ORC|RE|4207490^SYS|7795082922||Prelim||^^^20030120215438^20030120215439^O||20030120215439|T6530140^HARDY^JAY||D7823224^MORGAN^JOHN^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4207490^SYS|7795082922|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20030116200804|||||Hosp Perf|||||D7823224^MORGAN^JOHN^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20030120215439||XA|Prelim||^^^20030120215438^20030120215439^O||||^Chest pain||D7823216^HALL^JEREMY^G.^^^^^ABC^^^^HOSP|T6530140^HARDY^JAY||20030120215439||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|5|ST|&IMP|2|The findings suggest a stable vascular configuration with the||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|6|ST|&IMP|2|previously noted atheromatous plaque persisting at the carotid||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|7|ST|&IMP|2|bifurcation. The stenosis in the left subclavian artery, while mild,||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|8|ST|&IMP|2|may warrant further surveillance in interval follow-up imaging to||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|9|ST|&IMP|2|monitor for progression. The X-ray angiography reveals opacification||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|10|ST|&IMP|2|of the aortic arch and of the major branches. There is a mild||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|11|ST|&IMP|2|stenosis noted in the left subclavian artery characterized by a||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|12|ST|&IMP|2|reduction of the luminal diameter. The visualization of the left||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|13|ST|&IMP|2|carotid artery is suboptimal due to overlapping structures. The right||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|14|ST|&IMP|2|carotid artery is patent with no significant lesions. A small||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|15|ST|&IMP|2|atheromatous plaque is seen at the bifurcation of the common carotid||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|16|ST|&IMP|2|arteries. Compared to prior studies available for this patient, there||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|17|ST|&IMP|2|appears to be stable findings with no acute changes noted in the||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|18|ST|&IMP|2|vascular architecture.||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|19|ST|&IMP|2|Dictated by: Jeremy Hall Interpreter, M.D.||||||Prelim|||||T6530140^HARDY^JAY<R>
+ZDS|2.25.308577906409976570248207134985246145207^EPIC^APPLICATION^DICOM<R>
+<EB>

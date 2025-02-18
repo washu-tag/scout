@@ -1,0 +1,27 @@
+2019-08-25 08:26:40.1436|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190825082640|TBD|ORU^R01|2.25.102803968063529570743623449055112845697|P|2.7<R>
+PID|1||ABC450993^^^ABC^MR||ΘΕΟΔΩΡΆΚΗΣ^ΆΛΈΞΙΟΣ^^^^^D||19760421|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823222^POWELL^CARRIE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084659|||||||||||||||||||||||||20190825082640|||||||V<R>
+ORC|RE|6515623^SYS|7795082770||Wet Read||^^^20190825082639^20190825082640^O||20190825082640|T6530137^MALDONADO^CRYSTAL||D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6515623^SYS|7795082770|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20190822132110|||||Hosp Perf||||^^^HEART|D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20190825082640||NM|Wet Read||^^^20190825082639^20190825082640^O||||^Chest pain||D7823227^WOOD^MELISSA^C.^^^^^ABC^^^^HOSP|T6530137^MALDONADO^CRYSTAL||20190825082640||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM Study||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|5|ST|&IMP|2|The comparison with the 2005 study indicates a progression of||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|6|ST|&IMP|2|coronary artery disease with moderate to severe ischemia observed in||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|7|ST|&IMP|2|both inferior and inferolateral segments. Recommend further||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|8|ST|&IMP|2|evaluation for potential revascularization strategies. In this||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|9|ST|&IMP|2|follow-up cardiac nuclear medicine study performed on August 22,||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|10|ST|&IMP|2|2019, compared to the earlier study from May 31, 2005, there is a||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|11|ST|&IMP|2|notable change: the inferior wall perfusion defect has worsened to||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|12|ST|&IMP|2|moderate severity with an ejection fraction noted at 55%. There is||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|13|ST|&IMP|2|evidence of new ischemic areas, specifically in the inferolateral||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|14|ST|&IMP|2|segments. The comparison shows that previously moderate ischemia has||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|15|ST|&IMP|2|evolved into more significant perfusion abnormalities. Rest images||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|16|ST|&IMP|2|indicate fixed defects corresponding with previously noted areas of||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|17|ST|&IMP|2|ischemia.||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|18|ST|&IMP|2|Dictated by: Melissa Wood Interpreter, M.D.||||||Wet Read|||||T6530137^MALDONADO^CRYSTAL<R>
+ZDS|2.25.136209846447404962078056783820660603567^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+1998-11-16 12:24:35.8095|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19981116122435|TBD|ORU^R01|2.25.17804481319520978867463945332499680727|P|2.4<R>
+PID|1||ABC451086^^^ABC^MR~EPIC4485845^^^EPIC^MRN||BENNETT^COLIN^RYAN^^^^D||19520214000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451086^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457165^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1355504^SYS|7795083142|BED70250^70250 70250 Skull < 4 views^UNKDEV|URGENT||19981113190643|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||70250^Skull 1 View Dx Xray|19981116122435||BED|||1^^^19981116122435^^U^^URGENT|       |||^Chest pain|D7823231^SMITH^CLARA^T.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||70250<R>
+OBX|1|TX|1000147||CLARA SMITH, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|1000147||ACC#  Date Time  Exam~~7795083142 Nov 16 1998 12:24PM BED70250 70250 Skull < 4 views~~EXAMINATION:~Skull X-ray~~FINDINGS:~The skull X-ray reveals symmetric cranial contour with no evidence of~fractures or gross lesions. The cranial sutures appear well-defined~and have not shown premature closure. The paranasal sinuses are~clear, and no significant pathologies such as osteolytic lesions or~sclerotic foci are identified. No abnormal calcifications are~visualized.~~IMPRESSION:~Overall, the X-ray provides a normal evaluation of the skull. There~are no acute or chronic changes observed, indicating an unremarkable~skull structure.||||||F<R>
+OBX|3|TX|1000147||Requested By: Donovan,William C. M.D.~~Dictated By: Clara Smith, M.D. on Nov 16 1998 12:24PM~~This document has been electronically signed by: Clara Smith, M.D. on~Nov 16 1998 12:24PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|1000147|4|7795083142^UK^ZB||||||F<R>
+<EB>

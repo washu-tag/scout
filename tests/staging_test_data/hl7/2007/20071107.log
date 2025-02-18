@@ -1,0 +1,34 @@
+2007-11-07 09:51:34.8394|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20071107095134|TBD|ORU^R01|2.25.61937836645490635768781205764847206635|P|2.7<R>
+PID|1||ABC451078^^^ABC^MR||KELLY^JODI^DAWN^^^^D||19801121|F||UNABLE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084683|||||||||||||||||||||||||20071107095134|||||||V<R>
+ORC|RE|9144839^SYS|7795083110||Wet Read||^^^20071107095133^20071107095134^O||20071107095134|||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9144839^SYS|7795083110|BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM|O|20071106173302|||||Hosp Perf||||^^^BREAST|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20071107095134||MG|Wet Read||^^^20071107095133^20071107095134^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|||20071107095134||||||||BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|Findings are stable when compared to the mammogram from 2003-09-17.||||||Wet Read<R>
+OBX|6|ST|&IMP|2|No new pathology observed; routine screening should continue. This||||||Wet Read<R>
+OBX|7|ST|&IMP|2|study from 2007-11-06 shows continued stability in breast density and||||||Wet Read<R>
+OBX|8|ST|&IMP|2|anatomy compared to the mammogram from 2003-09-17. The glandular||||||Wet Read<R>
+OBX|9|ST|&IMP|2|tissue retains its symmetrical distribution with no isolated masses||||||Wet Read<R>
+OBX|10|ST|&IMP|2|detected. Calcifications seen previously remain stable and are||||||Wet Read<R>
+OBX|11|ST|&IMP|2|classified as benign. There are no new areas of concern, and there is||||||Wet Read<R>
+OBX|12|ST|&IMP|2|no evidence of lymphadenopathy or skin abnormalities.||||||Wet Read<R>
+OBX|13|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.213993993306683864190582070910324078501^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2007-11-07 20:06:15.5883|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20071107200615|TBD|ORU^R01|2.25.265531350969413331712268242005252930691|P|2.4<R>
+PID|1||ABC451154^^^ABC^MR~EPIC4485913^^^EPIC^MRN||WHITEHEAD^MICHAEL^ROGER^^^^D||19330116000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451154^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457360^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6361844^SYS|7795083418|JPT78699C^78699 Brain PET: MR Fusion 78699^UNKDEV|URGENT||20071107110523|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||78699^Brain PtMr|20071107200615||JPTC|||1^^^20071107200615^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||78699<R>
+OBX|1|TX|5497773||AMBER REESE, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|5497773||ACC#  Date Time  Exam~~7795083418 Nov 07 2007 08:06PM JPT78699C Brain PET: MR Fusion 78699~~EXAMINATION:~Head PET-MR~~FINDINGS:~The head PET-MR scan reveals hypermetabolic activity in the left~temporal lobe, raising concern for possible seizure foci or~underlying neoplastic changes. No mass effect is noted on the MR~imaging, and the ventricles are appropriately sized. The baseline~brain surveillance shows intact cortical thickness, albeit with some~age-related atrophy. No abnormal enhancement patterns or edema are~observed.~~IMPRESSION:~The PET-MR findings, particularly in the left temporal lobe, may~indicate an underlying pathophysiological condition; one should~consider further evaluation with additional neuroimaging or EEG~monitoring in conjunction with clinical correlation.||||||P<R>
+OBX|3|TX|5497773||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Amber Reese, M.D. on Nov 07 2007 08:06PM~~Pending review by: Kimberly Hanson, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5497773|4|7795083418^UK^ZB||||||P<R>
+<EB>

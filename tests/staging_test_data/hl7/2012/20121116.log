@@ -1,0 +1,11 @@
+2012-11-16 22:52:05.3031|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20121116225205|TBD|ORU^R01|2.25.275299025655710490531015427479136180109|P|2.4<R>
+PID|1||ABC450993^^^ABC^MR~EPIC4485752^^^EPIC^MRN||ΘΕΟΔΩΡΆΚΗΣ^ΆΛΈΞΙΟΣ^^^^^D||19760421000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC450993^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457097^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||785597^SYS|7795082771|IMG1259^1259 XR CHEST 1 VIEW^UNKDEV|URGENT||20121115122307|||PSCRIB|||||^^^^ |D7823240^PARSONS^ERNESTO^JOHN^M.D.^^^^ABC|||||1259^Chest 1 View Xray|20121116225205||IMG|||1^^^20121116225205^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||1259<R>
+OBX|1|TX|9565718||CURTIS HAWKINS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|9565718||ACC#  Date Time  Exam~~7795082771 Nov 16 2012 10:52PM IMG1259 XR CHEST 1 VIEW~~EXAMINATION:~Chest X-ray~~FINDINGS:~The chest X-ray performed on November 15, 2012, shows clear lung~fields bilaterally, with no evidence of pleural effusion or~pneumothorax. Cardiac silhouette appears normal in size and contour;~however, there is subtle prominence of the pulmonary vasculature~noted at the hilum, which may suggest mild pulmonary hypertension or~increased blood flow. The mediastinum is visualized within normal~limits, and bony thorax demonstrates no acute skeletal abnormalities.~~IMPRESSION:~Normal chest X-ray with mild vascular prominence, indicating possible~diastolic dysfunction or pulmonary circulatory overload. Clinical~correlation is recommended, especially regarding systemic or~pulmonary arterial pressures.||||||P<R>
+OBX|3|TX|9565718||Requested By: Parsons,Ernesto J. M.D.~~Dictated By: Curtis Hawkins, M.D. on Nov 16 2012 10:52PM~~Pending review by: Amber Reese, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|9565718|4|7795082771^UK^ZB||||||P<R>
+<EB>

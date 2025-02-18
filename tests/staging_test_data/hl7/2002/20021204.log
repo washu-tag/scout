@@ -1,0 +1,30 @@
+2002-12-04 13:15:18.2700|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20021204131518|TBD|ORU^R01|2.25.65010112815365281783837445739459503413|P|2.7<R>
+PID|1||ABC451026^^^ABC^MR||SMITH^HEATHER^ERICA^^^^D||19580730|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084875|||||||||||||||||||||||||20021204131518|||||||V<R>
+ORC|RE|5089989^SYS|7795082902||Wet Read||^^^20021204131517^20021204131518^O||20021204131518|T6530148^GROSS^CARLY||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5089989^SYS|7795082902|BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL|O|20021130125529|||||Hosp Perf||||^^^BREAST|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20021204131518||MG|Wet Read||^^^20021204131517^20021204131518^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20021204131518||||||||BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Four-view mammogram||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|The mammographic findings do not suggest any evidence of malignancy||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|or focal lesions. Given the patient's age and the quality of the||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|images, continued routine screening at prescribed intervals is||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|recommended, with a BI-RADS classification of 1. It is imperative||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|that the patient is encouraged to maintain regular follow-up and||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|report any new breast symptoms promptly. The four-view mammographic||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|study displays symmetric breast parenchyma without significant||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|architectural distortion. The glandular tissue consists mainly of||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|moderately dense fibroglandular tissue, consistent with a patient age||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|of 44 years at the time of imaging. No masses or calcifications are||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|detected on the craniocaudal or mediolateral oblique views. The skin||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|and subdermal fat planes are unremarkable. Comparison with prior||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|mammograms from 2000 reveals no interval changes in breast density or||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|the overall morphology of the breast tissue. The examination adheres||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|to BI-RADS category 1, indicating a negative result with normal||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|20|ST|&IMP|2|findings.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|21|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.316694752121184020955715441483166386599^EPIC^APPLICATION^DICOM<R>
+<EB>

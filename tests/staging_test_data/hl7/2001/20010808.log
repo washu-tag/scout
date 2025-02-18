@@ -1,0 +1,11 @@
+2001-08-08 00:28:35.8592|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010808002835|TBD|ORU^R01|2.25.201760408995299552984856913114754471262|P|2.4<R>
+PID|1||ABC451035^^^ABC^MR~EPIC4485794^^^EPIC^MRN||BURNS^GILBERT^ADAM^^^^D||19430321000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451035^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823254^CRUZ^JOSEPH^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457424^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||688905^SYS|7795082939|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||20010803120101|||PSCRIB|||||^^^^ |D7823251^CALLAHAN^SCOTT^ALEXANDER^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|20010808002835||IMG|||1^^^20010808002835^^U^^URGENT|       |||^Chest pain|D7823253^NIXON^MELISSA^D.^^^M.D.|D7823256^MILLER^MICHAEL^D.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|9922917||MELISSA NIXON, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|9922917||ACC#  Date Time  Exam~~7795082939 Aug 08 2001 12:28AM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~MRI of the chest reveals a normal cardiac silhouette, with no~evidence of pericardial effusion. The pulmonary parenchyma is~well-oxygenated and exhibits no focal areas of consolidation or~suspicious masses. Mediastinal structures show no significant~lymphadenopathy, and the thoracic aorta remains unremarkable.~Notably, the lobar bronchi are patent without any indication of~stenosis. A subtle area of fibrous scarring is noted in the left~lower lobe, likely residual from a past infectious process.~~IMPRESSION:~The chest MRI is consistent with a post-inflammatory process rather~than an acute infectious process. No acute cardiopulmonary~pathologies are identified. Recommend clinical correlation for the~left lower lobe scarring.||||||F<R>
+OBX|3|TX|9922917||Requested By: Callahan,Scott A. M.D.~~Dictated By: Melissa Nixon, M.D. on Aug 08 2001 12:28AM~~This document has been electronically signed by: Melissa Nixon, M.D.~on Aug 08 2001 12:28AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9922917|4|7795082939^UK^ZB||||||F<R>
+<EB>

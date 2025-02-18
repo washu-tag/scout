@@ -1,0 +1,11 @@
+1994-07-15 03:22:56.7928|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19940715032256|TBD|ORU^R01|2.25.283526921662978992135623214527883145168|P|2.4<R>
+PID|1||ABC451121^^^ABC^MR~EPIC4485880^^^EPIC^MRN||SMITH^MINDY^TERA^^^^D||19741018000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451121^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457324^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9257692^SYS|7795083283|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||19940711082457|||PSCRIB|||||^^^^ |D7823231^SMITH^CLARA^TAMIKA^M.D.^^^^ABC|||||2361^Brain MRI|19940715032256||IMG|||1^^^19940715032256^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|4898525||JOE MEDRANO, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|4898525||ACC#  Date Time  Exam~~7795083283 Jul 15 1994 03:22AM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI from July 11, 1994, reveals no hyperintensities on~T2-weighted imaging or enhancement on post-contrast sequences. The~ventricular system is symmetric and within normal limits, with no~evidence of midline shift or mass effect. The cortical sulci and~fissures are typically aged, with no significant atrophy noted. Basal~ganglia and thalamic regions appear normal with well-defined margins.~The images show no signs of acute intracranial hemorrhage or chronic~ischemic changes, and there are no suspicious lesions detected. In~comparing to prior imaging, there have been no identifiable changes~since this examination.~~IMPRESSION:~No acute intracranial pathology is evident. The MRI findings are~within normal limits with no abnormalities detected.||||||F<R>
+OBX|3|TX|4898525||Requested By: Smith,Clara T. M.D.~~Dictated By: Joe Medrano, M.D. on Jul 15 1994 03:22AM~~This document has been electronically signed by: Joe Medrano, M.D. on~Jul 15 1994 03:22AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4898525|4|7795083283^UK^ZB||||||F<R>
+<EB>

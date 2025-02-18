@@ -1,0 +1,35 @@
+1999-08-27 22:07:21.8877|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19990827220721|TBD|ORU^R01|2.25.23257806270399008318291521169477429145|P|2.7<R>
+PID|1||ABC451167^^^ABC^MR||LIM^HYUN-JUN^^^^^D||19420728|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085000|||||||||||||||||||||||||19990827220721|||||||V<R>
+ORC|RE|4924263^SYS|7795083466||Prelim||^^^19990827220720^19990827220721^O||19990827220721|T6530149^VASQUEZ^MISTY||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4924263^SYS|7795083466|IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC|O|19990823091645|||||Hosp Perf||||^^^BRAIN|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19990827220721||CT|Prelim||^^^19990827220720^19990827220721^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||19990827220721||||||||IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain PET-CT||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|Increased metabolic activity in bilateral temporal and parietal lobes||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|raises suspicion for the early stages of neurodegenerative processes,||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|corresponding with typical patterns seen in age-related dementia or||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|Alzheimer’s disease. Cortical atrophy observed is consistent with||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|expected findings for a male patient of 57 years without evidence of||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|acute intracranial pathology. Recommend clinical correlation and||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|possible follow-up imaging in 1-2 years for comprehensive evaluation||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|of progression. The FDG-PET portion of the brain study shows||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|increased metabolic activity in the temporal and parietal lobes,||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|suggestive of possible neurodegenerative processes. No focal cortical||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|uptake was visualized suggesting the absence of malignant lesions.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|The attenuation correction CT images display age-appropriate cortical||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|atrophy predominantly affecting the hippocampi and medial temporal||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|18|ST|&IMP|2|lobes, consistent with expected changes for a patient of this age.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|19|ST|&IMP|2|Otherwise, ventricles are mildly prominent reflecting benign||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|20|ST|&IMP|2|age-related ependymal atrophy. The base of the skull and cervical||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|21|ST|&IMP|2|spine appears unremarkable. There are no significant abnormalities in||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|22|ST|&IMP|2|the intracranial vessels on the non-contrast CT sequences. The||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|23|ST|&IMP|2|overall metabolic pattern demonstrates preserved dominant hemisphere||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|24|ST|&IMP|2|function with no evidence of seizure focus or abnormal||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|25|ST|&IMP|2|hypermetabolism.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|26|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.22950321304239073079204050448079497166^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,25 @@
+2012-11-07 03:32:50.5132|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20121107033250|TBD|ORU^R01|2.25.186629513942305757340037824193421379996|P|2.7<R>
+PID|1||ABC451165^^^ABC^MR||CRAIG^KAREN^JESSICA^^^^D||19200411|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084970|||||||||||||||||||||||||20121107033250|||||||V<R>
+ORC|RE|3253576^SYS|7795083460||Prelim||^^^20121107033249^20121107033250^O||20121107033250|T6530154^ROBERTS^RICARDO||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3253576^SYS|7795083460|IMG2370^MRI BRAIN W WO CONTRAST^UNKDEV^^BRAIN MRI|O|20121102202141|||||Hosp Perf||||^^^BRAIN|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20121107033250||MR|Prelim||^^^20121107033249^20121107033250^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20121107033250||||||||IMG2370^MRI BRAIN W WO CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|This MRI shows stable cerebral architecture and no interval changes||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|noted since prior imaging in 1998. No new pathologies have developed,||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|confirming the absence of pathological processes affecting the||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|patient’s neurological condition. The brain MRI very closely||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|resembles findings from the previous scan dated 1998-10-24. The||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|cerebral sulci and gyri maintain their relative symmetry. There||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|continues to be no evidence of acute ischemia, swelling, or mass||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|lesions present. The previous slight prominence of the ventricular||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|system remains stable and within normal limits for expected||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|age-related changes. The diffusion sequences remain unchanged,||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|demonstrating no areas of restricted diffusion.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.198802000819841841457545914025671058201^EPIC^APPLICATION^DICOM<R>
+<EB>

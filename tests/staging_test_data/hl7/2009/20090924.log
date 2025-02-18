@@ -1,0 +1,25 @@
+2009-09-24 04:06:17.6875|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090924040617|TBD|ORU^R01|2.25.281103889148347278179144530065489913857|P|2.7<R>
+PID|1||ABC451149^^^ABC^MR||FOLEY^HEATHER^CASSIE^^^^D||19930826|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084828|||||||||||||||||||||||||20090924040617|||||||V<R>
+ORC|RE|8215985^SYS|7795083395||Final||^^^20090924040616^20090924040617^O||20090924040617|T6530150^NEAL^EMILY||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8215985^SYS|7795083395|BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL|O|20090921193903|||||Hosp Perf||||^^^BREAST|D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20090924040617||MG|Final||^^^20090924040616^20090924040617^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20090924040617||||||||BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Four-view mammogram||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|Normal bilateral mammographic findings without evidence of malignancy||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|or other abnormalities. Routine screening mammograms are recommended||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|at one-year intervals. The four-view mammography examination||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|demonstrates normal breast parenchyma with symmetric glandular tissue||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|density bilaterally. No evidence of suspicious masses, architectural||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|distortion, or microcalcifications is apparent. The skin and||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|subcutaneous tissue are unremarkable, with no signs of edema. The||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|axillary lymph nodes appear normal in size and morphology, and there||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|is no radiographic evidence of malignancy. No palpable abnormalities||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|correlate with the imaging findings, concluding that this is a normal||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|mammogram.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Final|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.298876544619733305423284098695468548172^EPIC^APPLICATION^DICOM<R>
+<EB>

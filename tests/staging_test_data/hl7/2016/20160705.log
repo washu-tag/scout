@@ -1,0 +1,27 @@
+2016-07-05 09:20:11.6198|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20160705092011|TBD|ORU^R01|2.25.143995135885723580753076005453129896324|P|2.7<R>
+PID|1||ABC451132^^^ABC^MR||SMITH^DAVID^JARON^^^^D||19621015|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084915|||||||||||||||||||||||||20160705092011|||||||V<R>
+ORC|RE|4837046^SYS|7795083324||Final||^^^20160705092010^20160705092011^O||20160705092011|T6530148^GROSS^CARLY||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4837046^SYS|7795083324|BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY|O|20160702065947|||||Hosp Perf||||^^^CSPINE|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20160705092011||DX|Final||^^^20160705092010^20160705092011^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20160705092011||||||||BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cervical spine X-ray||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|Normal cervical spine X-ray findings with no evidence of acute or||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|chronic changes. The integrity of the vertebrae and intervertebral||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|discs remains intact, suggesting a healthy cervical spine without||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|indication of degenerative processes or acute injury. The cervical||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|spine X-ray reveals good alignment of the cervical vertebrae. There||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|is no evidence of fractures or dislocations. The intervertebral disc||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|spaces demonstrate normal height and signal intensity with no signs||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|of spondylosis or herniated discs. Anterior osteophyte formation is||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|absent, and the foramina appear widely patent without any||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|encroachment on the neural foramina. The soft tissues surrounding the||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|cervical spine are unremarkable and show no signs of abnormal||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|swelling or edema. The overall curvature appears to be within normal||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|limits, indicating no significant subclinical abnormalities.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Final|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.209388862333708154789839585374258006311^EPIC^APPLICATION^DICOM<R>
+<EB>

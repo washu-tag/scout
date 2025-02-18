@@ -1,0 +1,11 @@
+2014-12-22 09:29:49.5296|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20141222092949|TBD|ORU^R01|2.25.325570953882495674004927626515384277728|P|2.4<R>
+PID|1||ABC451182^^^ABC^MR~EPIC4485941^^^EPIC^MRN||TAKAHASHI^MEI^^^^^D||19480612000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451182^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457157^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6568961^SYS|7795083527|SM71550CH0^715500 MR CHEST WO^UNKDEV|URGENT||20141221081043|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||715500^Chest PtMr|20141222092949||SMCH|||1^^^20141222092949^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||715500<R>
+OBX|1|TX|1274491||KIMBERLY HANSON, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|1274491||ACC#  Date Time  Exam~~7795083527 Dec 22 2014 09:29AM SM71550CH0 MR CHEST WO~~EXAMINATION:~Chest PET-MR~~FINDINGS:~The PET-MR scan exhibits metabolic activity that is homogeneous~within the lung fields, with no focal hypermetabolic lesions~suggestive of malignancy. The pulmonary vasculature is well~visualized, revealing no vascular occlusions or abnormalities in~blood flow patterns. Soft tissue structures surrounding the lung~fields appear normal without edema or any apparent masses. No~lymphadenopathy is detected, with nodal involvement remaining absent.~~IMPRESSION:~The comprehensive PET-MR study shows no signs indicative of~neoplastic activity throughout the thoracic region. The findings are~consistent with stable pulmonary status and warrant no immediate~intervention. Continued follow-ups for routine imaging assessments~are recommended.||||||P<R>
+OBX|3|TX|1274491||Requested By: Hunt,April M. M.D.~~Dictated By: Kimberly Hanson, M.D. on Dec 22 2014 09:29AM~~Pending review by: Lisa Sanders, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|1274491|4|7795083527^UK^ZB||||||P<R>
+<EB>

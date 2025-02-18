@@ -1,0 +1,25 @@
+2008-12-28 11:04:12.4710|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20081228110412|TBD|ORU^R01|2.25.302278193715426538140852879120977884045|P|2.7<R>
+PID|1||ABC451110^^^ABC^MR||THOMPSON^KEVIN^FRANK^Sr.^^^D||19900127|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084977|||||||||||||||||||||||||20081228110412|||||||V<R>
+ORC|RE|9649285^SYS|7795083239||Wet Read||^^^20081228110411^20081228110412^O||20081228110412|T6530152^ADKINS^MELLISSA||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9649285^SYS|7795083239|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20081227112658|||||Hosp Perf||||^^^CHEST|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20081228110412||CR|Wet Read||^^^20081228110411^20081228110412^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20081228110412||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|Overall, the chest X-ray from December 27, 2008, shows a normal||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|examination with no acute cardiopulmonary abnormalities. The lung||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|fields are clear, and the cardiac and mediastinal silhouettes are||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|within normal limits. This study can be interpreted as normal. The||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|frontal and lateral views demonstrate a well-aerated lung field||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|bilaterally without evidence of consolidations or pleural effusion.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|The cardiac silhouette remains within normal limits, demonstrating no||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|significant cardiomegaly. Vascular markings are unremarkable and||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|there is no evidence of pulmonary edema. The thoracic bony structures||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|appear intact without any signs of fracture or destructive lesions.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|No hilar enlargement or mediastinal shift is noted.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.170851492444213205390466041885601919706^EPIC^APPLICATION^DICOM<R>
+<EB>

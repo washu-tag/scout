@@ -1,0 +1,22 @@
+2004-07-18 22:53:22.4364|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20040718225322|TBD|ORU^R01|2.25.279816280975787842816213858190309851836|P|2.7<R>
+PID|1||ABC451174^^^ABC^MR||JONES^MILTON^JOSHUA^^^^D||19630203|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084727|||||||||||||||||||||||||20040718225322|||||||V<R>
+ORC|RE|7910610^SYS|7795083495||Prelim||^^^20040718225321^20040718225322^O||20040718225322|T6530152^ADKINS^MELLISSA||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7910610^SYS|7795083495|BED70250^70250 Skull < 4 views^UNKDEV^^SKULL 1 VIEW DX XRAY|O|20040714115533|||||Hosp Perf||||^^^SKULL|D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20040718225322||DX|Prelim||^^^20040718225321^20040718225322^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20040718225322||||||||BED70250^70250 Skull < 4 views^UNKDEV^^SKULL 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Skull X-ray||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|The skull X-ray results suggest normal findings with no current||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|evidence of trauma, mass effect, or significant pathology. The skull||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|X-ray reveals normal cranial contour and integrity, with no signs of||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|fractures or lesions. The cranial sutures appear patent with||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|appropriate separation, and both the frontal and occipital bones are||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|intact. The orbits are symmetric, and no abnormalities are seen||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|within the sinuses which appear clear. There is no evidence of soft||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|tissue swelling or significant erosion of the bony structures.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.85844198357131091707167176040641683786^EPIC^APPLICATION^DICOM<R>
+<EB>

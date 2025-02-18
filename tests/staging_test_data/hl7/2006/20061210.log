@@ -1,0 +1,24 @@
+2006-12-10 21:59:32.3942|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20061210215932|TBD|ORU^R01|2.25.29445686993256088952079233393363314057|P|2.7<R>
+PID|1||ABC451037^^^ABC^MR||ITO^SOTA^^^^^D||19451114|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084904|||||||||||||||||||||||||20061210215932|||||||V<R>
+ORC|RE|3165068^SYS|7795082948||Prelim||^^^20061210215931^20061210215932^O||20061210215932|T6530136^RIOS^KRISTIN||D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3165068^SYS|7795082948|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20061209090448|||||Hosp Perf||||^^^HEART|D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20061210215932||NM|Prelim||^^^20061210215931^20061210215932^O||||^Chest pain||D7823224^MORGAN^JOHN^J.^^^^^ABC^^^^HOSP|T6530136^RIOS^KRISTIN||20061210215932||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac Nuclear Medicine Study||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|5|ST|&IMP|2|Stable findings in the cardiac NM study with improvement in ejection||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|6|ST|&IMP|2|fraction compared to the 1994 study. No ischemic change or perfusion||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|7|ST|&IMP|2|defects are seen, suggesting stable cardiac health. When compared||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|8|ST|&IMP|2|with the prior NM study dated 1994-12-01, this study shows persistent||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|9|ST|&IMP|2|normal perfusion with the left ventricular ejection fraction improved||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|10|ST|&IMP|2|to 68%. The rest and stress images remain free of ischemic changes,||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|11|ST|&IMP|2|with no new areas of decreased perfusion observed. Myocardial areas||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|12|ST|&IMP|2|maintain a consistent perfusion pattern with no significant changes||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|13|ST|&IMP|2|noted in wall motion morphology. The comparison suggests enhanced||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|14|ST|&IMP|2|cardiac performance since the last evaluation.||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|15|ST|&IMP|2|Dictated by: John Morgan Interpreter, M.D.||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+ZDS|2.25.320613704252634264260564968436800714482^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+1996-01-02 03:03:56.7908|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19960102030356|TBD|ORU^R01|2.25.234539735671922759929037502860901967292|P|2.4<R>
+PID|1||ABC451037^^^ABC^MR~EPIC4485796^^^EPIC^MRN||ITO^SOTA^^^^^D||19451114000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451037^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457341^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6411482^SYS|7795082947|MDXREVNT^ Radiology Event^UNKDEV|URGENT||19951230143517|||PSCRIB|||||^^^^ |D7823235^SANCHEZ^GUY^JEFFREY^M.D.^^^^ABC|||||^Xr Sing View|19960102030356||MDXREVNT|||1^^^19960102030356^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB<R>
+OBX|1|TX|4230771||JOE MEDRANO, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4230771||ACC#  Date Time  Exam~~7795082947 Jan 02 1996 03:03AM MDXREVNT Radiology Event~~EXAMINATION:~Single-view Chest X-ray~~FINDINGS:~The frontal chest radiograph is notable for clear lung fields without~evidence of consolidation, effusion, or mass. The cardiac silhouette~appears within normal limits, and the mediastinum is central. The~bony structures are well-defined, showing no acute fractures or~lesions. Mild degenerative changes in the thoracic spine are noted,~with some osteophyte formation, consistent with the patient's age.~Overall, the visualized upper abdomen and diaphragm are unremarkable.~~IMPRESSION:~The single-view chest X-ray presents a normal thoracic appearance.~There are no acute findings; however, age-related changes in the~thoracic spine are noted.||||||F<R>
+OBX|3|TX|4230771||Requested By: Sanchez,Guy J. M.D.~~Dictated By: Joe Medrano, M.D. on Jan 02 1996 03:03AM~~This document has been electronically signed by: Joe Medrano, M.D. on~Jan 02 1996 03:03AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4230771|4|7795082947^UK^ZB||||||F<R>
+<EB>

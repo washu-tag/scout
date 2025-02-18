@@ -1,0 +1,11 @@
+2009-03-03 17:01:58.6442|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090303170158|TBD|ORU^R01|2.25.52393614364809588653143521030246598646|P|2.4<R>
+PID|1||ABC451110^^^ABC^MR~EPIC4485869^^^EPIC^MRN||THOMPSON^KEVIN^FRANK^Sr.^^^D||19900127000000|M||U|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451110^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457414^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3493676^SYS|7795083240|BED74000^74000 74000 Abdomen single view AP^UNKDEV|URGENT||20090228195908|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||74000^Abdomen 1 View Dx Xray|20090303170158||BED|||1^^^20090303170158^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB|||||||||74000<R>
+OBX|1|TX|6560492||MICHAEL MARKS, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|6560492||ACC#  Date Time  Exam~~7795083240 Mar 03 2009 05:01PM BED74000 74000 Abdomen single view AP~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdomen X-ray demonstrates normal gas patterns within the bowel.~No evidence of obstruction is noted, and the stomach and bowel gas~distribution appears standard. The liver and spleen are not~visualized but there are no calcifications or soft tissue masses~observed in the abdomen. The bony elements, including the ribs and~lumbar spine, exhibit normal mineralization. No free air or fluid~accumulations are detectable.~~IMPRESSION:~The abdominal X-ray from February 28, 2009, is interpreted as normal,~with no obstructive processes or acute intra-abdominal pathologies~identified. The gas distribution is normal, suggesting adequately~functioning gastrointestinal motility.||||||P<R>
+OBX|3|TX|6560492||Requested By: Sanders,Lisa A. M.D.~~Dictated By: Michael Marks, M.D. on Mar 03 2009 05:01PM~~Pending review by: Joe Medrano, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|6560492|4|7795083240^UK^ZB||||||P<R>
+<EB>

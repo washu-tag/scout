@@ -1,0 +1,11 @@
+2024-01-13 21:33:44.8788|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240113213344|TBD|ORU^R01|2.25.243365226072818733894702710479817215598|P|2.4<R>
+PID|1||ABC451186^^^ABC^MR~EPIC4485945^^^EPIC^MRN||JOHNSON^STACIE^SARA^^^^D||19471012000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451186^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457103^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3571740^SYS|7795083545|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20240110140441|||PSCRIB|||||^^^^ |D7823227^WOOD^MELISSA^CHASITY^M.D.^^^^ABC|||||8452^NM MPI SPECT|20240113213344||H|||1^^^20240113213344^^U^^URGENT|       |||^Chest pain|D7823223^HARPER^MARIA^K.^^^M.D.|D7823221^MAXWELL^MICHAEL^R.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|2403846||MARIA HARPER, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|2403846||ACC#  Date Time  Exam~~7795083545 Jan 13 2024 09:33PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~Compared to the cardiac NM study dated 2010-04-25, there are no newly~identified perfusion defects or abnormalities. The SPECT scan~illustrates normal perfusion throughout all myocardial segments,~consistent with a previously reported left ventricular ejection~fraction of 60%. There is stability in wall motion dynamics, and no~signs of ischemia or infarction are present.~~IMPRESSION:~The comparison indicates stability in cardiac perfusion parameters,~reflecting a preserved cardiac function with no new pathological~findings, maintaining the correlation found in the previous studies.||||||P<R>
+OBX|3|TX|2403846||Requested By: Wood,Melissa C. M.D.~~Dictated By: Maria Harper, M.D. on Jan 13 2024 09:33PM~~Pending review by: Michael Maxwell, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|2403846|4|7795083545^UK^ZB||||||P<R>
+<EB>

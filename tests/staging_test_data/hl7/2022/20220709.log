@@ -1,0 +1,29 @@
+2022-07-09 13:36:09.5597|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220709133609|TBD|ORU^R01|2.25.242202437683723909872425735096873324853|P|2.7<R>
+PID|1||ABC450996^^^ABC^MR||OLIVER^TABATHA^ROBYN^^^^D||19430118|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084722|||||||||||||||||||||||||20220709133609|||||||V<R>
+ORC|RE|8988954^SYS|7795082782||Wet Read||^^^20220709133608^20220709133609^O||20220709133609|T6530148^GROSS^CARLY||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8988954^SYS|7795082782|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20220706165426|||||Hosp Perf||||^^^BRAIN|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20220709133609||MR|Wet Read||^^^20220709133608^20220709133609^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20220709133609||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|This follow-up MRI indicates a progression of chronic ischemic||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|changes compared to the prior study. The development of new||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|hyperintensities raises concern for expanding small vessel disease.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|Clinical correlation and potential neurocognitive assessment may be||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|warranted to evaluate any cognitive decline correlated with these||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|findings. Continued monitoring with regular imaging is recommended.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|Comparing this MRI (dated 2022-07-06) with the previous study dated||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|2001-04-24 (UID: 2.25.334650041296552496189596069554417351877),||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|changes are observed. The periventricular white matter lesions have||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|increased in both number and size, and new hyperintensities are noted||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|in the frontal lobe region, which may indicate a progression of||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|chronic ischemic changes. The remainder of the brain shows no new||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|focal lesions, and there is no evidence of hemorrhagic events. The||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|previously noted white matter abnormalities are consistent with||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|increased periventricular changes.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|20|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.148067076723369932054360715871636086480^EPIC^APPLICATION^DICOM<R>
+<EB>

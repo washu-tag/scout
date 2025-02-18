@@ -1,0 +1,11 @@
+2022-12-08 23:08:11.2400|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20221208230811|TBD|ORU^R01|2.25.85958262234829765898413894744138887043|P|2.4<R>
+PID|1||ABC451130^^^ABC^MR~EPIC4485889^^^EPIC^MRN||KATO^YUA^^^^^D||19710820000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451130^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457309^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6614577^SYS|7795083317|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||20221205091407|||PSCRIB|||||^^^^ |D7823235^SANCHEZ^GUY^JEFFREY^M.D.^^^^ABC|||||70553^Brain dMRI|20221208230811||CMRP|||1^^^20221208230811^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|8245436||AMBER REESE, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|8245436||ACC#  Date Time  Exam~~7795083317 Dec 08 2022 11:08PM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI demonstrates no acute intracranial hemorrhage or~ischemic changes. The gray and white matter appear preserved without~evidence of atrophy. Ventricles are symmetrically enlarged,~consistent with age, but there are no focal lesions, enhancing~masses, or mass effect. There is a lack of significant white matter~hyperintensities, and the major intracranial structures, including~the basal ganglia and thalami, are within normal limits. Vascular~flow signals are adequate with no signs of stenosis in the major~cerebral vessels.~~IMPRESSION:~The brain MRI is unremarkable with no acute findings. Normal~age-related changes with no focal abnormalities—indicative of stable~intracranial status.||||||F<R>
+OBX|3|TX|8245436||Requested By: Sanchez,Guy J. M.D.~~Dictated By: Amber Reese, M.D. on Dec 08 2022 11:08PM~~This document has been electronically signed by: Amber Reese, M.D. on~Dec 08 2022 11:08PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8245436|4|7795083317^UK^ZB||||||F<R>
+<EB>

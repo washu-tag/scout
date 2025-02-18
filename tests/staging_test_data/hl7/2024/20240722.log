@@ -1,0 +1,21 @@
+2024-07-22 13:55:13.0336|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240722135513|TBD|ORU^R01|2.25.205578804201413679972063500453403315216|P|2.7<R>
+PID|1||ABC451004^^^ABC^MR||PEREZ^THOMAS^MICHAEL^^^^D||19700404|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084946|||||||||||||||||||||||||20240722135513|||||||V<R>
+ORC|RE|9167643^SYS|7795082819||Prelim||^^^20240722135512^20240722135513^O||20240722135513|||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9167643^SYS|7795082819|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20240721101019|||||Hosp Perf|||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20240722135513||CR|Prelim||^^^20240722135512^20240722135513^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|||20240722135513||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-View X-ray||||||Prelim<R>
+OBX|3|ST|&GDT|1|||||||Prelim<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim<R>
+OBX|5|ST|&IMP|2|The single-view X-ray does not reveal any significant pathology,||||||Prelim<R>
+OBX|6|ST|&IMP|2|consistent with normal skeletal structure. The single-view X-ray||||||Prelim<R>
+OBX|7|ST|&IMP|2|captures an adequate representation of the region of interest,||||||Prelim<R>
+OBX|8|ST|&IMP|2|demonstrating no acute bony abnormalities. Soft tissues appear||||||Prelim<R>
+OBX|9|ST|&IMP|2|normal, and there are no indications of foreign body presence or||||||Prelim<R>
+OBX|10|ST|&IMP|2|significant vascular alterations. The joint spaces are||||||Prelim<R>
+OBX|11|ST|&IMP|2|well-preserved.||||||Prelim<R>
+OBX|12|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.280627890785297168296086341382194267543^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,25 @@
+2002-09-20 06:33:44.4450|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020920063344|TBD|ORU^R01|2.25.84749142113407844618412326432332798355|P|2.7<R>
+PID|1||ABC451082^^^ABC^MR||FIELDS^SARA^LISA^^^^D||19511218|F||PCFIS|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084746|||||||||||||||||||||||||20020920063344|||||||V<R>
+ORC|RE|9630489^SYS|7795083129||Wet Read||^^^20020920063343^20020920063344^O||20020920063344|||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9630489^SYS|7795083129|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20020919171704|||||Hosp Perf|||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20020920063344||DX|Wet Read||^^^20020920063343^20020920063344^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|||20020920063344||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view chest X-ray||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|The chest X-ray findings are unremarkable, consistent with a normal||||||Wet Read<R>
+OBX|6|ST|&IMP|2|thoracic exam. No significant changes are noted from the previous||||||Wet Read<R>
+OBX|7|ST|&IMP|2|imaging studies. The single-view chest X-ray reveals clear lung||||||Wet Read<R>
+OBX|8|ST|&IMP|2|fields with no evidence of consolidation or pleural effusion. The||||||Wet Read<R>
+OBX|9|ST|&IMP|2|heart size is within normal limits, with no signs of cardiomegaly.||||||Wet Read<R>
+OBX|10|ST|&IMP|2|The bony thorax appears intact, with no visible fractures or lesions.||||||Wet Read<R>
+OBX|11|ST|&IMP|2|The diaphragm is well positioned, and the mediastinal silhouette is||||||Wet Read<R>
+OBX|12|ST|&IMP|2|unremarkable. There are no focal opacities or suspicious masses||||||Wet Read<R>
+OBX|13|ST|&IMP|2|identified in the visualized regions of the chest. This study||||||Wet Read<R>
+OBX|14|ST|&IMP|2|displays a comparable result to historical imaging, with no acute||||||Wet Read<R>
+OBX|15|ST|&IMP|2|changes.||||||Wet Read<R>
+OBX|16|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.223849807715619084402249402589335047263^EPIC^APPLICATION^DICOM<R>
+<EB>

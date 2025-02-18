@@ -1,0 +1,11 @@
+2011-02-08 08:59:27.3243|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110208085927|TBD|ORU^R01|2.25.118950578541472531619693285082253808753|P|2.4<R>
+PID|1||ABC451055^^^ABC^MR~EPIC4485814^^^EPIC^MRN||GREEN^RYAN^JASON^^^^D||19741230000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451055^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457401^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1466058^SYS|7795083017|CTCHEST^ CT THORAX^UNKDEV|URGENT||20110206131912|||PSCRIB|||||^^^^ |D7823231^SMITH^CLARA^TAMIKA^M.D.^^^^ABC|||||^Thorax Petct AC NAC|20110208085927||CTCHEST|||1^^^20110208085927^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823234^DONOVAN^WILLIAM^C.^^^M.D.||PSCRIB<R>
+OBX|1|TX|2736289||GUY SANCHEZ, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|2736289||ACC#  Date Time  Exam~~7795083017 Feb 08 2011 08:59AM CTCHEST CT THORAX~~EXAMINATION:~Thorax PET-CT~~FINDINGS:~The thorax PET-CT study reveals no hypermetabolic lesions in the lung~fields. All major structures, including the heart, mediastinum, and~surrounding soft tissues, demonstrate normal metabolic activity.~Additionally, no enlarged or hypermetabolic lymph nodes are detected~within the mediastinum or hilum, and both lungs have retained a good~volume and structure without any interstitial abnormalities or~pleural effusion. Bronchial anatomy appears normal without masses or~obstructive lesions assessed, and the bone structures, including ribs~and the spine, maintain integrity without evidence of pathological~activity.~~IMPRESSION:~The thorax PET-CT scan is negative for any malignancy or significant~pathology at this time. Stable findings suggest an absence of any~active disease, and no further immediate evaluation is warranted.||||||F<R>
+OBX|3|TX|2736289||Requested By: Smith,Clara T. M.D.~~Dictated By: Guy Sanchez, M.D. on Feb 08 2011 08:59AM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Feb 08 2011 08:59AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2736289|4|7795083017^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,28 @@
+2014-08-14 15:53:20.7426|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140814155320|TBD|ORU^R01|2.25.147758687922634317414760498686858055591|P|2.7<R>
+PID|1||ABC451163^^^ABC^MR||LEE^SAMUEL^MARVIN^^Adm.^^D||19480202|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823287^BARRETT^JONATHAN^B.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084910|||||||||||||||||||||||||20140814155320|||||||V<R>
+ORC|RE|663747^SYS|7795083451||Prelim||^^^20140814155319^20140814155320^O||20140814155320|T6530208^HARRISON^NICOLE||D7823281^HOUSTON^CARLOS^P.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|663747^SYS|7795083451|IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED|O|20140811101331|||||Hosp Perf||||^^^BRAIN|D7823281^HOUSTON^CARLOS^P.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20140814155320||MR|Prelim||^^^20140814155319^20140814155320^O||||^Chest pain||D7823278^HUBBARD^BRADLEY^D.^^^^^ABC^^^^HOSP|T6530208^HARRISON^NICOLE||20140814155320||||||||IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|5|ST|&IMP|2|The brain MRI from 2014-08-11 reveals no significant change compared||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|6|ST|&IMP|2|to the previous studies. Stability of the chronic small vessel||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|7|ST|&IMP|2|ischemic changes is noted, with no acute intracranial abnormalities.||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|8|ST|&IMP|2|This individual continues to exhibit brain tissues without emergent||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|9|ST|&IMP|2|pathology. Analysis of the brain MRI from 2014-08-11 demonstrates||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|10|ST|&IMP|2|preserved cortical and subcortical structures with symmetric||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|11|ST|&IMP|2|hemispheric volume. No focal lesions are seen, and signal||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|12|ST|&IMP|2|characteristics are within normal limits across all imaging planes.||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|13|ST|&IMP|2|The ventricles are within normal size deviation for age, and the||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|14|ST|&IMP|2|basal ganglia appear intact. Notably, there are minimal||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|15|ST|&IMP|2|periventricular hyperintensities consistent with gliosis, likely||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|16|ST|&IMP|2|attributed to chronic small vessel ischemia. No evidence of acute||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|17|ST|&IMP|2|ischemia or intracranial hemorrhage is observed, and the findings are||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|18|ST|&IMP|2|stable when compared to prior imaging.||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|19|ST|&IMP|2|Dictated by: Bradley Hubbard Interpreter, M.D.||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+ZDS|2.25.231803650110798851954275539125054287178^EPIC^APPLICATION^DICOM<R>
+<EB>

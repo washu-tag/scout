@@ -1,0 +1,11 @@
+2004-08-08 17:55:47.6506|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20040808175547|TBD|ORU^R01|2.25.330974270094052111323098884253556389420|P|2.4<R>
+PID|1||ABC451151^^^ABC^MR~EPIC4485910^^^EPIC^MRN||MEYERS^NATALIE^CANDI^^^^D||19690613000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451151^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457299^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5290450^SYS|7795083401|BHC77057^77057 77057 Screening Mamm Bilat^UNKDEV|URGENT||20040807123250|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||77057^Screening Mammogram Bilateral|20040808175547||BHC|||1^^^20040808175547^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||77057<R>
+OBX|1|TX|4052772||JOE MEDRANO, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4052772||ACC#  Date Time  Exam~~7795083401 Aug 08 2004 05:55PM BHC77057 77057 Screening Mamm Bilat~~EXAMINATION:~Four-view mammogram~~FINDINGS:~The four-view mammogram demonstrates dense breast tissue, which can~obscure subtle lesions. However, there is a small speculated mass in~the upper outer quadrant of the right breast measuring approximately~1.2 cm with irregular margins and associated architectural~distortion. No microcalcifications are identified. The left breast~shows no suspicious masses or calcifications. Axillary lymph nodes~are not grossly enlarged. In conjunction with prior imaging from~2004-08-07, the new findings represent a significant change~warranting further investigation with targeted ultrasound or MRI for~characterization.~~IMPRESSION:~1. New speculated mass in the right breast, most concerning for~malignancy. 2. Recommend biopsy for definitive diagnosis and further~imaging for assessment.||||||F<R>
+OBX|3|TX|4052772||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Joe Medrano, M.D. on Aug 08 2004 05:55PM~~This document has been electronically signed by: Joe Medrano, M.D. on~Aug 08 2004 05:55PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4052772|4|7795083401^UK^ZB||||||F<R>
+<EB>

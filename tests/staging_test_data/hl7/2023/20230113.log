@@ -1,0 +1,53 @@
+2023-01-13 18:07:17.8754|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230113180717|TBD|ORU^R01|2.25.75267866435004253560518940926837609309|P|2.7<R>
+PID|1||ABC451103^^^ABC^MR||COLLINS^NICKOLAS^LARRY^^^^D||19511215|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084882|||||||||||||||||||||||||20230113180717|||||||V<R>
+ORC|RE|9705593^SYS|7795083214||Final||^^^20230113180716^20230113180717^O||20230113180717|||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9705593^SYS|7795083214|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20230112110103|||||Hosp Perf|||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230113180717||OT|Final||^^^20230113180716^20230113180717^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|||20230113180717||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|1. Stable findings on comparison with the prior X-ray. 2. Mild heart||||||Final<R>
+OBX|6|ST|&IMP|2|enlargement may warrant follow-up, but there were no acute changes||||||Final<R>
+OBX|7|ST|&IMP|2|indicating cardiac distress. 3. Continue monitoring for long-term||||||Final<R>
+OBX|8|ST|&IMP|2|trends, given the patient’s age and risk factors. The recent||||||Final<R>
+OBX|9|ST|&IMP|2|single-view chest X-ray performed on 2023-01-12 shows the lungs are||||||Final<R>
+OBX|10|ST|&IMP|2|clear with no signs of acute infiltrates or effusions. Comparison to||||||Final<R>
+OBX|11|ST|&IMP|2|prior examination dated 2003-08-02 (UID:||||||Final<R>
+OBX|12|ST|&IMP|2|2.25.26781241994672757633955386613870610365) reveals stable pulmonary||||||Final<R>
+OBX|13|ST|&IMP|2|architecture. The vascular markings remain within normal limits. The||||||Final<R>
+OBX|14|ST|&IMP|2|heart appears slightly enlarged compared to prior comparison;||||||Final<R>
+OBX|15|ST|&IMP|2|however, it falls within the physiologic bounds considering the||||||Final<R>
+OBX|16|ST|&IMP|2|patient's age and longstanding history of mild hypertension. The||||||Final<R>
+OBX|17|ST|&IMP|2|bones display the same age-related degenerative changes as before but||||||Final<R>
+OBX|18|ST|&IMP|2|no acute pathology observed.||||||Final<R>
+OBX|19|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Final<R>
+ZDS|2.25.37018100585600133642881236482782869982^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2023-01-13 20:17:30.9482|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230113201730|TBD|ORU^R01|2.25.52701499728560986148007900532464551690|P|2.7<R>
+PID|1||ABC451123^^^ABC^MR||PALMER^LINDA^JENNIFER^^^^D||19841123|F||OTHER|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084930|||||||||||||||||||||||||20230113201730|||||||V<R>
+ORC|RE|6518059^SYS|7795083292||Final||^^^20230113201729^20230113201730^O||20230113201730|T6530146^MOORE^CURTIS||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6518059^SYS|7795083292|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20230113122236|||||Hosp Perf||||^^^BREAST|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230113201730||MG|Final||^^^20230113201729^20230113201730^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20230113201730||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|The findings of the mammogram are consistent with normal breast||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|tissue, showing no signs of suspicious masses. Routine screening is||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|recommended based on current American Cancer Society guidelines. The||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|single-view mammogram taken on 2023-01-13 demonstrates symmetric||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|breast tissue with no focal masses or architectural distortions||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|noted. The overall breast density is classified as heterogeneously||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|dense, which may obscure small lesions. No microcalcifications are||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|observed that would otherwise suggest malignancy. Skin thickness and||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|nipple-areola complex appear normal without any signs of retraction||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|or discharge. No axillary lymphadenopathy is present.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.131049781550346707397759645678076163426^EPIC^APPLICATION^DICOM<R>
+<EB>

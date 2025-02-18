@@ -1,0 +1,30 @@
+2007-12-25 02:03:36.1928|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20071225020336|TBD|ORU^R01|2.25.225316755007331882951358330875445142355|P|2.7<R>
+PID|1||ABC451049^^^ABC^MR||CURTIS^KAREN^KRISTEN^^^^D||19520301|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084819|||||||||||||||||||||||||20071225020336|||||||V<R>
+ORC|RE|668166^SYS|7795082994||Final||^^^20071225020335^20071225020336^O||20071225020336|T6530145^RUIZ^TARA||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|668166^SYS|7795082994|IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC|O|20071222171636|||||Hosp Perf||||^^^HEAD|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20071225020336||CT|Final||^^^20071225020335^20071225020336^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20071225020336||||||||IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head PET-CT study||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|New hypermetabolic activity noted in the left frontal lobe,||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|potentially suggestive of neoplastic or inflammatory etiology. This||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|finding is a significant change from the previous head study and||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|warrants further evaluation with follow-up MRI and possible tissue||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|biopsy to clarify the nature of this abnormality. The PET-CT imaging||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|reveals hypermetabolic activity in the left frontal lobe, indicating||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|potential underlying pathology. No focal masses are identified, but||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|mild edema and restricted diffusion in the adjacent white matter||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|suggest ongoing inflammatory processes. The rest of the intracranial||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|structures, including the basal ganglia and cerebellum, appear||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|unremarkable. The ventricles are of normal size and configuration,||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|with no midline shift or hydrocephalus. Surrounding the||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|hypermetabolic focus, there is notable hyperintensity on FLAIR||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|sequences, suggesting a possible demyelinating process or low-grade||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|19|ST|&IMP|2|neoplasm. Compared to the prior head imaging studies performed on||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|20|ST|&IMP|2|December 22, 2007, this shows a new area of concern. ||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|21|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Final|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.196543951973405334877010121766293409905^EPIC^APPLICATION^DICOM<R>
+<EB>

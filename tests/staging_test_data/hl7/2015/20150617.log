@@ -1,0 +1,11 @@
+2015-06-17 01:35:21.7651|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150617013521|TBD|ORU^R01|2.25.140252739836332914118576010953287594702|P|2.4<R>
+PID|1||ABC451000^^^ABC^MR~EPIC4485759^^^EPIC^MRN||ISHIKAWA^SOUMA^^^^^D||19910125000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451000^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457250^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5353069^SYS|7795082798|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20150612105638|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||8452^NM MPI SPECT|20150617013521||H|||1^^^20150617013521^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|9118112||MICHAEL MARKS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|9118112||ACC#  Date Time  Exam~~7795082798 Jun 17 2015 01:35AM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~Comparative analysis of this cardiac nuclear medicine study dated~2015-06-12 against the previous study on 2008-02-08 illustrates some~improvement in left ventricular function. The rest and stress~myocardial perfusion imaging show that the anterior wall~hypoperfusion identified during the 2008 study has diminished, with~an increase in myocardial uptake. The left ventricular ejection~fraction has improved to 58%. There continues to be hypoperfusion~present in the inferior wall, but this appears less pronounced than~previously noted. Areas of transient ischemic dilation were not~observed upon re-evaluation.~~IMPRESSION:~1. Improved myocardial perfusion since 2008, with increased ejection~fraction. 2. Continued inferior wall ischemia warrants clinical~follow-up. 3. Significant positive change may suggest response to~prior interventions.||||||P<R>
+OBX|3|TX|9118112||Requested By: Marks,Michael R. M.D.~~Dictated By: Michael Marks, M.D. on Jun 17 2015 01:35AM~~Pending review by: April Hunt, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|9118112|4|7795082798^UK^ZB||||||P<R>
+<EB>

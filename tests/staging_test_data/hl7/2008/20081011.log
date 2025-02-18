@@ -1,0 +1,11 @@
+2008-10-11 20:20:32.7063|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20081011202032|TBD|ORU^R01|2.25.5271299296491593149089611707830944020|P|2.4<R>
+PID|1||ABC451019^^^ABC^MR~EPIC4485778^^^EPIC^MRN||WILLIAMS^ERIN^KELLY^^^^D||19380422000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451019^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457190^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2994469^SYS|7795082876|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||20081011161048|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|20081011202032||IMG|||1^^^20081011202032^^U^^URGENT|       |||^Chest pain|D7823234^DONOVAN^WILLIAM^C.^^^M.D.|D7823243^HAWKINS^CURTIS^K.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|6038935||WILLIAM DONOVAN, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|6038935||ACC#  Date Time  Exam~~7795082876 Oct 11 2008 08:20PM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~The chest MRI reveals well-defined pulmonary structures, with no~evidence of mass lesions, pulmonary nodules, or consolidation. The~mediastinum is symmetric without lymphadenopathy. The heart appears~normal in size and morphology, with no signs of pericardial effusion~or significant valvular abnormalities. Additionally, the aortic arch~and its branches exhibit a normal caliber without signs of dissection~or aneurysm. Thoracic soft tissues do not demonstrate any abnormal~signal intensities. The lungs are well-ventilated, showcasing no~pleural effusion or thickening.~~IMPRESSION:~The chest MRI appears unremarkable, indicating no acute changes or~significant chronic pulmonary or cardiac pathology.||||||P<R>
+OBX|3|TX|6038935||Requested By: Sanders,Lisa A. M.D.~~Dictated By: William Donovan, M.D. on Oct 11 2008 08:20PM~~Pending review by: Curtis Hawkins, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|6038935|4|7795082876^UK^ZB||||||P<R>
+<EB>

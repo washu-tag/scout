@@ -1,0 +1,11 @@
+2006-12-14 04:00:17.6211|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20061214040017|TBD|ORU^R01|2.25.334468894998192606692924658276751475677|P|2.4<R>
+PID|1||ABC451168^^^ABC^MR~EPIC4485927^^^EPIC^MRN||MORRIS^OCTAVIO^MARCUS^^^^D||19481022000000|M||U|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451168^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823250^ROBERTSON^MICHELLE^D.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457105^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7810456^SYS|7795083469|IMG2347^2347 MRI BRAIN WO CONTRAST^UNKDEV|URGENT||20061209125351|||PSCRIB|||||^^^^ |D7823258^BRYANT^DAVID^TIMOTHY^M.D.^^^^ABC|||||2347^BRAIN MRI Expedited|20061214040017||IMG|||1^^^20061214040017^^U^^URGENT|       |||^Chest pain|D7823256^MILLER^MICHAEL^D.^^^M.D.|D7823257^ROBINSON^RALPH^A.^^^M.D.||PSCRIB|||||||||2347<R>
+OBX|1|TX|5729859||MICHAEL MILLER, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5729859||ACC#  Date Time  Exam~~7795083469 Dec 14 2006 04:00AM IMG2347 MRI BRAIN WO CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI dated December 9, 2006, shows further evolution of the~previously characterized lesion in the right frontal lobe, which has~increased in size to approximately 3 cm and is now displaying~indistinct margins with a heterogeneous signal on T1-weighted~imaging. There is moderate associated edema producing a mild midline~shift to the left. No new lesions are identified. However, the flow~voids appear to be partially compressed around the surrounding tissue~indicative of a likely mass effect.~~IMPRESSION:~The December 2006 MRI findings suggest significant growth of the~right frontal lobe lesion, now indicating a concerning transformation~to a possibly high-grade tumor. The midline shift and edema also~warrant urgent evaluation by neuro-oncology for further management,~including imaging studies and potential surgical intervention.||||||F<R>
+OBX|3|TX|5729859||Requested By: Bryant,David T. M.D.~~Dictated By: Michael Miller, M.D. on Dec 14 2006 04:00AM~~This document has been electronically signed by: Michael Miller, M.D.~on Dec 14 2006 04:00AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5729859|4|7795083469^UK^ZB||||||F<R>
+<EB>

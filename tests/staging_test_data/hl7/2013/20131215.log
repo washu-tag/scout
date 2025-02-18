@@ -1,0 +1,11 @@
+2013-12-15 22:22:47.5767|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20131215222247|TBD|ORU^R01|2.25.171205925474493214747451197567733770499|P|2.4<R>
+PID|1||ABC451073^^^ABC^MR~EPIC4485832^^^EPIC^MRN||LOPEZ^JOSHUA^TRAVIS^^^^D||19320202000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451073^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457150^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9892663^SYS|7795083092|M755612^755612 MR CARDIAC MRPH FUNC WWO^UNKDEV|URGENT||20131214102744|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||755612^HEART MRI|20131215222247||M|||1^^^20131215222247^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||755612<R>
+OBX|1|TX|6474767||JESSICA WRIGHT, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6474767||ACC#  Date Time  Exam~~7795083092 Dec 15 2013 10:22PM M755612 MR CARDIAC MRPH FUNC WWO~~EXAMINATION:~Heart MRI~~FINDINGS:~Cardiac MRI reveals normal chamber sizes and wall thickness. There is~no evidence of myocardial edema or late gadolinium enhancement,~suggesting no significant areas of necrosis or fibrosis. The aortic~root and valves are noted to be within normal limits without stenotic~or regurgitant lesions observed. Coronary angiography sequences~demonstrate patent coronary arteries without irregularity or plaque~formation.~~IMPRESSION:~The cardiac MRI findings are reassuring and indicate no evidence of~cardiomyopathy or ischemic heart disease. The heart's structure and~function appear normal. Continued routine monitoring is advised given~the history of coronary artery disease.||||||F<R>
+OBX|3|TX|6474767||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Jessica Wright, M.D. on Dec 15 2013 10:22PM~~This document has been electronically signed by: Jessica Wright, M.D.~on Dec 15 2013 10:22PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6474767|4|7795083092^UK^ZB||||||F<R>
+<EB>

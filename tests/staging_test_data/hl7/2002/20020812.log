@@ -1,0 +1,27 @@
+2002-08-12 11:28:34.7096|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020812112834|TBD|ORU^R01|2.25.198368240045660223637445953667549203070|P|2.7<R>
+PID|1||ABC451012^^^ABC^MR||GARCIA^JUSTIN^MARIO^^^^D||19650712|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084957|||||||||||||||||||||||||20020812112834|||||||V<R>
+ORC|RE|2925257^SYS|7795082847||Final||^^^20020812112833^20020812112834^O||20020812112834|||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2925257^SYS|7795082847|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20020809153007|||||Hosp Perf|||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20020812112834||SC|Final||^^^20020812112833^20020812112834^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|||20020812112834||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|Findings from the single-view X-ray are consistent with normal||||||Final<R>
+OBX|6|ST|&IMP|2|thoracic anatomy and function. There are no acute pulmonary processes||||||Final<R>
+OBX|7|ST|&IMP|2|noted. Follow-up imaging can be scheduled as a preventive measure if||||||Final<R>
+OBX|8|ST|&IMP|2|clinical symptoms arise, but the current evidence does not||||||Final<R>
+OBX|9|ST|&IMP|2|necessitate any immediate intervention. The single-view X-ray taken||||||Final<R>
+OBX|10|ST|&IMP|2|on 2002-08-09 shows the thoracic cavity largely unremarkable with||||||Final<R>
+OBX|11|ST|&IMP|2|clear lung fields and no evidence of consolidation or pleural||||||Final<R>
+OBX|12|ST|&IMP|2|effusion. The bony thorax reveals no fractures or osteolytic lesions,||||||Final<R>
+OBX|13|ST|&IMP|2|and the heart silhouette appears within normal limits. The||||||Final<R>
+OBX|14|ST|&IMP|2|mediastinal structures are properly positioned, with no shift||||||Final<R>
+OBX|15|ST|&IMP|2|observed. The diaphragm presents a smooth contour, and there are no||||||Final<R>
+OBX|16|ST|&IMP|2|signs of pulmonary edema. Compared with the last chest X-ray||||||Final<R>
+OBX|17|ST|&IMP|2|performed, no significant changes have been identified.||||||Final<R>
+OBX|18|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Final<R>
+ZDS|2.25.93324549413406951402410907692565074532^EPIC^APPLICATION^DICOM<R>
+<EB>

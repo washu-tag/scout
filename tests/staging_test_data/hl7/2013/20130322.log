@@ -1,0 +1,32 @@
+2013-03-22 02:13:04.2357|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130322021304|TBD|ORU^R01|2.25.183245829839805574740734141235768227334|P|2.7<R>
+PID|1||ABC451005^^^ABC^MR||SALINAS^OMAR^PATRICK^^^^D||19360815|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084817|||||||||||||||||||||||||20130322021304|||||||V<R>
+ORC|RE|9615267^SYS|7795082822||Prelim||^^^20130322021303^20130322021304^O||20130322021304|T6530147^ANDERSON^NATALIE||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9615267^SYS|7795082822|BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY|O|20130321151104|||||Hosp Perf||||^^^ABDOMEN|D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20130322021304||DX|Prelim||^^^20130322021303^20130322021304^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20130322021304||||||||BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|Overall, the abdomen X-ray demonstrates no acute intra-abdominal||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|pathology. The previously noted calcified mass in the left lower||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|quadrant persists without significant change, suggestive of a chronic||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|and benign process such as a phlebolith. Follow-up ultrasound may be||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|beneficial for characterizing this lesion, but no immediate||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|interventions are warranted based on current findings. The abdominal||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|X-ray reveals no evidence of free air under the diaphragm, indicating||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|the absence of perforated viscus. Bowel gas pattern is within normal||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|limits with no signs of obstruction. The liver, spleen, and kidneys||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|are within normal size limits. However, there is a notable presence||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|of a calcified mass in the left lower quadrant, possibly representing||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|a phlebolith or mineralized lymph node. No significant bony||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|17|ST|&IMP|2|abnormalities are noted in the visualized segments of the pelvis and||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|18|ST|&IMP|2|lumbar spine. Review of the previous abdominal study dated 2011-09-05||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|19|ST|&IMP|2|indicates stability of the calcified mass since then. There are also||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|20|ST|&IMP|2|no signs of acute inflammatory changes in the surrounding soft||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|21|ST|&IMP|2|tissue, and the bowel loops display normal mucosal patterns with no||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|22|ST|&IMP|2|signs of wall thickening or lumen narrowing.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|23|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.151775471267297144204955729759802773680^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2018-07-11 21:32:49.9191|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180711213249|TBD|ORU^R01|2.25.229662901253813854013131346657346633966|P|2.4<R>
+PID|1||ABC451092^^^ABC^MR~EPIC4485851^^^EPIC^MRN||MAY^KENNETH^CHAD^^^^D||19850929000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451092^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457284^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3726334^SYS|7795083167|IMG1259^1259 XR CHEST 1 VIEW^UNKDEV|URGENT||20180707102354|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||1259^Chest 1 View Xray|20180711213249||IMG|||1^^^20180711213249^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823243^HAWKINS^CURTIS^K.^^^M.D.||PSCRIB|||||||||1259<R>
+OBX|1|TX|2156344||RUSSELL GALLAGHER, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|2156344||ACC#  Date Time  Exam~~7795083167 Jul 11 2018 09:32PM IMG1259 XR CHEST 1 VIEW~~EXAMINATION:~Chest X-ray~~FINDINGS:~The chest X-ray conducted shows clear pulmonary fields with no~evidence of infiltrates or pleural effusions. The diaphragm appears~intact and properly positioned, with no signs of free air under the~diaphragm. The heart borders are well-defined, and the aortic knob is~unremarkable. The bony structures show no acute changes or fractures.~Tracheobronchial anatomy is normal without signs of central airway~obstruction. The surrounding soft tissues demonstrate no signs of~pathological changes or masses. Overall, this presents as an~unobstructed and attractive thoracic cavity.~~IMPRESSION:~Unremarkable chest radiograph, no acute cardiopulmonary disease or~notable findings.||||||F<R>
+OBX|3|TX|2156344||Requested By: Donovan,William C. M.D.~~Dictated By: Russell Gallagher, M.D. on Jul 11 2018 09:32PM~~This document has been electronically signed by: Russell Gallagher,~M.D. on Jul 11 2018 09:32PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2156344|4|7795083167^UK^ZB||||||F<R>
+<EB>

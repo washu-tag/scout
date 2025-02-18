@@ -1,0 +1,11 @@
+2010-06-23 13:18:27.1684|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100623131827|TBD|ORU^R01|2.25.139712249143531106418074152584100162356|P|2.4<R>
+PID|1||ABC451090^^^ABC^MR~EPIC4485849^^^EPIC^MRN||THOMAS^LISA^KRISTIN^^Capt.^^D||19411017000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451090^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457292^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||593983^SYS|7795083157|M755570^755570 MR CARDIAC MRPH FUNC W/O^UNKDEV|URGENT||20100622193310|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||755570^HEART MRI Expedited|20100623131827||M|||1^^^20100623131827^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||755570<R>
+OBX|1|TX|8567299||KIMBERLY HANSON, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|8567299||ACC#  Date Time  Exam~~7795083157 Jun 23 2010 01:18PM M755570 MR CARDIAC MRPH FUNC W/O~~EXAMINATION:~Heart MRI~~FINDINGS:~The cardiac MRI reveals a normal sized heart with no evidence of wall~motion abnormalities under stress conditions. The left ventricular~ejection fraction is measured at 65%, which is within normal limits.~The myocardial tissue characterizes no signs of hypertrophy or~infiltration, and the coronary vessel patency appears intact. There~is mild aortic calcification but no significant stenosis of the aorta~or other major vessels. The pericardium appears normal without~effusion.~~IMPRESSION:~The heart MRI from June 2010 suggests a healthy cardiac function with~no significant abnormalities. The mildly calcified aorta is likely~age-related, and no intervention is indicated at this time.||||||P<R>
+OBX|3|TX|8567299||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Kimberly Hanson, M.D. on Jun 23 2010 01:18PM~~Pending review by: Amber Reese, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|8567299|4|7795083157^UK^ZB||||||P<R>
+<EB>

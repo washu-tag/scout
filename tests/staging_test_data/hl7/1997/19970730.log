@@ -1,0 +1,11 @@
+1997-07-30 19:02:23.3888|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19970730190223|TBD|ORU^R01|2.25.145287805121088931170247113907825564986|P|2.4<R>
+PID|1||ABC451022^^^ABC^MR~EPIC4485781^^^EPIC^MRN||REYES^MEGAN^PATRICIA^^^^D||19711117000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451022^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457245^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9143179^SYS|7795082887|MDXREVNT^ Radiology Event^UNKDEV|URGENT||19970728175325|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||^Xr Sing View|19970730190223||MDXREVNT|||1^^^19970730190223^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB<R>
+OBX|1|TX|7147610||RUSSELL GALLAGHER, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7147610||ACC#  Date Time  Exam~~7795082887 Jul 30 1997 07:02PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray of the left hand~~FINDINGS:~The single-view radiographic assessment of the left hand demonstrates~the bony architecture with no evidence of acute fracture or~dislocation. The carpal and metacarpal bones appear intact, and there~is no sign of subluxation. Soft tissues are unremarkable, with no~visible edema or localized swelling. No foreign bodies are apparent~within the visualized field. Biomechanically, the joint spaces~demonstrate appropriate congruence, without joint effusion noted in~the accompanying anatomical structures.~~IMPRESSION:~Normal radiographic examination of the left hand. No acute osseous~abnormalities detected, and there are no signs of acute trauma or~degenerative changes.||||||F<R>
+OBX|3|TX|7147610||Requested By: Hunt,April M. M.D.~~Dictated By: Russell Gallagher, M.D. on Jul 30 1997 07:02PM~~This document has been electronically signed by: Russell Gallagher,~M.D. on Jul 30 1997 07:02PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7147610|4|7795082887^UK^ZB||||||F<R>
+<EB>

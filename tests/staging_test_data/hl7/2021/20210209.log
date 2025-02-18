@@ -1,0 +1,30 @@
+2021-02-09 14:12:09.3785|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210209141209|TBD|ORU^R01|2.25.310331789605012211103066857777919722785|P|2.7<R>
+PID|1||ABC451006^^^ABC^MR||WILLIAMS^RUTH^AMANDA^^^^D||19910916|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084837|||||||||||||||||||||||||20210209141209|||||||V<R>
+ORC|RE|3926634^SYS|7795082823||Final||^^^20210209141208^20210209141209^O||20210209141209|T6530151^WATERS^JESSICA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3926634^SYS|7795082823|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC|O|20210207071602|||||Hosp Perf||||^^^ABDOMEN|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210209141209||CT|Final||^^^20210209141208^20210209141209^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20210209141209||||||||CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-CT||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|The abdomen PET-CT shows no evidence of malignancy or other||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|pathological processes suggestive of disease. Findings indicate a||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|baseline status of well-being with all major abdominal organs||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|appearing normal upon imaging. No abnormal findings correlate with||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|the patient's clinical history. The abdomen PET-CT performed on||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|2021-02-07 reveals normal anatomical configuration with no evidence||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|of mass lesions in the liver, spleen, pancreas, or kidneys. Uptake||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|patterns are physiologically appropriate with no hypermetabolic||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|activity noted. The gastrointestinal tract appears intact without||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|signs of obstruction or significant wall thickening. Lymphadenopathy||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|is absent, and there is no evidence of ascites. The gallbladder and||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|bilary system demonstrate normal morphology with no signs of calculi||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|or cholestasis. The vascular structures including the aorta and||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|18|ST|&IMP|2|inferior vena cava are patent, and higher uptake corresponding to||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|19|ST|&IMP|2|tracer is noted in the physiological regions such as the gut,||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|20|ST|&IMP|2|indicating normal metabolic activity.||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|21|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Final|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.168129856439621008582095399711036383485^EPIC^APPLICATION^DICOM<R>
+<EB>

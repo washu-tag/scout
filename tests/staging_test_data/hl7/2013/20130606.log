@@ -1,0 +1,26 @@
+2013-06-06 05:29:41.7499|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130606052941|TBD|ORU^R01|2.25.135354002886965371151871648718228843164|P|2.7<R>
+PID|1||ABC451112^^^ABC^MR||JIMENEZ^KATHERINE^CARLA^^^^D||19380423|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084936|||||||||||||||||||||||||20130606052941|||||||V<R>
+ORC|RE|974650^SYS|7795083245||Final||^^^20130606052940^20130606052941^O||20130606052941|T6530146^MOORE^CURTIS||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|974650^SYS|7795083245|IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED|O|20130603165400|||||Hosp Perf||||^^^BRAIN|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20130606052941||MR|Final||^^^20130606052940^20130606052941^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20130606052941||||||||IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: MRI of the brain||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|Normal brain MRI without evidence of pathology, acute or chronic||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|processes. No enhancing lesions or edema noted. The MRI of the brain||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|reveals an unremarkable appearance of the cerebral cortex with no||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|signs of focal lesions. The ventricles are normal in size and||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|configuration, without evidence of hydrocephalus. The cerebral white||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|matter appears normal with no signal abnormalities on T2-weighted||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|images. The basal ganglia, thalami, and brainstem demonstrate no||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|pathological changes. The midline structures, particularly the corpus||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|callosum, are intact. Diffusion-weighted imaging shows no restricted||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|diffusion suggesting the absence of acute ischemia. Overall, the||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|brain MRI is within normal limits and shows no acute or chronic||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|intracranial pathology.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.293645029670044394692472631555532012417^EPIC^APPLICATION^DICOM<R>
+<EB>

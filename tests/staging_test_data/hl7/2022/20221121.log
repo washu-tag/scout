@@ -1,0 +1,26 @@
+2022-11-21 22:23:55.1274|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20221121222355|TBD|ORU^R01|2.25.87693438845484462082270970703769112210|P|2.7<R>
+PID|1||ABC451108^^^ABC^MR||SMITH^RANDALL^STEVEN^^^^D||19490119|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084932|||||||||||||||||||||||||20221121222355|||||||V<R>
+ORC|RE|9966070^SYS|7795083231||Wet Read||^^^20221121222354^20221121222355^O||20221121222355|T6530151^WATERS^JESSICA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9966070^SYS|7795083231|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20221117174916|||||Hosp Perf||||^^^HEART|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20221121222355||NM|Wet Read||^^^20221121222354^20221121222355^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20221121222355||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|The cardiac NM study suggests no evidence of ischemic heart disease||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|or cardiac dysfunction as of the most recent evaluation. The||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|patient’s cardiac health appears stable, and findings correlate||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|favorably with previous imaging studies. The cardiac nuclear medicine||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|scan performed on 2022-11-17 demonstrates preserved left ventricular||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|systolic function with an ejection fraction of 60%. Regional wall||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|motion is normal across all myocardial segments assessed. Myocardial||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|perfusion appears homogeneous, presenting no defects at rest or||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|during the stress phase of the study. There are no signs of ischemia||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|or significant perfusion abnormalities. The absence of reversibility||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|in previously identified perfusion defects suggests a stable||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|condition concerning any prior findings, if applicable.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.145573617814832276158600420114490614128^EPIC^APPLICATION^DICOM<R>
+<EB>

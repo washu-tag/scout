@@ -1,0 +1,25 @@
+2001-06-11 00:32:41.6782|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010611003241|TBD|ORU^R01|2.25.265410411568792908178595896967988620242|P|2.7<R>
+PID|1||ABC451162^^^ABC^MR||LIM^JI-WOO^^^^^D||19570704|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084883|||||||||||||||||||||||||20010611003241|||||||V<R>
+ORC|RE|1651050^SYS|7795083444||Prelim||^^^20010611003240^20010611003241^O||20010611003241|T6530147^ANDERSON^NATALIE||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1651050^SYS|7795083444|BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL|O|20010610202115|||||Hosp Perf||||^^^BREAST|D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20010611003241||MG|Prelim||^^^20010611003240^20010611003241^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20010611003241||||||||BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Four-view mammogram||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|The four-view mammogram performed on June 10, 2001, compared to the||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|prior single-view mammogram shows stability in breast architecture||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|with no new suspicious findings. Continued routine screening||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|mammograms are recommended. The four-view mammogram demonstrates||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|bilateral breast density with pronounced interconnected||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|fibroglandular tissue. Comparison with the prior mammogram from||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|September 3, 1995, indicates a slight increase in breast density yet||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|still within acceptable limits. Notably, there is no development of||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|new calcifications or mass lesions over this five-year period. The||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|skin and subcutaneous tissue remain intact, and there is absence of||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|associated lymphadenopathy.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.335451596576214578104302878726501915218^EPIC^APPLICATION^DICOM<R>
+<EB>

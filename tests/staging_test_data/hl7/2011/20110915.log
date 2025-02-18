@@ -1,0 +1,35 @@
+2011-09-15 09:46:52.7872|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110915094652|TBD|ORU^R01|2.25.220702175491349484691866844547952280333|P|2.7<R>
+PID|1||ABC451090^^^ABC^MR||THOMAS^LISA^KRISTIN^^Capt.^^D||19411017|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084855|||||||||||||||||||||||||20110915094652|||||||V<R>
+ORC|RE|739433^SYS|7795083158||Final||^^^20110915094651^20110915094652^O||20110915094652|T6530145^RUIZ^TARA||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|739433^SYS|7795083158|BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL|O|20110912204929|||||Hosp Perf||||^^^BREAST|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20110915094652||MG|Final||^^^20110915094651^20110915094652^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20110915094652||||||||BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Four-view mammogram||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|The four-view mammogram of September 2011 shows stable benign breast||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|findings with no indications for additional intervention needed.||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|Regular follow-up screening is recommended as per routine protocols.||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|The four-view mammogram displays bilateral symmetric breast||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|composition with predominantly dense fibroglandular areas. There is||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|no focal mass or suspicious calcifications noted. Skin and nipple||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|appearance remain normal. The limited comparative views from previous||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|examinations reveal stable findings, with no new changes from the||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|previous mammogram done in 1998.||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Final|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.322874078312855826770492528206639799364^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2011-09-15 11:58:39.9158|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110915115839|TBD|ORU^R01|2.25.233057899611140585697676603519162717602|P|2.4<R>
+PID|1||ABC450994^^^ABC^MR~EPIC4485753^^^EPIC^MRN||JONES^HENRY^KEENAN^^^^D||19600928000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC450994^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457112^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9014368^SYS|7795082777|IMG2347^2347 MRI BRAIN WO CONTRAST^UNKDEV|URGENT||20110913120144|||PSCRIB|||||^^^^ |D7823235^SANCHEZ^GUY^JEFFREY^M.D.^^^^ABC|||||2347^BRAIN MRI Expedited|20110915115839||IMG|||1^^^20110915115839^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB|||||||||2347<R>
+OBX|1|TX|4119146||RUSSELL GALLAGHER, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|4119146||ACC#  Date Time  Exam~~7795082777 Sep 15 2011 11:58AM IMG2347 MRI BRAIN WO CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI is performed without contrast and reveals well-defined~imaging of both hemispheres. There is no discernible mass effect,~midline shift, or abnormal enhancement within the parenchyma.~Cortical sulci and ventricular systems are within normal limits and~demonstrate expected morphological features for the patient's age.~Diffusion-weighted imaging reveals no areas of acute infarction.~However, on T2-weighted images, there are multiple hyperintense~lesions located in the periventricular and subcortical white matter,~consistent with chronic microangiopathic changes, potentially~indicating a vascular etiology. Additionally, there are two small~foci of non-specific enhancement in the frontal lobe, which may~require further evaluation via follow-up MRI with contrast, depending~on clinical history.~~IMPRESSION:~The MRI of the brain performed on 2011-09-13 suggests the presence of~chronic microangiopathic changes likely related to vascular factors.~The observed white matter hyperintensities may reflect previous~ischemic events or demyelination. The non-specific enhancement noted~in the frontal lobe requires additional clinical investigation,~particularly to rule out any underlying demyelinating or neoplastic~processes. No significant acute intracranial pathology was identified~upon this review. Consideration for follow-up imaging and~neurological assessment is advised to better characterize these~findings and correlate with neurological symptoms.||||||P<R>
+OBX|3|TX|4119146||Requested By: Sanchez,Guy J. M.D.~~Dictated By: Russell Gallagher, M.D. on Sep 15 2011 11:58AM~~Pending review by: Jessica Wright, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|4119146|4|7795082777^UK^ZB||||||P<R>
+<EB>

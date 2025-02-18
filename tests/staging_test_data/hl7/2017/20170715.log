@@ -1,0 +1,24 @@
+2017-07-15 15:11:03.4822|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170715151103|TBD|ORU^R01|2.25.276505727371946649230889570015804131512|P|2.7<R>
+PID|1||ABC451151^^^ABC^MR||MEYERS^NATALIE^CANDI^^^^D||19690613|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084863|||||||||||||||||||||||||20170715151103|||||||V<R>
+ORC|RE|6079873^SYS|7795083404||Wet Read||^^^20170715151102^20170715151103^O||20170715151103|T6530150^NEAL^EMILY||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6079873^SYS|7795083404|BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY|O|20170712121754|||||Hosp Perf||||^^^ABDOMEN|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20170715151103||DX|Wet Read||^^^20170715151102^20170715151103^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20170715151103||||||||BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|1. No acute intra-abdominal pathology appreciated. 2. Stable findings||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|with minor aortic calcifications indicating possible||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|arteriosclerosis. Abdomen X-ray demonstrates no acute intra-abdominal||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|pathology. Bowel gas pattern is within normal limits without signs of||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|obstruction or perforation. Visualization of the liver, spleen, and||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|kidneys shows no significant mass lesions or abnormalities. However,||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|there is minimal abdominal aortic calcification noted, suggestive of||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|early vascular changes possibly related to age. Compared to prior||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|X-ray from 2017-07-12, the findings remain stable with no acute||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|changes observed.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.315617031773408317061191106351766419869^EPIC^APPLICATION^DICOM<R>
+<EB>

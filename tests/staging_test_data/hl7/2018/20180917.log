@@ -1,0 +1,11 @@
+2018-09-17 23:13:44.6130|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180917231344|TBD|ORU^R01|2.25.80293710149799376839189580388147824790|P|2.4<R>
+PID|1||ABC451032^^^ABC^MR~EPIC4485791^^^EPIC^MRN||FLETCHER^LAUREN^KRISTINA^^^^D||20001225000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451032^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823257^ROBINSON^RALPH^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457378^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2836599^SYS|7795082929|OMHEADWO^ MRI BRAIN WITHOUT CONTRAST^UNKDEV|URGENT||20180916201706|||PSCRIB|||||^^^^ |D7823247^WARREN^MARY^TIFFANY^M.D.^^^^ABC|||||^HEAD MRI Expedited|20180917231344||OMHEADWO|||1^^^20180917231344^^U^^URGENT|       |||^Chest pain|D7823259^SOLIS^JESSICA^L.^^^M.D.|D7823246^SANCHEZ^LESLIE^K.^^^M.D.||PSCRIB<R>
+OBX|1|TX|6472646||JESSICA SOLIS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|6472646||ACC#  Date Time  Exam~~7795082929 Sep 17 2018 11:13PM OMHEADWO MRI BRAIN WITHOUT CONTRAST~~EXAMINATION:~Head MRI~~FINDINGS:~The brain MRI shows normal morphology of the cerebral hemispheres,~cerebellum, and brainstem. There is no evidence of acute ischemia or~hemorrhage. The ventricles are of normal size and configuration~without any significant midline shift. The cortical and subcortical~regions are unremarkable in signal intensity. No abnormal enhancing~lesions are identified, and the white matter is free of foci of~hyperintensity typically seen in demyelinating conditions. The~visualized portions of the cranial nerves show no abnormalities.~~IMPRESSION:~Normal head MRI. No acute intracranial pathologies are identified;~both structural and signal characteristics of the brain are within~normal limits.||||||P<R>
+OBX|3|TX|6472646||Requested By: Warren,Mary T. M.D.~~Dictated By: Jessica Solis, M.D. on Sep 17 2018 11:13PM~~Pending review by: Leslie Sanchez, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|6472646|4|7795082929^UK^ZB||||||P<R>
+<EB>

@@ -1,0 +1,29 @@
+1998-05-30 18:38:48.3171|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19980530183848|TBD|ORU^R01|2.25.294315854561198827652260200284496348544|P|2.7<R>
+PID|1||ABC451128^^^ABC^MR||PAUL^JUSTIN^TYRONE^^^^D||19360925|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085004|||||||||||||||||||||||||19980530183848|||||||V<R>
+ORC|RE|2416672^SYS|7795083308||Wet Read||^^^19980530183847^19980530183848^O||19980530183848|T6530150^NEAL^EMILY||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2416672^SYS|7795083308|OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED|O|19980526114756|||||Hosp Perf||||^^^HEAD|D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19980530183848||MR|Wet Read||^^^19980530183847^19980530183848^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||19980530183848||||||||OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head MRI||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|The brain MRI shows no evidence of acute intracranial pathology. Mild||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|chronic changes consistent with microvascular disease are noted,||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|which are common in patients of this age. The overall stability of||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|findings is reassuring, with no significant changes compared to||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|previous studies. The MRI of the brain reveals normal cortical and||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|subcortical structures, with no evidence of acute infarct or||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|hemorrhage. The ventricular system is symmetric and appropriately||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|sized, with no signs of hydrocephalus. There are mild chronic||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|microvascular ischemic changes noted, predominantly in the||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|subcortical white matter, consistent with the patient's age. No mass||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|effect or midline shift is identified. The cranial nerves are intact||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|and show no signs of compression or displacement. There are no areas||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|of abnormal enhancement post-contrast administration. Importantly, no||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|18|ST|&IMP|2|new lesions are detected compared to the prior study dated||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|19|ST|&IMP|2|1996-05-04, which displayed no abnormalities at that time.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|20|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.14473304339194466674726076490408303900^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,25 @@
+2011-02-28 10:39:07.1530|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110228103907|TBD|ORU^R01|2.25.184145882247017037075045120718198235888|P|2.7<R>
+PID|1||ABC451050^^^ABC^MR||MAYNARD^CLIFTON^JASON^^^^D||19411024|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084850|||||||||||||||||||||||||20110228103907|||||||V<R>
+ORC|RE|2782343^SYS|7795082997||Prelim||^^^20110228103906^20110228103907^O||20110228103907|T6530154^ROBERTS^RICARDO||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2782343^SYS|7795082997|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20110224084029|||||Hosp Perf||||^^^ABDOMEN|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20110228103907||CR|Prelim||^^^20110228103906^20110228103907^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20110228103907||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|The findings indicate a benign renal cyst, which appears stable and||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|does not warrant further action at this time. Continued observation||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|with follow-up imaging in the future is suggested. The abdomen X-ray||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|shows a normal distribution of bowel gas without any signs of||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|obstruction or abnormal air-fluid levels. The contours of the liver,||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|spleen, and kidneys are clearly visualized and within normal limits.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|No calcifications are detected in the renal shadows or around the||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|aorta. However, there is a small, well-defined cystic structure||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|observed in the right renal area. No significant changes are noted||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|when compared with the prior study performed on 2008-05-10,||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|indicating it has not increased in size or changed morphologically.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.238127168469818235229563453109293445026^EPIC^APPLICATION^DICOM<R>
+<EB>

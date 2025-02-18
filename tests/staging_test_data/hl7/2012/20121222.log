@@ -1,0 +1,11 @@
+2012-12-22 21:53:05.3153|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20121222215305|TBD|ORU^R01|2.25.184188157260513893981765169798365442541|P|2.4<R>
+PID|1||ABC451018^^^ABC^MR~EPIC4485777^^^EPIC^MRN||SANCHEZ^LISA^SARAH^^^^D||19850515000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451018^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457162^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8067715^SYS|7795082869|EDXETSP1V^1 XR Thoracic Spine 1 View^UNKDEV|URGENT||20121220071616|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||1^Thoracic spine 1 View Dx Xray|20121222215305||EDXETSPV|||1^^^20121222215305^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB|||||||||1<R>
+OBX|1|TX|4662439||JENNIFER SMITH, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4662439||ACC#  Date Time  Exam~~7795082869 Dec 22 2012 09:53PM EDXETSP1V XR Thoracic Spine 1 View~~EXAMINATION:~T-spine X-ray~~FINDINGS:~The thoracic spine X-ray demonstrates mild degenerative changes~characterized by disc space narrowing at T8-T9 with accompanying~osteophyte formation. No acute fractures or dislocations are noted.~The alignment of the thoracic spine appears intact. Neural foramina~are patent, and there are no signs of significant scoliosis or~kyphosis observed. Compared to the X-ray imaging from the previous~report dated 2009-01-22, there is a noted progression of degenerative~changes but no acute pathology is identified.~~IMPRESSION:~Mild degenerative changes in the thoracic spine are present,~consistent with aging. Recommend maintaining conservative management~and periodic follow-up imaging to monitor changes.||||||F<R>
+OBX|3|TX|4662439||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Jennifer Smith, M.D. on Dec 22 2012 09:53PM~~This document has been electronically signed by: Jennifer Smith, M.D.~on Dec 22 2012 09:53PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4662439|4|7795082869^UK^ZB||||||F<R>
+<EB>

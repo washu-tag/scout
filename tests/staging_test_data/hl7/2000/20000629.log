@@ -1,0 +1,11 @@
+2000-06-29 11:15:16.4319|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000629111516|TBD|ORU^R01|2.25.5428613169915697408435341321500660770|P|2.4<R>
+PID|1||ABC451126^^^ABC^MR~EPIC4485885^^^EPIC^MRN||BAILEY^WILLIAM^NICHOLAS^^^^D||19460323000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451126^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457409^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5025896^SYS|7795083302|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||20000626161803|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|20000629111516||IMG|||1^^^20000629111516^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|8670191||GUY SANCHEZ, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|8670191||ACC#  Date Time  Exam~~7795083302 Jun 29 2000 11:15AM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~The chest MRI demonstrates normal thoracic anatomy with no evidence~of focal lesions in the lungs. There are no masses or pleural~effusions detected. The pulmonary vascular structures appear~unremarkable, and mediastinal contours are within normal limits. The~heart is noted to be of normal morphology and size, with good~visualization of the cardiac chambers. No significant enhancement or~perfusion defect is observed. The trachea is centrally located with~no signs of obstruction. Additionally, the visualized portions of the~thoracic spine demonstrate no abnormalities.~~IMPRESSION:~Overall, the chest MRI from 2000-06-26 reveals no significant~pathological findings. All structures appear normal without signs of~malignancy or acute pathology.||||||F<R>
+OBX|3|TX|8670191||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Guy Sanchez, M.D. on Jun 29 2000 11:15AM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Jun 29 2000 11:15AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8670191|4|7795083302^UK^ZB||||||F<R>
+<EB>

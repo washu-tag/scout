@@ -1,0 +1,11 @@
+2022-11-17 20:11:51.2897|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20221117201151|TBD|ORU^R01|2.25.234231934110723050901589236586530217043|P|2.4<R>
+PID|1||ABC451115^^^ABC^MR~EPIC4485874^^^EPIC^MRN||QUINTERO^NICHOLAS^ERIC^^^^D||19340113000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451115^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457431^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3935109^SYS|7795083259|JPT78699C^78699 Brain PET: MR Fusion 78699^UNKDEV|URGENT||20221114062448|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||78699^Brain PtMr|20221117201151||JPTC|||1^^^20221117201151^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.||PSCRIB|||||||||78699<R>
+OBX|1|TX|2164373||JENNIFER SMITH, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|2164373||ACC#  Date Time  Exam~~7795083259 Nov 17 2022 08:11PM JPT78699C Brain PET: MR Fusion 78699~~EXAMINATION:~Head PET-MR~~FINDINGS:~The head PET-MR study demonstrates normal brain perfusion without any~focal metabolic abnormalities. Gray and white matter distributions~are intact, with no evidence of dementia or neurological deficits.~The subarachnoid spaces and ventricles are normal in size, with no~signs of atrophy or other concerning changes. The basal ganglia,~thalamus, and brainstem are unremarkable. A normal pattern of uptake~is noted throughout, with no significant lesions, tumors, or other~pathologies observed.~~IMPRESSION:~The head PET-MR study shows no evidence of abnormality. Results~confirm normal brain perfusion, indicative of healthy neurological~function. Routine follow-up is recommended.||||||F<R>
+OBX|3|TX|2164373||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Jennifer Smith, M.D. on Nov 17 2022 08:11PM~~This document has been electronically signed by: Jennifer Smith, M.D.~on Nov 17 2022 08:11PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2164373|4|7795083259^UK^ZB||||||F<R>
+<EB>

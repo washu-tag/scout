@@ -1,0 +1,11 @@
+2011-01-22 13:24:25.5004|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110122132425|TBD|ORU^R01|2.25.5589046817955840730739950687452166173|P|2.4<R>
+PID|1||ABC451169^^^ABC^MR~EPIC4485928^^^EPIC^MRN||WHITE^KRISTINA^ALICIA^^^^D||19770108000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451169^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457129^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2198698^SYS|7795083477|IMG1259^1259 XR CHEST 1 VIEW^UNKDEV|URGENT||20110118061026|||PSCRIB|||||^^^^ |D7823235^SANCHEZ^GUY^JEFFREY^M.D.^^^^ABC|||||1259^Chest 1 View Xray|20110122132425||IMG|||1^^^20110122132425^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||1259<R>
+OBX|1|TX|309090||JESSICA WRIGHT, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|309090||ACC#  Date Time  Exam~~7795083477 Jan 22 2011 01:24PM IMG1259 XR CHEST 1 VIEW~~EXAMINATION:~Chest X-ray~~FINDINGS:~The chest X-ray taken on 2011-01-18 shows clear lung fields with no~signs of acute infiltrates or effusion. Cardiac silhouette is within~normal limits, and the mediastinum appears unremarkable. The~costophrenic angles are sharp, indicating no identifiable pleural~effusion. Visualized bony structures do not exhibit any acute~fractures or lytic lesions. No masses or suspicious densities are~noted, keeping with the previously established pattern of thoracic~imaging.~~IMPRESSION:~The chest X-ray is unremarkable, demonstrating normal thoracic~anatomy with no acute abnormalities. Findings suggest stability since~the last imaging.||||||F<R>
+OBX|3|TX|309090||Requested By: Sanchez,Guy J. M.D.~~Dictated By: Jessica Wright, M.D. on Jan 22 2011 01:24PM~~This document has been electronically signed by: Jessica Wright, M.D.~on Jan 22 2011 01:24PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|309090|4|7795083477^UK^ZB||||||F<R>
+<EB>

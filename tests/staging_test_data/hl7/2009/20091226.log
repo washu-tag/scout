@@ -1,0 +1,11 @@
+2009-12-26 09:54:29.7577|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20091226095429|TBD|ORU^R01|2.25.127524114079933126829898845823816240385|P|2.4<R>
+PID|1||ABC451110^^^ABC^MR~EPIC4485869^^^EPIC^MRN||THOMPSON^KEVIN^FRANK^Sr.^^^D||19900127000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451110^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457413^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2668003^SYS|7795083238|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20091222155449|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||^Xr Sing View|20091226095429||MDXREVNT|||1^^^20091226095429^^U^^URGENT|       |||^Chest pain|D7823241^SANDERS^LISA^A.^^^M.D.|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|9717950||LISA SANDERS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|9717950||ACC#  Date Time  Exam~~7795083238 Dec 26 2009 09:54AM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~The single-view X-ray of the chest reveals a partial visualization of~the lung fields. The right hemidiaphragm is clearly delineated, and~there is no displacement noted. No acutely concerning infiltrates or~masses are observed in the limited view provided. There are no~fractures of the clavicles or thoracic cage evident. The visualized~soft tissues appear normal without significant swelling or lesions.~~IMPRESSION:~The single-view X-ray dated December 22, 2009, is limited but shows~no alarming abnormalities in the visualized areas. The findings~suggest a generally unremarkable study, with no gross pathologies~noted in the visible structures.||||||F<R>
+OBX|3|TX|9717950||Requested By: Medrano,Joe J. M.D.~~Dictated By: Lisa Sanders, M.D. on Dec 26 2009 09:54AM~~This document has been electronically signed by: Lisa Sanders, M.D.~on Dec 26 2009 09:54AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9717950|4|7795083238^UK^ZB||||||F<R>
+<EB>

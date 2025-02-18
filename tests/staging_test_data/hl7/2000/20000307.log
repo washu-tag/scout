@@ -1,0 +1,25 @@
+2000-03-07 02:29:50.4257|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000307022950|TBD|ORU^R01|2.25.315704468220119489260660126642369775199|P|2.7<R>
+PID|1||ABC451113^^^ABC^MR||ΖΕΡΒΆΝΟΣ^ΊΩΆΝΝΗΣ^^^^^D||19330928|M||DECLINED|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084962|||||||||||||||||||||||||20000307022950|||||||V<R>
+ORC|RE|9565881^SYS|7795083250||Wet Read||^^^20000307022949^20000307022950^O||20000307022950|||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9565881^SYS|7795083250|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20000304171921|||||Hosp Perf|||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20000307022950||DX|Wet Read||^^^20000307022949^20000307022950^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|||20000307022950||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|No acute cardiopulmonary abnormalities identified. The findings are||||||Wet Read<R>
+OBX|6|ST|&IMP|2|consistent with a normal chest X-ray for the patient's demographic.||||||Wet Read<R>
+OBX|7|ST|&IMP|2|No follow-up necessary unless clinically indicated. The chest X-ray||||||Wet Read<R>
+OBX|8|ST|&IMP|2|reveals a symmetrical thoracic cavity with clear lung fields. The||||||Wet Read<R>
+OBX|9|ST|&IMP|2|cardiac silhouette is within normal limits, and no acute bony||||||Wet Read<R>
+OBX|10|ST|&IMP|2|injuries are detected. The diaphragm is well-defined and shows normal||||||Wet Read<R>
+OBX|11|ST|&IMP|2|curvature. No significant pleural effusions or interstitial patterns||||||Wet Read<R>
+OBX|12|ST|&IMP|2|are observed. Vascular markings are normal for the patient's age,||||||Wet Read<R>
+OBX|13|ST|&IMP|2|indicating no signs of congestive heart failure or pulmonary||||||Wet Read<R>
+OBX|14|ST|&IMP|2|pathology. Overall, the study appears consistent with normal findings||||||Wet Read<R>
+OBX|15|ST|&IMP|2|for a male patient of 66 years.||||||Wet Read<R>
+OBX|16|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.199358775415130723507611811996989194115^EPIC^APPLICATION^DICOM<R>
+<EB>

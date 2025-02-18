@@ -1,0 +1,28 @@
+2008-09-03 13:20:55.7003|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20080903132055|TBD|ORU^R01|2.25.305369155029808279737327037936541660189|P|2.7<R>
+PID|1||ABC451055^^^ABC^MR||GREEN^RYAN^JASON^^^^D||19741230|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084967|||||||||||||||||||||||||20080903132055|||||||V<R>
+ORC|RE|5140578^SYS|7795083022||Prelim||^^^20080903132054^20080903132055^O||20080903132055|T6530145^RUIZ^TARA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5140578^SYS|7795083022|OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED|O|20080902074802|||||Hosp Perf||||^^^HEAD|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20080903132055||MR|Prelim||^^^20080903132054^20080903132055^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20080903132055||||||||OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head MRI||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|The head MRI demonstrates normal anatomical and signal||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|characteristics with no focal abnormalities noted. There is no||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|evidence of recent ischemic or hemorrhagic events and a||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|well-preserved cortical architecture. The MRI of the head||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|demonstrates normal brain parenchyma with no evidence of acute||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|infarction or hemorrhage. The ventricles are symmetrically sized, and||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|there is no evidence of midline shift. Cortical sulci and gyri show||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|normal variations without atrophy. The diffusion-weighted imaging||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|reveals no restricted diffusion, and the diffusion tensor imaging||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|appears unremarkable. The spectral fat-saturated images show no||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|abnormalities in the orbits or skull base. There is a normal signal||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|intensity in the basal ganglia and thalami. Surrounding structures||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|including the cranial nerves appear intact, and there are no lesions||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|that are suggestive of demyelinating disease.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|19|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.228907357208851255030084037330647400456^EPIC^APPLICATION^DICOM<R>
+<EB>

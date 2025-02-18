@@ -1,0 +1,30 @@
+2012-11-06 10:13:45.1112|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20121106101345|TBD|ORU^R01|2.25.320465216450604113879504981093241125638|P|2.7<R>
+PID|1||ABC451069^^^ABC^MR||GONZALEZ^MICHAEL^STEPHEN^^^^D||19961009|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084676|||||||||||||||||||||||||20121106101345|||||||V<R>
+ORC|RE|7642037^SYS|7795083075||Prelim||^^^20121106101344^20121106101345^O||20121106101345|T6530146^MOORE^CURTIS||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7642037^SYS|7795083075|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20121104082502|||||Hosp Perf||||^^^BRAIN|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20121106101345||MR|Prelim||^^^20121106101344^20121106101345^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20121106101345||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|The imaging shows unremarkable findings overall with the exception of||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|a small, benign-appearing hyperintense lesion in the right parietal||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|lobe suggestive of a developmental venous anomaly. No other||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|significant abnormalities were found. The MRI of the brain reveals||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|normal anatomical structures with symmetric appearance of the||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|cerebral hemispheres. There are no focal lesions, and no evidence of||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|acute ischemic changes or hemorrhage is noted. The ventricular system||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|is within normal limits without dilation, and the cortical sulci are||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|age-appropriate without signs of atrophy. Notably, there is the||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|presence of a single small, non-enhancing T2 hyperintense signal in||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|the right parietal lobe, consistent with a benign process, likely a||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|developmental venous anomaly. No midline shift or mass effect is||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|evident. The basilar arteries and vertebral arteries are patent.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|Additionally, the visualized portions of the orbits and facial bones||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|19|ST|&IMP|2|do not show any abnormalities, and the pituitary gland is of normal||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|20|ST|&IMP|2|size and configuration.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|21|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.88575810193274228175209525034121108673^EPIC^APPLICATION^DICOM<R>
+<EB>

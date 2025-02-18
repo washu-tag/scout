@@ -1,0 +1,11 @@
+2018-12-22 06:52:17.6273|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20181222065217|TBD|ORU^R01|2.25.205345913746402371166144586600821855625|P|2.4<R>
+PID|1||ABC451020^^^ABC^MR~EPIC4485779^^^EPIC^MRN||ΘΕΟΔΩΡΆΚΗΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19971220000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451020^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823288^GONZALEZ^AMBER^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457212^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||99786^SYS|7795082877|OMHEADWO^ MRI BRAIN WITHOUT CONTRAST^UNKDEV|URGENT||20181218131931|||PSCRIB|||||^^^^ |D7823282^HARRELL^YOEL^JARED^M.D.^^^^ABC|||||^HEAD MRI Expedited|20181222065217||OMHEADWO|||1^^^20181222065217^^U^^URGENT|       |||^Chest pain|D7823288^GONZALEZ^AMBER^R.^^^M.D.|D7823282^HARRELL^YOEL^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|3096124||AMBER GONZALEZ, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|3096124||ACC#  Date Time  Exam~~7795082877 Dec 22 2018 06:52AM OMHEADWO MRI BRAIN WITHOUT CONTRAST~~EXAMINATION:~Head MRI~~FINDINGS:~The MRI of the brain demonstrates normal morphology of cerebral~structures. There are no focal lesions, and both gray and white~matter appear normal without evidence of edema, hemorrhage, or mass~effect. The ventricles are symmetrically sized and positioned, and~the midline structures are intact. Notably, there are small,~periventricular hyperintensities that could be consistent with~chronic ischemic changes; however, they remain stable when compared~to the previous study dated 2018-12-18, indicating no new or acute~process. Vascular flow voids within the intracranial arterial~circulation are well visualized, indicating no significant vascular~insult.~~IMPRESSION:~Imaging findings are consistent with a normal anatomical brain scan.~Stable minor hyperintensities warrant observation but do not suggest~acute pathology.||||||F<R>
+OBX|3|TX|3096124||Requested By: Harrell,Yoel J. M.D.~~Dictated By: Amber Gonzalez, M.D. on Dec 22 2018 06:52AM~~This document has been electronically signed by: Amber Gonzalez, M.D.~on Dec 22 2018 06:52AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3096124|4|7795082877^UK^ZB||||||F<R>
+<EB>

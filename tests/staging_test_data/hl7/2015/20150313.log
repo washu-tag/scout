@@ -1,0 +1,27 @@
+2015-03-13 11:04:18.1483|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150313110418|TBD|ORU^R01|2.25.47343630565238581175520286064277450432|P|2.7<R>
+PID|1||ABC451062^^^ABC^MR||FLORES^DANIEL^DANIEL^^^^D||19781010|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823276^WALKER^NICOLE^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085037|||||||||||||||||||||||||20150313110418|||||||V<R>
+ORC|RE|5712283^SYS|7795083045||Wet Read||^^^20150313110417^20150313110418^O||20150313110418|T6530208^HARRISON^NICOLE||D7823279^BYRD^PAUL^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5712283^SYS|7795083045|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20150310125101|||||Hosp Perf||||^^^HEART|D7823279^BYRD^PAUL^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20150313110418||MR|Wet Read||^^^20150313110417^20150313110418^O||||^Chest pain||D7823287^BARRETT^JONATHAN^B.^^^^^ABC^^^^HOSP|T6530208^HARRISON^NICOLE||20150313110418||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|5|ST|&IMP|2|The heart MRI performed on March 10, 2015, presents a wholly normal||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|6|ST|&IMP|2|cardiac assessment, in line with previous findings of normal cardiac||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|7|ST|&IMP|2|physiology and anatomy. There are no intervals or significant changes||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|8|ST|&IMP|2|when compared to prior studies, indicating stable cardiac health. The||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|9|ST|&IMP|2|cardiac MRI demonstrates normal left ventricular (LV) size and||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|10|ST|&IMP|2|function with a normal ejection fraction estimated in the range of||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|11|ST|&IMP|2|55-65%. There is no evidence of regional wall motion abnormalities.||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|12|ST|&IMP|2|The myocardial tissue appears homogenous with no areas of edema,||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|13|ST|&IMP|2|scar, or Late Gadolinium Enhancement (LGE) indicative of prior||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|14|ST|&IMP|2|infarction. Coronary arteries are patent without evidence of||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|15|ST|&IMP|2|stenosis. The right ventricular (RV) and atrial structures are also||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|16|ST|&IMP|2|normal, with no detected pericardial effusion or fibrotic changes.||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|17|ST|&IMP|2|The valvular structures are intact with normal morphology.||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+OBX|18|ST|&IMP|2|Dictated by: Jonathan Barrett Interpreter, M.D.||||||Wet Read|||||T6530208^HARRISON^NICOLE<R>
+ZDS|2.25.313647538741353553769767815455122984494^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2024-02-05 16:17:47.6489|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240205161747|TBD|ORU^R01|2.25.167392040237734472053720408605432182984|P|2.4<R>
+PID|1||ABC451004^^^ABC^MR~EPIC4485763^^^EPIC^MRN||PEREZ^THOMAS^MICHAEL^^^^D||19700404000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451004^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457382^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||160315^SYS|7795082818|BED72020^72020 72020 Spine Single View^UNKDEV|URGENT||20240204141541|||PSCRIB|||||^^^^ |D7823231^SMITH^CLARA^TAMIKA^M.D.^^^^ABC|||||72020^Spine 1 View Dx Xray|20240205161747||BED|||1^^^20240205161747^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB|||||||||72020<R>
+OBX|1|TX|4560116||GUY SANCHEZ, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|4560116||ACC#  Date Time  Exam~~7795082818 Feb 05 2024 04:17PM BED72020 72020 Spine Single View~~EXAMINATION:~Spine X-ray~~FINDINGS:~The spine X-ray indicates normal vertebral morphology with no acute~fractures or dislocations. The lumbar spine exhibits adequate~intervertebral disc height and is free from significant degenerative~disc disease. The sacroiliac joints show normal alignment, and the~pelvic structures are unremarkable. There is no abnormal curvature or~scoliosis noted.~~IMPRESSION:~Overall, the lumbar spine X-ray results are within normal limits,~indicating a lack of degenerative or traumatic changes.||||||F<R>
+OBX|3|TX|4560116||Requested By: Smith,Clara T. M.D.~~Dictated By: Guy Sanchez, M.D. on Feb 05 2024 04:17PM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Feb 05 2024 04:17PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4560116|4|7795082818^UK^ZB||||||F<R>
+<EB>

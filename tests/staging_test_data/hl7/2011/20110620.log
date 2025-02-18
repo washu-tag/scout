@@ -1,0 +1,11 @@
+2011-06-20 17:15:06.5624|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110620171506|TBD|ORU^R01|2.25.213037733103074152816660026080506358375|P|2.4<R>
+PID|1||ABC451117^^^ABC^MR~EPIC4485876^^^EPIC^MRN||MCLAUGHLIN^NICOLE^LATOYA^III^^^D||19831230000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451117^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457448^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4333748^SYS|7795083264|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20110617173633|||PSCRIB|||||^^^^ |D7823218^LLOYD^JESSICA^ALEXANDRIA^M.D.^^^^ABC|||||4185^XRay Angiography|20110620171506||IMG|||1^^^20110620171506^^U^^URGENT|       |||^Chest pain|D7823229^WADE^KERRI^L.^^^M.D.|D7823224^MORGAN^JOHN^J.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|6380518||KERRI WADE, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|6380518||ACC#  Date Time  Exam~~7795083264 Jun 20 2011 05:15PM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray angiography~~FINDINGS:~The X-ray angiography imaging displays the vasculature in detail. No~significant stenosis or occlusions are noted in the major vessels.~The aorta shows normal caliber with no evidence of an aneurysm. The~branches arising from the aorta, including the carotid and subclavian~arteries, are patent and without significant abnormality. The~contrast opacifies all regions adequately, and there are no abnormal~vascular formations or perfusion defects noted.~~IMPRESSION:~Vascular imaging is normal with no significant findings. The patient~demonstrates an intact vascular architecture.||||||F<R>
+OBX|3|TX|6380518||Requested By: Lloyd,Jessica A. M.D.~~Dictated By: Kerri Wade, M.D. on Jun 20 2011 05:15PM~~This document has been electronically signed by: Kerri Wade, M.D. on~Jun 20 2011 05:15PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6380518|4|7795083264^UK^ZB||||||F<R>
+<EB>

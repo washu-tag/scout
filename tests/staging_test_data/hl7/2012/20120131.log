@@ -1,0 +1,11 @@
+2012-01-31 19:16:03.1164|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120131191603|TBD|ORU^R01|2.25.286040991783746849156955015167030120199|P|2.4<R>
+PID|1||ABC451175^^^ABC^MR~EPIC4485934^^^EPIC^MRN||OCONNOR^JEREMY^JOSHUA^^^^D||19931118000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451175^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457187^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3894283^SYS|7795083499|M755612^755612 MR CARDIAC MRPH FUNC WWO^UNKDEV|URGENT||20120128142031|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||755612^HEART MRI|20120131191603||M|||1^^^20120131191603^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||755612<R>
+OBX|1|TX|2147229||JOSEPH BARAJAS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|2147229||ACC#  Date Time  Exam~~7795083499 Jan 31 2012 07:16PM M755612 MR CARDIAC MRPH FUNC WWO~~EXAMINATION:~MRI of the heart~~FINDINGS:~The cardiac MRI demonstrates a normal-sized left ventricle with~normal wall motion and no significant hypertrophy. There is a small~amount of pericardial effusion noted, measuring approximately 2mm in~thickness. No myocardial fibrosis or areas of late gadolinium~enhancement are identified, indicating the absence of ischemic or~inflammatory cardiomyopathy. The right ventricle appears normal in~size and function. The great vessels are patent without any~noticeable stenoses or abnormalities. No intra-cardiac masses or~thrombus are visualized.~~IMPRESSION:~The MRI of the heart reveals normal cardiac structure and function.~There is a minor pericardial effusion, which may warrant surveillance~but does not currently reveal any significant pathology. No acute or~chronic ischemic changes are seen. The findings are stable compared~to previous imaging studies.||||||P<R>
+OBX|3|TX|2147229||Requested By: Marks,Michael R. M.D.~~Dictated By: Joseph Barajas, M.D. on Jan 31 2012 07:16PM~~Pending review by: Amber Reese, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|2147229|4|7795083499^UK^ZB||||||P<R>
+<EB>

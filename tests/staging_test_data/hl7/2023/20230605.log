@@ -1,0 +1,28 @@
+2023-06-05 08:32:08.6223|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230605083208|TBD|ORU^R01|2.25.183248973830626412129623424882234083237|P|2.7<R>
+PID|1||ABC451039^^^ABC^MR||ITO^ASAHI^^^^^D||19990224|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084961|||||||||||||||||||||||||20230605083208|||||||V<R>
+ORC|RE|6661176^SYS|7795082956||Prelim||^^^20230605083207^20230605083208^O||20230605083208|T6530153^MORAN^JOSHUA||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6661176^SYS|7795082956|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20230601081844|||||Hosp Perf|||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230605083208||US|Prelim||^^^20230605083207^20230605083208^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||20230605083208||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|1. Normal abdominal ultrasound with stable anatomy. 2. No evidence of||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|hepatobiliary pathology or renal compromise. 3. Continued||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|surveillance recommended based on clinical symptoms. The ultrasound||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|of the abdomen is performed, revealing normal-sized kidneys without||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|hydronephrosis. No renal calculi are observed. The liver is of normal||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|echogenicity and size, continuing previous studies suggesting no||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|fatty infiltration. The gallbladder is normal in appearance, without||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|stones or wall thickening. The pancreas is also visualized with no||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|masses or inflammatory changes identified. Additionally, the aorta is||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|patent without dilation or atherosclerotic changes. No free fluid is||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|15|ST|&IMP|2|seen within the peritoneal cavity, reflecting overall abdominal||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|16|ST|&IMP|2|health. Comparative analysis with past imaging indicates no new||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|17|ST|&IMP|2|developments or complications noted; all structures remain stable||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|18|ST|&IMP|2|compared to previous examinations conducted in 2021.||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|19|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.259464748174294883506511407147181950815^EPIC^APPLICATION^DICOM<R>
+<EB>

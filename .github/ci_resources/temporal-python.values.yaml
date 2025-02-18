@@ -1,0 +1,9 @@
+nameOverride: temporal-python
+image:
+  repository: docker.io/local/washu-tag/temporal-python
+  tag: latest
+envFrom:
+  - secretRef:
+      name: s3-secret
+  - configMapRef:
+      name: s3-env

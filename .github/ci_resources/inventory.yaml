@@ -1,0 +1,35 @@
+---
+k3s_cluster:
+  children:
+    server:
+      hosts:
+        FQDN-leader.edu:
+          ansible_connection: local
+          ansible_python_interpreter: /usr/bin/python3
+          k3s_control_node: true
+  vars:
+    s3_username: 'minio'
+    s3_password: 'minio1234'
+    s3_region: 'us-east-1'
+    k3s_token: $(openssl rand -hex 32)
+    slack_token: ''
+    slack_channel_id: ''
+    base_dir: '/var/lib'
+    scout_repo_dir: '{{ base_dir }}/scout'
+    kubeconfig_group: 'root'
+
+    # These would only be overwritten for development builds
+    temporal_java_helm_values: '{{ scout_repo_dir }}/.github/ci_resources/temporal-java.values.yaml'
+    temporal_python_helm_values: '{{ scout_repo_dir }}/.github/ci_resources/temporal-python.values.yaml'
+
+    # You probably don't want to change these unless you know these items will be
+    # stored in different locations on your system
+    helm_plugins_dir: '~/.local/share/helm/plugins'
+    kubeconfig_yaml: '/etc/rancher/k3s/k3s.yaml'
+
+    # Do not change the values below, they are hard-coded various places
+    orchestration_worker_namespace: orchestration-workers
+    minio_tenant_namespace: minio-scout
+    grafana_namespace: grafana
+    loki_namespace: loki
+    # End do not change

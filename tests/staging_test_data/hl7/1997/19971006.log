@@ -1,0 +1,25 @@
+1997-10-06 06:51:29.4913|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19971006065129|TBD|ORU^R01|2.25.287868597971593912069958254299629142472|P|2.7<R>
+PID|1||ABC451065^^^ABC^MR||ΑΡΓΎΡΗΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19630112|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085044|||||||||||||||||||||||||19971006065129|||||||V<R>
+ORC|RE|8070944^SYS|7795083055||Final||^^^19971006065128^19971006065129^O||19971006065129|T6530150^NEAL^EMILY||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8070944^SYS|7795083055|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|19971002080202|||||Hosp Perf||||^^^CHEST|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19971006065129||CR|Final||^^^19971006065128^19971006065129^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||19971006065129||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|The chest X-ray appears unremarkable with no significant||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|abnormalities noted. The findings are consistent with normal thoracic||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|anatomy and function. The chest radiograph reveals clear lung fields||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|without any focal consolidative opacities or pleural effusions. The||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|heart size is within normal limits, and the cardiac silhouette is not||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|enlarged. The mediastinum appears unshifted and maintains normal||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|contour. The diaphragm is well-defined, and there is no evidence of||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|free air under the diaphragm. The bones visualized demonstrate no||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|acute bony injuries or destructive lesions. Silhouette sign is||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|negative; therefore, no acute processes are suspected based on this||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|view.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Final|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.16436451962792723037448172299187988315^EPIC^APPLICATION^DICOM<R>
+<EB>

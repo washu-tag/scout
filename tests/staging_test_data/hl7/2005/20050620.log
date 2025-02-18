@@ -1,0 +1,11 @@
+2005-06-20 21:15:13.8664|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20050620211513|TBD|ORU^R01|2.25.246775649822314181566245310138053079052|P|2.4<R>
+PID|1||ABC451051^^^ABC^MR~EPIC4485810^^^EPIC^MRN||WHITE^JACOB^OSCAR^^^^D||19430325000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451051^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457305^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||50308^SYS|7795083001|IMG2347^2347 MRI BRAIN WO CONTRAST^UNKDEV|URGENT||20050618175732|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||2347^BRAIN MRI Expedited|20050620211513||IMG|||1^^^20050620211513^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||2347<R>
+OBX|1|TX|2871554||JOSEPH BARAJAS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|2871554||ACC#  Date Time  Exam~~7795083001 Jun 20 2005 09:15PM IMG2347 MRI BRAIN WO CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The MRI of the brain shows unremarkable cerebral anatomy. No focal~cortical lesions or mass effect is noted. The ventricular system is~symmetric, and no ventricular enlargement suggests the absence of~hydrocephalus. No abnormalities are seen in the cranial fossa; the~basal ganglia and cortex show normal signal intensity without any~signs of acute ischemia or hemorrhage. Minor white matter~hyperintensities are noted, consistent with small vessel ischemic~changes typical in patients of this age group, but no acute process~is evident.~~IMPRESSION:~Normal brain MRI. Mild chronic ischemic changes are present, likely~age-related, without current acute pathology.||||||F<R>
+OBX|3|TX|2871554||Requested By: Wright,Jessica M. M.D.~~Dictated By: Joseph Barajas, M.D. on Jun 20 2005 09:15PM~~This document has been electronically signed by: Joseph Barajas, M.D.~on Jun 20 2005 09:15PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2871554|4|7795083001^UK^ZB||||||F<R>
+<EB>

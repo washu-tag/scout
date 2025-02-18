@@ -1,0 +1,11 @@
+2005-02-09 18:58:07.2070|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20050209185807|TBD|ORU^R01|2.25.162738538475639932548325421928753102573|P|2.4<R>
+PID|1||ABC451090^^^ABC^MR~EPIC4485849^^^EPIC^MRN||THOMAS^LISA^KRISTIN^^Capt.^^D||19411017000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451090^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457294^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7802995^SYS|7795083161|IMG2370^2370 MRI BRAIN W WO CONTRAST^UNKDEV|URGENT||20050208093018|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||2370^BRAIN MRI|20050209185807||IMG|||1^^^20050209185807^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||2370<R>
+OBX|1|TX|5529499||AMBER REESE, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5529499||ACC#  Date Time  Exam~~7795083161 Feb 09 2005 06:58PM IMG2370 MRI BRAIN W WO CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The MRI of the brain demonstrates symmetrical cortical and~subcortical structures with no evidences of acute ischemic changes or~intracranial hemorrhage. The ventricles appear normal in size and~configuration. There is no midline shift or mass effect noted.~However, incidental white matter hyperintensities on FLAIR sequences~are observed, suggestive of chronic microangiopathic changes, which~are not uncommon in this age group. The basal ganglia and thalamic~regions are intact without signs of focal lesions, and the cerebral~sulci are within normal limits.~~IMPRESSION:~The brain MRI performed in 2005 is largely unremarkable with~incidental findings suggestive of chronic ischemia likely~attributable to small vessel disease, consistent with vascular aging.~No acute pathology is identified. Continued monitoring for~progression of these findings is suggested.||||||F<R>
+OBX|3|TX|5529499||Requested By: Marks,Michael R. M.D.~~Dictated By: Amber Reese, M.D. on Feb 09 2005 06:58PM~~This document has been electronically signed by: Amber Reese, M.D. on~Feb 09 2005 06:58PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5529499|4|7795083161^UK^ZB||||||F<R>
+<EB>

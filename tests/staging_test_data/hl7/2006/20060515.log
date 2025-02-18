@@ -1,0 +1,11 @@
+2006-05-15 03:07:17.1461|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060515030717|TBD|ORU^R01|2.25.44968082723339615300491953170116131725|P|2.4<R>
+PID|1||ABC451128^^^ABC^MR~EPIC4485887^^^EPIC^MRN||PAUL^JUSTIN^TYRONE^^^^D||19360925000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451128^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457440^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5838545^SYS|7795083307|IMG5021^5021 PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV|URGENT||20060512065523|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||5021^Brain Petct AC NAC|20060515030717||IMG|||1^^^20060515030717^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||5021<R>
+OBX|1|TX|8871311||KIMBERLY HANSON, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|8871311||ACC#  Date Time  Exam~~7795083307 May 15 2006 03:07AM IMG5021 PET/CT FDG BRAIN TUMOR~METABOLIC EVALUATION~~EXAMINATION:~Head PET-CT~~FINDINGS:~The head PET-CT demonstrates normal metabolic activity across all~assessed regions of the brain. The activity is homogenous with no~focal areas of hypermetabolism. The study effectively rules out any~signs of malignancy or other neurodegenerative processes. The CT~component likewise shows an unremarkable assessment of brain~structures with no evidence of mass effect, hemorrhage, or acute~ischemia. Comparison with the MRI performed on 1998-05-26 supports~stability in brain parenchyma and function since that time, as no new~lesions have emerged or developed.~~IMPRESSION:~The PET-CT study yields no abnormal findings, confirming absence of~metabolic activity suggestive of pathological processes. The~stability in results relative to the previous MRI is noteworthy, and~no immediate follow-up imaging is required unless clinically~indicated.||||||F<R>
+OBX|3|TX|8871311||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Kimberly Hanson, M.D. on May 15 2006 03:07AM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on May 15 2006 03:07AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8871311|4|7795083307^UK^ZB||||||F<R>
+<EB>

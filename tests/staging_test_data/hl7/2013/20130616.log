@@ -1,0 +1,11 @@
+2013-06-16 07:29:58.8325|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130616072958|TBD|ORU^R01|2.25.218221417209682824396418021101609647874|P|2.4<R>
+PID|1||ABC451110^^^ABC^MR~EPIC4485869^^^EPIC^MRN||THOMPSON^KEVIN^FRANK^Sr.^^^D||19900127000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451110^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823254^CRUZ^JOSEPH^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457415^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||731530^SYS|7795083242|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||20130611194726|||PSCRIB|||||^^^^ |D7823249^OLIVER^JASON^JOHN^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|20130616072958||IMG|||1^^^20130616072958^^U^^URGENT|       |||^Chest pain|D7823251^CALLAHAN^SCOTT^A.^^^M.D.|D7823252^NICHOLS^ISAAC^V.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|1475640||SCOTT CALLAHAN, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|1475640||ACC#  Date Time  Exam~~7795083242 Jun 16 2013 07:29AM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~The MRI of the chest showed well-defined structures of the heart and~lungs. The lungs were free of any significant lesions,~consolidations, or nodules. There is good depiction of the pulmonary~vasculature without evidence of thromboembolic disease. The thoracic~aorta and branches remain patent, and there is no mediastinal~lymphadenopathy or pericardial effusion evident. The heart~demonstrates normal chamber sizes and function with no wall motion~abnormalities.~~IMPRESSION:~The chest MRI performed on June 11, 2013, is favorable with normal~findings regarding the pulmonary and cardiac structures. There are no~signs of pathologies such as masses, effusions, or pulmonary vascular~obstructions.||||||F<R>
+OBX|3|TX|1475640||Requested By: Oliver,Jason J. M.D.~~Dictated By: Scott Callahan, M.D. on Jun 16 2013 07:29AM~~This document has been electronically signed by: Scott Callahan, M.D.~on Jun 16 2013 07:29AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|1475640|4|7795083242^UK^ZB||||||F<R>
+<EB>

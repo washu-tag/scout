@@ -1,0 +1,11 @@
+2023-04-05 22:46:05.6951|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230405224605|TBD|ORU^R01|2.25.295082188034693250241697497784336887209|P|2.4<R>
+PID|1||ABC450993^^^ABC^MR~EPIC4485752^^^EPIC^MRN||ΘΕΟΔΩΡΆΚΗΣ^ΆΛΈΞΙΟΣ^^^^^D||19760421000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC450993^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457099^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1174071^SYS|7795082775|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20230403120922|||PSCRIB|||||^^^^ |D7823231^SMITH^CLARA^TAMIKA^M.D.^^^^ABC|||||^Xr Sing View|20230405224605||MDXREVNT|||1^^^20230405224605^^U^^URGENT|       |||^Chest pain|D7823238^HUNT^APRIL^M.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB<R>
+OBX|1|TX|6224139||APRIL HUNT, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|6224139||ACC#  Date Time  Exam~~7795082775 Apr 05 2023 10:46PM MDXREVNT Radiology Event~~EXAMINATION:~Single-View X-ray~~FINDINGS:~The single-view X-ray performed on April 3, 2023, shows a stable~appearance of pulmonary vasculature with no new acute infiltrates or~consolidations. Cardiac silhouette remains within normal limits, and~there is no significant change noted from the preceding studies.~Minor degenerative changes are seen in the thoracic spine, but there~are no acute bony lesions or abnormal collections. The diaphragm and~costophrenic angles are well-defined, suggesting no effusion.~~IMPRESSION:~No acute findings in the single-view X-ray. There remains a stable~anatomical configuration of the chest, consistent with resolved or~stable chronic conditions.||||||F<R>
+OBX|3|TX|6224139||Requested By: Smith,Clara T. M.D.~~Dictated By: April Hunt, M.D. on Apr 05 2023 10:46PM~~This document has been electronically signed by: April Hunt, M.D. on~Apr 05 2023 10:46PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6224139|4|7795082775^UK^ZB||||||F<R>
+<EB>

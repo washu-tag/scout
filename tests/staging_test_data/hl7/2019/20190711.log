@@ -1,0 +1,11 @@
+2019-07-11 12:36:15.9746|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190711123615|TBD|ORU^R01|2.25.105978032199801487219556702799886777217|P|2.4<R>
+PID|1||ABC451149^^^ABC^MR~EPIC4485908^^^EPIC^MRN||FOLEY^HEATHER^CASSIE^^^^D||19930826000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451149^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457267^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5793672^SYS|7795083398|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||20190709063435|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||70553^Brain dMRI|20190711123615||CMRP|||1^^^20190711123615^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|242174||JENNIFER SMITH, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|242174||ACC#  Date Time  Exam~~7795083398 Jul 11 2019 12:36PM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI performed demonstrates a normal cerebral anatomy with~no evidence of acute infarction, hemorrhage, or mass effect. The~ventricles are of normal size, and there is no midline shift. The~gray and white matter show good differentiation, with no signs of~demyelinating diseases or abnormal enhancement. The sinuses are~clear, and the visualized extra-axial spaces are free of collections.~There are no abnormal lesions identified within the cranial vault.~~IMPRESSION:~Normal brain MRI findings without significant abnormalities, ruling~out acute intracranial processes or structural anomalies.||||||F<R>
+OBX|3|TX|242174||Requested By: Wright,Jessica M. M.D.~~Dictated By: Jennifer Smith, M.D. on Jul 11 2019 12:36PM~~This document has been electronically signed by: Jennifer Smith, M.D.~on Jul 11 2019 12:36PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|242174|4|7795083398^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,11 @@
+2020-04-24 09:39:47.1740|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200424093947|TBD|ORU^R01|2.25.159225918020929090101351983367779986317|P|2.4<R>
+PID|1||ABC451090^^^ABC^MR~EPIC4485849^^^EPIC^MRN||THOMAS^LISA^KRISTIN^^Capt.^^D||19411017000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451090^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457293^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1164824^SYS|7795083159|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||20200420085609|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||2361^Brain MRI|20200424093947||IMG|||1^^^20200424093947^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823234^DONOVAN^WILLIAM^C.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|6871844||KIMBERLY HANSON, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6871844||ACC#  Date Time  Exam~~7795083159 Apr 24 2020 09:39AM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI performed on April 20, 2020, confirms the presence of~previously noted white matter hyperintensities. There's slight~interval progression compared to the 2005 study, with an increase in~both the volume and number of these hyperintensities suggestive of~subclinical ischemic disease progression. No new focal lesions or~other acute pathologies are observed. The ventricles remain normal in~size. The cerebral cortex shows no atrophy or other abnormalities.~~IMPRESSION:~The brain MRI from 2020 indicates a notable increase in white matter~changes when compared to the examination from February 2005. While~the changes suggest ongoing small vessel ischemia related to~cerebrovascular aging, there is no acute intracranial pathology.~Clinical correlation and continued monitoring are recommended.||||||F<R>
+OBX|3|TX|6871844||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Kimberly Hanson, M.D. on Apr 24 2020 09:39AM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on Apr 24 2020 09:39AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6871844|4|7795083159^UK^ZB||||||F<R>
+<EB>

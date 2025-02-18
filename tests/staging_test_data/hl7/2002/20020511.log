@@ -1,0 +1,11 @@
+2002-05-11 17:55:57.2174|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020511175557|TBD|ORU^R01|2.25.249333526483801279560597947077746282564|P|2.4<R>
+PID|1||ABC451168^^^ABC^MR~EPIC4485927^^^EPIC^MRN||MORRIS^OCTAVIO^MARCUS^^^^D||19481022000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451168^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457104^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6965221^SYS|7795083467|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20020509074452|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||^Xr Sing View|20020511175557||MDXREVNT|||1^^^20020511175557^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB<R>
+OBX|1|TX|473037||MICHAEL MARKS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|473037||ACC#  Date Time  Exam~~7795083467 May 11 2002 05:55PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~The single-view chest X-ray demonstrates clear lung fields~bilaterally, with no evidence of acute infiltrates or pleural~effusions. The cardiac silhouette is within normal limits, and the~mediastinum is not shifted. The bony thorax appears intact without~any acute fractures or lytic lesions present. Diaphragmatic contours~are normal, and there is no elevated right hemidiaphragm.~~IMPRESSION:~The chest X-ray findings are unremarkable and suggest normal thoracic~anatomy and no acute pathology. Routine follow-up imaging may be~recommended based on clinical symptoms but no immediate investigation~is warranted.||||||F<R>
+OBX|3|TX|473037||Requested By: Reese,Amber J. M.D.~~Dictated By: Michael Marks, M.D. on May 11 2002 05:55PM~~This document has been electronically signed by: Michael Marks, M.D.~on May 11 2002 05:55PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|473037|4|7795083467^UK^ZB||||||F<R>
+<EB>

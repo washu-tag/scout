@@ -1,0 +1,19 @@
+2001-05-19 17:49:24.1910|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010519174924|TBD|ORU^R01|2.25.101382626209882519359193575273290531696|P|2.7<R>
+PID|1||ABC451029^^^ABC^MR||ΜΙΧΌΠΟΥΛΟΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19810423|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084953|||||||||||||||||||||||||20010519174924|||||||V<R>
+ORC|RE|5245330^SYS|7795082917||Wet Read||^^^20010519174923^20010519174924^O||20010519174924|||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5245330^SYS|7795082917|BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM|O|20010518152519|||||Hosp Perf||||^^^BREAST|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20010519174924||MG|Wet Read||^^^20010519174923^20010519174924^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|||20010519174924||||||||BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|The mammogram is interpreted as normal with no suspicious findings.||||||Wet Read<R>
+OBX|6|ST|&IMP|2|The mammogram demonstrates dense breast parenchyma with no evident||||||Wet Read<R>
+OBX|7|ST|&IMP|2|focal mass lesions. No microcalcifications are observed, and the||||||Wet Read<R>
+OBX|8|ST|&IMP|2|overall architecture of the breast is preserved. There are no skin or||||||Wet Read<R>
+OBX|9|ST|&IMP|2|nipple changes, and axillary lymph nodes appear unremarkable.||||||Wet Read<R>
+OBX|10|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.132743225849308927744763645594008514352^EPIC^APPLICATION^DICOM<R>
+<EB>

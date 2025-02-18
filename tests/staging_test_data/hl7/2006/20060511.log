@@ -1,0 +1,51 @@
+2006-05-11 05:21:59.3935|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060511052159|TBD|ORU^R01|2.25.247149029252239086634108122245177483924|P|2.7<R>
+PID|1||ABC451070^^^ABC^MR||BAILEY^CHRISTOPHER^FIDEL^^^^D||19470612|M||AMIND|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084706|||||||||||||||||||||||||20060511052159|||||||V<R>
+ORC|RE|8621027^SYS|7795083078||Prelim||^^^20060511052158^20060511052159^O||20060511052159|T6530145^RUIZ^TARA||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8621027^SYS|7795083078|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20060510162327|||||Hosp Perf|||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060511052159||US|Prelim||^^^20060511052158^20060511052159^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20060511052159||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound Abdomen||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|The ultrasound study of the abdomen shows no significant pathological||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|findings. The organs assessed are within normal limits, and there is||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|no evidence of biliary obstruction, renal obstruction, or other||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|identified masses. Ultrasound imaging of the abdomen displayed||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|unremarkable liver size with echogenicity within normal limits. The||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|gallbladder is non-distended with no stones or pericholecystic fluid.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|The kidneys exhibit good parenchymal echogenicity, demonstrating||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|normal cortical thickness and no evidence of hydronephrosis. Pancreas||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|appears homogeneous and no masses are noted. Notably, the aorta and||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|inferior vena cava are patent without thrombosis or significant||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|dilation. There is no free fluid in the abdominal cavity, and lymph||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|nodes appear normal without signs of enlargement.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.34003504499442288653520592744980630210^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2006-05-11 19:03:00.0085|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060511190300|TBD|ORU^R01|2.25.209300116430593418315128482911250736725|P|2.7<R>
+PID|1||ABC451096^^^ABC^MR||CHUNG^SEO-JOON^^^^^D||19710928|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084736|||||||||||||||||||||||||20060511190300|||||||V<R>
+ORC|RE|8236014^SYS|7795083187||Prelim||^^^20060511190259^20060511190300^O||20060511190300|T6530149^VASQUEZ^MISTY||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8236014^SYS|7795083187|M755612^MR CARDIAC MRPH FUNC WWO^UNKDEV^^HEART MRI|O|20060508163924|||||Hosp Perf||||^^^HEART|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060511190300||MR|Prelim||^^^20060511190259^20060511190300^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20060511190300||||||||M755612^MR CARDIAC MRPH FUNC WWO^UNKDEV^^HEART MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|1. Normal myocardial function with preserved ejection fraction. 2. No||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|evidence of cardiac ischemia or structural heart disease. Cardiac MRI||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|demonstrates normal chamber sizes and wall motion. The left||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|ventricular ejection fraction is estimated at 60%, which is within||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|normal limits. No evidence of myocardial edema or late enhancement||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|suggests fibrosis or infarction. Coronary artery territories appear||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|well-perfused and there are no significant flow-limiting lesions||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|identified. The aorta demonstrates normal caliber, and there are no||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|structural abnormalities observed within the valve apparatus.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|Hemodynamics appear stable with no pericardial effusion noted.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.221410136961746585620585420201345077841^EPIC^APPLICATION^DICOM<R>
+<EB>

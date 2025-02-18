@@ -1,0 +1,28 @@
+1999-08-19 23:19:38.6076|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19990819231938|TBD|ORU^R01|2.25.190562837396073758005240324366501844193|P|2.7<R>
+PID|1||ABC451085^^^ABC^MR||MARTINEZ^ALFRED^DAVID^^^^D||19300126|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084802|||||||||||||||||||||||||19990819231938|||||||V<R>
+ORC|RE|6526673^SYS|7795083138||Prelim||^^^19990819231937^19990819231938^O||19990819231938|T6530148^GROSS^CARLY||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6526673^SYS|7795083138|CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI|O|19990816081519|||||Hosp Perf||||^^^BRAIN|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19990819231938||MR|Prelim||^^^19990819231937^19990819231938^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||19990819231938||||||||CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|Overall, the MRI displays no acute intracranial processes. The||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|periventricular changes are consistent with age-related small vessel||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|disease, without evidence of acute infarction or demyelinating||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|processes. A follow-up MRI in one year is advisable to monitor the||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|stability of the observed lesions. The MRI performed on the brain||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|reveals normal ventricular size with no evidence of midline shift or||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|hemorrhage. There is a hyperintensely altered area observed in the||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|periventricular white matter which measures approximately 5 mm and is||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|likely related to chronic microangiopathic changes rather than acute||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|processes, as per previous imaging evaluations. Notably, no focal||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|enhancing lesions are evident, and the basal ganglia, thalami, and||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|cortical areas appear preserved. The major cerebral sulci and gyri||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|exhibit normal morphology and there are no significant measurable||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|atrophic changes.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.286615583174110863622429271681175254399^EPIC^APPLICATION^DICOM<R>
+<EB>

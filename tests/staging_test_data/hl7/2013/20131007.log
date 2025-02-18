@@ -1,0 +1,23 @@
+2013-10-07 21:02:54.6601|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20131007210254|TBD|ORU^R01|2.25.240413191806335657843712658205524172100|P|2.7<R>
+PID|1||ABC451120^^^ABC^MR||YOUNG^ANGIE^BRANDY^^^^D||19970929|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084859|||||||||||||||||||||||||20131007210254|||||||V<R>
+ORC|RE|1858437^SYS|7795083280||Prelim||^^^20131007210253^20131007210254^O||20131007210254|||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1858437^SYS|7795083280|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20131004125956|||||Hosp Perf|||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20131007210254||DX|Prelim||^^^20131007210253^20131007210254^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|||20131007210254||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Prelim<R>
+OBX|3|ST|&GDT|1|||||||Prelim<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim<R>
+OBX|5|ST|&IMP|2|Unremarkable single-view chest X-ray. No signs of acute disease||||||Prelim<R>
+OBX|6|ST|&IMP|2|processes detected. The X-ray demonstrates clear lung fields with no||||||Prelim<R>
+OBX|7|ST|&IMP|2|evidence of infiltrates or consolidations. Cardiac silhouette appears||||||Prelim<R>
+OBX|8|ST|&IMP|2|within normal limits with a size that is not enlarged. The||||||Prelim<R>
+OBX|9|ST|&IMP|2|mediastinum is midline without signs of deviation. The bony||||||Prelim<R>
+OBX|10|ST|&IMP|2|structures show no acute osseous lesions, fractures, or lytic||||||Prelim<R>
+OBX|11|ST|&IMP|2|lesions. The diaphragm is well-defined, and no free air is seen||||||Prelim<R>
+OBX|12|ST|&IMP|2|beneath it. Overall, the imaging suggests no acute pulmonary||||||Prelim<R>
+OBX|13|ST|&IMP|2|pathology.||||||Prelim<R>
+OBX|14|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.235955074578282746786774890767231500479^EPIC^APPLICATION^DICOM<R>
+<EB>

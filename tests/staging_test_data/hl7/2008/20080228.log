@@ -1,0 +1,33 @@
+2008-02-28 07:18:57.4925|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20080228071857|TBD|ORU^R01|2.25.191061976900721568906997247512999645250|P|2.7<R>
+PID|1||ABC451160^^^ABC^MR||SAWYER^LEA^PRISCILLA^^^^D||19890405|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823219^LOGAN^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084821|||||||||||||||||||||||||20080228071857|||||||V<R>
+ORC|RE|6801746^SYS|7795083439||Wet Read||^^^20080228071856^20080228071857^O||20080228071857|T6530141^WALTER^JOSHUA||D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6801746^SYS|7795083439|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20080225065241|||||Hosp Perf||||^^^HEART|D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20080228071857||NM|Wet Read||^^^20080228071856^20080228071857^O||||^Chest pain||D7823216^HALL^JEREMY^G.^^^^^ABC^^^^HOSP|T6530141^WALTER^JOSHUA||20080228071857||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac nuclear medicine study||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|5|ST|&IMP|2|In conclusion, the cardiac NM study performed on February 25, 2008,||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|6|ST|&IMP|2|reveals a normal myocardial perfusion pattern with preserved ejection||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|7|ST|&IMP|2|fraction and no significant abnormalities noted. There are no||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|8|ST|&IMP|2|findings suggesting coronary artery disease, and the study can be||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|9|ST|&IMP|2|deemed as clinically unremarkable. Continuous monitoring and annual||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|10|ST|&IMP|2|assessment are suggested, considering the clinical history, but there||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|11|ST|&IMP|2|are no acute concerns at this time. The myocardial perfusion imaging||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|12|ST|&IMP|2|demonstrated an uneventful distribution of radiotracer throughout the||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|13|ST|&IMP|2|myocardium at rest. There was no evidence of perfusion defect within||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|14|ST|&IMP|2|the left ventricular myocardium, indicative of preserved myocardial||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|15|ST|&IMP|2|perfusion. SPECT imaging of the heart revealed symmetrical activity||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|16|ST|&IMP|2|with no significant wall motion abnormalities upon visual analysis.||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|17|ST|&IMP|2|The Ejection Fraction (EF), calculated at rest, was determined to be||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|18|ST|&IMP|2|within the normal limits at approximately 60%. Stress-induced images||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|19|ST|&IMP|2|acquired show comparable perfusion with no new ischemic changes||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|20|ST|&IMP|2|identified. Additionally, there were no arrhythmias detected during||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|21|ST|&IMP|2|the examination, and the heart size remains within normal ranges||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|22|ST|&IMP|2|based on inferred volume calculations. The lung fields remain clear,||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|23|ST|&IMP|2|with no vascular congestion or evidence of cardiac enlargement.||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+OBX|24|ST|&IMP|2|Dictated by: Jeremy Hall Interpreter, M.D.||||||Wet Read|||||T6530141^WALTER^JOSHUA<R>
+ZDS|2.25.251788901202941921982973737315453516310^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2016-10-09 19:22:56.5413|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20161009192256|TBD|ORU^R01|2.25.122844031717452960077903763883140139046|P|2.4<R>
+PID|1||ABC451185^^^ABC^MR~EPIC4485944^^^EPIC^MRN||PERALTA^MICHAEL^JEFFREY^^^^D||19970514000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451185^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457230^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1780164^SYS|7795083536|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20161007085038|||PSCRIB|||||^^^^ |D7823221^MAXWELL^MICHAEL^RYAN^M.D.^^^^ABC|||||8452^NM MPI SPECT|20161009192256||H|||1^^^20161009192256^^U^^URGENT|       |||^Chest pain|D7823215^PORTER^JAMEL^J.^^^M.D.|D7823226^KENNEDY^JERI^A.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|6252132||JAMEL PORTER, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|6252132||ACC#  Date Time  Exam~~7795083536 Oct 09 2016 07:22PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~The cardiac nuclear medicine study demonstrates normal left~ventricular function with an ejection fraction of 60%. There is no~evidence of significant perfusion defects observed at rest and during~stress. The myocardial SPECT imaging shows homogeneous radiotracer~distribution across all myocardial segments, suggesting no ischemia~or infarct. No arrhythmias were noted during the test, and there were~no wall motion abnormalities.~~IMPRESSION:~Overall, the findings from the 2016 study indicate normal cardiac~perfusion and function with no ischemic changes detected. This is a~favorable result when compared to the previous abdominal MRI done on~2015-11-15.||||||F<R>
+OBX|3|TX|6252132||Requested By: Maxwell,Michael R. M.D.~~Dictated By: Jamel Porter, M.D. on Oct 09 2016 07:22PM~~This document has been electronically signed by: Jamel Porter, M.D.~on Oct 09 2016 07:22PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6252132|4|7795083536^UK^ZB||||||F<R>
+<EB>

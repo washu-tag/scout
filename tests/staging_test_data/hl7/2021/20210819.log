@@ -1,0 +1,25 @@
+2021-08-19 19:04:01.6337|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210819190401|TBD|ORU^R01|2.25.89697025799071040608872657274642295855|P|2.7<R>
+PID|1||ABC451137^^^ABC^MR||STONE^JOHN^JAMES^^^^D||19910722|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085010|||||||||||||||||||||||||20210819190401|||||||V<R>
+ORC|RE|5258834^SYS|7795083346||Wet Read||^^^20210819190400^20210819190401^O||20210819190401|T6530154^ROBERTS^RICARDO||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5258834^SYS|7795083346|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20210819141931|||||Hosp Perf||||^^^BRAIN|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210819190401||MR|Wet Read||^^^20210819190400^20210819190401^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20210819190401||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|The MRI demonstrates stability of the left temporal hyperintense||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|lesion as compared to the PET-CT dated 2020-03-09, with no evidence||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|of interval change. The presence of periventricular hyperintensities||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|raises consideration for a chronic process, possibly related to small||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|vessel ischemic disease. MRI of the brain reveals a stable,||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|hyperintense lesion in the left temporal region on T2-weighted||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|imaging consistent with the area previously noted in the PET-CT. No||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|new lesions are evident on the recent study. The study shows evidence||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|of slight progression of periventricular white matter||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|hyperintensities. The ventricular size remains mildly enlarged. There||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|are no indications of acute infarctions or hemorrhages.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.2880659132284174333162888555538955614^EPIC^APPLICATION^DICOM<R>
+<EB>

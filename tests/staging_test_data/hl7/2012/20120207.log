@@ -1,0 +1,23 @@
+2012-02-07 04:18:58.5753|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120207041858|TBD|ORU^R01|2.25.254136935302791586437569920314602218351|P|2.7<R>
+PID|1||ABC451040^^^ABC^MR||MOORE^RUSSELL^JOHN^^^^D||19920516|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084982|||||||||||||||||||||||||20120207041858|||||||V<R>
+ORC|RE|2891952^SYS|7795082963||Prelim||^^^20120207041857^20120207041858^O||20120207041858|||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2891952^SYS|7795082963|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20120202195946|||||Hosp Perf|||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20120207041858||DX|Prelim||^^^20120207041857^20120207041858^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|||20120207041858||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray||||||Prelim<R>
+OBX|3|ST|&GDT|1|||||||Prelim<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim<R>
+OBX|5|ST|&IMP|2|Normal single-view chest X-ray without evidence of acute||||||Prelim<R>
+OBX|6|ST|&IMP|2|cardiopulmonary pathology. The single-view chest radiograph presents||||||Prelim<R>
+OBX|7|ST|&IMP|2|clear lung fields with a normal vascular pattern. Cardiac silhouette||||||Prelim<R>
+OBX|8|ST|&IMP|2|is within normal limits with no evident enlargement or contour||||||Prelim<R>
+OBX|9|ST|&IMP|2|abnormalities. The mediastinum appears midline without widening. The||||||Prelim<R>
+OBX|10|ST|&IMP|2|diaphragmatic contour is smooth, and no pleural effusions or masses||||||Prelim<R>
+OBX|11|ST|&IMP|2|are noted. There is no bony abnormality observed in the visualized||||||Prelim<R>
+OBX|12|ST|&IMP|2|thoracic spine or ribs. Overall, the examination is suggestive of||||||Prelim<R>
+OBX|13|ST|&IMP|2|normal chest findings.||||||Prelim<R>
+OBX|14|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.298865847972214292419702741161455773320^EPIC^APPLICATION^DICOM<R>
+<EB>

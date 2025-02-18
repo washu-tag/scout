@@ -1,0 +1,11 @@
+2013-02-03 04:53:44.8067|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130203045344|TBD|ORU^R01|2.25.259160668747242385023840807380080226274|P|2.4<R>
+PID|1||ABC451161^^^ABC^MR~EPIC4485920^^^EPIC^MRN||WARD^DANNY^DAVID^^^^D||19561123000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451161^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457303^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7770846^SYS|7795083440|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||20130202104300|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||70553^Brain dMRI|20130203045344||CMRP|||1^^^20130203045344^^U^^URGENT|       |||^Chest pain|D7823240^PARSONS^ERNESTO^J.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|5859472||ERNESTO PARSONS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5859472||ACC#  Date Time  Exam~~7795083440 Feb 03 2013 04:53AM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~Brain MRI~~FINDINGS:~The evaluation demonstrates a well-defined area of high signal~intensity on T2-weighted images located in the periventricular white~matter. No evidence of midline shift, hemorrhage, or mass effect is~appreciated. Additionally, the ventricles appear atrophic consistent~with the patient's age. The corpus callosum is intact and there are~no areas of abnormal enhancement noted post-contrast administration.~The rest of the brain parenchyma shows no evidence of focal lesions~or abnormal signal characteristics. Overall, these findings suggest~chronic small vessel ischemic changes typical in an older adult~population, though there are no acute pathologies identified.~~IMPRESSION:~Chronic microvascular ischemic changes without acute intracranial~processes. No signs of mass effect or acute hemorrhage. Correlate~clinically for possible cognitive decline due to microvascular~changes.||||||F<R>
+OBX|3|TX|5859472||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Ernesto Parsons, M.D. on Feb 03 2013 04:53AM~~This document has been electronically signed by: Ernesto Parsons,~M.D. on Feb 03 2013 04:53AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5859472|4|7795083440^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,11 @@
+2018-04-29 12:02:49.2208|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180429120249|TBD|ORU^R01|2.25.299675618218330975971361111680385707714|P|2.4<R>
+PID|1||ABC451154^^^ABC^MR~EPIC4485913^^^EPIC^MRN||WHITEHEAD^MICHAEL^ROGER^^^^D||19330116000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451154^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457357^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4276018^SYS|7795083412|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||20180427090228|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||2361^Brain MRI|20180429120249||IMG|||1^^^20180429120249^^U^^URGENT|       |||^Chest pain|D7823241^SANDERS^LISA^A.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|615989||LISA SANDERS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|615989||ACC#  Date Time  Exam~~7795083412 Apr 29 2018 12:02PM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~Comparison to the prior brain MRI from 2013-07-12 shows progression~of periventricular changes with additional hyperintensities~indicating evolving white matter disease. This suggests chronic small~vessel ischemia has advanced since the last study. The ventricular~system appears stable, and no new focal abnormalities have developed.~Importantly, there is no evidence of acute stroke or significant mass~effect present.~~IMPRESSION:~The comparison indicates mild progression of chronic ischemic changes~consistent with aging and cerebrovascular risk factors.~Recommendation includes clinical follow-up to monitor neurological~status and cognitive function timelines.||||||P<R>
+OBX|3|TX|615989||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Lisa Sanders, M.D. on Apr 29 2018 12:02PM~~Pending review by: Michael Marks, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|615989|4|7795083412^UK^ZB||||||P<R>
+<EB>

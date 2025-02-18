@@ -19,6 +19,9 @@
   roles:
     - role: xanmanning.k3s
 
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+
   post_tasks:
     - name: Update kubeconfig group permissions since write-kubeconfig-group isn't exposed via the role
       file:

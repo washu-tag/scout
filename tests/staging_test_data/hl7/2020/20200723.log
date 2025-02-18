@@ -1,0 +1,11 @@
+2020-07-23 12:21:14.0283|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200723122114|TBD|ORU^R01|2.25.124420940493107263927418571912439326089|P|2.4<R>
+PID|1||ABC451035^^^ABC^MR~EPIC4485794^^^EPIC^MRN||BURNS^GILBERT^ADAM^^^^D||19430321000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451035^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457425^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||26733^SYS|7795082941|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20200722113643|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||^Xr Sing View|20200723122114||MDXREVNT|||1^^^20200723122114^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB<R>
+OBX|1|TX|6882695||AMBER REESE, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|6882695||ACC#  Date Time  Exam~~7795082941 Jul 23 2020 12:21PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~The single-view X-ray of the chest reveals clear lung fields~bilaterally with no infiltrates or nodules. Cardiac silhouette is~within normal limits, and the bony architecture appears intact~without signs of fractures or other acute skeletal pathology. The~diaphragm and pleura show no abnormal elevation or effusion. Soft~tissues appear normal without any palpable masses.~~IMPRESSION:~The single-view chest X-ray is unremarkable, indicating that there~are no acute findings. Recommend routine surveillance based on~clinical indications.||||||F<R>
+OBX|3|TX|6882695||Requested By: Wright,Jessica M. M.D.~~Dictated By: Amber Reese, M.D. on Jul 23 2020 12:21PM~~This document has been electronically signed by: Amber Reese, M.D. on~Jul 23 2020 12:21PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6882695|4|7795082941^UK^ZB||||||F<R>
+<EB>

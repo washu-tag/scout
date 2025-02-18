@@ -1,0 +1,25 @@
+2019-09-01 02:36:11.5955|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190901023611|TBD|ORU^R01|2.25.333267298945854919135714846506827831398|P|2.7<R>
+PID|1||ABC451019^^^ABC^MR||WILLIAMS^ERIN^KELLY^^^^D||19380422|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823245^MOORE^BRIAN^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084751|||||||||||||||||||||||||20190901023611|||||||V<R>
+ORC|RE|7785560^SYS|7795082873||Prelim||^^^20190901023610^20190901023611^O||20190901023611|T6530159^KIRBY^HEATHER||D7823248^RODRIGUEZ^NICOLE^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7785560^SYS|7795082873|IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED|O|20190829170905|||||Hosp Perf||||^^^CHEST|D7823248^RODRIGUEZ^NICOLE^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20190901023611||MR|Prelim||^^^20190901023610^20190901023611^O||||^Chest pain||D7823258^BRYANT^DAVID^T.^^^^^ABC^^^^HOSP|T6530159^KIRBY^HEATHER||20190901023611||||||||IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Follow-up Chest MRI||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|5|ST|&IMP|2|The follow-up chest MRI is consistent with findings from the study||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|6|ST|&IMP|2|performed on 2008-10-11, indicating no significant acute changes or||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|7|ST|&IMP|2|evolving pathology in the thoracic region. When compared to the prior||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|8|ST|&IMP|2|chest MRI conducted on 2008-10-11, the follow-up imaging demonstrates||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|9|ST|&IMP|2|stability in lung and mediastinal structures. There remains no||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|10|ST|&IMP|2|indication of new pathologies, with previous normal findings||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|11|ST|&IMP|2|confirmed. The absence of consolidation or nodules persists, and the||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|12|ST|&IMP|2|heart and major vessels maintain their normal appearance. There were||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|13|ST|&IMP|2|no unexpected developments noted in the soft tissues of the thorax.||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|14|ST|&IMP|2|Both examinations suggest the lungs exhibit stable ventilation and||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|15|ST|&IMP|2|perfusion status between the two dates.||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+OBX|16|ST|&IMP|2|Dictated by: David Bryant Interpreter, M.D.||||||Prelim|||||T6530159^KIRBY^HEATHER<R>
+ZDS|2.25.81062266383730979311169505348861692285^EPIC^APPLICATION^DICOM<R>
+<EB>

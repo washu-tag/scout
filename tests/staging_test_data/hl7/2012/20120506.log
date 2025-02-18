@@ -1,0 +1,26 @@
+2012-05-06 11:58:52.5432|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120506115852|TBD|ORU^R01|2.25.57290929981806470128521553226848527212|P|2.7<R>
+PID|1||ABC451135^^^ABC^MR||ΑΣΤΡΙΝΊΔΗΣ^ΈΛΙΣΆΒΕΤ^^^^^D||19470414|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084998|||||||||||||||||||||||||20120506115852|||||||V<R>
+ORC|RE|8461773^SYS|7795083341||Wet Read||^^^20120506115851^20120506115852^O||20120506115852|T6530145^RUIZ^TARA||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8461773^SYS|7795083341|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20120505075201|||||Hosp Perf||||^^^BREAST|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20120506115852||MG|Wet Read||^^^20120506115851^20120506115852^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20120506115852||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|The finding of focal asymmetry in the upper left quadrant requires||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|additional evaluation, preferably through ultrasound or additional||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|mammographic views. The breast tissue composition may obscure||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|pathology; hence a multi-view assessment is recommended. The||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|single-view mammogram demonstrates dense breast parenchyma consistent||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|with the patient's age. There are no distinct masses identified;||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|however, there appears to be a focal asymmetry in the upper left||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|quadrant that warrants attention. No calcifications are seen in this||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|view. The axillary regions show no suspicious lymph nodes and the||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|subcutaneous tissue is unremarkable. The overall breast architecture||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|is preserved with no signs of architectural distortion noted in this||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|view.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.228983788654837202525004474653804642982^EPIC^APPLICATION^DICOM<R>
+<EB>

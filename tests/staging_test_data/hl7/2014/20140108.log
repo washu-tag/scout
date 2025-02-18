@@ -1,0 +1,34 @@
+2014-01-08 15:56:15.5944|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140108155615|TBD|ORU^R01|2.25.139410410230344522792654452997543377728|P|2.7<R>
+PID|1||ABC451111^^^ABC^MR||LEE^ANITA^DEVON^^^^D||19300209|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084920|||||||||||||||||||||||||20140108155615|||||||V<R>
+ORC|RE|1034006^SYS|7795083244||Wet Read||^^^20140108155614^20140108155615^O||20140108155615|T6530151^WATERS^JESSICA||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1034006^SYS|7795083244|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20140107170519|||||Hosp Perf||||^^^HEART|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20140108155615||MR|Wet Read||^^^20140108155614^20140108155615^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20140108155615||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac MRI with contrast||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|The cardiac MRI reveals no significant cardiac abnormalities. The||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|left ventricular function is preserved with no ischemic changes or||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|scarring. Notably, the left atrial enlargement warrants monitoring||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|due to potential implications for atrial fibrillation risk. Close||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|follow-up may be advisable to evaluate functional capacity and any||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|subsequent arrhythmic episodes. Overall, the patient demonstrates||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|good cardiac health with mild regurgitation that may require future||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|reassessment. The cardiac MRI study reveals normal myocardial wall||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|motion with no signs of fibrosis. The left ventricle demonstrates||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|preserved systolic function, with an ejection fraction of 60%. The||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|myocardial contours are smooth and no significant wall thickening or||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|thinning is observed. Concurrently, the right ventricle is||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|well-formed, appearing normal in size and function. Noteworthy is the||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|18|ST|&IMP|2|absence of significant coronary artery disease as evaluated by||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|19|ST|&IMP|2|perfusion sequences; no perfusion defects were recorded. The left||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|20|ST|&IMP|2|atrium appears dilated, raising the need for further assessment||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|21|ST|&IMP|2|regarding atrial enlargement. The aorta shows normal caliber and no||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|22|ST|&IMP|2|evidence of dissection or aneurysm. An incidental finding of mild||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|23|ST|&IMP|2|mitral regurgitation was noted, but no significant valvular||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|24|ST|&IMP|2|abnormalities are present.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|25|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.127086082216505290060798616376532818183^EPIC^APPLICATION^DICOM<R>
+<EB>

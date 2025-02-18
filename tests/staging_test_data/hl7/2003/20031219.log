@@ -1,0 +1,25 @@
+2003-12-19 10:45:31.0195|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20031219104531|TBD|ORU^R01|2.25.90051915296785358889105078064804956800|P|2.7<R>
+PID|1||ABC451077^^^ABC^MR||BENJAMIN^BENJAMIN^JOSHUA^^^^D||19390124|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084656|||||||||||||||||||||||||20031219104531|||||||V<R>
+ORC|RE|5508927^SYS|7795083106||Wet Read||^^^20031219104530^20031219104531^O||20031219104531|T6530145^RUIZ^TARA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5508927^SYS|7795083106|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20031219084103|||||Hosp Perf||||^^^HEART|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20031219104531||NM|Wet Read||^^^20031219104530^20031219104531^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20031219104531||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM Study||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|The NM study findings show normal myocardial perfusion and wall||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|motion, suggesting no ischemic heart disease. The overall impression||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|indicates preserved cardiac function, supporting the technique and||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|physiological responses during the study. The cardiac nuclear||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|medicine study demonstrates adequate myocardial perfusion at rest,||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|with uniform tracer uptake across all myocardial regions. There is no||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|evidence of perfusion abnormalities indicative of ischemia during the||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|stress phase. The left ventricular size is within normal limits, and||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|there is no significant regional wall motion abnormality. Myocardial||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|viability is confirmed with the uptake of technetium-99m, suggesting||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|no areas of scar tissue present.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.153733645542781828006326799542252919010^EPIC^APPLICATION^DICOM<R>
+<EB>

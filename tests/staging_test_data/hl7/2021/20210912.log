@@ -1,0 +1,11 @@
+2021-09-12 03:04:42.1894|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210912030442|TBD|ORU^R01|2.25.208115200162795655557963604702473764825|P|2.4<R>
+PID|1||ABC451061^^^ABC^MR~EPIC4485820^^^EPIC^MRN||WHITAKER^CHAD^CLINTON^^^^D||19360922000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451061^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457468^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3443711^SYS|7795083040|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20210908175658|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20210912030442||IMG|||1^^^20210912030442^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|7585840||JESSICA WRIGHT, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|7585840||ACC#  Date Time  Exam~~7795083040 Sep 12 2021 03:04AM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdomen X-ray demonstrates normal gas distribution in the bowel~without signs of obstruction or perforation. There is an~insignificant amount of perihepatic fluid noted, but this is likely~to be physiological. The liver appears normal in size and contour,~with no evidence of calcifications. Comparison with the previous~abdomen PET-MR (2021-01-26) noted no significant changes in the~abdominal anatomy. The kidneys appear normally positioned with no~signs of nephrolithiasis. Overall, the findings correlate with a~generally unremarkable abdomen on standard X-ray imaging.~~IMPRESSION:~1. No evidence of acute pathological changes in the abdomen.~2. Findings correlate with previous imaging; overall, the abdominal~examination is stable.||||||P<R>
+OBX|3|TX|7585840||Requested By: Reese,Amber J. M.D.~~Dictated By: Jessica Wright, M.D. on Sep 12 2021 03:04AM~~Pending review by: Guy Sanchez, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|7585840|4|7795083040^UK^ZB||||||P<R>
+<EB>

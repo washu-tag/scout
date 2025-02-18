@@ -1,0 +1,28 @@
+2018-12-29 19:36:17.0217|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20181229193617|TBD|ORU^R01|2.25.13085906918742430778200239572059890643|P|2.7<R>
+PID|1||ABC451058^^^ABC^MR||KIM^JI-MIN^^^^^D||19940508|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085015|||||||||||||||||||||||||20181229193617|||||||V<R>
+ORC|RE|2331501^SYS|7795083030||Prelim||^^^20181229193616^20181229193617^O||20181229193617|T6530147^ANDERSON^NATALIE||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2331501^SYS|7795083030|M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR|O|20181227120828|||||Hosp Perf||||^^^PELVIS|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20181229193617||MR|Prelim||^^^20181229193616^20181229193617^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20181229193617||||||||M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Pelvis PET-MR||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|The findings suggest possible hyperplasia, with an atypical||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|endometrial thickening. Given the metabolic activity on PET, further||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|workup including hysteroscopy and endometrial biopsy may be||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|considered to evaluate the underlying etiology. Close correlation||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|with clinical findings and gynecological assessment is recommended.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|The pelvis PET-MR performed on December 27, 2018, demonstrates avid||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|metabolic activity localized primarily in the pelvic region. There is||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|notable enhancement in the uterus and ovaries with attendant||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|hypermetabolism seen on the PET. No cystic or solid masses are||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|observed, but the endometrium appears thickened. The bony structures||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|are unremarkable and show no signs of metastatic disease or lytic||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|lesions. Surrounding soft tissues exhibit no edema or inflammatory||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|17|ST|&IMP|2|changes. The visualized lymph nodes are non-enlarged, with no||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|18|ST|&IMP|2|metabolic activity detected.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|19|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.316119132969659916769208760207402654882^EPIC^APPLICATION^DICOM<R>
+<EB>

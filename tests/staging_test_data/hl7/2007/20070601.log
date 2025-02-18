@@ -1,0 +1,26 @@
+2007-06-01 11:27:47.4462|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20070601112747|TBD|ORU^R01|2.25.121285174363408861643635810050824933204|P|2.7<R>
+PID|1||ABC451043^^^ABC^MR||SMITH^STEPHAN^GERALD^^^^D||19540826|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084672|||||||||||||||||||||||||20070601112747|||||||V<R>
+ORC|RE|6793484^SYS|7795082971||Final||^^^20070601112746^20070601112747^O||20070601112747|T6530152^ADKINS^MELLISSA||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6793484^SYS|7795082971|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC|O|20070528075909|||||Hosp Perf||||^^^ABDOMEN|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20070601112747||CT|Final||^^^20070601112746^20070601112747^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20070601112747||||||||CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-CT||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|The absence of hypermetabolic activity and normal morphological||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|features suggest that there is no evidence of malignancy or||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|significant abdominal pathology. The study is generally unremarkable,||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|consistent with normal findings. The PET-CT scan of the abdomen||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|performed on 2007-05-28 exhibits no hypermetabolic lesions. The||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|liver, pancreas, kidneys, spleen, and adrenal glands all appear||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|morphologically normal with no lesions indicating malignancy.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|Gastrointestinal tract demonstrates no abnormal uptake; however, mild||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|physiological uptake is noted in the bowel. Lymph nodes within the||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|abdomen are non-enlarged and exhibit no abnormal metabolic activity.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|There are no signs of free fluid or gas, concluding that there are no||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|acute abdominal pathologies to report.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|17|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.143672435637940761280913972872142727765^EPIC^APPLICATION^DICOM<R>
+<EB>

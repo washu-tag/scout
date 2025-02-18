@@ -1,0 +1,11 @@
+2010-04-10 13:07:28.1111|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100410130728|TBD|ORU^R01|2.25.136268454281048935551225906885345761272|P|2.4<R>
+PID|1||ABC451051^^^ABC^MR~EPIC4485810^^^EPIC^MRN||WHITE^JACOB^OSCAR^^^^D||19430325000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451051^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457306^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6488098^SYS|7795083003|MRI1133^1133 MRI W WO ABDOMEN^UNKDEV|URGENT||20100409203908|||PSCRIB|||||^^^^ |D7823231^SMITH^CLARA^TAMIKA^M.D.^^^^ABC|||||1133^ABDOMEN MRI|20100410130728||MRI|||1^^^20100410130728^^U^^URGENT|       |||^Chest pain|D7823234^DONOVAN^WILLIAM^C.^^^M.D.|D7823243^HAWKINS^CURTIS^K.^^^M.D.||PSCRIB|||||||||1133<R>
+OBX|1|TX|902552||WILLIAM DONOVAN, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|902552||ACC#  Date Time  Exam~~7795083003 Apr 10 2010 01:07PM MRI1133 MRI W WO ABDOMEN~~EXAMINATION:~Abdomen MRI~~FINDINGS:~MRI of the abdomen reveals normal morphology of the hepatic and renal~parenchyma. The gallbladder is unremarkable with no signs of~gallstones. The pancreas appears normal, and the adrenal glands are~bilaterally symmetric and without mass lesions. The abdominal aorta~and inferior vena cava show normal caliber without aneurysms or~stenosis. No pathologic lymphadenopathy is noted in the surrounding~regions. Additionally, no lesions indicating malignancy or acute~inflammatory processes are observed.~~IMPRESSION:~Normal abdomen MRI. No findings suggestive of neoplasm or acute~abdomen.||||||F<R>
+OBX|3|TX|902552||Requested By: Smith,Clara T. M.D.~~Dictated By: William Donovan, M.D. on Apr 10 2010 01:07PM~~This document has been electronically signed by: William Donovan,~M.D. on Apr 10 2010 01:07PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|902552|4|7795083003^UK^ZB||||||F<R>
+<EB>

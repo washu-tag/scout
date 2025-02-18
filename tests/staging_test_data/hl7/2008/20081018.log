@@ -1,0 +1,11 @@
+2008-10-18 16:25:15.3726|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20081018162515|TBD|ORU^R01|2.25.301050983504538166851568545379770352108|P|2.4<R>
+PID|1||ABC451075^^^ABC^MR~EPIC4485834^^^EPIC^MRN||BRIDGES^DAVID^JEREMY^^^^D||19900607000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451075^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457107^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9353807^SYS|7795083096|BED70250^70250 70250 Skull < 4 views^UNKDEV|URGENT||20081014160953|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||70250^Skull 1 View Dx Xray|20081018162515||BED|||1^^^20081018162515^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||70250<R>
+OBX|1|TX|5605757||JOE MEDRANO, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5605757||ACC#  Date Time  Exam~~7795083096 Oct 18 2008 04:25PM BED70250 70250 Skull < 4 views~~EXAMINATION:~Skull X-ray~~FINDINGS:~The skull radiograph demonstrates a normal cranial contour without~evidence of fracture. The calvarium appears intact and symmetric,~with no signs of hydrocephalus or suture diastasis noted. The orbits~are well-defined with no displacement of the globe, and the mastoid~air cells are adequately developed, showing no signs of acute~mastoiditis. The cervical spine is visualized on the lateral view,~showing normal alignment and no evidence of subluxation. Overall,~bony mineralization within the skull is normal, and there are no~significant soft tissue abnormalities evident.~~IMPRESSION:~1. No acute cranial fractures are identified. 2. Normal skull~morphology with intact sutures. 3. No significant abnormalities~detected within the visualized structures. This study aligns with the~previous skull X-ray from 2008, showing no interval changes.||||||F<R>
+OBX|3|TX|5605757||Requested By: Donovan,William C. M.D.~~Dictated By: Joe Medrano, M.D. on Oct 18 2008 04:25PM~~This document has been electronically signed by: Joe Medrano, M.D. on~Oct 18 2008 04:25PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5605757|4|7795083096^UK^ZB||||||F<R>
+<EB>

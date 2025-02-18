@@ -1,0 +1,29 @@
+2018-05-29 08:57:55.3537|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180529085755|TBD|ORU^R01|2.25.149255854340313858076421792815584580432|P|2.7<R>
+PID|1||ABC451148^^^ABC^MR||PENA^ADAM^BRIAN^^Col.^^D||19890908|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823286^JAMES^TIMOTHY^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084799|||||||||||||||||||||||||20180529085755|||||||V<R>
+ORC|RE|3045891^SYS|7795083391||Prelim||^^^20180529085754^20180529085755^O||20180529085755|T6530208^HARRISON^NICOLE||D7823284^JACKSON^MELINDA^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3045891^SYS|7795083391|IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED|O|20180526083211|||||Hosp Perf||||^^^CHEST|D7823284^JACKSON^MELINDA^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20180529085755||MR|Prelim||^^^20180529085754^20180529085755^O||||^Chest pain||D7823279^BYRD^PAUL^K.^^^^^ABC^^^^HOSP|T6530208^HARRISON^NICOLE||20180529085755||||||||IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest MRI||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|5|ST|&IMP|2|The chest MRI reveals a newly identified right apical nodule and a||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|6|ST|&IMP|2|moderate pericardial effusion. Given the incidental nature of the||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|7|ST|&IMP|2|nodule, a follow-up CT scan may be appropriate to characterize this||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|8|ST|&IMP|2|finding further, particularly in light of the prior status||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|9|ST|&IMP|2|post-Ischemic stroke findings from 2013 that did not mention such||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|10|ST|&IMP|2|masses. The chest MRI shows symmetric lung fields with no pleural||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|11|ST|&IMP|2|effusions or significant lymphadenopathy. The heart is of normal size||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|12|ST|&IMP|2|and configuration with a moderate pericardial effusion noted,||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|13|ST|&IMP|2|estimated at 1.5 cm in maximum depth. The pulmonary vasculature||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|14|ST|&IMP|2|appears unremarkable without evidence for acute embolic disease. An||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|15|ST|&IMP|2|incidental finding includes a small right apical nodule measuring||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|16|ST|&IMP|2|approximately 0.8 cm, which is hypo-intense on T1-weighted and||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|17|ST|&IMP|2|iso-intense on T2-weighted sequences; this finding requires close||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|18|ST|&IMP|2|monitoring as it is new compared to the imaging reports from||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|19|ST|&IMP|2|2013-10-04.||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+OBX|20|ST|&IMP|2|Dictated by: Paul Byrd Interpreter, M.D.||||||Prelim|||||T6530208^HARRISON^NICOLE<R>
+ZDS|2.25.134453528756744793896242615497882298687^EPIC^APPLICATION^DICOM<R>
+<EB>

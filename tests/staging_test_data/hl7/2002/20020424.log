@@ -1,0 +1,24 @@
+2002-04-24 19:14:39.7878|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020424191439|TBD|ORU^R01|2.25.323571401174140852417040794684041242489|P|2.7<R>
+PID|1||ABC451162^^^ABC^MR||LIM^JI-WOO^^^^^D||19570704|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084885|||||||||||||||||||||||||20020424191439|||||||V<R>
+ORC|RE|9187516^SYS|7795083448||Final||^^^20020424191438^20020424191439^O||20020424191439|T6530150^NEAL^EMILY||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9187516^SYS|7795083448|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20020421112410|||||Hosp Perf||||^^^BREAST|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20020424191439||MG|Final||^^^20020424191438^20020424191439^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20020424191439||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|This single-view mammogram indicates stable findings, with no new||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|significant abnormalities detected when compared to the previous||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|four-view mammogram. Recommended routine follow-up. Imaging from||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|April 21, 2002, shows a notable stability in breast density as||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|compared to the previous mammogram from June 10, 2001. No new masses||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|or calcifications are present; the fibroglandular pattern remains||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|consistent. There is a slight increase in overall parenchymal density||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|but still classified as benign. Texture of the skin and||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|nipple-areolar complex appears normal with no retraction, flattening||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|or skin thickening.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Final|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.312459822014561829722591006336206815755^EPIC^APPLICATION^DICOM<R>
+<EB>

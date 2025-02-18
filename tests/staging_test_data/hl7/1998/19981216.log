@@ -1,0 +1,11 @@
+1998-12-16 06:00:12.9727|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19981216060012|TBD|ORU^R01|2.25.78627289697919354775049195064962238037|P|2.4<R>
+PID|1||ABC451076^^^ABC^MR~EPIC4485835^^^EPIC^MRN||CAMPBELL^LISA^REBECCA^^^^D||19680803000000|F||R|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451076^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457125^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8071640^SYS|7795083100|OMHEADWO^ MRI BRAIN WITHOUT CONTRAST^UNKDEV|URGENT||19981213104638|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||^HEAD MRI Expedited|19981216060012||OMHEADWO|||1^^^19981216060012^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB<R>
+OBX|1|TX|8183910||JESSICA WRIGHT, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|8183910||ACC#  Date Time  Exam~~7795083100 Dec 16 1998 06:00AM OMHEADWO MRI BRAIN WITHOUT CONTRAST~~EXAMINATION:~Head MRI~~FINDINGS:~The MRI of the brain demonstrates normal cerebral anatomy without~evident midline shift or mass effect. There are no intracranial~hemorrhages or extra-axial fluid collections noted. The ventricular~system appears normal in size and configuration. However, there is~mild periventricular white matter hyperintensity, likely indicating~chronic microvascular ischemic changes consistent with age. No areas~of abnormal enhancement are observed post-contrast administration.~The diffusion-weighted imaging reveals no acute infarcted~territories, and the visualized portions of the brainstem and~cerebellum are normal in appearance. The cranial nerves appear~grossly intact without any signs of compression or pathology.~~IMPRESSION:~The MRI of the brain performed on 1998-12-13 is overall normal, with~mild chronic ischemic changes that may correlate with vascular risk~factors. There are no acute abnormalities or significant lesions~identified.||||||F<R>
+OBX|3|TX|8183910||Requested By: Hunt,April M. M.D.~~Dictated By: Jessica Wright, M.D. on Dec 16 1998 06:00AM~~This document has been electronically signed by: Jessica Wright, M.D.~on Dec 16 1998 06:00AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8183910|4|7795083100^UK^ZB||||||F<R>
+<EB>

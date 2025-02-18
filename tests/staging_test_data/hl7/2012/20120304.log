@@ -1,0 +1,11 @@
+2012-03-04 04:12:23.8765|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120304041223|TBD|ORU^R01|2.25.14185500317897082360399182465783803722|P|2.4<R>
+PID|1||ABC451099^^^ABC^MR~EPIC4485858^^^EPIC^MRN||HAMMOND^JOHN^CHRISTOPHER^^^^D||19391026000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451099^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457223^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8578212^SYS|7795083197|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20120301090735|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||8452^NM MPI SPECT|20120304041223||H|||1^^^20120304041223^^U^^URGENT|       |||^Chest pain|D7823240^PARSONS^ERNESTO^J.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|1916837||ERNESTO PARSONS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|1916837||ACC#  Date Time  Exam~~7795083197 Mar 04 2012 04:12AM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~The nuclear medicine study shows decreased perfusion in the~anteroseptal region during stress imaging, suggestive of ischemia.~Rest images indicate a fixed defect, indicating prior myocardial~injury. The left ventricle displays wall motion abnormalities~rehearsing a significant decrease in wall motion in the anteroseptal~and inferior segments during the stress phase, yet with an LVEF~calculated at 55%. These findings correspond with a history of~exertional angina. The right ventricle maintains normal dimensions~and contractility throughout. Area of interest does not depict any~sign of myocardial viability or restored perfusion upon comparison.~~IMPRESSION:~Considerable stress-induced myocardial ischemia characterized by~defects in the anteroseptal region, with a suggestion of prior~myocardial infarction. Recommend further evaluation with cardiology~for potential revascularization strategies.||||||P<R>
+OBX|3|TX|1916837||Requested By: Marks,Michael R. M.D.~~Dictated By: Ernesto Parsons, M.D. on Mar 04 2012 04:12AM~~Pending review by: Joseph Barajas, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|1916837|4|7795083197^UK^ZB||||||P<R>
+<EB>

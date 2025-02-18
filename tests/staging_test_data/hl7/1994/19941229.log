@@ -1,0 +1,29 @@
+1994-12-29 14:19:21.1677|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19941229141921|TBD|ORU^R01|2.25.226782656680836493232000533533182492780|P|2.7<R>
+PID|1||ABC451038^^^ABC^MR||HALE^CRYSTAL^KATHRYN^^^^D||19630613|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084939|||||||||||||||||||||||||19941229141921|||||||V<R>
+ORC|RE|8049628^SYS|7795082952||Final||^^^19941229141920^19941229141921^O||19941229141921|T6530146^MOORE^CURTIS||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8049628^SYS|7795082952|BED70250^70250 Skull < 4 views^UNKDEV^^SKULL 1 VIEW DX XRAY|O|19941226184939|||||Hosp Perf||||^^^SKULL|D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19941229141921||DX|Final||^^^19941229141920^19941229141921^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||19941229141921||||||||BED70250^70250 Skull < 4 views^UNKDEV^^SKULL 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Skull X-ray||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|1. No evidence of skull fractures or cranial pathology. ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|2. Normal anatomical appearance of the skull with no findings||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|suggestive of chronic or acute disease. ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|3. Continuation of normal findings from previous studies could be||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|evaluated in the context of clinical history as warranted. The skull||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|X-ray reveals a normal contour of the calvarium with no signs of||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|fractures or abnormalities. The suture lines are clearly delineated||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|with no evidence of suture fusion. The cranial vault appears||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|symmetrical, and the intracranial structures are not well visualized||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|due to the nature of the X-ray imaging modality. There is no evidence||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|of lesions, mass effect, or midline shift. The air cells of the||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|mastoid process are well-aerated, and there are no obvious signs of||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|sinusitis or other pathological findings. Overall, the findings of||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|the X-ray indicate a healthy skull architecture without acute||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|19|ST|&IMP|2|traumatic changes.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|20|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.33938974427670813575797450535235847497^EPIC^APPLICATION^DICOM<R>
+<EB>

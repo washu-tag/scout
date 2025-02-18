@@ -1,0 +1,29 @@
+2020-11-13 19:28:27.7443|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20201113192827|TBD|ORU^R01|2.25.143838464673580419773349004489874345613|P|2.7<R>
+PID|1||ABC451189^^^ABC^MR||GRAHAM^WILLIAM^KEVIN^^^^D||19560703|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084710|||||||||||||||||||||||||20201113192827|||||||V<R>
+ORC|RE|592077^SYS|7795083555||Wet Read||^^^20201113192826^20201113192827^O||20201113192827|T6530147^ANDERSON^NATALIE||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|592077^SYS|7795083555|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20201113150634|||||Hosp Perf||||^^^BRAIN|D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20201113192827||MR|Wet Read||^^^20201113192826^20201113192827^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20201113192827||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|1. Mild cerebral microvascular changes likely correlating with the||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|patient's age; otherwise normal findings. 2. No acute intracranial||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|event noted. 3. These cerebral imaging results are stable compared to||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|the prior imaging dated 2018-11-17, showing no interval||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|deterioration. The brain MRI demonstrates no acute intracranial||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|hemorrhage, infarction, or mass effect. Multiple scattered||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|hyperintense lesions on T2-weighted images are noted in||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|periventricular white matter, which may represent small vessel||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|ischemic changes commonly seen in older adults. The ventricles are||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|symmetrically enlarged without signs of midline shift. The cranial||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|structures demonstrate no evidence of significant atrophy or volume||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|loss. The pituitary gland appears normal and non-enlarged, with the||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|17|ST|&IMP|2|sella turcica maintaining its typical morphology. No abnormal||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|18|ST|&IMP|2|enhancement is displayed post-contrast, and MRA analysis shows patent||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|19|ST|&IMP|2|arterial structures without stenosis.||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|20|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.45292086838231504879471928364348810766^EPIC^APPLICATION^DICOM<R>
+<EB>

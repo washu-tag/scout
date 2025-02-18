@@ -1,0 +1,11 @@
+2008-08-10 12:05:07.5041|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20080810120507|TBD|ORU^R01|2.25.293269766298396989479963830752042982342|P|2.4<R>
+PID|1||ABC451148^^^ABC^MR~EPIC4485907^^^EPIC^MRN||PENA^ADAM^BRIAN^^Col.^^D||19890908000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451148^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457235^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6936286^SYS|7795083388|BED72040^72040 72040 Spine Cerv 3views or less^UNKDEV|URGENT||20080806195024|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||72040^Cervical spine 1 View Dx Xray|20080810120507||BED|||1^^^20080810120507^^U^^URGENT|       |||^Chest pain|D7823231^SMITH^CLARA^T.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||72040<R>
+OBX|1|TX|1389820||CLARA SMITH, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|1389820||ACC#  Date Time  Exam~~7795083388 Aug 10 2008 12:05PM BED72040 72040 Spine Cerv 3views or~less~~EXAMINATION:~Cervical spine X-ray~~FINDINGS:~The cervical spine demonstrates normal lordosis with no evident~segmental misalignment. The C3-C4, C4-C5, and C5-C6 intervertebral~disc spaces maintain healthy disc height. There’s no indication of~acute fractures or dislocations noted. The prevertebral soft tissues~appear unremarkable without signs of swelling or abnormal gas~collection. Notably, there is mild degenerative change at C5-C6~characterized by marginal osteophyte formation but without~significant neural foraminal narrowing observed. Articular facets~exhibit minor degenerative changes; however, there is no evidence of~lateral recess stenosis.~~IMPRESSION:~The cervical spine X-ray presents minor degenerative changes at the~C5-C6 level without acute pathology. Findings correlate with a~typical aging process in a patient of this age bracket, with no~significant concern for acute intervention.||||||P<R>
+OBX|3|TX|1389820||Requested By: Medrano,Joe J. M.D.~~Dictated By: Clara Smith, M.D. on Aug 10 2008 12:05PM~~Pending review by: Kimberly Hanson, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|1389820|4|7795083388^UK^ZB||||||P<R>
+<EB>

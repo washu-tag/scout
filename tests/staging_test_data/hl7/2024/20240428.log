@@ -1,0 +1,11 @@
+2024-04-28 10:33:42.6966|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240428103342|TBD|ORU^R01|2.25.259421937095343553817135877574397530978|P|2.4<R>
+PID|1||ABC451060^^^ABC^MR~EPIC4485819^^^EPIC^MRN||BEASLEY^JESSICA^JESSICA^III^^^D||19880405000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451060^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457462^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9380071^SYS|7795083035|BED70250^70250 70250 Skull < 4 views^UNKDEV|URGENT||20240425105252|||PSCRIB|||||^^^^ |D7823240^PARSONS^ERNESTO^JOHN^M.D.^^^^ABC|||||70250^Skull 1 View Dx Xray|20240428103342||BED|||1^^^20240428103342^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||70250<R>
+OBX|1|TX|6050073||RUSSELL GALLAGHER, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|6050073||ACC#  Date Time  Exam~~7795083035 Apr 28 2024 10:33AM BED70250 70250 Skull < 4 views~~EXAMINATION:~Skull X-ray~~FINDINGS:~The skull X-ray demonstrates a normal cranial vault with no evident~fractures, lesions, or abnormal calcifications. The sella turcica is~of normal dimensions, and there are no signs of lytic or blastic~lesions present in the calvaria. The paranasal sinuses appear clear~and well-opacified without evidence of infection or fluid levels.~Comparing this to the 2017 spinal imaging, the review is consistent~in showing no new developments suggesting cerebral lesions or any~structural pathology.~~IMPRESSION:~The skull X-ray performed on 04/25/2024 presents an intact and stable~cranial architecture. The absence of acute intracranial pathology is~reaffirmed, and no changes are reflected when contrasted with prior~imaging. No further imaging or intervention is indicated at this~time.||||||P<R>
+OBX|3|TX|6050073||Requested By: Parsons,Ernesto J. M.D.~~Dictated By: Russell Gallagher, M.D. on Apr 28 2024 10:33AM~~Pending review by: Joseph Barajas, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|6050073|4|7795083035^UK^ZB||||||P<R>
+<EB>

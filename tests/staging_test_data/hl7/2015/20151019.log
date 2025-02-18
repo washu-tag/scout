@@ -1,0 +1,25 @@
+2015-10-19 19:05:46.9705|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20151019190546|TBD|ORU^R01|2.25.232320169733450905646572983019387861784|P|2.7<R>
+PID|1||ABC451153^^^ABC^MR||COLEMAN^ANTHONY^RYAN^^^^D||19620626|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084895|||||||||||||||||||||||||20151019190546|||||||V<R>
+ORC|RE|9424212^SYS|7795083408||Prelim||^^^20151019190545^20151019190546^O||20151019190546|T6530147^ANDERSON^NATALIE||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9424212^SYS|7795083408|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20151017075846|||||Hosp Perf||||^^^CHEST|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20151019190546||CR|Prelim||^^^20151019190545^20151019190546^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20151019190546||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|Unremarkable chest X-ray featuring clear lung fields and no evidence||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|of cardiac or pulmonary pathology. Stability noted as compared to||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|previous spine study. The chest X-ray presents a clear lung field||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|bilaterally with no acute infiltrates, nodules, or pleural effusions.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|The cardiac silhouette is within normal limits, and the diaphragm is||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|well-positioned. No widening of the mediastinum or abnormal||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|parenchymal findings noted. The thoracic spine segment appears||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|normal, consistent with the previously obtained lumbar spine X-ray.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|Compared with the prior imaging on 2014-10-25, there is no new||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|significant abnormality in the chest region, and all structures||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|appear stable over the intervening time period.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.338398397129062067904423136585253051151^EPIC^APPLICATION^DICOM<R>
+<EB>

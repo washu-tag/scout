@@ -1,0 +1,27 @@
+2021-09-23 16:14:12.7627|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210923161412|TBD|ORU^R01|2.25.160595381566387124541408990219497648669|P|2.7<R>
+PID|1||ABC451028^^^ABC^MR||FIELDS^STEVEN^BRIAN^^^^D||19980605|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084934|||||||||||||||||||||||||20210923161412|||||||V<R>
+ORC|RE|5387398^SYS|7795082909||Prelim||^^^20210923161411^20210923161412^O||20210923161412|T6530150^NEAL^EMILY||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5387398^SYS|7795082909|IMG2370^MRI BRAIN W WO CONTRAST^UNKDEV^^BRAIN MRI|O|20210919072302|||||Hosp Perf||||^^^BRAIN|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210923161412||MR|Prelim||^^^20210923161411^20210923161412^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20210923161412||||||||IMG2370^MRI BRAIN W WO CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|1. No new acute findings in the brain parenchyma; no evidence of||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|stroke or other acute pathology. 2. Stable markers of chronic||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|ischemic or demyelinating changes persisting since the last MRI on||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|2015-03-19. 3. Normal anatomical integrity and brain morphology. The||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|MRI reveals a stable appearance of the cerebral structures. There is||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|no evidence of new lesions or changes in size of previously noted||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|hyperintensities compared to the last assessment dated 2015-03-19.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|The ventricles remain normal in size, with no hydrocephalus detected.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|The midline structures are preserved. The basal cisterns show no||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|evidence of effacement, indicating a lack of mass effect. White||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|matter hyperintensities are noted, similar to prior imaging, and can||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|be attributed to chronic ischemic changes or demyelination,||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|consistent with the age of the patient.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|18|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.236499652217165866273665870851808538780^EPIC^APPLICATION^DICOM<R>
+<EB>

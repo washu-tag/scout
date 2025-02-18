@@ -1,0 +1,11 @@
+2024-08-05 12:46:59.5568|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240805124659|TBD|ORU^R01|2.25.234737311177966855659191582812382438707|P|2.4<R>
+PID|1||ABC451120^^^ABC^MR~EPIC4485879^^^EPIC^MRN||YOUNG^ANGIE^BRANDY^^^^D||19970929000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451120^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457296^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5813048^SYS|7795083279|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20240803202024|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||2816^Ultrasound|20240805124659||IMG|||1^^^20240805124659^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|2572950||JENNIFER SMITH, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|2572950||ACC#  Date Time  Exam~~7795083279 Aug 05 2024 12:46PM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Abdominal ultrasound~~FINDINGS:~The ultrasound exam of the abdomen demonstrates a normal-sized liver~with homogeneous echotexture. The gallbladder appears normal in shape~and contains no gallstones or sludge. The pancreas visualizes~normally without signs of inflammation. The renal parenchyma is~echogenic but within normal limits, and no hydronephrosis is present.~The aorta is patent with normal caliber, and no abdominal masses or~fluid collections are observed. The uterus is visualized and appears~normal without any fibroids or cysts.~~IMPRESSION:~Abdominal ultrasound findings are normal. No significant~abnormalities are noted in the abdominal organs evaluated.||||||F<R>
+OBX|3|TX|2572950||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Jennifer Smith, M.D. on Aug 05 2024 12:46PM~~This document has been electronically signed by: Jennifer Smith, M.D.~on Aug 05 2024 12:46PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2572950|4|7795083279^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,11 @@
+2011-02-10 10:37:24.3457|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110210103724|TBD|ORU^R01|2.25.149345715113187385320382777302405965764|P|2.4<R>
+PID|1||ABC451180^^^ABC^MR~EPIC4485939^^^EPIC^MRN||NGUYEN^FREDERICK^JOSHUA^^^^D||19390120000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451180^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457117^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5762815^SYS|7795083521|BED70250^70250 70250 Skull < 4 views^UNKDEV|URGENT||20110209140706|||PSCRIB|||||^^^^ |D7823231^SMITH^CLARA^TAMIKA^M.D.^^^^ABC|||||70250^Skull 1 View Dx Xray|20110210103724||BED|||1^^^20110210103724^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||70250<R>
+OBX|1|TX|1926072||JOE MEDRANO, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|1926072||ACC#  Date Time  Exam~~7795083521 Feb 10 2011 10:37AM BED70250 70250 Skull < 4 views~~EXAMINATION:~Skull X-ray~~FINDINGS:~The skull X-ray reveals normal cranial contour with adequate~visualization of the internal and external tables. No evidence of~recent fractures or lesions is observed, and the paranasal sinuses~are aerated and free of fluid. The sella turcica appears normally~formed, and there is no displacement of midline structures.~Calcifications in the meninges are within expected limits for an~individual of this age demographic.~~IMPRESSION:~The findings are normal for a patient of this age. There are no acute~osseous injuries or significant intracranial abnormalities evident on~the skull X-ray.||||||F<R>
+OBX|3|TX|1926072||Requested By: Smith,Clara T. M.D.~~Dictated By: Joe Medrano, M.D. on Feb 10 2011 10:37AM~~This document has been electronically signed by: Joe Medrano, M.D. on~Feb 10 2011 10:37AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|1926072|4|7795083521^UK^ZB||||||F<R>
+<EB>

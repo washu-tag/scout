@@ -1,0 +1,11 @@
+2012-09-10 07:39:27.3022|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120910073927|TBD|ORU^R01|2.25.339132915384507842394873056244068632355|P|2.4<R>
+PID|1||ABC451024^^^ABC^MR~EPIC4485783^^^EPIC^MRN||PEREZ^MEGHAN^SHARON^^^^D||19600223000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451024^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823229^WADE^KERRI^L.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457286^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7266529^SYS|7795082896|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20120905175230|||PSCRIB|||||^^^^ |D7823224^MORGAN^JOHN^JEREMY^M.D.^^^^ABC|||||4185^XRay Angiography|20120910073927||IMG|||1^^^20120910073927^^U^^URGENT|       |||^Chest pain|D7823225^PARK^JOLENE^R.^^^M.D.|D7823222^POWELL^CARRIE^J.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|8669652||JOLENE PARK, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|8669652||ACC#  Date Time  Exam~~7795082896 Sep 10 2012 07:39AM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray angiography of the lower extremities~~FINDINGS:~The X-ray angiography performed on 2012-09-05 demonstrates patent~arterial flow in the iliac, femoral, and popliteal arteries. No~stenosis or occlusion is noted along the vessel segments evaluated.~The tibial arteries are successfully visualized with minor tortuosity~evident in the distal branches. The vascular bed architecture appears~intact, and there are no signs of vascular calcification or abnormal~collateral circulation. Contrast opacification is adequate without~extravasation.~~IMPRESSION:~The X-ray angiography study indicates normal arterial flow, with no~evidence of obstructive disease noted as of 2012-09-05. The vascular~integrity of the lower extremities is maintained, and the absence of~stenosis suggests a healthy perfusion status. No further immediate~intervention is warranted.||||||P<R>
+OBX|3|TX|8669652||Requested By: Morgan,John J. M.D.~~Dictated By: Jolene Park, M.D. on Sep 10 2012 07:39AM~~Pending review by: Carrie Powell, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|8669652|4|7795082896^UK^ZB||||||P<R>
+<EB>

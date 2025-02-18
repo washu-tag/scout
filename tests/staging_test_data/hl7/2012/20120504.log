@@ -1,0 +1,11 @@
+2012-05-04 03:05:53.7174|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120504030553|TBD|ORU^R01|2.25.38789288374093007346440246586141659188|P|2.4<R>
+PID|1||ABC451138^^^ABC^MR~EPIC4485897^^^EPIC^MRN||PARK^CARRIE^JESSICA^^^^D||19940427000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451138^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457461^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5630846^SYS|7795083352|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||20120430072404|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||2361^Brain MRI|20120504030553||IMG|||1^^^20120504030553^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|9582813||KIMBERLY HANSON, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|9582813||ACC#  Date Time  Exam~~7795083352 May 04 2012 03:05AM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI reveals a symmetrical pattern of cortical and~subcortical structures without evidence of significant mass effect.~The ventricles are age-appropriate in size. T2-weighted sequences~display no hyperintensities that may suggest demyelination or other~pathological processes. The corpus callosum appears intact, and the~basal ganglia are well visualized and normal in morphology. No~evidence of acute infarcts or hemorrhages is observed. Correlating~with the previous brain imaging dated 04/30/2011, there are no~notable changes in signal intensity or volume, affirming the~stability of findings.~~IMPRESSION:~Normal brain MRI with no new or progressive findings noted when~compared to the last imaging. The slight variation in white matter~integrity observed previously appears stable, and there are no acute~abnormalities. These findings are consistent with a healthy neural~architecture.||||||F<R>
+OBX|3|TX|9582813||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Kimberly Hanson, M.D. on May 04 2012 03:05AM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on May 04 2012 03:05AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9582813|4|7795083352^UK^ZB||||||F<R>
+<EB>

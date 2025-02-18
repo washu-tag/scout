@@ -1,0 +1,25 @@
+2020-10-13 22:08:42.9938|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20201013220842|TBD|ORU^R01|2.25.176630834347699329028036742461747323275|P|2.7<R>
+PID|1||ABC450997^^^ABC^MR||BOYD^MEGAN^CONNIE^^^^D||19391212|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084763|||||||||||||||||||||||||20201013220842|||||||V<R>
+ORC|RE|6681850^SYS|7795082788||Prelim||^^^20201013220841^20201013220842^O||20201013220842|T6530149^VASQUEZ^MISTY||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6681850^SYS|7795082788|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20201012103623|||||Hosp Perf||||^^^HEART|D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20201013220842||MR|Prelim||^^^20201013220841^20201013220842^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20201013220842||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|Heart MRI indicates a robustly functioning cardiac state with no||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|evidence of structural heart disease. Continued cardiovascular risk||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|assessment and follow-up are recommended given the patient's age. The||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|cardiac MRI reveals normal cardiac chamber size and wall motion||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|throughout the ventricles. The left ventricular ejection fraction||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|remains within normal limits. Myocardial signal intensity is||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|homogeneous without evidence of ischemic areas or abnormal||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|enhancement patterns suggestive of myocardial inflammation or||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|fibrosis. Additionally, valvular function is intact, and no||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|pericardial effusion is appreciated. The aorta and large vessels||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|arise normally without significant stenosis or abnormal dilation.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.273874412450346651884086299401478437069^EPIC^APPLICATION^DICOM<R>
+<EB>

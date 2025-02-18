@@ -1,0 +1,11 @@
+2013-04-14 04:24:51.8184|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130414042451|TBD|ORU^R01|2.25.260980892709178524716115181829853610999|P|2.4<R>
+PID|1||ABC451019^^^ABC^MR~EPIC4485778^^^EPIC^MRN||WILLIAMS^ERIN^KELLY^^^^D||19380422000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451019^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457188^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||64838^SYS|7795082872|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20130413064733|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20130414042451||IMG|||1^^^20130414042451^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|8387829||KIMBERLY HANSON, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|8387829||ACC#  Date Time  Exam~~7795082872 Apr 14 2013 04:24AM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Follow-up Abdominal X-ray~~FINDINGS:~Comparative analysis with the previous abdominal X-ray performed on~2004-06-08 shows stable findings. The current examination continues~to exhibit a normal gas pattern without evidence of obstruction or~distension. The solid abdominal organs retain their normal morphology~and size, showing no new calcifications or lesions. The renal shadows~remain unchanged and consistently show normal positioning. There is~no new peri-renal fluid or significant changes noted from prior~images, reinforcing stability in the abdominal region.~~IMPRESSION:~Overall, the follow-up abdominal X-ray demonstrates stable~characteristics when compared to the imaging dated 2004-06-08,~confirming no acute or chronic changes in the abdominal structures.||||||F<R>
+OBX|3|TX|8387829||Requested By: Wright,Jessica M. M.D.~~Dictated By: Kimberly Hanson, M.D. on Apr 14 2013 04:24AM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on Apr 14 2013 04:24AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8387829|4|7795082872^UK^ZB||||||F<R>
+<EB>

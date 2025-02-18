@@ -1,0 +1,11 @@
+2018-10-31 21:14:30.1666|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20181031211430|TBD|ORU^R01|2.25.59511473616580363441393263844281951571|P|2.4<R>
+PID|1||ABC451017^^^ABC^MR~EPIC4485776^^^EPIC^MRN||WOOD^WILLIAM^JUSTIN^^^^D||19890323000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451017^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457465^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1341535^SYS|7795082865|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20181029113816|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||2816^Ultrasound|20181031211430||IMG|||1^^^20181031211430^^U^^URGENT|       |||^Chest pain|D7823231^SMITH^CLARA^T.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|1158407||CLARA SMITH, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|1158407||ACC#  Date Time  Exam~~7795082865 Oct 31 2018 09:14PM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Ultrasound~~FINDINGS:~Comparative ultrasound of the right lower quadrant (referencing the~prior ultrasound dated 2010-07-31) shows a change in the lesion's~characteristics. The previously observed mass has increased in size~to approximately 7.0 cm, with heterogeneous echogenicity now~apparent, indicating possible internal necrosis or cystic change.~Vascularity has also increased significantly, with Doppler imaging~revealing a prominent arterial flow pattern consistent with~hypervascularity typical of malignant lesions. No significant free~fluid is found, and other abdominal organs remain normal in~appearance.~~IMPRESSION:~The increase in size and the change to a more heterogeneous~echogenicity raises significant concern for a malignant process.~Correlation with previous imaging reveals notable progression;~immediate further evaluation through CT imaging or biopsy recommended~for definitive diagnosis.||||||P<R>
+OBX|3|TX|1158407||Requested By: Donovan,William C. M.D.~~Dictated By: Clara Smith, M.D. on Oct 31 2018 09:14PM~~Pending review by: Lisa Sanders, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|1158407|4|7795082865^UK^ZB||||||P<R>
+<EB>

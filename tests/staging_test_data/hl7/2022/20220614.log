@@ -1,0 +1,11 @@
+2022-06-14 00:39:28.0116|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220614003928|TBD|ORU^R01|2.25.206101454538354772579359235521238687032|P|2.4<R>
+PID|1||ABC451151^^^ABC^MR~EPIC4485910^^^EPIC^MRN||MEYERS^NATALIE^CANDI^^^^D||19690613000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451151^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457300^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8912603^SYS|7795083403|IMG2370^2370 MRI BRAIN W WO CONTRAST^UNKDEV|URGENT||20220610134629|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||2370^BRAIN MRI|20220614003928||IMG|||1^^^20220614003928^^U^^URGENT|       |||^Chest pain|D7823231^SMITH^CLARA^T.^^^M.D.|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.||PSCRIB|||||||||2370<R>
+OBX|1|TX|712847||CLARA SMITH, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|712847||ACC#  Date Time  Exam~~7795083403 Jun 14 2022 12:39AM IMG2370 MRI BRAIN W WO CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~Brain MRI depicts several areas of increased T2 signal intensity in~the periventricular white matter, consistent with chronic~microvascular ischemic changes, likely related to longstanding~vascular risk factors. No acute infarcts or significant mass lesions~are observed. The ventricles are moderately dilated, which appears~chronic. Midline structures are intact, and there is no evidence of~significant edema or mass effect. Compared to MRI from 2022-06-10,~these findings remain unchanged, suggesting stable chronicity without~signs of acute neurological deterioration.~~IMPRESSION:~1. Chronic microvascular ischemic changes in the periventricular~white matter without acute intracranial pathology. 2. Overall stable~with respect to previous MRI findings.||||||F<R>
+OBX|3|TX|712847||Requested By: Sanders,Lisa A. M.D.~~Dictated By: Clara Smith, M.D. on Jun 14 2022 12:39AM~~This document has been electronically signed by: Clara Smith, M.D. on~Jun 14 2022 12:39AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|712847|4|7795083403^UK^ZB||||||F<R>
+<EB>

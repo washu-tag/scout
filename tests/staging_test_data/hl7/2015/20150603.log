@@ -1,0 +1,24 @@
+2015-06-03 21:01:08.8211|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150603210108|TBD|ORU^R01|2.25.303041806774586004990348948500676830382|P|2.7<R>
+PID|1||ABC451017^^^ABC^MR||WOOD^WILLIAM^JUSTIN^^^^D||19890323|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085029|||||||||||||||||||||||||20150603210108|||||||V<R>
+ORC|RE|1711029^SYS|7795082866||Final||^^^20150603210107^20150603210108^O||20150603210108|T6530154^ROBERTS^RICARDO||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1711029^SYS|7795082866|EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY|O|20150531094717|||||Hosp Perf||||^^^TSPINE|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20150603210108||DX|Final||^^^20150603210107^20150603210108^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20150603210108||||||||EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: T-spine X-ray||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|The thoracic spine changes are consistent with mild degenerative||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|processes, but there is no evidence of acute pathology at this time.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|Routine follow-up is advised. The thoracic spine X-ray demonstrates||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|normal alignment of the vertebral bodies with no evidence of acute||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|fractures or dislocation. There is mild degenerative disc disease at||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|T7-T8 with associated endplate sclerosis, but no significant disc||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|herniation is identified. The intervertebral foramina are patent,||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|allowing for adequate neurovascular transit. No osseous lesions,||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|noted bony mineralization, nor soft tissue masses are visible. The||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|lung fields are clear, and heart size appears within normal limits. ||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.73972207147722200144630978638060407604^EPIC^APPLICATION^DICOM<R>
+<EB>

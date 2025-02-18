@@ -1,0 +1,25 @@
+2007-07-02 18:38:18.1045|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20070702183818|TBD|ORU^R01|2.25.136776043184153292178804352498515985913|P|2.7<R>
+PID|1||ABC451031^^^ABC^MR||SANCHEZ^AMBER^REBEKAH^^^^D||19211130|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084891|||||||||||||||||||||||||20070702183818|||||||V<R>
+ORC|RE|5208787^SYS|7795082920||Final||^^^20070702183817^20070702183818^O||20070702183818|T6530152^ADKINS^MELLISSA||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5208787^SYS|7795082920|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20070628065245|||||Hosp Perf|||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20070702183818||US|Final||^^^20070702183817^20070702183818^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20070702183818||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdominal ultrasound||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|Stable small renal cyst on the right kidney. No acute abdominal||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|pathology noted. Routine surveillance is suggested for the renal cyst||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|if the patient experiences any symptoms. The abdominal ultrasound||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|demonstrates the liver to be of normal size and echogenicity with no||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|focal lesions. The gallbladder is unremarkable without gallstones or||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|fluid collection. The bilateral kidneys are normal in shape and||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|outline with no evidence of hydronephrosis. Notably, there is a small||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|cyst on the right kidney measuring approximately 1.5 cm. Pancreatic||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|echogenicity is well-preserved and the aorta is within normal limits.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|Compared to the previous imaging from 2006-06-13, the kidney cyst||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|remains stable in size, showing no changes in characteristics.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.83338218975151634853907054231161167637^EPIC^APPLICATION^DICOM<R>
+<EB>

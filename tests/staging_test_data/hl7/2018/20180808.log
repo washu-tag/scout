@@ -1,0 +1,26 @@
+2018-08-08 06:40:32.0523|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180808064032|TBD|ORU^R01|2.25.12885578767224800085445715710027362887|P|2.7<R>
+PID|1||ABC451067^^^ABC^MR||MELENDEZ^TARA^LARA^^^^D||19580416|F||PCFIS|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085051|||||||||||||||||||||||||20180808064032|||||||V<R>
+ORC|RE|6078732^SYS|7795083069||Prelim||^^^20180808064031^20180808064032^O||20180808064032|T6530147^ANDERSON^NATALIE||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6078732^SYS|7795083069|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20180804193911|||||Hosp Perf|||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20180808064032||US|Prelim||^^^20180808064031^20180808064032^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20180808064032||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|The breast ultrasound shows normal findings consistent with the||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|absence of any lesions or abnormalities. Surveillance imaging is||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|maintained within standard screening guidelines. No further||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|evaluation is indicated at this time. The ultrasound examination||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|reveals a normal echogenicity of the breast tissue with no||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|identifiable masses or cysts. The bilateral axillae are free of||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|pathological lymphadenopathy. The parenchyma is uniformly dense with||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|no fibrocystic changes noted. Infiltrating structures appear||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|homogenous and well-defined, supporting the absence of significant||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|lesions in the examined regions. Sonographic evaluation of||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|surrounding tissues confirms normal anatomical relationships without||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|irregularities.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+OBX|17|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Prelim|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.36896486952247981306919032971463522457^EPIC^APPLICATION^DICOM<R>
+<EB>

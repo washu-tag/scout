@@ -1,0 +1,11 @@
+2018-09-26 22:24:59.1325|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180926222459|TBD|ORU^R01|2.25.108580652380881960227677524265335775073|P|2.4<R>
+PID|1||ABC451020^^^ABC^MR~EPIC4485779^^^EPIC^MRN||ΘΕΟΔΩΡΆΚΗΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19971220000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451020^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457213^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5594068^SYS|7795082879|BED74000^74000 74000 Abdomen single view AP^UNKDEV|URGENT||20180924182100|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||74000^Abdomen 1 View Dx Xray|20180926222459||BED|||1^^^20180926222459^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB|||||||||74000<R>
+OBX|1|TX|5045879||JOSEPH BARAJAS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5045879||ACC#  Date Time  Exam~~7795082879 Sep 26 2018 10:24PM BED74000 74000 Abdomen single view AP~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdominal X-ray study reveals normal gas pattern within the bowel~with no signs of obstruction. The liver, spleen, and kidneys are~visualized adequately, reflecting normal size and contour. No~calcifications or masses are identified within the solid organs. The~visualized portions of the gastrointestinal tract are normal, with no~evidence of free air or fluid collections suggestive of perforation~or ascites. Minor retention of bowel gas is noted; however, this is~consistent with the patient's recent dietary intake. Considering the~imaging performed on 2018-09-24, there are no significant alterations~noted in abdominal organ configuration or position.~~IMPRESSION:~Clinical impression is unremarkable, suggesting normal abdominal~anatomy. No acute changes requiring follow-up or intervention are~identified.||||||F<R>
+OBX|3|TX|5045879||Requested By: Hunt,April M. M.D.~~Dictated By: Joseph Barajas, M.D. on Sep 26 2018 10:24PM~~This document has been electronically signed by: Joseph Barajas, M.D.~on Sep 26 2018 10:24PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5045879|4|7795082879^UK^ZB||||||F<R>
+<EB>

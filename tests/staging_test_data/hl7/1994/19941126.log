@@ -1,0 +1,11 @@
+1994-11-26 16:22:45.2701|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19941126162245|TBD|ORU^R01|2.25.321427676956028432618914487048384918527|P|2.4<R>
+PID|1||ABC451182^^^ABC^MR~EPIC4485941^^^EPIC^MRN||TAKAHASHI^MEI^^^^^D||19480612000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451182^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457158^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1285731^SYS|7795083529|BHC76140^76140 76140 Outside Exam^UNKDEV|URGENT||19941122141156|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||76140^Outside Mammogram|19941126162245||BHC|||1^^^19941126162245^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||76140<R>
+OBX|1|TX|3819516||JENNIFER SMITH, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|3819516||ACC#  Date Time  Exam~~7795083529 Nov 26 1994 04:22PM BHC76140 76140 Outside Exam~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The mammogram demonstrates symmetric breast parenchyma with no~evident masses or architectural distortions. The glandular tissue~appears within normal limits for the patient’s age, with the absence~of suspicious calcifications. Normal fatty tissue is predominant, and~no significant lymphadenopathy is noted.~~IMPRESSION:~Overall, the single-view mammogram shows benign findings. There are~no signs of malignancy or significant abnormalities detected in the~imaging.||||||F<R>
+OBX|3|TX|3819516||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Jennifer Smith, M.D. on Nov 26 1994 04:22PM~~This document has been electronically signed by: Jennifer Smith, M.D.~on Nov 26 1994 04:22PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3819516|4|7795083529^UK^ZB||||||F<R>
+<EB>

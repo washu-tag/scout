@@ -1,0 +1,28 @@
+2019-02-25 14:15:19.1315|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190225141519|TBD|ORU^R01|2.25.256221726942295131847008670854478628393|P|2.7<R>
+PID|1||ABC451175^^^ABC^MR||OCONNOR^JEREMY^JOSHUA^^^^D||19931118|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084748|||||||||||||||||||||||||20190225141519|||||||V<R>
+ORC|RE|311128^SYS|7795083496||Prelim||^^^20190225141518^20190225141519^O||20190225141519|T6530153^MORAN^JOSHUA||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|311128^SYS|7795083496|JPT78699C^Brain PET: MR Fusion 78699^UNKDEV^^BRAIN PTMR|O|20190224152614|||||Hosp Perf||||^^^HEAD|D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20190225141519||MR|Prelim||^^^20190225141518^20190225141519^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||20190225141519||||||||JPT78699C^Brain PET: MR Fusion 78699^UNKDEV^^BRAIN PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: PET-MR of the head||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|The PET-MR of the head demonstrates no significant change from the||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|previous MRI performed on 2015-10-10. No new areas of abnormal uptake||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|are noted, suggesting stability of the brain tissue and the||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|previously identified foci of hyperintensity. This suggests a||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|non-aggressive process. Regular follow-up may be advised based on||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|clinical presentation. The combined PET-MR of the head reveals no||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|abnormal hypermetabolic activity within the brain parenchyma,||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|indicating no evidence of active malignancy or active inflammatory||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|process. The MR sequences demonstrate the previously noted white||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|matter changes but with no new lesions compared to the MRI conducted||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|15|ST|&IMP|2|on 2015-10-10. The cerebral cortices and basal ganglia are symmetric.||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|16|ST|&IMP|2|Meningeal enhancement is absent. No suspicious masses or significant||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|17|ST|&IMP|2|perfusion deficits are observed. Mild age-related atrophy may be||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|18|ST|&IMP|2|noted but is consistent with historical imaging.||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|19|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.90092408965255934120657262902591704431^EPIC^APPLICATION^DICOM<R>
+<EB>

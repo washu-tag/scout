@@ -1,0 +1,29 @@
+2011-03-27 00:34:41.9885|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110327003441|TBD|ORU^R01|2.25.90954195719627305651918757450944916849|P|2.7<R>
+PID|1||ABC451116^^^ABC^MR||MALDONADO^ERICA^SASHA^^^^D||19660710|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085008|||||||||||||||||||||||||20110327003441|||||||V<R>
+ORC|RE|9561809^SYS|7795083263||Final||^^^20110327003440^20110327003441^O||20110327003441|T6530145^RUIZ^TARA||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9561809^SYS|7795083263|BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL|O|20110322124923|||||Hosp Perf||||^^^BREAST|D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20110327003441||MG|Final||^^^20110327003440^20110327003441^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20110327003441||||||||BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Four-view mammogram||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|Overall, the mammographic studies do not reveal any acute or chronic||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|abnormalities. The patient's breast density remains consistent with a||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|BI-RADS category 1, indicating negative results. Routine surveillance||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|is recommended as per standard screening guidelines, with the next||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|screening in one year unless clinical symptoms dictate otherwise. The||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|four-view mammogram reveals heterogeneously dense breast tissue||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|characterized by fibroglandular areas interspersed with fatty tissue.||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|No dominant masses, suspicious calcifications, or new architectural||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|distortions are noted, consistent with a BI-RADS category 1. The||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|inframammary folds are well-defined, and there is no evidence of skin||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|thickening or retraction. Previous examinations show similar||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|findings, affirming stability over the intervening 4-year period. No||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|lymphadenopathy is appreciated in the axillary regions, and breast||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|contours are normal without any evidence of edema or abnormal||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|19|ST|&IMP|2|asymmetric densities.||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|20|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Final|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.43435240212275925043303411688885789749^EPIC^APPLICATION^DICOM<R>
+<EB>

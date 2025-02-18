@@ -1,0 +1,31 @@
+2023-02-04 15:15:58.9889|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230204151558|TBD|ORU^R01|2.25.311447707216609794393857376634126125628|P|2.7<R>
+PID|1||ABC451159^^^ABC^MR||HAMMOND^MICHAEL^ALLAN^^^^D||19900930|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084813|||||||||||||||||||||||||20230204151558|||||||V<R>
+ORC|RE|2036311^SYS|7795083433||Final||^^^20230204151557^20230204151558^O||20230204151558|T6530148^GROSS^CARLY||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2036311^SYS|7795083433|CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI|O|20230202111942|||||Hosp Perf||||^^^BRAIN|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230204151558||MR|Final||^^^20230204151557^20230204151558^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20230204151558||||||||CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|Comparing to the MRI from January 12, 2008, there is a notable||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|increase in white matter hyperintensities that may suggest early||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|age-related changes or possibly chronic ischemia. Nonetheless, the||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|absence of acute lesions is reassuring. Continued monitoring is||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|recommended to assess for any progressive changes in serial imaging.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|The February 2, 2023 brain MRI shows evidence of slight progression||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|of white matter hyperintensities noted in the prior study dated||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|January 12, 2008, now presenting with more pronounced lesions||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|primarily concentrated in the periventricular and subcortical||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|regions. The signal characteristics remain hyperintense on||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|T2-weighted images with a corresponding hypointensity on T1-weighted||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|sequences. The ventricles are mildly prominent but within normal||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|limits for the patient's age. The prior findings of normal anatomical||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|structures are mainly intact; however, subtle changes indicate||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|possible early stages of small vessel ischemic change. No acute||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|20|ST|&IMP|2|intracranial pathology such as hemorrhage or new focal lesions are||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|21|ST|&IMP|2|detected. The overall morphology of the brain is stable.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|22|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Final|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.11378334995501222182231108763386960941^EPIC^APPLICATION^DICOM<R>
+<EB>

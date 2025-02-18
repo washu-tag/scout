@@ -1,0 +1,11 @@
+1999-02-16 23:53:58.5921|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19990216235358|TBD|ORU^R01|2.25.308802497959995668851977234824102866291|P|2.4<R>
+PID|1||ABC451001^^^ABC^MR~EPIC4485760^^^EPIC^MRN||CANTU^KEVIN^BRANDON^^^^D||19450220000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451001^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457278^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9020862^SYS|7795082803|MDXREVNT^ Radiology Event^UNKDEV|URGENT||19990212115105|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||^Xr Sing View|19990216235358||MDXREVNT|||1^^^19990216235358^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|9600087||CURTIS HAWKINS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|9600087||ACC#  Date Time  Exam~~7795082803 Feb 16 1999 11:53PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray of the chest~~FINDINGS:~The X-ray demonstrates clear lung fields bilaterally with no evidence~of consolidation, effusion, or pleural abnormalities. The cardiac~silhouette appears within normal limits and the mediastinum is~midline. The bony thorax shows no signs of acute osseous~abnormalities, fractures, or degenerative disease. Diaphragmatic~contours are well-defined without elevation. No foreign bodies or~significant pathologic changes are seen. Overall, the study appears~unremarkable.~~IMPRESSION:~Normal single-view chest X-ray with no acute abnormalities or~findings suggestive of pathology.||||||F<R>
+OBX|3|TX|9600087||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Curtis Hawkins, M.D. on Feb 16 1999 11:53PM~~This document has been electronically signed by: Curtis Hawkins, M.D.~on Feb 16 1999 11:53PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9600087|4|7795082803^UK^ZB||||||F<R>
+<EB>

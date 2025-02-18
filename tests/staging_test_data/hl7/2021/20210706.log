@@ -1,0 +1,11 @@
+2021-07-06 01:40:12.0184|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210706014012|TBD|ORU^R01|2.25.225072508383606773054378098006823107471|P|2.4<R>
+PID|1||ABC451134^^^ABC^MR~EPIC4485893^^^EPIC^MRN||YIM^YE-JUN^^^^^D||19761104000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451134^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457410^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2046495^SYS|7795083333|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20210705122642|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||^Xr Sing View|20210706014012||MDXREVNT|||1^^^20210706014012^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|4831724||GUY SANCHEZ, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4831724||ACC#  Date Time  Exam~~7795083333 Jul 06 2021 01:40AM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~The single-view chest X-ray is generally normal, revealing clear lung~fields with no evidence of acute cardiopulmonary disease. However,~there is an incidental finding of mild degenerative changes in the~thoracic spine, particularly at the T7-T8 level, which may correlate~with the patient's history of back discomfort. The heart size is~within normal limits, and there is no indication of pleural effusion~or bony lesions on the visualized structures. Compared to previous~images, no significant acute changes are noted.~~IMPRESSION:~The X-ray shows no acute findings; however, chronic changes in the~thoracic spine may require further clinical correlation and possibly~MRI if there are relevant symptoms. Recommend follow-up if there are~persistent complaints.||||||F<R>
+OBX|3|TX|4831724||Requested By: Reese,Amber J. M.D.~~Dictated By: Guy Sanchez, M.D. on Jul 06 2021 01:40AM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Jul 06 2021 01:40AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4831724|4|7795083333^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,38 @@
+1998-12-08 11:45:59.1567|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19981208114559|TBD|ORU^R01|2.25.160896878110335635404088684424922865389|P|2.4<R>
+PID|1||ABC451001^^^ABC^MR~EPIC4485760^^^EPIC^MRN||CANTU^KEVIN^BRANDON^^^^D||19450220000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451001^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457276^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4114314^SYS|7795082799|IMG5021^5021 PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV|URGENT||19981206125638|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||5021^Brain Petct AC NAC|19981208114559||IMG|||1^^^19981208114559^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823243^HAWKINS^CURTIS^K.^^^M.D.||PSCRIB|||||||||5021<R>
+OBX|1|TX|2252822||JENNIFER SMITH, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|2252822||ACC#  Date Time  Exam~~7795082799 Dec 08 1998 11:45AM IMG5021 PET/CT FDG BRAIN TUMOR~METABOLIC EVALUATION~~EXAMINATION:~Head PET-CT scan~~FINDINGS:~The PET-CT scan demonstrates normal distribution of FDG activity~throughout the cerebral cortex, with no areas of focal~hypermetabolism or hypometabolism noted. The basal ganglia, thalamus,~and brainstem show symmetrical metabolic activity consistent with~normal physiological uptake. There are no lesions suggestive of~malignancy or significant intracranial abnormalities such as~hemorrhage or edema. Cranial structures remain intact without~evidence of structural anomalies. No lymphadenopathy in the neck is~appreciated. Notably, there are no new findings when compared to~previous imaging studies.~~IMPRESSION:~This examination reveals no abnormalities or significant changes from~prior imaging studies. The brain appears to be within normal limits,~showing no evidence of metabolic disturbances that could suggest~underlying pathology.||||||F<R>
+OBX|3|TX|2252822||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Jennifer Smith, M.D. on Dec 08 1998 11:45AM~~This document has been electronically signed by: Jennifer Smith, M.D.~on Dec 08 1998 11:45AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2252822|4|7795082799^UK^ZB||||||F<R>
+<EB><R>
+
+1998-12-08 23:42:56.8218|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19981208234256|TBD|ORU^R01|2.25.190777181101043773633612332884448704032|P|2.7<R>
+PID|1||ABC451090^^^ABC^MR||THOMAS^LISA^KRISTIN^^Capt.^^D||19411017|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084857|||||||||||||||||||||||||19981208234256|||||||V<R>
+ORC|RE|5291223^SYS|7795083162||Wet Read||^^^19981208234255^19981208234256^O||19981208234256|T6530146^MOORE^CURTIS||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5291223^SYS|7795083162|BMV77057A^77057A Screen unilateral^UNKDEV^^SCREENING MAMMOGRAM UNILATERAL|O|19981208102457|||||Hosp Perf||||^^^BREAST|D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19981208234256||MG|Wet Read||^^^19981208234255^19981208234256^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||19981208234256||||||||BMV77057A^77057A Screen unilateral^UNKDEV^^SCREENING MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|Overall, the single-view mammogram from 1998 shows no significant||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|abnormalities. Due to the patient's dense breast tissue, further||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|imaging or follow-up may be warranted depending on clinical risk||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|factors, but at this point, the study is interpreted as benign. The||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|mammogram reveals a dense breast parenchyma consistent with the||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|patient's age and breast composition. No dominant masses,||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|microcalcifications, or architectural distortion is observed,||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|suggesting a negative study. Bilateral symmetrical glandular tissue||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|is present, with no significant abnormalities detected in the||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|retroareolar regions, and the skin and nipple appear normal. The||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|fibroglandular tissue distribution is typical for this age group,||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|with no evidence of suspicious lesions.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.128795297816164109514381366285495524670^EPIC^APPLICATION^DICOM<R>
+<EB>

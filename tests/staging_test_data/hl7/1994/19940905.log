@@ -1,0 +1,34 @@
+1994-09-05 23:39:59.5650|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19940905233959|TBD|ORU^R01|2.25.184302297688727729192938159362886174214|P|2.7<R>
+PID|1||ABC451059^^^ABC^MR||LEE^LINDSEY^ELIZABETH^^^^D||19640121|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823285^MICHAEL^JAMIE^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085022|||||||||||||||||||||||||19940905233959|||||||V<R>
+ORC|RE|4771562^SYS|7795083034||Wet Read||^^^19940905233958^19940905233959^O||19940905233959|T6530211^CHANDLER^JOSEPH||D7823286^JAMES^TIMOTHY^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4771562^SYS|7795083034|IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED|O|19940903200316|||||Hosp Perf||||^^^BRAIN|D7823286^JAMES^TIMOTHY^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19940905233959||MR|Wet Read||^^^19940905233958^19940905233959^O||||^Chest pain||D7823289^CERVANTES^DEBORAH^H.^^^^^ABC^^^^HOSP|T6530211^CHANDLER^JOSEPH||19940905233959||||||||IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: MRI brain without contrast||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|5|ST|&IMP|2|MRI brain without contrast shows no intracranial masses, edema, or||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|6|ST|&IMP|2|other acute pathologies. The cerebral structures maintain normal||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|7|ST|&IMP|2|anatomy and signal characteristics. There is no evidence of||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|8|ST|&IMP|2|neurodegenerative changes or vascular anomalies. The study is||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|9|ST|&IMP|2|unremarkable and consistent with previously documented imaging from||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|10|ST|&IMP|2|July 1993, reinforcing the stability of the patient's cerebral||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|11|ST|&IMP|2|condition over the past year. The MRI of the brain demonstrates a||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|12|ST|&IMP|2|normal morphometric structure, with no evidence of intracranial||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|13|ST|&IMP|2|lesions or mass effect. The cortical and subcortical gray matter||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|14|ST|&IMP|2|demonstrate preserved contour and signal intensity on T1-weighted||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|15|ST|&IMP|2|images. There is no evidence of abnormal hyperintensities, suggesting||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|16|ST|&IMP|2|an absence of gliosis or neoplastic processes. The ventricles are||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|17|ST|&IMP|2|unremarkable, retaining a normal size and configuration. There is||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|18|ST|&IMP|2|also no midline shift or herniation observed. The diffusion-weighted||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|19|ST|&IMP|2|imaging does not exhibit any areas of acute ischemia. Additionally,||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|20|ST|&IMP|2|the anterior and posterior circulation appears intact on the||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|21|ST|&IMP|2|angiographic sequences, with no stenosis or occlusion identified in||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|22|ST|&IMP|2|the major intracranial arteries. This study correlates with a||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|23|ST|&IMP|2|previous MRI performed on 1993-07-15, which similarly exhibited no||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|24|ST|&IMP|2|notable intracranial abnormalities.||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|25|ST|&IMP|2|Dictated by: Deborah Cervantes Interpreter, M.D.||||||Wet Read|||||T6530211^CHANDLER^JOSEPH<R>
+ZDS|2.25.101706746031517975287760687539133246444^EPIC^APPLICATION^DICOM<R>
+<EB>

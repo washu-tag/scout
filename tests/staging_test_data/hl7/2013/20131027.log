@@ -1,0 +1,29 @@
+2013-10-27 16:00:30.0736|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20131027160030|TBD|ORU^R01|2.25.302897612440908506853792816165094077045|P|2.7<R>
+PID|1||ABC451129^^^ABC^MR||ALVARADO^SABRINA^AUTUMN^^^^D||19460913|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085019|||||||||||||||||||||||||20131027160030|||||||V<R>
+ORC|RE|8466602^SYS|7795083315||Wet Read||^^^20131027160029^20131027160030^O||20131027160030|T6530149^VASQUEZ^MISTY||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8466602^SYS|7795083315|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20131026145216|||||Hosp Perf||||^^^BRAIN|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20131027160030||MR|Wet Read||^^^20131027160029^20131027160030^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20131027160030||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|MRI findings of 2013-10-26 are unremarkable aside from mild||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|age-related changes. The white matter hyperintensities are likely||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|chronic in nature and correlate with small vessel disease risk||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|factors. No immediate follow-up is warranted unless the patient||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|experiences new neurological symptoms. The brain MRI shows normal||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|brain morphology with no evidence of acute or chronic intracranial||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|hemorrhage. There is a mild volume loss noted in the bilateral||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|temporal lobes, consistent with age-related changes, but no||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|significant mass effect or midline shift. The ventricular system is||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|within normal limits, with no signs of hydrocephalus. There appear to||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|be a few nonspecific white matter hyperintensities on FLAIR imaging,||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|likely representing chronic small vessel ischemic changes, with no||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|acute ischemic infarcts present. The cranio-cervical junction is||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|18|ST|&IMP|2|unremarkable, and the orbits and sinuses do not show any remarkable||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|19|ST|&IMP|2|pathology.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|20|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.136395844614625214670278711571805089517^EPIC^APPLICATION^DICOM<R>
+<EB>

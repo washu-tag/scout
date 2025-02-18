@@ -1,0 +1,45 @@
+2008-07-15 03:47:24.7811|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20080715034724|TBD|ORU^R01|2.25.302998299290238696895378966624551045015|P|2.4<R>
+PID|1||ABC451177^^^ABC^MR~EPIC4485936^^^EPIC^MRN||PIERCE^ALLEN^DESHAWN^^^^D||19501013000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451177^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457228^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1809863^SYS|7795083508|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||20080711063706|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||2361^Brain MRI|20080715034724||IMG|||1^^^20080715034724^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|3950917||AMBER REESE, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|3950917||ACC#  Date Time  Exam~~7795083508 Jul 15 2008 03:47AM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~Brain MRI Study~~FINDINGS:~MRI of the brain performed with T1, T2-weighted, and FLAIR sequences~demonstrates normal morphology of the cerebral hemispheres. No acute~ischemic changes are evident on diffusion-weighted imaging. However,~there are several small hyperintense lesions on FLAIR sequences,~predominantly in the periventricular and subcortical white matter,~suggestive of chronic microangiopathic changes which are consistent~with age-related changes or possible mild vascular dementia. The~ventricles are within normal limits in size, and midline structures~are intact. No evidence of mass effect or edema is observed. Review~indicates these findings are stable compared to the previous brain~MRI on 2008-07-11.~~IMPRESSION:~The MRI findings suggest chronic microangiopathic changes likely~related to small vessel ischemic disease, stable since the last~assessment on 2008-07-11. No acute intracranial abnormalities~detected.||||||F<R>
+OBX|3|TX|3950917||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Amber Reese, M.D. on Jul 15 2008 03:47AM~~This document has been electronically signed by: Amber Reese, M.D. on~Jul 15 2008 03:47AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3950917|4|7795083508^UK^ZB||||||F<R>
+<EB><R>
+
+2008-07-15 09:17:57.3219|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20080715091757|TBD|ORU^R01|2.25.307701251546416798618385604241162781189|P|2.7<R>
+PID|1||ABC451086^^^ABC^MR||BENNETT^COLIN^RYAN^^^^D||19520214|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084728|||||||||||||||||||||||||20080715091757|||||||V<R>
+ORC|RE|2035491^SYS|7795083143||Wet Read||^^^20080715091756^20080715091757^O||20080715091757|T6530149^VASQUEZ^MISTY||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2035491^SYS|7795083143|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20080712175050|||||Hosp Perf||||^^^BRAIN|D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20080715091757||MR|Wet Read||^^^20080715091756^20080715091757^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20080715091757||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|In comparison to the MRI dated 2002-11-09, there are incremental||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|changes noted in the white matter hyperintensities, suggesting an||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|evolution consistent with chronic small vessel disease. While the||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|overall structural integrity of the brain is maintained, the||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|increased burden of ischemic lesions may warrant further monitoring||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|for cognitive changes or vascular risk factor management. No acute||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|intracranial abnormalities detected. Comparing the current MRI with||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|the previous study from 2002-11-09, there is a stable appearance of||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|the major brain structures and ventricles. The lateral and third||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|ventricles retain their morphology without any noted enlargement.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|However, there is an increase in the extent of white matter||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|hyperintensities noted previously, now demonstrating a more||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|pronounced area, particularly in the frontal and occipital regions||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|18|ST|&IMP|2|consistent with chronic ischemic changes. The corticomedullary||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|19|ST|&IMP|2|junction remains well-defined, and there are no newly developed focal||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|20|ST|&IMP|2|lesions or enhancing masses identified. No abnormal masses in the||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|21|ST|&IMP|2|temporal lobes or cerebellum are visualized. The brainstem appears||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|22|ST|&IMP|2|unchanged in contour and signal characteristics compared to the prior||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|23|ST|&IMP|2|scan.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|24|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.125057844103508630169708964662350189348^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,28 @@
+1999-07-02 21:02:25.0103|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19990702210225|TBD|ORU^R01|2.25.212910101969758366561443558556152233030|P|2.7<R>
+PID|1||ABC451151^^^ABC^MR||MEYERS^NATALIE^CANDI^^^^D||19690613|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823221^MAXWELL^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084862|||||||||||||||||||||||||19990702210225|||||||V<R>
+ORC|RE|2737402^SYS|7795083402||Prelim||^^^19990702210224^19990702210225^O||19990702210225|T6530140^HARDY^JAY||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2737402^SYS|7795083402|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|19990629070753|||||Hosp Perf||||^^^HEART|D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19990702210225||NM|Prelim||^^^19990702210224^19990702210225^O||||^Chest pain||D7823225^PARK^JOLENE^R.^^^^^ABC^^^^HOSP|T6530140^HARDY^JAY||19990702210225||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM Study||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|5|ST|&IMP|2|1. Moderate hypoperfusion in the anterior and septal walls during||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|6|ST|&IMP|2|stress, stable from the previous study. 2. No significant resting||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|7|ST|&IMP|2|perfusion defects; overall left ventricular ejection fraction mildly||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|8|ST|&IMP|2|reduced at 55%. This nuclear medicine cardiac study reveals moderate||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|9|ST|&IMP|2|hypoperfusion in the anterior and septal walls during stress, with no||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|10|ST|&IMP|2|significant perfusion defect at rest. The ejection fraction is||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|11|ST|&IMP|2|calculated at 55%, indicating mildly impaired ventricular function.||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|12|ST|&IMP|2|No reversible ischemic changes are observed, and there is no evidence||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|13|ST|&IMP|2|of perfusion-gradient mismatch that would suggest myocardial||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|14|ST|&IMP|2|viability. Dynamic acquisition frames illustrate symmetrical high||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|15|ST|&IMP|2|uptake in the basal segments of the left ventricle but diminished||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|16|ST|&IMP|2|flow reserve under pharmacological stress testing. Compared to the||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|17|ST|&IMP|2|last assessment on 1999-06-29, these findings imply a stable pattern||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|18|ST|&IMP|2|of perfusion without acute ischemic events.||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|19|ST|&IMP|2|Dictated by: Jolene Park Interpreter, M.D.||||||Prelim|||||T6530140^HARDY^JAY<R>
+ZDS|2.25.159232482639109917252646426788188067484^EPIC^APPLICATION^DICOM<R>
+<EB>

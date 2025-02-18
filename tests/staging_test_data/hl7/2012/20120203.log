@@ -1,0 +1,24 @@
+2012-02-03 18:50:00.2019|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120203185000|TBD|ORU^R01|2.25.205130606111119008599735778552969023102|P|2.7<R>
+PID|1||ABC451158^^^ABC^MR||MATTHEWS^ANDRES^MATTHEW^M.D.^^^D||19260816|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084787|||||||||||||||||||||||||20120203185000|||||||V<R>
+ORC|RE|9853729^SYS|7795083429||Prelim||^^^20120203184959^20120203185000^O||20120203185000|T6530146^MOORE^CURTIS||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9853729^SYS|7795083429|IMG2370^MRI BRAIN W WO CONTRAST^UNKDEV^^BRAIN MRI|O|20120201174536|||||Hosp Perf||||^^^BRAIN|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20120203185000||MR|Prelim||^^^20120203184959^20120203185000^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20120203185000||||||||IMG2370^MRI BRAIN W WO CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|Findings consistent with normal aging changes and chronic small||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|vessel ischemic disease. Clinical correlation for cognitive||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|assessment is advised. This examination shows age-associated||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|parenchymal volume loss, particularly within the frontal and temporal||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|lobes, suggestive of generalized cerebral atrophy. There are several||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|subcortical white matter hyperintensities on T2/FLAIR sequences,||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|likely representing chronic small vessel ischemic changes. No acute||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|intracranial hemorrhage or mass effect is observed. Ventricular||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|enlargement is noted, with a slight predominance of the lateral||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|ventricles, correlating with the observed atrophy.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.41278037274604791725923416831715888276^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2008-12-12 18:57:04.1236|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20081212185704|TBD|ORU^R01|2.25.171213093687252277454656007323542120513|P|2.4<R>
+PID|1||ABC451178^^^ABC^MR~EPIC4485937^^^EPIC^MRN||CHOI^SU-BIN^^^^^D||19671008000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451178^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457269^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9797783^SYS|7795083512|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20081211143118|||PSCRIB|||||^^^^ |D7823218^LLOYD^JESSICA^ALEXANDRIA^M.D.^^^^ABC|||||8452^NM MPI SPECT|20081212185704||H|||1^^^20081212185704^^U^^URGENT|       |||^Chest pain|D7823221^MAXWELL^MICHAEL^R.^^^M.D.|D7823215^PORTER^JAMEL^J.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|2119476||MICHAEL MAXWELL, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|2119476||ACC#  Date Time  Exam~~7795083512 Dec 12 2008 06:57PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~The nuclear medicine cardiac study presents normal left ventricular~function with an ejection fraction measured at 60%. Myocardial~perfusion is homogeneous with no defects observed in either stress or~rest phases. There is no evidence of ischemia, indicating adequate~blood flow throughout the myocardium during both phases of the study.~~IMPRESSION:~The results from the nuclear medicine study are representative of a~well-functioning myocardium without ischemic pathologies, suggesting~a healthy cardiac condition.||||||F<R>
+OBX|3|TX|2119476||Requested By: Lloyd,Jessica A. M.D.~~Dictated By: Michael Maxwell, M.D. on Dec 12 2008 06:57PM~~This document has been electronically signed by: Michael Maxwell,~M.D. on Dec 12 2008 06:57PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2119476|4|7795083512^UK^ZB||||||F<R>
+<EB>

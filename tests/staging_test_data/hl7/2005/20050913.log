@@ -1,0 +1,25 @@
+2005-09-13 08:40:28.6679|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20050913084028|TBD|ORU^R01|2.25.196544772749974222298560523449795518424|P|2.7<R>
+PID|1||ABC451042^^^ABC^MR||HINES^JAMES^MATTHEW^^^^D||19860224|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085001|||||||||||||||||||||||||20050913084028|||||||V<R>
+ORC|RE|8094747^SYS|7795082967||Wet Read||^^^20050913084027^20050913084028^O||20050913084028|T6530146^MOORE^CURTIS||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8094747^SYS|7795082967|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20050909161957|||||Hosp Perf|||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20050913084028||US|Wet Read||^^^20050913084027^20050913084028^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20050913084028||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound of the abdomen||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|Overall, the ultrasound examination of the abdomen shows normal||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|anatomical structures and no significant pathological findings. The||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|assessment indicates a robust abdominal health without signs of||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|pathology as of September 9, 2005. The ultrasound demonstrates a||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|normal hepatic echotexture with no signs of focal lesions or||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|gallstones. The biliary tree is unremarkable with no evidence of||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|dilation. The pancreas appears normal in size and echogenicity||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|without any identifiable masses or cysts. The spleen is within normal||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|limits without splenomegaly. Kidneys reveal normal size and||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|echogenicity bilaterally. No hydronephrosis or renal calculi were||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|noted. No free fluid is present in the abdominal cavity.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.253976613369615821012828299463202055753^EPIC^APPLICATION^DICOM<R>
+<EB>

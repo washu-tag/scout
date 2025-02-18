@@ -1,0 +1,11 @@
+2002-05-30 12:58:19.0666|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020530125819|TBD|ORU^R01|2.25.25126575631098817140576867278476952259|P|2.4<R>
+PID|1||ABC451187^^^ABC^MR~EPIC4485946^^^EPIC^MRN||MACK^RYAN^DERRICK^^^^D||19800924000000|M||P|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451187^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457118^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2158449^SYS|7795083547|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20020528140134|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20020530125819||IMG|||1^^^20020530125819^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|3045284||KIMBERLY HANSON, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|3045284||ACC#  Date Time  Exam~~7795083547 May 30 2002 12:58PM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~An AP supine abdomen X-ray demonstrates a well-expanded gas pattern~in both the stomach and small bowel, with no evidence of bowel~obstruction. The liver, spleen, and renal outlines are easily~discernible, showing no focal lesions or distortions. The psoas~margins are sharp, indicating no retroperitoneal or intra-abdominal~free air. Gas is seen within the rectum, and there is no evidence of~masses or acute processes occurring within the visualized abdominal~contents. No unusual calcifications are present. The heart shadow and~diaphragm show normal morphology.~~IMPRESSION:~The abdominal X-ray demonstrates a normal gas pattern without signs~of obstruction or any acute abdominal pathology. No obvious~abnormalities were identified, supporting a diagnosis of stable~abdominal condition in comparison to previous studies.||||||P<R>
+OBX|3|TX|3045284||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Kimberly Hanson, M.D. on May 30 2002 12:58PM~~Pending review by: April Hunt, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|3045284|4|7795083547^UK^ZB||||||P<R>
+<EB>

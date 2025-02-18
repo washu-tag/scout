@@ -1,0 +1,11 @@
+1996-03-15 14:49:57.3167|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19960315144957|TBD|ORU^R01|2.25.143314614685933076535117405094858789919|P|2.4<R>
+PID|1||ABC451165^^^ABC^MR~EPIC4485924^^^EPIC^MRN||CRAIG^KAREN^JESSICA^^^^D||19200411000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451165^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457406^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6696633^SYS|7795083459|BHC77057^77057 77057 Screening Mamm Bilat^UNKDEV|URGENT||19960312184752|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||77057^Screening Mammogram Bilateral|19960315144957||BHC|||1^^^19960315144957^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||77057<R>
+OBX|1|TX|3491741||CURTIS HAWKINS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|3491741||ACC#  Date Time  Exam~~7795083459 Mar 15 1996 02:49PM BHC77057 77057 Screening Mamm Bilat~~EXAMINATION:~Four-view mammogram~~FINDINGS:~The mammogram demonstrates heterogeneously dense breast tissue, which~is consistent with the patient’s age. There are no masses or~architectural distortions identified in the right or left breast. No~calcifications are noted, and the skin and subcutaneous tissues~appear normal. Lymph nodes in the axillary regions are unremarkable.~Fibroglandular tissue patterns are observed, typical for a patient of~this demographic, and no suspicious findings warranting additional~imaging or biopsies are present.~~IMPRESSION:~The mammography results indicate no evidence of malignancy or other~notable abnormalities in the breast tissue. Routine annual screening~mammogram results are considered normal based on the current imaging~findings.||||||F<R>
+OBX|3|TX|3491741||Requested By: Wright,Jessica M. M.D.~~Dictated By: Curtis Hawkins, M.D. on Mar 15 1996 02:49PM~~This document has been electronically signed by: Curtis Hawkins, M.D.~on Mar 15 1996 02:49PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3491741|4|7795083459^UK^ZB||||||F<R>
+<EB>

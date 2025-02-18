@@ -1,0 +1,26 @@
+2002-02-14 11:10:30.1334|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020214111030|TBD|ORU^R01|2.25.202220226107211911681451164853422117378|P|2.7<R>
+PID|1||ABC451169^^^ABC^MR||WHITE^KRISTINA^ALICIA^^^^D||19770108|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823275^SMITH^STEPHANIE^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084691|||||||||||||||||||||||||20020214111030|||||||V<R>
+ORC|RE|1542002^SYS|7795083476||Prelim||^^^20020214111029^20020214111030^O||20020214111030|T6530205^ROMERO^ZACHARY||D7823289^CERVANTES^DEBORAH^H.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1542002^SYS|7795083476|IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED|O|20020213093455|||||Hosp Perf||||^^^BRAIN|D7823289^CERVANTES^DEBORAH^H.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20020214111030||MR|Prelim||^^^20020214111029^20020214111030^O||||^Chest pain||D7823281^HOUSTON^CARLOS^P.^^^^^ABC^^^^HOSP|T6530205^ROMERO^ZACHARY||20020214111030||||||||IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|5|ST|&IMP|2|The brain MRI is entirely normal with no abnormalities detected. The||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|6|ST|&IMP|2|imaging correlates well with the prior PET studies indicating a||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|7|ST|&IMP|2|consistent absence of intracranial disease. MRI conducted on||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|8|ST|&IMP|2|2002-02-13 reveals normal anatomy with no acute intracranial||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|9|ST|&IMP|2|pathology. The T1 and T2-weighted images show no lesions,||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|10|ST|&IMP|2|hemorrhages, or signs of demyelination. The ventricles are within||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|11|ST|&IMP|2|normal limits, and the cortical sulci and gyri demonstrate a typical||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|12|ST|&IMP|2|morphology for age. The diffusion-weighted imaging does not reveal||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|13|ST|&IMP|2|any areas of acute ischemia or restricted diffusion. The brain||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|14|ST|&IMP|2|parenchyma demonstrates normal signal characteristics throughout.||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|15|ST|&IMP|2|There are no parenchymal abnormalities or abnormal enhancement||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|16|ST|&IMP|2|following contrast administration.||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+OBX|17|ST|&IMP|2|Dictated by: Carlos Houston Interpreter, M.D.||||||Prelim|||||T6530205^ROMERO^ZACHARY<R>
+ZDS|2.25.179656516155770630755832294305119619392^EPIC^APPLICATION^DICOM<R>
+<EB>

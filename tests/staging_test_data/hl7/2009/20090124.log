@@ -1,0 +1,25 @@
+2009-01-24 08:27:17.1651|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090124082717|TBD|ORU^R01|2.25.116590565526177349225414516205784108220|P|2.7<R>
+PID|1||ABC451018^^^ABC^MR||SANCHEZ^LISA^SARAH^^^^D||19850515|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823220^HESS^BRANDI^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084725|||||||||||||||||||||||||20090124082717|||||||V<R>
+ORC|RE|5446608^SYS|7795082870||Wet Read||^^^20090124082716^20090124082717^O||20090124082717|T6530139^WHITE^NICHOLAS||D7823222^POWELL^CARRIE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5446608^SYS|7795082870|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20090122155100|||||Hosp Perf|||||D7823222^POWELL^CARRIE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20090124082717||XA|Wet Read||^^^20090124082716^20090124082717^O||||^Chest pain||D7823229^WADE^KERRI^L.^^^^^ABC^^^^HOSP|T6530139^WHITE^NICHOLAS||20090124082717||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|5|ST|&IMP|2|The angiography study indicates a normal vascular function with no||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|6|ST|&IMP|2|significant findings. There is no evidence of obstructive disease or||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|7|ST|&IMP|2|vascular anomalies at this time. X-ray angiography of the lower||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|8|ST|&IMP|2|extremities reveals patent arterial pathways with no evidence of||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|9|ST|&IMP|2|stenosis or occlusion observed in the femoral, popliteal, and tibial||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|10|ST|&IMP|2|arteries. The collateral circulation appears intact. There is some||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|11|ST|&IMP|2|calcification of the arterial walls noted, which is typical for age.||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|12|ST|&IMP|2|Venous structures do not show any thrombosis or varicosities at this||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|13|ST|&IMP|2|junction, indicating normal venous drainage patterns. Compared to the||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|14|ST|&IMP|2|previous imaging assessments conducted on 2006-03-26, there is no||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|15|ST|&IMP|2|evidence of vascular compromise or significant disease progression.||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+OBX|16|ST|&IMP|2|Dictated by: Kerri Wade Interpreter, M.D.||||||Wet Read|||||T6530139^WHITE^NICHOLAS<R>
+ZDS|2.25.124528441871724622797916908179896534205^EPIC^APPLICATION^DICOM<R>
+<EB>

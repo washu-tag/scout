@@ -1,0 +1,29 @@
+2023-06-29 14:32:07.3830|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230629143207|TBD|ORU^R01|2.25.208583461750563686358064482389076856118|P|2.7<R>
+PID|1||ABC451069^^^ABC^MR||GONZALEZ^MICHAEL^STEPHEN^^^^D||19961009|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084675|||||||||||||||||||||||||20230629143207|||||||V<R>
+ORC|RE|6560414^SYS|7795083073||Final||^^^20230629143206^20230629143207^O||20230629143207|T6530146^MOORE^CURTIS||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6560414^SYS|7795083073|IMG5017^PET/CT FDG WHOLE BODY^UNKDEV^^WHOLEBODY PETCT AC NAC|O|20230625200827|||||Hosp Perf||||^^^WHOLEBODY|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230629143207||CT|Final||^^^20230629143206^20230629143207^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20230629143207||||||||IMG5017^PET/CT FDG WHOLE BODY^UNKDEV^^WHOLEBODY PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Whole-body PET-CT||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|The results are concerning for a hypermetabolic pulmonary lesion||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|potentially indicative of malignancy, coupled with osseous metastatic||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|lesions in the spine. The enlarged mediastinal lymph nodes further||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|necessitate correlation with clinical history and possible biopsy for||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|definitive diagnosis. The whole-body PET-CT scan displays uptakes||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|consistent with physiological processes in the liver, spleen,||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|kidneys, and bladder. However, a hypermetabolic lesion is identified||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|in the left lung apex measuring approximately 3.2 cm with associated||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|narrowing of the bronchial lumen, indicating a concern for potential||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|malignancy. Additionally, there are multiple osseous lesions in the||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|thoracic and lumbar spine consistent with metastasis, with varying||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|degrees of radiotracer uptake. Lymph nodes in the mediastinum are||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|enlarged with a significant metabolic activity, raising the suspicion||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|for lymphoma or metastatic cancer. No evidence of acute fractures or||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|19|ST|&IMP|2|significant pulmonary parenchymal disease was observed.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|20|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.123305137740202622434242675386232053657^EPIC^APPLICATION^DICOM<R>
+<EB>

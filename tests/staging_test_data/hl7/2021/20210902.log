@@ -1,0 +1,27 @@
+2021-09-02 16:39:09.5568|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210902163909|TBD|ORU^R01|2.25.95856675791211468154808136305146369710|P|2.7<R>
+PID|1||ABC451014^^^ABC^MR||BOYD^CYNTHIA^JAMIE^^^^D||19980522|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085006|||||||||||||||||||||||||20210902163909|||||||V<R>
+ORC|RE|5810146^SYS|7795082854||Prelim||^^^20210902163908^20210902163909^O||20210902163909|T6530151^WATERS^JESSICA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5810146^SYS|7795082854|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20210829151406|||||Hosp Perf||||^^^BREAST|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210902163909||MG|Prelim||^^^20210902163908^20210902163909^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20210902163909||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|1. Dense breast tissue; stability compared to previous mammography||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|from 2020 with no new suspicious findings. 2. Benign fibroglandular||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|changes noted without evidence of malignant transformation. The||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|single-view mammogram demonstrates breast tissue density that is||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|classified as heterogeneously dense, which may obscure small masses.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|There are no suspicious masses, calcifications, or architectural||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|distortions noted in the evaluated breast tissue. Previous historical||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|follow-up exams from 2020 show a stable bilaterally symmetric denser||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|breast parenchyma with no new findings of malignancy. An area of||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|benign glandular tissue is noted in the upper outer quadrant,||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|consistent with prior exams. Overall, findings are consistent with||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|benign changes reflective of fibrocystic alterations without evidence||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|of malignancy.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|18|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.76277690335137609387289534304801115320^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2022-02-02 11:05:42.0371|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220202110542|TBD|ORU^R01|2.25.174776898286765923997843705487996414477|P|2.4<R>
+PID|1||ABC451032^^^ABC^MR~EPIC4485791^^^EPIC^MRN||FLETCHER^LAUREN^KRISTINA^^^^D||20001225000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451032^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457376^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5370847^SYS|7795082925|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20220129092157|||PSCRIB|||||^^^^ |D7823235^SANCHEZ^GUY^JEFFREY^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20220202110542||BHC|||1^^^20220202110542^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|7742874||JOSEPH BARAJAS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7742874||ACC#  Date Time  Exam~~7795082925 Feb 02 2022 11:05AM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view Mammogram~~FINDINGS:~Compared to the study dated 2021-08-25 (UID:~2.25.74993464682091467224891383734890445259), this mammogram shows~stable breast tissue densities with no new developments. The~previously observed heterogeneously dense architecture remains~unchanged. There are still no masses or suspicious calcifications,~reaffirming the absence of malignancy. The axillary regions continue~to show no signs of macroadenopathy or lymphatic involvement.~~IMPRESSION:~Stable findings on this single-view mammogram. The lack of changes~from the previous examination supports ongoing benign breast tissue~characteristics.||||||F<R>
+OBX|3|TX|7742874||Requested By: Sanchez,Guy J. M.D.~~Dictated By: Joseph Barajas, M.D. on Feb 02 2022 11:05AM~~This document has been electronically signed by: Joseph Barajas, M.D.~on Feb 02 2022 11:05AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7742874|4|7795082925^UK^ZB||||||F<R>
+<EB>

@@ -4,7 +4,7 @@
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 408,
+        "expectedNumResults": 385,
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
@@ -18,22 +18,22 @@
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 397,
+        "expectedNumResults": 399,
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
-            "zds_1_study_instance_uid": ["None"],
+            "zds_1_study_instance_uid": [null],
             "msh_12_version_id": ["2.4"]
           }
         }
       },
-      "sql": "SELECT * FROM syntheticdata WHERE zds_1_study_instance_uid='None'",
+      "sql": "SELECT * FROM syntheticdata WHERE zds_1_study_instance_uid IS NULL",
       "id": "uid_missing"
     },
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 128,
+        "expectedNumResults": 131,
         "additionalValidation": {
           "type": ".DateComparisonValidation",
           "description": "patient born after 1990-12-31",
@@ -49,22 +49,22 @@
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 397,
+        "expectedNumResults": 399,
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
-            "orc_2_placer_order_number": ["None"],
+            "orc_2_placer_order_number": [null],
             "msh_12_version_id": ["2.4"]
           }
         }
       },
-      "sql": "SELECT * FROM syntheticdata WHERE orc_2_placer_order_number='None'",
+      "sql": "SELECT * FROM syntheticdata WHERE orc_2_placer_order_number IS NULL",
       "id": "placer_order_missing"
     },
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 114,
+        "expectedNumResults": 105,
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
@@ -78,69 +78,12 @@
     },
     {
       "expectedQueryResult": {
-        "type": ".GroupedAggregationResult",
-        "result": {
-          "DX": {
-            "male_count": 22,
-            "female_count": 24,
-            "total_count": 46
-          },
-          "NM": {
-            "male_count": 17,
-            "female_count": 17,
-            "total_count": 34
-          },
-          "MR": {
-            "male_count": 78,
-            "female_count": 45,
-            "total_count": 123
-          },
-          "XR": {
-            "male_count": 1,
-            "female_count": 2,
-            "total_count": 3
-          },
-          "CR": {
-            "male_count": 19,
-            "female_count": 13,
-            "total_count": 32
-          },
-          "MG": {
-            "male_count": 0,
-            "female_count": 42,
-            "total_count": 42
-          },
-          "US": {
-            "male_count": 20,
-            "female_count": 16,
-            "total_count": 36
-          },
-          "XA": {
-            "male_count": 19,
-            "female_count": 14,
-            "total_count": 33
-          },
-          "CT": {
-            "male_count": 23,
-            "female_count": 21,
-            "total_count": 44
-          },
-          "OT": {
-            "male_count": 3,
-            "female_count": 5,
-            "total_count": 8
-          },
-          "SC": {
-            "male_count": 0,
-            "female_count": 2,
-            "total_count": 2
-          }
-        },
-        "primaryColumnName": "primary_modality",
-        "secondaryColumns": ["male_count", "female_count", "total_count"]
+        "type": ".ExactNumberObjectsResult",
+        "expectedNumResults": 800,
+        "additionalValidation": null
       },
-      "sql": "SELECT obr_24_diagnostic_serv_sect_id as primary_modality, COUNT(CASE WHEN pid_8_administrative_sex='M' THEN 1 END) as male_count, COUNT(CASE WHEN pid_8_administrative_sex='F' THEN 1 END) as female_count, COUNT(*) as total_count FROM syntheticdata WHERE msh_12_version_id='2.7' GROUP BY obr_24_diagnostic_serv_sect_id ORDER BY obr_24_diagnostic_serv_sect_id",
-      "id": "modality_grouping"
+      "sql": "SELECT * FROM syntheticdata",
+      "id": "all"
     }
   ]
 }

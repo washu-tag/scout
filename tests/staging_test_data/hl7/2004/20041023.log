@@ -1,0 +1,25 @@
+2004-10-23 23:25:13.1040|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20041023232513|TBD|ORU^R01|2.25.19122249259604417552286642033782269424|P|2.7<R>
+PID|1||ABC451073^^^ABC^MR||LOPEZ^JOSHUA^TRAVIS^^^^D||19320202|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084713|||||||||||||||||||||||||20041023232513|||||||V<R>
+ORC|RE|31529^SYS|7795083093||Wet Read||^^^20041023232512^20041023232513^O||20041023232513|T6530147^ANDERSON^NATALIE||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|31529^SYS|7795083093|EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY|O|20041023203724|||||Hosp Perf||||^^^TSPINE|D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20041023232513||DX|Wet Read||^^^20041023232512^20041023232513^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20041023232513||||||||EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Thoracic Spine X-ray||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|Degenerative changes are consistent with the patient's age and||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|clinical history. No acute bony lesions or fractures are observed.||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|Recommendations for conservative management and possible physical||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|therapy are advised to address symptomatic relief of spine-related||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|discomfort. AP and lateral views of the thoracic spine demonstrate||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|significant degenerative changes, including anterior vertebral body||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|osteophytes and disc space narrowing at the T7-T8 and T8-T9 levels.||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|No acute fracture or dislocation is evident. The curvature of the||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|thoracic spine is within normal limits, with no signs of scoliosis or||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|kyphosis. Mottled changes consistent with age-related osteopenia are||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|noted in the bone density.||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.310970809992144501914763634217554815651^EPIC^APPLICATION^DICOM<R>
+<EB>

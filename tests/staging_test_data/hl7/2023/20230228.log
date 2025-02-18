@@ -1,0 +1,28 @@
+2023-02-28 18:41:17.0123|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230228184117|TBD|ORU^R01|2.25.93120174398981530895404833805863801069|P|2.7<R>
+PID|1||ABC451081^^^ABC^MR||COLEMAN^STEPHANIE^SHANNON^^^^D||19951215|F||OTHER|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084718|||||||||||||||||||||||||20230228184117|||||||V<R>
+ORC|RE|4492665^SYS|7795083124||Prelim||^^^20230228184116^20230228184117^O||20230228184117|T6530146^MOORE^CURTIS||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4492665^SYS|7795083124|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20230224174939|||||Hosp Perf|||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230228184117||US|Prelim||^^^20230228184116^20230228184117^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20230228184117||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|The differential findings are consistent with normal abdominal||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|anatomy, with the exception of a benign ovarian cyst that is likely a||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|physiological finding. No surgical intervention is warranted, and||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|routine follow-up may be considered. Overall, the ultrasound does not||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|indicate any acute abdominal abnormalities. The ultrasound||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|examination of the abdomen demonstrates normal hepatic morphology,||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|with the liver measuring within normal limits and exhibiting||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|homogenous echotexture. The gallbladder is well visualized and free||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|of calculus, while the biliary ducts are unobstructed. The kidneys||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|show normal size and echogenicity, with no hydronephrosis or calculi||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|evident. Additionally, there is a small functional cyst in the right||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|ovary measuring approximately 2.0 cm, which appears benign. No free||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|fluid in the abdominal cavity was identified, nor were any abnormal||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|masses seen.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|19|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.144170884621876022781902908535745145704^EPIC^APPLICATION^DICOM<R>
+<EB>

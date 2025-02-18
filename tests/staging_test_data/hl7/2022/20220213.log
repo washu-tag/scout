@@ -1,0 +1,11 @@
+2022-02-13 12:42:51.8368|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220213124251|TBD|ORU^R01|2.25.244799652841080227624740909018033115073|P|2.4<R>
+PID|1||ABC451080^^^ABC^MR~EPIC4485839^^^EPIC^MRN||ΜΙΧΌΠΟΥΛΟΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19621029000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451080^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457130^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1845828^SYS|7795083118|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20220209102017|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20220213124251||BHC|||1^^^20220213124251^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|6851266||CURTIS HAWKINS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|6851266||ACC#  Date Time  Exam~~7795083118 Feb 13 2022 12:42PM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~Upon evaluation of the 2022-02-09 mammogram in relation to the~previous examination dated 2019-09-17 (UID:~2.25.235325051082180130239006363727452721195), there is noted~resolution of the focal asymmetry observed previously. The breast~tissue appears once again predominantly homogenous with predominantly~dense glandular tissue. No masses, calcifications, or asymmetries are~seen on this study. The overall breast architecture appears normal,~and there are no suspicious regions that warrant any concern. Skin~and soft tissue layers show no abnormalities.Dynamic assessment~points toward regression of the previously noted area. The study is~classified as BI-RADS category 1 (negative).~~IMPRESSION:~This imaging study indicates a stable and unremarkable breast~condition, with no evidence of malignancy. Continuation of routine~screening as per guidelines is recommended.||||||P<R>
+OBX|3|TX|6851266||Requested By: Medrano,Joe J. M.D.~~Dictated By: Curtis Hawkins, M.D. on Feb 13 2022 12:42PM~~Pending review by: Amber Reese, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|6851266|4|7795083118^UK^ZB||||||P<R>
+<EB>

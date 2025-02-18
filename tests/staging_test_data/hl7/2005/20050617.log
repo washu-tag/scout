@@ -1,0 +1,24 @@
+2005-06-17 20:07:51.0572|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20050617200751|TBD|ORU^R01|2.25.131941492168246098158088955294450273993|P|2.7<R>
+PID|1||ABC451178^^^ABC^MR||CHOI^SU-BIN^^^^^D||19671008|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084832|||||||||||||||||||||||||20050617200751|||||||V<R>
+ORC|RE|2416397^SYS|7795083513||Prelim||^^^20050617200750^20050617200751^O||20050617200751|T6530140^HARDY^JAY||D7823229^WADE^KERRI^L.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2416397^SYS|7795083513|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20050615084012|||||Hosp Perf|||||D7823229^WADE^KERRI^L.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20050617200751||XA|Prelim||^^^20050617200750^20050617200751^O||||^Chest pain||D7823216^HALL^JEREMY^G.^^^^^ABC^^^^HOSP|T6530140^HARDY^JAY||20050617200751||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|5|ST|&IMP|2|The angiographic study reveals patent vascular supply to the||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|6|ST|&IMP|2|posterior circulation with no intervening abnormalities, suggesting||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|7|ST|&IMP|2|effective collateral circulation compensating for previously noted||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|8|ST|&IMP|2|occlusive disease. Digital subtraction angiography of the cerebral||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|9|ST|&IMP|2|vasculature displays normal arterial anatomy with no evidence of||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|10|ST|&IMP|2|aneurysm or vascular malformations. Both internal carotid arteries||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|11|ST|&IMP|2|and vertebral arteries are patent without significant stenosis.||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|12|ST|&IMP|2|Recanalization of previously occluded segments is noted in the right||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|13|ST|&IMP|2|posterior cerebral artery with good collateral circulation seen. No||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|14|ST|&IMP|2|acute ischemic changes are demonstrated on associated imaging.||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|15|ST|&IMP|2|Dictated by: Jeremy Hall Interpreter, M.D.||||||Prelim|||||T6530140^HARDY^JAY<R>
+ZDS|2.25.225736112182223072943783604921843530474^EPIC^APPLICATION^DICOM<R>
+<EB>

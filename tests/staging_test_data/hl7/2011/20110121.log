@@ -1,0 +1,11 @@
+2011-01-21 07:23:08.2107|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110121072308|TBD|ORU^R01|2.25.147688986242324076675519044724715889816|P|2.4<R>
+PID|1||ABC451078^^^ABC^MR~EPIC4485837^^^EPIC^MRN||KELLY^JODI^DAWN^^^^D||19801121000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451078^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457120^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6326790^SYS|7795083109|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20110120140859|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||^Xr Sing View|20110121072308||MDXREVNT|||1^^^20110121072308^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB<R>
+OBX|1|TX|2757050||JOE MEDRANO, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|2757050||ACC#  Date Time  Exam~~7795083109 Jan 21 2011 07:23AM MDXREVNT Radiology Event~~EXAMINATION:~X-ray of the extremities~~FINDINGS:~The X-ray examination reveals no acute fractures, dislocations, or~significant degenerative changes in the visualized bony structures.~Joint spaces appear normal, and soft tissues are unremarkable with no~effusions or significant edema noted. Exposure and positioning are~adequate, allowing for a comprehensive evaluation of the right and~left extremities.~~IMPRESSION:~Normal X-ray findings; no pathology detected. Suggest continued~clinical monitoring as needed.||||||F<R>
+OBX|3|TX|2757050||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Joe Medrano, M.D. on Jan 21 2011 07:23AM~~This document has been electronically signed by: Joe Medrano, M.D. on~Jan 21 2011 07:23AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2757050|4|7795083109^UK^ZB||||||F<R>
+<EB>

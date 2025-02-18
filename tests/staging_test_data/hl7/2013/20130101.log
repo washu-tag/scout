@@ -1,0 +1,32 @@
+2013-01-01 09:39:14.7596|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130101093914|TBD|ORU^R01|2.25.149625721537853357782606235471016649146|P|2.7<R>
+PID|1||ABC451119^^^ABC^MR||ΞΕΝΆΚΗΣ^ΖΩΉ^^^^^D||19241002|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823228^MYERS^BRENT^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084842|||||||||||||||||||||||||20130101093914|||||||V<R>
+ORC|RE|6635815^SYS|7795083275||Wet Read||^^^20130101093913^20130101093914^O||20130101093914|T6530142^LOPEZ^JOHN||D7823224^MORGAN^JOHN^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6635815^SYS|7795083275|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20121230065646|||||Hosp Perf||||^^^HEART|D7823224^MORGAN^JOHN^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20130101093914||NM|Wet Read||^^^20130101093913^20130101093914^O||||^Chest pain||D7823215^PORTER^JAMEL^J.^^^^^ABC^^^^HOSP|T6530142^LOPEZ^JOHN||20130101093914||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM Study||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|5|ST|&IMP|2|The cardiac nuclear medicine evaluation illustrates preserved left||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|6|ST|&IMP|2|ventricular function and normal myocardial perfusion at rest and||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|7|ST|&IMP|2|during pharmacologic stress. No ischemic changes are evident,||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|8|ST|&IMP|2|contributing to a reassuring cardiac profile, especially in the||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|9|ST|&IMP|2|context of the patient's vascular history noted in previous||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|10|ST|&IMP|2|angiographic assessments. Continuous monitoring and routine||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|11|ST|&IMP|2|cardiovascular risk management are recommended given her age. Cardiac||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|12|ST|&IMP|2|nuclear medicine study reveals normal left ventricular size and||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|13|ST|&IMP|2|function with an ejection fraction calculated at 60%. Myocardial||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|14|ST|&IMP|2|perfusion imaging demonstrates homogeneous tracer distribution||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|15|ST|&IMP|2|throughout the myocardium under rest conditions, suggesting no||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|16|ST|&IMP|2|significant ischemia or infarction. The stress study, conducted via||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|17|ST|&IMP|2|pharmacological means, shows comparable perfusion patterns with no||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|18|ST|&IMP|2|new areas of reduced uptake, indicating no inducible ischemia.||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|19|ST|&IMP|2|Compared to the previous X-ray angiography study (2011-11-21), there||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|20|ST|&IMP|2|is no evidence of new or worsening myocardial perfusion defects.||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|21|ST|&IMP|2|Overall, the septal and lateral wall regions were visualized well,||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|22|ST|&IMP|2|with no perfusion anomalies or wall motion abnormalities noted.||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+OBX|23|ST|&IMP|2|Dictated by: Jamel Porter Interpreter, M.D.||||||Wet Read|||||T6530142^LOPEZ^JOHN<R>
+ZDS|2.25.129226496206865251761459414808057018201^EPIC^APPLICATION^DICOM<R>
+<EB>

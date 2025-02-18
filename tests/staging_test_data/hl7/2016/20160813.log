@@ -1,0 +1,23 @@
+2016-08-13 18:54:11.6632|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20160813185411|TBD|ORU^R01|2.25.328865740504491447894208280770573351232|P|2.7<R>
+PID|1||ABC451035^^^ABC^MR||BURNS^GILBERT^ADAM^^^^D||19430321|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823224^MORGAN^JOHN^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084987|||||||||||||||||||||||||20160813185411|||||||V<R>
+ORC|RE|299789^SYS|7795082938||Final||^^^20160813185410^20160813185411^O||20160813185411|T6530136^RIOS^KRISTIN||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|299789^SYS|7795082938|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20160811184836|||||Hosp Perf|||||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20160813185411||XA|Final||^^^20160813185410^20160813185411^O||||^Chest pain||D7823223^HARPER^MARIA^K.^^^^^ABC^^^^HOSP|T6530136^RIOS^KRISTIN||20160813185411||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray Angiography Study||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|5|ST|&IMP|2|X-ray angiography demonstrates normal vascular anatomy with no||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|6|ST|&IMP|2|obstructive disease. Recommend continued monitoring based on further||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|7|ST|&IMP|2|clinical findings. X-ray angiography reveals patent vascular||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|8|ST|&IMP|2|structures with no significant stenosis or occlusion evident within||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|9|ST|&IMP|2|the major abdominal vascular supply. The celiac trunk, SMA, and renal||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|10|ST|&IMP|2|arteries exhibit normal opacification. Notably, there is no evidence||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|11|ST|&IMP|2|of an abdominal aortic aneurysm. The branches of the vascular supply||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|12|ST|&IMP|2|showcase expected morphology without signs of atherosclerotic||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|13|ST|&IMP|2|disease.||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|14|ST|&IMP|2|Dictated by: Maria Harper Interpreter, M.D.||||||Final|||||T6530136^RIOS^KRISTIN<R>
+ZDS|2.25.736458386965884569364845938612675040^EPIC^APPLICATION^DICOM<R>
+<EB>

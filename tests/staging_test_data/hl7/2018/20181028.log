@@ -1,0 +1,11 @@
+2018-10-28 23:01:30.8798|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20181028230130|TBD|ORU^R01|2.25.93079551192090456641771826534034432304|P|2.4<R>
+PID|1||ABC451113^^^ABC^MR~EPIC4485872^^^EPIC^MRN||ΖΕΡΒΆΝΟΣ^ΊΩΆΝΝΗΣ^^^^^D||19330928000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451113^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457400^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6907157^SYS|7795083253|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20181024143306|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||^Xr Sing View|20181028230130||MDXREVNT|||1^^^20181028230130^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB<R>
+OBX|1|TX|9989617||KIMBERLY HANSON, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|9989617||ACC#  Date Time  Exam~~7795083253 Oct 28 2018 11:01PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray of the chest~~FINDINGS:~The single-view X-ray taken on 2018-10-24 shows clear bilateral lung~fields with normal vascularity. The cardiac size remains~unremarkable, and no acute bony abnormalities are appreciated. The~diaphragms maintain normal position and contour. There are no signs~of interstitial edema, pleural effusions, or pneumothorax evident.~Compared to the previous study from 2000-03-04, there are no~significant changes in thoracic structures. Overall, findings remain~stable with no acute abnormalities.~~IMPRESSION:~Stable appearance of the chest radiographs when compared with the~study from 2000-03-04. No acute abnormalities detected. Routine~follow-up at the clinician's discretion recommended.||||||F<R>
+OBX|3|TX|9989617||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Kimberly Hanson, M.D. on Oct 28 2018 11:01PM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on Oct 28 2018 11:01PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9989617|4|7795083253^UK^ZB||||||F<R>
+<EB>

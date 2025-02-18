@@ -1,0 +1,26 @@
+2014-09-14 06:10:33.2032|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140914061033|TBD|ORU^R01|2.25.152072630611427982289123677840429223704|P|2.7<R>
+PID|1||ABC451023^^^ABC^MR||LAWSON^TONYA^EMILY^^^^D||19881007|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084833|||||||||||||||||||||||||20140914061033|||||||V<R>
+ORC|RE|2750889^SYS|7795082889||Wet Read||^^^20140914061032^20140914061033^O||20140914061033|T6530150^NEAL^EMILY||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2750889^SYS|7795082889|IMG2370^MRI BRAIN W WO CONTRAST^UNKDEV^^BRAIN MRI|O|20140911143529|||||Hosp Perf||||^^^BRAIN|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20140914061033||MR|Wet Read||^^^20140914061032^20140914061033^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20140914061033||||||||IMG2370^MRI BRAIN W WO CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|The MRI findings correlate with the prior study; stable brain||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|morphology without new developments noted, reassuring for the absence||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|of significant progression in underlying pathology. This follow-up||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|MRI dated September 11, 2014, shows no significant changes compared||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|to the previous examination from January 10, 2007. The previously||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|noted bilateral periventricular hyperintensities remain unchanged in||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|size and distribution, indicative of stable microvascular disease.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|The cerebral hemispheres exhibit a normal configuration, and there||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|are no focal lesions or evidence of new ischemic events. Venous||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|structures remain intact, with no signs of thrombosis or||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|malformations noted. The brainstem and cerebellum are symmetric and||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|unremarkable.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.116923149776845308512631102759592613275^EPIC^APPLICATION^DICOM<R>
+<EB>

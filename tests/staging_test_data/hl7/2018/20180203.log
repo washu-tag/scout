@@ -1,0 +1,28 @@
+2018-02-03 12:55:59.3826|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180203125559|TBD|ORU^R01|2.25.50771339084922047663539639562445227125|P|2.7<R>
+PID|1||ABC451094^^^ABC^MR||LESTER^WILLIAM^GEOFFREY^^^^D||19340330|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084698|||||||||||||||||||||||||20180203125559|||||||V<R>
+ORC|RE|9964224^SYS|7795083177||Wet Read||^^^20180203125558^20180203125559^O||20180203125559|T6530148^GROSS^CARLY||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9964224^SYS|7795083177|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20180203064026|||||Hosp Perf||||^^^BRAIN|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20180203125559||MR|Wet Read||^^^20180203125558^20180203125559^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20180203125559||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|MRI of the brain evidences age-related atrophy and microvascular||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|changes without acute pathology. The findings are consistent with||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|expected changes for the patient’s age of 84 years. Longitudinal||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|monitoring is suggested given the chronic changes observed. The||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|cerebral MRI demonstrates a volume-averaged study with no acute||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|ischemic changes visualized. However, there is evidence of||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|age-related atrophy, particularly notable in the frontal and temporal||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|lobes. Axial images show several small periventricular white matter||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|hyperintensities consistent with chronic microvascular ischemic||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|changes, typically associated with aging. The ventricles are mildly||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|enlarged, but symmetry is maintained. No mass effect, hemorrhage, or||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|significant midline shift is identified. The brainstem and cerebellum||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|appear unremarkable, and the major vascular structures are patent||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|with no stenosis detected.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.88492871342908450027855036550146608233^EPIC^APPLICATION^DICOM<R>
+<EB>

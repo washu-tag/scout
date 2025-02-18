@@ -1,0 +1,25 @@
+2021-02-14 11:29:45.8868|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210214112945|TBD|ORU^R01|2.25.317637245896065681563429023712954881551|P|2.7<R>
+PID|1||ABC451009^^^ABC^MR||WILLIAMS^JAMES^RAUL^^^^D||20001116|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084897|||||||||||||||||||||||||20210214112945|||||||V<R>
+ORC|RE|8527415^SYS|7795082833||Final||^^^20210214112944^20210214112945^O||20210214112945|T6530153^MORAN^JOSHUA||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8527415^SYS|7795082833|BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY|O|20210210205350|||||Hosp Perf||||^^^CSPINE|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210214112945||DX|Final||^^^20210214112944^20210214112945^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||20210214112945||||||||BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cervical Spine X-ray||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|The cervical spine examination is normal, with no acute changes or||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|degenerative changes noted at this time. This study compares well to||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|previous studies, showing stability with respect to prior anatomy and||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|alignment. The cervical spine X-ray shows normal alignment of||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|cervical vertebrae with no evidence of subluxation. The disc spaces||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|are well maintained with no signs of degenerative changes. The||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|vertebral bodies appear normal in height and configuration. There is||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|no evidence of acute fracture, bone lesion, or significant soft||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|tissue abnormality surrounding the cervical spine. The prevertebral||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|soft tissues are unremarkable, and the neural foramina are patent||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|15|ST|&IMP|2|without signs of foraminal stenosis.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|16|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.260968119814392684177525745960912270941^EPIC^APPLICATION^DICOM<R>
+<EB>

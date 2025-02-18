@@ -1,0 +1,11 @@
+2000-07-20 04:02:25.3015|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000720040225|TBD|ORU^R01|2.25.330990763067977036434913402341571101986|P|2.4<R>
+PID|1||ABC451029^^^ABC^MR~EPIC4485788^^^EPIC^MRN||ΜΙΧΌΠΟΥΛΟΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19810423000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451029^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457388^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3115858^SYS|7795082914|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||20000718103639|||PSCRIB|||||^^^^ |D7823231^SMITH^CLARA^TAMIKA^M.D.^^^^ABC|||||2361^Brain MRI|20000720040225||IMG|||1^^^20000720040225^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|9226694||GUY SANCHEZ, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|9226694||ACC#  Date Time  Exam~~7795082914 Jul 20 2000 04:02AM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~Imaging reveals a symmetric cerebral hemispheric structure with~normal gray-white matter differentiation. No focal lesions or areas~of restricted diffusion are identified. The ventricular system is~within normal limits, with no evidence of midline shift or~significant mass effect. Sulci are appropriately developed for the~patient’s age, and no abnormal signal intensities are noted in the~brainstem or cerebellum. The orbits and posterior fossa are~unremarkable.~~IMPRESSION:~No evidence of acute intracranial pathology. Normal brain MRI~findings with no significant abnormalities detected.||||||F<R>
+OBX|3|TX|9226694||Requested By: Smith,Clara T. M.D.~~Dictated By: Guy Sanchez, M.D. on Jul 20 2000 04:02AM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Jul 20 2000 04:02AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9226694|4|7795082914^UK^ZB||||||F<R>
+<EB>

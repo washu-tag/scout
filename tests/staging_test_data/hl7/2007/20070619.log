@@ -1,0 +1,25 @@
+2007-06-19 16:56:23.9092|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20070619165623|TBD|ORU^R01|2.25.322285419234976627381322151049564473078|P|2.7<R>
+PID|1||ABC451079^^^ABC^MR||COLEMAN^KATE^MARY^^^^D||19261102|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084702|||||||||||||||||||||||||20070619165623|||||||V<R>
+ORC|RE|4592439^SYS|7795083113||Final||^^^20070619165622^20070619165623^O||20070619165623|T6530148^GROSS^CARLY||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4592439^SYS|7795083113|BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL|O|20070615132336|||||Hosp Perf||||^^^BREAST|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20070619165623||MG|Final||^^^20070619165622^20070619165623^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20070619165623||||||||BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Four-view mammogram||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|1. No evidence of malignancy; overall, stable findings compared to||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|the prior mammogram dated 1995-05-17. 2. Benign calcifications noted;||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|recommend continued routine surveillance. 3. Dense breast tissue may||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|limit mammographic sensitivity. The four-view mammogram exhibits||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|normal breast architecture without significant abnormalities. The||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|breast tissue remains dense but stable compared to the previous||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|single-view mammogram dated 1995-05-17. No suspicious masses or||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|calcifications are present, and the axillary lymph nodes appear||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|normal. The skin and nipple morphology are unremarkable. There are||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|subtle benign calcifications which are distinguished from malignant||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|patterns; stability from prior imaging is observed.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Final|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.164683664749281656602083106217243404376^EPIC^APPLICATION^DICOM<R>
+<EB>

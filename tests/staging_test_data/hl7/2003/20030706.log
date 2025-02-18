@@ -1,0 +1,11 @@
+2003-07-06 07:56:01.0479|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20030706075601|TBD|ORU^R01|2.25.238873690631853825509462094450226595687|P|2.4<R>
+PID|1||ABC451088^^^ABC^MR~EPIC4485847^^^EPIC^MRN||PACHECO^CAROLINA^THERESA^^^^D||19541127000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451088^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457247^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2384458^SYS|7795083151|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20030704092330|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||8452^NM MPI SPECT|20030706075601||H|||1^^^20030706075601^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|5241108||JOSEPH BARAJAS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|5241108||ACC#  Date Time  Exam~~7795083151 Jul 06 2003 07:56AM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study.~~FINDINGS:~The nuclear medicine study demonstrates preserved left ventricular~function with an ejection fraction of 60%. Stress testing shows no~evidence of inducible ischemia in the perfusion images obtained. The~right coronary artery territory appears well-perfused with~homogeneous tracer uptake; however, the left anterior descending~artery displays a slight reduction in uptake that may suggest early~ischemic changes. The lungs are clear, and no significant~extracardiac activity is noted. The heart size remains within normal~limits.~~IMPRESSION:~Overall, the cardiac NM study suggests excellent ventricular function~and lack of reversible ischemia, although the noted uptake reduction~in the left anterior descending region merits further clinical~assessment. Consider follow-up stress testing or coronary CTA if~clinically indicated.||||||P<R>
+OBX|3|TX|5241108||Requested By: Hunt,April M. M.D.~~Dictated By: Joseph Barajas, M.D. on Jul 06 2003 07:56AM~~Pending review by: Guy Sanchez, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5241108|4|7795083151^UK^ZB||||||P<R>
+<EB>

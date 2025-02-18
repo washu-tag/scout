@@ -1,0 +1,27 @@
+1997-10-04 22:24:23.4165|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19971004222423|TBD|ORU^R01|2.25.196471019982093562210147279466118579343|P|2.7<R>
+PID|1||ABC451173^^^ABC^MR||HOLLAND^CHRISTOPHER^JOSHUA^^^^D||19661207|M||PCFIS|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084782|||||||||||||||||||||||||19971004222423|||||||V<R>
+ORC|RE|8854408^SYS|7795083489||Wet Read||^^^19971004222422^19971004222423^O||19971004222423|||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8854408^SYS|7795083489|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|19971002094038|||||Hosp Perf|||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19971004222423||CR|Wet Read||^^^19971004222422^19971004222423^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|||19971004222423||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest.||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|The chest X-ray shows no significant abnormalities, indicative of a||||||Wet Read<R>
+OBX|6|ST|&IMP|2|normal thoracic examination. No acute cardiopulmonary pathology||||||Wet Read<R>
+OBX|7|ST|&IMP|2|detected. The single-view chest X-ray demonstrates clear lung fields||||||Wet Read<R>
+OBX|8|ST|&IMP|2|bilaterally, with no evidence of acute pulmonary process. The heart||||||Wet Read<R>
+OBX|9|ST|&IMP|2|size is within normal limits, and the mediastinal contours appear||||||Wet Read<R>
+OBX|10|ST|&IMP|2|unremarkable. The diaphragm is well-positioned, and costophrenic||||||Wet Read<R>
+OBX|11|ST|&IMP|2|angles are sharp. There are no signs of effusion or pneumothorax||||||Wet Read<R>
+OBX|12|ST|&IMP|2|noted in the visualized portion of the thorax. Basic skeletal||||||Wet Read<R>
+OBX|13|ST|&IMP|2|structures appear intact with no visible fractures or abnormal bony||||||Wet Read<R>
+OBX|14|ST|&IMP|2|lesions. The visualized thoracic spine shows normal alignment and||||||Wet Read<R>
+OBX|15|ST|&IMP|2|age-appropriate degenerative changes, without significant concavity||||||Wet Read<R>
+OBX|16|ST|&IMP|2|or compressive deformation. No calcifications are identified within||||||Wet Read<R>
+OBX|17|ST|&IMP|2|the visible soft tissues surrounding the thoracic cavity.||||||Wet Read<R>
+OBX|18|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.338106621867242156446175349068895601473^EPIC^APPLICATION^DICOM<R>
+<EB>

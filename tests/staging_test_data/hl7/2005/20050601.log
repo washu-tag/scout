@@ -1,0 +1,11 @@
+2005-06-01 14:17:54.1899|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20050601141754|TBD|ORU^R01|2.25.88917394841820236492609226879041771629|P|2.4<R>
+PID|1||ABC451082^^^ABC^MR~EPIC4485841^^^EPIC^MRN||FIELDS^SARA^LISA^^^^D||19511218000000|F||P|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451082^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457182^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4828570^SYS|7795083126|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||20050529072626|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||2361^Brain MRI|20050601141754||IMG|||1^^^20050601141754^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|4632988||AMBER REESE, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|4632988||ACC#  Date Time  Exam~~7795083126 Jun 01 2005 02:17PM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~MRI of the brain~~FINDINGS:~MRI of the brain reveals an unremarkable examination. No acute~infarcts, hemorrhages, or mass lesions were identified. The~ventricles are symmetrical without evidence of hydrocephalus. The~cortical and subcortical structures appear normal, with no signs of~atrophy or abnormal signal intensities. The brainstem and cerebellum~are within normal limits. There are no enhancing lesions, suggesting~no active demyelinating disease or neoplasm. This is consistent with~the previous MRI performed on 2002-01-23, where normal neuroanatomy~was also documented.~~IMPRESSION:~The brain MRI findings are consistent with no acute intracranial~pathology. Stable prior imaging findings, with a normal brain~structure and no notable changes in the last 3 years.||||||F<R>
+OBX|3|TX|4632988||Requested By: Donovan,William C. M.D.~~Dictated By: Amber Reese, M.D. on Jun 01 2005 02:17PM~~This document has been electronically signed by: Amber Reese, M.D. on~Jun 01 2005 02:17PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4632988|4|7795083126^UK^ZB||||||F<R>
+<EB>

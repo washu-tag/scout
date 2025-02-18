@@ -1,0 +1,24 @@
+2007-10-19 05:04:54.8359|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20071019050454|TBD|ORU^R01|2.25.6009192600217779475753788820073783151|P|2.7<R>
+PID|1||ABC451098^^^ABC^MR||SANCHEZ^SHANE^SAUL^^^^D||19760531|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084769|||||||||||||||||||||||||20071019050454|||||||V<R>
+ORC|RE|4352837^SYS|7795083191||Prelim||^^^20071019050453^20071019050454^O||20071019050454|T6530151^WATERS^JESSICA||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4352837^SYS|7795083191|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20071015155946|||||Hosp Perf||||^^^ABDOMEN|D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20071019050454||CR|Prelim||^^^20071019050453^20071019050454^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20071019050454||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|No acute intrabdominal pathology identified. Normal bowel gas pattern||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|without signs of obstruction. The X-ray examination reveals an||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|overall normal abdominal architecture. The bowel gas pattern is||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|appropriate for the patient's age, with moderate air distribution||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|throughout the small and large bowel. No signs of acute obstruction||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|or free air under the diaphragm were observed. The liver outlines and||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|renal silhouettes are well-defined and unremarkable. There are no||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|abnormal calcifications noted, and the spleen and pancreas also||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|appear within normal limits. There are no bony lesions or fractures||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|apparent in the visualized skeletal structures.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.28133948302002031631834072673294331976^EPIC^APPLICATION^DICOM<R>
+<EB>

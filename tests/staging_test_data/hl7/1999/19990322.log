@@ -1,0 +1,11 @@
+1999-03-22 12:46:21.4972|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19990322124621|TBD|ORU^R01|2.25.181978407579422533787986203156886168427|P|2.4<R>
+PID|1||ABC451004^^^ABC^MR~EPIC4485763^^^EPIC^MRN||PEREZ^THOMAS^MICHAEL^^^^D||19700404000000|M||U|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451004^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457383^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7596043^SYS|7795082820|IMG2370^2370 MRI BRAIN W WO CONTRAST^UNKDEV|URGENT||19990319155143|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||2370^BRAIN MRI|19990322124621||IMG|||1^^^19990322124621^^U^^URGENT|       |||^Chest pain|D7823241^SANDERS^LISA^A.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||2370<R>
+OBX|1|TX|3672817||LISA SANDERS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|3672817||ACC#  Date Time  Exam~~7795082820 Mar 22 1999 12:46PM IMG2370 MRI BRAIN W WO CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The MRI of the brain demonstrates normal cortical and subcortical~structures. No evidence of acute infarct is observed, and the~ventricular system appears within normal limits with no signs of~hydrocephalus. The basal ganglia and thalami are unremarkable with no~abnormal signal intensity. The white matter shows no lesions or~demyelinating changes. The midline structures are intact, and there~is no evidence of mass effect or mass lesions. Extra-axial spaces are~within normal limits and no restrictions in cerebrospinal fluid (CSF)~flow are noted.~~IMPRESSION:~Overall, the MRI findings are consistent with a normal study of the~brain without any acute pathology or chronic changes.||||||F<R>
+OBX|3|TX|3672817||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Lisa Sanders, M.D. on Mar 22 1999 12:46PM~~This document has been electronically signed by: Lisa Sanders, M.D.~on Mar 22 1999 12:46PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3672817|4|7795082820^UK^ZB||||||F<R>
+<EB>

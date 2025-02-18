@@ -1,0 +1,11 @@
+2021-11-06 05:34:44.4679|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20211106053444|TBD|ORU^R01|2.25.312450088208087385848678932050594825027|P|2.4<R>
+PID|1||ABC451184^^^ABC^MR~EPIC4485943^^^EPIC^MRN||FLETCHER^LYNDSEY^CARLA^^^^D||19200730000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451184^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823254^CRUZ^JOSEPH^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457202^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4355216^SYS|7795083532|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||20211105102342|||PSCRIB|||||^^^^ |D7823249^OLIVER^JASON^JOHN^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|20211106053444||IMG|||1^^^20211106053444^^U^^URGENT|       |||^Chest pain|D7823249^OLIVER^JASON^J.^^^M.D.|D7823256^MILLER^MICHAEL^D.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|1765768||JASON OLIVER, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|1765768||ACC#  Date Time  Exam~~7795083532 Nov 06 2021 05:34AM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~This follow-up chest MRI presents findings correlating with the~previous study (2.25.180025236119635208924169410571729755581 dated~2009-04-19). There continues to be no evidence of focal lung lesions~or interval change in the size of previously noted mediastinal lymph~nodes, which remain non-enlarged and below 1 cm. The right and left~lung parenchyma are unremarkable, reflecting no significant change~over the 12-year period. Additionally, the thoracic vascular~structures are unremarked, and there is no evidence of new edema or~infiltrative processes. Notably, there are no visible breast~abnormalities recorded, aligning with the historically benign imaging~findings.~~IMPRESSION:~Stable thoracic MRI findings with no evidence of new pathologies~compared to the prior study from 2009. The imaging results suggest~consistent lung and mediastinal health. Continued surveillance may be~warranted due to the patient's age, but currently, there are no~actionable findings.||||||P<R>
+OBX|3|TX|1765768||Requested By: Oliver,Jason J. M.D.~~Dictated By: Jason Oliver, M.D. on Nov 06 2021 05:34AM~~Pending review by: Michael Miller, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|1765768|4|7795083532^UK^ZB||||||P<R>
+<EB>

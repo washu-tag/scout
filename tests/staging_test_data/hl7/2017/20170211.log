@@ -1,0 +1,27 @@
+2017-02-11 05:59:48.6901|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170211055948|TBD|ORU^R01|2.25.13412289544673132760563967339249170608|P|2.7<R>
+PID|1||ABC451043^^^ABC^MR||SMITH^STEPHAN^GERALD^^^^D||19540826|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084671|||||||||||||||||||||||||20170211055948|||||||V<R>
+ORC|RE|1649274^SYS|7795082969||Wet Read||^^^20170211055947^20170211055948^O||20170211055948|T6530135^EDWARDS^SHANE||D7823217^SANCHEZ^ROY^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1649274^SYS|7795082969|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20170210064103|||||Hosp Perf||||^^^HEART|D7823217^SANCHEZ^ROY^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20170211055948||NM|Wet Read||^^^20170211055947^20170211055948^O||||^Chest pain||D7823217^SANCHEZ^ROY^A.^^^^^ABC^^^^HOSP|T6530135^EDWARDS^SHANE||20170211055948||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|5|ST|&IMP|2|The findings are consistent with normal myocardial perfusion and||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|6|ST|&IMP|2|function, indicating no evidence of ischemic heart disease. The||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|7|ST|&IMP|2|patient's cardiac status remains stable with satisfactory ejection||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|8|ST|&IMP|2|fraction. The cardiac nuclear medicine study performed on 2017-02-10||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|9|ST|&IMP|2|shows normal myocardial perfusion at rest, with the left ventricle||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|10|ST|&IMP|2|displaying uniform uptake and no perfusion defects. The gated SPECT||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|11|ST|&IMP|2|analysis reveals a normal left ventricular ejection fraction (LVEF)||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|12|ST|&IMP|2|estimated at 60%, indicative of preserved systolic function. No wall||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|13|ST|&IMP|2|motion abnormalities are noted. There are no areas of ischemia or||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|14|ST|&IMP|2|infarction visualized, with the corresponding stress tests confirming||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|15|ST|&IMP|2|the absence of significant coronary artery disease or abnormalities||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|16|ST|&IMP|2|in the perfusion patterns of the myocardium. Technically, the images||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|17|ST|&IMP|2|were clear, and there was adequate stress-induced myocardial uptake.||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+OBX|18|ST|&IMP|2|Dictated by: Roy Sanchez Interpreter, M.D.||||||Wet Read|||||T6530135^EDWARDS^SHANE<R>
+ZDS|2.25.33242654795210795841881255952962582179^EPIC^APPLICATION^DICOM<R>
+<EB>

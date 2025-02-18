@@ -1,0 +1,27 @@
+2023-08-14 07:44:36.9074|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230814074436|TBD|ORU^R01|2.25.802043570555432518806328263241983748|P|2.7<R>
+PID|1||ABC451080^^^ABC^MR||ΜΙΧΌΠΟΥΛΟΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19621029|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084692|||||||||||||||||||||||||20230814074436|||||||V<R>
+ORC|RE|5127530^SYS|7795083117||Wet Read||^^^20230814074435^20230814074436^O||20230814074436|T6530149^VASQUEZ^MISTY||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5127530^SYS|7795083117|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20230813101635|||||Hosp Perf||||^^^ABDOMEN|D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230814074436||CR|Wet Read||^^^20230814074435^20230814074436^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20230814074436||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|The abdomen X-ray does not indicate any acute pathology. The anatomy||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|is largely unremarkable, and no further imaging is required unless||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|symptomatic changes arise. An annual follow-up X-ray or alternate||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|imaging is advised as part of routine health maintenance. The||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|abdominal X-ray demonstrates normal gas patterns, with no signs of||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|bowel obstruction or perforation. The liver, spleen, and kidneys are||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|visible within a normal size range. There are no radiopaque calculi||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|evident within the renal or biliary tracts. The gastric and colonic||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|distention is within normal limits, and there are no abnormal soft||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|tissue masses noted in the abdominal cavity. Visualized segmental||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|structures appear undistorted. No free air under the diaphragm is||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|appreciable. Overall, the findings align with a stable abdominal||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|profile that does not warrant further immediate intervention.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|18|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.171615503255517708016243796536770475124^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,26 @@
+2021-05-31 23:05:05.1283|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210531230505|TBD|ORU^R01|2.25.195471816263461858911834333497753176955|P|2.7<R>
+PID|1||ABC451070^^^ABC^MR||BAILEY^CHRISTOPHER^FIDEL^^^^D||19470612|M||AMIND|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084707|||||||||||||||||||||||||20210531230505|||||||V<R>
+ORC|RE|6791031^SYS|7795083080||Wet Read||^^^20210531230504^20210531230505^O||20210531230505|T6530146^MOORE^CURTIS||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6791031^SYS|7795083080|M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR|O|20210528123744|||||Hosp Perf||||^^^PELVIS|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210531230505||MR|Wet Read||^^^20210531230504^20210531230505^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20210531230505||||||||M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Pelvis PET-MR||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|The pelvic PET-MR demonstrates increased metabolic activity in the||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|prostate suggestive of malignancy. Monitoring and follow-up biopsies||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|are recommended to clarify the diagnosis and assess progression. The||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|pelvis PET-MR study illustrates areas of hypermetabolic activity in||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|the prostate, with an SUVmax of 4.5, suggesting possible malignancy.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|No bladder wall thickening or enlarged pelvic lymph nodes are||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|identified. Bone marrow signal appears normal, and surrounding soft||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|tissues remain intact, without localized edema. Notably, the rectum,||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|seminal vesicles, and perirectal tissues are free from abnormal||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|enhancement. The imaging does not indicate any distant metastases||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|with bone structures showing no lesions. However, the findings||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|necessitate close monitoring.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.16384381077748582031930102929914102659^EPIC^APPLICATION^DICOM<R>
+<EB>

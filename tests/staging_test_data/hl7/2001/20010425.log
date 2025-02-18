@@ -1,0 +1,11 @@
+2001-04-25 11:03:42.1752|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010425110342|TBD|ORU^R01|2.25.156731619632109237531104494542614031213|P|2.4<R>
+PID|1||ABC450996^^^ABC^MR~EPIC4485755^^^EPIC^MRN||OLIVER^TABATHA^ROBYN^^^^D||19430118000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC450996^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823251^CALLAHAN^SCOTT^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457160^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2170197^SYS|7795082783|IMG2347^2347 MRI BRAIN WO CONTRAST^UNKDEV|URGENT||20010424140712|||PSCRIB|||||^^^^ |D7823258^BRYANT^DAVID^TIMOTHY^M.D.^^^^ABC|||||2347^BRAIN MRI Expedited|20010425110342||IMG|||1^^^20010425110342^^U^^URGENT|       |||^Chest pain|D7823257^ROBINSON^RALPH^A.^^^M.D.|D7823248^RODRIGUEZ^NICOLE^A.^^^M.D.||PSCRIB|||||||||2347<R>
+OBX|1|TX|8432673||RALPH ROBINSON, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|8432673||ACC#  Date Time  Exam~~7795082783 Apr 25 2001 11:03AM IMG2347 MRI BRAIN WO CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI demonstrates intact cerebral hemispheres with no~evidence of mass effect or midline shift. The ventricles are~symmetric and within normal limits. However, hyperintensities noted~in the periventricular and subcortical white matter may suggest~chronic ischemic changes, likely due to small vessel disease. The~basal ganglia and thalami appear normal, with no signal abnormalities~observed. The brainstem is unremarkable, and there is no evidence of~acute infarction or hemorrhage.~~IMPRESSION:~Overall, the MRI shows age-related changes predominantly consistent~with chronic ischemic changes likely related to microangiopathy.~Follow-up imaging in 1-2 years may be beneficial to assess the~progression of white matter abnormalities.||||||P<R>
+OBX|3|TX|8432673||Requested By: Bryant,David T. M.D.~~Dictated By: Ralph Robinson, M.D. on Apr 25 2001 11:03AM~~Pending review by: Nicole Rodriguez, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|8432673|4|7795082783^UK^ZB||||||P<R>
+<EB>

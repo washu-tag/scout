@@ -1,0 +1,26 @@
+1996-07-28 22:41:44.7861|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19960728224144|TBD|ORU^R01|2.25.213941237872035415721748266804422115817|P|2.7<R>
+PID|1||ABC450998^^^ABC^MR||JANG^JI-WOO^^^^^D||19440924|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084779|||||||||||||||||||||||||19960728224144|||||||V<R>
+ORC|RE|544938^SYS|7795082793||Wet Read||^^^19960728224143^19960728224144^O||19960728224144|||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|544938^SYS|7795082793|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|19960725125941|||||Hosp Perf|||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19960728224144||DX|Wet Read||^^^19960728224143^19960728224144^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|||19960728224144||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|Overall, the findings suggest a stable thoracic examination. There||||||Wet Read<R>
+OBX|6|ST|&IMP|2|are no acute processes identified, and the lungs are clear. This||||||Wet Read<R>
+OBX|7|ST|&IMP|2|study correlates with previous imaging, confirming that no||||||Wet Read<R>
+OBX|8|ST|&IMP|2|significant pulmonary pathology is evident. The single-view chest||||||Wet Read<R>
+OBX|9|ST|&IMP|2|X-ray demonstrates clear lung fields bilaterally, with no evidence of||||||Wet Read<R>
+OBX|10|ST|&IMP|2|focal consolidations or pleural effusions. The cardiac silhouette||||||Wet Read<R>
+OBX|11|ST|&IMP|2|appears within normal limits, with no signs of cardiomegaly or||||||Wet Read<R>
+OBX|12|ST|&IMP|2|abnormal contours. The mediastinal structures are midline, with the||||||Wet Read<R>
+OBX|13|ST|&IMP|2|aortic arch demonstrating a normal configuration. The diaphragmatic||||||Wet Read<R>
+OBX|14|ST|&IMP|2|contours are well defined, and no bony abnormalities are observed in||||||Wet Read<R>
+OBX|15|ST|&IMP|2|the visualized thoracic skeleton. Compared to earlier studies, there||||||Wet Read<R>
+OBX|16|ST|&IMP|2|is no significant change.||||||Wet Read<R>
+OBX|17|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.138726653943611289749618233590854785588^EPIC^APPLICATION^DICOM<R>
+<EB>

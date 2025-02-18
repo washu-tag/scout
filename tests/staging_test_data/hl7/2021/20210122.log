@@ -1,0 +1,30 @@
+2021-01-22 09:23:09.5796|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210122092309|TBD|ORU^R01|2.25.174851207967493711193054536435949686368|P|2.7<R>
+PID|1||ABC451057^^^ABC^MR||HOWELL^JULIE^ANGELA^^^^D||19720712|F||OTHER|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085003|||||||||||||||||||||||||20210122092309|||||||V<R>
+ORC|RE|2520927^SYS|7795083027||Prelim||^^^20210122092308^20210122092309^O||20210122092309|||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2520927^SYS|7795083027|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20210118101859|||||Hosp Perf|||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210122092309||CR|Prelim||^^^20210122092308^20210122092309^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|||20210122092309||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray||||||Prelim<R>
+OBX|3|ST|&GDT|1|||||||Prelim<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim<R>
+OBX|5|ST|&IMP|2|1. Clear lung fields with no acute abnormalities. ||||||Prelim<R>
+OBX|6|ST|&IMP|2|2. Stable appearance of the calcified nodule in the right lung apex,||||||Prelim<R>
+OBX|7|ST|&IMP|2|benign in nature. ||||||Prelim<R>
+OBX|8|ST|&IMP|2|3. No signs of acute thoracic pathology; findings are consistent with||||||Prelim<R>
+OBX|9|ST|&IMP|2|previous imaging and indicate unchanged status. The single-view X-ray||||||Prelim<R>
+OBX|10|ST|&IMP|2|performed on 2021-01-18 of the chest shows clear lung fields||||||Prelim<R>
+OBX|11|ST|&IMP|2|bilaterally with a well-aerated appearance. The cardiac silhouette is||||||Prelim<R>
+OBX|12|ST|&IMP|2|within normal limits, and no acute infiltrates or pleural effusions||||||Prelim<R>
+OBX|13|ST|&IMP|2|are observed. The diaphragm is positioned appropriately, without||||||Prelim<R>
+OBX|14|ST|&IMP|2|evidence of free air beneath. Scattered degenerative changes are||||||Prelim<R>
+OBX|15|ST|&IMP|2|noted in the thoracic spine, consistent with age-related changes.||||||Prelim<R>
+OBX|16|ST|&IMP|2|There is a small, benign-appearing calcified nodule in the right lung||||||Prelim<R>
+OBX|17|ST|&IMP|2|apex that has not changed compared to previous studies, with no signs||||||Prelim<R>
+OBX|18|ST|&IMP|2|indicating malignancy or growth. The bony structures exhibit no||||||Prelim<R>
+OBX|19|ST|&IMP|2|lesions, fractures, or destructive processes. Overall, the study does||||||Prelim<R>
+OBX|20|ST|&IMP|2|not reveal acute cardiopulmonary disease.||||||Prelim<R>
+OBX|21|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.277699815570838864573116081175488793416^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,25 @@
+2014-07-04 15:41:02.3059|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140704154102|TBD|ORU^R01|2.25.37870060126883239045005643221941018593|P|2.7<R>
+PID|1||ABC451172^^^ABC^MR||LEWIS^NOEMI^TERESA^^^^D||19380330|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084756|||||||||||||||||||||||||20140704154102|||||||V<R>
+ORC|RE|8217096^SYS|7795083486||Final||^^^20140704154101^20140704154102^O||20140704154102|T6530151^WATERS^JESSICA||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8217096^SYS|7795083486|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20140630093809|||||Hosp Perf||||^^^BREAST|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20140704154102||MG|Final||^^^20140704154101^20140704154102^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20140704154102||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view Mammogram||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|Mammographic findings are concerning for possible early malignancy||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|given the presence of new calcifications. Further diagnostic imaging||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|and potential biopsy are strongly recommended to ascertain the nature||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|of these findings. The single-view mammogram obtained on 2014-06-30||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|demonstrates dense breast tissue which can obscure underlying||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|pathology. However, there is a region of suspicious calcifications||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|noted in the upper outer quadrant of the left breast, warranting||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|further investigation. No significant masses are visible, and lymph||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|nodes appear unremarkable. Comparison with prior mammograms indicates||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|this area is new and requires evaluation through targeted ultrasound||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|or biopsy for definitive analysis.||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Final|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.205642594576797497011736562946021347813^EPIC^APPLICATION^DICOM<R>
+<EB>

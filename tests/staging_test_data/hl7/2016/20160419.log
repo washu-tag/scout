@@ -1,0 +1,30 @@
+2016-04-19 01:17:12.2636|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20160419011712|TBD|ORU^R01|2.25.265092340747916196923824475386767122657|P|2.7<R>
+PID|1||ABC451106^^^ABC^MR||HUNT^JENNIFER^HEATHER^^^^D||19980310|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823289^CERVANTES^DEBORAH^H.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084905|||||||||||||||||||||||||20160419011712|||||||V<R>
+ORC|RE|1214373^SYS|7795083221||Wet Read||^^^20160419011711^20160419011712^O||20160419011712|T6530213^WARD^MARIE||D7823277^ALLEN^JOSEPH^B.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1214373^SYS|7795083221|IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED|O|20160417093840|||||Hosp Perf||||^^^CHEST|D7823277^ALLEN^JOSEPH^B.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20160419011712||MR|Wet Read||^^^20160419011711^20160419011712^O||||^Chest pain||D7823275^SMITH^STEPHANIE^R.^^^^^ABC^^^^HOSP|T6530213^WARD^MARIE||20160419011712||||||||IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest MRI||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|5|ST|&IMP|2|1. Right lung lesion noted measuring 3.5 cm, warranting further||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|6|ST|&IMP|2|evaluation to differentiate between benign and malignant pathology.||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|7|ST|&IMP|2|2. No evidence of mediastinal tumor spread or lymphadenopathy. 3.||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|8|ST|&IMP|2|Recommended follow-up imaging with CT for further characterization of||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|9|ST|&IMP|2|the lung lesion. MRI of the chest was conducted with the patient||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|10|ST|&IMP|2|placed in a supine position. The study revealed a hyperintense right||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|11|ST|&IMP|2|lung lesion, characterized by a well-defined margin, measuring||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|12|ST|&IMP|2|approximately 3.5 cm in diameter on T2-weighted imaging. The lesion||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|13|ST|&IMP|2|demonstrates significant enhancement following contrast||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|14|ST|&IMP|2|administration (gadolinium), suggesting possible neoplastic||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|15|ST|&IMP|2|involvement. No mediastinal lymphadenopathy or pleural effusion was||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|16|ST|&IMP|2|noted. The lung parenchyma appears otherwise unremarkable, with||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|17|ST|&IMP|2|normal vascular structures and bronchial airways. There are no signs||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|18|ST|&IMP|2|of pulmonary embolism or significant bronchiectasis identified. The||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|19|ST|&IMP|2|cardiac silhouette maintains normal morphology, and there is no||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|20|ST|&IMP|2|substantial pericardial effusion.||||||Wet Read|||||T6530213^WARD^MARIE<R>
+OBX|21|ST|&IMP|2|Dictated by: Stephanie Smith Interpreter, M.D.||||||Wet Read|||||T6530213^WARD^MARIE<R>
+ZDS|2.25.41588245199678179249225195093655899337^EPIC^APPLICATION^DICOM<R>
+<EB>

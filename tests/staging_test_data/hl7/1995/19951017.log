@@ -1,0 +1,11 @@
+1995-10-17 15:42:31.5452|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19951017154231|TBD|ORU^R01|2.25.216738960950585762403486549969796686401|P|2.4<R>
+PID|1||ABC451130^^^ABC^MR~EPIC4485889^^^EPIC^MRN||KATO^YUA^^^^^D||19710820000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451130^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457311^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3901805^SYS|7795083321|M755570^755570 MR CARDIAC MRPH FUNC W/O^UNKDEV|URGENT||19951014103914|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||755570^HEART MRI Expedited|19951017154231||M|||1^^^19951017154231^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||755570<R>
+OBX|1|TX|9787683||MICHAEL MARKS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|9787683||ACC#  Date Time  Exam~~7795083321 Oct 17 1995 03:42PM M755570 MR CARDIAC MRPH FUNC W/O~~EXAMINATION:~Heart MRI~~FINDINGS:~Evaluation of the cardiac morphology and function reveals a normal~left ventricular volume and ejection fraction, measured at~approximately 60%. The right ventricle demonstrates normal size and~function. No evidence of significant valvular disease noted; however,~mild mitral regurgitation is observed. The pericardium appears~unremarkable. No areas of late gadolinium enhancement indicative of~myocardial scarring or ischemia are identified. Coronary arteries~remain patent on the visualized segments. The cardiac structure~appears within normal limits, showcasing a robust and effective~cardiac performance without any overt abnormalities.~~IMPRESSION:~Normal heart MRI findings. The left and right ventricular functions~are well-preserved, with no indications of structural heart disease~or myocardial infarction. Mild mitral regurgitation noted but is~deemed hemodynamically insignificant.||||||F<R>
+OBX|3|TX|9787683||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Michael Marks, M.D. on Oct 17 1995 03:42PM~~This document has been electronically signed by: Michael Marks, M.D.~on Oct 17 1995 03:42PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9787683|4|7795083321^UK^ZB||||||F<R>
+<EB>

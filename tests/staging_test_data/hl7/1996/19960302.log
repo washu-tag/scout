@@ -1,0 +1,27 @@
+1996-03-02 11:12:20.8580|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19960302111220|TBD|ORU^R01|2.25.81258791904431046242170144403822282262|P|2.7<R>
+PID|1||ABC451115^^^ABC^MR||QUINTERO^NICHOLAS^ERIC^^^^D||19340113|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823255^HARVEY^MARK^W.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084994|||||||||||||||||||||||||19960302111220|||||||V<R>
+ORC|RE|1682683^SYS|7795083258||Prelim||^^^19960302111219^19960302111220^O||19960302111220|T6530160^NUNEZ^JENNIFER||D7823255^HARVEY^MARK^W.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1682683^SYS|7795083258|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|19960302065754|||||Hosp Perf||||^^^HEART|D7823255^HARVEY^MARK^W.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19960302111220||MR|Prelim||^^^19960302111219^19960302111220^O||||^Chest pain||D7823250^ROBERTSON^MICHELLE^D.^^^^^ABC^^^^HOSP|T6530160^NUNEZ^JENNIFER||19960302111220||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac MRI||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|5|ST|&IMP|2|Overall, the cardiac MRI demonstrates a normal heart structure and||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|6|ST|&IMP|2|function with no evidence of ischemia or myocardial damage. Continued||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|7|ST|&IMP|2|surveillance is recommended given the patient's age but no immediate||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|8|ST|&IMP|2|concerns are raised. The MRI of the heart reveals a normal left||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|9|ST|&IMP|2|ventricular size and function, with an ejection fraction estimated at||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|10|ST|&IMP|2|65%. The myocardial perfusion appears homogenous without evidence of||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|11|ST|&IMP|2|ischemic changes. The right ventricle is also within normal limits,||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|12|ST|&IMP|2|featuring normal wall motion and no abnormal hypertrophy. No||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|13|ST|&IMP|2|perfusion defects or late gadolinium enhancement were noted,||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|14|ST|&IMP|2|indicating an absence of scarring or prior myocardial infarction. The||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|15|ST|&IMP|2|coronary arteries are not visualized, but there appears to be no||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|16|ST|&IMP|2|signs of coronary artery disease in the adjoining soft tissues. The||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|17|ST|&IMP|2|pericardium is intact, and there are no effusions present.||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|18|ST|&IMP|2|Dictated by: Michelle Robertson Interpreter, M.D.||||||Prelim|||||T6530160^NUNEZ^JENNIFER<R>
+ZDS|2.25.311744264691883366219714531430938088921^EPIC^APPLICATION^DICOM<R>
+<EB>

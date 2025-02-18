@@ -1,0 +1,23 @@
+2020-01-09 16:14:48.1866|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200109161448|TBD|ORU^R01|2.25.327366885665429931509904619265196211746|P|2.4<R>
+PID|1||ABC451043^^^ABC^MR~EPIC4485802^^^EPIC^MRN||SMITH^STEPHAN^GERALD^^^^D||19540826000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451043^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457109^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9646154^SYS|7795082970|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20200108180444|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||8452^NM MPI SPECT|20200109161448||H|||1^^^20200109161448^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|7071412||MICHAEL MARKS, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|7071412||ACC#  Date Time  Exam~~7795082970 Jan 09 2020 04:14PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~In comparison with the previous cardiac nuclear medicine study~conducted on February 10, 2017 (UID:~2.25.33242654795210795841881255952962582179), the current examination~on January 08, 2020, reveals similar normal perfusion~characteristics. The myocardial perfusion imaging shows no~significant change from prior results, with the left ventricle~maintaining a normal ejection fraction of 60% and displaying no~perfusion defects during rest. All segments demonstrate appropriate~uptake, and the study does not reveal any new ischemic regions or~wall motion abnormalities. Furthermore, stress evaluation remains~consistent with normal myocardial function without evidence of~obstructive coronary artery disease.~~IMPRESSION:~The 2020 cardiac NM study reflects consistent findings with prior~studies indicative of stable cardiac health. No progression of~coronary artery disease or deterioration of myocardial function has~been observed since the last imaging, with ejection fraction and~perfusion patterns remaining within normal limits.||||||P<R>
+OBX|3|TX|7071412||Requested By: Marks,Michael R. M.D.~~Dictated By: Michael Marks, M.D. on Jan 09 2020 04:14PM~~Pending review by: Joe Medrano, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|7071412|4|7795082970^UK^ZB||||||P<R>
+<EB><R>
+
+2020-01-09 23:17:53.7106|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200109231753|TBD|ORU^R01|2.25.149964521873164677334128716903604193792|P|2.4<R>
+PID|1||ABC451008^^^ABC^MR~EPIC4485767^^^EPIC^MRN||THOMPSON^AMANDA^NOELLE^^^^D||19720809000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451008^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457315^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9981852^SYS|7795082829|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||20200108185734|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||2361^Brain MRI|20200109231753||IMG|||1^^^20200109231753^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|8932517||RUSSELL GALLAGHER, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|8932517||ACC#  Date Time  Exam~~7795082829 Jan 09 2020 11:17PM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI conducted on January 8, 2020, displays no acute~intracranial abnormalities, but there are some mild age-appropriate~white matter changes that are nonspecific. No significant masses,~midline shifts, or hemorrhagic events are observed. The ventricles~are symmetrically sized, suggesting appropriate intracranial~pressure. The circle of Willis is intact, and there are no focal~lesions noted. The images indicate vascular integrity without any~signs of significant pathology.~~IMPRESSION:~Overall, the brain MRI findings are largely normal with mild~age-related changes, with no evidence of acute or active neurological~pathology.||||||F<R>
+OBX|3|TX|8932517||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Russell Gallagher, M.D. on Jan 09 2020 11:17PM~~This document has been electronically signed by: Russell Gallagher,~M.D. on Jan 09 2020 11:17PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8932517|4|7795082829^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,29 @@
+2010-11-30 22:50:31.2413|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20101130225031|TBD|ORU^R01|2.25.198201486962808973773033145961710205483|P|2.7<R>
+PID|1||ABC451075^^^ABC^MR||BRIDGES^DAVID^JEREMY^^^^D||19900607|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823227^WOOD^MELISSA^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084670|||||||||||||||||||||||||20101130225031|||||||V<R>
+ORC|RE|1596248^SYS|7795083097||Prelim||^^^20101130225030^20101130225031^O||20101130225031|T6530139^WHITE^NICHOLAS||D7823221^MAXWELL^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1596248^SYS|7795083097|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20101126081644|||||Hosp Perf|||||D7823221^MAXWELL^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20101130225031||XA|Prelim||^^^20101130225030^20101130225031^O||||^Chest pain||D7823224^MORGAN^JOHN^J.^^^^^ABC^^^^HOSP|T6530139^WHITE^NICHOLAS||20101130225031||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray Angiography Study||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|5|ST|&IMP|2|1. Patent abdominal vasculature without evidence of vascular||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|6|ST|&IMP|2|occlusions or stenosis. 2. Normal visualization of renal and||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|7|ST|&IMP|2|mesenteric arteries, consistent with prior normal examinations. 3. No||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|8|ST|&IMP|2|acute vascular abnormalities detected; mild tortuosity is noted||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|9|ST|&IMP|2|without clinical significance. The X-ray angiography study of the||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|10|ST|&IMP|2|abdominal vasculature demonstrates patent vessels with a notable||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|11|ST|&IMP|2|focus on the aorta and its main branches. There is no evidence of||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|12|ST|&IMP|2|significant vascular occlusion or stenosis present. The renal||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|13|ST|&IMP|2|arteries show normal caliber and enhancement, with no suspicious||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|14|ST|&IMP|2|lesions. The mesenteric vessels are visualized adequately, displaying||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|15|ST|&IMP|2|typical branching patterns without any signs of ischemia or||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|16|ST|&IMP|2|pathological dilations. The imaging indicates no acute abdominal||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|17|ST|&IMP|2|pathology, and arteries have regular size and contrast filling||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|18|ST|&IMP|2|patterns. Mild tortuosity is depicted; however, this is consistent||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|19|ST|&IMP|2|with normal anatomical variations.||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|20|ST|&IMP|2|Dictated by: John Morgan Interpreter, M.D.||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+ZDS|2.25.296115713510523045531587389918499522498^EPIC^APPLICATION^DICOM<R>
+<EB>

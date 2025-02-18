@@ -1,0 +1,23 @@
+2006-04-23 01:25:37.8434|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060423012537|TBD|ORU^R01|2.25.257787843373487441511928945338998760724|P|2.7<R>
+PID|1||ABC451130^^^ABC^MR||KATO^YUA^^^^^D||19710820|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823272^KOBAYASHI^KOTONE^^^^^^^^^^HOSP|||RAD|||||||||V42084872|||||||||||||||||||||||||20060423012537|||||||V<R>
+ORC|RE|1780250^SYS|7795083318||Wet Read||^^^20060423012536^20060423012537^O||20060423012537|T6530172^SASAKI^KOHARU||D7823264^SAITO^RIN^^^^^^^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1780250^SYS|7795083318|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20060420153136|||||Hosp Perf||||^^^TSPINE|D7823264^SAITO^RIN^^^^^^^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060423012537||DX|Wet Read||^^^20060423012536^20060423012537^O||||^Chest pain||D7823272^KOBAYASHI^KOTONE^^^^^^^^^^HOSP|T6530172^SASAKI^KOHARU||20060423012537||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: T-spine X-ray||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+OBX|5|ST|&IMP|2|Unremarkable T-spine X-ray. No signs of acute injury or chronic||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+OBX|6|ST|&IMP|2|degenerative changes observed, indicating a stable thoracic spine.||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+OBX|7|ST|&IMP|2|The T-spine X-ray shows no acute fractures or subluxations. The||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+OBX|8|ST|&IMP|2|vertebral bodies maintain normal heights and alignments, with no||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+OBX|9|ST|&IMP|2|signs of degenerative disc disease or significant osteophyte||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+OBX|10|ST|&IMP|2|formation. The intervertebral disc spaces are well-maintained, and||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+OBX|11|ST|&IMP|2|there is no evidence of thoracic spinal stenosis or acute pathology.||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+OBX|12|ST|&IMP|2|Soft tissues appear unremarkable without any significant||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+OBX|13|ST|&IMP|2|paravertebral swelling or calcifications noted.||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+OBX|14|ST|&IMP|2|Dictated by: Kotone Kobayashi Interpreter, M.D.||||||Wet Read|||||T6530172^SASAKI^KOHARU<R>
+ZDS|2.25.213301042456680432238599290073812472288^EPIC^APPLICATION^DICOM<R>
+<EB>

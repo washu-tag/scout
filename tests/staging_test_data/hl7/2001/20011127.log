@@ -1,0 +1,11 @@
+2001-11-27 15:59:09.7104|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20011127155909|TBD|ORU^R01|2.25.23216549615687696622939147403154979465|P|2.4<R>
+PID|1||ABC451162^^^ABC^MR~EPIC4485921^^^EPIC^MRN||LIM^JI-WOO^^^^^D||19570704000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451162^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457321^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7639469^SYS|7795083445|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20011127104723|||PSCRIB|||||^^^^ |D7823219^LOGAN^MICHAEL^DANIEL^M.D.^^^^ABC|||||4185^XRay Angiography|20011127155909||IMG|||1^^^20011127155909^^U^^URGENT|       |||^Chest pain|D7823224^MORGAN^JOHN^J.^^^M.D.|D7823227^WOOD^MELISSA^C.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|6233330||JOHN MORGAN, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6233330||ACC#  Date Time  Exam~~7795083445 Nov 27 2001 03:59PM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray angiography study~~FINDINGS:~The X-ray angiography study of the breast arterial supply displays~normal vascular morphology. There are no signs of vascular~obstruction or stenosis observed in the main breast arteries. The~contrast enhancement is homogeneous with all vascular territories~being adequately perfused without evidence of perfusion deficits or~avascular areas. Surrounding soft tissues demonstrate no inflammatory~changes; the skin contour is normal.~~IMPRESSION:~The X-ray angiography conducted on November 27, 2001, reveals patent~breast vasculature without evidence of obstruction or significant~vascular anomalies, indicating normal perfusion and absence of~ischemic changes.||||||F<R>
+OBX|3|TX|6233330||Requested By: Logan,Michael D. M.D.~~Dictated By: John Morgan, M.D. on Nov 27 2001 03:59PM~~This document has been electronically signed by: John Morgan, M.D. on~Nov 27 2001 03:59PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6233330|4|7795083445^UK^ZB||||||F<R>
+<EB>

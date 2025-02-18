@@ -86,7 +86,7 @@
         name: temporal-java
         chart_ref: '{{ scout_repo_dir }}/helm/orchestration/temporal-worker'
         values_files:
-          - '{{ scout_repo_dir }}/helm/orchestration/temporal-java.values.yaml'
+          - '{{ temporal_java_helm_values }}'
         release_namespace: '{{ orchestration_worker_namespace }}'
         release_state: present
         wait: true
@@ -104,7 +104,7 @@
         name: temporal-python
         chart_ref: '{{ scout_repo_dir }}/helm/orchestration/temporal-worker'
         values_files:
-          - '{{ scout_repo_dir }}/helm/orchestration/temporal-python.values.yaml'
+          - '{{ temporal_python_helm_values }}'
         release_namespace: '{{ orchestration_worker_namespace }}'
         release_state: present
         wait: true

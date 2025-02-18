@@ -1,0 +1,24 @@
+2014-11-23 09:39:30.9142|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20141123093930|TBD|ORU^R01|2.25.1014351978966980071651405628300178557|P|2.7<R>
+PID|1||ABC450997^^^ABC^MR||BOYD^MEGAN^CONNIE^^^^D||19391212|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084762|||||||||||||||||||||||||20141123093930|||||||V<R>
+ORC|RE|8220660^SYS|7795082786||Final||^^^20141123093929^20141123093930^O||20141123093930|||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8220660^SYS|7795082786|BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM|O|20141120064140|||||Hosp Perf||||^^^BREAST|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20141123093930||MG|Final||^^^20141123093929^20141123093930^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|||20141123093930||||||||BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|While no acute findings were noted, there is a slight development in||||||Final<R>
+OBX|6|ST|&IMP|2|breast tissue density since the previous study from 1997. Continued||||||Final<R>
+OBX|7|ST|&IMP|2|monitoring is advisable, and clinical correlation with a physical||||||Final<R>
+OBX|8|ST|&IMP|2|examination is recommended. This follow-up mammogram compared to the||||||Final<R>
+OBX|9|ST|&IMP|2|prior study from 1997 shows no new developments in breast tissue||||||Final<R>
+OBX|10|ST|&IMP|2|architecture. The overall composition continues to be predominantly||||||Final<R>
+OBX|11|ST|&IMP|2|fatty, and no new masses or calcifications are detected. The axillary||||||Final<R>
+OBX|12|ST|&IMP|2|lymph nodes remain stable and demonstrate no new signs of||||||Final<R>
+OBX|13|ST|&IMP|2|enlargement. However, there is a subtle increase in glandular||||||Final<R>
+OBX|14|ST|&IMP|2|density, which is not unusual with aging but warrants a note.||||||Final<R>
+OBX|15|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Final<R>
+ZDS|2.25.152518924843676226145971486416988973541^EPIC^APPLICATION^DICOM<R>
+<EB>

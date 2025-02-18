@@ -1,0 +1,27 @@
+2023-04-13 21:03:05.2452|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230413210305|TBD|ORU^R01|2.25.125070588715179876809031537772081876404|P|2.7<R>
+PID|1||ABC451047^^^ABC^MR||ΓΙΑΝΝΑΡΆΣ^ΊΩΣΉΦ^^^^^D||19680418|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084761|||||||||||||||||||||||||20230413210305|||||||V<R>
+ORC|RE|4327798^SYS|7795082988||Wet Read||^^^20230413210304^20230413210305^O||20230413210305|T6530152^ADKINS^MELLISSA||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4327798^SYS|7795082988|IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC|O|20230412194048|||||Hosp Perf||||^^^HEAD|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230413210305||CT|Wet Read||^^^20230413210304^20230413210305^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20230413210305||||||||IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head PET-CT scan||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|The head PET-CT scan shows normal metabolic activity, and no evidence||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|indicating malignancy or significant pathology. There are no new||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|changes compared to prior imaging, reinforcing a continued absence of||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|neurological concerns. The PET-CT of the head demonstrates increased||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|metabolic activity within expected physiologic ranges in the brain||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|without any areas of abnormal hypermetabolism that would suggest||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|malignancy. No new lesions or abnormal uptake are observed. The||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|cortical, subcortical, and brainstem regions show no significant||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|abnormalities, and the uptake is symmetric, consistent with normal||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|brain function. There are no areas of significant early or late||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|hypometabolism. Additionally, the sinuses and orbits show no signs of||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|abnormal uptake or volume loss, and there are no signs suggestive of||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|17|ST|&IMP|2|acute infection or other complications.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|18|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.164304489355666081347759165718902541736^EPIC^APPLICATION^DICOM<R>
+<EB>

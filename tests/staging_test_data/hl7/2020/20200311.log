@@ -1,0 +1,27 @@
+2020-03-11 14:05:19.3953|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200311140519|TBD|ORU^R01|2.25.164697160243315958718838419761472783421|P|2.7<R>
+PID|1||ABC451137^^^ABC^MR||STONE^JOHN^JAMES^^^^D||19910722|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085011|||||||||||||||||||||||||20200311140519|||||||V<R>
+ORC|RE|9366946^SYS|7795083348||Final||^^^20200311140518^20200311140519^O||20200311140519|T6530146^MOORE^CURTIS||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9366946^SYS|7795083348|IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC|O|20200309064540|||||Hosp Perf||||^^^HEAD|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20200311140519||CT|Final||^^^20200311140518^20200311140519^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20200311140519||||||||IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head PET-CT||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|The findings indicate increased uptake in the temporal lobes which||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|may correspond to focal pathology. The absence of significant masses||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|or acute intracranial events suggests a need for further evaluation||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|with MRI and clinical correlation to rule out a possible degenerative||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|disease or other neoplastic processes. The head PET-CT scan||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|illustrates a diffusely increased metabolic activity within the||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|bilateral temporal lobes, particularly within the parahippocampal||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|regions. This hypermetabolic region raises concern for potential||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|underlying pathology, possibly a neoplasm or focal inflammation.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|There is marked cortical atrophy noted in the temporal and frontal||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|lobes, suggesting a neurodegenerative process. Additionally, the CT||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|component reveals mild ventriculomegaly with no acute intracranial||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|hemorrhage identified.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.257273639115032619125635963586513643292^EPIC^APPLICATION^DICOM<R>
+<EB>

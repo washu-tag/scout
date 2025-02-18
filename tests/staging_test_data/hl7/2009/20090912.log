@@ -1,0 +1,11 @@
+2009-09-12 06:52:21.1357|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090912065221|TBD|ORU^R01|2.25.72662302537283123601058188083851891328|P|2.4<R>
+PID|1||ABC451067^^^ABC^MR~EPIC4485826^^^EPIC^MRN||MELENDEZ^TARA^LARA^^^^D||19580416000000|F||P|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451067^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457485^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2710326^SYS|7795083064|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20090910121226|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20090912065221||BHC|||1^^^20090912065221^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|4773490||AMBER REESE, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4773490||ACC#  Date Time  Exam~~7795083064 Sep 12 2009 06:52AM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~Comparison with the mammogram from 1996-02-07 indicates that the~breast parenchyma remains predominantly dense with no new findings.~Bilateral breast tissue exhibits minimal changes since the last~study, with the same benign micro-calcifications still present. The~lateral projection provides a consistent view with no suspicious~masses or architectural distortion observed. No axillary~lymphadenopathy is noted bilaterally, and the overall breast~morphology remains stable.~~IMPRESSION:~Continued stable appearance when compared to the prior study dated~1996-02-07. The findings are consistent with benign pathology,~confirming no new abnormalities. Follow-up screening is warranted as~per routine guidelines.||||||F<R>
+OBX|3|TX|4773490||Requested By: Wright,Jessica M. M.D.~~Dictated By: Amber Reese, M.D. on Sep 12 2009 06:52AM~~This document has been electronically signed by: Amber Reese, M.D. on~Sep 12 2009 06:52AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4773490|4|7795083064^UK^ZB||||||F<R>
+<EB>

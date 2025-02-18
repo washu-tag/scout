@@ -1,0 +1,29 @@
+2017-04-16 23:42:35.0341|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170416234235|TBD|ORU^R01|2.25.210067718000573776069871097408555619188|P|2.7<R>
+PID|1||ABC451020^^^ABC^MR||ΘΕΟΔΩΡΆΚΗΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19971220|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823224^MORGAN^JOHN^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084775|||||||||||||||||||||||||20170416234235|||||||V<R>
+ORC|RE|2004354^SYS|7795082878||Prelim||^^^20170416234234^20170416234235^O||20170416234235|T6530140^HARDY^JAY||D7823217^SANCHEZ^ROY^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2004354^SYS|7795082878|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20170414121932|||||Hosp Perf|||||D7823217^SANCHEZ^ROY^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20170416234235||XA|Prelim||^^^20170416234234^20170416234235^O||||^Chest pain||D7823215^PORTER^JAMEL^J.^^^^^ABC^^^^HOSP|T6530140^HARDY^JAY||20170416234235||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|5|ST|&IMP|2|Overall, the angiographic evaluation reveals a normal vascular||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|6|ST|&IMP|2|anatomy with no acute pathological findings. The integrity of the||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|7|ST|&IMP|2|vascular system is maintained, and no interventions are required at||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|8|ST|&IMP|2|this time. The images demonstrate patency of the major vascular||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|9|ST|&IMP|2|structures of the examined region. No significant stenosis or||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|10|ST|&IMP|2|occlusion is observed in the visualized arteries. Vascular branching||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|11|ST|&IMP|2|appears normal with no evidence of an aneurysm or atypical vascular||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|12|ST|&IMP|2|formations. The contrast media fills the arteries adequately without||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|13|ST|&IMP|2|extravasation into the surrounding tissues. Mild luminal||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|14|ST|&IMP|2|irregularities are noted but are classified as within normal limits.||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|15|ST|&IMP|2|The surrounding soft tissues and bones appear unremarkable, with no||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|16|ST|&IMP|2|signs of fracture or deformity. Impingement on vascular structures by||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|17|ST|&IMP|2|surrounding anatomy is not observed. Comparing with previous studies,||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|18|ST|&IMP|2|there have been no significant changes over the last three years||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|19|ST|&IMP|2|regarding vascular health since the last examination on 2017-04-14.||||||Prelim|||||T6530140^HARDY^JAY<R>
+OBX|20|ST|&IMP|2|Dictated by: Jamel Porter Interpreter, M.D.||||||Prelim|||||T6530140^HARDY^JAY<R>
+ZDS|2.25.27979951506246881850416548568933511665^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2012-12-14 15:25:35.9054|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20121214152535|TBD|ORU^R01|2.25.55084417138175234414103155857618739853|P|2.4<R>
+PID|1||ABC451121^^^ABC^MR~EPIC4485880^^^EPIC^MRN||SMITH^MINDY^TERA^^^^D||19741018000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451121^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457325^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7685856^SYS|7795083285|IMG1259^1259 XR CHEST 1 VIEW^UNKDEV|URGENT||20121211084829|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||1259^Chest 1 View Xray|20121214152535||IMG|||1^^^20121214152535^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||1259<R>
+OBX|1|TX|8867107||KIMBERLY HANSON, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|8867107||ACC#  Date Time  Exam~~7795083285 Dec 14 2012 03:25PM IMG1259 XR CHEST 1 VIEW~~EXAMINATION:~Chest X-ray~~FINDINGS:~The chest X-ray from December 11, 2012, shows clear lung fields~bilaterally, free from pleural effusions or infiltrates. The cardiac~silhouette appears normal in size and contour. Mediastinal structures~are midline without any significant lymphadenopathy. The bony thorax~is intact, and diaphragm positions appear normal. There are no acute~changes in comparison to the previous chest imaging. The chest~configuration suggests a benign condition with no acute chest~pathology.~~IMPRESSION:~Chest X-ray demonstrates no abnormalities. Normal pulmonary and~cardiac contours, stable compared to prior imaging.||||||P<R>
+OBX|3|TX|8867107||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Kimberly Hanson, M.D. on Dec 14 2012 03:25PM~~Pending review by: April Hunt, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|8867107|4|7795083285^UK^ZB||||||P<R>
+<EB>

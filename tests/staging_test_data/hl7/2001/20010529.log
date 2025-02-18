@@ -1,0 +1,24 @@
+2001-05-29 22:54:15.6279|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010529225415|TBD|ORU^R01|2.25.23177778987380720231693860817462514152|P|2.7<R>
+PID|1||ABC451117^^^ABC^MR||MCLAUGHLIN^NICOLE^LATOYA^III^^^D||19831230|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085012|||||||||||||||||||||||||20010529225415|||||||V<R>
+ORC|RE|5064769^SYS|7795083265||Prelim||^^^20010529225414^20010529225415^O||20010529225415|T6530154^ROBERTS^RICARDO||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5064769^SYS|7795083265|IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED|O|20010527081257|||||Hosp Perf||||^^^BRAIN|D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20010529225415||MR|Prelim||^^^20010529225414^20010529225415^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20010529225415||||||||IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|There are no intracranial abnormalities detected. The study is||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|unremarkable and within normal limits, suggesting a healthy cerebral||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|structure. Imaging demonstrates a normal brain anatomy with symmetric||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|cerebral hemisphere morphology. There is no evidence of mass effect,||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|and the ventricles are within normal limits. No extra-axial fluid||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|collections are observed. The corpus callosum appears intact, and||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|there is no signal abnormality in the white or gray matter. No||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|significant foci of abnormal signal are detected on T2-weighted||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|images. Angiographic sequences reveal patent vessels without stenosis||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|or significant vascular malformations.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.208540244885688585978665362661188705242^EPIC^APPLICATION^DICOM<R>
+<EB>

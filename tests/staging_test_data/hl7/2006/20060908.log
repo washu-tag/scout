@@ -1,0 +1,24 @@
+2006-09-08 10:04:47.4200|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060908100447|TBD|ORU^R01|2.25.137068438394195151834258288040643347088|P|2.7<R>
+PID|1||ABC451165^^^ABC^MR||CRAIG^KAREN^JESSICA^^^^D||19200411|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084968|||||||||||||||||||||||||20060908100447|||||||V<R>
+ORC|RE|2002830^SYS|7795083456||Wet Read||^^^20060908100446^20060908100447^O||20060908100447|||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2002830^SYS|7795083456|BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM|O|20060904141112|||||Hosp Perf||||^^^BREAST|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060908100447||MG|Wet Read||^^^20060908100446^20060908100447^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|||20060908100447||||||||BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|Overall, the mammogram shows no notable findings of malignancy or||||||Wet Read<R>
+OBX|6|ST|&IMP|2|other significant breast abnormalities. Given the limitation of a||||||Wet Read<R>
+OBX|7|ST|&IMP|2|single view, comparison to previous studies may be warranted if||||||Wet Read<R>
+OBX|8|ST|&IMP|2|clinical concerns arise. The single-view mammogram displays fairly||||||Wet Read<R>
+OBX|9|ST|&IMP|2|dense glandular tissue with no apparent masses or calcifications. The||||||Wet Read<R>
+OBX|10|ST|&IMP|2|persistent density may obscure small lesions, although no significant||||||Wet Read<R>
+OBX|11|ST|&IMP|2|abnormalities are visualized in this projection. Margins of the||||||Wet Read<R>
+OBX|12|ST|&IMP|2|breast envelope are well-defined. No concerns or abnormalities noted||||||Wet Read<R>
+OBX|13|ST|&IMP|2|in the axillary areas. The fat composition is consistent with the||||||Wet Read<R>
+OBX|14|ST|&IMP|2|normal aging breast tissue.||||||Wet Read<R>
+OBX|15|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.182191881750710242314697534044793516988^EPIC^APPLICATION^DICOM<R>
+<EB>

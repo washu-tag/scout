@@ -1,0 +1,25 @@
+2000-05-18 09:31:21.5065|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000518093121|TBD|ORU^R01|2.25.120784469912538405863185346252051701461|P|2.7<R>
+PID|1||ABC451073^^^ABC^MR||LOPEZ^JOSHUA^TRAVIS^^^^D||19320202|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084712|||||||||||||||||||||||||20000518093121|||||||V<R>
+ORC|RE|2227409^SYS|7795083091||Prelim||^^^20000518093120^20000518093121^O||20000518093121|T6530151^WATERS^JESSICA||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2227409^SYS|7795083091|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20000514172013|||||Hosp Perf||||^^^BRAIN|D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20000518093121||MR|Prelim||^^^20000518093120^20000518093121^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20000518093121||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|Small ischemic changes noted in the right frontal lobe are likely||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|chronic, correlating with the patient's age. No acute pathology||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|identified. Continued monitoring and vascular risk stratification are||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|recommended. Comparison with previous study from 1996 indicates||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|stability in intracranial findings. The brain MRI reveals a small||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|chronic ischemic change in the right frontal lobe, consistent with a||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|vascular etiology. No acute intracranial hemorrhage or mass effect is||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|observed. The ventricles are normal in size and configuration, and||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|the corpus callosum is intact. There are no significant foci of||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|abnormal signal within the brain parenchyma. The basilar and carotid||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|arteries demonstrate normal flow without stenosis.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.140544710916106647703948010360383487118^EPIC^APPLICATION^DICOM<R>
+<EB>

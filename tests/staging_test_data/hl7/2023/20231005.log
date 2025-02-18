@@ -1,0 +1,25 @@
+2023-10-05 00:52:37.0297|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20231005005237|TBD|ORU^R01|2.25.245358104574993932182602880138070990296|P|2.7<R>
+PID|1||ABC450993^^^ABC^MR||ΘΕΟΔΩΡΆΚΗΣ^ΆΛΈΞΙΟΣ^^^^^D||19760421|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084660|||||||||||||||||||||||||20231005005237|||||||V<R>
+ORC|RE|2613105^SYS|7795082772||Final||^^^20231005005236^20231005005237^O||20231005005237|T6530154^ROBERTS^RICARDO||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2613105^SYS|7795082772|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC|O|20231002072216|||||Hosp Perf||||^^^ABDOMEN|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20231005005237||CT|Final||^^^20231005005236^20231005005237^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20231005005237||||||||CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-CT||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|Increased metabolic activity in the left kidney warrants further||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|investigation, potentially considering biopsy or nephrectomy, given||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|the concern for renal mass. No metastatic disease is evident at this||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|time. The abdomen PET-CT conducted on October 2, 2023, revealed||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|increased metabolic activity concerning the left kidney, with an SUV||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|max of 4.2, suggesting potential renal neoplasia. There is no||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|evidence of distant metastatic disease identified within the abdomen||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|or pelvis. The surrounding organs demonstrate normal morphological||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|appearance with no lesions detected in the liver, pancreas, or||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|spleen. Lymph nodes are non-enlarged, and there are no significant||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|vascular anomalies noted within the abdominal vasculature.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.333445040489966117829264871455883365042^EPIC^APPLICATION^DICOM<R>
+<EB>

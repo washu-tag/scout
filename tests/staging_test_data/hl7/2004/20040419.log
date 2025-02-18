@@ -1,0 +1,26 @@
+2004-04-19 08:41:18.5102|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20040419084118|TBD|ORU^R01|2.25.37943189779668848068359753653646688381|P|2.7<R>
+PID|1||ABC451099^^^ABC^MR||HAMMOND^JOHN^CHRISTOPHER^^^^D||19391026|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084784|||||||||||||||||||||||||20040419084118|||||||V<R>
+ORC|RE|5572894^SYS|7795083194||Prelim||^^^20040419084117^20040419084118^O||20040419084118|T6530146^MOORE^CURTIS||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5572894^SYS|7795083194|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20040416194605|||||Hosp Perf|||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20040419084118||XA|Prelim||^^^20040419084117^20040419084118^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20040419084118||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|Significant atherosclerotic changes noted in the right common femoral||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|artery with moderate stenosis; recommend clinical correlation and||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|possible follow-up imaging to assess progression. The X-ray||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|angiography performed on the lower extremities reveals a moderate||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|degree of stenosis (approximately 60% narrowing) of the right common||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|femoral artery. No evidence of occlusion or significant collateral||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|circulation is noted. The remaining visualized arterial segments show||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|normal caliber without evidence of dissection or aneurysm formation.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|The vascular pedicle is intact, and the surrounding soft tissues do||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|not demonstrate any infiltrative process or lymphadenopathy. Overall,||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|the study indicates chronic changes likely secondary to||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|atherosclerotic disease without acute ischemic findings.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.96214139541614663735323510194390503052^EPIC^APPLICATION^DICOM<R>
+<EB>

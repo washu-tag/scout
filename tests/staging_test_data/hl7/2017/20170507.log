@@ -1,0 +1,11 @@
+2017-05-07 11:05:36.8979|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170507110536|TBD|ORU^R01|2.25.106703128462619836979379022070086301646|P|2.4<R>
+PID|1||ABC451192^^^ABC^MR~EPIC4485951^^^EPIC^MRN||POWERS^JENNIFER^RONDA^^^^D||19521224000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451192^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457242^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6565287^SYS|7795083566|IMG5021^5021 PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV|URGENT||20170503121906|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||5021^Brain Petct AC NAC|20170507110536||IMG|||1^^^20170507110536^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB|||||||||5021<R>
+OBX|1|TX|3533754||RUSSELL GALLAGHER, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|3533754||ACC#  Date Time  Exam~~7795083566 May 07 2017 11:05AM IMG5021 PET/CT FDG BRAIN TUMOR~METABOLIC EVALUATION~~EXAMINATION:~Head PET-CT study~~FINDINGS:~In the head PET-CT performed on 2017-05-03, there is symmetrical~uptake in the brain parenchyma with normal metabolic activity~observed in cortical and subcortical areas. No hypermetabolic lesions~are noted, including in the axillae, orbits, or regional lymph nodes.~There are also no signs of acute intracranial hemorrhage or midline~shift. Cerebral ventricles are normal in size without evidence of~communicating hydrocephalus. Comparison to prior studies reveals no~significant changes in cerebral perfusion or metabolic activity.~~IMPRESSION:~The PET-CT results are unremarkable with no evidence of suspicious~lesions or acute intracranial pathology. The metabolic activity of~brain structures appears normal, suggesting no significant~neurodegenerative or neoplastic disease at this stage.||||||F<R>
+OBX|3|TX|3533754||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Russell Gallagher, M.D. on May 07 2017 11:05AM~~This document has been electronically signed by: Russell Gallagher,~M.D. on May 07 2017 11:05AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3533754|4|7795083566^UK^ZB||||||F<R>
+<EB>

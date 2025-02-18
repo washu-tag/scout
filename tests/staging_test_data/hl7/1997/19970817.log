@@ -1,0 +1,25 @@
+1997-08-17 03:09:21.3493|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19970817030921|TBD|ORU^R01|2.25.315163644464285449585094411600622415356|P|2.7<R>
+PID|1||ABC451143^^^ABC^MR||HART^MIGUEL^MATTHEW^^^^D||19230901|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084657|||||||||||||||||||||||||19970817030921|||||||V<R>
+ORC|RE|7022402^SYS|7795083367||Final||^^^19970817030920^19970817030921^O||19970817030921|T6530148^GROSS^CARLY||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7022402^SYS|7795083367|BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY|O|19970815133458|||||Hosp Perf||||^^^ABDOMEN|D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19970817030921||DX|Final||^^^19970817030920^19970817030921^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||19970817030921||||||||BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|The imaging findings are suggestive of a mild ileus likely secondary||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|to functional obstruction with no acute intra-abdominal catastrophe.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|There is evidence of hepatic steatosis, which may warrant further||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|metabolic assessments. No immediate intervention is needed. The||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|abdominal X-ray demonstrates a well-distended stomach and gas-filled||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|bowel loops consistent with mild ileus. No evidence of free air under||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|the diaphragm is noted, which may suggest absence of perforation. The||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|liver is moderately enlarged, and the contour appears smooth with||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|some fatty infiltrative changes. The spleen is of normal size, and||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|renal outlines are preserved. No calcifications or masses were||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|identified in the abdominal organs.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Final|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.282970174599725703698777169119889223222^EPIC^APPLICATION^DICOM<R>
+<EB>

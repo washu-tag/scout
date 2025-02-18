@@ -1,0 +1,23 @@
+1996-10-12 19:13:25.9075|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19961012191325|TBD|ORU^R01|2.25.149286361335422319177353852077462066651|P|2.7<R>
+PID|1||ABC451130^^^ABC^MR||KATO^YUA^^^^^D||19710820|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084871|||||||||||||||||||||||||19961012191325|||||||V<R>
+ORC|RE|2750662^SYS|7795083316||Prelim||^^^19961012191324^19961012191325^O||19961012191325|T6530151^WATERS^JESSICA||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2750662^SYS|7795083316|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|19961009200657|||||Hosp Perf||||^^^BREAST|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19961012191325||MG|Prelim||^^^19961012191324^19961012191325^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||19961012191325||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|Normal mammogram findings for both breasts. No evidence of malignancy||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|or worrisome findings on this examination. The study demonstrates the||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|right breast with an overall heterogeneous density; however, no||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|discrete masses or calcifications are evident. There are no signs of||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|architectural distortion or skin thickening. The left breast shows||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|similar characteristics, maintaining a normal contour with no||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|abnormalities noted. The imaged areas are free from any suspicious||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|findings, and breast tissue appears within the normal limits for the||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|patient’s age, with no focal lesions detected.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.336232778657536095045502684858618790712^EPIC^APPLICATION^DICOM<R>
+<EB>

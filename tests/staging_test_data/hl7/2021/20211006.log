@@ -1,0 +1,11 @@
+2021-10-06 12:04:35.2303|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20211006120435|TBD|ORU^R01|2.25.169590949973451278230679204454890186089|P|2.4<R>
+PID|1||ABC451070^^^ABC^MR~EPIC4485829^^^EPIC^MRN||BAILEY^CHRISTOPHER^FIDEL^^^^D||19470612000000|M||I|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451070^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457143^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4935333^SYS|7795083077|M72195PEL0^721950 MR PELVIS WO^UNKDEV|URGENT||20211002103214|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||721950^Pelvis PtMr|20211006120435||MPEL|||1^^^20211006120435^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB|||||||||721950<R>
+OBX|1|TX|621624||CURTIS HAWKINS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|621624||ACC#  Date Time  Exam~~7795083077 Oct 06 2021 12:04PM M72195PEL0 MR PELVIS WO~~EXAMINATION:~Pelvis PET-MR~~FINDINGS:~This follow-up PET-MR, dated 2021-10-02, shows evolution from the~previous study performed on 2021-05-28, with an increase in~hypermetabolic activity in the prostate (SUVmax increased to 5.2).~The left obturator lymph nodes appear slightly hypermetabolic but~remain stable in size. No bone metastases are observed in the spine~or pelvis. The integrity of surrounding structures continues to look~preserved. A new focus of activity was seen in the left seminal~vesicle, suggesting possible localized disease progression, which was~not noted in prior imaging.~~IMPRESSION:~This PET-MR reveals progression of known disease within the prostate~with newly noted involvement of the seminal vesicle. Enhanced~surveillance and potentially aggressive therapeutic management should~be discussed, including repeat biopsy of the prostate to assess for~histological changes and direct treatment strategies.||||||F<R>
+OBX|3|TX|621624||Requested By: Reese,Amber J. M.D.~~Dictated By: Curtis Hawkins, M.D. on Oct 06 2021 12:04PM~~This document has been electronically signed by: Curtis Hawkins, M.D.~on Oct 06 2021 12:04PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|621624|4|7795083077^UK^ZB||||||F<R>
+<EB>

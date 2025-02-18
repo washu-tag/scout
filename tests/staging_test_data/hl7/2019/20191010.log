@@ -1,0 +1,27 @@
+2019-10-10 14:52:46.2551|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20191010145246|TBD|ORU^R01|2.25.139610214003617090836426490792276339690|P|2.7<R>
+PID|1||ABC451050^^^ABC^MR||MAYNARD^CLIFTON^JASON^^^^D||19411024|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823228^MYERS^BRENT^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084851|||||||||||||||||||||||||20191010145246|||||||V<R>
+ORC|RE|3933484^SYS|7795082999||Wet Read||^^^20191010145245^20191010145246^O||20191010145246|T6530144^PARK^ROBERT||D7823218^LLOYD^JESSICA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3933484^SYS|7795082999|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20191006171528|||||Hosp Perf||||^^^HEART|D7823218^LLOYD^JESSICA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20191010145246||NM|Wet Read||^^^20191010145245^20191010145246^O||||^Chest pain||D7823218^LLOYD^JESSICA^A.^^^^^ABC^^^^HOSP|T6530144^PARK^ROBERT||20191010145246||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|5|ST|&IMP|2|The imaging reflects preserved left ventricular function with no||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|6|ST|&IMP|2|identifiable ischemia or infarction. The overall assessment confirms||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|7|ST|&IMP|2|a stable cardiac profile with a healthy functional capacity noted in||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|8|ST|&IMP|2|follow-up. The cardiac nuclear medicine study demonstrates uniform||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|9|ST|&IMP|2|perfusion of the left ventricular myocardium with no evidence of||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|10|ST|&IMP|2|reversible ischemia or infarction. All segments exhibit adequate||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|11|ST|&IMP|2|uptake of the radiotracer with the left ventricular function||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|12|ST|&IMP|2|appearing preserved. The ejection fraction calculated is||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|13|ST|&IMP|2|approximately 60%. There are no findings of stress-induced wall||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|14|ST|&IMP|2|motion abnormalities or myocardial defects noted. Compared to the||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|15|ST|&IMP|2|previous assessment from 2017-04-15, there is stability in findings||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|16|ST|&IMP|2|and no new areas of concern, indicating favorable cardiac function||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|17|ST|&IMP|2|and perfusion status.||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+OBX|18|ST|&IMP|2|Dictated by: Jessica Lloyd Interpreter, M.D.||||||Wet Read|||||T6530144^PARK^ROBERT<R>
+ZDS|2.25.324772194902182117548542473295351859980^EPIC^APPLICATION^DICOM<R>
+<EB>

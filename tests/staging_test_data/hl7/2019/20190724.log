@@ -1,0 +1,11 @@
+2019-07-24 02:52:55.6074|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190724025255|TBD|ORU^R01|2.25.121233146461247109542639899243189043981|P|2.4<R>
+PID|1||ABC451049^^^ABC^MR~EPIC4485808^^^EPIC^MRN||CURTIS^KAREN^KRISTEN^^^^D||19520301000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451049^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457256^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4358807^SYS|7795082993|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20190723194902|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20190724025255||IMG|||1^^^20190724025255^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823234^DONOVAN^WILLIAM^C.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|5963845||CURTIS HAWKINS, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|5963845||ACC#  Date Time  Exam~~7795082993 Jul 24 2019 02:52AM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray study~~FINDINGS:~The abdomen X-ray examination reveals normal bowel gas patterns with~no evidence of obstruction or distension. The liver, kidneys, and~spleen are visualized within normal limits; however, there is a~nodular density in the right kidney indicative of a renal cyst, which~appears unchanged compared to previous imaging. No calculi are noted~in the urinary tract, and the abdominal aorta remains unremarkable.~The lower abdominal structures and pelvic organs appear within normal~limits. The study provides stable results in comparison to previous~imaging evaluations, with no new abdominal pathology detected.~~IMPRESSION:~Normal abdominal X-ray findings with a noted stable renal cyst in the~right kidney. No evidence of acute abdominal pathology or significant~changes since the last imaging on July 23, 2019.||||||P<R>
+OBX|3|TX|5963845||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Curtis Hawkins, M.D. on Jul 24 2019 02:52AM~~Pending review by: William Donovan, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5963845|4|7795082993^UK^ZB||||||P<R>
+<EB>

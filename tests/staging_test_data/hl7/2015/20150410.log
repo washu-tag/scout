@@ -1,0 +1,35 @@
+2015-04-10 07:48:11.3776|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150410074811|TBD|ORU^R01|2.25.194650709383129286615661151062273466007|P|2.7<R>
+PID|1||ABC451164^^^ABC^MR||SATO^SOUMA^^^^^D||19511024|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084925|||||||||||||||||||||||||20150410074811|||||||V<R>
+ORC|RE|8176834^SYS|7795083455||Prelim||^^^20150410074810^20150410074811^O||20150410074811|T6530149^VASQUEZ^MISTY||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8176834^SYS|7795083455|BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY|O|20150408192026|||||Hosp Perf||||^^^ABDOMEN|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20150410074811||DX|Prelim||^^^20150410074810^20150410074811^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20150410074811||||||||BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|The radiographic findings reveal no significant changes in the||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|gastrointestinal tract compared to the previous study from February||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|17, 2011. No acute issues or obstructions are observed. The noted||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|mild soft tissue prominence could suggest a benign condition;||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|however, clinical correlation and possibly follow-up imaging may be||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|prudent to rule out any developing pathology. Recommendations include||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|continued observation and routine follow-up examinations as||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|necessary. Comparing the current study dated 2015-04-08 to the prior||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|abdomen X-ray from 2011-02-17, there is a significant unchanged||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|appearance of the gastrointestinal tract. Gas patterns remain||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|consistent with a normally functioning bowel. Air is noted across the||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|gastritis and intestinal loops without any evidence of obstruction or||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|abnormal dilation, maintaining a healthy mucosal pattern. However,||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|18|ST|&IMP|2|there is noticeable mild soft tissue prominence in the lower||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|19|ST|&IMP|2|abdominal region, possibly indicating subcutaneous edema. Renal||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|20|ST|&IMP|2|outlines continue to appear normal, and there are no emerging||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|21|ST|&IMP|2|calcifications deploying within the renal fossa. Skeletal structures||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|22|ST|&IMP|2|maintain similar alignment and density as previously noted, with no||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|23|ST|&IMP|2|new skeletal abnormalities evident. The overall radiographic||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|24|ST|&IMP|2|appearance remains stable, although the mild soft tissue prominence||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|25|ST|&IMP|2|warrants further clinical correlation.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|26|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.63498665814326149500162295287563221167^EPIC^APPLICATION^DICOM<R>
+<EB>

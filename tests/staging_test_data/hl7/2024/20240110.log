@@ -1,0 +1,11 @@
+2024-01-10 21:40:21.5779|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240110214021|TBD|ORU^R01|2.25.189463559850959972472305167378062200533|P|2.4<R>
+PID|1||ABC451037^^^ABC^MR~EPIC4485796^^^EPIC^MRN||ITO^SOTA^^^^^D||19451114000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451037^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457340^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8333491^SYS|7795082945|M755612^755612 MR CARDIAC MRPH FUNC WWO^UNKDEV|URGENT||20240108155505|||PSCRIB|||||^^^^ |D7823240^PARSONS^ERNESTO^JOHN^M.D.^^^^ABC|||||755612^HEART MRI|20240110214021||M|||1^^^20240110214021^^U^^URGENT|       |||^Chest pain|D7823241^SANDERS^LISA^A.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB|||||||||755612<R>
+OBX|1|TX|8500253||LISA SANDERS, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|8500253||ACC#  Date Time  Exam~~7795082945 Jan 10 2024 09:40PM M755612 MR CARDIAC MRPH FUNC WWO~~EXAMINATION:~Heart MRI~~FINDINGS:~The cardiac MRI reveals normal cardiac anatomy with hyperintense left~ventricular myocardium on T2-weighted sequences, indicating no~evidence of edema. Late gadolinium enhancement sequences show no~areas of fibrosis or scarring in the myocardium. The left ventricle~demonstrates normal wall thickness and motion during systole and~diastole. The left atrium is normal in size, and there are no~visualized valvular abnormalities. Great vessels are normally~positioned with no structural anomalies detected.~~IMPRESSION:~The heart MRI indicates a structurally normal heart with no evidence~of myocarditis, infarction, or other structural abnormalities. The~findings correlate favorably with prior nuclear studies and suggest~excellent cardiac health.||||||P<R>
+OBX|3|TX|8500253||Requested By: Parsons,Ernesto J. M.D.~~Dictated By: Lisa Sanders, M.D. on Jan 10 2024 09:40PM~~Pending review by: Clara Smith, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|8500253|4|7795082945^UK^ZB||||||P<R>
+<EB>

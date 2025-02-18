@@ -1,0 +1,11 @@
+2004-03-28 05:10:40.7490|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20040328051040|TBD|ORU^R01|2.25.159947303944148770033643261039867533493|P|2.4<R>
+PID|1||ABC451174^^^ABC^MR~EPIC4485933^^^EPIC^MRN||JONES^MILTON^JOSHUA^^^^D||19630203000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451174^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457163^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||28212^SYS|7795083492|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20040327110439|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||^Xr Sing View|20040328051040||MDXREVNT|||1^^^20040328051040^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB<R>
+OBX|1|TX|8723087||GUY SANCHEZ, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|8723087||ACC#  Date Time  Exam~~7795083492 Mar 28 2004 05:10AM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray of the chest~~FINDINGS:~The single-view chest X-ray captures the lungs in full inflation,~revealing clear lung fields bilaterally, without any infiltrates,~consolidations, or pleural effusions. The heart is of normal size and~contour. The mediastinum is symmetric with no signs of widening. The~bony thorax appears intact with no fractures visualized in the ribs~or sternum. Diaphragm is well-positioned and the costophrenic angles~are sharply defined.~~IMPRESSION:~Overall, the chest X-ray demonstrates no acute pathology and is~consistent with normal thoracic anatomy without any complications.~Clinical follow-up is recommended if respiratory symptoms are~present.||||||P<R>
+OBX|3|TX|8723087||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Guy Sanchez, M.D. on Mar 28 2004 05:10AM~~Pending review by: April Hunt, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|8723087|4|7795083492^UK^ZB||||||P<R>
+<EB>

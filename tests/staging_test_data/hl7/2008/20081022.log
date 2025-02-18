@@ -1,0 +1,27 @@
+2008-10-22 00:52:46.7383|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20081022005246|TBD|ORU^R01|2.25.273407547210957058395597992710229353437|P|2.7<R>
+PID|1||ABC451173^^^ABC^MR||HOLLAND^CHRISTOPHER^JOSHUA^^^^D||19661207|M||PCFIS|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823246^SANCHEZ^LESLIE^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084783|||||||||||||||||||||||||20081022005246|||||||V<R>
+ORC|RE|656940^SYS|7795083491||Final||^^^20081022005245^20081022005246^O||20081022005246|T6530155^STEVENSON^JEREMY||D7823259^SOLIS^JESSICA^L.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|656940^SYS|7795083491|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20081021162323|||||Hosp Perf||||^^^HEART|D7823259^SOLIS^JESSICA^L.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20081022005246||MR|Final||^^^20081022005245^20081022005246^O||||^Chest pain||D7823253^NIXON^MELISSA^D.^^^^^ABC^^^^HOSP|T6530155^STEVENSON^JEREMY||20081022005246||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac MRI examination for evaluation of myocardial conditions.||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|5|ST|&IMP|2|Cardiac MRI findings are consistent with normal myocardial function||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|6|ST|&IMP|2|and morphology, with no detectable areas of infarction or fibrosis.||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|7|ST|&IMP|2|The structure and performance of the heart are within normal limits.||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|8|ST|&IMP|2|The cardiac MRI scan yields multiphase imaging with excellent||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|9|ST|&IMP|2|delineation of endocardial and epicardial borders. There is no||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|10|ST|&IMP|2|evidence of significant ischemic changes or regional wall motion||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|11|ST|&IMP|2|abnormalities. The left ventricular ejection fraction is measured at||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|12|ST|&IMP|2|62%, indicating preserved left ventricular function. Late gadolinium||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|13|ST|&IMP|2|enhancement reveals no hyperenhancement patterns suggestive of prior||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|14|ST|&IMP|2|myocardial infarction or scarring. The right ventricle appears||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|15|ST|&IMP|2|morphologically and functionally normal with no evidence of dilation||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|16|ST|&IMP|2|or hypertrophy. Valvular structures are intact with normal morphology||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|17|ST|&IMP|2|and function, and no significant regurgitation or stenosis is noted.||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+OBX|18|ST|&IMP|2|Dictated by: Melissa Nixon Interpreter, M.D.||||||Final|||||T6530155^STEVENSON^JEREMY<R>
+ZDS|2.25.320092634835426011805010184728729408447^EPIC^APPLICATION^DICOM<R>
+<EB>

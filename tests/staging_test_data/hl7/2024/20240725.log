@@ -1,0 +1,34 @@
+2024-07-25 05:14:53.5605|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240725051453|TBD|ORU^R01|2.25.21993863500581035804095697995211798628|P|2.7<R>
+PID|1||ABC451041^^^ABC^MR||DAVIS^JANET^MARIA^^^^D||19910430|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084990|||||||||||||||||||||||||20240725051453|||||||V<R>
+ORC|RE|2644201^SYS|7795082965||Final||^^^20240725051452^20240725051453^O||20240725051453|T6530150^NEAL^EMILY||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2644201^SYS|7795082965|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20240721083419|||||Hosp Perf||||^^^BREAST|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20240725051453||MG|Final||^^^20240725051452^20240725051453^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20240725051453||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|The mammogram reveals concerning findings suggestive of malignancy,||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|specifically the presence of a spiculated mass that necessitates||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|further pathological evaluation via biopsy to rule out breast||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|carcinoma. The detected microcalcifications further accentuate the||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|need for follow-up imaging or diagnostic mammography to evaluate for||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|possible progression and characterization of the lesion. Given the||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|change in imaging results from the previous study may require urgent||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|intervention, referral to a breast specialist is recommended. The||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|single-view mammogram performed on July 21, 2024, yielded a critical||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|assessment of the breast parenchyma. The imaging delineates a||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|well-defined, hypoechoic mass measuring approximately 1.5 cm in the||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|upper outer quadrant of the left breast, which was newly noted||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|compared to the prior imaging. The mass exhibits spiculated margins,||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|18|ST|&IMP|2|raising the suspicion for an infiltrative process. Additionally,||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|19|ST|&IMP|2|there are scattered microcalcifications observed in the left breast,||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|20|ST|&IMP|2|which appear to be grouped and could imply early ductal carcinoma in||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|21|ST|&IMP|2|situ (DCIS). No significant lymphadenopathy was detected in the||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|22|ST|&IMP|2|axillary region, and both breasts show no suspicious architectural||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|23|ST|&IMP|2|distortions. The right breast is unremarkable without any palpable or||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|24|ST|&IMP|2|visualized abnormalities.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|25|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Final|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.122919660132277531382560598871573743622^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,24 @@
+2010-04-27 20:42:42.3979|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100427204242|TBD|ORU^R01|2.25.287145795914749655851529830853687873762|P|2.7<R>
+PID|1||ABC451186^^^ABC^MR||JOHNSON^STACIE^SARA^^^^D||19471012|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823220^HESS^BRANDI^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084665|||||||||||||||||||||||||20100427204242|||||||V<R>
+ORC|RE|6941348^SYS|7795083544||Wet Read||^^^20100427204241^20100427204242^O||20100427204242|T6530138^FIELDS^VICTORIA||D7823218^LLOYD^JESSICA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6941348^SYS|7795083544|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20100425163930|||||Hosp Perf||||^^^HEART|D7823218^LLOYD^JESSICA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20100427204242||NM|Wet Read||^^^20100427204241^20100427204242^O||||^Chest pain||D7823218^LLOYD^JESSICA^A.^^^^^ABC^^^^HOSP|T6530138^FIELDS^VICTORIA||20100427204242||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|5|ST|&IMP|2|The comparison with the prior study confirms a stable cardiac||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|6|ST|&IMP|2|perfusion pattern and maintains an overall assessment of health||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|7|ST|&IMP|2|regarding myocardial function. Compared to the previous cardiac NM||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|8|ST|&IMP|2|study dated 2000-07-12, this examination indicates stable myocardial||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|9|ST|&IMP|2|perfusion. SPECT imaging shows no new perfusion defects, and||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|10|ST|&IMP|2|previously noted areas of perfusion appear unchanged. The left||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|11|ST|&IMP|2|ventricular ejection fraction remains stable at 60% with no||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|12|ST|&IMP|2|indications of regional wall motion abnormalities. The overall||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|13|ST|&IMP|2|cardiac size and contours are consistent with prior studies, with no||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|14|ST|&IMP|2|evidence of pathologic hypertrophy or dilation.||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|15|ST|&IMP|2|Dictated by: Jessica Lloyd Interpreter, M.D.||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+ZDS|2.25.144244493651861733166390136957771490247^EPIC^APPLICATION^DICOM<R>
+<EB>

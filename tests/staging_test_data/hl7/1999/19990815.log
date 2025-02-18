@@ -1,0 +1,26 @@
+1999-08-15 06:12:39.7265|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19990815061239|TBD|ORU^R01|2.25.51080564524631674843449145366991428375|P|2.7<R>
+PID|1||ABC451015^^^ABC^MR||ELLIOTT^TONYA^SASHA^^^^D||19471006|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085020|||||||||||||||||||||||||19990815061239|||||||V<R>
+ORC|RE|7532455^SYS|7795082858||Final||^^^19990815061238^19990815061239^O||19990815061239|T6530149^VASQUEZ^MISTY||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7532455^SYS|7795082858|IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED|O|19990814132014|||||Hosp Perf||||^^^BRAIN|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19990815061239||MR|Final||^^^19990815061238^19990815061239^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||19990815061239||||||||IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|Findings suggest a benign frontal lobe lesion, likely a meningioma or||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|a low-grade glial tumor, given the characteristics on MRI.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|Suggestions for follow-up with repeat imaging in 6–12 months to||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|monitor stability or changes as indicated. The MRI of the brain shows||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|a well-defined, slightly hyperintense lesion located in the right||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|frontal lobe on T2-weighted images, with no significant mass effect||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|or midline shift. The lesion demonstrates minimal restriction on||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|diffusion-weighted imaging, suggesting a benign process. Surrounding||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|edema is absent. No evidence of acute ischemic changes or hemorrhage||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|is observed. The ventricles and sulci are symmetric, and the basal||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|ganglia appear intact. No abnormal signal intensity is appreciated in||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|the posterior fossa or cranial nerves.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.98551233835916732723493600384627860887^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,18 @@
+name: 'K3s image import'
+description: 'Downloads docker image tags it for testing'
+inputs:
+  image-name:
+    description: 'Name for docker image'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.image-name }}
+        path: ${{ runner.temp }}
+    - name: Import image into k3s
+      shell: bash
+      run: |
+        sudo k3s ctr -n k8s.io images import --index-name docker.io/local/washu-tag/${{ inputs.image-name }}:latest ${{ runner.temp }}/${{ inputs.image-name }}.tar # TODO: use derived version, not latest

@@ -1,0 +1,11 @@
+2018-06-02 19:10:31.9419|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180602191031|TBD|ORU^R01|2.25.2140158930768932090566248996790556893|P|2.4<R>
+PID|1||ABC451118^^^ABC^MR~EPIC4485877^^^EPIC^MRN||WILLIS^PATRICK^STEPHEN^^^^D||20000430000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451118^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457263^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6227681^SYS|7795083272|BED72020^72020 72020 Spine Single View^UNKDEV|URGENT||20180601093555|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||72020^Spine 1 View Dx Xray|20180602191031||BED|||1^^^20180602191031^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||72020<R>
+OBX|1|TX|9754450||MICHAEL MARKS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|9754450||ACC#  Date Time  Exam~~7795083272 Jun 02 2018 07:10PM BED72020 72020 Spine Single View~~EXAMINATION:~Spine X-ray~~FINDINGS:~The spine X-ray demonstrates a well-aligned thoracolumbar spine.~There are degenerative changes at the L4-L5 and L5-S1 levels~characterized by disc space narrowing and osteophyte formation. No~evidence of acute fracture or displacement is noted. Alignment~appears preserved. There is also a mild scoliosis noted in the~thoracic region. The vertebral bodies exhibit normal height but are~mildly sclerotic at certain levels due to asymptomatic degenerative~changes. No significant paravertebral soft tissue masses or~abnormalities stand out, and the alignment maintains a physiologic~curvature.~~IMPRESSION:~The study reveals degenerative changes consistent with mild~spondylosis without acute findings. Ongoing follow-up is advisable to~monitor the stability of the observed degenerative changes.||||||F<R>
+OBX|3|TX|9754450||Requested By: Marks,Michael R. M.D.~~Dictated By: Michael Marks, M.D. on Jun 02 2018 07:10PM~~This document has been electronically signed by: Michael Marks, M.D.~on Jun 02 2018 07:10PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9754450|4|7795083272^UK^ZB||||||F<R>
+<EB>

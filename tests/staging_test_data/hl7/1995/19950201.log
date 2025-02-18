@@ -1,0 +1,33 @@
+1995-02-01 13:23:23.0114|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19950201132323|TBD|ORU^R01|2.25.293879042435045674884683880231103445856|P|2.7<R>
+PID|1||ABC451105^^^ABC^MR||WATANABE^YUUMA^^^^^D||19500816|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084870|||||||||||||||||||||||||19950201132323|||||||V<R>
+ORC|RE|5997236^SYS|7795083219||Final||^^^19950201132322^19950201132323^O||19950201132323|T6530147^ANDERSON^NATALIE||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5997236^SYS|7795083219|SM71550CH0^MR CHEST WO^UNKDEV^^CHEST PTMR|O|19950130182902|||||Hosp Perf||||^^^CHEST|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19950201132323||MR|Final||^^^19950201132322^19950201132323^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||19950201132323||||||||SM71550CH0^MR CHEST WO^UNKDEV^^CHEST PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest PET-MR||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|The findings suggest the presence of a potential hypermetabolic||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|process within the right upper lobe that could indicate a malignancy.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|Given the increased SUV and the patient's age, further diagnostic||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|assessment is recommended, possibly including a follow-up CT scan and||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|consultation for biopsy. Close clinical correlation is advised to||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|guide any necessary intervention. The PET-MR examination demonstrates||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|bilateral asymmetric pulmonary uptake, particularly in the right||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|upper lobe, with an SUV max of 4.8, raising suspicion for an||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|underlying malignancy. No pulmonary nodules are detected, however,||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|there is an area of consolidation with associated ground-glass||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|opacities observed in the right upper lobe. Mediastinal structures||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|appear unremarkable with no lymphadenopathy or pleural effusion||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|17|ST|&IMP|2|evident. Cardiac structures exhibit classic sinus rhythm, with no||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|18|ST|&IMP|2|significant wall motion abnormalities noted. The aorta is within||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|19|ST|&IMP|2|normal limits with no signs of calcification or aneurysm formation.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|20|ST|&IMP|2|Compared to previous chest imaging dated 1993, there is a notable||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|21|ST|&IMP|2|increase in metabolic activity without corresponding structural||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|22|ST|&IMP|2|lesions, emphasizing the need for further evaluation, potentially||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|23|ST|&IMP|2|including biopsy depending on clinical correlation.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|24|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.167242757860717875758750370427783923530^EPIC^APPLICATION^DICOM<R>
+<EB>

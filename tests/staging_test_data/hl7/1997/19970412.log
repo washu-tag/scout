@@ -1,0 +1,28 @@
+1997-04-12 04:14:57.5787|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19970412041457|TBD|ORU^R01|2.25.152081723038973826852121825356406130015|P|2.7<R>
+PID|1||ABC451019^^^ABC^MR||WILLIAMS^ERIN^KELLY^^^^D||19380422|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084752|||||||||||||||||||||||||19970412041457|||||||V<R>
+ORC|RE|7008328^SYS|7795082875||Wet Read||^^^19970412041456^19970412041457^O||19970412041457|T6530153^MORAN^JOSHUA||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7008328^SYS|7795082875|CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI|O|19970409163729|||||Hosp Perf||||^^^BRAIN|D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19970412041457||MR|Wet Read||^^^19970412041456^19970412041457^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||19970412041457||||||||CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|Overall, the brain MRI is unremarkable with no acute or chronic||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|pathological findings. The structure and vascular integrity of the||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|brain appear normal, suggesting no significant neurological changes||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|at this time. The MRI of the brain performed on the date specified||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|reveals normal intracranial anatomy with no evidence of mass lesions,||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|cerebral edema, or acute hemorrhagic events. The ventricles are||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|well-formed and show no signs of hydrocephalus. The cortical sulci||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|are appropriately configured without evidence of significant cortical||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|atrophy, which is reassuring. The diffusion-weighted imaging (DWI)||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|sequences demonstrate no restricted diffusion. The posterior fossa||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|15|ST|&IMP|2|structures are intact, with the cerebellum and brainstem exhibiting||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|16|ST|&IMP|2|normal morphology. There are no abnormal signal intensities||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|17|ST|&IMP|2|appreciated in the white or gray matter, and vascular structures||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|18|ST|&IMP|2|appear patent. No midline shifts or mass effect noted.||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|19|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.80679688957207031521250897665077873188^EPIC^APPLICATION^DICOM<R>
+<EB>

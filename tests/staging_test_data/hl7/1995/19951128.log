@@ -1,0 +1,27 @@
+1995-11-28 07:39:45.6696|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19951128073945|TBD|ORU^R01|2.25.222191183201584052618073460782096615281|P|2.7<R>
+PID|1||ABC451027^^^ABC^MR||GARCIA^REGINA^REBECCA^^^^D||19470111|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084901|||||||||||||||||||||||||19951128073945|||||||V<R>
+ORC|RE|1478688^SYS|7795082907||Prelim||^^^19951128073944^19951128073945^O||19951128073945|T6530149^VASQUEZ^MISTY||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1478688^SYS|7795082907|CTCHEST^CT THORAX^UNKDEV^^THORAX PETCT AC NAC|O|19951123170054|||||Hosp Perf||||^^^THORAX|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19951128073945||CT|Prelim||^^^19951128073944^19951128073945^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||19951128073945||||||||CTCHEST^CT THORAX^UNKDEV^^THORAX PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Thorax PET-CT||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|This PET-CT study does not reveal any significant abnormal findings.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|The mild uptake noted might require clinical correlation to rule out||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|any infectious or inflammatory processes versus oncological concerns,||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|especially considering historical context. Follow-up imaging may be||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|warranted for closer observation. The thoracic PET-CT performed on||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|1995-11-23 demonstrates symmetric lung expansion with no pulmonary||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|nodules or masses identified on the low-dose CT component. The||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|mediastinum appears unremarkable, with no evidence of lymphadenopathy||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|or vascular abnormalities. However, there is mild uptake in the right||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|lower lobe, with a maximum standardized uptake value (SUV) of 2.5,||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|which may suggest an inflammatory process rather than malignant||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|involvement. The cardiac structures are visualized adequately, with||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|no regional wall motion abnormalities or perfusion defects noted.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|18|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.37149557923204225529929617638619282609^EPIC^APPLICATION^DICOM<R>
+<EB>

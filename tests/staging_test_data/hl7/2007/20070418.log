@@ -1,0 +1,11 @@
+2007-04-18 16:51:36.8393|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20070418165136|TBD|ORU^R01|2.25.105556539089796263573959113586562823068|P|2.4<R>
+PID|1||ABC451085^^^ABC^MR~EPIC4485844^^^EPIC^MRN||MARTINEZ^ALFRED^DAVID^^^^D||19300126000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451085^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457240^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||550252^SYS|7795083139|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20070416170452|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||2816^Ultrasound|20070418165136||IMG|||1^^^20070418165136^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|9820915||GUY SANCHEZ, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|9820915||ACC#  Date Time  Exam~~7795083139 Apr 18 2007 04:51PM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Ultrasound of the abdomen~~FINDINGS:~The ultrasound study conducted on the abdomen shows normal liver size~and echogenicity, without evidence of focal lesions. The gallbladder~appears unremarkable with no gallstones or wall thickening. Renal~structures are normal bilaterally, exhibiting appropriate size and~echogenicity, with no hydronephrosis noted. The aorta is well~visualized, showing no aneurysmal dilation. No free fluid is detected~in the peritoneal cavity, and the urinary bladder is adequately~distended and without wall irregularities.~~IMPRESSION:~Findings are within normal limits with no abnormalities detected in~the abdominal ultrasound at this time. No follow-up is necessary~unless symptomatic changes occur.||||||F<R>
+OBX|3|TX|9820915||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Guy Sanchez, M.D. on Apr 18 2007 04:51PM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Apr 18 2007 04:51PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9820915|4|7795083139^UK^ZB||||||F<R>
+<EB>

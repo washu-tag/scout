@@ -1,0 +1,11 @@
+2021-11-02 14:34:40.4948|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20211102143440|TBD|ORU^R01|2.25.16069050515926096314078353027915278625|P|2.4<R>
+PID|1||ABC451028^^^ABC^MR~EPIC4485787^^^EPIC^MRN||FIELDS^STEVEN^BRIAN^^^^D||19980605000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451028^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457370^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1683828^SYS|7795082908|BED71010^71010 71010 Chest 1 view Frontal^UNKDEV|URGENT||20211031061454|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||71010^Chest 1 View Dx Xray|20211102143440||BED|||1^^^20211102143440^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||71010<R>
+OBX|1|TX|7371660||GUY SANCHEZ, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7371660||ACC#  Date Time  Exam~~7795082908 Nov 02 2021 02:34PM BED71010 71010 Chest 1 view Frontal~~EXAMINATION:~Chest X-ray~~FINDINGS:~The chest X-ray is notable for clear lung fields with no opacity or~effusion. The cardiac silhouette is within normal limits and the~mediastinum is midline. Visualized bony structures are intact without~evidence of acute fracture. No air under diaphragm or other~extrathoracic abnormalities. The diaphragm is appropriately~positioned and shows normal movement within the thoracic cavity. No~signs of pleural disease.~~IMPRESSION:~1. Chest X-ray findings are normal with no acute thoracic pathology~identified. 2. Lungs, heart, and mediastinum appear normal. 3.~Results correlate well with the prior imaging studies, particularly~the chest MRI from 2021-10-16.||||||F<R>
+OBX|3|TX|7371660||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Guy Sanchez, M.D. on Nov 02 2021 02:34PM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Nov 02 2021 02:34PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7371660|4|7795082908^UK^ZB||||||F<R>
+<EB>

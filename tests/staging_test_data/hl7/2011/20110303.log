@@ -1,0 +1,25 @@
+2011-03-03 01:30:12.8191|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110303013012|TBD|ORU^R01|2.25.14828702280290597003990743228828702733|P|2.7<R>
+PID|1||ABC451067^^^ABC^MR||MELENDEZ^TARA^LARA^^^^D||19580416|F||PCFIS|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085050|||||||||||||||||||||||||20110303013012|||||||V<R>
+ORC|RE|8974426^SYS|7795083067||Final||^^^20110303013011^20110303013012^O||20110303013012|T6530149^VASQUEZ^MISTY||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8974426^SYS|7795083067|CTCHEST^CT THORAX^UNKDEV^^THORAX PETCT AC NAC|O|20110226114645|||||Hosp Perf||||^^^THORAX|D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20110303013012||CT|Final||^^^20110303013011^20110303013012^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20110303013012||||||||CTCHEST^CT THORAX^UNKDEV^^THORAX PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Thorax PET-CT||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|Hypermetabolic activity in the right upper lobe raises concern for a||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|neoplastic process. Correlation with prior imaging and clinical||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|correlation is recommended. Further evaluation via biopsy or||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|follow-up imaging is suggested. The thoracic PET-CT demonstrates||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|hypermetabolic activity in the right upper lobe, with a maximum||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|standardized uptake value (SUV max) of 6.3 consistent with potential||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|malignancy. The surrounding lung parenchyma reveals areas of||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|ground-glass opacities without significant consolidation. Mediastinal||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|lymph nodes appear reactive without significant enlargement or||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|metabolic activity. Bone windows reveal no suspicious lesions in the||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|bony structures of the thorax.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.278300521002275852903733922003003504840^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2024-04-13 05:41:56.8787|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240413054156|TBD|ORU^R01|2.25.135793662264061439300220880196027729956|P|2.4<R>
+PID|1||ABC451081^^^ABC^MR~EPIC4485840^^^EPIC^MRN||COLEMAN^STEPHANIE^SHANNON^^^^D||19951215000000|F||R|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451081^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457154^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8969137^SYS|7795083121|BHC77057^77057 77057 Screening Mamm Bilat^UNKDEV|URGENT||20240410192903|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||77057^Screening Mammogram Bilateral|20240413054156||BHC|||1^^^20240413054156^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB|||||||||77057<R>
+OBX|1|TX|89908||RUSSELL GALLAGHER, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|89908||ACC#  Date Time  Exam~~7795083121 Apr 13 2024 05:41AM BHC77057 77057 Screening Mamm Bilat~~EXAMINATION:~Four-view mammogram~~FINDINGS:~The mammogram demonstrates breast parenchyma of homogenous density~with no architectural distortion. No suspicious masses or~calcifications are observed in any of the four views. The skin and~nipple-areolar complex appear normal, with no lymphadenopathy noted~in the axilla. There is a benign-appearing fibrocystic change seen~bilaterally, which correlates with prior mammograms from 2021 and~appears stable. The density is classified as BI-RADS 1, indicating~negative findings.~~IMPRESSION:~The four-view mammogram reveals no evidence of malignancy, with~findings consistent with benign fibrocystic changes. This study is~comparable to previous images from 2021, demonstrating no significant~changes. Routine screening in accordance with established guidelines~is recommended.||||||P<R>
+OBX|3|TX|89908||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Russell Gallagher, M.D. on Apr 13 2024 05:41AM~~Pending review by: Guy Sanchez, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|89908|4|7795083121^UK^ZB||||||P<R>
+<EB>

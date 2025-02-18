@@ -1,0 +1,28 @@
+1997-09-11 07:32:24.1356|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19970911073224|TBD|ORU^R01|2.25.153116515147922288748115563325749830427|P|2.7<R>
+PID|1||ABC451163^^^ABC^MR||LEE^SAMUEL^MARVIN^^Adm.^^D||19480202|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823288^GONZALEZ^AMBER^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084911|||||||||||||||||||||||||19970911073224|||||||V<R>
+ORC|RE|661278^SYS|7795083453||Wet Read||^^^19970911073223^19970911073224^O||19970911073224|T6530207^CLARK^SCOTT||D7823288^GONZALEZ^AMBER^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|661278^SYS|7795083453|OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED|O|19970908074948|||||Hosp Perf||||^^^HEAD|D7823288^GONZALEZ^AMBER^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19970911073224||MR|Wet Read||^^^19970911073223^19970911073224^O||||^Chest pain||D7823281^HOUSTON^CARLOS^P.^^^^^ABC^^^^HOSP|T6530207^CLARK^SCOTT||19970911073224||||||||OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head MRI||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|5|ST|&IMP|2|The head MRI evaluated on 1997-09-08 reveals normal brain||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|6|ST|&IMP|2|architecture with the exception of a small, chronic ischemic change||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|7|ST|&IMP|2|in the left frontal white matter. No other abnormalities are noted,||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|8|ST|&IMP|2|and there are no signs of acute or chronic intra-axial pathology. The||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|9|ST|&IMP|2|MRI of the brain demonstrates normal anatomical structures with no||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|10|ST|&IMP|2|evidence of mass effect or midline shift. The cerebral hemispheres||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|11|ST|&IMP|2|appear symmetrically enlarged, though not excessively so. No lesions||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|12|ST|&IMP|2|are identified within the cortical or subcortical regions. The||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|13|ST|&IMP|2|ventricles are appropriately sized, with no hydrocephalus noted. The||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|14|ST|&IMP|2|visualized portions of the cerebellum and brainstem are unremarkable.||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|15|ST|&IMP|2|There is a small area of increased signal noted in the left frontal||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|16|ST|&IMP|2|white matter, likely representing a chronic ischemic change. No acute||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|17|ST|&IMP|2|infarct or significant edema is detected. There is also no evidence||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|18|ST|&IMP|2|of acute hemorrhage.||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+OBX|19|ST|&IMP|2|Dictated by: Carlos Houston Interpreter, M.D.||||||Wet Read|||||T6530207^CLARK^SCOTT<R>
+ZDS|2.25.192292272991316587041610262870354874424^EPIC^APPLICATION^DICOM<R>
+<EB>

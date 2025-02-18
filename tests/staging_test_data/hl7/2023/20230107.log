@@ -1,0 +1,11 @@
+2023-01-07 07:54:31.5465|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230107075431|TBD|ORU^R01|2.25.92443863567335687974024452999066733830|P|2.4<R>
+PID|1||ABC451058^^^ABC^MR~EPIC4485817^^^EPIC^MRN||KIM^JI-MIN^^^^^D||19940508000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451058^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457452^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4952237^SYS|7795083031|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||20230103170633|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|20230107075431||IMG|||1^^^20230107075431^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|6381590||KIMBERLY HANSON, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6381590||ACC#  Date Time  Exam~~7795083031 Jan 07 2023 07:54AM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~The chest MRI acquired on January 3rd, 2023, demonstrates a clear~thoracic cavity with no abnormalities. The lung parenchyma is normal,~with no evidence of masses, consolidations, or effusions. The~mediastinal structures are unremarkable, showing no signs of~lymphadenopathy. The cardiac silhouette appears normal with preserved~chamber size and function. Vascular structures are patent with no~abnormalities noted.~~IMPRESSION:~Findings are unremarkable with no evidence of pleural effusion,~malignancy, or significant pathology. The chest MRI results are~normal, and no follow-up is suggested unless clinically warranted.||||||F<R>
+OBX|3|TX|6381590||Requested By: Medrano,Joe J. M.D.~~Dictated By: Kimberly Hanson, M.D. on Jan 07 2023 07:54AM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on Jan 07 2023 07:54AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6381590|4|7795083031^UK^ZB||||||F<R>
+<EB>

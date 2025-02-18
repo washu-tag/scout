@@ -1,0 +1,11 @@
+2000-05-25 06:09:42.7291|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000525060942|TBD|ORU^R01|2.25.137273213202956907387023501711452377063|P|2.4<R>
+PID|1||ABC451024^^^ABC^MR~EPIC4485783^^^EPIC^MRN||PEREZ^MEGHAN^SHARON^^^^D||19600223000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451024^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457287^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1630410^SYS|7795082898|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20000522141409|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||2816^Ultrasound|20000525060942||IMG|||1^^^20000525060942^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|9151942||KIMBERLY HANSON, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|9151942||ACC#  Date Time  Exam~~7795082898 May 25 2000 06:09AM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Ultrasound of the abdomen and pelvis~~FINDINGS:~The ultrasound examination reveals an unremarkable liver, measuring~14 cm in length, with homogenous echotexture. The gallbladder is~visualized without stones or wall thickening. The biliary ducts are~patent. The kidneys are normal in size and echogenicity, with no~evidence of hydronephrosis. The uterus is anteverted, measuring 7.5~cm and demonstrates normal echogenicity with no focal lesions.~Ovaries are distinguished bilaterally, with the right ovary measuring~3.5 cm and the left ovary 3.0 cm, both displaying normal echotexture.~No free fluid is detected in the abdominal or pelvic cavities.~~IMPRESSION:~The abdominal and pelvic ultrasound conducted on 2000-05-22 is within~normal limits, demonstrating no abnormalities in the evaluated~organs. The ovaries and uterus appear normal for this age~demographic, with no signs of pathological processes. Continued~routine monitoring is encouraged.||||||F<R>
+OBX|3|TX|9151942||Requested By: Reese,Amber J. M.D.~~Dictated By: Kimberly Hanson, M.D. on May 25 2000 06:09AM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on May 25 2000 06:09AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9151942|4|7795082898^UK^ZB||||||F<R>
+<EB>

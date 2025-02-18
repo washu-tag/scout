@@ -1,0 +1,24 @@
+2013-08-11 10:05:45.9312|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130811100545|TBD|ORU^R01|2.25.12557040731960355875078682417532699743|P|2.7<R>
+PID|1||ABC451168^^^ABC^MR||MORRIS^OCTAVIO^MARCUS^^^^D||19481022|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084668|||||||||||||||||||||||||20130811100545|||||||V<R>
+ORC|RE|4845590^SYS|7795083470||Wet Read||^^^20130811100544^20130811100545^O||20130811100545|T6530147^ANDERSON^NATALIE||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4845590^SYS|7795083470|BED71010^71010 Chest 1 view Frontal^UNKDEV^^CHEST 1 VIEW DX XRAY|O|20130808201503|||||Hosp Perf||||^^^CHEST|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20130811100545||DX|Wet Read||^^^20130811100544^20130811100545^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20130811100545||||||||BED71010^71010 Chest 1 view Frontal^UNKDEV^^CHEST 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|The 2013 chest X-ray shows early changes that may be indicative of an||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|ongoing inflammatory or infectious process in the right lung base.||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|Correlation with clinical findings and possibly further imaging or||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|evaluation by a pulmonologist is recommended to clarify the||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|significance of these radiographic findings. The chest X-ray obtained||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|on August 8, 2013, demonstrates mild infiltrative changes in the||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|right lower lung zone, which could represent early sequelae of a||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|pulmonary process. The heart remains in normal size and configuration||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|with clear assessed mediastinal structures. The pulmonary vascular||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|markings are mildly increased. No blatant pleural effusion is seen.||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.242181061829902351073294244285932302999^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,27 @@
+2019-01-15 05:59:45.3700|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190115055945|TBD|ORU^R01|2.25.179674707043766114595170534453356889387|P|2.7<R>
+PID|1||ABC451048^^^ABC^MR||WILSON^KRISTEN^LATISHA^^^^D||19960620|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084796|||||||||||||||||||||||||20190115055945|||||||V<R>
+ORC|RE|3095673^SYS|7795082990||Prelim||^^^20190115055944^20190115055945^O||20190115055945|T6530151^WATERS^JESSICA||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3095673^SYS|7795082990|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20190114141201|||||Hosp Perf||||^^^BREAST|D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20190115055945||MG|Prelim||^^^20190115055944^20190115055945^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20190115055945||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|1. Heterogeneously dense breast tissue, consistent with normal||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|variation. 2. No significant findings to suggest malignancy at this||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|time. 3. Recommend routine screening mammogram in one year. The||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|single-view mammogram demonstrates a heterogeneously dense breast||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|tissue pattern. No dominant masses, architectural distortion, or||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|calcifications are observed on the mediolateral oblique view. The||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|skin and nipple contour appear normal, and no evidence of||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|microcalcifications that would suggest malignancy is present. The||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|subcutaneous and retromammary fat planes are well-defined with no||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|signs of skin thickening or nipple retraction. Comparison to the||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|prior mammogram dated 2017-12-05 shows stable breast tissue||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|architecture without new abnormalities. Overall, findings are||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|consistent with benign breast changes typical of a younger female.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+OBX|18|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Prelim|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.173690551074316754089953602062548321373^EPIC^APPLICATION^DICOM<R>
+<EB>

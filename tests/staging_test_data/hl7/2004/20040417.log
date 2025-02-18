@@ -1,0 +1,11 @@
+2004-04-17 11:17:25.4115|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20040417111725|TBD|ORU^R01|2.25.240904633510196842780189651782237720480|P|2.4<R>
+PID|1||ABC451168^^^ABC^MR~EPIC4485927^^^EPIC^MRN||MORRIS^OCTAVIO^MARCUS^^^^D||19481022000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451168^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457106^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6775494^SYS|7795083471|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||20040416162210|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||70553^Brain dMRI|20040417111725||CMRP|||1^^^20040417111725^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|5489280||JOE MEDRANO, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|5489280||ACC#  Date Time  Exam~~7795083471 Apr 17 2004 11:17AM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~Brain MRI~~FINDINGS:~Compared to the MRI from January 3, 1996, the current brain MRI~performed on April 16, 2004, shows a notable change in the previously~identified lesion, which is now larger, measuring approximately 2.5~cm with increased hyperintensity on T2-weighted images and areas of~diffusion restriction on DWI sequences. There is mild surrounding~edema now observed, suggesting a progression of the disease. No~additional lesions are noted in the cerebral hemispheres or~cerebellum, and the ventricles maintain their size without evidence~of hydrocephalus.~~IMPRESSION:~This MRI examination indicates progression of the previously~identified lesion in the right frontal lobe, now concerning for a~higher-grade neoplasm. Surgical consultation is advised for possible~biopsy, and close neurological follow-up is essential.||||||P<R>
+OBX|3|TX|5489280||Requested By: Reese,Amber J. M.D.~~Dictated By: Joe Medrano, M.D. on Apr 17 2004 11:17AM~~Pending review by: Clara Smith, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5489280|4|7795083471^UK^ZB||||||P<R>
+<EB>

@@ -1,0 +1,11 @@
+2014-11-05 22:29:17.3579|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20141105222917|TBD|ORU^R01|2.25.230793763661311412750298409785882075520|P|2.4<R>
+PID|1||ABC451099^^^ABC^MR~EPIC4485858^^^EPIC^MRN||HAMMOND^JOHN^CHRISTOPHER^^^^D||19391026000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451099^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457221^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6511962^SYS|7795083193|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20141104135314|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20141105222917||IMG|||1^^^20141105222917^^U^^URGENT|       |||^Chest pain|D7823231^SMITH^CLARA^T.^^^M.D.|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|5167527||CLARA SMITH, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|5167527||ACC#  Date Time  Exam~~7795083193 Nov 05 2014 10:29PM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdomen X-ray shows normal bowel gas pattern without any signs of~obstruction or ileus. The liver and kidneys are of normal size and~contour with no radiopaque stones noted. The visualized air-filled~small and large bowel loops are unremarkable and symmetric. No free~air under the diaphragm is detected. The urinary tract appears patent~with no signs of distention. Overall, the findings depict a benign~abdominal radiographic study without acute pathology concerning.~~IMPRESSION:~No acute abdominal process observed on X-ray, findings are consistent~with a non-obstructed bowel and normal organ anatomy.||||||F<R>
+OBX|3|TX|5167527||Requested By: Reese,Amber J. M.D.~~Dictated By: Clara Smith, M.D. on Nov 05 2014 10:29PM~~This document has been electronically signed by: Clara Smith, M.D. on~Nov 05 2014 10:29PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5167527|4|7795083193^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,26 @@
+2000-10-10 14:12:42.5009|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20001010141242|TBD|ORU^R01|2.25.128036241927425292856263776757287502188|P|2.7<R>
+PID|1||ABC451004^^^ABC^MR||PEREZ^THOMAS^MICHAEL^^^^D||19700404|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823283^FOX^DANNY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084945|||||||||||||||||||||||||20001010141242|||||||V<R>
+ORC|RE|6936159^SYS|7795082817||Final||^^^20001010141241^20001010141242^O||20001010141242|T6530210^JOHNSON^TARA||D7823285^MICHAEL^JAMIE^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6936159^SYS|7795082817|IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED|O|20001009195447|||||Hosp Perf||||^^^BRAIN|D7823285^MICHAEL^JAMIE^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20001010141242||MR|Final||^^^20001010141241^20001010141242^O||||^Chest pain||D7823286^JAMES^TIMOTHY^C.^^^^^ABC^^^^HOSP|T6530210^JOHNSON^TARA||20001010141242||||||||IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|5|ST|&IMP|2|The findings are stable when compared to the MRI done on March 19,||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|6|ST|&IMP|2|1999. There are no new or progressive abnormalities identified,||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|7|ST|&IMP|2|consistent with a stable neuroimaging profile. Comparison is made||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|8|ST|&IMP|2|with the prior MRI dated 1999-03-19. The brain MRI shows no||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|9|ST|&IMP|2|significant changes from the previous examination. The previously||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|10|ST|&IMP|2|noted normal cerebral morphology remains intact. There is still no||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|11|ST|&IMP|2|evidence of acute ischemic changes or mass lesions. The white matter||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|12|ST|&IMP|2|integrity is preserved without new hyperintensities suggesting||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|13|ST|&IMP|2|demyelination or other pathological processes. Cortical sulci and||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|14|ST|&IMP|2|gyri are normal in width, with no signs of cerebral atrophy. The CSF||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|15|ST|&IMP|2|spaces are unremarkable, and no abnormal enhancement is present||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|16|ST|&IMP|2|post-contrast.||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|17|ST|&IMP|2|Dictated by: Timothy James Interpreter, M.D.||||||Final|||||T6530210^JOHNSON^TARA<R>
+ZDS|2.25.233567119164616231536501646553790695253^EPIC^APPLICATION^DICOM<R>
+<EB>

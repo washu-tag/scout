@@ -1,0 +1,24 @@
+2011-09-19 19:03:56.3469|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110919190356|TBD|ORU^R01|2.25.246194180392777527811662875483314903496|P|2.7<R>
+PID|1||ABC451040^^^ABC^MR||MOORE^RUSSELL^JOHN^^^^D||19920516|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823219^LOGAN^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084979|||||||||||||||||||||||||20110919190356|||||||V<R>
+ORC|RE|1680607^SYS|7795082957||Prelim||^^^20110919190355^20110919190356^O||20110919190356|T6530139^WHITE^NICHOLAS||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1680607^SYS|7795082957|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20110919134803|||||Hosp Perf||||^^^HEART|D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20110919190356||NM|Prelim||^^^20110919190355^20110919190356^O||||^Chest pain||D7823229^WADE^KERRI^L.^^^^^ABC^^^^HOSP|T6530139^WHITE^NICHOLAS||20110919190356||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM Study||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|5|ST|&IMP|2|Myocardial perfusion scan reveals normal results; no evidence of||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|6|ST|&IMP|2|significant cardiac ischemia. This nuclear medicine study shows a||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|7|ST|&IMP|2|normal myocardial perfusion scan at rest. There is symmetric uptake||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|8|ST|&IMP|2|across all myocardial territories, and no focal defects are observed.||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|9|ST|&IMP|2|The left ventricular ejection fraction is calculated at 60%,||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|10|ST|&IMP|2|indicative of preserved systolic function. The study findings do not||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|11|ST|&IMP|2|suggest any ischemic changes or perfusion abnormalities. No evidence||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|12|ST|&IMP|2|of stress-induced reversible ischemia is present, and the left||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|13|ST|&IMP|2|ventricle appears well-formed and functioning optimally both at rest||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|14|ST|&IMP|2|and on stress evaluation.||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+OBX|15|ST|&IMP|2|Dictated by: Kerri Wade Interpreter, M.D.||||||Prelim|||||T6530139^WHITE^NICHOLAS<R>
+ZDS|2.25.85327835295076526364454680819875788374^EPIC^APPLICATION^DICOM<R>
+<EB>

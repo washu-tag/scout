@@ -1,0 +1,11 @@
+2011-02-21 03:52:12.4633|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110221035212|TBD|ORU^R01|2.25.306071003639239729161169088707169824739|P|2.4<R>
+PID|1||ABC451164^^^ABC^MR~EPIC4485923^^^EPIC^MRN||SATO^SOUMA^^^^^D||19511024000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451164^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823272^KOBAYASHI^KOTONE^^^^^^^^^^HOSP|^^|^^|RAD|||||||||V56457361^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7758913^SYS|7795083454|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20110217125700|||PSCRIB|||||^^^^ |D7823261^YAMAGUCHI^MINATO|||||^Xr Sing View|20110221035212||MDXREVNT|||1^^^20110221035212^^U^^URGENT|       |||^Chest pain|D7823268^YAMAMOTO^REN^^^^M.D.|D7823265^WATANABE^YUTA^^^^M.D.||PSCRIB<R>
+OBX|1|TX|5668940||REN YAMAMOTO, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|5668940||ACC#  Date Time  Exam~~7795083454 Feb 21 2011 03:52AM MDXREVNT Radiology Event~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdominal radiograph demonstrates gas patterns consistent with a~normal gastrointestinal tract. There is presence of air in the~stomach and throughout the small and large intestine, indicative of~normal peristalsis. No free air under the diaphragm is noted,~suggesting the absence of perforation. The renal outlines are~unremarkable, and there is no evidence of calcifications within the~renal shadows. Bowel gas distribution appears symmetric, with no~signs of distension or obstruction identified. Visualized skeletal~structures maintain integrity, presenting no acute abnormalities. The~soft tissue contours are indistinct but appear unremarkable. Overall,~no significant acute or chronic pathology is observed in this~assessment.~~IMPRESSION:~The findings are consistent with a benign abdominal radiograph. There~are no signs of acute intra-abdominal pathology, obstruction,~perforation, or any notable osseous abnormalities. Continued routine~monitoring is recommended.||||||F<R>
+OBX|3|TX|5668940||Requested By: Yamaguchi,Minato null M.D.~~Dictated By: Ren Yamamoto, M.D. on Feb 21 2011 03:52AM~~This document has been electronically signed by: Ren Yamamoto, M.D.~on Feb 21 2011 03:52AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5668940|4|7795083454^UK^ZB||||||F<R>
+<EB>

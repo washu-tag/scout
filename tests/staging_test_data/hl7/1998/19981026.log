@@ -1,0 +1,27 @@
+1998-10-26 22:49:04.5323|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19981026224904|TBD|ORU^R01|2.25.89427187596577210191588708408606292487|P|2.7<R>
+PID|1||ABC451165^^^ABC^MR||CRAIG^KAREN^JESSICA^^^^D||19200411|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084969|||||||||||||||||||||||||19981026224904|||||||V<R>
+ORC|RE|4451408^SYS|7795083458||Final||^^^19981026224903^19981026224904^O||19981026224904|T6530146^MOORE^CURTIS||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4451408^SYS|7795083458|CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI|O|19981024161711|||||Hosp Perf||||^^^BRAIN|D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19981026224904||MR|Final||^^^19981026224903^19981026224904^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||19981026224904||||||||CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|The MRI study demonstrates no significant abnormalities in the brain||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|parenchyma, consistent with normative age-related changes. No||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|evidence of stroke, mass lesions, or pathologic changes were observed||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|in this examination. The brain MRI reveals a normal morphology of the||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|cerebral hemispheres with symmetric cortical thickness across both||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|the frontal, parietal, occipital, and temporal lobes. The basal||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|ganglia, thalami, and brainstem appear intact without focal lesions,||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|edema, or mass effect. The ventricles are symmetric and within normal||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|limits for the patient’s age, and no acute ischemic changes or||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|hemorrhages are noted. The diffusion-weighted imaging (DWI) excludes||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|any signs of recent stroke. Flow voids within the major intracranial||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|vessels are present and indicate normal vascular patency. The||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|cerebral sulci and gyri appear normal for an older adult.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.178810120630137920864593415238134548698^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,30 @@
+2021-04-02 01:57:55.0968|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210402015755|TBD|ORU^R01|2.25.35173459079059461327666631484269990430|P|2.7<R>
+PID|1||ABC451014^^^ABC^MR||BOYD^CYNTHIA^JAMIE^^^^D||19980522|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085007|||||||||||||||||||||||||20210402015755|||||||V<R>
+ORC|RE|1252730^SYS|7795082856||Wet Read||^^^20210402015754^20210402015755^O||20210402015755|T6530140^HARDY^JAY||D7823220^HESS^BRANDI^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1252730^SYS|7795082856|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20210331095755|||||Hosp Perf|||||D7823220^HESS^BRANDI^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210402015755||XA|Wet Read||^^^20210402015754^20210402015755^O||||^Chest pain||D7823227^WOOD^MELISSA^C.^^^^^ABC^^^^HOSP|T6530140^HARDY^JAY||20210402015755||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|5|ST|&IMP|2|1. Bilateral coronary arteries patent with no significant stenoses||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|6|ST|&IMP|2|identified. 2. Mild intimal hyperplasia in the circumflex artery but||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|7|ST|&IMP|2|no meaningful luminal compromise. 3. Stable findings compared to||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|8|ST|&IMP|2|previous angiograms from 2019, suggesting a consistent disease||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|9|ST|&IMP|2|course. 4. Absence of any pathological venous findings. The X-ray||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|10|ST|&IMP|2|angiography of the coronary arteries reveals no significant stenosis||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|11|ST|&IMP|2|or occlusion. The left main coronary artery appears patent with a||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|12|ST|&IMP|2|smooth course; however, mild intimal hyperplasia is noted in the||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|13|ST|&IMP|2|proximal segment of the circumflex artery, without luminal narrowing.||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|14|ST|&IMP|2|The right coronary artery is widely patent with normal caliber||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|15|ST|&IMP|2|throughout. No evidence of collateral circulation is observed. The||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|16|ST|&IMP|2|aorta shows normal dimensions, and no dissections or calcifications||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|17|ST|&IMP|2|are noted. Comparing with prior angiographic studies from 2019, there||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|18|ST|&IMP|2|is no interval change indicative of progressive coronary artery||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|19|ST|&IMP|2|disease. The venous system is demonstrated to be preserved with no||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|20|ST|&IMP|2|signs of deep vein thrombosis.||||||Wet Read|||||T6530140^HARDY^JAY<R>
+OBX|21|ST|&IMP|2|Dictated by: Melissa Wood Interpreter, M.D.||||||Wet Read|||||T6530140^HARDY^JAY<R>
+ZDS|2.25.7908908637540019058954876875407418261^EPIC^APPLICATION^DICOM<R>
+<EB>

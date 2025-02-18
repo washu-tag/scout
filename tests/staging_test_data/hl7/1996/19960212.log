@@ -1,0 +1,11 @@
+1996-02-12 00:10:33.8018|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19960212001033|TBD|ORU^R01|2.25.144265763479237998063600771733000493010|P|2.4<R>
+PID|1||ABC451067^^^ABC^MR~EPIC4485826^^^EPIC^MRN||MELENDEZ^TARA^LARA^^^^D||19580416000000|F||P|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451067^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457486^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6472500^SYS|7795083066|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||19960207191251|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|19960212001033||BHC|||1^^^19960212001033^^U^^URGENT|       |||^Chest pain|D7823238^HUNT^APRIL^M.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|4963774||APRIL HUNT, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|4963774||ACC#  Date Time  Exam~~7795083066 Feb 12 1996 12:10AM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The study demonstrates a predominantly heterogeneously dense breast~tissue. No significant focal mass lesion or calcification is evident.~There are scattered benign-appearing micro-calcifications present,~consistent with normal physiological variation. No acute changes~noted, and the comparison to previous mammograms shows stable breast~architecture. Lymph nodes appear unremarkable bilaterally with no~signs of axillary or supraclavicular adenopathy.~~IMPRESSION:~The single-view mammogram performed shows benign findings with no~evidence of malignancy. The breast density is classified as~heterogeneously dense which may limit the sensitivity for detecting~small lesions. Routine screening recommended.||||||P<R>
+OBX|3|TX|4963774||Requested By: Wright,Jessica M. M.D.~~Dictated By: April Hunt, M.D. on Feb 12 1996 12:10AM~~Pending review by: Amber Reese, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|4963774|4|7795083066^UK^ZB||||||P<R>
+<EB>

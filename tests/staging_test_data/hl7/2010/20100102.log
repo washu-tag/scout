@@ -1,0 +1,11 @@
+2010-01-02 04:29:34.9624|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100102042934|TBD|ORU^R01|2.25.326266355120068907528686366262788987719|P|2.4<R>
+PID|1||ABC451045^^^ABC^MR~EPIC4485804^^^EPIC^MRN||WALSH^ANGEL^CARRIE^^^^D||19550621000000|F||R|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451045^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457152^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5073161^SYS|7795082979|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20091229181146|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||8452^NM MPI SPECT|20100102042934||H|||1^^^20100102042934^^U^^URGENT|       |||^Chest pain|D7823241^SANDERS^LISA^A.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|1526145||LISA SANDERS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|1526145||ACC#  Date Time  Exam~~7795082979 Jan 02 2010 04:29AM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~Follow-up myocardial perfusion imaging shows stable findings compared~to the previous study dated 2000-04-19. Anterior wall perfusion~remains mildly reduced during both stress and rest, but there is no~change in the extent of ischemia. The ejection fraction has slightly~improved to 62%, indicating preserved left ventricular function.~There remains no evidence of wall motion abnormalities. No new~perfusion defects are noted.~~IMPRESSION:~Stable myocardial perfusion with unchanged mild anterior wall~ischemia compared to the study from 2000-04-19. The slight~improvement in ejection fraction may suggest cardiac adaptation;~continued monitoring recommended.||||||F<R>
+OBX|3|TX|1526145||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Lisa Sanders, M.D. on Jan 02 2010 04:29AM~~This document has been electronically signed by: Lisa Sanders, M.D.~on Jan 02 2010 04:29AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|1526145|4|7795082979^UK^ZB||||||F<R>
+<EB>

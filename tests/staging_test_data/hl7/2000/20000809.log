@@ -1,0 +1,36 @@
+2000-08-09 19:08:02.6862|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000809190802|TBD|ORU^R01|2.25.135985269835500785887941614834045441423|P|2.7<R>
+PID|1||ABC451188^^^ABC^MR||SMITH^HEATHER^JENNIFER^^^^D||19310625|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084701|||||||||||||||||||||||||20000809190802|||||||V<R>
+ORC|RE|4599440^SYS|7795083551||Wet Read||^^^20000809190801^20000809190802^O||20000809190802|T6530146^MOORE^CURTIS||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4599440^SYS|7795083551|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20000809103705|||||Hosp Perf||||^^^HEART|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20000809190802||NM|Wet Read||^^^20000809190801^20000809190802^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20000809190802||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac Nuclear Medicine Study||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|1. Evidence of relative hypoperfusion in the anterior and inferior||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|walls of the myocardium, suggestive of possible ischemic changes. ||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|2. Ejection fraction of 55% indicates mild systolic dysfunction. ||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|3. Continued surveillance and clinical correlation are advised given||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|the patient's known cardiovascular risk factors. The cardiac||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|perfusion imaging demonstrates relative hypoperfusion in the anterior||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|and inferior walls with a perfusion defect in the apical segment.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|There is preserved perfusion in the rest of the myocardium. No||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|evidence of significant wall motion abnormality was noted during the||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|dynamic acquisition. The left ventricular ejection fraction is||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|calculated to be 55%, which is within the lower range of normal||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|limits but slightly decreased compared to previous studies.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|Myocardial stress imaging indicates that the heart responds||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|adequately under exertion. No significant findings of previous||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|19|ST|&IMP|2|nuclear studies suggest worsening ischemic heart disease.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|20|ST|&IMP|2|||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|21|ST|&IMP|2|Comparatively, it is noteworthy that the prior cardiac nuclear study||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|22|ST|&IMP|2|performed on 2000-08-09 indicated a more robust ejection fraction of||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|23|ST|&IMP|2|65%, whereas evidence of reversible ischemia was less pronounced. The||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|24|ST|&IMP|2|persistence of the anterior perfusion defect remains a crucial area||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|25|ST|&IMP|2|for monitoring as the patient is hypertensive and has a borderline||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|26|ST|&IMP|2|history of coronary artery disease.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|27|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.8936977635309804880953871814982133860^EPIC^APPLICATION^DICOM<R>
+<EB>

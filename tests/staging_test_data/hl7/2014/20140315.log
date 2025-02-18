@@ -1,0 +1,11 @@
+2014-03-15 01:32:58.8499|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140315013258|TBD|ORU^R01|2.25.38953579730691101119054893211766795408|P|2.4<R>
+PID|1||ABC451156^^^ABC^MR~EPIC4485915^^^EPIC^MRN||IBARRA^HEATHER^THERESA^^^^D||19680413000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451156^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457184^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7523197^SYS|7795083423|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20140311143228|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20140315013258||IMG|||1^^^20140315013258^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|8586876||RUSSELL GALLAGHER, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|8586876||ACC#  Date Time  Exam~~7795083423 Mar 15 2014 01:32AM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdominal X-ray demonstrates a normal gas pattern with no~evidence of obstructive pathology. The liver, spleen, and kidneys~appear unremarkable in size and contour. The diaphragm is~well-defined, and there is no free air observed under the diaphragm.~No bony abnormalities are noted, and the soft tissue shadows are~within normal limits. There is a moderate volume of gas within the~colon with no signs of significant distention. Overall, there are no~acute findings or alarming features discernible on this study.~~IMPRESSION:~The abdominal X-ray is unremarkable with no evidence of acute or~chronic pathology. The normal gas pattern and absence of free air or~masses are reassuring.||||||P<R>
+OBX|3|TX|8586876||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Russell Gallagher, M.D. on Mar 15 2014 01:32AM~~Pending review by: Michael Marks, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|8586876|4|7795083423^UK^ZB||||||P<R>
+<EB>

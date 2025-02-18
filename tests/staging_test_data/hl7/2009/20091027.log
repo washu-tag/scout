@@ -1,0 +1,11 @@
+2009-10-27 23:42:31.8333|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20091027234231|TBD|ORU^R01|2.25.182879981780278437982090612707133764141|P|2.4<R>
+PID|1||ABC451061^^^ABC^MR~EPIC4485820^^^EPIC^MRN||WHITAKER^CHAD^CLINTON^^^^D||19360922000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451061^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457469^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||385578^SYS|7795083042|BED70250^70250 70250 Skull < 4 views^UNKDEV|URGENT||20091026162925|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||70250^Skull 1 View Dx Xray|20091027234231||BED|||1^^^20091027234231^^U^^URGENT|       |||^Chest pain|D7823240^PARSONS^ERNESTO^J.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB|||||||||70250<R>
+OBX|1|TX|4441720||ERNESTO PARSONS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4441720||ACC#  Date Time  Exam~~7795083042 Oct 27 2009 11:42PM BED70250 70250 Skull < 4 views~~EXAMINATION:~Skull X-ray~~FINDINGS:~The skull X-ray demonstrates normal morphology of the cranial vault~with no evidence of acute fractures or significant bony lesions. The~sella turcica is within normal limits. There is mild degeneration~noted at the cervical spine, particularly at the C5-C6 levels,~indicating potential for spondylosis, but this is incidental and not~directly related to cranial pathology. The sinus cavities are clear~with no opacification present. Comparison to previous imaging is~notable, indicating stability of findings.~~IMPRESSION:~1. No acute intracranial pathology appreciated on current skull~X-ray; anatomical structures unremarkable.~2. Incidental mild cervical spondylosis; routine follow-up may be~useful.||||||F<R>
+OBX|3|TX|4441720||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Ernesto Parsons, M.D. on Oct 27 2009 11:42PM~~This document has been electronically signed by: Ernesto Parsons,~M.D. on Oct 27 2009 11:42PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4441720|4|7795083042^UK^ZB||||||F<R>
+<EB>

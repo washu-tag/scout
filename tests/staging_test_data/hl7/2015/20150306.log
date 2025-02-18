@@ -1,0 +1,11 @@
+2015-03-06 19:23:08.3514|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150306192308|TBD|ORU^R01|2.25.200654815129563983037153079341319352734|P|2.4<R>
+PID|1||ABC451049^^^ABC^MR~EPIC4485808^^^EPIC^MRN||CURTIS^KAREN^KRISTEN^^^^D||19520301000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451049^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823220^HESS^BRANDI^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457257^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8510348^SYS|7795082995|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20150302100531|||PSCRIB|||||^^^^ |D7823225^PARK^JOLENE^REGINA^M.D.^^^^ABC|||||8452^NM MPI SPECT|20150306192308||H|||1^^^20150306192308^^U^^URGENT|       |||^Chest pain|D7823223^HARPER^MARIA^K.^^^M.D.|D7823227^WOOD^MELISSA^C.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|4016258||MARIA HARPER, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4016258||ACC#  Date Time  Exam~~7795082995 Mar 06 2015 07:23PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~The cardiac nuclear medicine study shows a moderately reduced~perfusion in the inferior wall consistent with previous ischemic~changes. The left ventricular ejection fraction is estimated at 55%,~which is within normal limits albeit on the lower side of normal. No~significant wall motion abnormalities are present during the stress~phase, although there is mild hypokinesis noted. There is also~increased uptake in the region corresponding to the area of perfusion~abnormality, suggestive of previous or current subendocardial~ischemia. This study reveals changes similar to those seen in the~assessment conducted on March 2, 2015, indicating stable findings~with no progression of ischemic heart disease.~~IMPRESSION:~Stable myocardial perfusion imaging results demonstrating preserved~left ventricular function with mild ischemic changes noted in the~inferior wall. Continuous monitoring and management of cardiovascular~risk factors are recommended.||||||F<R>
+OBX|3|TX|4016258||Requested By: Park,Jolene R. M.D.~~Dictated By: Maria Harper, M.D. on Mar 06 2015 07:23PM~~This document has been electronically signed by: Maria Harper, M.D.~on Mar 06 2015 07:23PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4016258|4|7795082995^UK^ZB||||||F<R>
+<EB>

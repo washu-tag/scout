@@ -1,0 +1,28 @@
+2024-08-02 03:35:45.2990|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240802033545|TBD|ORU^R01|2.25.307753468526369543338260254634443996480|P|2.7<R>
+PID|1||ABC451094^^^ABC^MR||LESTER^WILLIAM^GEOFFREY^^^^D||19340330|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084696|||||||||||||||||||||||||20240802033545|||||||V<R>
+ORC|RE|7186172^SYS|7795083173||Final||^^^20240802033544^20240802033545^O||20240802033545|T6530149^VASQUEZ^MISTY||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7186172^SYS|7795083173|MRI1133^MRI W WO ABDOMEN^UNKDEV^^ABDOMEN MRI|O|20240801091957|||||Hosp Perf||||^^^ABDOMEN|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20240802033545||MR|Final||^^^20240802033544^20240802033545^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20240802033545||||||||MRI1133^MRI W WO ABDOMEN^UNKDEV^^ABDOMEN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen MRI||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|MRI of the abdomen highlights a complex renal cystic lesion with||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|features suggestive of a potential neoplasm. Given the new finding||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|compared to the 2020 ultrasound, further investigative measures,||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|including urology referral for possible biopsy or follow-up imaging,||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|are highly warranted. The abdomen MRI demonstrates a complex cystic||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|lesion in the left kidney measuring approximately 4.5 cm, with||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|internal septations, concerning for a renal neoplasm. There is||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|accompanying enhancement on post-contrast imaging suggesting the need||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|for careful evaluation. The liver and spleen remain unremarkable. No||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|signs of abdominal free fluid, solid lesions, or organomegaly are||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|noted. The pancreatic and adrenal glands appear normal on all||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|sequences. Bowel loops are noted without obstruction. Comparison to||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|prior ultrasound on 2020-12-30 reveals the new renal lesion,||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|18|ST|&IMP|2|necessitating further evaluation.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|19|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.313097658173613701199935122204554284417^EPIC^APPLICATION^DICOM<R>
+<EB>

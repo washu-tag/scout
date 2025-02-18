@@ -1,0 +1,22 @@
+2023-06-09 22:15:42.8127|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230609221542|TBD|ORU^R01|2.25.264952056931013324196240299375591047641|P|2.7<R>
+PID|1||ABC451029^^^ABC^MR||ΜΙΧΌΠΟΥΛΟΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19810423|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084952|||||||||||||||||||||||||20230609221542|||||||V<R>
+ORC|RE|292210^SYS|7795082915||Prelim||^^^20230609221541^20230609221542^O||20230609221542|T6530145^RUIZ^TARA||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|292210^SYS|7795082915|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20230605100654|||||Hosp Perf|||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230609221542||US|Prelim||^^^20230609221541^20230609221542^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20230609221542||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|Abdominal ultrasound demonstrates normal findings with no evidence of||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|acute pathology or complications, corresponding favorably with the||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|prior imaging studies. Ultrasound examination of the abdomen reveals||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|a normal size and echogenicity of the liver, kidneys, and spleen. The||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|gallbladder is visualized without stones or wall thickening. The||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|common bile duct measures within normal range. No free fluid is||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|detected in the peritoneal cavity, and there are no suspicious masses||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|or cysts.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.23017251163499346295550893593671255574^EPIC^APPLICATION^DICOM<R>
+<EB>

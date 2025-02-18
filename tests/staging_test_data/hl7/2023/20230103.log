@@ -1,0 +1,26 @@
+2023-01-03 21:39:34.2157|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230103213934|TBD|ORU^R01|2.25.18162379533723859036252731581707420413|P|2.7<R>
+PID|1||ABC451176^^^ABC^MR||CALLAHAN^DEBRA^AMANDA^^^^D||19861204|F||OTHER|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084770|||||||||||||||||||||||||20230103213934|||||||V<R>
+ORC|RE|3606458^SYS|7795083500||Wet Read||^^^20230103213933^20230103213934^O||20230103213934|T6530146^MOORE^CURTIS||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3606458^SYS|7795083500|BED71010^71010 Chest 1 view Frontal^UNKDEV^^CHEST 1 VIEW DX XRAY|O|20221231061328|||||Hosp Perf||||^^^CHEST|D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230103213934||DX|Wet Read||^^^20230103213933^20230103213934^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20230103213934||||||||BED71010^71010 Chest 1 view Frontal^UNKDEV^^CHEST 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|Chest X-ray results indicate a stable thoracic status with no acute||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|changes. There are no signs of pulmonary disease or structural||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|abnormalities. Routine monitoring and follow-up should depend on||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|patient symptoms and clinical history. The chest X-ray taken on||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|December 31, 2022, presents normal pulmonary architecture with clear||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|lung fields and no acute infiltrates or effusions. The cardiac||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|silhouette remains within normal limits, and there is no evidence of||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|pulmonary congestion. Bony structures show no signs of pathology, and||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|the diaphragm appears smooth and positioned normally without any||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|eventration. The mediastinal contours are unremarkable, indicating no||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|shift or mass effect. Overall, the findings reflect a stable process||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|compared to prior imaging studies.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.190005720068381939204081443093311608821^EPIC^APPLICATION^DICOM<R>
+<EB>

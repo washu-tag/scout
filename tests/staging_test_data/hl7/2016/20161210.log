@@ -1,0 +1,24 @@
+2016-12-10 08:13:08.5685|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20161210081308|TBD|ORU^R01|2.25.293759458841927207034766571866807928193|P|2.7<R>
+PID|1||ABC451035^^^ABC^MR||BURNS^GILBERT^ADAM^^^^D||19430321|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084988|||||||||||||||||||||||||20161210081308|||||||V<R>
+ORC|RE|1156946^SYS|7795082940||Prelim||^^^20161210081307^20161210081308^O||20161210081308|T6530146^MOORE^CURTIS||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1156946^SYS|7795082940|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20161206113942|||||Hosp Perf|||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20161210081308||US|Prelim||^^^20161210081307^20161210081308^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20161210081308||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|The most recent abdominal ultrasound continues to show stable results||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|when compared to the prior examination on 2008-04-06. No new||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|abnormalities identified, consistent with previous findings.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|Comparative abdominal ultrasound from 2016-12-06 against previous||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|study on 2008-04-06 shows no significant change in liver echotexture,||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|confirming stable hepatic parenchyma. The gallbladder still remains||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|free of calculi, while the pancreas presents with consistent||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|echogenicity. Kidneys demonstrate stable morphology and function. No||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|development of ascites or other fluid collections in the abdominal||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|cavity noted.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.134082429269919786196572132133049356160^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,26 @@
+1995-06-30 23:32:37.5635|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19950630233237|TBD|ORU^R01|2.25.168986206915425448317089609305958256368|P|2.7<R>
+PID|1||ABC451127^^^ABC^MR||KOBAYASHI^AOI^^^^^D||19750818|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084991|||||||||||||||||||||||||19950630233237|||||||V<R>
+ORC|RE|2223214^SYS|7795083304||Prelim||^^^19950630233236^19950630233237^O||19950630233237|||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2223214^SYS|7795083304|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|19950629175723|||||Hosp Perf|||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19950630233237||CR|Prelim||^^^19950630233236^19950630233237^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|||19950630233237||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Prelim<R>
+OBX|3|ST|&GDT|1|||||||Prelim<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim<R>
+OBX|5|ST|&IMP|2|Imaging demonstrates a normal chest X-ray for the patient. There are||||||Prelim<R>
+OBX|6|ST|&IMP|2|no signs of acute pathology. Previous studies have shown consistent||||||Prelim<R>
+OBX|7|ST|&IMP|2|results without evidence of pulmonary disease or cardiac enlargement.||||||Prelim<R>
+OBX|8|ST|&IMP|2|It is recommended to continue routine monitoring. The evaluation of||||||Prelim<R>
+OBX|9|ST|&IMP|2|the single-view chest X-ray reveals clear pulmonary vasculature with||||||Prelim<R>
+OBX|10|ST|&IMP|2|no evidence of acute infiltrative processes. The lung fields appear||||||Prelim<R>
+OBX|11|ST|&IMP|2|well-expanded with no signs of atelectasis or effusion noted. Cardiac||||||Prelim<R>
+OBX|12|ST|&IMP|2|silhouette is within normal limits, demonstrating no cardiomegaly.||||||Prelim<R>
+OBX|13|ST|&IMP|2|The mediastinum appears symmetric without any significant shift. Ribs||||||Prelim<R>
+OBX|14|ST|&IMP|2|and bony thorax show no evidence of fractures or destructive lesions.||||||Prelim<R>
+OBX|15|ST|&IMP|2|Overall, the findings indicate a stable lung and cardiac position||||||Prelim<R>
+OBX|16|ST|&IMP|2|without notable acute changes.||||||Prelim<R>
+OBX|17|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.301960140673576347053165791453074259246^EPIC^APPLICATION^DICOM<R>
+<EB>

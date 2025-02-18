@@ -1,0 +1,27 @@
+2015-03-28 07:57:54.5379|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150328075754|TBD|ORU^R01|2.25.222149263420674329556009625572004666871|P|2.7<R>
+PID|1||ABC451161^^^ABC^MR||WARD^DANNY^DAVID^^^^D||19561123|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084867|||||||||||||||||||||||||20150328075754|||||||V<R>
+ORC|RE|1591171^SYS|7795083443||Final||^^^20150328075753^20150328075754^O||20150328075754|T6530149^VASQUEZ^MISTY||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1591171^SYS|7795083443|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20150324114219|||||Hosp Perf||||^^^HEART|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20150328075754||NM|Final||^^^20150328075753^20150328075754^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20150328075754||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|Normal myocardial perfusion with preserved ventricular function. Mild||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|inferior wall tracer uptake may warrant correlation with clinical||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|symptoms and further investigations if indicated. The myocardial||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|perfusion imaging demonstrates preserved perfusion in the left||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|ventricle at rest with no significant areas of ischemia detected||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|during the stress component of the study. The ejection fraction is||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|calculated at 65%, which is within normal limits. There is a mildly||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|decreased tracer uptake noted in the inferior wall, which may suggest||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|the presence of mild ischemia or perhaps variant perfusion due to||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|microvascular involvement rather than obstructive coronary artery||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|disease. No significant perfusion defects or wall motion||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|abnormalities observed. The left atrium and right ventricular||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|structures appear normal with no signs of hypertrophy.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|18|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.235859574101286350828194398537490221254^EPIC^APPLICATION^DICOM<R>
+<EB>

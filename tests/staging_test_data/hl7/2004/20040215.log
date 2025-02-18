@@ -1,0 +1,26 @@
+2004-02-15 07:31:05.7809|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20040215073105|TBD|ORU^R01|2.25.1605086331375011526691542676645437786|P|2.7<R>
+PID|1||ABC451140^^^ABC^MR||THOMAS^MELISSA^ERIN^^^^D||19720808|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085035|||||||||||||||||||||||||20040215073105|||||||V<R>
+ORC|RE|5335720^SYS|7795083361||Final||^^^20040215073104^20040215073105^O||20040215073105|T6530149^VASQUEZ^MISTY||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5335720^SYS|7795083361|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20040210180420|||||Hosp Perf||||^^^BREAST|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20040215073105||MG|Final||^^^20040215073104^20040215073105^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20040215073105||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|1. No evidence of malignancy in the imaged left breast. 2. Stable||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|fibroadenomatous changes noted since the past examination. 3.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|Consider bilateral mammography in future screenings to assess the||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|right breast. The single-view mammogram of the left breast reveals a||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|few scattered fibroglandular densities, which is consistent with the||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|patient's age. There is no evidence of mass lesions, calcifications,||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|or architectural distortion. Notably, the breast tissue appears||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|symmetric and the axillary regions are unremarkable. The right breast||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|was not imaged, which is a limitation of this study. Comparative||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|evaluation with the previous mammogram dated 2001-09-10 shows no||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|significant changes in the breast tissue architecture, and a stable||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|appearance has been established.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.220721794881130520123522993795146730912^EPIC^APPLICATION^DICOM<R>
+<EB>

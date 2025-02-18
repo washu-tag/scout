@@ -1,0 +1,34 @@
+2012-10-23 07:47:10.8263|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20121023074710|TBD|ORU^R01|2.25.257832223175815845840843546362938834355|P|2.7<R>
+PID|1||ABC451072^^^ABC^MR||CHAVEZ^BRADLEY^SHANE^^^^D||19320612|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084674|||||||||||||||||||||||||20121023074710|||||||V<R>
+ORC|RE|3021533^SYS|7795083087||Wet Read||^^^20121023074709^20121023074710^O||20121023074710|T6530152^ADKINS^MELLISSA||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3021533^SYS|7795083087|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20121020080811|||||Hosp Perf||||^^^BRAIN|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20121023074710||MR|Wet Read||^^^20121023074709^20121023074710^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20121023074710||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|1. Mild cortical atrophy consistent with age-related changes,||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|predominantly involving the frontal and temporal regions. 2. Moderate||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|ventricular enlargement is present, considered normal in an elderly||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|male patient. 3. Multiple small FLAIR hyperintensities suggestive of||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|chronic microvascular ischemic disease; clinically relevant findings||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|should be correlated with neurological status. No acute intracranial||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|pathology noted. MRI of the brain reveals mild cortical atrophy||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|consistent with aging, primarily affecting the frontal and temporal||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|lobes. No midline shift or mass effect is identified. The ventricles||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|are moderately dilated but symmetric, suggestive of a normal variant||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|in the context of senescence. No acute ischemic changes are detected||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|within the brain parenchyma, although there are numerous small||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|17|ST|&IMP|2|hyperintensities on FLAIR sequences, which are likely indicative of||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|18|ST|&IMP|2|chronic microvascular ischemic disease. These findings correlate with||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|19|ST|&IMP|2|mild cognitive decline previously assessed. The basilar cisterns||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|20|ST|&IMP|2|remain patent, and cranial nerves appear unremarkable. No signs of||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|21|ST|&IMP|2|hemorrhage or meningeal enhancement are observed, supporting the||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|22|ST|&IMP|2|absence of acute intracranial pathology. The corpus callosum||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|23|ST|&IMP|2|maintains its integrity without any lesions or demyelination being||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|24|ST|&IMP|2|apparent.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|25|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.51573212854047002976177664325066413154^EPIC^APPLICATION^DICOM<R>
+<EB>

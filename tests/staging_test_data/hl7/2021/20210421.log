@@ -1,0 +1,23 @@
+2021-04-21 13:32:06.3446|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210421133206|TBD|ORU^R01|2.25.317210369079791929923694954851650859735|P|2.7<R>
+PID|1||ABC451115^^^ABC^MR||QUINTERO^NICHOLAS^ERIC^^^^D||19340113|M||DECLINED|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084993|||||||||||||||||||||||||20210421133206|||||||V<R>
+ORC|RE|1100740^SYS|7795083256||Final||^^^20210421133205^20210421133206^O||20210421133206|T6530151^WATERS^JESSICA||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1100740^SYS|7795083256|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20210418162708|||||Hosp Perf||||^^^ABDOMEN|D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210421133206||CR|Final||^^^20210421133205^20210421133206^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20210421133206||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|The abdominal X-ray is non-contributory and demonstrates normal||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|findings in an elderly individual. No further evaluation is required||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|based on this imaging study. The abdomen X-ray reveals normal gas||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|patterns in the bowel without signs of obstruction or excessive air.||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|The outlines of the liver, spleen, and kidneys are clearly visualized||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|and normal in appearance. There are no fecal impactions or free air||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|beneath the diaphragm, and the bony structures exhibit no acute||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|pathology. The lumbar spine shows age-related changes but nothing||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|alarming.||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Final|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.112464762655356068199359070326564577576^EPIC^APPLICATION^DICOM<R>
+<EB>

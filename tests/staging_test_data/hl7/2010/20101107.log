@@ -1,0 +1,25 @@
+2010-11-07 11:00:51.7271|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20101107110051|TBD|ORU^R01|2.25.5868571128770357241445531917003032945|P|2.7<R>
+PID|1||ABC451001^^^ABC^MR||CANTU^KEVIN^BRANDON^^^^D||19450220|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823219^LOGAN^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084840|||||||||||||||||||||||||20101107110051|||||||V<R>
+ORC|RE|6309623^SYS|7795082802||Final||^^^20101107110050^20101107110051^O||20101107110051|T6530140^HARDY^JAY||D7823224^MORGAN^JOHN^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6309623^SYS|7795082802|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20101105113226|||||Hosp Perf|||||D7823224^MORGAN^JOHN^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20101107110051||XA|Final||^^^20101107110050^20101107110051^O||||^Chest pain||D7823216^HALL^JEREMY^G.^^^^^ABC^^^^HOSP|T6530140^HARDY^JAY||20101107110051||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|5|ST|&IMP|2|Normal coronary angiography with no evidence of significant||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|6|ST|&IMP|2|atherosclerosis or obstructive disease. The X-ray angiography||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|7|ST|&IMP|2|demonstrates patent coronary arteries with no significant stenosis or||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|8|ST|&IMP|2|occlusions identified in major vascular territories. The left main||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|9|ST|&IMP|2|coronary artery and its branches visualize well without any evidence||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|10|ST|&IMP|2|of calcifications or plaque burden. The right coronary artery||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|11|ST|&IMP|2|maintains normal anatomy and patency. No vascular anomalies or||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|12|ST|&IMP|2|collateral circulations are apparent. All major vessels are||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|13|ST|&IMP|2|visualized beyond the bifurcations with clear opacification,||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|14|ST|&IMP|2|indicating effective contrast distribution. Overall, the findings are||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|15|ST|&IMP|2|consistent with normal coronary anatomy and function.||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|16|ST|&IMP|2|Dictated by: Jeremy Hall Interpreter, M.D.||||||Final|||||T6530140^HARDY^JAY<R>
+ZDS|2.25.195183154759238484474120746255207276552^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,25 @@
+2010-10-02 00:15:33.8347|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20101002001533|TBD|ORU^R01|2.25.16598786793695621691082890141594654876|P|2.7<R>
+PID|1||ABC451169^^^ABC^MR||WHITE^KRISTINA^ALICIA^^^^D||19770108|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084690|||||||||||||||||||||||||20101002001533|||||||V<R>
+ORC|RE|2492121^SYS|7795083474||Final||^^^20101002001532^20101002001533^O||20101002001533|T6530148^GROSS^CARLY||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2492121^SYS|7795083474|IMG5017^PET/CT FDG WHOLE BODY^UNKDEV^^WHOLEBODY PETCT AC NAC|O|20100928130028|||||Hosp Perf||||^^^WHOLEBODY|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20101002001533||CT|Final||^^^20101002001532^20101002001533^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20101002001533||||||||IMG5017^PET/CT FDG WHOLE BODY^UNKDEV^^WHOLEBODY PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Wholebody PET-CT||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|The whole-body PET-CT shows no evidence of malignancy or significant||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|pathologic conditions. Normal metabolic activity suggests an absence||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|of recurrent disease. The whole-body PET-CT conducted on 2010-09-28||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|demonstrates normal biodistribution of FDG with no focal||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|hypermetabolic foci detected in any of the evaluated regions||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|including the head, neck, chest, abdomen, and pelvis. The lungs||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|appear clear and free of suspicious nodules or lymphadenopathy. The||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|abdominal scans reveal no enlarged lymph nodes or hepatic lesions,||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|and osteoblastic activity in the skeleton remains within||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|physiological limits. The study provides no evidence of systemic||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|malignancy or hypermetabolic disease.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Final|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.261545731335014974121859507524107359173^EPIC^APPLICATION^DICOM<R>
+<EB>

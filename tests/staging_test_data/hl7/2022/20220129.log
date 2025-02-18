@@ -1,0 +1,30 @@
+2022-01-29 18:37:05.4041|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220129183705|TBD|ORU^R01|2.25.103025571471548535658985065048183121221|P|2.7<R>
+PID|1||ABC451155^^^ABC^MR||RODRIGUEZ^CASEY^TONY^^^^D||19900704|M||OTHER|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823218^LLOYD^JESSICA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084730|||||||||||||||||||||||||20220129183705|||||||V<R>
+ORC|RE|1160031^SYS|7795083421||Prelim||^^^20220129183704^20220129183705^O||20220129183705|T6530136^RIOS^KRISTIN||D7823221^MAXWELL^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1160031^SYS|7795083421|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20220125200749|||||Hosp Perf|||||D7823221^MAXWELL^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20220129183705||XA|Prelim||^^^20220129183704^20220129183705^O||||^Chest pain||D7823224^MORGAN^JOHN^J.^^^^^ABC^^^^HOSP|T6530136^RIOS^KRISTIN||20220129183705||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|5|ST|&IMP|2|The X-ray angiography study conducted on 2022-01-25 demonstrates||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|6|ST|&IMP|2|normal arterial patency in the lower extremities without significant||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|7|ST|&IMP|2|stenosis or occlusion. Mild atherosclerotic changes are noted in the||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|8|ST|&IMP|2|aortoiliac segment. No acute vascular events detected. Clinical||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|9|ST|&IMP|2|correlation may be considered for risk assessment. The X-ray||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|10|ST|&IMP|2|angiography study depicts the arterial anatomy of the lower||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|11|ST|&IMP|2|extremities with contrast enhancement. Evaluation reveals a patent||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|12|ST|&IMP|2|superficial femoral artery bilaterally with good opacification of the||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|13|ST|&IMP|2|popliteal arteries. There are no significant vascular occlusions or||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|14|ST|&IMP|2|stenoses noted in the examined arterial segments. However, there are||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|15|ST|&IMP|2|focal areas of mild calcification in the aortoiliac region,||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|16|ST|&IMP|2|indicating atherosclerotic changes. No evidence of acute thrombus or||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|17|ST|&IMP|2|embolic events was observed. Additionally, venous structures appear||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|18|ST|&IMP|2|unremarkable, with normal patency of the deep veins. Branching||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|19|ST|&IMP|2|patterns are normal, and there are no signs of varicosities or||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|20|ST|&IMP|2|abnormal venous collaterals noticeable.||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|21|ST|&IMP|2|Dictated by: John Morgan Interpreter, M.D.||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+ZDS|2.25.52497486494368810472667997948402737609^EPIC^APPLICATION^DICOM<R>
+<EB>

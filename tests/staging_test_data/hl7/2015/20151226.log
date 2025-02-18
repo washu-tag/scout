@@ -1,0 +1,27 @@
+2015-12-26 03:11:15.6480|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20151226031115|TBD|ORU^R01|2.25.188580724495959168342944707174678407783|P|2.7<R>
+PID|1||ABC451180^^^ABC^MR||NGUYEN^FREDERICK^JOSHUA^^^^D||19390120|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823288^GONZALEZ^AMBER^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084679|||||||||||||||||||||||||20151226031115|||||||V<R>
+ORC|RE|7366363^SYS|7795083520||Prelim||^^^20151226031114^20151226031115^O||20151226031115|T6530207^CLARK^SCOTT||D7823278^HUBBARD^BRADLEY^D.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7366363^SYS|7795083520|OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED|O|20151224204550|||||Hosp Perf||||^^^HEAD|D7823278^HUBBARD^BRADLEY^D.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20151226031115||MR|Prelim||^^^20151226031114^20151226031115^O||||^Chest pain||D7823288^GONZALEZ^AMBER^R.^^^^^ABC^^^^HOSP|T6530207^CLARK^SCOTT||20151226031115||||||||OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head MRI||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|5|ST|&IMP|2|The imaging demonstrates findings consistent with normal aging||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|6|ST|&IMP|2|including mild ventriculomegaly and subtle white matter changes.||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|7|ST|&IMP|2|These changes are compatible with chronic ischemia and do not raise||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|8|ST|&IMP|2|acute concerns for malignancy or active pathology. The MRI of the||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|9|ST|&IMP|2|brain shows no acute intracranial hemorrhage or territorial||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|10|ST|&IMP|2|infarctions. The ventricles are symmetrically enlarged, indicative of||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|11|ST|&IMP|2|mild chronic ventricular dilation, possibly suggesting age-related||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|12|ST|&IMP|2|atrophy. Various small, punctate areas of hyperintensity are noted in||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|13|ST|&IMP|2|the subcortical white matter on T2-weighted images, consistent with||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|14|ST|&IMP|2|small vessel ischemic changes. The cortical sulci are prominent,||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|15|ST|&IMP|2|which may correlate with the patient's age. No mass lesions or||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|16|ST|&IMP|2|midline shifts are observed, and the ventricles appear generally||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|17|ST|&IMP|2|unremarkable.||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+OBX|18|ST|&IMP|2|Dictated by: Amber Gonzalez Interpreter, M.D.||||||Prelim|||||T6530207^CLARK^SCOTT<R>
+ZDS|2.25.201474324812692077355620011356508803872^EPIC^APPLICATION^DICOM<R>
+<EB>

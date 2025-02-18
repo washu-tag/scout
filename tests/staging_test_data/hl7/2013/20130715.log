@@ -1,0 +1,11 @@
+2013-07-15 23:25:47.5663|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130715232547|TBD|ORU^R01|2.25.199799407299669230541872162131294572439|P|2.4<R>
+PID|1||ABC451154^^^ABC^MR~EPIC4485913^^^EPIC^MRN||WHITEHEAD^MICHAEL^ROGER^^^^D||19330116000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451154^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823278^HUBBARD^BRADLEY^D.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457358^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1456041^SYS|7795083414|IMG2347^2347 MRI BRAIN WO CONTRAST^UNKDEV|URGENT||20130712161014|||PSCRIB|||||^^^^ |D7823281^HOUSTON^CARLOS^PAUL^M.D.^^^^ABC|||||2347^BRAIN MRI Expedited|20130715232547||IMG|||1^^^20130715232547^^U^^URGENT|       |||^Chest pain|D7823286^JAMES^TIMOTHY^C.^^^M.D.|D7823288^GONZALEZ^AMBER^R.^^^M.D.||PSCRIB|||||||||2347<R>
+OBX|1|TX|7369326||TIMOTHY JAMES, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7369326||ACC#  Date Time  Exam~~7795083414 Jul 15 2013 11:25PM IMG2347 MRI BRAIN WO CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI demonstrates mild periventricular white matter changes,~consistent with small vessel ischemic disease, in an elderly patient.~The gray-white matter junction is intact with no significant lesions.~There is no evidence of acute hemorrhage or mass effect. The basilar~cisterns are well preserved, suggesting normal intracranial pressure.~No focal abnormalities are apparent on diffusion-weighted images.~~IMPRESSION:~The imaging supports chronic ischemic changes typical for the~patient's age. Overall, no acute intracranial pathology is~identified.||||||F<R>
+OBX|3|TX|7369326||Requested By: Houston,Carlos P. M.D.~~Dictated By: Timothy James, M.D. on Jul 15 2013 11:25PM~~This document has been electronically signed by: Timothy James, M.D.~on Jul 15 2013 11:25PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7369326|4|7795083414^UK^ZB||||||F<R>
+<EB>

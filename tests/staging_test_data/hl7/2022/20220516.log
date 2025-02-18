@@ -1,0 +1,26 @@
+2022-05-16 05:58:39.6778|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220516055839|TBD|ORU^R01|2.25.285409644995627438787598020497184367863|P|2.7<R>
+PID|1||ABC451020^^^ABC^MR||ΘΕΟΔΩΡΆΚΗΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19971220|F||UNABLE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823295^GARRETT^JOSHUA^C.^M.D.^^^^^^^^HOSP|||RAD|||||||||V42084776|||||||||||||||||||||||||20220516055839|||||||V<R>
+ORC|RE|5607005^SYS|7795082880||Wet Read||^^^20220516055838^20220516055839^O||20220516055839|T6530215^LUCAS^MATTHEW||D7823300^BISHOP^DUSTIN^T.^M.D.^^^^^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5607005^SYS|7795082880|IMG1021^MRI TRANSFER OF OUTSIDE FILMS^UNKDEV^^MRI GENERIC|O|20220512075959|||||Hosp Perf||||^^^CHEST|D7823300^BISHOP^DUSTIN^T.^M.D.^^^^^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20220516055839||MR|Wet Read||^^^20220516055838^20220516055839^O||||^Chest pain||D7823297^PAYNE^MOLLY^L.^^^^^^^^^HOSP|T6530215^LUCAS^MATTHEW||20220516055839||||||||IMG1021^MRI TRANSFER OF OUTSIDE FILMS^UNKDEV^^MRI GENERIC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest MRI||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|5|ST|&IMP|2|Chest MRI findings are consistent with a normal thoracic assessment.||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|6|ST|&IMP|2|No acute changes are present, and the findings support stable lung||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|7|ST|&IMP|2|and heart anatomy. The chest MRI reveals clear lung fields, with no||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|8|ST|&IMP|2|presence of effusion, consolidation, or nodular pathology. The||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|9|ST|&IMP|2|pleurae are smooth without any thickening or signs of pleural||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|10|ST|&IMP|2|disease. Heart size is within normal limits, and there are no visible||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|11|ST|&IMP|2|cardiac masses or valvular abnormalities. The thoracic aorta appears||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|12|ST|&IMP|2|normal in caliber, without evidence of dilation or dissection. The||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|13|ST|&IMP|2|images demonstrate no significant interval changes from the previous||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|14|ST|&IMP|2|study dated 2022-05-12. The mediastinal structures maintain their||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|15|ST|&IMP|2|normal relationships with no evidence of pathological enlargement of||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|16|ST|&IMP|2|lymph nodes.||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+OBX|17|ST|&IMP|2|Dictated by: Molly Payne Interpreter, M.D.||||||Wet Read|||||T6530215^LUCAS^MATTHEW<R>
+ZDS|2.25.160205731417922875639903015310494858856^EPIC^APPLICATION^DICOM<R>
+<EB>

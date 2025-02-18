@@ -1,0 +1,28 @@
+2011-11-03 08:28:26.0257|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20111103082826|TBD|ORU^R01|2.25.32545144643712867347890634925286876096|P|2.7<R>
+PID|1||ABC451085^^^ABC^MR||MARTINEZ^ALFRED^DAVID^^^^D||19300126|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084801|||||||||||||||||||||||||20111103082826|||||||V<R>
+ORC|RE|9524583^SYS|7795083136||Final||^^^20111103082825^20111103082826^O||20111103082826|T6530152^ADKINS^MELLISSA||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9524583^SYS|7795083136|IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC|O|20111031155047|||||Hosp Perf||||^^^HEAD|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20111103082826||CT|Final||^^^20111103082825^20111103082826^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20111103082826||||||||IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head PET-CT||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|Increased metabolic activity in the temporal region may suggest||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|underlying epilepsy, dementia, or neoplastic processes, thus further||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|evaluation with a neurology consult and additional MRI may be||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|warranted to explore these findings more deeply. Persistent sinus||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|disease may require symptomatic management. The head PET-CT shows||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|perturbed metabolic activity within the cortical aspects of the||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|temporal lobe; this area demonstrates an SUVmax of 4.5. The CT||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|portion does not show significant structural abnormalities aside from||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|age-related cortical atrophy, with no acute intracranial hemorrhage||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|or midline shift evident. The vascular structures appear intact with||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|no signs of acute ischemia. The review of the sinuses shows mild||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|mucosal thickening within the maxillary sinuses bilaterally, possibly||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|17|ST|&IMP|2|consistent with chronic sinusitis. An assessment of other cranial||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|18|ST|&IMP|2|structures reveals no masses or enhancing lesions.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|19|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.217165436050103889826456056066773618074^EPIC^APPLICATION^DICOM<R>
+<EB>

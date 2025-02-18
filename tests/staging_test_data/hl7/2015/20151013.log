@@ -1,0 +1,28 @@
+2015-10-13 20:44:02.6248|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20151013204402|TBD|ORU^R01|2.25.185847524565075800405858469740392856299|P|2.7<R>
+PID|1||ABC451175^^^ABC^MR||OCONNOR^JEREMY^JOSHUA^^^^D||19931118|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823259^SOLIS^JESSICA^L.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084749|||||||||||||||||||||||||20151013204402|||||||V<R>
+ORC|RE|1273531^SYS|7795083498||Wet Read||^^^20151013204401^20151013204402^O||20151013204402|T6530164^HILL^TAMARA||D7823258^BRYANT^DAVID^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1273531^SYS|7795083498|OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED|O|20151010092508|||||Hosp Perf||||^^^HEAD|D7823258^BRYANT^DAVID^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20151013204402||MR|Wet Read||^^^20151013204401^20151013204402^O||||^Chest pain||D7823246^SANCHEZ^LESLIE^K.^^^^^ABC^^^^HOSP|T6530164^HILL^TAMARA||20151013204402||||||||OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: MRI of the head||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|5|ST|&IMP|2|MRI of the head shows no acute intracranial pathology. The punctate||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|6|ST|&IMP|2|white matter changes are nonspecific and could be attributable to||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|7|ST|&IMP|2|small vessel disease. Follow-up imaging may be warranted if||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|8|ST|&IMP|2|neurologic symptoms arise in the future. No changes are noted from||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|9|ST|&IMP|2|previous studies. The brain MRI identifies no acute intracranial||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|10|ST|&IMP|2|hemorrhage or ischemic stroke. There are a few small punctate foci of||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|11|ST|&IMP|2|hyperintensity in the white matter on T2-weighted images, likely||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|12|ST|&IMP|2|demyelinating in nature, but do not demonstrate enhancement or||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|13|ST|&IMP|2|significant mass effect. The ventricular system is normal in size and||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|14|ST|&IMP|2|configuration, and there is no midline shift. The pituitary gland,||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|15|ST|&IMP|2|notably positioned, shows no signs of adenoma or other abnormalities.||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|16|ST|&IMP|2|Cerebellar tonsils are positioned above the foramen magnum indicating||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|17|ST|&IMP|2|a normal cistern. No significant bone marrow abnormalities are noted||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|18|ST|&IMP|2|in surrounding structures.||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|19|ST|&IMP|2|Dictated by: Leslie Sanchez Interpreter, M.D.||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+ZDS|2.25.13850567477074209999342286240124895508^EPIC^APPLICATION^DICOM<R>
+<EB>

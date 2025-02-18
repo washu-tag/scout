@@ -1,0 +1,11 @@
+2006-11-04 19:49:01.4923|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20061104194901|TBD|ORU^R01|2.25.310424338471287826200028886729148895676|P|2.4<R>
+PID|1||ABC451173^^^ABC^MR~EPIC4485932^^^EPIC^MRN||HOLLAND^CHRISTOPHER^JOSHUA^^^^D||19661207000000|M||P|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451173^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457219^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9569756^SYS|7795083488|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20061031064359|||PSCRIB|||||^^^^ |D7823240^PARSONS^ERNESTO^JOHN^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20061104194901||IMG|||1^^^20061104194901^^U^^URGENT|       |||^Chest pain|D7823240^PARSONS^ERNESTO^J.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|5575281||ERNESTO PARSONS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5575281||ACC#  Date Time  Exam~~7795083488 Nov 04 2006 07:49PM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdominal X-ray examination.~~FINDINGS:~The abdominal X-ray demonstrates normal gas patterns without evidence~of obstruction or distension. Bowel gas distribution appears~appropriate throughout all quadrants, and there are no visible~foreign bodies or calcifications noted. The liver silhouette is~well-defined, and no abnormalities are observed in the renal shadows.~The spleen and pancreas are not prominently visualized, which is~consistent with normal anatomy. There is no free air under the~diaphragm, ruling out perforation, and the psoas margins show normal~contouring. A minimal amount of stool is appreciated in the colon,~with no signs of fecal impaction detected.~~IMPRESSION:~Abdominal X-ray is unremarkable with normal gas patterns and no~radiographic evidence of acute abdominal pathology.||||||F<R>
+OBX|3|TX|5575281||Requested By: Parsons,Ernesto J. M.D.~~Dictated By: Ernesto Parsons, M.D. on Nov 04 2006 07:49PM~~This document has been electronically signed by: Ernesto Parsons,~M.D. on Nov 04 2006 07:49PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5575281|4|7795083488^UK^ZB||||||F<R>
+<EB>

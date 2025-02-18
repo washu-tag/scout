@@ -1,0 +1,23 @@
+2000-06-09 05:42:53.7238|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000609054253|TBD|ORU^R01|2.25.76693649432597631297035463927928480035|P|2.4<R>
+PID|1||ABC451130^^^ABC^MR~EPIC4485889^^^EPIC^MRN||KATO^YUA^^^^^D||19710820000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451130^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457310^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4565454^SYS|7795083319|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20000607121532|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||4185^XRay Angiography|20000609054253||IMG|||1^^^20000609054253^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|8756271||JENNIFER SMITH, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|8756271||ACC#  Date Time  Exam~~7795083319 Jun 09 2000 05:42AM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray angiography~~FINDINGS:~X-ray angiography of the coronary vessels reveals clear opacification~of the left main coronary artery and its bifurcations. There is no~evidence of significant stenosis greater than 50%, and all major~branches demonstrate normal patency. The right coronary artery is~similarly unremarkable with no significant narrowing visualized, and~collateral circulation is not evident. Overall, there appear to be no~acute ischemic changes to the myocardium, and no evidence of vascular~malformations is detected.~~IMPRESSION:~Normal X-ray angiography findings. Patent coronary arteries with no~evidence of obstructive coronary artery disease, indicating a healthy~vasculature.||||||P<R>
+OBX|3|TX|8756271||Requested By: Marks,Michael R. M.D.~~Dictated By: Jennifer Smith, M.D. on Jun 09 2000 05:42AM~~Pending review by: Joseph Barajas, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|8756271|4|7795083319^UK^ZB||||||P<R>
+<EB><R>
+
+2000-06-09 17:41:11.4629|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000609174111|TBD|ORU^R01|2.25.250028902134885145568824244706562116992|P|2.4<R>
+PID|1||ABC451065^^^ABC^MR~EPIC4485824^^^EPIC^MRN||ΑΡΓΎΡΗΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19630112000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451065^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457481^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1742052^SYS|7795083056|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20000608083915|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||8452^NM MPI SPECT|20000609174111||H|||1^^^20000609174111^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|7282017||MICHAEL MARKS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7282017||ACC#  Date Time  Exam~~7795083056 Jun 09 2000 05:41PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~The cardiac nuclear medicine study demonstrates normal perfusion~throughout the myocardium at rest. There is homogenous tracer~distribution with no areas of reduced uptake observed, ruling out~ischemia or infarction. The left ventricular function is well within~normal limits, with an ejection fraction calculated at approximately~65%. The wall motion analysis indicates no regional dyskinesis or~hypokinesis, with all wall segments moving normally during both~resting and stress phases. No extra-cardiac activity is noted that~would suggest abnormality, ensuring no significant artifact~influences the interpretation. The patient shows no signs of~arrhythmias or other abnormalities on the EKG tracing during the~procedure.~~IMPRESSION:~The nuclear cardiac study indicates normal perfusion and myocardial~function, suggesting a low probability of clinically significant~coronary artery disease. The results are reassuring and appropriate~for the patient’s age and medical history.||||||F<R>
+OBX|3|TX|7282017||Requested By: Medrano,Joe J. M.D.~~Dictated By: Michael Marks, M.D. on Jun 09 2000 05:41PM~~This document has been electronically signed by: Michael Marks, M.D.~on Jun 09 2000 05:41PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7282017|4|7795083056^UK^ZB||||||F<R>
+<EB>

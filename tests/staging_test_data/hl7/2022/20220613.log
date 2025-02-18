@@ -1,0 +1,11 @@
+2022-06-13 18:53:11.4857|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220613185311|TBD|ORU^R01|2.25.253905174161996304650589646251297958764|P|2.4<R>
+PID|1||ABC451081^^^ABC^MR~EPIC4485840^^^EPIC^MRN||COLEMAN^STEPHANIE^SHANNON^^^^D||19951215000000|F||R|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451081^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457155^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2670470^SYS|7795083123|BED72020^72020 72020 Spine Single View^UNKDEV|URGENT||20220610060526|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||72020^Spine 1 View Dx Xray|20220613185311||BED|||1^^^20220613185311^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB|||||||||72020<R>
+OBX|1|TX|8345072||RUSSELL GALLAGHER, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|8345072||ACC#  Date Time  Exam~~7795083123 Jun 13 2022 06:53PM BED72020 72020 Spine Single View~~EXAMINATION:~Spine X-ray~~FINDINGS:~The X-ray of the thoracic and lumbar spine reveals a normal alignment~with no acute fractures or dislocations noted. However, there are~signs of moderate degenerative changes, including loss of height and~osteophyte formation at multiple levels, particularly between T6-T7~and L4-L5. The vertebral bodies appear sclerotic, and there is a~minimal disc space narrowing observed. The sacroiliac joints also~demonstrate mild sclerosis, suggestive of early degenerative changes.~No evidence of malignancy or acute pathology is observed.~~IMPRESSION:~The findings are consistent with age-related degenerative disc~disease, which appears stable compared to the previous imaging~studies. There is no evidence of acute injury or significant~abnormality that would require immediate intervention. Clinical~correlation is advised to manage potential symptoms related to~degenerative spine disease.||||||F<R>
+OBX|3|TX|8345072||Requested By: Donovan,William C. M.D.~~Dictated By: Russell Gallagher, M.D. on Jun 13 2022 06:53PM~~This document has been electronically signed by: Russell Gallagher,~M.D. on Jun 13 2022 06:53PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8345072|4|7795083123^UK^ZB||||||F<R>
+<EB>

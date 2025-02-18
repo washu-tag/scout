@@ -1,0 +1,32 @@
+2018-04-01 15:04:13.6959|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180401150413|TBD|ORU^R01|2.25.314160769954999495399004177394975735563|P|2.7<R>
+PID|1||ABC451071^^^ABC^MR||ΑΣΤΡΙΝΊΔΗΣ^ΜΆΡΘΑ^^^^^D||19940926|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823217^SANCHEZ^ROY^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084663|||||||||||||||||||||||||20180401150413|||||||V<R>
+ORC|RE|4201344^SYS|7795083085||Final||^^^20180401150412^20180401150413^O||20180401150413|T6530140^HARDY^JAY||D7823228^MYERS^BRENT^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4201344^SYS|7795083085|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20180330150230|||||Hosp Perf||||^^^HEART|D7823228^MYERS^BRENT^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20180401150413||NM|Final||^^^20180401150412^20180401150413^O||||^Chest pain||D7823221^MAXWELL^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530140^HARDY^JAY||20180401150413||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|5|ST|&IMP|2|The results of the cardiac NM study align perfectly with previous||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|6|ST|&IMP|2|cardiac evaluations, reinforcing stable myocardial perfusion and||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|7|ST|&IMP|2|function. As noted from the ongoing imaging assessments, the patient||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|8|ST|&IMP|2|exhibits no signs of pathologic cardiovascular alterations as of||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|9|ST|&IMP|2|March 30, 2018. It is suggested that the patient continue with||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|10|ST|&IMP|2|routine cardiovascular evaluations and lifestyle modifications to||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|11|ST|&IMP|2|maintain cardiac health. The cardiac nuclear medicine study performed||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|12|ST|&IMP|2|on March 30, 2018, displays normal perfusion dynamics, with no areas||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|13|ST|&IMP|2|of ischemia or infarction present. The images reflect an adequately||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|14|ST|&IMP|2|performing myocardium with preserved left ventricular function||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|15|ST|&IMP|2|evaluated at rest and after stress. The wall motion appears intact,||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|16|ST|&IMP|2|and ejection fraction is computed at approximately 60%, within normal||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|17|ST|&IMP|2|parameters. No perfusion defects are identified, and the heart's||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|18|ST|&IMP|2|chambers exhibit normal dimensions. The study indicates a||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|19|ST|&IMP|2|well-compensated cardiovascular state without any abnormalities in||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|20|ST|&IMP|2|the right or left coronary territories, reinforcing consistent||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|21|ST|&IMP|2|assessment compared to previous examinations. There is no evidence of||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|22|ST|&IMP|2|prior myocardial damage or stress-related defects.||||||Final|||||T6530140^HARDY^JAY<R>
+OBX|23|ST|&IMP|2|Dictated by: Michael Maxwell Interpreter, M.D.||||||Final|||||T6530140^HARDY^JAY<R>
+ZDS|2.25.117705469922263990722769616611530046722^EPIC^APPLICATION^DICOM<R>
+<EB>

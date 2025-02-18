@@ -1,0 +1,11 @@
+2006-06-07 17:37:37.0300|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060607173737|TBD|ORU^R01|2.25.81688059031399903787651998384994620350|P|2.4<R>
+PID|1||ABC451053^^^ABC^MR~EPIC4485812^^^EPIC^MRN||HILL^EDWARD^WYATT^^^^D||19660723000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451053^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457352^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7873960^SYS|7795083015|IMG1259^1259 XR CHEST 1 VIEW^UNKDEV|URGENT||20060607070110|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||1259^Chest 1 View Xray|20060607173737||IMG|||1^^^20060607173737^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB|||||||||1259<R>
+OBX|1|TX|811840||JOSEPH BARAJAS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|811840||ACC#  Date Time  Exam~~7795083015 Jun 07 2006 05:37PM IMG1259 XR CHEST 1 VIEW~~EXAMINATION:~Chest X-ray~~FINDINGS:~The chest X-ray is normal with clear lung fields and no infiltrates~or effusions. The heart is normal in size, with no mediastinal~shifting, and the costophrenic angles are sharp. Bony structures are~intact with no acute fractures noted. Diaphragmatic contour is~normal, and there are no signs of pneumothorax.~~IMPRESSION:~Normal chest X-ray without any acute pulmonary or cardiovascular~abnormalities.||||||P<R>
+OBX|3|TX|811840||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Joseph Barajas, M.D. on Jun 07 2006 05:37PM~~Pending review by: Jessica Wright, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|811840|4|7795083015^UK^ZB||||||P<R>
+<EB>

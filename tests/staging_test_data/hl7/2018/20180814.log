@@ -1,0 +1,24 @@
+2018-08-14 05:36:00.5080|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180814053600|TBD|ORU^R01|2.25.47387523920849166565424724458815367836|P|2.7<R>
+PID|1||ABC450996^^^ABC^MR||OLIVER^TABATHA^ROBYN^^^^D||19430118|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084721|||||||||||||||||||||||||20180814053600|||||||V<R>
+ORC|RE|1637525^SYS|7795082780||Prelim||^^^20180814053559^20180814053600^O||20180814053600|T6530150^NEAL^EMILY||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1637525^SYS|7795082780|IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC|O|20180812171400|||||Hosp Perf||||^^^HEAD|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20180814053600||CT|Prelim||^^^20180814053559^20180814053600^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20180814053600||||||||IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head PET-CT||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|This PET-CT study of the head is unremarkable, providing reassurance||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|of no focal hypermetabolic regions. The findings denote stability in||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|cerebral metabolic function, indicating no overt signs of malignancy||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|or neuroinflammation. The head PET-CT examination reveals no abnormal||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|metabolic activity within the brain parenchyma. The cerebral cortex||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|demonstrates normal metabolic uptake consistent with expected||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|physiological function. Additionally, the pituitary gland is||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|unremarkable, and the orbits and sinuses are free of evident||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|pathology. There are no signs of encephalitis, tumors, or areas of||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|increased uptake that suggest neurodegenerative diseases.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.11507434766368010717110690527992958482^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,25 @@
+2022-07-16 16:25:48.4751|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220716162548|TBD|ORU^R01|2.25.237317832930235485097765354072697464683|P|2.7<R>
+PID|1||ABC451185^^^ABC^MR||PERALTA^MICHAEL^JEFFREY^^^^D||19970514|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084794|||||||||||||||||||||||||20220716162548|||||||V<R>
+ORC|RE|8844420^SYS|7795083539||Wet Read||^^^20220716162547^20220716162548^O||20220716162548|T6530153^MORAN^JOSHUA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8844420^SYS|7795083539|IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED|O|20220715204101|||||Hosp Perf||||^^^CHEST|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20220716162548||MR|Wet Read||^^^20220716162547^20220716162548^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||20220716162548||||||||IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest MRI||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|The chest MRI findings are consistent with normal thoracic anatomy||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|and physiology, corroborating the prior assessments made in the||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|thorax PET-CT performed on 2018-09-21 and indicating progressive||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|stability in this patient's pulmonary and cardiac health. The chest||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|MRI evaluates the thoracic structures and shows normal morphology||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|without significant abnormalities. The lung parenchyma demonstrates a||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|clear signal with no focal lesions or interstitial changes noted. The||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|mediastinum is unremarkable, and there is no evidence of a mass||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|effect. The cardiac silhouette is normal in size, and aortic||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|structures appear unremarkable. Regional lymph nodes are within||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|15|ST|&IMP|2|normal limits, with no signs of enlargement.||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|16|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.320663254080343012330821828533990271849^EPIC^APPLICATION^DICOM<R>
+<EB>

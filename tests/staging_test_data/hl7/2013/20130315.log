@@ -1,0 +1,30 @@
+2013-03-15 11:59:42.2511|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130315115942|TBD|ORU^R01|2.25.173296245352072725915311379702478439373|P|2.7<R>
+PID|1||ABC451142^^^ABC^MR||NAKAMURA^HARUTO^^^^^D||19750510|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085039|||||||||||||||||||||||||20130315115942|||||||V<R>
+ORC|RE|6224201^SYS|7795083365||Prelim||^^^20130315115941^20130315115942^O||20130315115942|T6530149^VASQUEZ^MISTY||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6224201^SYS|7795083365|IMG5017^PET/CT FDG WHOLE BODY^UNKDEV^^WHOLEBODY PETCT AC NAC|O|20130312164845|||||Hosp Perf||||^^^WHOLEBODY|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20130315115942||CT|Prelim||^^^20130315115941^20130315115942^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20130315115942||||||||IMG5017^PET/CT FDG WHOLE BODY^UNKDEV^^WHOLEBODY PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Wholebody PET-CT||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|1. Increased size and metabolic activity of the left lung mass,||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|suggestive of disease progression since the last imaging. 2.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|Bilateral mediastinal lymphadenopathy demonstrates metabolic||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|involvement. 3. Recommend staging and biopsy to confirm the diagnosis||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|and plan for treatment. Whole-body PET-CT imaging reveals multiple||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|foci of increased metabolic activity, most prominently in the left||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|lung and mediastinal regions. The left lung demonstrates a newly||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|appeared 4.5 cm hypermetabolic mass with SUV max of 10.8. In||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|addition, there are multiple enlarged mediastinal lymph nodes||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|bilaterally, with the largest node showing a SUV of 7.2. No osseous||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|lesions are visualized, and other abdominal organs do not show||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|evidence of metastatic disease. The liver and spleen appear||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|unremarkable, without focal lesions detected. Contrasted with prior||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|18|ST|&IMP|2|imaging performed in 2013, there is a concerning increase in both||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|19|ST|&IMP|2|size and metabolic activity of left lung lesions, suggesting disease||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|20|ST|&IMP|2|progression.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|21|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.175026378856378267827222359394203721456^EPIC^APPLICATION^DICOM<R>
+<EB>

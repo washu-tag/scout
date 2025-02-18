@@ -1,0 +1,11 @@
+2011-01-16 04:59:24.5802|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110116045924|TBD|ORU^R01|2.25.170499365422363637307436430057754236352|P|2.4<R>
+PID|1||ABC451066^^^ABC^MR~EPIC4485825^^^EPIC^MRN||NEAL^KATHLEEN^KATHRYN^^^^D||19550405000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451066^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823254^CRUZ^JOSEPH^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457484^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4620432^SYS|7795083062|IMG2347^2347 MRI BRAIN WO CONTRAST^UNKDEV|URGENT||20110115140051|||PSCRIB|||||^^^^ |D7823253^NIXON^MELISSA^DANIELLE^M.D.^^^^ABC|||||2347^BRAIN MRI Expedited|20110116045924||IMG|||1^^^20110116045924^^U^^URGENT|       |||^Chest pain|D7823251^CALLAHAN^SCOTT^A.^^^M.D.|D7823258^BRYANT^DAVID^T.^^^M.D.||PSCRIB|||||||||2347<R>
+OBX|1|TX|7394578||SCOTT CALLAHAN, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|7394578||ACC#  Date Time  Exam~~7795083062 Jan 16 2011 04:59AM IMG2347 MRI BRAIN WO CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI shows normal cerebral anatomy with no acute~intracranial hemorrhage or any abnormal mass lesions detected. The~ventricular system is normal in size and configuration. No evidence~of midline shift exists. The cerebral hemispheres show normal signal~intensities on T1 and T2-weighted images. No significant white matter~hyperintensities are demonstrated, and the major vascular structures~within the cranium appear patent. The orbits and sella are~unremarkable. There are no inflammatory changes along the meninges.~~IMPRESSION:~1. Unremarkable brain MRI; no significant abnormalities or lesions.~2. Normal anatomy and signal characteristics.||||||F<R>
+OBX|3|TX|7394578||Requested By: Nixon,Melissa D. M.D.~~Dictated By: Scott Callahan, M.D. on Jan 16 2011 04:59AM~~This document has been electronically signed by: Scott Callahan, M.D.~on Jan 16 2011 04:59AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7394578|4|7795083062^UK^ZB||||||F<R>
+<EB>

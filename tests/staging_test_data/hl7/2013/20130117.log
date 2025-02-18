@@ -1,0 +1,11 @@
+2013-01-17 18:43:38.0840|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130117184338|TBD|ORU^R01|2.25.78860477752140837066012188419999432510|P|2.4<R>
+PID|1||ABC451108^^^ABC^MR~EPIC4485867^^^EPIC^MRN||SMITH^RANDALL^STEVEN^^^^D||19490119000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451108^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457368^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3662858^SYS|7795083230|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||20130115173124|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||2361^Brain MRI|20130117184338||IMG|||1^^^20130117184338^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|260344||MICHAEL MARKS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|260344||ACC#  Date Time  Exam~~7795083230 Jan 17 2013 06:43PM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI performed on 2013-01-15 exhibits no significant~abnormalities in the cortical and subcortical structures. The gray~and white matter differentiation is maintained without any patchy~areas of increased signal on T2-weighted images, indicative of~demyelination. There is no evidence of mass lesion or edema present.~The ventricles are symmetric, and the midline structures are~well-aligned. Notably, there is mild age-related atrophy of the~parenchyma, which is consistent with the neuroanatomical changes~typical for a patient of this demographic profile.~~IMPRESSION:~The brain MRI indicates no acute intracranial pathology, with only~expected age-related changes. There are no abnormal findings that~would require further investigation given the patient's clinical~history.||||||F<R>
+OBX|3|TX|260344||Requested By: Reese,Amber J. M.D.~~Dictated By: Michael Marks, M.D. on Jan 17 2013 06:43PM~~This document has been electronically signed by: Michael Marks, M.D.~on Jan 17 2013 06:43PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|260344|4|7795083230^UK^ZB||||||F<R>
+<EB>

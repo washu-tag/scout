@@ -1,0 +1,25 @@
+2019-12-20 10:04:15.3627|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20191220100415|TBD|ORU^R01|2.25.149106557455675991642699662148624891930|P|2.7<R>
+PID|1||ABC451177^^^ABC^MR||PIERCE^ALLEN^DESHAWN^^^^D||19501013|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084790|||||||||||||||||||||||||20191220100415|||||||V<R>
+ORC|RE|8540055^SYS|7795083507||Prelim||^^^20191220100414^20191220100415^O||20191220100415|T6530148^GROSS^CARLY||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8540055^SYS|7795083507|BED70250^70250 Skull < 4 views^UNKDEV^^SKULL 1 VIEW DX XRAY|O|20191219140251|||||Hosp Perf||||^^^SKULL|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20191220100415||DX|Prelim||^^^20191220100414^20191220100415^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20191220100415||||||||BED70250^70250 Skull < 4 views^UNKDEV^^SKULL 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Skull X-ray Study||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|Skull X-ray shows normal anatomy with minor age-related changes. No||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|acute findings, and stable when compared to the last study on||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|2019-12-19. The skull X-ray demonstrates normal cranial contour||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|without evident fractures or significant bony lesions. The sella||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|turcica is normal in size and shape, and there is no evidence of||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|midline shift. The paranasal sinuses are adequately aerated with no||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|signs of obstruction or fluid levels. However, there are mild||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|age-related changes including some evidence of suture fusion which||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|may be subject to further monitoring. This assessment is consistent||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|with findings on previous skull films, with no notable changes since||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|2019-12-19.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.33514868690942745649067291156565147476^EPIC^APPLICATION^DICOM<R>
+<EB>

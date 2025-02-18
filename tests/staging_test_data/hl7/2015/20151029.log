@@ -1,0 +1,11 @@
+2015-10-29 03:53:52.2594|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20151029035352|TBD|ORU^R01|2.25.65841063318348573177883600509968261623|P|2.4<R>
+PID|1||ABC451045^^^ABC^MR~EPIC4485804^^^EPIC^MRN||WALSH^ANGEL^CARRIE^^^^D||19550621000000|F||R|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451045^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457153^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2673981^SYS|7795082981|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||20151025140057|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||70553^Brain dMRI|20151029035352||CMRP|||1^^^20151029035352^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|7101100||JESSICA WRIGHT, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|7101100||ACC#  Date Time  Exam~~7795082981 Oct 29 2015 03:53AM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~Brain MRI~~FINDINGS:~Repeat MRI of the brain shows some involution of the previously noted~hyperintense lesion in the right frontal cortex. The lesion now~measures approximately 1.8 cm and demonstrates a reduction in edema.~Surrounding brain structures show no new changes, and both the~ventricles and cisterns remain normal. No post-contrast enhancement~is observed, and there are no new lesions or findings suggestive of~acute changes.~~IMPRESSION:~The finding indicates a favorable response, likely suggesting the~prior lesion was non-neoplastic or resolving. Continued monitoring of~the lesion is recommended in conjunction with clinical symptoms.||||||F<R>
+OBX|3|TX|7101100||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Jessica Wright, M.D. on Oct 29 2015 03:53AM~~This document has been electronically signed by: Jessica Wright, M.D.~on Oct 29 2015 03:53AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7101100|4|7795082981^UK^ZB||||||F<R>
+<EB>

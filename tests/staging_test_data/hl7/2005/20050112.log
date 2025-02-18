@@ -1,0 +1,24 @@
+2005-01-12 08:43:24.2490|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20050112084324|TBD|ORU^R01|2.25.50090961176286086318776105548578511854|P|2.7<R>
+PID|1||ABC451117^^^ABC^MR||MCLAUGHLIN^NICOLE^LATOYA^III^^^D||19831230|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085013|||||||||||||||||||||||||20050112084324|||||||V<R>
+ORC|RE|138075^SYS|7795083267||Wet Read||^^^20050112084323^20050112084324^O||20050112084324|T6530153^MORAN^JOSHUA||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|138075^SYS|7795083267|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20050108184748|||||Hosp Perf||||^^^BREAST|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20050112084324||MG|Wet Read||^^^20050112084323^20050112084324^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||20050112084324||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|Mammography results are negative for any malignant features. The||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|breast tissue appears normal with no evidence of masses or concerning||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|calcifications. The mammographic examination shows no signs of mass||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|lesions or calcifications of concern in the left and right breast.||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|The breast tissue is predominantly glandular with typical||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|fibroglandular densities. Bilateral asymmetric breast densities are||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|identified; however, they are consistent with normal variations in||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|breast parenchyma and do not suggest malignancy. No suspicious||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|microcalcifications or architectural distortions were detected, and||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|the lymph nodes in the axillary regions appear uninvolved.||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|15|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.14372469371257350263544581544805790015^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2000-03-29 14:51:48.5573|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000329145148|TBD|ORU^R01|2.25.65624193433232066006343665513588198479|P|2.4<R>
+PID|1||ABC451104^^^ABC^MR~EPIC4485863^^^EPIC^MRN||PARK^SEO-HYEON^^^^^D||19210313000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451104^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457332^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7546408^SYS|7795083218|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||20000328104335|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||70553^Brain dMRI|20000329145148||CMRP|||1^^^20000329145148^^U^^URGENT|       |||^Chest pain|D7823238^HUNT^APRIL^M.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|320035||APRIL HUNT, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|320035||ACC#  Date Time  Exam~~7795083218 Mar 29 2000 02:51PM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~Brain MRI~~FINDINGS:~The MRI of the brain performed on March 28, 2000, demonstrates no~evidence of acute intracranial hemorrhage or midline shift. The~ventricular system is within normal limits, with no hydrocephalus~noted. A few small periventricular hyperintensities are observed on~T2-weighted sequences, suggestive of chronic small vessel ischemic~changes, consistent with the patient's age. The cortical and~subcortical structures are unremarkable. The brainstem and cerebellum~appear normal, with no mass effect or significant structural~abnormalities seen. Diffusion-weighted images show no areas of~restricted diffusion. Overall, the findings are nonspecific,~reflecting age-related changes without acute concerns.~~IMPRESSION:~Mild chronic small vessel ischemic changes consistent with age; no~acute intracranial abnormalities identified.||||||F<R>
+OBX|3|TX|320035||Requested By: Barajas,Joseph A. M.D.~~Dictated By: April Hunt, M.D. on Mar 29 2000 02:51PM~~This document has been electronically signed by: April Hunt, M.D. on~Mar 29 2000 02:51PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|320035|4|7795083218^UK^ZB||||||F<R>
+<EB>

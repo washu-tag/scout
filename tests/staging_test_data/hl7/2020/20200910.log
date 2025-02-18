@@ -1,0 +1,27 @@
+2020-09-10 20:50:22.0208|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200910205022|TBD|ORU^R01|2.25.85739063093613987865031355022818963952|P|2.7<R>
+PID|1||ABC451100^^^ABC^MR||DAVIS^SCOTTIE^JUSTIN^^^^D||19870226|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084800|||||||||||||||||||||||||20200910205022|||||||V<R>
+ORC|RE|5831812^SYS|7795083199||Wet Read||^^^20200910205021^20200910205022^O||20200910205022|T6530145^RUIZ^TARA||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5831812^SYS|7795083199|BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY|O|20200908070524|||||Hosp Perf||||^^^SPINE|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20200910205022||DX|Wet Read||^^^20200910205021^20200910205022^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20200910205022||||||||BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Spine X-ray||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|The spine X-ray demonstrates mild degenerative disc disease at L4-L5,||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|without evidence of acute pathology or significant instability. There||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|are no new developments observed when compared to the previous||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|imaging study dated 2020-09-08, confirming the chronic nature of the||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|findings and the absence of acute changes. The X-ray of the spine||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|reveals overall good alignment of the vertebral bodies from cervical||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|to lumbar regions. There’s a minor degenerative change at the L4-L5||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|level with mild disc space narrowing and osteophyte formation.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|However, the spinal canal appears adequately patent without signs of||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|acute fracture or dislocation. The facet joints do not demonstrate||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|signs of significant arthropathy. Prior X-ray review from 2020-09-08||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|shows the same minor degenerative changes, with no noted progression||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|of noted disc degeneration.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.87286792638069317773276065842436438726^EPIC^APPLICATION^DICOM<R>
+<EB>

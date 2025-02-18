@@ -1,0 +1,28 @@
+2006-08-28 19:05:48.3292|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060828190548|TBD|ORU^R01|2.25.188877614386844161407794491764478873425|P|2.7<R>
+PID|1||ABC451132^^^ABC^MR||SMITH^DAVID^JARON^^^^D||19621015|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823282^HARRELL^YOEL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084917|||||||||||||||||||||||||20060828190548|||||||V<R>
+ORC|RE|9280025^SYS|7795083327||Wet Read||^^^20060828190547^20060828190548^O||20060828190548|T6530209^OLSON^RICHARD||D7823278^HUBBARD^BRADLEY^D.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9280025^SYS|7795083327|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20060828061159|||||Hosp Perf||||^^^HEART|D7823278^HUBBARD^BRADLEY^D.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060828190548||MR|Wet Read||^^^20060828190547^20060828190548^O||||^Chest pain||D7823278^HUBBARD^BRADLEY^D.^^^^^ABC^^^^HOSP|T6530209^OLSON^RICHARD||20060828190548||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac MRI||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|5|ST|&IMP|2|Normal cardiac MRI findings with preserved left ventricular function||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|6|ST|&IMP|2|and no evidence of ischemia, fibrosis, or pericardial effusion. The||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|7|ST|&IMP|2|heart demonstrates a structurally intact architecture, supporting a||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|8|ST|&IMP|2|low likelihood of significant underlying heart disease. The cardiac||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|9|ST|&IMP|2|MRI performed on the patient demonstrates normal chamber sizes with||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|10|ST|&IMP|2|preserved systolic function. The left ventricular ejection fraction||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|11|ST|&IMP|2|is calculated to be within normal limits, indicative of intact||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|12|ST|&IMP|2|cardiac performance. No regional wall motion abnormalities are||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|13|ST|&IMP|2|observed. The myocardium appears homogenous throughout, with no||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|14|ST|&IMP|2|evidence of late gadolinium enhancement suggestive of ischemia or||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|15|ST|&IMP|2|fibrosis. Cardiac valves are well-defined, with no valvular||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|16|ST|&IMP|2|insufficiency or stenosis detected. The aorta and pulmonary arteries||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|17|ST|&IMP|2|are unremarkable, and there is no pericardial effusion. Overall, the||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|18|ST|&IMP|2|examination suggests no significant cardiac pathology.||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+OBX|19|ST|&IMP|2|Dictated by: Bradley Hubbard Interpreter, M.D.||||||Wet Read|||||T6530209^OLSON^RICHARD<R>
+ZDS|2.25.217215889646879072581784330630864166545^EPIC^APPLICATION^DICOM<R>
+<EB>

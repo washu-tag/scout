@@ -1,0 +1,25 @@
+1999-09-10 08:42:02.7037|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19990910084202|TBD|ORU^R01|2.25.29227536531224538456173294266955126325|P|2.7<R>
+PID|1||ABC451055^^^ABC^MR||GREEN^RYAN^JASON^^^^D||19741230|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084966|||||||||||||||||||||||||19990910084202|||||||V<R>
+ORC|RE|206451^SYS|7795083020||Final||^^^19990910084201^19990910084202^O||19990910084202|T6530152^ADKINS^MELLISSA||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|206451^SYS|7795083020|BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY|O|19990908095408|||||Hosp Perf||||^^^SPINE|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19990910084202||DX|Final||^^^19990910084201^19990910084202^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||19990910084202||||||||BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Spine X-ray||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|The findings reveal a normal spine without any evidence of||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|degeneration or acute pathology. This evaluation shows normal||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|vertebral alignment and stability, with no acute fractures or other||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|significant radiological findings. Lateral, anteroposterior, and||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|oblique views of the spine show normal alignment of the vertebrae||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|throughout. No signs of spondylosis or significant disc disease are||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|noted. The vertebral bodies exhibit normal height and morphology,||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|with no evidence of fracture or significant degenerative changes. The||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|pedicles and facets are intact and symmetric. The sacroiliac joints||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|are normal, and there are no abnormal calcifications or ossifications||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|observed in the soft tissues surrounding the spine.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.322926657003254202258396152007978756603^EPIC^APPLICATION^DICOM<R>
+<EB>

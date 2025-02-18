@@ -1,0 +1,11 @@
+2016-10-15 21:24:34.2394|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20161015212434|TBD|ORU^R01|2.25.235172180271248410760022848824025207745|P|2.4<R>
+PID|1||ABC451149^^^ABC^MR~EPIC4485908^^^EPIC^MRN||FOLEY^HEATHER^CASSIE^^^^D||19930826000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451149^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457265^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2077075^SYS|7795083394|BHC76140^76140 76140 Outside Exam^UNKDEV|URGENT||20161011104612|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||76140^Outside Mammogram|20161015212434||BHC|||1^^^20161015212434^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||76140<R>
+OBX|1|TX|2416865||GUY SANCHEZ, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|2416865||ACC#  Date Time  Exam~~7795083394 Oct 15 2016 09:24PM BHC76140 76140 Outside Exam~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The single-view mammography reveals heterogeneous breast density,~typical for this patient’s age and parity. No masses or~calcifications are noted that would suggest the presence of~malignancy. There are no observable changes in the skin or~subcutaneous tissues surrounding the breast. The axillary regions~appear without adenopathy, and the overall assessment indicates no~acute abnormalities.~~IMPRESSION:~Mammographic findings suggest a stable appearance of breast tissue~with no suspicious lesions detected. Continued routine screenings are~advised.||||||P<R>
+OBX|3|TX|2416865||Requested By: Donovan,William C. M.D.~~Dictated By: Guy Sanchez, M.D. on Oct 15 2016 09:24PM~~Pending review by: April Hunt, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|2416865|4|7795083394^UK^ZB||||||P<R>
+<EB>

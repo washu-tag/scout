@@ -1,0 +1,11 @@
+2021-11-22 21:44:50.2685|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20211122214450|TBD|ORU^R01|2.25.323080978681239375768485427210101699966|P|2.4<R>
+PID|1||ABC451039^^^ABC^MR~EPIC4485798^^^EPIC^MRN||ITO^ASAHI^^^^^D||19990224000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451039^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457396^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4295390^SYS|7795082953|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20211119124258|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||^Xr Sing View|20211122214450||MDXREVNT|||1^^^20211122214450^^U^^URGENT|       |||^Chest pain|D7823231^SMITH^CLARA^T.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|5944393||CLARA SMITH, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|5944393||ACC#  Date Time  Exam~~7795082953 Nov 22 2021 09:44PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~The single-view X-ray of the chest demonstrates clear lung fields~bilaterally, with no evidence of acute infiltrates or pleural~effusion. The cardiac silhouette is within normal limits, and no~significant mediastinal widening is observed. The diaphragmatic~contour appears normal, and the bony thorax reveals no fractures or~significant pathological changes. This X-ray appears to be a routine~assessment. Notably, there are no historical comparisons necessary as~this is a first-time study; however, the findings align with previous~results showing stable parenchymal integrity.~~IMPRESSION:~1. Normal chest X-ray without evidence of active pulmonary disease.~2. No significant cardiothoracic abnormalities. 3. Recommend routine~follow-up imaging as clinically indicated.||||||P<R>
+OBX|3|TX|5944393||Requested By: Hunt,April M. M.D.~~Dictated By: Clara Smith, M.D. on Nov 22 2021 09:44PM~~Pending review by: Ernesto Parsons, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5944393|4|7795082953^UK^ZB||||||P<R>
+<EB>

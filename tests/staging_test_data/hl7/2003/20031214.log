@@ -1,0 +1,11 @@
+2003-12-14 04:24:33.5547|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20031214042433|TBD|ORU^R01|2.25.320542656602339855398671209093460719739|P|2.4<R>
+PID|1||ABC451158^^^ABC^MR~EPIC4485917^^^EPIC^MRN||MATTHEWS^ANDRES^MATTHEW^M.D.^^^D||19260816000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451158^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457226^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6535570^SYS|7795083432|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20031210180422|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||2816^Ultrasound|20031214042433||IMG|||1^^^20031214042433^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|2238326||JESSICA WRIGHT, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|2238326||ACC#  Date Time  Exam~~7795083432 Dec 14 2003 04:24AM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Abdominal Ultrasound~~FINDINGS:~The ultrasound demonstrates a mildly enlarged liver with increased~echogenicity, consistent with hepatic steatosis. The gallbladder is~unremarkable, with no stones or signs of cholecystitis. The kidneys~appear normal in size and echotexture without any~hydroureteronephrosis or masses visualized. There are no free~abdominal fluids or significant lymphadenopathy noted within the~visualized retroperitoneum.~~IMPRESSION:~Changes consistent with fatty liver disease (steatosis). Recommend~follow-up with clinical evaluation for metabolic syndrome factors.||||||P<R>
+OBX|3|TX|2238326||Requested By: Medrano,Joe J. M.D.~~Dictated By: Jessica Wright, M.D. on Dec 14 2003 04:24AM~~Pending review by: Russell Gallagher, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|2238326|4|7795083432^UK^ZB||||||P<R>
+<EB>

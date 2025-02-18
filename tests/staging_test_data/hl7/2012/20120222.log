@@ -1,0 +1,27 @@
+2012-02-22 06:18:47.7170|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120222061847|TBD|ORU^R01|2.25.333366640966585326626585813140349132226|P|2.7<R>
+PID|1||ABC450996^^^ABC^MR||OLIVER^TABATHA^ROBYN^^^^D||19430118|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084723|||||||||||||||||||||||||20120222061847|||||||V<R>
+ORC|RE|9298906^SYS|7795082784||Final||^^^20120222061846^20120222061847^O||20120222061847|T6530135^EDWARDS^SHANE||D7823215^PORTER^JAMEL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9298906^SYS|7795082784|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20120218084038|||||Hosp Perf|||||D7823215^PORTER^JAMEL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20120222061847||XA|Final||^^^20120222061846^20120222061847^O||||^Chest pain||D7823215^PORTER^JAMEL^J.^^^^^ABC^^^^HOSP|T6530135^EDWARDS^SHANE||20120222061847||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray Angiography Study||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|5|ST|&IMP|2|The presence of significant right internal carotid artery stenosis||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|6|ST|&IMP|2|raises concern for potential transient ischemic attacks (TIAs).||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|7|ST|&IMP|2|Clinical correlation is essential for managing cerebrovascular risks.||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|8|ST|&IMP|2|Follow-up imaging with Doppler ultrasound to evaluate flow dynamics||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|9|ST|&IMP|2|might be prudent. The X-ray angiography of the cerebral vasculature||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|10|ST|&IMP|2|reveals a significant stenosis in the right internal carotid artery||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|11|ST|&IMP|2|at the bifurcation. Collateral circulation is robust, indicating||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|12|ST|&IMP|2|compensatory mechanisms are in play. There are no significant||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|13|ST|&IMP|2|aneurysms or vascular malformations identified. The vertebrobasilar||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|14|ST|&IMP|2|system remains patent throughout with appropriate perfusion. No acute||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|15|ST|&IMP|2|ischemic changes are evident in the territory of vessels imaged,||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|16|ST|&IMP|2|indicating stable cerebral perfusion. Recommendations for vascular||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|17|ST|&IMP|2|surgical intervention may arise based on stenosis severity.||||||Final|||||T6530135^EDWARDS^SHANE<R>
+OBX|18|ST|&IMP|2|Dictated by: Jamel Porter Interpreter, M.D.||||||Final|||||T6530135^EDWARDS^SHANE<R>
+ZDS|2.25.262396376140174620724829587951868533591^EPIC^APPLICATION^DICOM<R>
+<EB>

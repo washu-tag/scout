@@ -1,0 +1,30 @@
+2006-03-19 01:46:43.8652|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060319014643|TBD|ORU^R01|2.25.121987332303431622905217668876950224061|P|2.7<R>
+PID|1||ABC451190^^^ABC^MR||CROSS^ROGER^LARRY^^^^D||19230502|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084742|||||||||||||||||||||||||20060319014643|||||||V<R>
+ORC|RE|7326936^SYS|7795083557||Prelim||^^^20060319014642^20060319014643^O||20060319014643|T6530152^ADKINS^MELLISSA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7326936^SYS|7795083557|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20060318113000|||||Hosp Perf|||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060319014643||US|Prelim||^^^20060319014642^20060319014643^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20060319014643||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound Abdomen||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|Normal abdominal ultrasound with incidental findings of mild||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|echogenicity in the left renal cortex—suggestive of chronic changes.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|No acute findings; however, clinical correlation is recommended to||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|explore any underlying etiologies. The ultrasound examination reveals||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|normal hepatic echogenicity with no focal hepatic lesions identified.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|The gallbladder shows normal wall thickness without gallstones or||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|sludge. The pancreas demonstrates a homogeneous appearance without||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|cysts or masses. Renal assessment indicates bilateral normal-sized||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|kidneys with no hydronephrosis. Bladder is distended and demonstrates||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|normal wall features. There are no signs of peritoneal fluid||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|collections. However, subtle changes in the renal parenchyma suggest||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|prior chronic or acute events.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|17|ST|&IMP|2|Correspondingly, there is imaging evidence of mild left renal||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|18|ST|&IMP|2|cortical echogenicity changes, requiring clinical correlation to rule||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|19|ST|&IMP|2|out potential pathologies like nephrosclerosis or mild||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|20|ST|&IMP|2|pyelonephritis.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|21|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.266833386026650509251482456678116753044^EPIC^APPLICATION^DICOM<R>
+<EB>

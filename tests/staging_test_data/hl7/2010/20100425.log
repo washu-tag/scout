@@ -1,0 +1,29 @@
+2010-04-25 13:59:29.8075|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100425135929|TBD|ORU^R01|2.25.65573425030002265524931884165772943131|P|2.7<R>
+PID|1||ABC451021^^^ABC^MR||BAKER^JASON^BOBBY^^^^D||19510313|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084791|||||||||||||||||||||||||20100425135929|||||||V<R>
+ORC|RE|5880658^SYS|7795082882||Wet Read||^^^20100425135928^20100425135929^O||20100425135929|T6530150^NEAL^EMILY||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5880658^SYS|7795082882|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20100421093616|||||Hosp Perf||||^^^HEART|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20100425135929||NM|Wet Read||^^^20100425135928^20100425135929^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20100425135929||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM Study||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|The cardiac nuclear medicine study corroborates the results of the||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|heart MRI performed on 2008-08-20, showing preserved myocardial||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|perfusion and function consistent with a healthy cardiac profile.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|Ongoing evaluation of cardiovascular health is suggested, with||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|lifestyle management emphasized given the patient's age. The nuclear||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|medicine study reveals normal myocardial perfusion both at rest and||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|during pharmacological stress. There is homogenous uptake of the||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|radiotracer in perfusion territories and no perfusion defects are||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|noted, indicating adequate coronary blood flow. The function||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|assessment derived from gated SPECT shows a normal ejection fraction||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|of approximately 66%, with no regional wall motion abnormalities||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|identified. The lungs are clear, with no signs of pulmonary||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|congestion or other related complications evident on the images.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|18|ST|&IMP|2|Comparing to the previous MRI findings from 2008, there are no||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|19|ST|&IMP|2|significant changes in overall cardiac function or morphology.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|20|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.195084252207278906575031472290392782989^EPIC^APPLICATION^DICOM<R>
+<EB>

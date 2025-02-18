@@ -1,0 +1,24 @@
+2023-11-24 18:47:32.6691|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20231124184732|TBD|ORU^R01|2.25.187749755775782679338403753291018331578|P|2.7<R>
+PID|1||ABC451149^^^ABC^MR||FOLEY^HEATHER^CASSIE^^^^D||19930826|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823247^WARREN^MARY^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084827|||||||||||||||||||||||||20231124184732|||||||V<R>
+ORC|RE|3225217^SYS|7795083393||Wet Read||^^^20231124184731^20231124184732^O||20231124184732|T6530160^NUNEZ^JENNIFER||D7823256^MILLER^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3225217^SYS|7795083393|IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED|O|20231120060956|||||Hosp Perf||||^^^CHEST|D7823256^MILLER^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20231124184732||MR|Wet Read||^^^20231124184731^20231124184732^O||||^Chest pain||D7823247^WARREN^MARY^T.^^^^^ABC^^^^HOSP|T6530160^NUNEZ^JENNIFER||20231124184732||||||||IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest MRI||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|5|ST|&IMP|2|Chest MRI demonstrates normal thoracic anatomy with no identifiable||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|6|ST|&IMP|2|abnormalities detected, consistent with previous imaging studies. The||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|7|ST|&IMP|2|chest MRI provides comprehensive imaging of the thoracic cavity and||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|8|ST|&IMP|2|illustrates normal pulmonary parenchyma without evidence of masses,||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|9|ST|&IMP|2|nodules, or effusion. The heart and great vessels appear||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|10|ST|&IMP|2|unremarkable, with no signs of cardiomegaly or wall motion||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|11|ST|&IMP|2|abnormalities. Edema in the surrounding soft tissues or pleural||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|12|ST|&IMP|2|effusions is absent. Vascular structures are patent, and mediastinal||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|13|ST|&IMP|2|contour appears normal. No lymphadenopathy or other abnormalities are||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|14|ST|&IMP|2|identified within the thoracic compartment.||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+OBX|15|ST|&IMP|2|Dictated by: Mary Warren Interpreter, M.D.||||||Wet Read|||||T6530160^NUNEZ^JENNIFER<R>
+ZDS|2.25.25117841846608034119779402186247055015^EPIC^APPLICATION^DICOM<R>
+<EB>

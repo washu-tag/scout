@@ -1,0 +1,24 @@
+2016-10-30 10:22:22.6677|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20161030102222|TBD|ORU^R01|2.25.148695069314723959237518444174297937538|P|2.7<R>
+PID|1||ABC451092^^^ABC^MR||MAY^KENNETH^CHAD^^^^D||19850929|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084846|||||||||||||||||||||||||20161030102222|||||||V<R>
+ORC|RE|3985857^SYS|7795083166||Final||^^^20161030102221^20161030102222^O||20161030102222|T6530144^PARK^ROBERT||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3985857^SYS|7795083166|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20161029161142|||||Hosp Perf|||||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20161030102222||XA|Final||^^^20161030102221^20161030102222^O||||^Chest pain||D7823223^HARPER^MARIA^K.^^^^^ABC^^^^HOSP|T6530144^PARK^ROBERT||20161030102222||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|5|ST|&IMP|2|Normal angiographic study with no significant vascular pathology||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|6|ST|&IMP|2|documented. X-ray angiography of the lower extremities shows patency||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|7|ST|&IMP|2|of the major arteries with no evidence of stenosis or occlusion||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|8|ST|&IMP|2|detected. Contrast material successfully fills the arterial trees||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|9|ST|&IMP|2|from the aortoiliac vessels down to the pedal arteries. The study||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|10|ST|&IMP|2|demonstrates a healthy venous return pattern and reveals no||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|11|ST|&IMP|2|abnormalities such as aneurysms or vascular malformations along the||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|12|ST|&IMP|2|visualized structures. Branching patterns appear normal, as do the||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|13|ST|&IMP|2|arterial wall margins, with no irregularities or calcifications||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|14|ST|&IMP|2|noted.||||||Final|||||T6530144^PARK^ROBERT<R>
+OBX|15|ST|&IMP|2|Dictated by: Maria Harper Interpreter, M.D.||||||Final|||||T6530144^PARK^ROBERT<R>
+ZDS|2.25.170704155800545003324881755822876603443^EPIC^APPLICATION^DICOM<R>
+<EB>

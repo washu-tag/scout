@@ -1,0 +1,11 @@
+2017-11-12 12:50:44.1342|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20171112125044|TBD|ORU^R01|2.25.239792074003472471038394863824099213188|P|2.4<R>
+PID|1||ABC451032^^^ABC^MR~EPIC4485791^^^EPIC^MRN||FLETCHER^LAUREN^KRISTINA^^^^D||20001225000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451032^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457377^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5449992^SYS|7795082927|M755612^755612 MR CARDIAC MRPH FUNC WWO^UNKDEV|URGENT||20171110085456|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||755612^HEART MRI|20171112125044||M|||1^^^20171112125044^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB|||||||||755612<R>
+OBX|1|TX|5330484||JENNIFER SMITH, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|5330484||ACC#  Date Time  Exam~~7795082927 Nov 12 2017 12:50PM M755612 MR CARDIAC MRPH FUNC WWO~~EXAMINATION:~Heart MRI~~FINDINGS:~The MRI of the heart demonstrates a normal cardiac morphology. The~left and right ventricles are well-defined with normal wall motion~and thickness. The assessment of myocardial edema does not reveal any~areas of hyperintense signal that would indicate inflammation or~infarction. No perfusion defects are present and coronary arteries~appear with normal caliber. The right atrium and ventricle are also~unremarkable. No pericardial effusion or thickening is noted, and the~aortic arch is unremarkable in appearance.~~IMPRESSION:~A normal cardiac MRI with well-preserved cardiac structure and~function. There are no signs of myocardial disease, ischemia, or~pericardial effusion.||||||F<R>
+OBX|3|TX|5330484||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Jennifer Smith, M.D. on Nov 12 2017 12:50PM~~This document has been electronically signed by: Jennifer Smith, M.D.~on Nov 12 2017 12:50PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5330484|4|7795082927^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,11 @@
+1995-12-29 00:28:35.8999|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19951229002835|TBD|ORU^R01|2.25.92048472410246617616354989281019322018|P|2.4<R>
+PID|1||ABC451190^^^ABC^MR~EPIC4485949^^^EPIC^MRN||CROSS^ROGER^LARRY^^^^D||19230502000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451190^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823279^BYRD^PAUL^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457181^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9884057^SYS|7795083560|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||19951225162331|||PSCRIB|||||^^^^ |D7823285^MICHAEL^JAMIE^MICHELLE^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|19951229002835||IMG|||1^^^19951229002835^^U^^URGENT|       |||^Chest pain|D7823286^JAMES^TIMOTHY^C.^^^M.D.|D7823288^GONZALEZ^AMBER^R.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|6865484||TIMOTHY JAMES, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|6865484||ACC#  Date Time  Exam~~7795083560 Dec 29 1995 12:28AM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~The MRI reveals the presence of mild bilateral pleural effusions,~more pronounced on the right side, consistent with possible~congestion or inflammatory processes. The mediastinum appears midline~without significant lymphadenopathy. Pulmonary vasculature is~unremarkable with no evidence of thromboembolic disease. Cardiac~contours are normal, without chamber enlargement or effusion.~Notably, there is no parenchymal consolidation, nodules, or masses~identified at this time. Overall, the lung parenchyma maintains an~intact architecture with well-defined fissures. Correlation with~clinical data is advised to rule out related pathology.~~IMPRESSION:~Mild bilateral pleural effusions, right side predominance. Normal~pulmonary parenchyma with no focal lesions. Consider hemodynamic~factors or inflammatory states as potential causes for pleural~effusion. Correlate with clinical follow-up.||||||P<R>
+OBX|3|TX|6865484||Requested By: Michael,Jamie M. M.D.~~Dictated By: Timothy James, M.D. on Dec 29 1995 12:28AM~~Pending review by: Amber Gonzalez, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|6865484|4|7795083560^UK^ZB||||||P<R>
+<EB>

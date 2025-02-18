@@ -1,0 +1,28 @@
+2022-04-20 07:28:32.7754|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220420072832|TBD|ORU^R01|2.25.13527420669914396790436552884788125497|P|2.7<R>
+PID|1||ABC451145^^^ABC^MR||MILLER^JENNIE^ELIZABETH^^^^D||19530208|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084738|||||||||||||||||||||||||20220420072832|||||||V<R>
+ORC|RE|5291724^SYS|7795083376||Final||^^^20220420072831^20220420072832^O||20220420072832|T6530145^RUIZ^TARA||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5291724^SYS|7795083376|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20220416202749|||||Hosp Perf||||^^^HEART|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20220420072832||NM|Final||^^^20220420072831^20220420072832^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20220420072832||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM Study||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|1. Resolving perfusion abnormalities indicating a substantial||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|improvement from the previous cardiac study dated 2002-03-14. 2.||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|Normalized left ventricular ejection fraction and complete resolution||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|of prior ischemic patterns; stability is noted. 3. No further||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|immediate intervention required; however, regular monitoring and||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|clinical correlation with symptoms are advised. This comparative||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|cardiac scintigraphy shows a significant improvement as opposed to||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|the previous NM study dated 2002-03-14. The resting and stress images||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|demonstrate no longer the inferolateral perfusion defects seen||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|previously. The left ventricular ejection fraction has normalized to||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|65%, and the wall motion is now regarded as normal throughout.||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|Additionally, there is improved flow reserve demonstrating no||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|ischemic patterns. These findings are indicative of either successful||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|intervention or a reversible condition noted in the prior study.||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|19|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Final|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.298821859354037305377391906810537357763^EPIC^APPLICATION^DICOM<R>
+<EB>

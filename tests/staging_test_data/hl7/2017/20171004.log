@@ -1,0 +1,34 @@
+2017-10-04 08:34:54.9433|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20171004083454|TBD|ORU^R01|2.25.300068963970522569602447372159126190183|P|2.7<R>
+PID|1||ABC451030^^^ABC^MR||KELLEY^LESLIE^DIANA^^^^D||19840617|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084852|||||||||||||||||||||||||20171004083454|||||||V<R>
+ORC|RE|8124184^SYS|7795082918||Final||^^^20171004083453^20171004083454^O||20171004083454|T6530136^RIOS^KRISTIN||D7823215^PORTER^JAMEL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8124184^SYS|7795082918|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20170930151015|||||Hosp Perf||||^^^HEART|D7823215^PORTER^JAMEL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20171004083454||NM|Final||^^^20171004083453^20171004083454^O||||^Chest pain||D7823217^SANCHEZ^ROY^A.^^^^^ABC^^^^HOSP|T6530136^RIOS^KRISTIN||20171004083454||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|5|ST|&IMP|2|The cardiac NM study conducted on 2017-09-30 demonstrates an overall||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|6|ST|&IMP|2|normal perfusion pattern with no indications of ischemic heart||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|7|ST|&IMP|2|disease or myocardial scarring. The left ventricular ejection||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|8|ST|&IMP|2|fraction is well within normal range. Continued routine follow-up is||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|9|ST|&IMP|2|advisable, particularly in light of the patient's prior imaging||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|10|ST|&IMP|2|findings from 2005 suggesting the need for regular cardiac||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|11|ST|&IMP|2|assessments, especially in the context of potential risk factors that||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|12|ST|&IMP|2|may develop over time. The cardiac nuclear medicine study performed||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|13|ST|&IMP|2|on 2017-09-30 reveals excellent perfusion of the myocardium at rest,||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|14|ST|&IMP|2|with no significant perfusion defects observed. There is symmetrical||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|15|ST|&IMP|2|distribution of radiotracer uptake through all myocardial segments,||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|16|ST|&IMP|2|suggesting no evidence of ischemia. The left ventricular dimensions||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|17|ST|&IMP|2|are within normal limits and systolic function is preserved,||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|18|ST|&IMP|2|quantifying an ejection fraction of approximately 60%. No wall motion||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|19|ST|&IMP|2|abnormalities are evident during the stress and rest phase images,||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|20|ST|&IMP|2|indicating overall cardiac viability and function is intact. The||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|21|ST|&IMP|2|surrounding structures appear unremarkable with no notable||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|22|ST|&IMP|2|enlargement of cardiac silhouette or pericardial effusion. No||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|23|ST|&IMP|2|arrhythmias were recorded during the imaging, and the patient||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|24|ST|&IMP|2|tolerated the stress portion of the study well without complications.||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|25|ST|&IMP|2|Dictated by: Roy Sanchez Interpreter, M.D.||||||Final|||||T6530136^RIOS^KRISTIN<R>
+ZDS|2.25.67218062863333683608497319663690127558^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,29 @@
+2001-03-03 03:49:27.8111|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010303034927|TBD|ORU^R01|2.25.165558042632812668162575654769100952550|P|2.7<R>
+PID|1||ABC451061^^^ABC^MR||WHITAKER^CHAD^CLINTON^^^^D||19360922|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823215^PORTER^JAMEL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085032|||||||||||||||||||||||||20010303034927|||||||V<R>
+ORC|RE|351600^SYS|7795083041||Final||^^^20010303034926^20010303034927^O||20010303034927|T6530136^RIOS^KRISTIN||D7823218^LLOYD^JESSICA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|351600^SYS|7795083041|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20010228103452|||||Hosp Perf|||||D7823218^LLOYD^JESSICA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20010303034927||XA|Final||^^^20010303034926^20010303034927^O||||^Chest pain||D7823220^HESS^BRANDI^M.^^^^^ABC^^^^HOSP|T6530136^RIOS^KRISTIN||20010303034927||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|5|ST|&IMP|2|1. Moderate atherosclerotic changes noted in the lower extremity||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|6|ST|&IMP|2|arteries with significant stenosis in the superficial femoral artery.||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|7|ST|&IMP|2|2. Continued surveillance recommended to monitor for progression of||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|8|ST|&IMP|2|vascular occlusion. No acute ischemic changes detected. The X-ray||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|9|ST|&IMP|2|angiography performed on the lower extremities reveals a patency of||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|10|ST|&IMP|2|major vessels including the femoral, popliteal, and tibial arteries.||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|11|ST|&IMP|2|There is evidence of moderate atherosclerotic changes with luminal||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|12|ST|&IMP|2|narrowing detected at the mid-distal superficial femoral artery with||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|13|ST|&IMP|2|approximately 50% stenosis, characterized by irregular calcified||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|14|ST|&IMP|2|plaques. Additionally, the anterior tibial artery demonstrates||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|15|ST|&IMP|2|decreased caliber and borderline stenosis of around 30%. No||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|16|ST|&IMP|2|significant collateral circulation or acute thrombus is noted, and||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|17|ST|&IMP|2|the venous system appears patent with no signs of deep vein||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|18|ST|&IMP|2|thrombosis. Comparison to prior studies is necessary to evaluate the||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|19|ST|&IMP|2|progression of vascular disease.||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|20|ST|&IMP|2|Dictated by: Brandi Hess Interpreter, M.D.||||||Final|||||T6530136^RIOS^KRISTIN<R>
+ZDS|2.25.207540452388385590470690676365418443352^EPIC^APPLICATION^DICOM<R>
+<EB>

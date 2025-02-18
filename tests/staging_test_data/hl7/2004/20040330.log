@@ -1,0 +1,24 @@
+2004-03-30 17:40:30.0246|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20040330174030|TBD|ORU^R01|2.25.112332317483486206844591367151695067551|P|2.7<R>
+PID|1||ABC451154^^^ABC^MR||WHITEHEAD^MICHAEL^ROGER^^^^D||19330116|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084922|||||||||||||||||||||||||20040330174030|||||||V<R>
+ORC|RE|9450455^SYS|7795083415||Prelim||^^^20040330174029^20040330174030^O||20040330174030|T6530152^ADKINS^MELLISSA||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9450455^SYS|7795083415|IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED|O|20040330080919|||||Hosp Perf||||^^^CHEST|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20040330174030||MR|Prelim||^^^20040330174029^20040330174030^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20040330174030||||||||IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest MRI||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|The chest MRI does not demonstrate any acute pathologic processes.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|Cardiopulmonary structures appear within normal limits, and no||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|evidence of malignancy is identified at this time. The chest MRI||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|shows a normal cardiothoracic silhouette with no evidence of||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|mediastinal shift. The lungs appear clear without any nodular||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|changes, and the fissures are well-defined. The heart reveals an||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|ejection fraction within normal limits, noted via cine imaging. No||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|pericardial effusion or myopathic changes are detected. The trachea||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|and major bronchi remain patent with no signs of bronchiectasis or||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|consolidation.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.214881685236039799284558524691573821435^EPIC^APPLICATION^DICOM<R>
+<EB>

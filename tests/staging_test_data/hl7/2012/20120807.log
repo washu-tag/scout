@@ -1,0 +1,25 @@
+2012-08-07 06:34:04.5034|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120807063404|TBD|ORU^R01|2.25.45116648350381669583913399977156998245|P|2.7<R>
+PID|1||ABC451067^^^ABC^MR||MELENDEZ^TARA^LARA^^^^D||19580416|F||PCFIS|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823252^NICHOLS^ISAAC^V.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085049|||||||||||||||||||||||||20120807063404|||||||V<R>
+ORC|RE|8475596^SYS|7795083065||Wet Read||^^^20120807063403^20120807063404^O||20120807063404|T6530162^DUNN^MELANIE||D7823250^ROBERTSON^MICHELLE^D.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8475596^SYS|7795083065|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20120806103540|||||Hosp Perf||||^^^HEART|D7823250^ROBERTSON^MICHELLE^D.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20120807063404||MR|Wet Read||^^^20120807063403^20120807063404^O||||^Chest pain||D7823248^RODRIGUEZ^NICOLE^A.^^^^^ABC^^^^HOSP|T6530162^DUNN^MELANIE||20120807063404||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|5|ST|&IMP|2|MRI findings indicate normal cardiac function with no evidence of||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|6|ST|&IMP|2|ischemic heart disease or structural abnormalities. The heart appears||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|7|ST|&IMP|2|well-compensated and maintaining normal systolic function. The||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|8|ST|&IMP|2|cardiac MRI shows preserved left ventricular ejection fraction at||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|9|ST|&IMP|2|60%. The left ventricle exhibits no regional wall motion||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|10|ST|&IMP|2|abnormalities. The right ventricle appears normal in size and||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|11|ST|&IMP|2|function. No focal areas of late gadolinium enhancement are||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|12|ST|&IMP|2|identified, ruling out significant myocardial scarring or prior||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|13|ST|&IMP|2|infarction. The aorta and pulmonary arteries are of normal caliber,||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|14|ST|&IMP|2|while the coronary arteries are not visualized in detail; however, no||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|15|ST|&IMP|2|overt obstructive disease is inferred.||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+OBX|16|ST|&IMP|2|Dictated by: Nicole Rodriguez Interpreter, M.D.||||||Wet Read|||||T6530162^DUNN^MELANIE<R>
+ZDS|2.25.283954881806832523609607995178855628547^EPIC^APPLICATION^DICOM<R>
+<EB>

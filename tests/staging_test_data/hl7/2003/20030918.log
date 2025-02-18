@@ -1,0 +1,11 @@
+2003-09-18 13:29:38.9765|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20030918132938|TBD|ORU^R01|2.25.2166231744663142545957607380334369314|P|2.4<R>
+PID|1||ABC451078^^^ABC^MR~EPIC4485837^^^EPIC^MRN||KELLY^JODI^DAWN^^^^D||19801121000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451078^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457121^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||283997^SYS|7795083111|BHC76140^76140 76140 Outside Exam^UNKDEV|URGENT||20030917161331|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||76140^Outside Mammogram|20030918132938||BHC|||1^^^20030918132938^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||76140<R>
+OBX|1|TX|9435748||JOE MEDRANO, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|9435748||ACC#  Date Time  Exam~~7795083111 Sep 18 2003 01:29PM BHC76140 76140 Outside Exam~~EXAMINATION:~Single-view mammogram~~FINDINGS:~Comparing this examination to the prior one dated 2000-03-11, the~breast tissue appears slightly less dense, which may be a consequence~of biological changes associated with aging. Bilaterally symmetrical~glandular architecture remains intact. No new masses or focal~asymmetries are identified. There are scattered benign calcifications~that remain stable when compared to previous imaging. There is no~evidence of malignancy or concerning features that would necessitate~further intervention.~~IMPRESSION:~Stable findings; no significant changes compared to the prior~mammogram of 2000-03-11. Recommend routine follow-up imaging in~accordance with standard screening protocols.||||||P<R>
+OBX|3|TX|9435748||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Joe Medrano, M.D. on Sep 18 2003 01:29PM~~Pending review by: Kimberly Hanson, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|9435748|4|7795083111^UK^ZB||||||P<R>
+<EB>

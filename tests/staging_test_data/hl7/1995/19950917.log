@@ -1,0 +1,40 @@
+1995-09-17 09:05:29.3430|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19950917090529|TBD|ORU^R01|2.25.42139221795178039306897105358545987743|P|2.4<R>
+PID|1||ABC451027^^^ABC^MR~EPIC4485786^^^EPIC^MRN||GARCIA^REGINA^REBECCA^^^^D||19470111000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451027^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457337^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||977969^SYS|7795082904|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||19950915203309|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||70553^Brain dMRI|19950917090529||CMRP|||1^^^19950917090529^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|8641132||JENNIFER SMITH, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|8641132||ACC#  Date Time  Exam~~7795082904 Sep 17 1995 09:05AM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~Brain MRI~~FINDINGS:~MRI of the brain reveals no evidence of acute intracranial hemorrhage~or mass effect. The ventricles are within normal limits in size and~configuration, with no midline shift observed. No focal lesions are~detected on T1 and T2-weighted imaging. There is some age-related~white matter hyperintensities noted, predominantly in the~periventricular and deep white matter regions, indicating chronic~microvascular ischemic changes, likely consistent with underlying~chronic small vessel disease. No acute ischemic changes are noted.~~IMPRESSION:~Overall, the MRI findings are largely unremarkable for a patient of~this age, with notable white matter changes suggesting chronic~ischemic changes rather than acute pathology. It is essential to~correlate these findings clinically, especially concerning cognitive~function and any neurological deficits.||||||P<R>
+OBX|3|TX|8641132||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Jennifer Smith, M.D. on Sep 17 1995 09:05AM~~Pending review by: Kimberly Hanson, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|8641132|4|7795082904^UK^ZB||||||P<R>
+<EB><R>
+
+1995-09-17 21:18:42.2388|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19950917211842|TBD|ORU^R01|2.25.297138986706562454563709973677256428901|P|2.7<R>
+PID|1||ABC451180^^^ABC^MR||NGUYEN^FREDERICK^JOSHUA^^^^D||19390120|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084680|||||||||||||||||||||||||19950917211842|||||||V<R>
+ORC|RE|7703190^SYS|7795083522||Wet Read||^^^19950917211841^19950917211842^O||19950917211842|T6530151^WATERS^JESSICA||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7703190^SYS|7795083522|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|19950915074855|||||Hosp Perf||||^^^ABDOMEN|D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19950917211842||CR|Wet Read||^^^19950917211841^19950917211842^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||19950917211842||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|The findings are indicative of a functional bowel disturbance,||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|possibly due to transient obstruction. Further clinical correlation||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|is recommended to determine the need for intervention. No significant||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|changes in abdominal vasculature are noted. The abdomen X-ray||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|presents an overall gaseous distension of the stomach and proximal||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|small bowel, suggestive of functional ileus. Several air-fluid levels||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|are noted in the left upper quadrant, possibly indicating a small||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|bowel obstruction. The liver appears mildly enlarged, with sharp||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|margins observed, while the gallbladder is well visualized without||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|any evidence of cholelithiasis. No free air under the diaphragm is||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|identified, and there is normal delineation of the renal shadows with||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|no radiopaque calculi. Overall, the bony structures exhibit no||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|evidence of acute pathologies, with gas-filled bowel loops being||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|18|ST|&IMP|2|present in a well-demarcated manner.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|19|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.185702911271123289081959025119680218595^EPIC^APPLICATION^DICOM<R>
+<EB>

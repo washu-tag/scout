@@ -1,0 +1,28 @@
+2006-11-02 03:42:33.4152|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20061102034233|TBD|ORU^R01|2.25.262524621583352491990250195873008770088|P|2.7<R>
+PID|1||ABC451192^^^ABC^MR||POWERS^JENNIFER^RONDA^^^^D||19521224|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084806|||||||||||||||||||||||||20061102034233|||||||V<R>
+ORC|RE|7972352^SYS|7795083569||Wet Read||^^^20061102034232^20061102034233^O||20061102034233|T6530154^ROBERTS^RICARDO||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7972352^SYS|7795083569|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20061029192950|||||Hosp Perf||||^^^HEART|D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20061102034233||MR|Wet Read||^^^20061102034232^20061102034233^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20061102034233||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI study||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|The MRI findings reveal evidence of a previous myocardial injury at||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|the inferior wall consistent with ischemia, although global cardiac||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|function remains preserved. Continued monitoring and potential||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|lifestyle modifications are recommended to prevent further cardiac||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|morbidity. MRI performed on 2006-10-29 demonstrates a structurally||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|normal left ventricle with an ejection fraction measured at 60%,||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|suggestive of preserved systolic function. The right ventricle is of||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|normal size with no evidence of hypertrophy or dilatation. There is,||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|however, a small area of late gadolinium enhancement located at the||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|inferior wall, indicative of prior ischemic insult. No significant||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|valvular incompetence is detected, and the pericardium is free of any||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|effusion or thickening. The aorta is normal in size, and the coronary||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|arteries are not visualized due to standard imaging techniques but||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|18|ST|&IMP|2|correlate with previous angiographic findings.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|19|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.66061826323407912759544894032196217558^EPIC^APPLICATION^DICOM<R>
+<EB>

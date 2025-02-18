@@ -1,0 +1,11 @@
+1994-12-24 05:14:22.1257|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19941224051422|TBD|ORU^R01|2.25.119739284989530362633565337317526908421|P|2.4<R>
+PID|1||ABC451066^^^ABC^MR~EPIC4485825^^^EPIC^MRN||NEAL^KATHLEEN^KATHRYN^^^^D||19550405000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451066^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823217^SANCHEZ^ROY^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457483^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7167474^SYS|7795083060|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||19941221201634|||PSCRIB|||||^^^^ |D7823217^SANCHEZ^ROY^ANDREW^M.D.^^^^ABC|||||4185^XRay Angiography|19941224051422||IMG|||1^^^19941224051422^^U^^URGENT|       |||^Chest pain|D7823224^MORGAN^JOHN^J.^^^M.D.|D7823221^MAXWELL^MICHAEL^R.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|2144688||JOHN MORGAN, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|2144688||ACC#  Date Time  Exam~~7795083060 Dec 24 1994 05:14AM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray angiography~~FINDINGS:~The X-ray angiography demonstrates the bilateral carotid arteries~with adequate opacification. There is evidence of essential stenosis~<50% in the proximal left internal carotid artery. The right common~carotid artery appears patent without evidence of atherosclerotic~changes. No significant collateral circulation is observed. The~vertebral arteries are bilaterally patent without evidence of~dissection or significant narrowing. Additionally, branching vessels~demonstrate normal anatomy without any significant anomalies noted.~There are no signs of thrombosis or distal embolic phenomena seen in~the vascular territory.~~IMPRESSION:~1. Mild stenosis (<50%) of the proximal left internal carotid artery.~2. No evidence of significant vascular disease in other major~cervical arteries. 3. Normal filling of the vertebral arteries, with~no complications such as dissection or embolism.||||||P<R>
+OBX|3|TX|2144688||Requested By: Sanchez,Roy A. M.D.~~Dictated By: John Morgan, M.D. on Dec 24 1994 05:14AM~~Pending review by: Michael Maxwell, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|2144688|4|7795083060^UK^ZB||||||P<R>
+<EB>

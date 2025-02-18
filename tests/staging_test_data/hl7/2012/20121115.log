@@ -1,0 +1,33 @@
+2012-11-15 12:58:26.2078|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20121115125826|TBD|ORU^R01|2.25.63800904327121237778576520490738906247|P|2.7<R>
+PID|1||ABC451136^^^ABC^MR||PARKER^SARAH^ERIN^^^^D||19630813|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085002|||||||||||||||||||||||||20121115125826|||||||V<R>
+ORC|RE|3580093^SYS|7795083342||Final||^^^20121115125825^20121115125826^O||20121115125826|||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3580093^SYS|7795083342|BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM|O|20121112180547|||||Hosp Perf||||^^^BREAST|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20121115125826||MG|Final||^^^20121115125825^20121115125826^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|||20121115125826||||||||BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|1. No evidence of malignancy, with findings consistent with BI-RADS||||||Final<R>
+OBX|6|ST|&IMP|2|Category A. Parenchyma remains stable without significant changes||||||Final<R>
+OBX|7|ST|&IMP|2|compared to the prior mammogram from 2011-09-15. 2. Recommendation||||||Final<R>
+OBX|8|ST|&IMP|2|for routine screening mammogram in accordance with age and risk||||||Final<R>
+OBX|9|ST|&IMP|2|factors, with no additional imaging required at this time due to||||||Final<R>
+OBX|10|ST|&IMP|2|absence of suspicious findings. Continual monitoring is advised,||||||Final<R>
+OBX|11|ST|&IMP|2|adhering to regular annual screening guidelines. The single-view||||||Final<R>
+OBX|12|ST|&IMP|2|mammogram demonstrates a homogenous breast parenchyma with a||||||Final<R>
+OBX|13|ST|&IMP|2|predominance of adipose tissue, consistent with the patient's age. No||||||Final<R>
+OBX|14|ST|&IMP|2|discrete masses, architectural distortion, or microcalcifications are||||||Final<R>
+OBX|15|ST|&IMP|2|observed within the imaged breast. The skin contour is smooth, and||||||Final<R>
+OBX|16|ST|&IMP|2|there is no evidence of subcutaneous edema or abnormal||||||Final<R>
+OBX|17|ST|&IMP|2|lymphadenopathy in the axillary region. Comparison to previous||||||Final<R>
+OBX|18|ST|&IMP|2|imaging studies performed on 2011-09-15 reveals no significant change||||||Final<R>
+OBX|19|ST|&IMP|2|in the overall appearance of the breast tissue, and this is||||||Final<R>
+OBX|20|ST|&IMP|2|consistent with stable benign findings over the interval. The density||||||Final<R>
+OBX|21|ST|&IMP|2|of breast tissue is classified as BI-RADS Category A, indicating||||||Final<R>
+OBX|22|ST|&IMP|2|predominantly fatty breast tissue, which reduces the sensitivity of||||||Final<R>
+OBX|23|ST|&IMP|2|mammography but ensures clarity in evaluation.||||||Final<R>
+OBX|24|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Final<R>
+ZDS|2.25.128973297327816788428984742508016688828^EPIC^APPLICATION^DICOM<R>
+<EB>

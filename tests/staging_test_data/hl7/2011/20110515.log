@@ -1,0 +1,59 @@
+2011-05-15 19:23:31.3782|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110515192331|TBD|ORU^R01|2.25.132159455976461492093669231124213074435|P|2.7<R>
+PID|1||ABC451187^^^ABC^MR||MACK^RYAN^DERRICK^^^^D||19800924|M||PCFIS|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084681|||||||||||||||||||||||||20110515192331|||||||V<R>
+ORC|RE|398505^SYS|7795083548||Final||^^^20110515192330^20110515192331^O||20110515192331|T6530136^RIOS^KRISTIN||D7823215^PORTER^JAMEL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|398505^SYS|7795083548|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20110511192218|||||Hosp Perf||||^^^HEART|D7823215^PORTER^JAMEL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20110515192331||NM|Final||^^^20110515192330^20110515192331^O||||^Chest pain||D7823216^HALL^JEREMY^G.^^^^^ABC^^^^HOSP|T6530136^RIOS^KRISTIN||20110515192331||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|5|ST|&IMP|2|Cardiac NM findings indicate preserved left ventricular function,||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|6|ST|&IMP|2|with no evidence of significant ischemic heart disease. The anterior||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|7|ST|&IMP|2|wall perfusion defect may warrant routine clinical correlation but is||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|8|ST|&IMP|2|significantly less concerning than previously noted findings in||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|9|ST|&IMP|2|earlier imaging. Overall assessment favors a diagnosis of stable||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|10|ST|&IMP|2|cardiac status with no evidence of acute coronary syndrome. The||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|11|ST|&IMP|2|cardiac nuclear medicine study performed showcases a moderately||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|12|ST|&IMP|2|reduced perfusion in the anterior wall with no significant motion||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|13|ST|&IMP|2|abnormalities noted. Rest and stress images indicate a preserved||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|14|ST|&IMP|2|ejection fraction of approximately 60%, with no evidence of coronary||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|15|ST|&IMP|2|artery disease identified during the stress phase. The presence of||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|16|ST|&IMP|2|diffuse haziness within the lung fields is suggestive of low-grade||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|17|ST|&IMP|2|congestion, however, there are no significant pleural effusions. The||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|18|ST|&IMP|2|right and left ventricles demonstrate normal wall thickness and||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|19|ST|&IMP|2|systolic function. Compared to the previous PET-CT from 2005-02-27,||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|20|ST|&IMP|2|there remains an improvement in ventricular function and no signs of||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|21|ST|&IMP|2|ischemia were noted in this study, leading to reassurance regarding||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|22|ST|&IMP|2|the cardiac status.||||||Final|||||T6530136^RIOS^KRISTIN<R>
+OBX|23|ST|&IMP|2|Dictated by: Jeremy Hall Interpreter, M.D.||||||Final|||||T6530136^RIOS^KRISTIN<R>
+ZDS|2.25.270111335214298043327067726976232097382^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2011-05-15 23:59:45.1849|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110515235945|TBD|ORU^R01|2.25.196652952896395661380695875163951220241|P|2.7<R>
+PID|1||ABC451171^^^ABC^MR||RUSH^JESSICA^DEANNA^^^^D||19880418|F||OTHER|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084732|||||||||||||||||||||||||20110515235945|||||||V<R>
+ORC|RE|9916542^SYS|7795083481||Final||^^^20110515235944^20110515235945^O||20110515235945|T6530150^NEAL^EMILY||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9916542^SYS|7795083481|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20110515095154|||||Hosp Perf||||^^^CHEST|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20110515235945||CR|Final||^^^20110515235944^20110515235945^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20110515235945||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|Chest X-ray is within normal limits, showing clear lungs and normal||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|mediastinum. No acute processes evident or significant changes from||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|the previous exam. The frontal and lateral views of the chest||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|demonstrate clear lung fields without any focal consolidations or||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|pleural effusions noted. The cardiac silhouette is within normal||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|limits, and there is no evidence of cardiomegaly. The mediastinum||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|appears symmetric, and the trachea is midline with no signs of||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|deviation. The bony thorax shows no acute osseous abnormalities,||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|fractures, or lesions. The diaphragms are well positioned, and||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|overall, no acute pulmonary disease is suggested. When compared to||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|previous studies dated 2011-05-15, the lung fields remain free of||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|significant opacities.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Final|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.5174035719630576197745900909756014773^EPIC^APPLICATION^DICOM<R>
+<EB>

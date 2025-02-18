@@ -1,0 +1,11 @@
+2013-04-06 21:58:04.5541|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130406215804|TBD|ORU^R01|2.25.28590388531254686611128131522725163485|P|2.4<R>
+PID|1||ABC451029^^^ABC^MR~EPIC4485788^^^EPIC^MRN||ΜΙΧΌΠΟΥΛΟΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19810423000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451029^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457387^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5276220^SYS|7795082912|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20130404061743|||PSCRIB|||||^^^^ |D7823231^SMITH^CLARA^TAMIKA^M.D.^^^^ABC|||||^Xr Sing View|20130406215804||MDXREVNT|||1^^^20130406215804^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB<R>
+OBX|1|TX|9339397||KIMBERLY HANSON, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|9339397||ACC#  Date Time  Exam~~7795082912 Apr 06 2013 09:58PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~The X-ray of the chest reveals clear lung fields bilaterally, with no~significant bony abnormalities noted in the thoracic cage. The~cardiac silhouette is within normal limits, and mediastinal~structures do not show deviation. Diaphragmatic contours are smooth~and normal without evidence of effusion.~~IMPRESSION:~Chest X-ray exhibits normal findings with no acute disease. No signs~of pneumonia, pleural effusion, or cardiomegaly.||||||P<R>
+OBX|3|TX|9339397||Requested By: Smith,Clara T. M.D.~~Dictated By: Kimberly Hanson, M.D. on Apr 06 2013 09:58PM~~Pending review by: April Hunt, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|9339397|4|7795082912^UK^ZB||||||P<R>
+<EB>

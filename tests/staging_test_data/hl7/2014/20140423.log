@@ -1,0 +1,11 @@
+2014-04-23 19:00:13.9937|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140423190013|TBD|ORU^R01|2.25.154828058607401311633509355823604873058|P|2.4<R>
+PID|1||ABC451172^^^ABC^MR~EPIC4485931^^^EPIC^MRN||LEWIS^NOEMI^TERESA^^^^D||19380330000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451172^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457192^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7739976^SYS|7795083483|BED72040^72040 72040 Spine Cerv 3views or less^UNKDEV|URGENT||20140423070834|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||72040^Cervical spine 1 View Dx Xray|20140423190013||BED|||1^^^20140423190013^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB|||||||||72040<R>
+OBX|1|TX|8136659||AMBER REESE, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|8136659||ACC#  Date Time  Exam~~7795083483 Apr 23 2014 07:00PM BED72040 72040 Spine Cerv 3views or~less~~EXAMINATION:~Cervical Spine X-ray~~FINDINGS:~The cervical spine X-ray acquired on 2014-04-23 exhibits normal~vertebral body height and alignment. However, there is noted~degenerative spondylosis with osteophyte formation present at C5-C7,~which may cause foraminal stenosis, with corresponding mild~degenerative disc disease. The posterior elements are intact without~signs of acute fracture or significant subluxation. CT correlates~might be beneficial for assessing the extent of spinal canal~narrowing due to foraminal encroachment.~~IMPRESSION:~Findings suggest chronic degenerative changes of the cervical spine~prevalent at the C5-C7 levels. Conservative management may be~sufficient, yet close observation is advisable, particularly if~symptoms progress.||||||F<R>
+OBX|3|TX|8136659||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Amber Reese, M.D. on Apr 23 2014 07:00PM~~This document has been electronically signed by: Amber Reese, M.D. on~Apr 23 2014 07:00PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8136659|4|7795083483^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,26 @@
+2010-08-03 20:45:31.4210|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100803204531|TBD|ORU^R01|2.25.215683872577892456974410541620029847981|P|2.7<R>
+PID|1||ABC451017^^^ABC^MR||WOOD^WILLIAM^JUSTIN^^^^D||19890323|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085028|||||||||||||||||||||||||20100803204531|||||||V<R>
+ORC|RE|1385870^SYS|7795082864||Wet Read||^^^20100803204530^20100803204531^O||20100803204531|T6530146^MOORE^CURTIS||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1385870^SYS|7795082864|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20100731090707|||||Hosp Perf|||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20100803204531||US|Wet Read||^^^20100803204530^20100803204531^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20100803204531||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|The mass identified within the right lower quadrant requires further||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|evaluation, including potential follow-up imaging or biopsy to||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|ascertain the nature of the lesion. The ultrasound evaluation reveals||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|a well-defined, homogenous mass within the right lower quadrant,||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|measuring approximately 4.5 cm in its greatest dimension. The mass||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|displays enhanced echogenicity with well-defined margins. Color||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|Doppler imaging indicates increased vascularity around the lesion||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|with no significant internal flow, raising the possibility of an||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|inflammatory or neoplastic process. The surrounding structures,||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|including the bowel and bladder, appear normal without any signs of||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|hydroureter or hydronephrosis, and there is no free fluid in the||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|abdominal cavity.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.172891250224883940694401460808611742713^EPIC^APPLICATION^DICOM<R>
+<EB>

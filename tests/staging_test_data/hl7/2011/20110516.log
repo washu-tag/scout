@@ -1,0 +1,26 @@
+2011-05-16 06:28:08.6031|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110516062808|TBD|ORU^R01|2.25.313137733219957823416687640536674086072|P|2.7<R>
+PID|1||ABC451022^^^ABC^MR||REYES^MEGAN^PATRICIA^^^^D||19711117|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084808|||||||||||||||||||||||||20110516062808|||||||V<R>
+ORC|RE|3561338^SYS|7795082888||Prelim||^^^20110516062807^20110516062808^O||20110516062808|T6530152^ADKINS^MELLISSA||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3561338^SYS|7795082888|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20110512194627|||||Hosp Perf||||^^^HEART|D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20110516062808||MR|Prelim||^^^20110516062807^20110516062808^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20110516062808||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|Findings are consistent with normal cardiac structure and function.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|No abnormalities were detected during the imaging assessment on this||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|date, and results align with previous chest imaging findings from||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|1999-11-26. Cardiac MRI demonstrates preserved left ventricular (LV)||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|function with an ejection fraction of approximately 60%. There is no||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|left ventricular hypertrophy, and the endocardial contours are||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|normal. The myocardium shows uniform thickness, and delayed||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|enhancement imaging indicates no focal areas of myocardial scarring,||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|ischemia, or infiltrative disease. The right ventricle appears normal||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|in size and function, with a patent right coronary artery. There's no||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|evidence of pericardial effusion or mediastinal mass effect. There is||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|unobstructed blood flow through the aorta with no aneurysms noted.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|17|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.157208620532687916659530215348984126619^EPIC^APPLICATION^DICOM<R>
+<EB>

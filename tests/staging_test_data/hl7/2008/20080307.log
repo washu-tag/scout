@@ -1,0 +1,11 @@
+2008-03-07 20:32:01.0123|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20080307203201|TBD|ORU^R01|2.25.65705476220723310256467045866485619956|P|2.4<R>
+PID|1||ABC451062^^^ABC^MR~EPIC4485821^^^EPIC^MRN||FLORES^DANIEL^DANIEL^^^^D||19781010000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451062^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457473^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1544^SYS|7795083044|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||20080305140912|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|20080307203201||IMG|||1^^^20080307203201^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|5241520||JESSICA WRIGHT, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5241520||ACC#  Date Time  Exam~~7795083044 Mar 07 2008 08:32PM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~The MRI of the chest reveals normal lung parenchyma with no evidence~of mass lesions or areas of abnormal signal intensity. The pleurae~are free of effusion or thickening, and the interstitium appears~unremarkable. The mediastinal structures, including the great vessels~and heart chambers, are normal in contour and signal characteristics,~and there are no signs of lymphadenopathy or vascular anomalies. The~airways are patent without evidence of stenosis or obstructive~processes. The spine and bony thorax demonstrate no significant~abnormalities.~~IMPRESSION:~The chest MRI conducted on March 5, 2008, corroborates the findings~of the previous chest X-ray. There are no notable changes or~abnormalities, reinforcing the conclusion of a stable thoracic~evaluation without evidence of active disease.||||||F<R>
+OBX|3|TX|5241520||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Jessica Wright, M.D. on Mar 07 2008 08:32PM~~This document has been electronically signed by: Jessica Wright, M.D.~on Mar 07 2008 08:32PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5241520|4|7795083044^UK^ZB||||||F<R>
+<EB>

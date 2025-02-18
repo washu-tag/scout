@@ -1,0 +1,11 @@
+2018-11-20 22:08:53.6058|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20181120220853|TBD|ORU^R01|2.25.327088426351823519079596983763109526203|P|2.4<R>
+PID|1||ABC451189^^^ABC^MR~EPIC4485948^^^EPIC^MRN||GRAHAM^WILLIAM^KEVIN^^^^D||19560703000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451189^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457146^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7384520^SYS|7795083552|M72195PEL0^721950 MR PELVIS WO^UNKDEV|URGENT||20181117100459|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||721950^Pelvis PtMr|20181120220853||MPEL|||1^^^20181120220853^^U^^URGENT|       |||^Chest pain|D7823238^HUNT^APRIL^M.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB|||||||||721950<R>
+OBX|1|TX|8855418||APRIL HUNT, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|8855418||ACC#  Date Time  Exam~~7795083552 Nov 20 2018 10:08PM M72195PEL0 MR PELVIS WO~~EXAMINATION:~Pelvis PET-MR~~FINDINGS:~The integrated PET-MR imaging of the pelvis indicates no~hypermetabolic activity noted within the bony structures or soft~tissues. The MRI sequences demonstrate a homogenous appearance of the~pelvic organs with no focal lesions or lymphadenopathy observed. The~prostate gland is within normal size limits, without any signs of~significant internal heterogeneity that might correlate with~malignancy. Vessels appear patent without evidence of thrombosis or~vascular lesions, and musculature is intact without edema or fluid~collections hinting at acute injuries.~~IMPRESSION:~1. No evidence of malignant disease or significant metabolic activity~within the pelvic region. 2. Findings are reassuring and unremarkable~relative to previous imaging including the 2003-03-25 cervical X-ray~and suggest stable anatomy without clinical implication.||||||F<R>
+OBX|3|TX|8855418||Requested By: Hunt,April M. M.D.~~Dictated By: April Hunt, M.D. on Nov 20 2018 10:08PM~~This document has been electronically signed by: April Hunt, M.D. on~Nov 20 2018 10:08PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8855418|4|7795083552^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,11 @@
+2011-06-12 18:11:56.2611|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110612181156|TBD|ORU^R01|2.25.49047199851110425472876482698963862411|P|2.4<R>
+PID|1||ABC451064^^^ABC^MR~EPIC4485823^^^EPIC^MRN||ΑΡΓΎΡΗΣ^ΈΛΙΣΆΒΕΤ^^^^^D||19890111000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451064^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457480^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6487702^SYS|7795083054|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20110610101656|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20110612181156||BHC|||1^^^20110612181156^^U^^URGENT|       |||^Chest pain|D7823234^DONOVAN^WILLIAM^C.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|8282964||WILLIAM DONOVAN, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|8282964||ACC#  Date Time  Exam~~7795083054 Jun 12 2011 06:11PM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~Comparing this study with the prior mammogram dated 2007-03-12, the~breasts remain symmetrical and the density appears consistent, but~with a slight increase in fibroglandular tissue noted bilaterally. No~new palpable masses or calcifications are identified. There is a~stable appearance of the breast parenchyma, with no signs of~suspicious lesions or changes from the previous examination. Axillary~regions remain unremarkable with no evidence of lymphadenopathy.~~IMPRESSION:~The current mammographic study shows stable findings compared to the~previous exam. There remains no evidence of malignancy or significant~change in breast tissue with benign characteristics. Routine~follow-up mammography is recommended.||||||P<R>
+OBX|3|TX|8282964||Requested By: Wright,Jessica M. M.D.~~Dictated By: William Donovan, M.D. on Jun 12 2011 06:11PM~~Pending review by: Clara Smith, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|8282964|4|7795083054^UK^ZB||||||P<R>
+<EB>

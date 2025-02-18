@@ -1,0 +1,26 @@
+2021-01-30 00:43:22.1389|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210130004322|TBD|ORU^R01|2.25.90568698095508932058666381959671153097|P|2.7<R>
+PID|1||ABC451061^^^ABC^MR||WHITAKER^CHAD^CLINTON^^^^D||19360922|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085031|||||||||||||||||||||||||20210130004322|||||||V<R>
+ORC|RE|2910417^SYS|7795083039||Wet Read||^^^20210130004321^20210130004322^O||20210130004322|T6530151^WATERS^JESSICA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2910417^SYS|7795083039|MABDOMENWO^MR ABD WO^UNKDEV^^ABDOMEN PTMR|O|20210126070157|||||Hosp Perf||||^^^ABDOMEN|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210130004322||MR|Wet Read||^^^20210130004321^20210130004322^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20210130004322||||||||MABDOMENWO^MR ABD WO^UNKDEV^^ABDOMEN PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-MR||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|1. Absence of hypermetabolic activity suggesting no active malignancy||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|or metastatic disease.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|2. Stable benign abdominal findings; recommend routine follow-up. The||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|abdomen PET-MR reveals no hypermetabolic lesions, suggesting no||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|active malignancy. Morphological evaluation indicates unremarkable||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|liver size and contour, normal biliary tree, and pancreas with no||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|lesions. Lymph nodes within the retroperitoneal space appear reactive||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|but are not hypermetabolic, measuring under 1 cm. Renal parenchyma||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|showcases normal perfusion and function with no obstructive uropathy.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|The bladder is well distended, without wall thickening or lesions.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|Comparison to previous imaging from 2021-01-26 shows no new||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|developments or worsening of pre-existing benign conditions.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.219971524309054955557908450358196344337^EPIC^APPLICATION^DICOM<R>
+<EB>

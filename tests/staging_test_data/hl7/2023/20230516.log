@@ -1,0 +1,35 @@
+2023-05-16 02:59:30.7175|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230516025930|TBD|ORU^R01|2.25.208009830427234552066382715597446239507|P|2.7<R>
+PID|1||ABC451034^^^ABC^MR||ROSE^SUZANNE^KAREN^^^^D||19541128|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084964|||||||||||||||||||||||||20230516025930|||||||V<R>
+ORC|RE|4474290^SYS|7795082935||Prelim||^^^20230516025929^20230516025930^O||20230516025930|T6530152^ADKINS^MELLISSA||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4474290^SYS|7795082935|M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR|O|20230512090042|||||Hosp Perf||||^^^PELVIS|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230516025930||MR|Prelim||^^^20230516025929^20230516025930^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20230516025930||||||||M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Pelvis PET-MR||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|Significant hypermetabolic activity in the left ovary consistent with||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|a functional cyst or likely malignancy, necessitating further||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|follow-up with targeted ultrasound and possibly an oncological||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|evaluation. No other significant pelvic or abdominal abnormalities||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|noted. Continued surveillance of the previously observed structures||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|is warranted to monitor for potential changes in size or metabolic||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|activity. The fusion acquired from PET and MRI modalities displays||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|notable multisequential profiles of the pelvic region. There is||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|increased radiotracer uptake in the left ovary measuring 2.5 cm,||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|which exhibits hypermetabolic activity suggestive of a functional||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|cyst or possibly an early neoplastic process. The surrounding soft||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|tissues and pelvic musculature appear unremarkable with no evidence||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|17|ST|&IMP|2|of inflammatory changes or lymphadenopathy. The bladder wall is||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|18|ST|&IMP|2|intact, showing no pathological thickening or abnormal enhancement||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|19|ST|&IMP|2|patterns. Additionally, the rectal and sigmoid segments show normal||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|20|ST|&IMP|2|wall thickening without focal masses, and the intra-abdominal||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|21|ST|&IMP|2|assessment reveals no free fluid or gas. Overall, there are no||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|22|ST|&IMP|2|significant bone marrow lesions in the pelvic bones. Upon comparison||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|23|ST|&IMP|2|with the previous MRI dated 2022-12-05, there is an observable||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|24|ST|&IMP|2|increase in ovarian uptake; however, the rest of the pelvic||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|25|ST|&IMP|2|structures remain stable without new abnormalities.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|26|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.160364791253353377970483952917301312981^EPIC^APPLICATION^DICOM<R>
+<EB>

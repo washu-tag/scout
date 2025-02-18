@@ -1,0 +1,26 @@
+2020-12-23 23:17:42.6913|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20201223231742|TBD|ORU^R01|2.25.289662920745898334100388103473370254721|P|2.7<R>
+PID|1||ABC451178^^^ABC^MR||CHOI^SU-BIN^^^^^D||19671008|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084830|||||||||||||||||||||||||20201223231742|||||||V<R>
+ORC|RE|6063748^SYS|7795083509||Wet Read||^^^20201223231741^20201223231742^O||20201223231742|T6530150^NEAL^EMILY||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6063748^SYS|7795083509|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20201223075050|||||Hosp Perf||||^^^BRAIN|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20201223231742||MR|Wet Read||^^^20201223231741^20201223231742^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20201223231742||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|MRI findings are consistent with previous studies, reinforcing the||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|presence of hyperintensity in the left temporal lobe without acute||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|intervention requirement. These findings may represent chronic||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|changes, warranting further clinical correlation and possibly||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|prolonged surveillance. The MRI brain demonstrates no acute||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|intracranial abnormalities; however, areas of hyperintensity are||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|noted in the left temporal region on T2-weighted imaging, correlating||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|with previous PET-CT findings. No evidence of mass effect, midline||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|shift, or significant cerebral edema is observed. The ventricles||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|remain within normal limits, and the cortical and subcortical||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|structures are also normal. The visualized basal ganglia and thalami||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|appear unremarkable.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.290702442160656915496443590912359395152^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,30 @@
+2022-06-07 02:47:05.2568|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220607024705|TBD|ORU^R01|2.25.229670160473386807459011346109701706465|P|2.7<R>
+PID|1||ABC451129^^^ABC^MR||ALVARADO^SABRINA^AUTUMN^^^^D||19460913|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085017|||||||||||||||||||||||||20220607024705|||||||V<R>
+ORC|RE|9224958^SYS|7795083311||Final||^^^20220607024704^20220607024705^O||20220607024705|T6530147^ANDERSON^NATALIE||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9224958^SYS|7795083311|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20220603154501|||||Hosp Perf||||^^^HEART|D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20220607024705||NM|Final||^^^20220607024704^20220607024705^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20220607024705||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|The nuclear medicine cardiac study confirms stable myocardial||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|perfusion and ejection fraction, consistent with normal cardiac||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|function. The patient is at low risk for ischemic heart disease based||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|on the current imaging, though continued monitoring of cardiac health||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|as per guidelines remains advisable. The cardiac nuclear medicine||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|study conducted on 2022-06-03 indicates normal myocardial perfusion||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|at rest. There are no areas of reversible ischemia or fixed defects.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|The left ventricular ejection fraction is calculated at 60%, which is||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|within normal limits. Visual assessment reveals well-preserved wall||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|motion throughout all left ventricular segments. The study shows no||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|perfusion abnormalities indicating ischemia or infarction, and the||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|right ventricular wall and myocardial thickness appear normative.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|17|ST|&IMP|2|Additionally, pulmonary vascular spaces are clear with no signs of||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|18|ST|&IMP|2|right ventricular dysfunction or hypertrophy. Comparison to previous||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|19|ST|&IMP|2|cardiovascular assessments indicates stable radiologic findings with||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|20|ST|&IMP|2|no acute issues.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|21|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.47295739552002969287793742896086701048^EPIC^APPLICATION^DICOM<R>
+<EB>

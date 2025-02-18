@@ -1,0 +1,11 @@
+1995-02-27 21:40:17.9431|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19950227214017|TBD|ORU^R01|2.25.19254391619293773365952071503409892735|P|2.4<R>
+PID|1||ABC451053^^^ABC^MR~EPIC4485812^^^EPIC^MRN||HILL^EDWARD^WYATT^^^^D||19660723000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451053^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823258^BRYANT^DAVID^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457349^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3021745^SYS|7795083009|OMHEADWO^ MRI BRAIN WITHOUT CONTRAST^UNKDEV|URGENT||19950225091549|||PSCRIB|||||^^^^ |D7823254^CRUZ^JOSEPH^JACOB^M.D.^^^^ABC|||||^HEAD MRI Expedited|19950227214017||OMHEADWO|||1^^^19950227214017^^U^^URGENT|       |||^Chest pain|D7823251^CALLAHAN^SCOTT^A.^^^M.D.|D7823247^WARREN^MARY^T.^^^M.D.||PSCRIB<R>
+OBX|1|TX|3664240||SCOTT CALLAHAN, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|3664240||ACC#  Date Time  Exam~~7795083009 Feb 27 1995 09:40PM OMHEADWO MRI BRAIN WITHOUT CONTRAST~~EXAMINATION:~Head MRI~~FINDINGS:~Comparison with the head MRI dated 1994-07-22 shows no significant~interval change in the cerebral anatomy. The previously noted~bilateral periventricular hyperintensities remain stable, reflecting~chronic ischemic changes. No new lesions or mass effect was~identified. Functional imaging sequences reveal intact diffusion of~water molecules across the cerebral cortex, indicating no acute~ischemic events, and perfusion imaging suggests preserved cerebral~blood flow with no notable hypoperfusion in any territories.~~IMPRESSION:~Findings are stable when compared to the previous study from July~1994. No acute intracranial pathology is found, and previous chronic~ischemic changes remain consistent with longitudinal monitoring.||||||P<R>
+OBX|3|TX|3664240||Requested By: Cruz,Joseph J. M.D.~~Dictated By: Scott Callahan, M.D. on Feb 27 1995 09:40PM~~Pending review by: Mary Warren, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|3664240|4|7795083009^UK^ZB||||||P<R>
+<EB>

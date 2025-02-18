@@ -1,0 +1,11 @@
+2006-03-27 04:38:24.6055|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060327043824|TBD|ORU^R01|2.25.97704502910239847637362912237709277514|P|2.4<R>
+PID|1||ABC451035^^^ABC^MR~EPIC4485794^^^EPIC^MRN||BURNS^GILBERT^ADAM^^^^D||19430321000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451035^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457423^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5570098^SYS|7795082937|EDXETSP1V^1 XR Thoracic Spine 1 View^UNKDEV|URGENT||20060324105857|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||1^Thoracic spine 1 View Dx Xray|20060327043824||EDXETSPV|||1^^^20060327043824^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||1<R>
+OBX|1|TX|9784808||AMBER REESE, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|9784808||ACC#  Date Time  Exam~~7795082937 Mar 27 2006 04:38AM EDXETSP1V XR Thoracic Spine 1 View~~EXAMINATION:~T-spine X-ray~~FINDINGS:~Lateral T-spine X-ray shows mild degenerative changes at the level of~T7-T8, characterized by endplate osteophyte formation. No acute~vertebral compression fractures noted. The alignment of the spine is~maintained, and there are no signs of any destructive lesion. The~remaining thoracic vertebrae appear normal, with intact soft tissues~and no significant findings in the posterior elements.~~IMPRESSION:~Mild degenerative changes suggest age-appropriate alterations with no~acute abnormalities or significant deformities present. Recommend~follow-up as clinically indicated.||||||P<R>
+OBX|3|TX|9784808||Requested By: Hunt,April M. M.D.~~Dictated By: Amber Reese, M.D. on Mar 27 2006 04:38AM~~Pending review by: Ernesto Parsons, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|9784808|4|7795082937^UK^ZB||||||P<R>
+<EB>

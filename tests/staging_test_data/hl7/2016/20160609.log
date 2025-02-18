@@ -1,0 +1,11 @@
+2016-06-09 00:19:27.9031|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20160609001927|TBD|ORU^R01|2.25.27094510011071518667652613336108480421|P|2.4<R>
+PID|1||ABC451112^^^ABC^MR~EPIC4485871^^^EPIC^MRN||JIMENEZ^KATHERINE^CARLA^^^^D||19380423000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451112^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457373^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1726914^SYS|7795083246|M755612^755612 MR CARDIAC MRPH FUNC WWO^UNKDEV|URGENT||20160607110151|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||755612^HEART MRI|20160609001927||M|||1^^^20160609001927^^U^^URGENT|       |||^Chest pain|D7823234^DONOVAN^WILLIAM^C.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||755612<R>
+OBX|1|TX|373973||WILLIAM DONOVAN, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|373973||ACC#  Date Time  Exam~~7795083246 Jun 09 2016 12:19AM M755612 MR CARDIAC MRPH FUNC WWO~~EXAMINATION:~MRI of the heart~~FINDINGS:~The cardiac MRI demonstrates normal chamber sizes with no evidence of~chamber dilation. Left ventricular function is well-preserved with an~ejection fraction of approximately 60%. There is no myocardial edema~or late gadolinium enhancement observed, indicating the absence of~myocardial infarction or active ischemia. The coronary arteries are~patent with no evidence of stenosis. The aortic arch and pulmonary~artery are without abnormalities. No pericardial effusion is~identified. Overall, the myocardium demonstrates normal signal~characteristics.~~IMPRESSION:~Cardiac MRI shows normal myocardial function, with no evidence of~ischemic heart disease. No structural abnormalities detected.||||||F<R>
+OBX|3|TX|373973||Requested By: Donovan,William C. M.D.~~Dictated By: William Donovan, M.D. on Jun 09 2016 12:19AM~~This document has been electronically signed by: William Donovan,~M.D. on Jun 09 2016 12:19AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|373973|4|7795083246^UK^ZB||||||F<R>
+<EB>

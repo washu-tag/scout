@@ -1,0 +1,11 @@
+2017-04-15 12:49:51.6693|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170415124951|TBD|ORU^R01|2.25.45446874036417706894649059818490665577|P|2.4<R>
+PID|1||ABC451032^^^ABC^MR~EPIC4485791^^^EPIC^MRN||FLETCHER^LAUREN^KRISTINA^^^^D||20001225000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451032^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823220^HESS^BRANDI^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457379^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9712442^SYS|7795082931|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20170413095717|||PSCRIB|||||^^^^ |D7823226^KENNEDY^JERI^AMANDA^M.D.^^^^ABC|||||8452^NM MPI SPECT|20170415124951||H|||1^^^20170415124951^^U^^URGENT|       |||^Chest pain|D7823222^POWELL^CARRIE^J.^^^M.D.|D7823218^LLOYD^JESSICA^A.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|4275330||CARRIE POWELL, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4275330||ACC#  Date Time  Exam~~7795082931 Apr 15 2017 12:49PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM Study~~FINDINGS:~The cardiac perfusion images reveal normal perfusion distribution in~the left ventricular myocardium during both stress and rest phases.~No evidence of ischemia or infarction is identified. The left~ventricular ejection fraction (LVEF) is calculated at 65%, suggesting~preserved systolic function. There is mild attenuation artifact~noted, likely due to diaphragmatic interference, but it does not~impact the overall interpretation. No extra-cardiac findings were~observed in the images acquired.~~IMPRESSION:~Normal cardiac perfusion study. The myocardial perfusion is intact~with a satisfactory ejection fraction indicating no significant~ischemia at the time of study.||||||F<R>
+OBX|3|TX|4275330||Requested By: Kennedy,Jeri A. M.D.~~Dictated By: Carrie Powell, M.D. on Apr 15 2017 12:49PM~~This document has been electronically signed by: Carrie Powell, M.D.~on Apr 15 2017 12:49PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4275330|4|7795082931^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,11 @@
+1996-02-14 21:26:40.0788|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19960214212640|TBD|ORU^R01|2.25.193865599195112956795500121305509854651|P|2.4<R>
+PID|1||ABC451079^^^ABC^MR~EPIC4485838^^^EPIC^MRN||COLEMAN^KATE^MARY^^^^D||19261102000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451079^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457140^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4862326^SYS|7795083114|IMG5017^5017 PET/CT FDG WHOLE BODY^UNKDEV|URGENT||19960211061228|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||5017^Wholebody Petct AC NAC|19960214212640||IMG|||1^^^19960214212640^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||5017<R>
+OBX|1|TX|7252884||JOSEPH BARAJAS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7252884||ACC#  Date Time  Exam~~7795083114 Feb 14 1996 09:26PM IMG5017 PET/CT FDG WHOLE BODY~~EXAMINATION:~Whole-body PET-CT~~FINDINGS:~The whole-body PET-CT performed reveals moderate fluorodeoxyglucose~(FDG) uptake in the mediastinal region with a standardized uptake~value (SUV) peak of 4.2, suggesting a consideration for possible~malignancy. The lungs show no focal lesions, and the liver is normal~in size with no hypermetabolic activity detected. The skeletal survey~shows no lytic or blastic lesions indicative of metastatic disease.~No abnormal lymphadenopathy is seen in the abdominal cavity. Compared~to the previous imaging study on 1995-05-17, the noted uptake~indicating possible underlying pathology is a new finding, warranting~further evaluation.~~IMPRESSION:~1. New hypermetabolic activity noted in mediastinal region,~suggestive of possible malignancy; further diagnostic workup~recommended. 2. No evidence of metastasis in the abdomen or pelvis~noted. 3. Correlation with clinical findings and potentially~follow-up imaging is advised.||||||F<R>
+OBX|3|TX|7252884||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Joseph Barajas, M.D. on Feb 14 1996 09:26PM~~This document has been electronically signed by: Joseph Barajas, M.D.~on Feb 14 1996 09:26PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7252884|4|7795083114^UK^ZB||||||F<R>
+<EB>

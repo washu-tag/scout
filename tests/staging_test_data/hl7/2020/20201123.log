@@ -1,0 +1,25 @@
+2020-11-23 06:55:49.9854|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20201123065549|TBD|ORU^R01|2.25.204166259828556855144584536128983520088|P|2.7<R>
+PID|1||ABC451092^^^ABC^MR||MAY^KENNETH^CHAD^^^^D||19850929|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084848|||||||||||||||||||||||||20201123065549|||||||V<R>
+ORC|RE|7329361^SYS|7795083170||Wet Read||^^^20201123065548^20201123065549^O||20201123065549|T6530152^ADKINS^MELLISSA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7329361^SYS|7795083170|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20201119074918|||||Hosp Perf|||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20201123065549||US|Wet Read||^^^20201123065548^20201123065549^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20201123065549||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound study||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|Abdominal ultrasound findings are within normal limits, with no||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|abnormalities detected throughout the surveyed organs. The ultrasound||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|study completed demonstrates an overall normal appearance of the||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|abdominal organs. The liver shows normal echogenicity and size, with||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|no evidence of lesions, masses, or biliary tree abnormalities. The||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|gallbladder walls are intact without signs of cholecystitis. The||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|kidneys are normal in size and echogenicity, with no hydronephrosis||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|or calculi visualized. Surrounding anatomical structures exhibit no||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|abnormalities, and vasculature appears patent. No lymphadenopathy is||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|identified, and no fluid collection exists within the peritoneal||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|cavity or retroperitoneal area.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.179497554154568533289342564362829567846^EPIC^APPLICATION^DICOM<R>
+<EB>

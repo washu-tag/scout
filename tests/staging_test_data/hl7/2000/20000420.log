@@ -1,0 +1,24 @@
+2000-04-20 07:46:01.4533|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000420074601|TBD|ORU^R01|2.25.33546388567320795237180559024540432780|P|2.7<R>
+PID|1||ABC451045^^^ABC^MR||WALSH^ANGEL^CARRIE^^^^D||19550621|F||OTHER|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084715|||||||||||||||||||||||||20000420074601|||||||V<R>
+ORC|RE|5047073^SYS|7795082980||Prelim||^^^20000420074600^20000420074601^O||20000420074601|T6530150^NEAL^EMILY||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5047073^SYS|7795082980|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20000419102804|||||Hosp Perf||||^^^HEART|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20000420074601||NM|Prelim||^^^20000420074600^20000420074601^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20000420074601||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|The study indicates mild anterior wall ischemia under stress but||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|normal resting perfusion. Clinical correlation with possible further||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|cardiac evaluation may be warranted. Myocardial perfusion imaging||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|demonstrates mildly reduced perfusion in the anterior wall during||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|stress, with normal perfusion at rest. The left ventricular function||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|is preserved with an ejection fraction of approximately 60%. There||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|are no areas of significant ischemia noted during the stress phase,||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|and no hyperkinetic or akinetic segments are identified. The heart||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|shows normal contours and no valvular abnormalities. The lungs are||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|clear without significant pleural effusions.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.98784470080010418277915794686899581121^EPIC^APPLICATION^DICOM<R>
+<EB>

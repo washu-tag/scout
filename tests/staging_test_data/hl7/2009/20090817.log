@@ -1,0 +1,26 @@
+2009-08-17 22:39:55.4485|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090817223955|TBD|ORU^R01|2.25.45366158066607974991641316283268286315|P|2.7<R>
+PID|1||ABC451126^^^ABC^MR||BAILEY^WILLIAM^NICHOLAS^^^^D||19460323|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823249^OLIVER^JASON^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084971|||||||||||||||||||||||||20090817223955|||||||V<R>
+ORC|RE|1076338^SYS|7795083299||Wet Read||^^^20090817223954^20090817223955^O||20090817223955|T6530164^HILL^TAMARA||D7823250^ROBERTSON^MICHELLE^D.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1076338^SYS|7795083299|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20090816184915|||||Hosp Perf||||^^^HEART|D7823250^ROBERTSON^MICHELLE^D.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20090817223955||MR|Wet Read||^^^20090817223954^20090817223955^O||||^Chest pain||D7823257^ROBINSON^RALPH^A.^^^^^ABC^^^^HOSP|T6530164^HILL^TAMARA||20090817223955||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|5|ST|&IMP|2|Comparison with the previous chest MRI indicates no changes in||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|6|ST|&IMP|2|cardiac configuration. The findings noted in the heart MRI imply||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|7|ST|&IMP|2|potential ischemic effects which warrant further evaluation, possibly||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|8|ST|&IMP|2|through advanced imaging or clinical correlation. The heart MRI from||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|9|ST|&IMP|2|2009-08-16 shows the left ventricle performing adequately with no||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|10|ST|&IMP|2|evidence of hypertrophy. The wall motion is normal in all segments.||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|11|ST|&IMP|2|However, there is a subtle mesenteric scintigraphy enhancement||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|12|ST|&IMP|2|concerning for possible ischemic changes that require further||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|13|ST|&IMP|2|evaluation. The right ventricle is of normal dimensions with no||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|14|ST|&IMP|2|evidence of regional wall motion abnormalities. The valves appear||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|15|ST|&IMP|2|structurally sound with no regurgitation or stenosis evident.||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|16|ST|&IMP|2|Pericardial spaces are clear without effusion.||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+OBX|17|ST|&IMP|2|Dictated by: Ralph Robinson Interpreter, M.D.||||||Wet Read|||||T6530164^HILL^TAMARA<R>
+ZDS|2.25.62554903679220497087530061281448669863^EPIC^APPLICATION^DICOM<R>
+<EB>

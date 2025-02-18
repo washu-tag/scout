@@ -1,0 +1,11 @@
+1999-03-12 17:37:33.8648|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19990312173733|TBD|ORU^R01|2.25.162901978151828317282602441877034667803|P|2.4<R>
+PID|1||ABC451172^^^ABC^MR~EPIC4485931^^^EPIC^MRN||LEWIS^NOEMI^TERESA^^^^D||19380330000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451172^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823217^SANCHEZ^ROY^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457194^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4660334^SYS|7795083487|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||19990308162458|||PSCRIB|||||^^^^ |D7823217^SANCHEZ^ROY^ANDREW^M.D.^^^^ABC|||||4185^XRay Angiography|19990312173733||IMG|||1^^^19990312173733^^U^^URGENT|       |||^Chest pain|D7823228^MYERS^BRENT^A.^^^M.D.|D7823215^PORTER^JAMEL^J.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|5284862||BRENT MYERS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5284862||ACC#  Date Time  Exam~~7795083487 Mar 12 1999 05:37PM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray Angiography~~FINDINGS:~The X-ray angiography, conducted on 1999-03-08, demonstrates a patent~arterial supply to the abdominal viscera. However, there are noted~irregularities in the aortic arch, with mild atherosclerotic changes~displayed. The mesenteric vessels exhibit normal caliber without~evidence of significant stenosis or occlusion; collateral circulation~is not prominently observed. Notably, there is a presence of a~ectatic segment in the distal aorta, but no active vascular~pathologies such as an aneurysm or dissection are apparent.~~IMPRESSION:~The angiographic study reveals stable vascular anatomy concerning~previous imaging, with mild atherosclerotic changes. No acute~intervention needed but routine monitoring is advised due to the~ectatic segment in the distal aorta.||||||F<R>
+OBX|3|TX|5284862||Requested By: Sanchez,Roy A. M.D.~~Dictated By: Brent Myers, M.D. on Mar 12 1999 05:37PM~~This document has been electronically signed by: Brent Myers, M.D. on~Mar 12 1999 05:37PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5284862|4|7795083487^UK^ZB||||||F<R>
+<EB>

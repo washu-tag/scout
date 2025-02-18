@@ -1,0 +1,25 @@
+2012-04-10 01:19:59.5765|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120410011959|TBD|ORU^R01|2.25.251105899495846438648514017181671645930|P|2.7<R>
+PID|1||ABC451043^^^ABC^MR||SMITH^STEPHAN^GERALD^^^^D||19540826|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084673|||||||||||||||||||||||||20120410011959|||||||V<R>
+ORC|RE|7580895^SYS|7795082973||Prelim||^^^20120410011958^20120410011959^O||20120410011959|||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7580895^SYS|7795082973|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20120408091521|||||Hosp Perf|||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20120410011959||DX|Prelim||^^^20120410011958^20120410011959^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|||20120410011959||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Prelim<R>
+OBX|3|ST|&GDT|1|||||||Prelim<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim<R>
+OBX|5|ST|&IMP|2|Chest X-ray findings are within normal limits with no acute||||||Prelim<R>
+OBX|6|ST|&IMP|2|cardiopulmonary changes noted. The examination displays normal lung||||||Prelim<R>
+OBX|7|ST|&IMP|2|and heart conditions appropriate for the patient's age. The||||||Prelim<R>
+OBX|8|ST|&IMP|2|single-view chest X-ray taken on 2012-04-08 demonstrates clear lung||||||Prelim<R>
+OBX|9|ST|&IMP|2|fields without signs of consolidation, effusion, or masses. The||||||Prelim<R>
+OBX|10|ST|&IMP|2|cardiac silhouette is normal in size and configuration, with no signs||||||Prelim<R>
+OBX|11|ST|&IMP|2|of cardiomegaly. The diaphragm is intact and the bony structures||||||Prelim<R>
+OBX|12|ST|&IMP|2|exhibit no evidence of fracture or destructive lesions. No||||||Prelim<R>
+OBX|13|ST|&IMP|2|mediastinal widening or abnormal air density is observed. Vasculature||||||Prelim<R>
+OBX|14|ST|&IMP|2|appears normal without signs of pulmonary hypertension. Overall, the||||||Prelim<R>
+OBX|15|ST|&IMP|2|findings are indicative of normal thoracic anatomy.||||||Prelim<R>
+OBX|16|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.178914791882366385633621136999604251615^EPIC^APPLICATION^DICOM<R>
+<EB>

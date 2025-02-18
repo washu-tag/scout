@@ -1,0 +1,23 @@
+2014-02-21 09:58:26.4751|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140221095826|TBD|ORU^R01|2.25.122693740776309762771109852377706189818|P|2.7<R>
+PID|1||ABC451053^^^ABC^MR||HILL^EDWARD^WYATT^^^^D||19660723|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084912|||||||||||||||||||||||||20140221095826|||||||V<R>
+ORC|RE|8434894^SYS|7795083010||Final||^^^20140221095825^20140221095826^O||20140221095826|T6530146^MOORE^CURTIS||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8434894^SYS|7795083010|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20140219142042|||||Hosp Perf||||^^^CHEST|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20140221095826||CR|Final||^^^20140221095825^20140221095826^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20140221095826||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|This study shows slight changes potentially indicative of chronic||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|lung involvement versus stable previous imaging. Further evaluation||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|may be warranted based on clinical context. The chest X-ray||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|demonstrates subtle elevation of the right hemidiaphragm with no||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|acute effusion or pneumonia. The lungs are otherwise clear, and heart||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|size remains within normal limits. There is a mild increase in||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|interstitial markings, raising some suspicion for chronic changes,||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|possibly linked to previous smoking history or interstitial lung||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|disease.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.209199880592901206888665743938285011570^EPIC^APPLICATION^DICOM<R>
+<EB>

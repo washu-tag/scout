@@ -1,0 +1,24 @@
+2023-08-22 20:14:17.6714|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230822201417|TBD|ORU^R01|2.25.319123958691088020151668895281054304584|P|2.7<R>
+PID|1||ABC451186^^^ABC^MR||JOHNSON^STACIE^SARA^^^^D||19471012|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823256^MILLER^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084664|||||||||||||||||||||||||20230822201417|||||||V<R>
+ORC|RE|758035^SYS|7795083542||Prelim||^^^20230822201416^20230822201417^O||20230822201417|T6530155^STEVENSON^JEREMY||D7823252^NICHOLS^ISAAC^V.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|758035^SYS|7795083542|OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED|O|20230821063825|||||Hosp Perf||||^^^HEAD|D7823252^NICHOLS^ISAAC^V.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230822201417||MR|Prelim||^^^20230822201416^20230822201417^O||||^Chest pain||D7823251^CALLAHAN^SCOTT^A.^^^^^ABC^^^^HOSP|T6530155^STEVENSON^JEREMY||20230822201417||||||||OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head MRI||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|5|ST|&IMP|2|The head MRI reveals stable findings with mild atrophy and other||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|6|ST|&IMP|2|age-related changes but no signs of acute pathology. The head MRI||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|7|ST|&IMP|2|demonstrates an unremarkable exam with no evidence of acute||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|8|ST|&IMP|2|intracranial hemorrhage or mass effect. The ventricles are normal in||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|9|ST|&IMP|2|size and configuration, with no midline shift. No acute ischemic||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|10|ST|&IMP|2|changes are observed. The brain parenchyma shows mild diffuse||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|11|ST|&IMP|2|atrophy, consistent with the patient's age, alongside age-appropriate||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|12|ST|&IMP|2|white matter changes. No enhancing lesions or abnormal||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|13|ST|&IMP|2|diffusion-weighted imaging findings are seen, and the cerebellum and||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|14|ST|&IMP|2|brainstem are normal.||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+OBX|15|ST|&IMP|2|Dictated by: Scott Callahan Interpreter, M.D.||||||Prelim|||||T6530155^STEVENSON^JEREMY<R>
+ZDS|2.25.289816814638234755679686897461314755437^EPIC^APPLICATION^DICOM<R>
+<EB>

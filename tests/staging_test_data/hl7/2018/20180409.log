@@ -1,0 +1,28 @@
+2018-04-09 21:14:16.1658|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180409211416|TBD|ORU^R01|2.25.282896023807292709584201130969260076083|P|2.7<R>
+PID|1||ABC451052^^^ABC^MR||ROMERO^JENNIFER^CRISTINA^^^^D||19480506|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084889|||||||||||||||||||||||||20180409211416|||||||V<R>
+ORC|RE|5010720^SYS|7795083007||Prelim||^^^20180409211415^20180409211416^O||20180409211416|T6530153^MORAN^JOSHUA||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5010720^SYS|7795083007|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20180408153621|||||Hosp Perf|||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20180409211416||US|Prelim||^^^20180409211415^20180409211416^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||20180409211416||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound abdomen||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|The abdominal ultrasound results suggest a stable abdominal||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|examination with no acute abnormalities. Aging changes include mild||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|renal cortical thinning, but there are no concerning findings||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|regarding the liver, biliary tract, or vascular structures. These||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|results align with the clinical picture and the patient’s age. The||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|abdominal ultrasound reveals normal organs within the upper abdominal||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|cavity. The liver is of normal echogenicity with no focal lesions or||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|signs of cirrhosis. The gallbladder appears unremarkable without||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|cholelithiasis or wall thickening. The common bile duct is normal in||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|caliber. The kidney morphology is normal bilaterally; however, there||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|15|ST|&IMP|2|is mild cortical thinning consistent with age-related changes. The||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|16|ST|&IMP|2|spleen and pancreas also appear unremarkable. The aorta appears||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|17|ST|&IMP|2|normal without signs of aneurysm, and no significant free fluid is||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|18|ST|&IMP|2|noted.||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+OBX|19|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Prelim|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.161789803150612342867696310583871326070^EPIC^APPLICATION^DICOM<R>
+<EB>

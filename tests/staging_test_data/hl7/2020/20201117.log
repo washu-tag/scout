@@ -1,0 +1,25 @@
+2020-11-17 13:07:40.9839|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20201117130740|TBD|ORU^R01|2.25.57148051151338916043312211062202909050|P|2.7<R>
+PID|1||ABC451015^^^ABC^MR||ELLIOTT^TONYA^SASHA^^^^D||19471006|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085021|||||||||||||||||||||||||20201117130740|||||||V<R>
+ORC|RE|1160424^SYS|7795082860||Prelim||^^^20201117130739^20201117130740^O||20201117130740|T6530150^NEAL^EMILY||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1160424^SYS|7795082860|BED71010^71010 Chest 1 view Frontal^UNKDEV^^CHEST 1 VIEW DX XRAY|O|20201113183452|||||Hosp Perf||||^^^CHEST|D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20201117130740||DX|Prelim||^^^20201117130739^20201117130740^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20201117130740||||||||BED71010^71010 Chest 1 view Frontal^UNKDEV^^CHEST 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|Chest X-ray findings demonstrate no evidence of acute pulmonary||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|disease or cardiac compromise. The overall impression is within||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|normal limits for a patient of this demographic, with no immediate||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|follow-up required unless clinical symptoms develop. The chest X-ray||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|presents clear lung fields without evidence of infiltrates,||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|effusions, or nodules. Cardiac silhouette is normal in size and||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|contour, with no signs of cardiomegaly. The mediastinal contours are||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|unremarkable, and the diaphragm is well-positioned. The pleural||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|spaces are clear without any significant fluid. Osseous structures||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|appear normal without evidence of lytic lesions or abnormalities in||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|the thoracic spine.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.289341932852172791560439266732381572963^EPIC^APPLICATION^DICOM<R>
+<EB>

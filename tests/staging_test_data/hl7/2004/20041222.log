@@ -1,0 +1,11 @@
+2004-12-22 15:24:29.8836|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20041222152429|TBD|ORU^R01|2.25.139347602059697707915506886139572929072|P|2.4<R>
+PID|1||ABC451003^^^ABC^MR~EPIC4485762^^^EPIC^MRN||JONES^MICHAEL^JAMES^^^^D||19881103000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451003^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457355^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6351304^SYS|7795082811|IMG1259^1259 XR CHEST 1 VIEW^UNKDEV|URGENT||20041221200016|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||1259^Chest 1 View Xray|20041222152429||IMG|||1^^^20041222152429^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB|||||||||1259<R>
+OBX|1|TX|4208044||JOSEPH BARAJAS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|4208044||ACC#  Date Time  Exam~~7795082811 Dec 22 2004 03:24PM IMG1259 XR CHEST 1 VIEW~~EXAMINATION:~Chest X-ray~~FINDINGS:~The chest X-ray reveals clear lung fields bilaterally, with no~evidence of consolidation or obstructive pathology. The cardiac~silhouette is within normal limits, and there are no significant~mediastinal shifts noted. The diaphragm appears well-defined, and~there is no visible free air under the diaphragm. The bony structures~including the thoracic spine and ribs exhibit normal density without~evidence of acute fracture or destructive lesions. Lymphadenopathy is~absent, and the soft tissues show no abnormal masses or significant~swelling. Conclusion: The examination reveals no acute chest~pathology or significant abnormalities, consistent with a healthy~thoracic structure.~~IMPRESSION:~Findings are unremarkable, demonstrating normal pulmonary and cardiac~anatomy without signs of acute or chronic disease. This chest X-ray~is entirely within normal limits.||||||F<R>
+OBX|3|TX|4208044||Requested By: Wright,Jessica M. M.D.~~Dictated By: Joseph Barajas, M.D. on Dec 22 2004 03:24PM~~This document has been electronically signed by: Joseph Barajas, M.D.~on Dec 22 2004 03:24PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4208044|4|7795082811^UK^ZB||||||F<R>
+<EB>

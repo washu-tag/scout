@@ -1,0 +1,28 @@
+2001-08-14 08:58:39.9746|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010814085839|TBD|ORU^R01|2.25.18327704641759129294299096498832255305|P|2.7<R>
+PID|1||ABC451180^^^ABC^MR||NGUYEN^FREDERICK^JOSHUA^^^^D||19390120|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084678|||||||||||||||||||||||||20010814085839|||||||V<R>
+ORC|RE|1217816^SYS|7795083518||Final||^^^20010814085838^20010814085839^O||20010814085839|T6530142^LOPEZ^JOHN||D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1217816^SYS|7795083518|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20010812174831|||||Hosp Perf|||||D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20010814085839||XA|Final||^^^20010814085838^20010814085839^O||||^Chest pain||D7823221^MAXWELL^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530142^LOPEZ^JOHN||20010814085839||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray Angiography Study||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|5|ST|&IMP|2|There is evidence of stenosis affecting the left superficial femoral||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|6|ST|&IMP|2|artery which may contribute to claudication symptoms, corresponding||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|7|ST|&IMP|2|to possible peripheral vascular disease. A vascular surgical consult||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|8|ST|&IMP|2|is advised for potential intervention depending on clinical symptoms.||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|9|ST|&IMP|2|The digital subtraction angiography of the lower extremities||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|10|ST|&IMP|2|demonstrates patent common femoral and popliteal arteries bilaterally||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|11|ST|&IMP|2|with preserved flow dynamics. However, there is focal stenosis||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|12|ST|&IMP|2|observed in the left superficial femoral artery at the level of the||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|13|ST|&IMP|2|mid-thigh, with a residual lumen of approximately 30%. Additionally,||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|14|ST|&IMP|2|there are multiple atherosclerotic changes with calcifications seen||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|15|ST|&IMP|2|along the arterial walls, but no occlusions or major collateral||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|16|ST|&IMP|2|circulation is present. The posterior tibial and anterior tibial||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|17|ST|&IMP|2|arteries are unremarkable in their course and caliber, and no||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|18|ST|&IMP|2|significant aneurysms or vascular malformations are visualized.||||||Final|||||T6530142^LOPEZ^JOHN<R>
+OBX|19|ST|&IMP|2|Dictated by: Michael Maxwell Interpreter, M.D.||||||Final|||||T6530142^LOPEZ^JOHN<R>
+ZDS|2.25.222511728615441899271722324032146606514^EPIC^APPLICATION^DICOM<R>
+<EB>

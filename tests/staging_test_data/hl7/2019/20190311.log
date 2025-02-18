@@ -1,0 +1,11 @@
+2019-03-11 05:20:51.5937|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190311052051|TBD|ORU^R01|2.25.125414847645914595057446749161460471734|P|2.4<R>
+PID|1||ABC451004^^^ABC^MR~EPIC4485763^^^EPIC^MRN||PEREZ^THOMAS^MICHAEL^^^^D||19700404000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451004^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457381^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4011116^SYS|7795082816|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20190308202337|||PSCRIB|||||^^^^ |D7823224^MORGAN^JOHN^JEREMY^M.D.^^^^ABC|||||4185^XRay Angiography|20190311052051||IMG|||1^^^20190311052051^^U^^URGENT|       |||^Chest pain|D7823216^HALL^JEREMY^G.^^^M.D.|D7823228^MYERS^BRENT^A.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|481326||JEREMY HALL, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|481326||ACC#  Date Time  Exam~~7795082816 Mar 11 2019 05:20AM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray Angiography~~FINDINGS:~The angiographic study performed demonstrates normal visualization of~the cerebral vasculature. No intracranial aneurysms, arteriovenous~malformations, or significant stenoses are identified. The vascular~supply appears intact, with good opacification of the major cerebral~arteries, including the anterior, middle, and posterior cerebral~arteries. Contralateral filling is symmetric, and there are no~collateral pathways indicative of prior ischemia or vascular~compromise.~~IMPRESSION:~The X-ray angiography results highlight a normal cerebral vascular~anatomy with no detectable pathology.||||||P<R>
+OBX|3|TX|481326||Requested By: Morgan,John J. M.D.~~Dictated By: Jeremy Hall, M.D. on Mar 11 2019 05:20AM~~Pending review by: Brent Myers, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|481326|4|7795082816^UK^ZB||||||P<R>
+<EB>

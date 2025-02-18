@@ -1,0 +1,24 @@
+2006-03-28 07:24:27.9826|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060328072427|TBD|ORU^R01|2.25.40922561781105891526461165952313428934|P|2.7<R>
+PID|1||ABC451186^^^ABC^MR||JOHNSON^STACIE^SARA^^^^D||19471012|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084666|||||||||||||||||||||||||20060328072427|||||||V<R>
+ORC|RE|6512957^SYS|7795083546||Final||^^^20060328072426^20060328072427^O||20060328072427|T6530145^RUIZ^TARA||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6512957^SYS|7795083546|CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI|O|20060325162040|||||Hosp Perf||||^^^BRAIN|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060328072427||MR|Final||^^^20060328072426^20060328072427^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20060328072427||||||||CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|MRI findings are suggestive of mild age-related changes without acute||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|pathology; overall, a stable and unremarkable study. The MRI of the||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|brain demonstrates well-defined gray-white matter differentiation||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|without evidence of acute infarction or hemorrhage. The ventricles||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|are symmetrically dilated, with no midline shift. No enhancement or||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|mass effect is noted. Subcortical white matter shows mild, diffuse||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|hyperintensities on T2-weighted sequences, which may represent||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|age-related changes. There is no evidence of significant cortical||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|atrophy or mass lesions. The posterior fossa appears unremarkable,||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|with normal cerebellar and brainstem morphology.||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Final|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.156021581275814540781651920714218596407^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,30 @@
+2023-06-10 04:39:48.0516|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230610043948|TBD|ORU^R01|2.25.330819051455512379525522275498967367329|P|2.7<R>
+PID|1||ABC451065^^^ABC^MR||ΑΡΓΎΡΗΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19630112|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085045|||||||||||||||||||||||||20230610043948|||||||V<R>
+ORC|RE|9641852^SYS|7795083057||Prelim||^^^20230610043947^20230610043948^O||20230610043948|T6530148^GROSS^CARLY||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9641852^SYS|7795083057|M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR|O|20230609061511|||||Hosp Perf||||^^^PELVIS|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230610043948||MR|Prelim||^^^20230610043947^20230610043948^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20230610043948||||||||M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Pelvis PET-MR||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|The PET-MR scan findings reveal a concerning hypermetabolic ovarian||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|mass that warrants further investigation, including possible biopsy||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|and surgical consultation. This study shows a significant deviation||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|compared to previous imaging studies, with the feature of the lesion||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|raising suspicion for malignancy. A multidisciplinary approach is||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|recommended for further evaluation. The pelvis PET-MR scan reveals a||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|hypermetabolic lesion in the right ovary measuring approximately 3.2||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|cm, with increased uptake on the PET component indicative of||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|potential malignant transformation. Surrounding soft tissue edema is||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|noted, along with slight enhancement on the MR sequences suggesting||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|inflammation. The left ovary and uterus appear normal with no||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|significant abnormalities. Pelvic lymph nodes do not show uptake that||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|would indicate metastatic spread. The bladder and rectum are||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|unremarkable. The bone marrow signal demonstrates no evidence of||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|infiltration, though correlation with bone imaging may be necessary||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|20|ST|&IMP|2|to rule out distant disease.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|21|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.132131613748070863176795839277026389226^EPIC^APPLICATION^DICOM<R>
+<EB>

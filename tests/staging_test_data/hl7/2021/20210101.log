@@ -1,0 +1,11 @@
+2021-01-01 02:53:26.7658|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210101025326|TBD|ORU^R01|2.25.142668710506691086696862394994594837519|P|2.4<R>
+PID|1||ABC451094^^^ABC^MR~EPIC4485853^^^EPIC^MRN||LESTER^WILLIAM^GEOFFREY^^^^D||19340330000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451094^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457134^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4002673^SYS|7795083174|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20201230152007|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||2816^Ultrasound|20210101025326||IMG|||1^^^20210101025326^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|6171187||AMBER REESE, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6171187||ACC#  Date Time  Exam~~7795083174 Jan 01 2021 02:53AM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Ultrasound~~FINDINGS:~The abdominal ultrasound demonstrates a normal-sized liver with no~focal lesions or biliary dilation noted. The gallbladder appears~normal in wall thickness without signs of gallstones. The kidneys are~bilaterally visualized without hydronephrosis or masses; however,~some echogenic renal parenchyma raises suspicion of chronic changes~consistent with possible baseline chronic disease. The aorta shows no~significant aneurysmal dilation, and a normal sonographic appearance~of the pancreas is identified. No ascites or abdominal~lymphadenopathy is observed.~~IMPRESSION:~The abdominal ultrasound reveals a benign appearance of major~abdominal organs with some echogenicity noted in the kidneys~suggestive of chronic pathology which may warrant follow-up. No acute~findings are noted; clinical correlation is suggested.||||||F<R>
+OBX|3|TX|6171187||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Amber Reese, M.D. on Jan 01 2021 02:53AM~~This document has been electronically signed by: Amber Reese, M.D. on~Jan 01 2021 02:53AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6171187|4|7795083174^UK^ZB||||||F<R>
+<EB>

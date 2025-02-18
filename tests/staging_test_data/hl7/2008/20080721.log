@@ -1,0 +1,11 @@
+2008-07-21 20:54:44.6047|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20080721205444|TBD|ORU^R01|2.25.217447745142281777720842305980045090825|P|2.4<R>
+PID|1||ABC451099^^^ABC^MR~EPIC4485858^^^EPIC^MRN||HAMMOND^JOHN^CHRISTOPHER^^^^D||19391026000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451099^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823253^NIXON^MELISSA^D.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457222^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8788554^SYS|7795083195|M755570^755570 MR CARDIAC MRPH FUNC W/O^UNKDEV|URGENT||20080719091845|||PSCRIB|||||^^^^ |D7823255^HARVEY^MARK^WILLIAM^M.D.^^^^ABC|||||755570^HEART MRI Expedited|20080721205444||M|||1^^^20080721205444^^U^^URGENT|       |||^Chest pain|D7823254^CRUZ^JOSEPH^J.^^^M.D.|D7823245^MOORE^BRIAN^M.^^^M.D.||PSCRIB|||||||||755570<R>
+OBX|1|TX|5129010||JOSEPH CRUZ, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5129010||ACC#  Date Time  Exam~~7795083195 Jul 21 2008 08:54PM M755570 MR CARDIAC MRPH FUNC W/O~~EXAMINATION:~Heart MRI~~FINDINGS:~Cardiac MRI displays normal left and right ventricular size and~function. The left ventricular ejection fraction (LVEF) is quantified~at 65%, which is within normal limits. Cine imaging reveals robust~wall motion without any observable dyskinesia. There is no evidence~of late gadolinium enhancement indicative of myocardial infarction or~fibrosis, ruling out significant ischemic heart disease. The coronary~arteries appear patent and well-visualized, with no signs of plaque~formation nor luminal irregularity. Moreover, there are no effusions~or signs of pericardial inflammation present.~~IMPRESSION:~Cardiac MRI findings are indicative of a structurally normal heart~with no evidence of ischemic changes or myocardial pathology.~Recommend routine follow-up based on established cardiology~guidelines.||||||F<R>
+OBX|3|TX|5129010||Requested By: Harvey,Mark W. M.D.~~Dictated By: Joseph Cruz, M.D. on Jul 21 2008 08:54PM~~This document has been electronically signed by: Joseph Cruz, M.D. on~Jul 21 2008 08:54PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5129010|4|7795083195^UK^ZB||||||F<R>
+<EB>

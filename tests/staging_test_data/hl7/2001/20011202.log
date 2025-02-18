@@ -1,0 +1,29 @@
+2001-12-02 22:10:52.6577|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20011202221052|TBD|ORU^R01|2.25.307632122490632302458797646405099573896|P|2.7<R>
+PID|1||ABC451139^^^ABC^MR||SMITH^LISA^CRYSTAL^^^^D||19830918|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823217^SANCHEZ^ROY^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085030|||||||||||||||||||||||||20011202221052|||||||V<R>
+ORC|RE|9883249^SYS|7795083355||Prelim||^^^20011202221051^20011202221052^O||20011202221052|T6530143^FELIX^REBECCA||D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9883249^SYS|7795083355|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20011202131433|||||Hosp Perf|||||D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20011202221052||XA|Prelim||^^^20011202221051^20011202221052^O||||^Chest pain||D7823226^KENNEDY^JERI^A.^^^^^ABC^^^^HOSP|T6530143^FELIX^REBECCA||20011202221052||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|5|ST|&IMP|2|The angiographic study indicates normal cerebrovascular circulation||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|6|ST|&IMP|2|with no significant abnormalities identified. There are no changes||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|7|ST|&IMP|2|from previous studies that necessitate further intervention. The||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|8|ST|&IMP|2|vascular structures are unremarkable, and clinical correlation is||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|9|ST|&IMP|2|warranted for symptomatology evaluation. Recommend routine follow-up||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|10|ST|&IMP|2|to monitor vascular health. The X-ray angiography study reveals||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|11|ST|&IMP|2|patency of the major intracranial and cervical vessels including the||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|12|ST|&IMP|2|internal carotid arteries and vertebral arteries without evidence of||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|13|ST|&IMP|2|significant stenosis or occlusion. No abnormal vascular formations||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|14|ST|&IMP|2|such as aneurysms or arteriovenous malformations are observed. There||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|15|ST|&IMP|2|is absence of collateral circulation, which indicates no chronic||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|16|ST|&IMP|2|occlusive disease. The flow dynamics appear normal, and the venous||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|17|ST|&IMP|2|structures drain appropriately with no indication of venous||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|18|ST|&IMP|2|thrombosis. Noteworthy, the study shows no calcifications within the||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|19|ST|&IMP|2|arterial walls that might suggest atherosclerosis at this time.||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+OBX|20|ST|&IMP|2|Dictated by: Jeri Kennedy Interpreter, M.D.||||||Prelim|||||T6530143^FELIX^REBECCA<R>
+ZDS|2.25.70621833255249752395496827633583405087^EPIC^APPLICATION^DICOM<R>
+<EB>

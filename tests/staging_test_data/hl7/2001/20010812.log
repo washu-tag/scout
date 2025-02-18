@@ -1,0 +1,11 @@
+2001-08-12 16:27:28.4550|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010812162728|TBD|ORU^R01|2.25.114289762738256556619068585307596420036|P|2.4<R>
+PID|1||ABC451043^^^ABC^MR~EPIC4485802^^^EPIC^MRN||SMITH^STEPHAN^GERALD^^^^D||19540826000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451043^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457110^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7447619^SYS|7795082972|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||20010809165838|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||2361^Brain MRI|20010812162728||IMG|||1^^^20010812162728^^U^^URGENT|       |||^Chest pain|D7823240^PARSONS^ERNESTO^J.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|3009660||ERNESTO PARSONS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|3009660||ACC#  Date Time  Exam~~7795082972 Aug 12 2001 04:27PM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI conducted on 2001-08-09 demonstrates a symmetric and~unremarkable appearance of the cerebral hemispheres. The gray-white~matter differentiation is preserved. No focal lesions, including~infarcts or neoplasms, were identified. The ventricular system~appears normal, without evidence of hydrocephalus. There is no~midline shift or mass effect noted. The orbitofrontal regions, basal~ganglia, thalamus, and brainstem are intact. There are no abnormal~findings observed in diffusion-weighted imaging which would indicate~acute ischemia. Overall, the findings are consistent with a normal~brain MRI.~~IMPRESSION:~The MRI of the brain reveals no significant abnormalities, with all~structures appearing normal and within expected limits for a~47-year-old male. No evidence of acute or chronic intracranial~pathology.||||||F<R>
+OBX|3|TX|3009660||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Ernesto Parsons, M.D. on Aug 12 2001 04:27PM~~This document has been electronically signed by: Ernesto Parsons,~M.D. on Aug 12 2001 04:27PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3009660|4|7795082972^UK^ZB||||||F<R>
+<EB>

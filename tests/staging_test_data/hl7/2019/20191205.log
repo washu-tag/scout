@@ -1,0 +1,11 @@
+2019-12-05 02:17:17.3996|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20191205021717|TBD|ORU^R01|2.25.229291949724236858659964322135075640233|P|2.4<R>
+PID|1||ABC451148^^^ABC^MR~EPIC4485907^^^EPIC^MRN||PENA^ADAM^BRIAN^^Col.^^D||19890908000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451148^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457236^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3098031^SYS|7795083390|OMHEADWO^ MRI BRAIN WITHOUT CONTRAST^UNKDEV|URGENT||20191201123613|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||^HEAD MRI Expedited|20191205021717||OMHEADWO|||1^^^20191205021717^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB<R>
+OBX|1|TX|7995547||CURTIS HAWKINS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7995547||ACC#  Date Time  Exam~~7795083390 Dec 05 2019 02:17AM OMHEADWO MRI BRAIN WITHOUT CONTRAST~~EXAMINATION:~Head MRI~~FINDINGS:~On the head MRI, there are no significant acute intracranial~abnormalities noted. The cerebral cortical sulci demonstrate normal~width with no signs of edema or mass effects. The basal ganglia and~thalamus appear within normal limits. The previously noted right~temporal lesion from the 2013 MRI is stable in character but slightly~more demarcated, possibly indicating maturation. The cerebellum is~unremarkable and no hydrocephalus is identified. Noteworthy is the~presence of small perforating vessels contributing to chronic~ischemic changes in the periventricular white matter.~~IMPRESSION:~The head MRI indicates stable character of the previously identified~right temporal lesion and no new acute findings. The ischemic changes~present are consistent with a history of cerebrovascular stress,~recommend regular monitoring and possibly considering preventative~therapies considering the patient's age and health background.||||||F<R>
+OBX|3|TX|7995547||Requested By: Donovan,William C. M.D.~~Dictated By: Curtis Hawkins, M.D. on Dec 05 2019 02:17AM~~This document has been electronically signed by: Curtis Hawkins, M.D.~on Dec 05 2019 02:17AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7995547|4|7795083390^UK^ZB||||||F<R>
+<EB>

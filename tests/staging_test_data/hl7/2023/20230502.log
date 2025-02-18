@@ -1,0 +1,11 @@
+2023-05-02 08:57:32.1827|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230502085732|TBD|ORU^R01|2.25.322464399858010120212990654222986399610|P|2.4<R>
+PID|1||ABC451123^^^ABC^MR~EPIC4485882^^^EPIC^MRN||PALMER^LINDA^JENNIFER^^^^D||19841123000000|F||R|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451123^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457365^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9833856^SYS|7795083289|BHC76140^76140 76140 Outside Exam^UNKDEV|URGENT||20230501131135|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||76140^Outside Mammogram|20230502085732||BHC|||1^^^20230502085732^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||76140<R>
+OBX|1|TX|7301934||AMBER REESE, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7301934||ACC#  Date Time  Exam~~7795083289 May 02 2023 08:57AM BHC76140 76140 Outside Exam~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The single-view mammogram performed on 2023-05-01 shows a notable~change when compared to the previous mammogram dated 2023-01-13. The~left breast demonstrates a new distinct irregular density measuring~approximately 7mm in the upper outer quadrant, which warrants further~evaluation. This lesion exhibits subtle microcalcifications on a~magnified view, which were absent in the prior examination.~Surrounding parenchyma maintains its normal contour without edema.~The axillary regions appear free of suspicious lymph nodes.~~IMPRESSION:~The mammogram indicates the emergence of a potentially concerning~lesion in the left breast, with associated microcalcifications~suggesting a need for additional imaging, such as a diagnostic~mammogram or ultrasound. Given these changes from 2023-01-13, we~recommend timely follow-up for further assessment.||||||F<R>
+OBX|3|TX|7301934||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Amber Reese, M.D. on May 02 2023 08:57AM~~This document has been electronically signed by: Amber Reese, M.D. on~May 02 2023 08:57AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7301934|4|7795083289^UK^ZB||||||F<R>
+<EB>

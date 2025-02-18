@@ -1,0 +1,11 @@
+2005-02-27 13:16:32.7957|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20050227131632|TBD|ORU^R01|2.25.142019792603101314692193199739620141274|P|2.4<R>
+PID|1||ABC451103^^^ABC^MR~EPIC4485862^^^EPIC^MRN||COLLINS^NICKOLAS^LARRY^^^^D||19511215000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451103^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457317^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8942600^SYS|7795083209|IMG2347^2347 MRI BRAIN WO CONTRAST^UNKDEV|URGENT||20050227103213|||PSCRIB|||||^^^^ |D7823235^SANCHEZ^GUY^JEFFREY^M.D.^^^^ABC|||||2347^BRAIN MRI Expedited|20050227131632||IMG|||1^^^20050227131632^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||2347<R>
+OBX|1|TX|7778496||GUY SANCHEZ, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|7778496||ACC#  Date Time  Exam~~7795083209 Feb 27 2005 01:16PM IMG2347 MRI BRAIN WO CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI demonstrates unremarkable morphology and echogenicity~of cortical and subcortical structures. The ventricular system is~within normal limits in size and configuration. There are no abnormal~masses, and there is no evidence of acute ischemia or prior~hemorrhage. The diffusion-weighted imaging sequences show no areas of~restricted diffusion. The vasculature visualized on the~time-of-flight MRA exhibits normal flow voids, and the major~intracranial vessels are patent. Brain parenchyma demonstrates no~significant microangiopathic changes. Scattered foci of T2~hyperintensities in the white matter may be consistent with small~vessel ischemic change typical for aging, but no acute pathology is~evident.~~IMPRESSION:~1. No evidence of acute neurological events; the brain MRI is largely~unremarkable. 2. Findings may indicate benign age-related changes,~but no intervention is necessary at this time.||||||F<R>
+OBX|3|TX|7778496||Requested By: Sanchez,Guy J. M.D.~~Dictated By: Guy Sanchez, M.D. on Feb 27 2005 01:16PM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Feb 27 2005 01:16PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7778496|4|7795083209^UK^ZB||||||F<R>
+<EB>

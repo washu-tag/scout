@@ -1,0 +1,11 @@
+2013-01-12 02:06:23.8089|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130112020623|TBD|ORU^R01|2.25.226869638384319499347767394834028263601|P|2.4<R>
+PID|1||ABC451022^^^ABC^MR~EPIC4485781^^^EPIC^MRN||REYES^MEGAN^PATRICIA^^^^D||19711117000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451022^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457244^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3061698^SYS|7795082885|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20130108143531|||PSCRIB|||||^^^^ |D7823240^PARSONS^ERNESTO^JOHN^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20130112020623||IMG|||1^^^20130112020623^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|4649221||RUSSELL GALLAGHER, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|4649221||ACC#  Date Time  Exam~~7795082885 Jan 12 2013 02:06AM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdominal X-ray reveals a mildly distended stomach; however, the~bowel gas pattern is within normal limits with no significant~air-fluid levels observed. The liver, spleen, and kidneys are within~normal radiographic limits, exhibiting no signs of significant hypo-~or hyperdensity. No free air or fluid is visualized beneath the~diaphragm and there are no renal calculi noted. The psoas shadows~remain well defined, indicating no retroperitoneal pathology or mass~effect. Gas distribution appears physiologic and consistent with~normal dietary habits.~~IMPRESSION:~Evaluation of the abdomen is unremarkable apart from mild gastric~distension. There are no acute abdominal conditions noted on the~imaging study from 2013-01-08, presenting a contrast to earlier~studies.||||||P<R>
+OBX|3|TX|4649221||Requested By: Parsons,Ernesto J. M.D.~~Dictated By: Russell Gallagher, M.D. on Jan 12 2013 02:06AM~~Pending review by: Michael Marks, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|4649221|4|7795082885^UK^ZB||||||P<R>
+<EB>

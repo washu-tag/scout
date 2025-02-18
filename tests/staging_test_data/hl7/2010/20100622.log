@@ -1,0 +1,28 @@
+2010-06-22 17:02:39.6330|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100622170239|TBD|ORU^R01|2.25.310286801943833629244962681502106279733|P|2.7<R>
+PID|1||ABC451133^^^ABC^MR||CAMPBELL^ANN^CHRISTINA^^^^D||19200825|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823275^SMITH^STEPHANIE^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084948|||||||||||||||||||||||||20100622170239|||||||V<R>
+ORC|RE|745929^SYS|7795083328||Final||^^^20100622170238^20100622170239^O||20100622170239|T6530210^JOHNSON^TARA||D7823289^CERVANTES^DEBORAH^H.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|745929^SYS|7795083328|OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED|O|20100618145457|||||Hosp Perf||||^^^HEAD|D7823289^CERVANTES^DEBORAH^H.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20100622170239||MR|Final||^^^20100622170238^20100622170239^O||||^Chest pain||D7823281^HOUSTON^CARLOS^P.^^^^^ABC^^^^HOSP|T6530210^JOHNSON^TARA||20100622170239||||||||OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head MRI||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|5|ST|&IMP|2|This MRI study shows no significant interval changes compared to the||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|6|ST|&IMP|2|prior exam from 2008-09-20, reinforcing prior conclusions regarding||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|7|ST|&IMP|2|chronic small vessel disease without acute intracranial pathology. As||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|8|ST|&IMP|2|such, no immediate intervention is indicated. This MRI of the head||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|9|ST|&IMP|2|performed on 2010-06-18 demonstrates stability in morphology when||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|10|ST|&IMP|2|compared to the previous head MRI dated 2008-09-20. The scattered||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|11|ST|&IMP|2|punctate hyperintensities on T2-weighted images remain unchanged and||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|12|ST|&IMP|2|still correlate with previous findings of small vessel ischemic||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|13|ST|&IMP|2|changes. Ventricular size and midline structures are unchanged,||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|14|ST|&IMP|2|maintaining a normal configuration with no evidence of new lesions or||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|15|ST|&IMP|2|areas suggesting hyperacute ischemia or acute intracranial events. No||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|16|ST|&IMP|2|mass lesions, edema, or midline shifts are noted. The brainstem,||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|17|ST|&IMP|2|cerebellum, and cranial nerves show normal signal intensity and||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|18|ST|&IMP|2|anatomy.||||||Final|||||T6530210^JOHNSON^TARA<R>
+OBX|19|ST|&IMP|2|Dictated by: Carlos Houston Interpreter, M.D.||||||Final|||||T6530210^JOHNSON^TARA<R>
+ZDS|2.25.329578671383230091443830943306065030066^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2018-01-22 01:10:52.8894|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180122011052|TBD|ORU^R01|2.25.176025916147628584183373054599862195957|P|2.4<R>
+PID|1||ABC451125^^^ABC^MR~EPIC4485884^^^EPIC^MRN||GRIFFIN^GERALD^JAMES^^^^D||19350928000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451125^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457390^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8478622^SYS|7795083295|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20180119093016|||PSCRIB|||||^^^^ |D7823240^PARSONS^ERNESTO^JOHN^M.D.^^^^ABC|||||2816^Ultrasound|20180122011052||IMG|||1^^^20180122011052^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|6822874||CURTIS HAWKINS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|6822874||ACC#  Date Time  Exam~~7795083295 Jan 22 2018 01:10AM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Ultrasound~~FINDINGS:~The ultrasound of the pelvis reveals the prostate gland to be~markedly enlarged, measuring approximately 50 cc, with heterogeneous~echogenicity consistent with possible benign prostatic hyperplasia~(BPH). No hypervascular lesions or focal masses are detected. The~bladder appears optimally distended with a few trabeculations but~shows no signs of wall thickening or lesions. The seminal vesicles~are symmetric and normal in appearance. No free fluid is detected in~the pelvic cavity, and the kidneys are bilaterally normal without~hydronephrosis. Also, a normal retroperitoneal fat plane is observed~without abnormal lymphadenopathy. The examination closely correlates~with the clinical findings of LUTS (lower urinary tract symptoms).~~IMPRESSION:~1. Enlarged prostate likely indicative of benign prostatic~hyperplasia without evidence of malignancy.~2. Normal bladder and seminal vesicle morphology; no additional~pelvic abnormalities noted.||||||P<R>
+OBX|3|TX|6822874||Requested By: Parsons,Ernesto J. M.D.~~Dictated By: Curtis Hawkins, M.D. on Jan 22 2018 01:10AM~~Pending review by: Michael Marks, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|6822874|4|7795083295^UK^ZB||||||P<R>
+<EB>

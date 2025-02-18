@@ -1,0 +1,11 @@
+2012-11-08 16:29:52.8797|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20121108162952|TBD|ORU^R01|2.25.300208649804390721848559913492696213609|P|2.4<R>
+PID|1||ABC451158^^^ABC^MR~EPIC4485917^^^EPIC^MRN||MATTHEWS^ANDRES^MATTHEW^M.D.^^^D||19260816000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451158^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457224^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8989251^SYS|7795083428|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||20121105195453|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||70553^Brain dMRI|20121108162952||CMRP|||1^^^20121108162952^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|5819949||CURTIS HAWKINS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5819949||ACC#  Date Time  Exam~~7795083428 Nov 08 2012 04:29PM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~Follow-up Brain MRI~~FINDINGS:~Compared to the previous study dated 2012-02-01 (UID:~2.25.41278037274604791725923416831715888276), there is progressive~cerebral atrophy with an increase in the size of the lateral~ventricles and the presence of newly developed subcortical white~matter hyperintensities. The extent of ischemic changes appears~slightly increased. No acute change with respect to mass lesions or~intracranial hemorrhage is noted. Significant contacts with the~medullary cholinergic system are preserved bilaterally, with no new~findings that would suggest acute pathology.~~IMPRESSION:~Progression of age-related atrophy and small vessel disease compared~to the prior brain MRI from 2012-02-01. Regular monitoring is~warranted. Consider further neurocognitive assessment as the findings~may correlate with decline in cognitive function.||||||F<R>
+OBX|3|TX|5819949||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Curtis Hawkins, M.D. on Nov 08 2012 04:29PM~~This document has been electronically signed by: Curtis Hawkins, M.D.~on Nov 08 2012 04:29PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5819949|4|7795083428^UK^ZB||||||F<R>
+<EB>

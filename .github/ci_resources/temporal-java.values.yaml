@@ -1,0 +1,20 @@
+nameOverride: temporal-java
+image:
+  repository: docker.io/local/washu-tag/temporal-java
+  tag: latest
+envFrom:
+  - secretRef:
+      name: s3-secret
+  - configMapRef:
+      name: s3-env
+env:
+  - name: TZ
+    value: 'US/Central'
+volumes:
+  - name: hl7logs
+    hostPath:
+      path: /var/lib/scout/tests/staging_test_data/hl7
+volumeMounts:
+  - name: hl7logs
+    mountPath: /hl7logs
+    readOnly: true

@@ -1,0 +1,31 @@
+2006-04-11 01:26:40.7973|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060411012640|TBD|ORU^R01|2.25.23394565379780018195031023500559173793|P|2.7<R>
+PID|1||ABC451133^^^ABC^MR||CAMPBELL^ANN^CHRISTINA^^^^D||19200825|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084950|||||||||||||||||||||||||20060411012640|||||||V<R>
+ORC|RE|5474386^SYS|7795083332||Wet Read||^^^20060411012639^20060411012640^O||20060411012640|T6530149^VASQUEZ^MISTY||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5474386^SYS|7795083332|CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI|O|20060409083400|||||Hosp Perf||||^^^BRAIN|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060411012640||MR|Wet Read||^^^20060411012639^20060411012640^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20060411012640||||||||CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|The brain MRI reveals benign atrophic changes consistent with aging,||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|with no acute intracranial pathology identified. Chronic ischemic||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|changes are present but do not raise any immediate clinical concern.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|No intervention is warranted at this time. The MRI of the brain||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|demonstrates significant age-related changes, including moderate||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|ventricular enlargement, particularly of the lateral and third||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|ventricles, consistent with a benign atrophic process. No acute||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|intracranial abnormalities are noted, such as hemorrhage or mass||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|effect. The cerebral parenchyma shows subtle hyperintensities on||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|T2-weighted images, primarily located in the periventricular and||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|subcortical regions, likely representing chronic small vessel||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|ischemic changes. The basal ganglia and thalami appear unremarkable,||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|with no evidence of focal lesions or demyelination. There is no||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|18|ST|&IMP|2|midline shift. The cranial structures are intact with no evidence of||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|19|ST|&IMP|2|abnormal enhancement post-contrast administration. The orbits,||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|20|ST|&IMP|2|brainstem, and cerebellum are unremarkable. Overall, the findings||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|21|ST|&IMP|2|suggest a stable and typical pattern for a patient of this age.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+OBX|22|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Wet Read|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.182629738446263279295799542750852573409^EPIC^APPLICATION^DICOM<R>
+<EB>

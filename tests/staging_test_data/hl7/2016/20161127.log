@@ -1,0 +1,29 @@
+2016-11-27 08:59:43.3124|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20161127085943|TBD|ORU^R01|2.25.307015198238066774119291625866961856095|P|2.7<R>
+PID|1||ABC451122^^^ABC^MR||CHANG^HA-JOON^^^^^D||19350622|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084902|||||||||||||||||||||||||20161127085943|||||||V<R>
+ORC|RE|1171410^SYS|7795083288||Wet Read||^^^20161127085942^20161127085943^O||20161127085943|||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1171410^SYS|7795083288|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20161123201555|||||Hosp Perf|||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20161127085943||DX|Wet Read||^^^20161127085942^20161127085943^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|||20161127085943||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|1. Normal chest X-ray findings with no acute pulmonary processes||||||Wet Read<R>
+OBX|6|ST|&IMP|2|evident. 2. Mild physiologic age-related changes noted; however,||||||Wet Read<R>
+OBX|7|ST|&IMP|2|these are within the expected range. 3. Continued monitoring||||||Wet Read<R>
+OBX|8|ST|&IMP|2|recommended given the patient’s age and prior vascular health. The||||||Wet Read<R>
+OBX|9|ST|&IMP|2|anteroposterior view of the chest demonstrates clear lung fields||||||Wet Read<R>
+OBX|10|ST|&IMP|2|bilaterally with no evidence of infiltrates, consolidations, or||||||Wet Read<R>
+OBX|11|ST|&IMP|2|effusions. The cardiac silhouette is within normal limits, and the||||||Wet Read<R>
+OBX|12|ST|&IMP|2|mediastinum appears central without any shift. Bony structures||||||Wet Read<R>
+OBX|13|ST|&IMP|2|visualized, including the ribs and spine, present no acute fractures||||||Wet Read<R>
+OBX|14|ST|&IMP|2|or destructive lesions. The diaphragm is well-defined and appears||||||Wet Read<R>
+OBX|15|ST|&IMP|2|intact without signs of herniation. Notably, there is a mild increase||||||Wet Read<R>
+OBX|16|ST|&IMP|2|in the aortic knob shadow, which may suggest age-related changes but||||||Wet Read<R>
+OBX|17|ST|&IMP|2|no significant abnormalities are evident that warrant further||||||Wet Read<R>
+OBX|18|ST|&IMP|2|investigation. Overall, the lung volumes are well aerated and there||||||Wet Read<R>
+OBX|19|ST|&IMP|2|are no signs of obstructive changes.||||||Wet Read<R>
+OBX|20|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.27799250894111299732186656604434724003^EPIC^APPLICATION^DICOM<R>
+<EB>

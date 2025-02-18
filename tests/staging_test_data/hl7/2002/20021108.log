@@ -1,0 +1,25 @@
+2002-11-08 05:24:27.7240|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20021108052427|TBD|ORU^R01|2.25.201739661622263317400934770712728344601|P|2.7<R>
+PID|1||ABC450997^^^ABC^MR||BOYD^MEGAN^CONNIE^^^^D||19391212|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084764|||||||||||||||||||||||||20021108052427|||||||V<R>
+ORC|RE|1423860^SYS|7795082790||Wet Read||^^^20021108052426^20021108052427^O||20021108052427|T6530151^WATERS^JESSICA||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1423860^SYS|7795082790|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20021104075041|||||Hosp Perf||||^^^ABDOMEN|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20021108052427||CR|Wet Read||^^^20021108052426^20021108052427^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20021108052427||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|Normal abdominal X-ray without acute pathology observed. No action||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|required, standard follow-up recommended. The abdominal X-ray||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|demonstrates normal gas patterns and the distribution of||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|gastrointestinal contents consistent with a healthy digestive system.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|The liver, spleen, and kidneys are identified, all within normal size||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|and configuration. No evidence of free air under the diaphragm or||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|bowel obstruction is observed. The bony structures of the lumbar||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|spine appear intact, without fractures or lesions. There is no||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|evidence of calculi in the renal or vesicular regions. Overall, the||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|abdominal organs are positioned correctly, and the soft tissue||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|appears unremarkable.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.29805696302498543454800286008820284090^EPIC^APPLICATION^DICOM<R>
+<EB>

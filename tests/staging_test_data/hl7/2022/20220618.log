@@ -1,0 +1,11 @@
+2022-06-18 06:11:04.0208|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220618061104|TBD|ORU^R01|2.25.100431019035625280299799794119375506306|P|2.4<R>
+PID|1||ABC451149^^^ABC^MR~EPIC4485908^^^EPIC^MRN||FOLEY^HEATHER^CASSIE^^^^D||19930826000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451149^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457266^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6220520^SYS|7795083396|IMG5017^5017 PET/CT FDG WHOLE BODY^UNKDEV|URGENT||20220615114612|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||5017^Wholebody Petct AC NAC|20220618061104||IMG|||1^^^20220618061104^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB|||||||||5017<R>
+OBX|1|TX|8384686||RUSSELL GALLAGHER, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|8384686||ACC#  Date Time  Exam~~7795083396 Jun 18 2022 06:11AM IMG5017 PET/CT FDG WHOLE BODY~~EXAMINATION:~Whole-body PET-CT~~FINDINGS:~The PET-CT scan reveals no hypermetabolic activity indicative of~malignancy. All visualized organs, including the lungs, liver, and~lymph nodes, exhibit normal metabolic activity with no evidence of~pathological uptake. Skeletal structures are unremarkable without~suspicious lesions. Incidental findings include mild bilateral~thyroid nodules with no concerning characteristics. Overall, the~examination does not demonstrate significant focal lesions or~abnormal metabolic processes.~~IMPRESSION:~Whole-body PET-CT shows no evidence of malignancy or significant~abnormality, with normal findings across all evaluated systems.||||||F<R>
+OBX|3|TX|8384686||Requested By: Reese,Amber J. M.D.~~Dictated By: Russell Gallagher, M.D. on Jun 18 2022 06:11AM~~This document has been electronically signed by: Russell Gallagher,~M.D. on Jun 18 2022 06:11AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8384686|4|7795083396^UK^ZB||||||F<R>
+<EB>

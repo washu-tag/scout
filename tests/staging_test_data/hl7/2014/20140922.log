@@ -1,0 +1,11 @@
+2014-09-22 01:26:45.7300|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140922012645|TBD|ORU^R01|2.25.302933890263035413231721107305176655650|P|2.4<R>
+PID|1||ABC451023^^^ABC^MR~EPIC4485782^^^EPIC^MRN||LAWSON^TONYA^EMILY^^^^D||19881007000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451023^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457271^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6653185^SYS|7795082890|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||20140920081241|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|20140922012645||IMG|||1^^^20140922012645^^U^^URGENT|       |||^Chest pain|D7823238^HUNT^APRIL^M.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|6979214||APRIL HUNT, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|6979214||ACC#  Date Time  Exam~~7795082890 Sep 22 2014 01:26AM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~The MRI of the chest shows normal pulmonary parenchyma without~evidence of mass lesions, consolidations, or interstitial lung~disease. The heart appears structurally normal with no pericardial~effusion; however, a small area of mild subendocardial enhancement is~present, possibly suggesting early ischemic changes. The aorta is~unremarkable, and the thoracic lymph nodes are neither enlarged nor~hypermetabolic. The breasts were not evaluated in detail as this~study primarily focused on the thoracic cavity.~~IMPRESSION:~No significant abnormalities were detected on chest MRI, though the~noted myocardial enhancement may warrant further cardiology~evaluation for potential ischemic heart disease.||||||P<R>
+OBX|3|TX|6979214||Requested By: Wright,Jessica M. M.D.~~Dictated By: April Hunt, M.D. on Sep 22 2014 01:26AM~~Pending review by: Guy Sanchez, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|6979214|4|7795082890^UK^ZB||||||P<R>
+<EB>

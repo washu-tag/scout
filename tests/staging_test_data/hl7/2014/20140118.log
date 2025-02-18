@@ -1,0 +1,30 @@
+2014-01-18 10:53:52.3006|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140118105352|TBD|ORU^R01|2.25.215659183410457828260281816136663407246|P|2.7<R>
+PID|1||ABC451068^^^ABC^MR||JONES^PEARL^TAMMY^^^^D||19690709|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084653|||||||||||||||||||||||||20140118105352|||||||V<R>
+ORC|RE|6544349^SYS|7795083070||Wet Read||^^^20140118105351^20140118105352^O||20140118105352|T6530151^WATERS^JESSICA||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6544349^SYS|7795083070|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20140113204442|||||Hosp Perf|||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20140118105352||US|Wet Read||^^^20140118105351^20140118105352^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20140118105352||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Breast ultrasound||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|In conclusion, the breast ultrasound dated 2014-01-13 indicates the||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|presence of benign-appearing fibroadenomas in the left breast with no||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|changes from previous imaging. The right breast is entirely normal||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|with no lesions. The findings are consistent with a stable course and||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|suggest continued routine follow-up as per standard practice. The||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|breast ultrasound performed on 2014-01-13 reveals an evaluation of||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|the right and left breasts. The evaluation demonstrates several||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|well-circumscribed, hypoechoic structures in the upper outer quadrant||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|of the left breast, measuring approximately 1.2 cm in diameter, which||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|appear consistent with benign fibroadenomas. No suspicious||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|vascularity is noted on Doppler assessment. The right breast is||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|unremarkable, exhibiting normal parenchyma with no focal masses or||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|cysts. Axillary lymph nodes are assessed and reveal no||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|18|ST|&IMP|2|lymphadenopathy or cortical thickening. This ultrasound indicates a||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|19|ST|&IMP|2|stable appearance of the previously noted benign findings in the left||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|20|ST|&IMP|2|breast compared to the prior evaluations.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|21|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.109551828994187186889811422733433002788^EPIC^APPLICATION^DICOM<R>
+<EB>

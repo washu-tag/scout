@@ -1,0 +1,22 @@
+1998-12-10 16:00:56.2230|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19981210160056|TBD|ORU^R01|2.25.186606460945516858388628196394996947225|P|2.7<R>
+PID|1||ABC451045^^^ABC^MR||WALSH^ANGEL^CARRIE^^^^D||19550621|F||UNABLE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084714|||||||||||||||||||||||||19981210160056|||||||V<R>
+ORC|RE|6550353^SYS|7795082978||Final||^^^19981210160055^19981210160056^O||19981210160056|||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6550353^SYS|7795082978|BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM|O|19981207061302|||||Hosp Perf||||^^^BREAST|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19981210160056||OT|Final||^^^19981210160055^19981210160056^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|||19981210160056||||||||BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|Mammographic findings are consistent with benign fibroglandular||||||Final<R>
+OBX|6|ST|&IMP|2|tissue changes. No malignant lesions identified. Annual follow-up is||||||Final<R>
+OBX|7|ST|&IMP|2|appropriate. The left and right breasts show no evidence of mass||||||Final<R>
+OBX|8|ST|&IMP|2|lesions or suspicious calcifications. The breast parenchyma is||||||Final<R>
+OBX|9|ST|&IMP|2|predominantly fibro-glandular, and no architectural distortion is||||||Final<R>
+OBX|10|ST|&IMP|2|identified. Subcutaneous fat and skin contours are normal. Axillary||||||Final<R>
+OBX|11|ST|&IMP|2|lymph nodes are not enlarged. Comparison to previous mammograms||||||Final<R>
+OBX|12|ST|&IMP|2|reveals no new findings or abnormalities.||||||Final<R>
+OBX|13|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Final<R>
+ZDS|2.25.292497224941203347531207138540030564606^EPIC^APPLICATION^DICOM<R>
+<EB>

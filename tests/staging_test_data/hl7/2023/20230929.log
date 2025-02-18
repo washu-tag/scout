@@ -1,0 +1,31 @@
+2023-09-29 01:49:58.2744|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230929014958|TBD|ORU^R01|2.25.299876852166675370550685622375973692418|P|2.7<R>
+PID|1||ABC451125^^^ABC^MR||GRIFFIN^GERALD^JAMES^^^^D||19350928|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084954|||||||||||||||||||||||||20230929014958|||||||V<R>
+ORC|RE|3508122^SYS|7795083296||Final||^^^20230929014957^20230929014958^O||20230929014958|T6530145^RUIZ^TARA||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3508122^SYS|7795083296|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20230924184036|||||Hosp Perf|||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230929014958||US|Final||^^^20230929014957^20230929014958^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20230929014958||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|1. Persistent enlargement of the prostate consistent with benign||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|prostatic hyperplasia; no new concerning features identified compared||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|to prior ultrasound.||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|2. Stable findings of the urinary system with no acute abnormalities||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|present. Assessment remains reassuring. In comparison to the previous||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|ultrasound dated 2018-01-19, this recent pelvic ultrasound confirms||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|persistent enlargement of the prostate, now measuring approximately||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|55 cc. The echogenicity remains heterogeneous; however, no new focal||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|lesions arise. The vascularity appears slightly increased but does||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|not suggest malignancy. The bladder again shows mild trabeculation||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|with no significant wall abnormalities, and the renal ultrasound||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|demonstrates normal bilateral anatomy without any evidence of||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|obstruction or mass effect. Notably, there are small calcifications||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|within the prostate, likely indicative of chronicity yet with no||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|19|ST|&IMP|2|suspicious lesions detectable. No ascites is noted during this||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|20|ST|&IMP|2|examination, and the outside findings correlate with ongoing benign||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|21|ST|&IMP|2|issues without acute intervention required at present.||||||Final|||||T6530145^RUIZ^TARA<R>
+OBX|22|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Final|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.314313273706932980781138772061621496889^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2007-06-16 15:35:21.4308|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20070616153521|TBD|ORU^R01|2.25.168608023676556370826139507397261779532|P|2.4<R>
+PID|1||ABC451001^^^ABC^MR~EPIC4485760^^^EPIC^MRN||CANTU^KEVIN^BRANDON^^^^D||19450220000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451001^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457277^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||227776^SYS|7795082801|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20070614060529|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||8452^NM MPI SPECT|20070616153521||H|||1^^^20070616153521^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|2693339||CURTIS HAWKINS, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|2693339||ACC#  Date Time  Exam~~7795082801 Jun 16 2007 03:35PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~The nuclear medicine evaluation of cardiac perfusion showed normal~tracer uptake throughout the myocardium at rest, with no areas of~ischemia or perfusion defects evident in the stress phase. Left~ventricular ejection fraction is calculated at 65%, indicative of~good systolic function. The wall motion is normal, and there are no~significant areas of hypokinesis or akinesis. There are no findings~suggestive of myocardial infarction. Comparatively, there are slight~differences when assessed against the prior study (UID:~2.25.166597577412375575820821277446245974555) which shows an improved~systolic function and no new abnormalities.~~IMPRESSION:~Normal perfusion study with preserved cardiac function. No~significant changes or abnormalities in comparison to previous~cardiac NM studies.||||||P<R>
+OBX|3|TX|2693339||Requested By: Reese,Amber J. M.D.~~Dictated By: Curtis Hawkins, M.D. on Jun 16 2007 03:35PM~~Pending review by: Ernesto Parsons, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|2693339|4|7795082801^UK^ZB||||||P<R>
+<EB>

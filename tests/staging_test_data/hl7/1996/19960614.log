@@ -1,0 +1,34 @@
+1996-06-14 04:31:12.6957|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19960614043112|TBD|ORU^R01|2.25.150609419075593714052741718213123191176|P|2.7<R>
+PID|1||ABC451147^^^ABC^MR||ANDERSON^JOSHUA^CHARLES^Sr.^^^D||19491102|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084777|||||||||||||||||||||||||19960614043112|||||||V<R>
+ORC|RE|8748883^SYS|7795083386||Final||^^^19960614043111^19960614043112^O||19960614043112|T6530138^FIELDS^VICTORIA||D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8748883^SYS|7795083386|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|19960612121724|||||Hosp Perf||||^^^HEART|D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19960614043112||NM|Final||^^^19960614043111^19960614043112^O||||^Chest pain||D7823221^MAXWELL^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530138^FIELDS^VICTORIA||19960614043112||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|5|ST|&IMP|2|The findings of the cardiac NM study are consistent with prior||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|6|ST|&IMP|2|angiographic results indicating myocardial ischemia due to left||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|7|ST|&IMP|2|anterior descending artery stenosis. The presence of reduced||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|8|ST|&IMP|2|perfusion in the anterior wall correlates with the regions of||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|9|ST|&IMP|2|stenosis documented, indicating potential reversibility upon||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|10|ST|&IMP|2|intervention. Further assessment or revascularization strategies||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|11|ST|&IMP|2|should be discussed, given the implications of compromised perfusion.||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|12|ST|&IMP|2|Continued monitoring of symptoms and repeat imaging at regular||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|13|ST|&IMP|2|intervals is advised. The cardiac nuclear medicine study conducted on||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|14|ST|&IMP|2|June 12, 1996, reveals resting sestamibi perfusion imaging||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|15|ST|&IMP|2|demonstrating preserved left ventricular (LV) function with an||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|16|ST|&IMP|2|ejection fraction of approximately 60%. However, there is noted||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|17|ST|&IMP|2|hypoperfusion in the anterior wall correlating with the stenosis||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|18|ST|&IMP|2|observed in the previous angiography. This area demonstrates reduced||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|19|ST|&IMP|2|tracer uptake suggestive of inducible ischemia. The perfusion||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|20|ST|&IMP|2|deficits are not reversible with stress testing, suggesting a degree||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|21|ST|&IMP|2|of irreversible myocardial damage in the region. No significant wall||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|22|ST|&IMP|2|motion abnormalities are seen at rest, and the right ventricular||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|23|ST|&IMP|2|function appears within normal limits. No evidence of previous||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|24|ST|&IMP|2|myocardial infarction is observed.||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|25|ST|&IMP|2|Dictated by: Michael Maxwell Interpreter, M.D.||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+ZDS|2.25.226962172476475917485205961031342500913^EPIC^APPLICATION^DICOM<R>
+<EB>

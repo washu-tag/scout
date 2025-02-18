@@ -1,0 +1,25 @@
+2013-08-23 18:27:23.6109|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130823182723|TBD|ORU^R01|2.25.277988090897673462769321829382853807805|P|2.7<R>
+PID|1||ABC450993^^^ABC^MR||ΘΕΟΔΩΡΆΚΗΣ^ΆΛΈΞΙΟΣ^^^^^D||19760421|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823219^LOGAN^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084661|||||||||||||||||||||||||20130823182723|||||||V<R>
+ORC|RE|9525328^SYS|7795082774||Prelim||^^^20130823182722^20130823182723^O||20130823182723|T6530138^FIELDS^VICTORIA||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9525328^SYS|7795082774|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20130821143752|||||Hosp Perf|||||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20130823182723||XA|Prelim||^^^20130823182722^20130823182723^O||||^Chest pain||D7823222^POWELL^CARRIE^J.^^^^^ABC^^^^HOSP|T6530138^FIELDS^VICTORIA||20130823182723||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray Angiography Study||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|5|ST|&IMP|2|Normal coronary angiographic study results indicate no significant||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|6|ST|&IMP|2|coronary artery disease. This is a reassuring outcome in the context||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|7|ST|&IMP|2|of a patient potentially at risk for ischemic heart disease. The||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|8|ST|&IMP|2|X-ray angiography study performed on August 21, 2013, demonstrated||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|9|ST|&IMP|2|patent coronary arteries with no significant stenotic lesions||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|10|ST|&IMP|2|identified. The left main coronary artery, left anterior descending,||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|11|ST|&IMP|2|and circumflex arteries are visualized and show normal lumen caliber||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|12|ST|&IMP|2|and morphology. There is no evidence of collateral circulation. The||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|13|ST|&IMP|2|right coronary artery is also patent with no lesions encountered. The||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|14|ST|&IMP|2|coronary flow reserve appears uncompromised. The study was performed||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|15|ST|&IMP|2|with optimal technique, and there were no complications.||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+OBX|16|ST|&IMP|2|Dictated by: Carrie Powell Interpreter, M.D.||||||Prelim|||||T6530138^FIELDS^VICTORIA<R>
+ZDS|2.25.171625245905880583771365509796621667885^EPIC^APPLICATION^DICOM<R>
+<EB>

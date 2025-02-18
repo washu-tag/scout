@@ -1,0 +1,35 @@
+2015-12-09 17:25:14.0823|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20151209172514|TBD|ORU^R01|2.25.192960432316681054421066021537226213483|P|2.7<R>
+PID|1||ABC451007^^^ABC^MR||DURAN^TIFFANY^SADIE^^^^D||19940922|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084853|||||||||||||||||||||||||20151209172514|||||||V<R>
+ORC|RE|2852422^SYS|7795082826||Prelim||^^^20151209172513^20151209172514^O||20151209172514|T6530146^MOORE^CURTIS||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2852422^SYS|7795082826|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC|O|20151209061800|||||Hosp Perf||||^^^ABDOMEN|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20151209172514||CT|Prelim||^^^20151209172513^20151209172514^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20151209172514||||||||CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-CT performed for assessment of liver lesion evolution.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|1. Progression of metabolic activity in the liver lesion originally||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|identified; this may indicate hepatocellular carcinoma or metastatic||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|disease. Recommend liver biopsy to assess malignant potential and||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|necessary staging criteria.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|2. New hypermetabolic lesion in the right lung, suggestive of a||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|possible primary lung malignancy or metastasis from a status in the||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|liver. Recommend a repeat CT thorax for further characterization.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|3. Left renal findings necessitate a follow-up renal ultrasound to||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|rule out adenopathy. Follow-up PET-CT reveals unchanged||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|hypermetabolic activity in the liver, specifically in segment 4, with||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|an SUV max now measuring 3.5. Although there is slight firmness to||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|borders appearing, the general architecture of the liver itself||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|remains unaltered when compared to the prior study dated 2013-01-17.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|Notably, there is a new area of increased uptake seen in the right||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|19|ST|&IMP|2|lower lobe of the lung, with an SUV max of 4.0, which was not present||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|20|ST|&IMP|2|on the previous PET scan. The pancreas continues to be unremarkable,||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|21|ST|&IMP|2|with no focal lesions, and the spleen remains normal in dimension.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|22|ST|&IMP|2|Renal contours are preserved, but subtle changes in the left renal||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|23|ST|&IMP|2|hilum may suggest a lymphadenopathy concern that warrants further||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|24|ST|&IMP|2|investigation. No significant portal or splenic vein thrombosis is||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|25|ST|&IMP|2|evident, and there appears to be no ascites at this time.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|26|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.77708254400372037883912790072380645600^EPIC^APPLICATION^DICOM<R>
+<EB>

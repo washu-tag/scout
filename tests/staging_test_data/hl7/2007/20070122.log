@@ -1,0 +1,11 @@
+2007-01-22 07:26:37.0722|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20070122072637|TBD|ORU^R01|2.25.182053354908594886136084392526772052565|P|2.4<R>
+PID|1||ABC451190^^^ABC^MR~EPIC4485949^^^EPIC^MRN||CROSS^ROGER^LARRY^^^^D||19230502000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451190^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457179^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3391650^SYS|7795083556|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20070118100809|||PSCRIB|||||^^^^ |D7823222^POWELL^CARRIE^JENNIFER^M.D.^^^^ABC|||||4185^XRay Angiography|20070122072637||IMG|||1^^^20070122072637^^U^^URGENT|       |||^Chest pain|D7823227^WOOD^MELISSA^C.^^^M.D.|D7823222^POWELL^CARRIE^J.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|4396439||MELISSA WOOD, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|4396439||ACC#  Date Time  Exam~~7795083556 Jan 22 2007 07:26AM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray Angiography~~FINDINGS:~The X-ray angiography demonstrates patent coronary arteries with no~significant stenotic lesions noted in the proximal, mid, or distal~segments. The left anterior descending artery shows normal caliber,~and the left circumflex artery supplies adequate perfusion to the~myocardium. There are no calcific or atherosclerotic changes evident~on multi-segment analysis. Notably, collateral circulation appears~intact, presenting a favorable hemodynamic status. There are no signs~of left ventricular wall motion abnormalities. This angiogram~demonstrates excellent myocardial viability regions with no ischemic~indicators apparent.~~IMPRESSION:~Patent coronary vessels with no significant lesions. Normal~myocardial perfusion suggesting a stable cardiac condition. Recommend~follow-up based on clinical history and risk factors.||||||F<R>
+OBX|3|TX|4396439||Requested By: Powell,Carrie J. M.D.~~Dictated By: Melissa Wood, M.D. on Jan 22 2007 07:26AM~~This document has been electronically signed by: Melissa Wood, M.D.~on Jan 22 2007 07:26AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4396439|4|7795083556^UK^ZB||||||F<R>
+<EB>

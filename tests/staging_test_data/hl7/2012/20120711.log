@@ -1,0 +1,11 @@
+2012-07-11 15:56:56.5773|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120711155656|TBD|ORU^R01|2.25.28521500588518505116979974190831192718|P|2.4<R>
+PID|1||ABC451058^^^ABC^MR~EPIC4485817^^^EPIC^MRN||KIM^JI-MIN^^^^^D||19940508000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451058^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457451^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2041017^SYS|7795083029|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20120708112441|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20120711155656||BHC|||1^^^20120711155656^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|7951509||MICHAEL MARKS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|7951509||ACC#  Date Time  Exam~~7795083029 Jul 11 2012 03:56PM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The single view mammogram conducted on July 8th, 2012, demonstrates a~breast density classified as heterogeneously dense. No masses,~architectural distortions, or microcalcifications were identified.~The skin and subcutaneous tissue appear unremarkable, and there are~no signs of lymphadenopathy in the axillary regions. Breast contour~appears smooth, and the overlying skin is intact with no suspicious~changes.~~IMPRESSION:~No significant abnormalities detected on the single-view mammogram.~The findings are consistent with an absence of malignancy at this~stage. Routine follow-up is recommended in accordance with standard~screening protocols, particularly given the heterogeneously dense~tissue which may obscure small lesions.||||||F<R>
+OBX|3|TX|7951509||Requested By: Sanders,Lisa A. M.D.~~Dictated By: Michael Marks, M.D. on Jul 11 2012 03:56PM~~This document has been electronically signed by: Michael Marks, M.D.~on Jul 11 2012 03:56PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7951509|4|7795083029^UK^ZB||||||F<R>
+<EB>

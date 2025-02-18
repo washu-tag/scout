@@ -1,0 +1,11 @@
+2000-07-24 04:29:41.6445|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000724042941|TBD|ORU^R01|2.25.110898065036873186871120339319629141303|P|2.4<R>
+PID|1||ABC451019^^^ABC^MR~EPIC4485778^^^EPIC^MRN||WILLIAMS^ERIN^KELLY^^^^D||19380422000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451019^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457189^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7288518^SYS|7795082874|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20000722122845|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||2816^Ultrasound|20000724042941||IMG|||1^^^20000724042941^^U^^URGENT|       |||^Chest pain|D7823231^SMITH^CLARA^T.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|2691293||CLARA SMITH, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|2691293||ACC#  Date Time  Exam~~7795082874 Jul 24 2000 04:29AM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Abdominal Ultrasound~~FINDINGS:~The ultrasound examination of the abdomen shows normal echogenicity~of the liver, with no focal lesions or biliary duct dilatation~visible. The gallbladder is not distended, and there is no evidence~of cholelithiasis or wall thickening. The pancreas appears~homogeneous, with no signs of inflammation or calcifications. The~kidneys demonstrate normal size, shape, and echogenicity bilaterally,~with no hydronephrosis observed. Peritoneal spaces are free of fluid~collections, and the aorta is unremarkable without any evidence of~aneurysm or dissection.~~IMPRESSION:~The abdominal ultrasound findings are consistent with a normal~examination. There are no abnormalities noted in the gallbladder,~liver, kidneys, pancreas, or surrounding structures.||||||F<R>
+OBX|3|TX|2691293||Requested By: Donovan,William C. M.D.~~Dictated By: Clara Smith, M.D. on Jul 24 2000 04:29AM~~This document has been electronically signed by: Clara Smith, M.D. on~Jul 24 2000 04:29AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2691293|4|7795082874^UK^ZB||||||F<R>
+<EB>

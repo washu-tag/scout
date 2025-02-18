@@ -1,0 +1,23 @@
+2010-09-05 02:54:24.5579|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100905025424|TBD|ORU^R01|2.25.197379935340569520535048992828777340773|P|2.4<R>
+PID|1||ABC451042^^^ABC^MR~EPIC4485801^^^EPIC^MRN||HINES^JAMES^MATTHEW^^^^D||19860224000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451042^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823247^WARREN^MARY^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457438^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6415985^SYS|7795082968|OMHEADWO^ MRI BRAIN WITHOUT CONTRAST^UNKDEV|URGENT||20100831132312|||PSCRIB|||||^^^^ |D7823255^HARVEY^MARK^WILLIAM^M.D.^^^^ABC|||||^HEAD MRI Expedited|20100905025424||OMHEADWO|||1^^^20100905025424^^U^^URGENT|       |||^Chest pain|D7823253^NIXON^MELISSA^D.^^^M.D.|D7823255^HARVEY^MARK^W.^^^M.D.||PSCRIB<R>
+OBX|1|TX|3270419||MELISSA NIXON, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|3270419||ACC#  Date Time  Exam~~7795082968 Sep 05 2010 02:54AM OMHEADWO MRI BRAIN WITHOUT CONTRAST~~EXAMINATION:~MRI of the brain~~FINDINGS:~The MRI of the brain reveals normal cerebral anatomy without any~acute intracranial hemorrhage. There is no evidence of midline shift~or mass effect. The ventricles and sulci are within normal limits for~the patient's age, and there are no posterior fossa abnormalities.~Cerebral white matter is unremarkable, although there appear to be~some nonspecific T2 hyperintensities in the periventricular white~matter, which could represent subtle chronic ischemic changes but are~not definitively diagnostic for demyelination or acute insult. The~pituitary gland is normal in morphology, and no sellar masses are~observed. The major intracranial vessels exhibit normal flow~patterns.~~IMPRESSION:~The MRI findings from August 31, 2010, suggest a stable cranial~anatomy with no major acute events or concerning findings. The~isolated white matter hyperintensities are likely benign or related~to early vascular changes, with no discernible acute pathological~processes.||||||P<R>
+OBX|3|TX|3270419||Requested By: Harvey,Mark W. M.D.~~Dictated By: Melissa Nixon, M.D. on Sep 05 2010 02:54AM~~Pending review by: Mark Harvey, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|3270419|4|7795082968^UK^ZB||||||P<R>
+<EB><R>
+
+2010-09-05 20:39:49.0057|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100905203949|TBD|ORU^R01|2.25.176045263934991009175471426078593699460|P|2.4<R>
+PID|1||ABC451173^^^ABC^MR~EPIC4485932^^^EPIC^MRN||HOLLAND^CHRISTOPHER^JOSHUA^^^^D||19661207000000|M||P|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451173^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823283^FOX^DANNY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457220^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8190204^SYS|7795083490|M755570^755570 MR CARDIAC MRPH FUNC W/O^UNKDEV|URGENT||20100904075846|||PSCRIB|||||^^^^ |D7823278^HUBBARD^BRADLEY^DANIEL^M.D.^^^^ABC|||||755570^HEART MRI Expedited|20100905203949||M|||1^^^20100905203949^^U^^URGENT|       |||^Chest pain|D7823285^MICHAEL^JAMIE^M.^^^M.D.|D7823279^BYRD^PAUL^K.^^^M.D.||PSCRIB|||||||||755570<R>
+OBX|1|TX|2304424||JAMIE MICHAEL, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|2304424||ACC#  Date Time  Exam~~7795083490 Sep 05 2010 08:39PM M755570 MR CARDIAC MRPH FUNC W/O~~EXAMINATION:~Follow-up cardiac MRI examination.~~FINDINGS:~Comparative analysis from the prior cardiac MRI dated 2008-10-21~reveals no significant interval changes in cardiac morphology or~function. The left ventricular ejection fraction remains stable at~61%, indicating consistent global function. There is still no~evidence of ischemic heart disease, as no late gadolinium enhancement~is observed to suggest prior necrosis or myocardial injury. The right~ventricle maintains its normal dimensions without features suggestive~of hypertrophy. All cardiac valves operate normally, confirming the~absence of valvular defects or insufficiencies. There is, however, a~noted increase in atrial size compared to previous evaluations, which~may necessitate further investigation.~~IMPRESSION:~The subsequent cardiac MRI is stable compared to the study performed~on 2008-10-21, with maintained normal myocardial function. Notable is~the increase in atrial size, which may require clinical correlation~and potential further cardiac evaluation.||||||P<R>
+OBX|3|TX|2304424||Requested By: Hubbard,Bradley D. M.D.~~Dictated By: Jamie Michael, M.D. on Sep 05 2010 08:39PM~~Pending review by: Paul Byrd, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|2304424|4|7795083490^UK^ZB||||||P<R>
+<EB>

@@ -1,0 +1,11 @@
+1997-12-09 15:29:18.7529|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19971209152918|TBD|ORU^R01|2.25.77663912784140531875687173295650756846|P|2.4<R>
+PID|1||ABC451008^^^ABC^MR~EPIC4485767^^^EPIC^MRN||THOMPSON^AMANDA^NOELLE^^^^D||19720809000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451008^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823220^HESS^BRANDI^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457316^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7675646^SYS|7795082831|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||19971208151351|||PSCRIB|||||^^^^ |D7823218^LLOYD^JESSICA^ALEXANDRIA^M.D.^^^^ABC|||||8452^NM MPI SPECT|19971209152918||H|||1^^^19971209152918^^U^^URGENT|       |||^Chest pain|D7823224^MORGAN^JOHN^J.^^^M.D.|D7823228^MYERS^BRENT^A.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|7053160||JOHN MORGAN, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|7053160||ACC#  Date Time  Exam~~7795082831 Dec 09 1997 03:29PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~This cardiac nuclear medicine study performed on December 8, 1997,~demonstrates normal myocardium perfusion at rest. The left~ventricular ejection fraction is calculated at approximately 60%,~indicative of adequate cardiac function. Myocardial activity is~preserved across all regions including the anterior, lateral,~inferior walls, and apex with no signs of reversible ischemia or~scarring. No perfusion defects were noted, and the lung uptake~remained within normal parameters, suggesting the absence of~congestive heart failure.~~IMPRESSION:~The findings suggest a normal myocardial perfusion without evidence~of ischemia, and an ejection fraction within normal limits indicating~good cardiac health.||||||P<R>
+OBX|3|TX|7053160||Requested By: Lloyd,Jessica A. M.D.~~Dictated By: John Morgan, M.D. on Dec 09 1997 03:29PM~~Pending review by: Brent Myers, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|7053160|4|7795082831^UK^ZB||||||P<R>
+<EB>

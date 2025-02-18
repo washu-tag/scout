@@ -1,0 +1,28 @@
+2013-06-07 01:52:55.4969|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130607015255|TBD|ORU^R01|2.25.280114476332215163779686741807546750793|P|2.7<R>
+PID|1||ABC451013^^^ABC^MR||BISHOP^JAMES^DANIEL^^^^D||19520529|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084983|||||||||||||||||||||||||20130607015255|||||||V<R>
+ORC|RE|6608851^SYS|7795082850||Wet Read||^^^20130607015254^20130607015255^O||20130607015255|T6530148^GROSS^CARLY||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6608851^SYS|7795082850|BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY|O|20130604130921|||||Hosp Perf||||^^^SPINE|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20130607015255||DX|Wet Read||^^^20130607015254^20130607015255^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20130607015255||||||||BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Spine X-ray||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|The spine X-ray results illustrate mild degenerative disc disease||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|consistent with aging, specifically at L4-L5 and L5-S1. There is no||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|evidence of acute injury or significant pathology at this time.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|Clinical correlation is recommended, particularly if the patient||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|experiences back pain or other neurologic symptoms. The X-ray of the||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|spine reveals mild degenerative changes, including disc space||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|narrowing noted at the L4-L5 and L5-S1 levels, with corresponding||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|osteophyte formation. There is a straightening of the lumbar lordosis||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|which may indicate muscle spasm or postural change. No acute||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|fractures or dislocations are identified, and the spinal canal||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|appears to be of normal width with no significant compression of the||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|neural foramina. The alignment of the vertebrae appears maintained||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|with no significant deviation, though some age-related spondylotic||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|changes are present.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Wet Read|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.153939079317380919187933560976709058503^EPIC^APPLICATION^DICOM<R>
+<EB>

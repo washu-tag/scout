@@ -1,0 +1,11 @@
+1999-11-09 21:54:23.8823|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19991109215423|TBD|ORU^R01|2.25.222039357589229070701892174728872583457|P|2.4<R>
+PID|1||ABC451153^^^ABC^MR~EPIC4485912^^^EPIC^MRN||COLEMAN^ANTHONY^RYAN^^^^D||19620626000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451153^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457333^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||603075^SYS|7795083409|MDXREVNT^ Radiology Event^UNKDEV|URGENT||19991109093828|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||^Xr Sing View|19991109215423||MDXREVNT|||1^^^19991109215423^^U^^URGENT|       |||^Chest pain|D7823234^DONOVAN^WILLIAM^C.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|2029139||WILLIAM DONOVAN, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|2029139||ACC#  Date Time  Exam~~7795083409 Nov 09 1999 09:54PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray of the left foot~~FINDINGS:~The single-view X-ray of the left foot demonstrates normal alignment~and osseous structures. There is no evidence of fracture or~dislocation. The joints appear intact, and no soft tissue swelling is~noted. The trabecular pattern is within normal limits, indicating~adequate bone density. No foreign bodies or gross osseous~abnormalities are identified. Comparatively, there are no significant~findings against any previous studies as this is the initial study~available.~~IMPRESSION:~Normal radiographic appearance of the left foot with no acute~abnormalities noted. Recommend clinical correlation if patient~presents with pain or dysfunction.||||||F<R>
+OBX|3|TX|2029139||Requested By: Marks,Michael R. M.D.~~Dictated By: William Donovan, M.D. on Nov 09 1999 09:54PM~~This document has been electronically signed by: William Donovan,~M.D. on Nov 09 1999 09:54PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2029139|4|7795083409^UK^ZB||||||F<R>
+<EB>

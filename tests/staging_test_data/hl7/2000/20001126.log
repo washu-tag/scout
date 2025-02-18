@@ -1,0 +1,38 @@
+2000-11-26 00:25:49.1498|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20001126002549|TBD|ORU^R01|2.25.34878744707757193851259770335289328124|P|2.7<R>
+PID|1||ABC451035^^^ABC^MR||BURNS^GILBERT^ADAM^^^^D||19430321|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084989|||||||||||||||||||||||||20001126002549|||||||V<R>
+ORC|RE|2644810^SYS|7795082942||Wet Read||^^^20001126002548^20001126002549^O||20001126002549|T6530151^WATERS^JESSICA||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2644810^SYS|7795082942|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC|O|20001122102127|||||Hosp Perf||||^^^ABDOMEN|D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20001126002549||CT|Wet Read||^^^20001126002548^20001126002549^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20001126002549||||||||CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-CT||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|The PET-CT suggests benign metabolic activity patterns consistent||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|with hepatic steatosis. Recommendations include follow-up imaging to||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|monitor for any progression. No active malignancy identified at this||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|time. The images demonstrate mild diffusely increased metabolic||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|activity in the liver, primarily in the hepatic lobes, suggestive of||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|possible fatty infiltration or early steatosis. No hypermetabolic||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|lesions are seen in the pancreas, biliary tree, or adrenal glands.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|The peritoneal cavity appears free of fluid. Lymph nodes in the||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|retroperitoneum are within normal limits, displaying no significant||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|hyperactivity. Spleen and kidneys show normal radiotracer||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|distribution. Overall, no significant concerning findings presented||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|on this examination.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Wet Read|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.115470087199205466249509391891590696351^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2000-11-26 07:20:55.0320|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20001126072055|TBD|ORU^R01|2.25.330614782421831186941020557870872133873|P|2.4<R>
+PID|1||ABC451145^^^ABC^MR~EPIC4485904^^^EPIC^MRN||MILLER^JENNIE^ELIZABETH^^^^D||19530208000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451145^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457177^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9843369^SYS|7795083379|IMG5017^5017 PET/CT FDG WHOLE BODY^UNKDEV|URGENT||20001123112050|||PSCRIB|||||^^^^ |D7823235^SANCHEZ^GUY^JEFFREY^M.D.^^^^ABC|||||5017^Wholebody Petct AC NAC|20001126072055||IMG|||1^^^20001126072055^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823234^DONOVAN^WILLIAM^C.^^^M.D.||PSCRIB|||||||||5017<R>
+OBX|1|TX|4540325||CURTIS HAWKINS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4540325||ACC#  Date Time  Exam~~7795083379 Nov 26 2000 07:20AM IMG5017 PET/CT FDG WHOLE BODY~~EXAMINATION:~Wholebody PET-CT~~FINDINGS:~Whole-body imaging demonstrates normal biodistribution of \S\18F-FDG.~The process reveals no hypermetabolic lesions in the visualized~structures, including head, neck, thorax, abdomen, and pelvis. The~liver and spleen show normal uptake. Localized mild uptake in the~right shoulder musculature can be attributed to physical activity and~is considered physiologic. Otherwise, no abnormal findings are noted~in the bones, suggesting an absence of metastatic disease. No~lymphadenopathy or abnormal splenic or hepatic enlargement is~identified, affirmatively ruling out systemic pathology.~~IMPRESSION:~1. No significant hypermetabolic activity suggestive of malignancy.~2. Normal metabolic response with only physiologic uptake noted in~the right shoulder girdle. 3. No evidence of metastatic disease or~significant lymphadenopathy, indicating stable disease.||||||F<R>
+OBX|3|TX|4540325||Requested By: Sanchez,Guy J. M.D.~~Dictated By: Curtis Hawkins, M.D. on Nov 26 2000 07:20AM~~This document has been electronically signed by: Curtis Hawkins, M.D.~on Nov 26 2000 07:20AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4540325|4|7795083379^UK^ZB||||||F<R>
+<EB>

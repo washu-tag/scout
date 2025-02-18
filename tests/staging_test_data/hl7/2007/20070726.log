@@ -1,0 +1,11 @@
+2007-07-26 18:50:18.3206|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20070726185018|TBD|ORU^R01|2.25.134670064679023187608469627126762732015|P|2.4<R>
+PID|1||ABC451121^^^ABC^MR~EPIC4485880^^^EPIC^MRN||SMITH^MINDY^TERA^^^^D||19741018000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451121^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457323^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5398101^SYS|7795083281|CTABD^ PETCT AC+NAC ABDOMEN^UNKDEV|URGENT||20070722061641|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||^Abdomen Petct AC NAC|20070726185018||CTABD|||1^^^20070726185018^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|8410956||RUSSELL GALLAGHER, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|8410956||ACC#  Date Time  Exam~~7795083281 Jul 26 2007 06:50PM CTABD PETCT AC+NAC ABDOMEN~~EXAMINATION:~Abdominal PET-CT~~FINDINGS:~The PET-CT conducted on July 22, 2007, reveals no abnormal metabolic~activity in the abdominal region. However, there is mild focal uptake~in the right lobe of the liver that requires correlation with prior~imaging. The kidneys are normal in morphology and function as~inferred from the examination. Gastrointestinal structures including~the stomach and intestines appear normal without any obstructive~changes. The pelvis is clear, displaying normal ovaries. Comparative~analysis with the ultrasound from 1996 indicates no significant~changes in the surrounding soft tissues or in the abdominal organs,~apart from the noted liver uptake that necessitates further clinical~evaluation.~~IMPRESSION:~Mild hypermetabolism in the right hepatic lobe is concerning for~potential pathology; however, stable kidney and other organ~structures noted. Recommend follow-up imaging and clinical~correlation.||||||F<R>
+OBX|3|TX|8410956||Requested By: Donovan,William C. M.D.~~Dictated By: Russell Gallagher, M.D. on Jul 26 2007 06:50PM~~This document has been electronically signed by: Russell Gallagher,~M.D. on Jul 26 2007 06:50PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8410956|4|7795083281^UK^ZB||||||F<R>
+<EB>

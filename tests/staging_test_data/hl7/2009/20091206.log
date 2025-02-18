@@ -1,0 +1,11 @@
+2009-12-06 15:30:06.5963|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20091206153006|TBD|ORU^R01|2.25.282753998802383065214098510682823991309|P|2.4<R>
+PID|1||ABC451003^^^ABC^MR~EPIC4485762^^^EPIC^MRN||JONES^MICHAEL^JAMES^^^^D||19881103000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451003^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823221^MAXWELL^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457354^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5056800^SYS|7795082809|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20091205141352|||PSCRIB|||||^^^^ |D7823223^HARPER^MARIA^KELLY^M.D.^^^^ABC|||||4185^XRay Angiography|20091206153006||IMG|||1^^^20091206153006^^U^^URGENT|       |||^Chest pain|D7823228^MYERS^BRENT^A.^^^M.D.|D7823217^SANCHEZ^ROY^A.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|9372634||BRENT MYERS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|9372634||ACC#  Date Time  Exam~~7795082809 Dec 06 2009 03:30PM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray Angiography Study~~FINDINGS:~The X-ray angiography demonstrates patent coronary arteries with no~obstructive lesions visualized within the major epicardial vessels.~There is a normal origin and course of the left anterior descending,~left circumflex, and right coronary arteries. The vascular tree shows~no signs of aneurysm or significant stenosis, and collateral~circulation is not evident. No calcifications are noted along the~arterial walls. The vascular access site appears clean, with no~post-procedural complications observable in the imaging, confirming~successful catheterization. Conclusion: There is no evidence of~significant coronary artery disease. The angiographic results are~consistent with a normal coronary anatomy.~~IMPRESSION:~The examination suggests no critical stenosis or occlusive disease,~indicating an overall normal coronary circulation.||||||P<R>
+OBX|3|TX|9372634||Requested By: Harper,Maria K. M.D.~~Dictated By: Brent Myers, M.D. on Dec 06 2009 03:30PM~~Pending review by: Roy Sanchez, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|9372634|4|7795082809^UK^ZB||||||P<R>
+<EB>

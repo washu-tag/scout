@@ -1,0 +1,11 @@
+1996-10-01 01:43:01.8119|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19961001014301|TBD|ORU^R01|2.25.151120237644475430519866514740359558938|P|2.4<R>
+PID|1||ABC451165^^^ABC^MR~EPIC4485924^^^EPIC^MRN||CRAIG^KAREN^JESSICA^^^^D||19200411000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451165^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457407^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4033861^SYS|7795083461|BED72040^72040 72040 Spine Cerv 3views or less^UNKDEV|URGENT||19960927094027|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||72040^Cervical spine 1 View Dx Xray|19961001014301||BED|||1^^^19961001014301^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB|||||||||72040<R>
+OBX|1|TX|6876774||JENNIFER SMITH, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6876774||ACC#  Date Time  Exam~~7795083461 Oct 01 1996 01:43AM BED72040 72040 Spine Cerv 3views or~less~~EXAMINATION:~C-spine X-ray~~FINDINGS:~The cervical spine X-rays exhibit normal alignment of the vertebrae~from C1 to C7. No acute fractures, dislocations, or significant~degenerative changes are identified. Intervertebral disc spaces~maintain normal height with no evidence of herniation. The~prevertebral soft tissues are unremarkable, and there are no osseous~lesions noted. The foramina appear patent without signs of stenosis.~~IMPRESSION:~Normal cervical spine X-ray. There are no acute or chronic~abnormalities noted in the axial or sagittal projections; findings~are entirely within normal limits.||||||F<R>
+OBX|3|TX|6876774||Requested By: Hunt,April M. M.D.~~Dictated By: Jennifer Smith, M.D. on Oct 01 1996 01:43AM~~This document has been electronically signed by: Jennifer Smith, M.D.~on Oct 01 1996 01:43AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6876774|4|7795083461^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,12 @@
+{
+  "sparkConfig": {
+    "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+    "spark.hadoop.fs.s3a.access.key": "minio",
+    "spark.hadoop.fs.s3a.secret.key": "minio1234",
+    "spark.hadoop.fs.s3a.endpoint": "http://$IP:80",
+    "spark.hadoop.fs.s3a.endpoint.region": "us-east-1",
+    "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
+    "spark.hadoop.fs.s3a.path.style.access": "true"
+  },
+  "deltaLakeUrl": "s3a://lake/orchestration/delta/test_data"
+}

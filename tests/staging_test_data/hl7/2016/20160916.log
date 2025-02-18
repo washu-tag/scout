@@ -1,0 +1,11 @@
+2016-09-16 15:28:43.1985|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20160916152843|TBD|ORU^R01|2.25.84214920816747943654324279118492424521|P|2.4<R>
+PID|1||ABC451159^^^ABC^MR~EPIC4485918^^^EPIC^MRN||HAMMOND^MICHAEL^ALLAN^^^^D||19900930000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451159^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457252^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6981286^SYS|7795083436|SM71550CH0^715500 MR CHEST WO^UNKDEV|URGENT||20160912200421|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||715500^Chest PtMr|20160916152843||SMCH|||1^^^20160916152843^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB|||||||||715500<R>
+OBX|1|TX|968605||KIMBERLY HANSON, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|968605||ACC#  Date Time  Exam~~7795083436 Sep 16 2016 03:28PM SM71550CH0 MR CHEST WO~~EXAMINATION:~Chest PET-MR~~FINDINGS:~The chest PET-MR demonstrates hypermetabolic activity in the right~upper lobe, indicative of a metabolic volume that is concerning for~malignancy. No significant lymphadenopathy is noted in the~mediastinum. The pulmonary vasculature is unremarkable, and the heart~appears normal in size and function. The surrounding soft tissue is~absent of edema or inflammatory changes, though a soft tissue density~lesion approximately 2.5 cm is identified, correlating with the~uptake on PET imaging. Additional foci of abnormal uptake are not~present elsewhere in the thoracic cavity.~~IMPRESSION:~The findings of hypermetabolic activity in the right upper lobe~warrant further evaluation with biopsy and follow-up imaging to~assess for possible malignancy. There is no evidence of metastatic~disease in the thoracic nodal structures based on present imaging.||||||F<R>
+OBX|3|TX|968605||Requested By: Medrano,Joe J. M.D.~~Dictated By: Kimberly Hanson, M.D. on Sep 16 2016 03:28PM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on Sep 16 2016 03:28PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|968605|4|7795083436^UK^ZB||||||F<R>
+<EB>

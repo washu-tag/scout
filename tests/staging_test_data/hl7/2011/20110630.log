@@ -1,0 +1,11 @@
+2011-06-30 10:37:22.2343|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110630103722|TBD|ORU^R01|2.25.264101464310615245234941937757078341944|P|2.4<R>
+PID|1||ABC451138^^^ABC^MR~EPIC4485897^^^EPIC^MRN||PARK^CARRIE^JESSICA^^^^D||19940427000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451138^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457460^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6438067^SYS|7795083350|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20110628100519|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20110630103722||IMG|||1^^^20110630103722^^U^^URGENT|       |||^Chest pain|D7823231^SMITH^CLARA^T.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|3519333||CLARA SMITH, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|3519333||ACC#  Date Time  Exam~~7795083350 Jun 30 2011 10:37AM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdomen X-ray demonstrates a soft tissue outline of the psoas~muscles and a general lack of significant bowel distension. The~diaphragm appears intact without any free air under the diaphragm,~which suggests no acute surgical abdomen. The visualized liver,~spleen, and kidneys appear unremarkable for size and contour, with no~evidence of calcifications. Renal shadows are evident, consistent~with normal anatomical positioning. No foreign bodies or masses are~identified. Comparison with previous imaging dated 06/28/2010 shows~similar morphology, highlighting stability with no observable~pathology.~~IMPRESSION:~Overall, the imaging demonstrates a normal abdominal X-ray with no~acute abdominal pathology identified. No significant changes are~noted compared to previous exams, which is reassuring. The study does~not demonstrate any suggestive findings of abdominal distress or~pathological processes.||||||F<R>
+OBX|3|TX|3519333||Requested By: Marks,Michael R. M.D.~~Dictated By: Clara Smith, M.D. on Jun 30 2011 10:37AM~~This document has been electronically signed by: Clara Smith, M.D. on~Jun 30 2011 10:37AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3519333|4|7795083350^UK^ZB||||||F<R>
+<EB>

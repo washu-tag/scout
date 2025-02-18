@@ -1,0 +1,11 @@
+1994-10-26 06:12:58.1300|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19941026061258|TBD|ORU^R01|2.25.17628029535660185019585775537372463803|P|2.4<R>
+PID|1||ABC451077^^^ABC^MR~EPIC4485836^^^EPIC^MRN||BENJAMIN^BENJAMIN^JOSHUA^^^^D||19390124000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451077^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457092^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2579507^SYS|7795083103|IMG2370^2370 MRI BRAIN W WO CONTRAST^UNKDEV|URGENT||19941023115344|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||2370^BRAIN MRI|19941026061258||IMG|||1^^^19941026061258^^U^^URGENT|       |||^Chest pain|D7823238^HUNT^APRIL^M.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB|||||||||2370<R>
+OBX|1|TX|1630338||APRIL HUNT, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|1630338||ACC#  Date Time  Exam~~7795083103 Oct 26 1994 06:12AM IMG2370 MRI BRAIN W WO CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The brain MRI demonstrates a normal ventricular system with no~evidence of midline shift. The cerebral hemispheres present intact~without any focal masses. The parenchyma exhibits normal signal~intensity characteristics on T1 and T2-weighted images. No acute~ischemic changes are observed. Minor periventricular leukoaraiosis is~noted, attributable to chronic small vessel ischemic changes, which~is not unusual given the patient's age.~~IMPRESSION:~Overall, the MRI findings are consistent with normal cerebrovascular~status with mild leukoaraiosis. No acute intracranial pathologies or~significant structural abnormalities are identified. Further~monitoring may be warranted for any progressive changes.||||||F<R>
+OBX|3|TX|1630338||Requested By: Hunt,April M. M.D.~~Dictated By: April Hunt, M.D. on Oct 26 1994 06:12AM~~This document has been electronically signed by: April Hunt, M.D. on~Oct 26 1994 06:12AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|1630338|4|7795083103^UK^ZB||||||F<R>
+<EB>

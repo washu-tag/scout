@@ -1,0 +1,30 @@
+2008-03-11 01:15:39.9789|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20080311011539|TBD|ORU^R01|2.25.107042213961427986410385981371940392736|P|2.7<R>
+PID|1||ABC451068^^^ABC^MR||JONES^PEARL^TAMMY^^^^D||19690709|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084654|||||||||||||||||||||||||20080311011539|||||||V<R>
+ORC|RE|7286892^SYS|7795083072||Final||^^^20080311011538^20080311011539^O||20080311011539|T6530154^ROBERTS^RICARDO||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7286892^SYS|7795083072|EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY|O|20080310083900|||||Hosp Perf||||^^^TSPINE|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20080311011539||DX|Final||^^^20080311011538^20080311011539^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20080311011539||||||||EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Thoracic spine X-ray||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|The examination of the thoracic spine via X-ray conducted on||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|2008-03-10 reveals no pathological abnormalities. The alignment of||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|thoracic vertebrae is deemed normal and there is no evidence of acute||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|injury, significant neurological compromise, or degenerative disease.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|Given the mild osteophyte formation, follow-up imaging may be||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|warranted if clinical symptoms arise. The thoracic spine X-ray was||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|performed on 2008-03-10. The imaging reveals normal alignment of the||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|thoracic vertebrae with a well-preserved intervertebral disc height||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|at all levels examined. No acute fractures or significant||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|degenerative changes are observed. The vertebral bodies maintain||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|normal height and contour, with no signs of spondylosis or disc||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|herniation noted. The posterior elements of the thoracic spine||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|demonstrate intact cortical lines, and there is no evidence of||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|18|ST|&IMP|2|abnormal paravertebral soft tissue mass or pleural effusion. There||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|19|ST|&IMP|2|are mild osteophyte formations at T7-T8 but no significant stenosis||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|20|ST|&IMP|2|is seen in the neural foramina.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|21|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.2124861708022235645767621813447952351^EPIC^APPLICATION^DICOM<R>
+<EB>

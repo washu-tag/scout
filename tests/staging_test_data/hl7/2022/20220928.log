@@ -1,0 +1,11 @@
+2022-09-28 22:24:25.7080|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220928222425|TBD|ORU^R01|2.25.72065419890223593681961680902450807966|P|2.4<R>
+PID|1||ABC451040^^^ABC^MR~EPIC4485799^^^EPIC^MRN||MOORE^RUSSELL^JOHN^^^^D||19920516000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451040^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823229^WADE^KERRI^L.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457416^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9790311^SYS|7795082958|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20220926200443|||PSCRIB|||||^^^^ |D7823229^WADE^KERRI^LYNDA^M.D.^^^^ABC|||||4185^XRay Angiography|20220928222425||IMG|||1^^^20220928222425^^U^^URGENT|       |||^Chest pain|D7823226^KENNEDY^JERI^A.^^^M.D.|D7823224^MORGAN^JOHN^J.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|7602788||JERI KENNEDY, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7602788||ACC#  Date Time  Exam~~7795082958 Sep 28 2022 10:24PM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray Angiography Study~~FINDINGS:~In comparison to the previous angiography study dated 2013-08-16~(UID: 2.25.203334082049865424632100734798386727839), the current~study from 2022-09-26 shows preserved vessel patency and similar~degrees of atherosclerotic changes in the abdominal aorta and~associated branches. There continues to be mild stenosis at the~origin of the renal arteries without deterioration since the last~evaluation. There are no signs of new aneurysms or significant~vascular occlusions with collateral formation continuing to be~well-developed. The visualized soft tissues appear unremarkable with~no edema or mass effect observed.~~IMPRESSION:~Stable findings on recent X-ray angiography; no progression of~atherosclerotic changes compared to the 2013 study.||||||F<R>
+OBX|3|TX|7602788||Requested By: Wade,Kerri L. M.D.~~Dictated By: Jeri Kennedy, M.D. on Sep 28 2022 10:24PM~~This document has been electronically signed by: Jeri Kennedy, M.D.~on Sep 28 2022 10:24PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7602788|4|7795082958^UK^ZB||||||F<R>
+<EB>

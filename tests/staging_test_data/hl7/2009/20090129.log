@@ -1,0 +1,23 @@
+2009-01-29 08:45:14.3073|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090129084514|TBD|ORU^R01|2.25.204071482041078256544400417601902603647|P|2.4<R>
+PID|1||ABC451171^^^ABC^MR~EPIC4485930^^^EPIC^MRN||RUSH^JESSICA^DEANNA^^^^D||19880418000000|F||R|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451171^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457170^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9526501^SYS|7795083482|IMG2370^2370 MRI BRAIN W WO CONTRAST^UNKDEV|URGENT||20090128093221|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||2370^BRAIN MRI|20090129084514||IMG|||1^^^20090129084514^^U^^URGENT|       |||^Chest pain|D7823238^HUNT^APRIL^M.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB|||||||||2370<R>
+OBX|1|TX|781229||APRIL HUNT, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|781229||ACC#  Date Time  Exam~~7795083482 Jan 29 2009 08:45AM IMG2370 MRI BRAIN W WO CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The MRI of the brain demonstrates normal ventricular size, with no~evidence of midline shift or mass effect. The cerebral parenchyma~reveals no focal lesions or areas of restricted diffusion. The~visualized gray and white matter show normal differentiation and are~unremarkable for any signs of demyelination or atrophy. The~hippocampi are intact, showing normal signal intensities. The major~intracranial vessels are patent without evidence of stenosis or~thrombosis. No hyperintense lesions are noted on T2-weighted or FLAIR~sequences. Overall, there are no abnormalities that would suggest an~acute or chronic intracranial process, and the findings are stable~compared to the previous brain MRI dated 2009-01-28.~~IMPRESSION:~MRI of the brain shows no acute intracranial abnormalities. The~ventricular size and cerebral parenchyma appear normal with no~lesions identified. These findings are stable when compared to the~prior study from 2009.||||||F<R>
+OBX|3|TX|781229||Requested By: Reese,Amber J. M.D.~~Dictated By: April Hunt, M.D. on Jan 29 2009 08:45AM~~This document has been electronically signed by: April Hunt, M.D. on~Jan 29 2009 08:45AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|781229|4|7795083482^UK^ZB||||||F<R>
+<EB><R>
+
+2009-01-29 17:00:46.6217|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090129170046|TBD|ORU^R01|2.25.43868694227950144919618178984719611307|P|2.4<R>
+PID|1||ABC451165^^^ABC^MR~EPIC4485924^^^EPIC^MRN||CRAIG^KAREN^JESSICA^^^^D||19200411000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451165^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457405^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5886713^SYS|7795083457|BHC77057^77057 77057 Screening Mamm Bilat^UNKDEV|URGENT||20090127103622|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||77057^Screening Mammogram Bilateral|20090129170046||BHC|||1^^^20090129170046^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||77057<R>
+OBX|1|TX|2633026||JESSICA WRIGHT, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|2633026||ACC#  Date Time  Exam~~7795083457 Jan 29 2009 05:00PM BHC77057 77057 Screening Mamm Bilat~~EXAMINATION:~Four-view mammogram~~FINDINGS:~Upon comparison to the prior four-view mammogram dated 1996-03-12,~there is notable stability in breast tissue density, which remains~heterogeneously dense. However, new bilateral benign-appearing~calcifications were identified, distributed in the upper inner~quadrants, likely representing benign ductal calcifications. No~masses were detected, and lymphatic structures maintain their normal~appearance. Skin contour is smooth, and no signs of skin retraction~or abnormality are seen in this set of images.~~IMPRESSION:~The findings demonstrate stable breast tissue characteristics since~prior evaluation in 1996. The newly identified bilateral~calcifications warrant follow-up with routine mammographic~surveillance, but currently appear benign. No immediate intervention~is recommended.||||||P<R>
+OBX|3|TX|2633026||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Jessica Wright, M.D. on Jan 29 2009 05:00PM~~Pending review by: Lisa Sanders, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|2633026|4|7795083457^UK^ZB||||||P<R>
+<EB>

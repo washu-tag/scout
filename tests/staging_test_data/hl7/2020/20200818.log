@@ -1,0 +1,11 @@
+2020-08-18 04:07:54.9512|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200818040754|TBD|ORU^R01|2.25.176738982822778863045906769432507107692|P|2.4<R>
+PID|1||ABC451084^^^ABC^MR~EPIC4485843^^^EPIC^MRN||ΞΕΝΆΚΗΣ^ΧΡΙΣΤΙΑΝΌΣ^^^^^D||19990329000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451084^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457218^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3286479^SYS|7795083134|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||20200815152729|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||2361^Brain MRI|20200818040754||IMG|||1^^^20200818040754^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|3146250||MICHAEL MARKS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|3146250||ACC#  Date Time  Exam~~7795083134 Aug 18 2020 04:07AM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~The MRI of the brain demonstrates symmetrical cerebral hemispheres~with no midline shift or mass effect noted. The ventricles are normal~in size with no evidence of hydrocephalus. There is no restricted~diffusion observed on diffusion-weighted sequences. The cortical and~subcortical structures appear intact with no evidence of cortical~atrophy. The brainstem and cerebellum are unremarkable. No focal~lesions, hemorrhage, or extra-axial fluid collections are observed.~The vascular structures appear within normal limits with no evidence~of stenosis or occlusion. The signal characteristics are unremarkable~throughout the cerebral and cerebellar hemispheres.~~IMPRESSION:~Overall, the brain MRI on 2020-08-15 shows no significant acute or~chronic pathologic findings. The cerebral architecture is preserved,~and there are no abnormalities that raise concern for any~intracranial pathology. This study serves as a baseline examination~without observed complications.||||||F<R>
+OBX|3|TX|3146250||Requested By: Reese,Amber J. M.D.~~Dictated By: Michael Marks, M.D. on Aug 18 2020 04:07AM~~This document has been electronically signed by: Michael Marks, M.D.~on Aug 18 2020 04:07AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3146250|4|7795083134^UK^ZB||||||F<R>
+<EB>

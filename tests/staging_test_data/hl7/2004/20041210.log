@@ -1,0 +1,27 @@
+2004-12-10 00:04:02.4022|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20041210000402|TBD|ORU^R01|2.25.235350782709081167162815111824559772586|P|2.7<R>
+PID|1||ABC451076^^^ABC^MR||CAMPBELL^LISA^REBECCA^^^^D||19680803|F||OTHER|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084688|||||||||||||||||||||||||20041210000402|||||||V<R>
+ORC|RE|4619346^SYS|7795083101||Prelim||^^^20041210000401^20041210000402^O||20041210000402|T6530150^NEAL^EMILY||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4619346^SYS|7795083101|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20041206192010|||||Hosp Perf||||^^^ABDOMEN|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20041210000402||CR|Prelim||^^^20041210000401^20041210000402^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20041210000402||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|The abdominal X-ray taken on 2004-12-06 indicates a moderate level of||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|bowel gas which may suggest a simple ileus. No acute processes are||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|identifiable, but clinical correlation is advised to assess bowel||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|habits and further symptoms. The abdominal X-ray performed shows a||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|well-distended bowel with evidence of moderate gas pattern suggesting||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|a benign ileus. No free air under the diaphragm or significant bowel||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|obstruction is evident upon review of the specific quadrants. The||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|renal shadows are within normal limits, and there are no calculi||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|visualized in the kidneys or ureters. Additionally, there is no||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|evidence of any gross abdominal masses or foreign bodies within the||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|abdominal cavity. The silhouette of the liver and spleen appears||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|normal in density and size, consistent with an absence of||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|hepatosplenomegaly.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|18|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.223350668606761532316398251807858324854^EPIC^APPLICATION^DICOM<R>
+<EB>

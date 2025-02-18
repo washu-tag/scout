@@ -1,0 +1,23 @@
+2018-04-15 13:02:29.3264|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180415130229|TBD|ORU^R01|2.25.79655483250763872921246094455229267560|P|2.7<R>
+PID|1||ABC451158^^^ABC^MR||MATTHEWS^ANDRES^MATTHEW^M.D.^^^D||19260816|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084786|||||||||||||||||||||||||20180415130229|||||||V<R>
+ORC|RE|1765029^SYS|7795083427||Final||^^^20180415130228^20180415130229^O||20180415130229|T6530150^NEAL^EMILY||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1765029^SYS|7795083427|BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY|O|20180413173806|||||Hosp Perf||||^^^ABDOMEN|D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20180415130229||DX|Final||^^^20180415130228^20180415130229^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20180415130229||||||||BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdominal X-ray||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|Normal abdominal X-ray. Hepatic silhouette correlates with prior||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|ultrasound findings of liver enlargement possibly due to steatosis.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|Continued monitoring suggested. The abdominal radiograph shows normal||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|bowel gas distribution without signs of obstruction or free air. The||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|gastric bubble is present, and the liver is slightly enlarged as||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|suggested by the silhouette. The kidneys appear unremarkable, and the||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|urinary bladder is adequately distended. No significant||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|calcifications or masses are noted within the visualized abdominal||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|organs.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Final|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.187890004451258686489054119889982545083^EPIC^APPLICATION^DICOM<R>
+<EB>

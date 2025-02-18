@@ -1,0 +1,25 @@
+1994-09-02 00:05:31.8890|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19940902000531|TBD|ORU^R01|2.25.19715659210719005683758109298223469170|P|2.7<R>
+PID|1||ABC451037^^^ABC^MR||ITO^SOTA^^^^^D||19451114|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084903|||||||||||||||||||||||||19940902000531|||||||V<R>
+ORC|RE|1407586^SYS|7795082946||Final||^^^19940902000530^19940902000531^O||19940902000531|T6530146^MOORE^CURTIS||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1407586^SYS|7795082946|BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY|O|19940828152420|||||Hosp Perf||||^^^ABDOMEN|D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19940902000531||DX|Final||^^^19940902000530^19940902000531^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||19940902000531||||||||BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdominal X-ray||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|Overall, the abdominal X-ray reveals a benign appearance with no||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|acute findings. The gas pattern is normal for a patient of this age,||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|with no signs of bowel obstruction or perforation. The abdomen||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|radiograph demonstrates an overall gas pattern that appears within||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|the expected limits for age. The lungs are clear, and the diaphragm||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|is intact with no signs of free air beneath it. No abnormal masses or||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|calcifications are observed in the visualized upper abdominal organs.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|The gastric bubble is appropriately positioned, and the bowel||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|contents exhibit normal distribution. Skeletal structures exhibit||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|mild osteopenia consistent with aging. No acute intraperitoneal||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|pathology is identified.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.252048620030822737665004918868985240788^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2019-05-13 22:10:22.6930|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190513221022|TBD|ORU^R01|2.25.195724293573171057951607104371821628125|P|2.4<R>
+PID|1||ABC451040^^^ABC^MR~EPIC4485799^^^EPIC^MRN||MOORE^RUSSELL^JOHN^^^^D||19920516000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451040^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457417^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1745496^SYS|7795082960|BED70250^70250 70250 Skull < 4 views^UNKDEV|URGENT||20190513134516|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||70250^Skull 1 View Dx Xray|20190513221022||BED|||1^^^20190513221022^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||70250<R>
+OBX|1|TX|1237470||JENNIFER SMITH, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|1237470||ACC#  Date Time  Exam~~7795082960 May 13 2019 10:10PM BED70250 70250 Skull < 4 views~~EXAMINATION:~Skull X-ray~~FINDINGS:~The skull X-ray indicates intact cranial contours and symmetric~appearances of the cranial vault. No evidence of acute fractures or~significant osseous abnormalities is appreciated. The sella turcica,~mastoid air cells, and paranasal sinuses appear clear with no~significant pathological findings. The facial bones display no~deformities, and the orbits remain symmetric without displacement or~expansion. Overall, findings are consistent with a normal skull~X-ray.~~IMPRESSION:~Normal skull X-ray without evidence of fracture or focal pathology.||||||P<R>
+OBX|3|TX|1237470||Requested By: Medrano,Joe J. M.D.~~Dictated By: Jennifer Smith, M.D. on May 13 2019 10:10PM~~Pending review by: Kimberly Hanson, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|1237470|4|7795082960^UK^ZB||||||P<R>
+<EB>

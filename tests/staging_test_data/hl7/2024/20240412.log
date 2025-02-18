@@ -1,0 +1,11 @@
+2024-04-12 17:17:39.0286|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240412171739|TBD|ORU^R01|2.25.163771622514116706193929890095647845071|P|2.4<R>
+PID|1||ABC451145^^^ABC^MR~EPIC4485904^^^EPIC^MRN||MILLER^JENNIE^ELIZABETH^^^^D||19530208000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451145^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457178^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2648633^SYS|7795083381|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20240409164332|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||8452^NM MPI SPECT|20240412171739||H|||1^^^20240412171739^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|5217824||RUSSELL GALLAGHER, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|5217824||ACC#  Date Time  Exam~~7795083381 Apr 12 2024 05:17PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM Study~~FINDINGS:~The recent cardiac NM study reveals no current perfusion deficits,~with a completely normalized stress response when compared against~the prior NM study from 2022-04-16. The ejection fraction has~remained stable at 65%, demonstrating good myocardial contractility~and without further wall motion abnormalities. All territories are~well-perfused during both rest and exercise, indicating the absence~of significant coronary artery disease progression. The global~assessment illustrates robust cardiac function and no detectable~ischemia or viability concerns.~~IMPRESSION:~1. Significant improvement in cardiac perfusion from the prior study~from 2022-04-16 with no ischemic symptoms noted. 2. Cardiac function~remains robust with stable left ventricular ejection fraction. 3. No~further interventions indicated; continue with routine follow-ups as~clinically warranted.||||||P<R>
+OBX|3|TX|5217824||Requested By: Medrano,Joe J. M.D.~~Dictated By: Russell Gallagher, M.D. on Apr 12 2024 05:17PM~~Pending review by: Joseph Barajas, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5217824|4|7795083381^UK^ZB||||||P<R>
+<EB>

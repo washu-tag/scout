@@ -1,0 +1,23 @@
+2019-06-04 00:15:43.3663|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190604001543|TBD|ORU^R01|2.25.271561245092282729568493773770264160248|P|2.4<R>
+PID|1||ABC451162^^^ABC^MR~EPIC4485921^^^EPIC^MRN||LIM^JI-WOO^^^^^D||19570704000000|F||U|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451162^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457322^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4157492^SYS|7795083447|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20190603125330|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20190604001543||BHC|||1^^^20190604001543^^U^^URGENT|       |||^Chest pain|D7823231^SMITH^CLARA^T.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|5284893||CLARA SMITH, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|5284893||ACC#  Date Time  Exam~~7795083447 Jun 04 2019 12:15AM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The single-view mammogram dated June 3, 2019, presents significant~contrasts in the breast tissue architecture compared to the prior~single-view mammogram from April 21, 2002. There is now a development~of a small, well-circumscribed mass at the upper outer quadrant of~the left breast measuring approximately 1.2 cm, accompanied by~associated micro-calcifications. Bilateral breast parenchyma shows~increased density, but the right breast maintains normal contours~with no masses. Lymphatic regions exhibit no abnormalities.~~IMPRESSION:~The findings from the June 3, 2019 single-view mammogram indicate the~presence of a likely benign yet concerning nodule with associated~calcifications in the left breast as compared to April 21, 2002.~Further evaluation with a targeted ultrasound and possible biopsy is~warranted to assess the nature of this new finding. Continued routine~screening is imperative.||||||P<R>
+OBX|3|TX|5284893||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Clara Smith, M.D. on Jun 04 2019 12:15AM~~Pending review by: Joe Medrano, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5284893|4|7795083447^UK^ZB||||||P<R>
+<EB><R>
+
+2019-06-04 22:11:20.0641|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190604221120|TBD|ORU^R01|2.25.265823020510329374616276370989647800236|P|2.4<R>
+PID|1||ABC451161^^^ABC^MR~EPIC4485920^^^EPIC^MRN||WARD^DANNY^DAVID^^^^D||19561123000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451161^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457304^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3910017^SYS|7795083442|IMG2361^2361 MRI BRAIN W CONTRAST^UNKDEV|URGENT||20190604124438|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||2361^Brain MRI|20190604221120||IMG|||1^^^20190604221120^^U^^URGENT|       |||^Chest pain|D7823238^HUNT^APRIL^M.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||2361<R>
+OBX|1|TX|1525264||APRIL HUNT, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|1525264||ACC#  Date Time  Exam~~7795083442 Jun 04 2019 10:11PM IMG2361 MRI BRAIN W CONTRAST~~EXAMINATION:~Brain MRI~~FINDINGS:~Comparison with the prior brain MRI dated 2013-02-02 reveals subtle~progression of the prior noted white matter hyperintensities~consistent with chronic ischemic changes. New areas of patchy high~signal intensity have emerged within the periventricular regions,~particularly the left side, suggesting possible progression of~ischemic disease. There is no evidence of any enhancing lesions or~mass effect. The ventricles remain stable in size, and no acute~intracranial hemorrhage is identified. The brainstem and cerebellum~maintain normal morphology. Mild atrophy is still noted throughout~the cerebral cortex, commensurate with aging. Overall, the study~supports a stable chronic condition but demonstrates progressive~changes when compared to the previous MRI.~~IMPRESSION:~Progressive white matter changes suggestive of increasing small~vessel disease compared to the MRI study from 2013. Recommend~neurological follow-up and consideration for cognitive evaluation. No~signs of acute intracranial pathologies.||||||P<R>
+OBX|3|TX|1525264||Requested By: Gallagher,Russell J. M.D.~~Dictated By: April Hunt, M.D. on Jun 04 2019 10:11PM~~Pending review by: Joseph Barajas, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|1525264|4|7795083442^UK^ZB||||||P<R>
+<EB>

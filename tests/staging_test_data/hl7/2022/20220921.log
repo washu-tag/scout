@@ -1,0 +1,33 @@
+2022-09-21 18:18:09.5323|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220921181809|TBD|ORU^R01|2.25.287614157422161230091045126338615612764|P|2.7<R>
+PID|1||ABC451146^^^ABC^MR||PIERCE^MISTY^JENNIFER^^^^D||19861030|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084767|||||||||||||||||||||||||20220921181809|||||||V<R>
+ORC|RE|7759781^SYS|7795083384||Wet Read||^^^20220921181808^20220921181809^O||20220921181809|T6530147^ANDERSON^NATALIE||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7759781^SYS|7795083384|IMG5017^PET/CT FDG WHOLE BODY^UNKDEV^^WHOLEBODY PETCT AC NAC|O|20220918101708|||||Hosp Perf||||^^^WHOLEBODY|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20220921181809||CT|Wet Read||^^^20220921181808^20220921181809^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20220921181809||||||||IMG5017^PET/CT FDG WHOLE BODY^UNKDEV^^WHOLEBODY PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Whole-body PET-CT||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|Whole-body PET-CT performed on 2022-09-18 indicates increased FDG||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|uptake in the right breast, consistent with prior mammographic||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|findings. While no other areas of concern are noted, the significant||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|uptake in the context of this patient's history necessitates targeted||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|imaging such as ultrasound or biopsy to exclude potential malignancy.||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|Ongoing monitoring through follow-up imaging is prudent. The||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|whole-body FDG-PET-CT study reveals increased FDG uptake in the right||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|breast region correlating with the previously noted mammographic||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|findings, suggesting metabolic activity that may warrant further||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|evaluation. No other hypermetabolic lesions are identified elsewhere||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|throughout the measured body regions. The liver, lungs, and bone||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|scans present normal background activity without any abnormal focal||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|17|ST|&IMP|2|accumulations. Lymph node assessment demonstrates no significant||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|18|ST|&IMP|2|pathologic enlargement in the sampled regions. The soft tissues and||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|19|ST|&IMP|2|musculoskeletal structures are unremarkable, with no signs of||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|20|ST|&IMP|2|metastatic disease evident on imaging. Comparison to the previous||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|21|ST|&IMP|2|imaging study dated September 18, 2022, affirms previously documented||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|22|ST|&IMP|2|findings, accentuating the necessity for further investigation||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|23|ST|&IMP|2|regarding the right breast uptake.||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+OBX|24|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Wet Read|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.322314743931835868993166549035961386551^EPIC^APPLICATION^DICOM<R>
+<EB>

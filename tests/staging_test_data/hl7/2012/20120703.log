@@ -1,0 +1,26 @@
+2012-07-03 19:35:58.4585|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120703193558|TBD|ORU^R01|2.25.201761057198983077644876883868000507893|P|2.7<R>
+PID|1||ABC451140^^^ABC^MR||THOMAS^MELISSA^ERIN^^^^D||19720808|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085033|||||||||||||||||||||||||20120703193558|||||||V<R>
+ORC|RE|4341847^SYS|7795083357||Prelim||^^^20120703193557^20120703193558^O||20120703193558|T6530149^VASQUEZ^MISTY||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4341847^SYS|7795083357|EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY|O|20120630204536|||||Hosp Perf||||^^^TSPINE|D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20120703193558||DX|Prelim||^^^20120703193557^20120703193558^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20120703193558||||||||EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: T-spine X-ray||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|1. Mild degenerative changes in the thoracic spine at T7-T8. 2. No||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|acute fractures or additional pathology identified. 3. Recommend||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|conservative management and regular follow-ups depending on||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|symptomatology. The T-spine X-ray demonstrates normal alignment of||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|the thoracic vertebrae with no signs of acute fracture. There are||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|mild degenerative changes evident at the T7-T8 levels, characterized||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|by endplate osteophytes and slight disc space narrowing. The pedicles||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|and facets appear intact. No significant paravertebral soft tissue||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|prominence is noted. The spinal canal caliber is adequate. Compared||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|to the previous imaging performed on 2010-05-15, there is a slight||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|progression of degenerative change, but overall spinal alignment||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|remains normal.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Prelim|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.257679467345670087114687878481353634814^EPIC^APPLICATION^DICOM<R>
+<EB>

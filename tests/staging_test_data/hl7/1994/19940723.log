@@ -1,0 +1,11 @@
+1994-07-23 10:22:32.1270|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19940723102232|TBD|ORU^R01|2.25.74345694682760618406999437591959955338|P|2.4<R>
+PID|1||ABC451053^^^ABC^MR~EPIC4485812^^^EPIC^MRN||HILL^EDWARD^WYATT^^^^D||19660723000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451053^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823256^MILLER^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457350^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6412862^SYS|7795083011|OMHEADWO^ MRI BRAIN WITHOUT CONTRAST^UNKDEV|URGENT||19940722085826|||PSCRIB|||||^^^^ |D7823246^SANCHEZ^LESLIE^KATIE^M.D.^^^^ABC|||||^HEAD MRI Expedited|19940723102232||OMHEADWO|||1^^^19940723102232^^U^^URGENT|       |||^Chest pain|D7823257^ROBINSON^RALPH^A.^^^M.D.|D7823258^BRYANT^DAVID^T.^^^M.D.||PSCRIB<R>
+OBX|1|TX|6651504||RALPH ROBINSON, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6651504||ACC#  Date Time  Exam~~7795083011 Jul 23 1994 10:22AM OMHEADWO MRI BRAIN WITHOUT CONTRAST~~EXAMINATION:~Head MRI~~FINDINGS:~The MRI of the brain demonstrates normal cerebral sulcal and~ventricular anatomy, with no midline shift or mass effect present.~The cortical and subcortical structures are intact. The visualized~cranial foramina exhibit normal morphology. The white matter shows~homogeneous signal intensity, with no evidence of demyelination or~infarction. However, subtle bilateral periventricular~hyperintensities are noted on T2-weighted images, suggestive of~chronic microvascular ischemic changes rather than acute pathology.~~IMPRESSION:~Overall, these findings are consistent with mild chronic ischemic~changes likely related to age and vascular risk factors. There is no~acute intracranial pathology identified. Close follow-up is~recommended to monitor these changes over time.||||||F<R>
+OBX|3|TX|6651504||Requested By: Sanchez,Leslie K. M.D.~~Dictated By: Ralph Robinson, M.D. on Jul 23 1994 10:22AM~~This document has been electronically signed by: Ralph Robinson, M.D.~on Jul 23 1994 10:22AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6651504|4|7795083011^UK^ZB||||||F<R>
+<EB>

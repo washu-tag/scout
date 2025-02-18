@@ -1,0 +1,25 @@
+2020-05-23 14:48:58.2101|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200523144858|TBD|ORU^R01|2.25.1337976420449941700001998725057548709|P|2.7<R>
+PID|1||ABC451163^^^ABC^MR||LEE^SAMUEL^MARVIN^^Adm.^^D||19480202|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084909|||||||||||||||||||||||||20200523144858|||||||V<R>
+ORC|RE|7625514^SYS|7795083449||Final||^^^20200523144857^20200523144858^O||20200523144858|T6530147^ANDERSON^NATALIE||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7625514^SYS|7795083449|EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY|O|20200520171523|||||Hosp Perf||||^^^TSPINE|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20200523144858||DX|Final||^^^20200523144857^20200523144858^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20200523144858||||||||EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Thoracic spine X-ray||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|The thoracic spine X-ray performed on 2020-05-20 shows mild||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|degenerative changes consistent with age. No acute abnormalities are||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|identified, and the overall spinal alignment is preserved. The||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|thoracic spine X-ray shows normal alignment of the thoracic vertebrae||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|with no evidence of acute fracture or dislocation. There are mild||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|degenerative changes evident at multiple levels, particularly at||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|T6-T7 and T8-T9, characterized by reduced disc height and formation||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|of osteophytes. No significant spinal canal stenosis is noted, and||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|the neural foramen appear patent bilaterally. Soft tissues adjacent||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|to the spine appear unremarkable, with no signs of paravertebral||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|masses or inflammation.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.204118215859613572636414964288055260981^EPIC^APPLICATION^DICOM<R>
+<EB>

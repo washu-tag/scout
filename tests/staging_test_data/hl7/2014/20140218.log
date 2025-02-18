@@ -1,0 +1,28 @@
+2014-02-18 23:42:35.3085|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140218234235|TBD|ORU^R01|2.25.273606842273994337738656497375049919737|P|2.7<R>
+PID|1||ABC451071^^^ABC^MR||ΑΣΤΡΙΝΊΔΗΣ^ΜΆΡΘΑ^^^^^D||19940926|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084662|||||||||||||||||||||||||20140218234235|||||||V<R>
+ORC|RE|674676^SYS|7795083083||Wet Read||^^^20140218234234^20140218234235^O||20140218234235|T6530145^RUIZ^TARA||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|674676^SYS|7795083083|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20140216205729|||||Hosp Perf||||^^^BREAST|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20140218234235||MG|Wet Read||^^^20140218234234^20140218234235^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20140218234235||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|Overall, the single-view mammogram was within normal limits with no||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|evident areas of suspicion or concern. There are no significant||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|changes since the previous study performed on 2014-02-16, and there||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|is no indication for immediate follow-up. Routine screening is||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|recommended as per guidelines. The single-view mammogram demonstrates||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|symmetric breast tissue bilaterally without any apparent masses or||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|architectural distortion. The breast parenchyma is predominantly||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|dense, which is consistent with a youthful appearance. No suspicious||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|microcalcifications are identified, and there are no evident signs of||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|spiculated or irregular masses. The area of interest is well||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|visualized with no palpable lumps correlated within the imaging. The||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|skin and nipple complex appear unremarkable, and there is no axillary||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|lymphadenopathy evident on this single view. The adipose tissue is||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|appropriately distributed.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|19|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.59016352998039837473043815879760612489^EPIC^APPLICATION^DICOM<R>
+<EB>

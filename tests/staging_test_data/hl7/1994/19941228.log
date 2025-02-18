@@ -1,0 +1,11 @@
+1994-12-28 09:57:50.8353|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19941228095750|TBD|ORU^R01|2.25.173140580557304856647845176388456667876|P|2.4<R>
+PID|1||ABC451169^^^ABC^MR~EPIC4485928^^^EPIC^MRN||WHITE^KRISTINA^ALICIA^^^^D||19770108000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451169^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457127^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4760079^SYS|7795083473|IMG5021^5021 PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV|URGENT||19941227105102|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||5021^Brain Petct AC NAC|19941228095750||IMG|||1^^^19941228095750^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||5021<R>
+OBX|1|TX|4538704||JOSEPH BARAJAS, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|4538704||ACC#  Date Time  Exam~~7795083473 Dec 28 1994 09:57AM IMG5021 PET/CT FDG BRAIN TUMOR~METABOLIC EVALUATION~~EXAMINATION:~Head PET-CT~~FINDINGS:~The examination reveals no significant FDG avidity within the brain~structures. The cerebrum appears symmetric with preserved gray-white~matter differentiation. No mass lesions, edema, or midline shift are~noted. The baseline metabolic activity in the brain is within the~expected range for female patients of this age group. The skull base~and cervical soft tissues show no signs of abnormal activity, with~visualized cranial nerves appearing normal. No extra-axial fluid~collections or overt vascular abnormalities are identified. Lymph~nodes in the neck are not enlarged significantly, showing normal~anatomical contours.~~IMPRESSION:~Overall, this head PET-CT is unremarkable with no evidence of~malignancy or significant intracranial pathology. The study is~consistent with normal anatomical and metabolic findings.||||||P<R>
+OBX|3|TX|4538704||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Joseph Barajas, M.D. on Dec 28 1994 09:57AM~~Pending review by: Kimberly Hanson, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|4538704|4|7795083473^UK^ZB||||||P<R>
+<EB>

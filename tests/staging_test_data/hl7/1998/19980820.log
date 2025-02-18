@@ -1,0 +1,11 @@
+1998-08-20 02:06:17.1639|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19980820020617|TBD|ORU^R01|2.25.171292561701332229092563200026789214104|P|2.4<R>
+PID|1||ABC451045^^^ABC^MR~EPIC4485804^^^EPIC^MRN||WALSH^ANGEL^CARRIE^^^^D||19550621000000|F||R|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451045^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457151^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5894191^SYS|7795082977|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||19980817073338|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||70553^Brain dMRI|19980820020617||CMRP|||1^^^19980820020617^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|4201291||AMBER REESE, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|4201291||ACC#  Date Time  Exam~~7795082977 Aug 20 1998 02:06AM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~Brain MRI~~FINDINGS:~MRI of the brain reveals a well-defined hyperintense lesion in the~right frontal cortex, measuring approximately 2.5 cm. There is no~significant mass effect or midline shift. The ventricles are within~normal limits, and no acute intracranial hemorrhage is seen. The~cortical structures appear intact, and there is no evidence of~ischemic change. The brainstem and cerebellum appear normal in signal~intensity. No enhancing lesions are seen post-contrast~administration, suggesting a non-neoplastic etiology for the~hyperintense lesion noted.~~IMPRESSION:~The findings are consistent with a likely benign process such as a~meningioma or a glial tumor; however, clinical correlation is~advised. No acute intracranial events were detected.||||||P<R>
+OBX|3|TX|4201291||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Amber Reese, M.D. on Aug 20 1998 02:06AM~~Pending review by: Russell Gallagher, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|4201291|4|7795082977^UK^ZB||||||P<R>
+<EB>

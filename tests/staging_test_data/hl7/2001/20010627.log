@@ -1,0 +1,25 @@
+2001-06-27 13:59:11.0539|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010627135911|TBD|ORU^R01|2.25.36294139047935785130986672688230485347|P|2.7<R>
+PID|1||ABC451008^^^ABC^MR||THOMPSON^AMANDA^NOELLE^^^^D||19720809|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084879|||||||||||||||||||||||||20010627135911|||||||V<R>
+ORC|RE|3841761^SYS|7795082832||Final||^^^20010627135910^20010627135911^O||20010627135911|T6530150^NEAL^EMILY||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3841761^SYS|7795082832|SM71550CH0^MR CHEST WO^UNKDEV^^CHEST PTMR|O|20010624160409|||||Hosp Perf||||^^^CHEST|D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20010627135911||MR|Final||^^^20010627135910^20010627135911^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20010627135911||||||||SM71550CH0^MR CHEST WO^UNKDEV^^CHEST PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest PET-MR||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|The findings are suggestive of possible malignancy in the left lung||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|segment requiring further characterization with CT imaging, albeit||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|the cardiac function remains stable with no evidence of ischemia. The||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|PET-MR exam conducted on June 24, 2001, reveals increased metabolic||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|activity in the left lung segment, with a maximum standardized uptake||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|value (SUV) of 5.5. This finding raises suspicion for a malignant||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|process, possibly a lung mass or localized infection. The right lung||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|is clear without significant metabolic uptake. Additionally,||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|mediastinal lymph nodes are slightly enlarged but lack significant||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|hypermetabolic changes. The heart shows normal metabolic activity||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|with good perfusion suggesting no acute cardiac events.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Final|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.24881367316003045762148780226190651815^EPIC^APPLICATION^DICOM<R>
+<EB>

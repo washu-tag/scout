@@ -1,0 +1,28 @@
+2002-02-17 08:37:12.3208|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020217083712|TBD|ORU^R01|2.25.169048685898990431964777296911866942347|P|2.7<R>
+PID|1||ABC451109^^^ABC^MR||SATO^ITSUKI^^^^^D||19490315|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084947|||||||||||||||||||||||||20020217083712|||||||V<R>
+ORC|RE|2093975^SYS|7795083234||Wet Read||^^^20020217083711^20020217083712^O||20020217083712|||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2093975^SYS|7795083234|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20020214134215|||||Hosp Perf|||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20020217083712||XR|Wet Read||^^^20020217083711^20020217083712^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|||20020217083712||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|The chest X-ray reveals a stable and normal appearing cardiothoracic||||||Wet Read<R>
+OBX|6|ST|&IMP|2|architecture with no acute abnormalities. There is no evidence of||||||Wet Read<R>
+OBX|7|ST|&IMP|2|infection or chronic lung disease when compared to previous images.||||||Wet Read<R>
+OBX|8|ST|&IMP|2|Continued routine follow-up of the lungs is recommended based on the||||||Wet Read<R>
+OBX|9|ST|&IMP|2|patient's age, even in the absence of acute findings. The single-view||||||Wet Read<R>
+OBX|10|ST|&IMP|2|posteroanterior chest X-ray demonstrates clear lung fields with no||||||Wet Read<R>
+OBX|11|ST|&IMP|2|evidence of focal opacities or pleural effusion. The cardiac||||||Wet Read<R>
+OBX|12|ST|&IMP|2|silhouette is within normal limits with a maintained configuration.||||||Wet Read<R>
+OBX|13|ST|&IMP|2|The diaphragm is well-defined. There are no bony abnormalities||||||Wet Read<R>
+OBX|14|ST|&IMP|2|visible within the thoracic cage. The hilar regions are unremarkable,||||||Wet Read<R>
+OBX|15|ST|&IMP|2|and the trachea appears midline with no deviation or obstruction.||||||Wet Read<R>
+OBX|16|ST|&IMP|2|Vascular markings are accentuated peripherally, but this is within||||||Wet Read<R>
+OBX|17|ST|&IMP|2|normal age-related variations. No evidence of acute cardiopulmonary||||||Wet Read<R>
+OBX|18|ST|&IMP|2|disease is noted.||||||Wet Read<R>
+OBX|19|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.177676172704013331036137730633861249499^EPIC^APPLICATION^DICOM<R>
+<EB>

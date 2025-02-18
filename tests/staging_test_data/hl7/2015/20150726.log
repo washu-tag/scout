@@ -1,0 +1,11 @@
+2015-07-26 17:14:56.9503|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150726171456|TBD|ORU^R01|2.25.94121395002226635831171458926767090667|P|2.4<R>
+PID|1||ABC451174^^^ABC^MR~EPIC4485933^^^EPIC^MRN||JONES^MILTON^JOSHUA^^^^D||19630203000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451174^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457164^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5513562^SYS|7795083494|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20150723112357|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||^Xr Sing View|20150726171456||MDXREVNT|||1^^^20150726171456^^U^^URGENT|       |||^Chest pain|D7823234^DONOVAN^WILLIAM^C.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|6071382||WILLIAM DONOVAN, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6071382||ACC#  Date Time  Exam~~7795083494 Jul 26 2015 05:14PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray of the chest~~FINDINGS:~Comparison is made with the prior chest X-ray from 2004-03-27.~~The most recent single-view chest X-ray reveals similar findings to~the previous study. The lung fields remain clear bilaterally; no~acute infiltrative processes or masses are noted.The cardiac~silhouette maintains its normal proportion and the mediastinal~structures continue to appear within normal limits. No changes in~bony architecture are observed when compared to the earlier study,~suggesting that there are no new pathologies such as fractures or~lesions. The costophrenic angles continue to be well defined without~pleural effusion, and both diaphragm positions correlate.~~IMPRESSION:~The single-view chest X-ray from 2015-07-23 does not show any~significant changes compared to the previous study dated 2004-03-27.~Findings remain stable and demonstrate a continued absence of acute~pulmonary or cardiac pathology. Continued clinical assessment is~advised based on clinical symptoms.||||||F<R>
+OBX|3|TX|6071382||Requested By: Sanders,Lisa A. M.D.~~Dictated By: William Donovan, M.D. on Jul 26 2015 05:14PM~~This document has been electronically signed by: William Donovan,~M.D. on Jul 26 2015 05:14PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6071382|4|7795083494^UK^ZB||||||F<R>
+<EB>

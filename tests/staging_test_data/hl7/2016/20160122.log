@@ -1,0 +1,11 @@
+2016-01-22 19:48:31.8826|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20160122194831|TBD|ORU^R01|2.25.232112184271228827589673261396524939337|P|2.4<R>
+PID|1||ABC451154^^^ABC^MR~EPIC4485913^^^EPIC^MRN||WHITEHEAD^MICHAEL^ROGER^^^^D||19330116000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451154^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457359^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3832367^SYS|7795083416|IMG1259^1259 XR CHEST 1 VIEW^UNKDEV|URGENT||20160122070401|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||1259^Chest 1 View Xray|20160122194831||IMG|||1^^^20160122194831^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.||PSCRIB|||||||||1259<R>
+OBX|1|TX|8135236||JOSEPH BARAJAS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|8135236||ACC#  Date Time  Exam~~7795083416 Jan 22 2016 07:48PM IMG1259 XR CHEST 1 VIEW~~EXAMINATION:~Chest X-ray~~FINDINGS:~The chest X-ray presents normal consolidated structures with no lung~lesions. The diaphragm is well defined and elevated without evidence~of free air. The cardiac silhouette maintains its contour, and the~mediastinum appears symmetrically widened, likely due to benign~anatomical variations. The bones are unremarkable, showing no signs~of acute fracture or lytic lesions.~~IMPRESSION:~Chest X-ray results confirm no acute thoracic abnormalities.~Structures remain within normal limits, comparable to prior imaging~studies.||||||F<R>
+OBX|3|TX|8135236||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Joseph Barajas, M.D. on Jan 22 2016 07:48PM~~This document has been electronically signed by: Joseph Barajas, M.D.~on Jan 22 2016 07:48PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8135236|4|7795083416^UK^ZB||||||F<R>
+<EB>

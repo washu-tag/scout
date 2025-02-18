@@ -1,0 +1,11 @@
+2011-07-14 05:37:12.3748|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110714053712|TBD|ORU^R01|2.25.222001838248391029237177478038617515711|P|2.4<R>
+PID|1||ABC451176^^^ABC^MR~EPIC4485935^^^EPIC^MRN||CALLAHAN^DEBRA^AMANDA^^^^D||19861204000000|F||R|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451176^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457208^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1934247^SYS|7795083501|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20110709150034|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20110714053712||IMG|||1^^^20110714053712^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|5837703||JENNIFER SMITH, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|5837703||ACC#  Date Time  Exam~~7795083501 Jul 14 2011 05:37AM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdominal X-ray obtained on July 9, 2011, reveals a predominantly~gas-filled abdomen with normal intestinal dilation. No acute~abnormalities such as free air under the diaphragm or significant~bowel obstruction are noted. The liver, spleen, and kidneys appear~within normal limits without discernible enlargement or~calcifications. The visualized bones appear intact without any~evident fractures. Overall, the study demonstrates a normal abdominal~profile.~~IMPRESSION:~Overall, the abdominal X-ray demonstrates no significant acute~pathology. The gas pattern is appropriate for the clinical setting,~and no signs of obstruction or acute disease processes are~identified. Follow-up may be warranted if clinical symptoms persist.||||||P<R>
+OBX|3|TX|5837703||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Jennifer Smith, M.D. on Jul 14 2011 05:37AM~~Pending review by: Russell Gallagher, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5837703|4|7795083501^UK^ZB||||||P<R>
+<EB>

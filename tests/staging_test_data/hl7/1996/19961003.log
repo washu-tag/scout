@@ -1,0 +1,26 @@
+1996-10-03 20:43:06.2335|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19961003204306|TBD|ORU^R01|2.25.66925258612245838839596784126191746773|P|2.7<R>
+PID|1||ABC451121^^^ABC^MR||SMITH^MINDY^TERA^^^^D||19741018|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084886|||||||||||||||||||||||||19961003204306|||||||V<R>
+ORC|RE|7268765^SYS|7795083282||Prelim||^^^19961003204305^19961003204306^O||19961003204306|T6530145^RUIZ^TARA||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7268765^SYS|7795083282|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|19961002065247|||||Hosp Perf|||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19961003204306||US|Prelim||^^^19961003204305^19961003204306^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||19961003204306||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdominal Ultrasound||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|Abdominal ultrasound findings are unremarkable with stable hepatic||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|and renal morphology. No acute abdominal conditions are observed. The||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|abdominal ultrasound performed on October 2, 1996, demonstrates a||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|normal-sized liver with homogeneous echotexture and no focal lesions.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|The gallbladder is visually intact, with no calculi or wall||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|thickening noted. The kidneys are normal in size and echogenicity,||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|with no evidence of hydronephrosis. The pancreas appears||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|non-distorted and without abnormal masses. The aorta and inferior||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|vena cava are patent, and no lymphadenopathy is identified in the||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|abdominal cavity. Overall, the ultrasound reflects a stable abdominal||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|profile when correlated with the preceding ultrasound from 1994.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|There are no new abnormalities noted in the intervening period.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.159305257617965120401641352605913878678^EPIC^APPLICATION^DICOM<R>
+<EB>

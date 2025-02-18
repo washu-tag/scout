@@ -1,0 +1,25 @@
+2017-03-01 00:56:03.8650|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170301005603|TBD|ORU^R01|2.25.311782908888310262615953778141813652323|P|2.7<R>
+PID|1||ABC451161^^^ABC^MR||WARD^DANNY^DAVID^^^^D||19561123|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084866|||||||||||||||||||||||||20170301005603|||||||V<R>
+ORC|RE|9587048^SYS|7795083441||Wet Read||^^^20170301005602^20170301005603^O||20170301005603|T6530145^RUIZ^TARA||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9587048^SYS|7795083441|EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY|O|20170226193252|||||Hosp Perf||||^^^TSPINE|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20170301005603||DX|Wet Read||^^^20170301005602^20170301005603^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20170301005603||||||||EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: T-spine X-ray||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|Mild degenerative changes in the mid-thoracic region of the spine||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|without evidence of acute pathology. No significant interval change||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|compared to previous studies. The thoracic spine X-ray reveals normal||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|vertebral alignment with no evidence of acute compression fractures.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|There are mild degenerative changes observed at the T7-T8 level,||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|including slight endplate osteophyte formation and decreased disc||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|height. No significant spondylolisthesis is noted, and the posterior||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|elements and soft tissues appear unremarkable. The mediastinum is of||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|normal width, and there are no signs of bony lesions or||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|calcifications within the thoracic cavity, indicating a stable||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|appearance compared to prior imaging studies.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.204036545317426313311840502537262482809^EPIC^APPLICATION^DICOM<R>
+<EB>

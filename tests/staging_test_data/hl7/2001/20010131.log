@@ -1,0 +1,31 @@
+2001-01-31 00:35:56.7927|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010131003556|TBD|ORU^R01|2.25.283057020375280424787298568814672773488|P|2.7<R>
+PID|1||ABC451012^^^ABC^MR||GARCIA^JUSTIN^MARIO^^^^D||19650712|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084956|||||||||||||||||||||||||20010131003556|||||||V<R>
+ORC|RE|7047664^SYS|7795082845||Wet Read||^^^20010131003555^20010131003556^O||20010131003556|T6530146^MOORE^CURTIS||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7047664^SYS|7795082845|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20010130102143|||||Hosp Perf||||^^^HEART|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20010131003556||MR|Wet Read||^^^20010131003555^20010131003556^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20010131003556||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|Cardiac MRI findings are consistent with a clinically normal heart.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|There are no significant structural or functional abnormalities||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|observed at this time. Continuous monitoring may be advised given the||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|patient's age and risk factors, but no acute interventions are||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|required based on the current assessment. The heart MRI conducted on||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|2001-01-30 reveals normal cardiac anatomy with well-defined borders||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|of the myocardium and chambers. The left ventricular ejection||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|fraction is estimated at 65%, indicating normal contractility. The||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|right ventricle shows no signs of hypertrophy and remains||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|morphologically within the expected range. There is no evidence of||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|myocardial edema or late gadolinium enhancement, ruling out ischemia||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|or prior infarction. The pericardium appears intact, and no effusion||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|is observed. The coronary arteries demonstrated normal opacification||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|during the perfusion sequences, with no evidence of anomalies or||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|19|ST|&IMP|2|pathological stenosis identified in any segment. Comparison to the||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|20|ST|&IMP|2|previous angiography indicates continued absence of significant||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|21|ST|&IMP|2|coronary pathology.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|22|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.140193996702942675280882339275355355301^EPIC^APPLICATION^DICOM<R>
+<EB>

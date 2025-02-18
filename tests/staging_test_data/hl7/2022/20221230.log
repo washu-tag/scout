@@ -1,0 +1,23 @@
+2022-12-30 03:17:18.1322|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20221230031718|TBD|ORU^R01|2.25.56744207509021225410907015278999015157|P|2.7<R>
+PID|1||ABC451047^^^ABC^MR||ΓΙΑΝΝΑΡΆΣ^ΊΩΣΉΦ^^^^^D||19680418|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084759|||||||||||||||||||||||||20221230031718|||||||V<R>
+ORC|RE|3805452^SYS|7795082984||Final||^^^20221230031717^20221230031718^O||20221230031718|||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3805452^SYS|7795082984|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20221229184135|||||Hosp Perf|||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20221230031718||SC|Final||^^^20221230031717^20221230031718^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|||20221230031718||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|Chest X-ray results are unremarkable, revealing normal lung and||||||Final<R>
+OBX|6|ST|&IMP|2|cardiac structures, with no acute pathologies identified. The||||||Final<R>
+OBX|7|ST|&IMP|2|single-view chest X-ray reveals clear lung fields with no signs of||||||Final<R>
+OBX|8|ST|&IMP|2|consolidation or effusion. The cardiac silhouette is within normal||||||Final<R>
+OBX|9|ST|&IMP|2|limits, and the mediastinal structures remain unchanged. The bony||||||Final<R>
+OBX|10|ST|&IMP|2|thorax appears intact with no fractures or lesions observed. There is||||||Final<R>
+OBX|11|ST|&IMP|2|no evidence of airspace disease or pleural abnormalities, and the||||||Final<R>
+OBX|12|ST|&IMP|2|costophrenic angles are sharp and well-defined. Overall, the study||||||Final<R>
+OBX|13|ST|&IMP|2|shows no obvious pathological findings.||||||Final<R>
+OBX|14|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Final<R>
+ZDS|2.25.157239736237934644728582126743377863492^EPIC^APPLICATION^DICOM<R>
+<EB>

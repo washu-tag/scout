@@ -1,0 +1,64 @@
+2013-09-02 03:01:43.6359|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130902030143|TBD|ORU^R01|2.25.179964851534244776172776960726065281775|P|2.7<R>
+PID|1||ABC451191^^^ABC^MR||GRIMES^STEPHEN^LARRY^^^^D||19310301|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084774|||||||||||||||||||||||||20130902030143|||||||V<R>
+ORC|RE|1514645^SYS|7795083564||Final||^^^20130902030142^20130902030143^O||20130902030143|T6530146^MOORE^CURTIS||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1514645^SYS|7795083564|BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY|O|20130830144801|||||Hosp Perf||||^^^ABDOMEN|D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20130902030143||DX|Final||^^^20130902030142^20130902030143^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20130902030143||||||||BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdominal X-ray examination.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|Unremarkable abdominal X-ray finding; only mild proximal bowel||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|dilation can be noted – suggestive of a functional issue rather than||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|structural obstruction. Overall findings stable from previous imaging||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|studies. The abdominal X-ray depicts a normal gas pattern with no||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|bowel obstruction evident. The liver, spleen, and kidneys exhibit||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|normally sized shadow profiles, with no evidence of abnormal||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|calcifications or masses identified. There is mild pre-surgical||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|proximal bowel dilation suggesting possible early ileus; however,||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|this is not clearly defined, and clinical correlation may be||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|warranted. The abdominal silhouette is within normal limits, and no||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|free air under the diaphragm was observed. The visualized osseous||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|structures maintain integrity, with no signs of acute bony injury.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|The structures appear well-aligned with no obvious degenerative||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|changes noted secondary to aging. Compared with the 2013 imaging||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|19|ST|&IMP|2|study, there is no significant change in morphology or disease||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|20|ST|&IMP|2|progression.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|21|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.147451960423047577482371078357830894555^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2013-09-02 23:52:01.3624|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130902235201|TBD|ORU^R01|2.25.146308625979690571701550383645838577544|P|2.7<R>
+PID|1||ABC451038^^^ABC^MR||HALE^CRYSTAL^KATHRYN^^^^D||19630613|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084938|||||||||||||||||||||||||20130902235201|||||||V<R>
+ORC|RE|1228603^SYS|7795082950||Wet Read||^^^20130902235200^20130902235201^O||20130902235201|T6530146^MOORE^CURTIS||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1228603^SYS|7795082950|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20130902100700|||||Hosp Perf||||^^^BRAIN|D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20130902235201||MR|Wet Read||^^^20130902235200^20130902235201^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20130902235201||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|1. No intracranial lesions or abnormalities evident; stable findings||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|when compared to previous studies. ||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|2. Cerebral structures within normal limits with preserved anatomical||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|integrity and no signs of pathological changes. ||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|3. There is a consistent appearance across longitudinal imaging||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|studies demonstrating no new developments in the patient's condition.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|The brain MRI revealed normal morphology of the cerebrum, cerebellum,||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|and brainstem. The imaging displays no evidence of gray-white matter||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|differentiation irregularities, and no lesions are identified in the||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|cortical or subcortical regions. The ventricles are symmetrically||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|spaced and of normal size, indicating no signs of hydrocephalus.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|Axial and coronal sequences provide clear visualization without||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|revealing any mass lesions, and diffusion-weighted imaging||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|demonstrates no areas suggestive of acute ischemic changes. The||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|19|ST|&IMP|2|assessment of the brain's vascular territories shows no areas of||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|20|ST|&IMP|2|infarction and normal arterial flow outlets of the circle of Willis.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|21|ST|&IMP|2|There are no signs of demyelinating disease or any other||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|22|ST|&IMP|2|abnormalities, and the examination of the cranial nerves is also||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|23|ST|&IMP|2|unremarkable.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+OBX|24|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Wet Read|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.263026394283604682585010894129773185998^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+1999-11-15 05:43:05.3211|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19991115054305|TBD|ORU^R01|2.25.149923609064383372210162650148281985432|P|2.4<R>
+PID|1||ABC451127^^^ABC^MR~EPIC4485886^^^EPIC^MRN||KOBAYASHI^AOI^^^^^D||19750818000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451127^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457427^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3081807^SYS|7795083303|M755570^755570 MR CARDIAC MRPH FUNC W/O^UNKDEV|URGENT||19991111060704|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||755570^HEART MRI Expedited|19991115054305||M|||1^^^19991115054305^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823234^DONOVAN^WILLIAM^C.^^^M.D.||PSCRIB|||||||||755570<R>
+OBX|1|TX|824412||GUY SANCHEZ, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|824412||ACC#  Date Time  Exam~~7795083303 Nov 15 1999 05:43AM M755570 MR CARDIAC MRPH FUNC W/O~~EXAMINATION:~Heart MRI~~FINDINGS:~The cardiac MRI performed on 1999-11-11 indicates well-preserved~global left ventricular systolic function with an ejection fraction~in the range of 65% via cine imaging. The myocardial tissue shows no~evidence of significant ischemia, with late gadolinium enhancement~not demonstrating areas of fibrosis. The coronary arteries are~unremarkable on the angiographic series, and there is no indication~of structural anomalies. Valve integrity appears normal without signs~of regurgitation or stenosis. Overall, heart morphology remains~within normal limits.~~IMPRESSION:~The heart MRI is unremarkable, with no signs of myocardial ischemia~or structural abnormalities. Compared to prior studies, the cardiac~function and structure appear stable, without any evidence of~restrictive or infiltrative cardiomyopathy.||||||F<R>
+OBX|3|TX|824412||Requested By: Sanders,Lisa A. M.D.~~Dictated By: Guy Sanchez, M.D. on Nov 15 1999 05:43AM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Nov 15 1999 05:43AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|824412|4|7795083303^UK^ZB||||||F<R>
+<EB>

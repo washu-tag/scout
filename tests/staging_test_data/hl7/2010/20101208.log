@@ -1,0 +1,28 @@
+2010-12-08 23:11:53.7972|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20101208231153|TBD|ORU^R01|2.25.151574525445566592082122140388739698276|P|2.7<R>
+PID|1||ABC451135^^^ABC^MR||ΑΣΤΡΙΝΊΔΗΣ^ΈΛΙΣΆΒΕΤ^^^^^D||19470414|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084997|||||||||||||||||||||||||20101208231153|||||||V<R>
+ORC|RE|2397629^SYS|7795083339||Prelim||^^^20101208231152^20101208231153^O||20101208231153|T6530154^ROBERTS^RICARDO||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2397629^SYS|7795083339|SM71550CH0^MR CHEST WO^UNKDEV^^CHEST PTMR|O|20101205100859|||||Hosp Perf||||^^^CHEST|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20101208231153||MR|Prelim||^^^20101208231152^20101208231153^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20101208231153||||||||SM71550CH0^MR CHEST WO^UNKDEV^^CHEST PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest PET-MR||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|The PET-MR indicates increased metabolic activity within the right||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|upper lobe nodule, which has progressed in size since the prior MRI||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|on November 15, 1994. This raises a concern for malignancy and||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|necessitates biopsy or follow-up imaging in three months to assess||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|for further growth. The cystic structure is likely benign. The||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|combination of PET and MRI imaging demonstrates increased metabolic||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|activity within a previously identified small pulmonary nodule in the||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|right upper lobe, now measuring approximately 1.2 cm. This may||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|suggest a lesion of greater clinical significance, warranting further||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|investigation. The MRI component asserts the presence of a||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|thin-walled cystic structure adjacent to the nodule, likely an||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|incidental finding. There is no evidence of mediastinal masses or||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|significant lymphadenopathy. The heart and diaphragm maintain normal||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|18|ST|&IMP|2|morphology without any suspicious mass effect.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|19|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.59445544620777761418130298317673017980^EPIC^APPLICATION^DICOM<R>
+<EB>

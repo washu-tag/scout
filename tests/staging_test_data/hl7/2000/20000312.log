@@ -1,0 +1,23 @@
+2000-03-12 07:45:53.8111|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000312074553|TBD|ORU^R01|2.25.174225793098402093834746549288669230086|P|2.7<R>
+PID|1||ABC451078^^^ABC^MR||KELLY^JODI^DAWN^^^^D||19801121|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084684|||||||||||||||||||||||||20000312074553|||||||V<R>
+ORC|RE|8671072^SYS|7795083112||Final||^^^20000312074552^20000312074553^O||20000312074553|T6530147^ANDERSON^NATALIE||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8671072^SYS|7795083112|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20000311093633|||||Hosp Perf||||^^^BREAST|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20000312074553||MG|Final||^^^20000312074552^20000312074553^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20000312074553||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|Mammographic findings are within normal limits for a female of this||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|age group. No suspicious lesions or abnormalities detected. The||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|mammographic evaluation reveals a predominantly heterogeneously dense||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|breast parenchyma. The dense areas exhibit bilaterally symmetrical||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|glandular tissue with no focal masses or architectural distortion||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|appreciated. There are no visible microcalcifications or abnormal||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|findings in the axillary regions. The breast contour appears smooth||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|without any visible skin thickening or retraction. All standard views||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|obtained are technically adequate, and no artifacts are noted.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.56014035982416130076540867524903931852^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,24 @@
+2007-12-17 15:06:07.7920|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20071217150607|TBD|ORU^R01|2.25.309885248458790197142343137653459504072|P|2.7<R>
+PID|1||ABC451004^^^ABC^MR||PEREZ^THOMAS^MICHAEL^^^^D||19700404|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084944|||||||||||||||||||||||||20071217150607|||||||V<R>
+ORC|RE|1850823^SYS|7795082815||Wet Read||^^^20071217150606^20071217150607^O||20071217150607|T6530150^NEAL^EMILY||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1850823^SYS|7795082815|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20071213105649|||||Hosp Perf||||^^^BRAIN|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20071217150607||MR|Wet Read||^^^20071217150606^20071217150607^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20071217150607||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|The data presents a stable condition, consistent with the previous||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|study from October 2000, with no new findings suggestive of||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|pathology. This MRI of the brain, dated December 13, 2007, reveals no||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|significant interval change compared to the previous MRI from October||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|9, 2000. The brain structure shows preserved anatomy with no new||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|areas of hyperintensity indicating acute or chronic lesions. The||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|leptomeningeal spaces remain clear, and there is no edema or mass||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|effect noted throughout the brain parenchyma. Extra-axial fluid||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|collections are absent. White matter remains unremarkable, and CSF||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|dynamics are normal with no signs of obstruction or effusion.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.231622445150621688016275535588157150303^EPIC^APPLICATION^DICOM<R>
+<EB>

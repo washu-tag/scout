@@ -1,0 +1,27 @@
+2014-04-25 07:51:54.3525|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140425075154|TBD|ORU^R01|2.25.52050835604713981657836950515938065927|P|2.7<R>
+PID|1||ABC451044^^^ABC^MR||SHERMAN^LINDA^DESIRAE^^^^D||19520302|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084694|||||||||||||||||||||||||20140425075154|||||||V<R>
+ORC|RE|4740777^SYS|7795082974||Prelim||^^^20140425075153^20140425075154^O||20140425075154|T6530136^RIOS^KRISTIN||D7823220^HESS^BRANDI^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4740777^SYS|7795082974|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20140424172307|||||Hosp Perf|||||D7823220^HESS^BRANDI^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20140425075154||XA|Prelim||^^^20140425075153^20140425075154^O||||^Chest pain||D7823225^PARK^JOLENE^R.^^^^^ABC^^^^HOSP|T6530136^RIOS^KRISTIN||20140425075154||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray Angiography||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|5|ST|&IMP|2|Angiography indicates normal vascular anatomy with no evidence of||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|6|ST|&IMP|2|arterial stenosis, occlusion, or aneurysm formation. The findings||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|7|ST|&IMP|2|corroborate previous studies and suggest stable cerebral vasculature.||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|8|ST|&IMP|2|The X-ray angiography was performed to evaluate the cerebral||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|9|ST|&IMP|2|vasculature. The study shows patent internal carotid arteries||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|10|ST|&IMP|2|bilaterally with no evidence of stenosis or occlusion. The vertebral||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|11|ST|&IMP|2|arteries are also patent, and the basilar artery is visualized||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|12|ST|&IMP|2|without abnormal anatomic variants. No aneurysms or vascular||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|13|ST|&IMP|2|malformations are detected throughout the visualized cerebral||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|14|ST|&IMP|2|circulation. The venous structures are unremarkable, with appropriate||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|15|ST|&IMP|2|venous drainage noted. Comparison with previous vascular imaging from||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|16|ST|&IMP|2|2009-03-15 shows no significant changes in the vascular anatomy or||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|17|ST|&IMP|2|pathophysiology identifiable in this series.||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|18|ST|&IMP|2|Dictated by: Jolene Park Interpreter, M.D.||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+ZDS|2.25.50385534561591811782073516435964363863^EPIC^APPLICATION^DICOM<R>
+<EB>

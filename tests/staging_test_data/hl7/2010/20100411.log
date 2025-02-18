@@ -1,0 +1,30 @@
+2010-04-11 23:27:21.7260|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100411232721|TBD|ORU^R01|2.25.91020529234818959821846934241808647862|P|2.7<R>
+PID|1||ABC451087^^^ABC^MR||VASQUEZ^JOSHUA^LARRY^^^^D||19420712|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084757|||||||||||||||||||||||||20100411232721|||||||V<R>
+ORC|RE|332838^SYS|7795083145||Prelim||^^^20100411232720^20100411232721^O||20100411232721|T6530148^GROSS^CARLY||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|332838^SYS|7795083145|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC|O|20100408171830|||||Hosp Perf||||^^^ABDOMEN|D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20100411232721||CT|Prelim||^^^20100411232720^20100411232721^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20100411232721||||||||CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-CT||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|There is an abnormal hypermetabolic lesion in the right lower||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|quadrant concerning for malignancy. Continued workup including||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|possible biopsy is strongly recommended to clarify the nature of the||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|lesion. It is essential to correlate these findings with clinical||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|data and possibly follow up with surgical consultation. Overall,||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|while the liver and renal findings are unremarkable, the||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|hypermetabolic activity requires immediate attention. The PET-CT scan||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|of the abdomen demonstrates a well-oxygenated liver with homogeneous||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|tracer uptake. The gallbladder is not distended, and there is no||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|evidence of calculi. The kidneys appear normal in size and shape,||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|with no hydronephrosis or renal masses noted. There is a notable||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|hypermetabolic lesion in the right lower quadrant, consistent with a||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|possible neoplastic process, measuring 2.5 cm, with concerning||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|characteristics warranting further evaluation. No para-aortic||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|lymphadenopathy is visualized. The aorta and inferior vena cava are||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|20|ST|&IMP|2|patent, and no aortic aneurysm is indicated.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|21|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.323939612121405355031219988539441311089^EPIC^APPLICATION^DICOM<R>
+<EB>

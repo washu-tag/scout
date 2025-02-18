@@ -1,0 +1,11 @@
+2013-12-24 23:32:12.5741|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20131224233212|TBD|ORU^R01|2.25.182438861935476017221414409780056890155|P|2.4<R>
+PID|1||ABC451076^^^ABC^MR~EPIC4485835^^^EPIC^MRN||CAMPBELL^LISA^REBECCA^^^^D||19680803000000|F||R|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451076^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457126^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3054673^SYS|7795083102|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20131223103056|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||^Xr Sing View|20131224233212||MDXREVNT|||1^^^20131224233212^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB<R>
+OBX|1|TX|1570350||JOE MEDRANO, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|1570350||ACC#  Date Time  Exam~~7795083102 Dec 24 2013 11:32PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~The single-view X-ray of the forearm produced on 2013-12-23 reveals~no acute fractures or dislocations in the visualized bones. The~radioulnar joints exhibit normal alignment and there are no~periosteal reactions or soft tissue swelling detected. The bony~cortices are intact, and there is no evidence of bone lesions or~other abnormalities. Surrounding soft tissues appear unremarkable~with no signs of acute or chronic pathology. The visualized range~from the distal humerus to the proximal wrist looks regularly formed~without any anomalies in bone density or architecture.~~IMPRESSION:~The single-view X-ray of the forearm dated 2013-12-23 is normal,~showing no fractures or dislocations. The overall examination is~within normal limits, without evidence of acute pathology, and~correlates well with prior studies.||||||F<R>
+OBX|3|TX|1570350||Requested By: Marks,Michael R. M.D.~~Dictated By: Joe Medrano, M.D. on Dec 24 2013 11:32PM~~This document has been electronically signed by: Joe Medrano, M.D. on~Dec 24 2013 11:32PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|1570350|4|7795083102^UK^ZB||||||F<R>
+<EB>

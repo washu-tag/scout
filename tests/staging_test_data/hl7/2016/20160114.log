@@ -1,0 +1,27 @@
+2016-01-14 09:58:31.2903|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20160114095831|TBD|ORU^R01|2.25.244815497040569575121771696906263663231|P|2.7<R>
+PID|1||ABC451024^^^ABC^MR||PEREZ^MEGHAN^SHARON^^^^D||19600223|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084849|||||||||||||||||||||||||20160114095831|||||||V<R>
+ORC|RE|9463122^SYS|7795082897||Final||^^^20160114095830^20160114095831^O||20160114095831|T6530147^ANDERSON^NATALIE||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9463122^SYS|7795082897|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20160111144332|||||Hosp Perf||||^^^BREAST|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20160114095831||MG|Final||^^^20160114095830^20160114095831^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20160114095831||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|The findings from the single-view mammogram performed on 2016-01-11||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|demonstrate stable breast tissue without any evidence of lesions or||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|detectable abnormalities when compared to prior imaging. The results||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|are consistent with benign breast tissue. Regular surveillance in||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|line with the patient’s age and risk factors remains advised. The||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|single-view mammogram taken on 2016-01-11 shows symmetric breast||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|tissue density with no architectural distortion or suspicious masses.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|There is no evidence of microcalcifications in either breast.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|Bilateral lymph nodes are observed in the axilla without any||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|significant enlargement or irregularities. Comparison with the||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|previous studies shows stable breast tissue characteristics, with no||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|changes suggestive of malignancy. Skin margins and soft tissue||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|17|ST|&IMP|2|contours are normal as well.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|18|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.42825329864735394385253471646038002863^EPIC^APPLICATION^DICOM<R>
+<EB>

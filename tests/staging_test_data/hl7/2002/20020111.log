@@ -1,0 +1,11 @@
+2002-01-11 05:49:27.2738|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020111054927|TBD|ORU^R01|2.25.128749616601287309313778630176553437487|P|2.4<R>
+PID|1||ABC451051^^^ABC^MR~EPIC4485810^^^EPIC^MRN||WHITE^JACOB^OSCAR^^^^D||19430325000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451051^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457307^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3078694^SYS|7795083005|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20020107114109|||PSCRIB|||||^^^^ |D7823240^PARSONS^ERNESTO^JOHN^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20020111054927||IMG|||1^^^20020111054927^^U^^URGENT|       |||^Chest pain|D7823234^DONOVAN^WILLIAM^C.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|7859871||WILLIAM DONOVAN, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|7859871||ACC#  Date Time  Exam~~7795083005 Jan 11 2002 05:49AM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The acute abdominal series demonstrates normal bowel gas patterns~with no signs of obstruction or free air under the diaphragm. The~outlines of the liver, spleen, and kidneys are visible without any~signs of organomegaly or radiopaque stones. The psoas muscles are~well-defined, and the bladder appears appropriately distended. No~abdominal masses or significant abnormal calcifications are observed,~suggesting a normal gastrointestinal and urogenital tract.~~IMPRESSION:~Normal abdominal X-ray without evidence of acute issues or~abnormalities.||||||P<R>
+OBX|3|TX|7859871||Requested By: Parsons,Ernesto J. M.D.~~Dictated By: William Donovan, M.D. on Jan 11 2002 05:49AM~~Pending review by: Amber Reese, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|7859871|4|7795083005^UK^ZB||||||P<R>
+<EB>

@@ -1,0 +1,28 @@
+2002-06-21 21:17:55.8475|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020621211755|TBD|ORU^R01|2.25.25764163619861270960808203096905806849|P|2.7<R>
+PID|1||ABC451025^^^ABC^MR||NAVARRO^LYNETTE^ALISHA^^^^D||19590331|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084864|||||||||||||||||||||||||20020621211755|||||||V<R>
+ORC|RE|517304^SYS|7795082899||Final||^^^20020621211754^20020621211755^O||20020621211755|T6530147^ANDERSON^NATALIE||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|517304^SYS|7795082899|IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI|O|20020618153030|||||Hosp Perf||||^^^BRAIN|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20020621211755||MR|Final||^^^20020621211754^20020621211755^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530147^ANDERSON^NATALIE||20020621211755||||||||IMG2361^MRI BRAIN W CONTRAST^UNKDEV^^BRAIN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|5|ST|&IMP|2|The brain MRI from 2002-06-18 reveals no acute intracranial||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|6|ST|&IMP|2|abnormalities. The minor white matter hyperintensities may correlate||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|7|ST|&IMP|2|with aging and vascular changes, but no acute lesions or other||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|8|ST|&IMP|2|concerning findings warrant any emergent intervention. Continued||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|9|ST|&IMP|2|monitoring may be advisable, especially considering the potential||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|10|ST|&IMP|2|implications of vascular-related pathologies. The MRI of the brain||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|11|ST|&IMP|2|displays no mass lesions, with well-defined gray-white matter||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|12|ST|&IMP|2|delineation noted. There is no midline shift, and the ventricular||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|13|ST|&IMP|2|system appears symmetric and within normal limits. No ischemic||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|14|ST|&IMP|2|changes are identified in the cortical or subcortical regions.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|15|ST|&IMP|2|However, subtle white matter hyperintensities are noted,||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|16|ST|&IMP|2|predominantly in the periventricular regions, potentially indicative||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|17|ST|&IMP|2|of chronic microvascular ischemic changes typical of cerebral small||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|18|ST|&IMP|2|vessel disease, particularly given the patient’s age.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+OBX|19|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Final|||||T6530147^ANDERSON^NATALIE<R>
+ZDS|2.25.183716211244065220794460412801180409301^EPIC^APPLICATION^DICOM<R>
+<EB>

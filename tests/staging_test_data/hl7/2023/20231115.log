@@ -1,0 +1,11 @@
+2023-11-15 17:46:20.0321|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20231115174620|TBD|ORU^R01|2.25.195156037222114686794998368756731278747|P|2.4<R>
+PID|1||ABC451137^^^ABC^MR~EPIC4485896^^^EPIC^MRN||STONE^JOHN^JAMES^^^^D||19910722000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451137^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457447^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8054359^SYS|7795083347|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20231114141307|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||2816^Ultrasound|20231115174620||IMG|||1^^^20231115174620^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|9240561||JOE MEDRANO, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|9240561||ACC#  Date Time  Exam~~7795083347 Nov 15 2023 05:46PM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Ultrasound~~FINDINGS:~Latest ultrasound shows a notable decrease in size of the previously~identified right renal mass, now measuring approximately 2.8 cm, with~predominantly cystic characteristics. There is a lack of vascular~flow on Doppler assessment indicating a possible benign nature. The~left kidney shows no changes, remaining normal with no new lesions.~The bladder and prostate continue to appear unremarkable.~~IMPRESSION:~The reduction in the size of the right renal mass is highly~suggestive of a resolved process, likely related to a benign cyst.~Continued follow-up imaging is recommended to ensure stability. There~are no additional findings requiring immediate intervention.||||||P<R>
+OBX|3|TX|9240561||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Joe Medrano, M.D. on Nov 15 2023 05:46PM~~Pending review by: Michael Marks, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|9240561|4|7795083347^UK^ZB||||||P<R>
+<EB>

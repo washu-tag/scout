@@ -1,0 +1,26 @@
+2018-09-22 22:14:13.7010|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180922221413|TBD|ORU^R01|2.25.338646361108826965504368243380798169760|P|2.7<R>
+PID|1||ABC451185^^^ABC^MR||PERALTA^MICHAEL^JEFFREY^^^^D||19970514|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084793|||||||||||||||||||||||||20180922221413|||||||V<R>
+ORC|RE|1595786^SYS|7795083537||Prelim||^^^20180922221412^20180922221413^O||20180922221413|T6530146^MOORE^CURTIS||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1595786^SYS|7795083537|CTCHEST^CT THORAX^UNKDEV^^THORAX PETCT AC NAC|O|20180921113343|||||Hosp Perf||||^^^THORAX|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20180922221413||CT|Prelim||^^^20180922221412^20180922221413^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20180922221413||||||||CTCHEST^CT THORAX^UNKDEV^^THORAX PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Thorax PET-CT||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|Findings from the PET-CT suggest a possible infectious process rather||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|than neoplastic changes, particularly in the right lung, and should||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|be clinically correlated. This study does not show evidence of||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|malignancy and is somewhat distinct from the cardiac evaluations||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|previously performed. The PET-CT of the thorax demonstrates excellent||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|soft tissue resolution. There is increased uptake in the right upper||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|lobe consistent with an inflammatory process, likely pneumonia. No||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|discrete mass lesions are seen, and there are no hypermetabolic lymph||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|nodes noted within the mediastinal or hilar regions. The heart||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|appears normal in configuration, and no significant pleural effusion||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|is detected. The tracheobronchial tree is patent without any||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|obstructive lesions.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.61830471997288927127219879578244105339^EPIC^APPLICATION^DICOM<R>
+<EB>

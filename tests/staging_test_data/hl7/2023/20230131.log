@@ -1,0 +1,28 @@
+2023-01-31 03:40:43.5985|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230131034043|TBD|ORU^R01|2.25.325719880284226439782209708377522333691|P|2.7<R>
+PID|1||ABC451099^^^ABC^MR||HAMMOND^JOHN^CHRISTOPHER^^^^D||19391026|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084785|||||||||||||||||||||||||20230131034043|||||||V<R>
+ORC|RE|901197^SYS|7795083196||Wet Read||^^^20230131034042^20230131034043^O||20230131034043|T6530150^NEAL^EMILY||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|901197^SYS|7795083196|BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY|O|20230129081100|||||Hosp Perf||||^^^ABDOMEN|D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230131034043||DX|Wet Read||^^^20230131034042^20230131034043^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20230131034043||||||||BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|Subtle enlargement of the gallbladder and emergence of calcifications||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|in the right lower quadrant suggestive of developing gallstones.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|Recommend further evaluation via ultrasound for assessment of||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|gallbladder and potential intervention. Comparison with the previous||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|abdomen X-ray dated 2014-11-04 reveals a number of notable changes.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|The 2023 study displays a subtle increase in the size and density of||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|the gallbladder, suggestive of possible cholelithiasis. The bowel gas||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|pattern remains normal; however, a few small calcifications are now||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|apparent in the right lower quadrant that were not present in the||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|earlier study, potentially indicating a new biliary abnormality. No||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|signs of perforation or obstruction are observed, and the renal||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|silhouette remains unchanged with no significant findings in the||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|urinary tract. The comparison shows the gallbladder was previously||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|18|ST|&IMP|2|unremarkable but now suggests potential pathology.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|19|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.227769982014049123773498264654827852545^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2011-07-07 20:40:12.5853|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110707204012|TBD|ORU^R01|2.25.284690171020538557659550980743425643494|P|2.4<R>
+PID|1||ABC451047^^^ABC^MR~EPIC4485806^^^EPIC^MRN||ΓΙΑΝΝΑΡΆΣ^ΊΩΣΉΦ^^^^^D||19680418000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451047^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457197^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1788227^SYS|7795082985|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||20110705201023|||PSCRIB|||||^^^^ |D7823242^HANSON^KIMBERLY^KERRY^M.D.^^^^ABC|||||70553^Brain dMRI|20110707204012||CMRP|||1^^^20110707204012^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|8454180||AMBER REESE, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|8454180||ACC#  Date Time  Exam~~7795082985 Jul 07 2011 08:40PM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~Brain MRI without contrast~~FINDINGS:~The brain MRI shows normal cerebral anatomy with bilateral cerebral~hemispheres demonstrating symmetrical morphology and normal sulcal~and gyri patterns. The ventricles are of normal size and~configuration without evidence of hydrocephalus. No mass lesions are~noted, and there is no evidence of ischemia or acute infarction on~diffusion-weighted imaging. The basal ganglia and thalami appear~normal. The white matter is unremarkable with no signs of~demyelination or focal ischemic changes. The orbits, sinuses, and~cerebellum are also examined and do not reveal any notable~abnormalities.~~IMPRESSION:~Findings are within normal limits, suggesting no acute intracranial~pathology. The study is unremarkable, supporting a normal brain MRI.||||||F<R>
+OBX|3|TX|8454180||Requested By: Hanson,Kimberly K. M.D.~~Dictated By: Amber Reese, M.D. on Jul 07 2011 08:40PM~~This document has been electronically signed by: Amber Reese, M.D. on~Jul 07 2011 08:40PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8454180|4|7795082985^UK^ZB||||||F<R>
+<EB>

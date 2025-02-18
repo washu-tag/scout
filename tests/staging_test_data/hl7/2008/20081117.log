@@ -1,0 +1,26 @@
+2008-11-17 17:37:53.5919|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20081117173753|TBD|ORU^R01|2.25.184685797002945162085694707616707825864|P|2.7<R>
+PID|1||ABC451088^^^ABC^MR||PACHECO^CAROLINA^THERESA^^^^D||19541127|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084810|||||||||||||||||||||||||20081117173753|||||||V<R>
+ORC|RE|9208935^SYS|7795083152||Final||^^^20081117173752^20081117173753^O||20081117173753|T6530153^MORAN^JOSHUA||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9208935^SYS|7795083152|CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI|O|20081115162935|||||Hosp Perf||||^^^BRAIN|D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20081117173753||MR|Final||^^^20081117173752^20081117173753^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||20081117173753||||||||CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|The brain MRI findings are largely unremarkable for a patient of this||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|age, indicating no acute vascular events or neoplasms. Mild atrophy||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|and white matter changes are noted, suggesting sclerotic pathways||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|typically seen in older adults. Follow-up MRI is advised if new||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|symptoms develop. The MRI of the brain reveals no acute intracranial||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|abnormalities. Mild cerebral atrophy noted consistent with age;||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|however, no focal lesions, hemorrhage, or mass effect is seen. The||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|ventricles are appropriately sized and symmetric. The surrounding||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|white matter reveals some hyperintensities on T2-weighted imaging||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|that may correlate with chronic small vessel ischemic changes. The||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|15|ST|&IMP|2|basal ganglia and thalami are unremarkable, with no evidence of||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|16|ST|&IMP|2|demyelination or other pathological processes.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|17|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.226992655017903191688852240416392843041^EPIC^APPLICATION^DICOM<R>
+<EB>

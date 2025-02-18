@@ -1,0 +1,33 @@
+1998-03-22 22:42:43.7246|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19980322224243|TBD|ORU^R01|2.25.170777250623701449686089393218464134583|P|2.7<R>
+PID|1||ABC451083^^^ABC^MR||WILLIAMS^FRANK^JUSTIN^^^^D||19610123|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084753|||||||||||||||||||||||||19980322224243|||||||V<R>
+ORC|RE|1713307^SYS|7795083130||Final||^^^19980322224242^19980322224243^O||19980322224243|T6530153^MORAN^JOSHUA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1713307^SYS|7795083130|BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY|O|19980322170320|||||Hosp Perf||||^^^SPINE|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19980322224243||DX|Final||^^^19980322224242^19980322224243^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||19980322224243||||||||BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray of the spine||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|The X-ray findings are consistent with age-related degenerative||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|changes predominantly located in the lumbar region and represent a||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|stable condition with no acute abnormalities. Recommendations include||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|maintaining an active lifestyle with attention to ergonomic||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|practices; no further imaging is necessary at this time. The spinal||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|X-ray performed demonstrates a normal cervical lordosis with anterior||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|alignment of the vertebrae. The intervertebral disc spaces appear||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|well-maintained throughout the cervical region, exhibiting no signs||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|of disc herniation or osteophyte formation. The thoracic spine||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|reveals a mild reduction in the thoracic kyphosis. The lumbar region||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|15|ST|&IMP|2|displays minimal degenerative changes, with slight osteophyte||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|16|ST|&IMP|2|formation at L4-L5 but with preserved disc heights. There is also no||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|17|ST|&IMP|2|evidence of spondylolisthesis, spinal stenosis, or paravertebral soft||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|18|ST|&IMP|2|tissue abnormalities. The sacroiliac joints appear symmetric and||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|19|ST|&IMP|2|unremarkable.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|20|ST|&IMP|2|||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|21|ST|&IMP|2|Comparatively, the findings of this X-ray can be noted as stable when||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|22|ST|&IMP|2|compared to prior imaging, with no notable progression of||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|23|ST|&IMP|2|degenerative changes or new pathologies.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|24|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.238801982798026670889400746863960609143^EPIC^APPLICATION^DICOM<R>
+<EB>

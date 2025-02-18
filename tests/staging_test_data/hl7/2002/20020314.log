@@ -1,0 +1,29 @@
+2002-03-14 18:27:38.2172|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020314182738|TBD|ORU^R01|2.25.85329498496870851260722173374955177234|P|2.7<R>
+PID|1||ABC451145^^^ABC^MR||MILLER^JENNIE^ELIZABETH^^^^D||19530208|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084741|||||||||||||||||||||||||20020314182738|||||||V<R>
+ORC|RE|5553319^SYS|7795083382||Final||^^^20020314182737^20020314182738^O||20020314182738|T6530137^MALDONADO^CRYSTAL||D7823227^WOOD^MELISSA^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5553319^SYS|7795083382|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20020314132102|||||Hosp Perf||||^^^HEART|D7823227^WOOD^MELISSA^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20020314182738||NM|Final||^^^20020314182737^20020314182738^O||||^Chest pain||D7823228^MYERS^BRENT^A.^^^^^ABC^^^^HOSP|T6530137^MALDONADO^CRYSTAL||20020314182738||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM Study||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|5|ST|&IMP|2|1. Mild perfusion abnormalities in the inferolateral wall,||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|6|ST|&IMP|2|correlating with potential regions of ischemia; further cardiology||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|7|ST|&IMP|2|evaluation is warranted. 2. Preserved left ventricular function with||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|8|ST|&IMP|2|no significant increase in volume overload. 3. Recommend follow-up||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|9|ST|&IMP|2|with more definitive imaging or exercise tolerance testing to further||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|10|ST|&IMP|2|assess coronary status. Initial cardiac scintigraphy illustrates a||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|11|ST|&IMP|2|mildly reduced perfusion in the inferolateral walls. The rest of the||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|12|ST|&IMP|2|myocardium demonstrates appropriate perfusion during stress testing||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|13|ST|&IMP|2|with splanchnic blood pooling behavior shown during rest imaging.||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|14|ST|&IMP|2|Left ventricular systolic function remains preserved with an ejection||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|15|ST|&IMP|2|fraction at 60%. There are minor wall motion abnormalities noted,||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|16|ST|&IMP|2|potentially secondary to ischemic compromise but not necessarily||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|17|ST|&IMP|2|indicating significant obstructive coronary artery disease at this||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|18|ST|&IMP|2|time. Noteworthy, there was no significant arrhythmias or||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|19|ST|&IMP|2|abnormalities in gated images.||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|20|ST|&IMP|2|Dictated by: Brent Myers Interpreter, M.D.||||||Final|||||T6530137^MALDONADO^CRYSTAL<R>
+ZDS|2.25.150313656523122963009915146187790345752^EPIC^APPLICATION^DICOM<R>
+<EB>

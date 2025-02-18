@@ -1,0 +1,62 @@
+1999-11-30 02:42:26.7124|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19991130024226|TBD|ORU^R01|2.25.188152228911722753628756191438069630822|P|2.7<R>
+PID|1||ABC451152^^^ABC^MR||YAMAMOTO^MEI^^^^^D||19590205|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084876|||||||||||||||||||||||||19991130024226|||||||V<R>
+ORC|RE|5174154^SYS|7795083406||Final||^^^19991130024225^19991130024226^O||19991130024226|T6530151^WATERS^JESSICA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5174154^SYS|7795083406|EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY|O|19991128165105|||||Hosp Perf||||^^^TSPINE|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19991130024226||DX|Final||^^^19991130024225^19991130024226^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||19991130024226||||||||EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: T-spine X-ray||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|1. Mild degenerative changes in the thoracic spine predominantly at||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|T7-T10 levels as previously existing without significant interval||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|change since the last study. 2. No acute osseous abnormalities||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|detected. 3. Overall stable thoracic spine morphology. The T-spine||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|X-ray reveals multiple vertebral bodies from T1 to T12. There is mild||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|degenerative change noted at multiple levels with osteophyte||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|formation primarily observed at T7-T8 and T9-T10. The vertebral||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|alignment appears satisfactory without any lateral or anteroposterior||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|deviation. There is no evidence of acute fracture, subluxation, or||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|dislocation. The prevertebral soft tissues are within normal limits.||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|No visible mediastinal widening or abnormal air-fluid levels in the||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|thoracic cavity. The lung fields are clear, and the heart silhouette||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|remains within normal size. Comparison to a prior examination done on||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|18|ST|&IMP|2|2005-08-15 shows stable findings with no significant progression of||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|19|ST|&IMP|2|degenerative changes, and the alignment continues to be maintained||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|20|ST|&IMP|2|without evidence of new pathology.||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|21|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Final|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.100405915728099816173320934019894171432^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+1999-11-30 23:11:29.8376|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19991130231129|TBD|ORU^R01|2.25.258872894671527226589049435320087888112|P|2.7<R>
+PID|1||ABC451011^^^ABC^MR||FISHER^CHRISTOPHER^MIGUEL^^^^D||19340331|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084927|||||||||||||||||||||||||19991130231129|||||||V<R>
+ORC|RE|6733722^SYS|7795082841||Final||^^^19991130231128^19991130231129^O||19991130231129|T6530139^WHITE^NICHOLAS||D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6733722^SYS|7795082841|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|19991130152133|||||Hosp Perf|||||D7823226^KENNEDY^JERI^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19991130231129||XA|Final||^^^19991130231128^19991130231129^O||||^Chest pain||D7823226^KENNEDY^JERI^A.^^^^^ABC^^^^HOSP|T6530139^WHITE^NICHOLAS||19991130231129||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|5|ST|&IMP|2|The findings are suggestive of mild atherosclerotic changes||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|6|ST|&IMP|2|predominantly related to renal artery stenosis, with overall||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|7|ST|&IMP|2|preserved vascular integrity throughout the major arterial||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|8|ST|&IMP|2|territories. Compared with prior imaging, there is a mild progression||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|9|ST|&IMP|2|in atherosclerosis, particularly in the renal artery, warranting||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|10|ST|&IMP|2|clinical follow-up to monitor for potential renal perfusion||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|11|ST|&IMP|2|compromise. The X-ray angiography demonstrates patency of the aorta||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|12|ST|&IMP|2|with no evident occlusion or significant stenosis. The visceral||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|13|ST|&IMP|2|arteries arising from the aorta show a normal caliber. Evidence of||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|14|ST|&IMP|2|mild atherosclerotic changes is noted within the renal arteries,||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|15|ST|&IMP|2|specifically proximal narrowing that may be consistent with||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|16|ST|&IMP|2|early-stage renal artery stenosis. The visualized carotid and||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|17|ST|&IMP|2|vertebral arteries exhibit no significant atherosclerotic lesions or||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|18|ST|&IMP|2|flow compromise. Comprehensive imaging of the lower extremities||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|19|ST|&IMP|2|reveals minor calcific deposits within the femoral arteries but with||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|20|ST|&IMP|2|no drastic intraluminal obstruction. There are no aneurysms or||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|21|ST|&IMP|2|vascular malformations observed throughout the study.||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|22|ST|&IMP|2|Dictated by: Jeri Kennedy Interpreter, M.D.||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+ZDS|2.25.145057942823240675966934767992003943328^EPIC^APPLICATION^DICOM<R>
+<EB>

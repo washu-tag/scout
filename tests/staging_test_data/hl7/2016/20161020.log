@@ -1,0 +1,26 @@
+2016-10-20 17:39:54.3069|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20161020173954|TBD|ORU^R01|2.25.140790121928482087225759195549194986049|P|2.7<R>
+PID|1||ABC451138^^^ABC^MR||PARK^CARRIE^JESSICA^^^^D||19940427|F||UNABLE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085024|||||||||||||||||||||||||20161020173954|||||||V<R>
+ORC|RE|87033^SYS|7795083351||Prelim||^^^20161020173953^20161020173954^O||20161020173954|T6530148^GROSS^CARLY||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|87033^SYS|7795083351|IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC|O|20161016181953|||||Hosp Perf||||^^^BRAIN|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20161020173954||CT|Prelim||^^^20161020173953^20161020173954^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20161020173954||||||||IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain PET-CT||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|This examination indicates normal cerebral metabolic activity. The||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|absence of any abnormality upon comparison with prior imaging||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|corroborates the stability of the patient’s neurological status. The||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|brain PET-CT scan shows normal cortical perfusion and metabolism,||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|with uniform tracer distribution across all cerebral regions. The||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|anterior, lateral, and medial cortices exhibit appropriate uptake||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|patterns. No focal areas of hypo- or hypermetabolism are detected||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|that might suggest malignancy or neurologic deficit. Surrounding||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|structures, including the orbits and sinuses, are unremarkable, with||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|no signs of edema or mass lesions noted. In comparison to the MRI||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|from 04/30/2012, no changes in metabolism or perfusion have occurred,||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|consolidating the absence of any progressive intracranial pathology.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.179320473065671984863951232244811033514^EPIC^APPLICATION^DICOM<R>
+<EB>

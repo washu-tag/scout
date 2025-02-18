@@ -1,0 +1,25 @@
+2013-11-15 08:49:02.0732|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20131115084902|TBD|ORU^R01|2.25.299475280750390925663490070853393368782|P|2.7<R>
+PID|1||ABC451135^^^ABC^MR||ΑΣΤΡΙΝΊΔΗΣ^ΈΛΙΣΆΒΕΤ^^^^^D||19470414|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084996|||||||||||||||||||||||||20131115084902|||||||V<R>
+ORC|RE|9415044^SYS|7795083337||Final||^^^20131115084901^20131115084902^O||20131115084902|T6530153^MORAN^JOSHUA||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9415044^SYS|7795083337|BED70250^70250 Skull < 4 views^UNKDEV^^SKULL 1 VIEW DX XRAY|O|20131112131314|||||Hosp Perf||||^^^SKULL|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20131115084902||DX|Final||^^^20131115084901^20131115084902^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||20131115084902||||||||BED70250^70250 Skull < 4 views^UNKDEV^^SKULL 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Skull X-ray||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|The X-ray is predominantly normal, although there is minor chronic||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|change seen in the frontal sinuses consistent with past history of||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|sinus issues. No acute pathology is identified, but clinical||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|correlation is advised to evaluate the patient's reported symptoms||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|more thoroughly. The skull X-ray demonstrates an intact calvarium||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|with no visible fractures or lytic lesions. There is slight sinus||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|opacification bilaterally in the frontal sinuses, possibly suggestive||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|of chronic sinusitis. The orbits and nasopharyngeal anatomy appear||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|normal. No abnormal soft tissue masses are discerned. Cervical spine||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|alignment is within normal limits, with no evidence of acute bony||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|15|ST|&IMP|2|injury observed in this examination.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|16|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.301528002246842953108226555005410801879^EPIC^APPLICATION^DICOM<R>
+<EB>

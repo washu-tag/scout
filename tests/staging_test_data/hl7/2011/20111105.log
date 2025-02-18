@@ -1,0 +1,28 @@
+2011-11-05 13:22:52.3455|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20111105132252|TBD|ORU^R01|2.25.320775221823761424836237417190989935123|P|2.7<R>
+PID|1||ABC451171^^^ABC^MR||RUSH^JESSICA^DEANNA^^^^D||19880418|F||OTHER|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084731|||||||||||||||||||||||||20111105132252|||||||V<R>
+ORC|RE|2480127^SYS|7795083479||Wet Read||^^^20111105132251^20111105132252^O||20111105132252|T6530154^ROBERTS^RICARDO||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2480127^SYS|7795083479|M755612^MR CARDIAC MRPH FUNC WWO^UNKDEV^^HEART MRI|O|20111102144908|||||Hosp Perf||||^^^HEART|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20111105132252||MR|Wet Read||^^^20111105132251^20111105132252^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20111105132252||||||||M755612^MR CARDIAC MRPH FUNC WWO^UNKDEV^^HEART MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|Cardiac MRI indicates normal heart size and function with no signs of||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|ischemic heart disease or scarring. No notable changes have occurred||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|since the last MRI in November 2011. The cardiac MRI reveals normal||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|left ventricular size and function with ejection fraction estimated||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|at 65%. The myocardium is homogenous without late gadolinium||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|enhancement indicating scar or ischemia. The right ventricular size||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|is within the normal range, and the valves are structurally normal||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|without signs of regurgitation or stenosis. The pericardium is thin||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|and free of effusion, and there are no cardiac masses seen. The||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|coronary arteries demonstrate normal course and caliber upon||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|angiographic sequences, signifying no significant stenosis or||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|occlusion. Compared to the heart MRI from 2011-11-02, there are no||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|remarkable changes in myocardial structure or function, supporting||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|18|ST|&IMP|2|stability of the findings.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|19|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.185565222296758303754104915181220522620^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,26 @@
+2006-02-03 13:30:38.9847|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060203133038|TBD|ORU^R01|2.25.170613606062350781775275019279952420815|P|2.7<R>
+PID|1||ABC451073^^^ABC^MR||LOPEZ^JOSHUA^TRAVIS^^^^D||19320202|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084711|||||||||||||||||||||||||20060203133038|||||||V<R>
+ORC|RE|2770951^SYS|7795083089||Final||^^^20060203133037^20060203133038^O||20060203133038|T6530150^NEAL^EMILY||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2770951^SYS|7795083089|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20060203062845|||||Hosp Perf||||^^^HEART|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060203133038||NM|Final||^^^20060203133037^20060203133038^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20060203133038||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|Findings suggest inducible ischemia in the inferior wall, possibly||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|indicative of coronary artery disease. Correlation with stress||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|testing may be beneficial to further elucidate functional capacity.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|Recommendations for cardiology follow-up and risk factor||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|optimization. The myocardial perfusion imaging indicates a||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|heterogeneous perfusion pattern in the inferior wall, with a noted||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|reversible defect suggestive of ischemia. Resting electrocardiogram||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|shows no significant abnormalities. Left ventricular ejection||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|fraction is calculated at 55%, with mild hypokinesis noted in the||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|inferior segments on stress imaging. There are no significant regions||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|of fixed defect, implying reversible ischemic etiology, potentially||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|secondary to coronary artery disease.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Final|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.339619981649690805697489298997002699766^EPIC^APPLICATION^DICOM<R>
+<EB>

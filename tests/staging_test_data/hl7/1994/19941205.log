@@ -1,0 +1,11 @@
+1994-12-05 20:17:22.2691|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19941205201722|TBD|ORU^R01|2.25.16133950961029958740456467776334489826|P|2.4<R>
+PID|1||ABC451037^^^ABC^MR~EPIC4485796^^^EPIC^MRN||ITO^SOTA^^^^^D||19451114000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451037^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457342^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6888859^SYS|7795082949|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||19941201074745|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||8452^NM MPI SPECT|19941205201722||H|||1^^^19941205201722^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823234^DONOVAN^WILLIAM^C.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|8979342||JOSEPH BARAJAS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|8979342||ACC#  Date Time  Exam~~7795082949 Dec 05 1994 08:17PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac Nuclear Medicine Study~~FINDINGS:~This myocardial perfusion study demonstrates an overall normal~perfusion pattern with homogeneous tracer uptake throughout the~myocardium at rest. Stress images show preserved perfusion without~evidence of myocardial ischemia, with no discernible regions of~decreased perfusion. The ejection fraction is calculated at 65%,~indicating good left ventricular function. There is no evidence of~noteworthy perfusion defects or resting regional wall motion~abnormalities evident in the acquired images.~~IMPRESSION:~The cardiac NM study indicates a normal perfusion pattern with no~ischemic changes. The ejection fraction suggests adequate ventricular~function, correlating with a healthy cardiac status at the time of~review.||||||F<R>
+OBX|3|TX|8979342||Requested By: Medrano,Joe J. M.D.~~Dictated By: Joseph Barajas, M.D. on Dec 05 1994 08:17PM~~This document has been electronically signed by: Joseph Barajas, M.D.~on Dec 05 1994 08:17PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8979342|4|7795082949^UK^ZB||||||F<R>
+<EB>

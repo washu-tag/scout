@@ -1,0 +1,30 @@
+2008-02-10 02:48:33.4681|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20080210024833|TBD|ORU^R01|2.25.292331362043515769233178877896372643370|P|2.7<R>
+PID|1||ABC451000^^^ABC^MR||ISHIKAWA^SOUMA^^^^^D||19910125|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084812|||||||||||||||||||||||||20080210024833|||||||V<R>
+ORC|RE|8052057^SYS|7795082797||Wet Read||^^^20080210024832^20080210024833^O||20080210024833|T6530154^ROBERTS^RICARDO||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8052057^SYS|7795082797|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20080208201425|||||Hosp Perf||||^^^HEART|D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20080210024833||NM|Wet Read||^^^20080210024832^20080210024833^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20080210024833||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|1. Abnormal myocardial perfusion study showing ischemic changes in||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|the left ventricle. 2. Possible underlying coronary artery disease.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|3. Further evaluation with coronary angiography may be warranted||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|depending on clinical correlation. The myocardial perfusion||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|scintigraphy demonstrates an abnormal perfusion pattern with left||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|ventricular hypoperfusion noted in the anterior, inferior, and||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|lateral wall segments. The rest of the myocardium appears to be||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|adequately perfused at rest. The visual analysis indicates a||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|significant reduction in tracer uptake in the aforementioned regions||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|during both stress and rest phases, suggesting underlying ischemia||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|possibly due to coronary artery disease (CAD). No evidence of||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|paradoxical hypoperfusion was observed, and wall motion is preserved.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|The left ventricular ejection fraction calculated from the gated||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|18|ST|&IMP|2|SPECT images is approximately 50%, which is mildly reduced compared||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|19|ST|&IMP|2|to normal values. There are no focal defects suggestive of||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|20|ST|&IMP|2|infarction.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|21|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.181761829888833235918597959517109446647^EPIC^APPLICATION^DICOM<R>
+<EB>

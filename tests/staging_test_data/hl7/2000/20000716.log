@@ -1,0 +1,11 @@
+2000-07-16 07:13:40.3921|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000716071340|TBD|ORU^R01|2.25.91748685208863109426356289393375946323|P|2.4<R>
+PID|1||ABC451186^^^ABC^MR~EPIC4485945^^^EPIC^MRN||JOHNSON^STACIE^SARA^^^^D||19471012000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451186^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457102^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2456866^SYS|7795083543|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20000712103233|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||8452^NM MPI SPECT|20000716071340||H|||1^^^20000716071340^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|9139257||RUSSELL GALLAGHER, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|9139257||ACC#  Date Time  Exam~~7795083543 Jul 16 2000 07:13AM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~This single-photon emission computed tomography (SPECT) myocardial~perfusion study reveals normal perfusion in all visualized segments~of the myocardium at rest. There is no evidence of left ventricular~dilation or hypertrophy. The left ventricular ejection fraction is~calculated to be 60%, indicative of preserved systolic function. No~perfusion defects are identified, and the coronary arteries appear~competent. No unusual perfusion patterns were noted to suggest~ischemia or infarction.~~IMPRESSION:~The cardiac NM study demonstrates normal myocardial perfusion with an~intact functional capacity, consistent with a healthy cardiac status.||||||F<R>
+OBX|3|TX|9139257||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Russell Gallagher, M.D. on Jul 16 2000 07:13AM~~This document has been electronically signed by: Russell Gallagher,~M.D. on Jul 16 2000 07:13AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9139257|4|7795083543^UK^ZB||||||F<R>
+<EB>

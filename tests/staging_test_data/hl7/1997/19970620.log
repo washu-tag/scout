@@ -1,0 +1,11 @@
+1997-06-20 16:52:35.5751|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19970620165235|TBD|ORU^R01|2.25.72603098140805731387277474983220839417|P|2.4<R>
+PID|1||ABC451145^^^ABC^MR~EPIC4485904^^^EPIC^MRN||MILLER^JENNIE^ELIZABETH^^^^D||19530208000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451145^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457176^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6902072^SYS|7795083377|CTCHEST^ CT THORAX^UNKDEV|URGENT||19970620092245|||PSCRIB|||||^^^^ |D7823240^PARSONS^ERNESTO^JOHN^M.D.^^^^ABC|||||^Thorax Petct AC NAC|19970620165235||CTCHEST|||1^^^19970620165235^^U^^URGENT|       |||^Chest pain|D7823230^WRIGHT^JESSICA^M.^^^M.D.|D7823243^HAWKINS^CURTIS^K.^^^M.D.||PSCRIB<R>
+OBX|1|TX|2324776||JESSICA WRIGHT, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|2324776||ACC#  Date Time  Exam~~7795083377 Jun 20 1997 04:52PM CTCHEST CT THORAX~~EXAMINATION:~Thorax PET-CT~~FINDINGS:~This thoracic PET-CT reveals an extensive evaluation of the lung~parenchyma, demonstrating no significant metabolic activity in the~visualized lung fields. A focal area of mild increased FDG uptake is~noted in the right upper lobe, which measures 1.5 cm and could raise~suspicion for possible malignancy; however, it may also represent a~benign process, such as pneumonia or granulomatous disease pending~further historical review. The mediastinal and hilar lymph nodes~exhibit normal metabolic activity, and the pleural surfaces are free~of effusions or nodular thickening. The skeletal survey within the~thorax shows no significant osseous abnormalities.~~IMPRESSION:~1. No clear evidence of malignancy in the lung fields, although the~focal abnormality warrants monitoring due to its size and~characteristics. 2. Normal mediastinal lymphadenopathy with no~abnormal FDG accumulation indicating metastatic disease. 3. No~pleural effusion or significant bony metastasis identified.||||||F<R>
+OBX|3|TX|2324776||Requested By: Parsons,Ernesto J. M.D.~~Dictated By: Jessica Wright, M.D. on Jun 20 1997 04:52PM~~This document has been electronically signed by: Jessica Wright, M.D.~on Jun 20 1997 04:52PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2324776|4|7795083377^UK^ZB||||||F<R>
+<EB>

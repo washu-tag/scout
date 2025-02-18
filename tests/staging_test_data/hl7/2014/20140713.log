@@ -1,0 +1,26 @@
+2014-07-13 13:08:56.5675|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20140713130856|TBD|ORU^R01|2.25.70526975777582528374803828711064966755|P|2.7<R>
+PID|1||ABC451104^^^ABC^MR||PARK^SEO-HYEON^^^^^D||19210313|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084894|||||||||||||||||||||||||20140713130856|||||||V<R>
+ORC|RE|5293604^SYS|7795083217||Final||^^^20140713130855^20140713130856^O||20140713130856|T6530146^MOORE^CURTIS||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5293604^SYS|7795083217|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20140712064058|||||Hosp Perf||||^^^ABDOMEN|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20140713130856||CR|Final||^^^20140713130855^20140713130856^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||20140713130856||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|Findings suggestive of possible gastric outlet obstruction; recommend||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|clinical correlation and further evaluation. The abdominal X-ray||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|performed on July 12, 2014, shows a distended stomach with air-fluid||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|levels suggestive of possible gastric outlet obstruction. The bowel||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|gas pattern reveals an absence of obstructive changes in the small||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|and large bowel, indicating normal transit. No free air or||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|significant pelvic or retroperitoneal fluid collections are||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|evidenced. The liver, kidneys, and spleen appear within normal limits||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|in size and contour. There is, however, an increased amount of||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|subcutaneous fat noted, which correlates with age-related changes.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|Compared with the previous imaging studies, no masses or adenopathy||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|have developed.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.204803277818037623071312125332749361419^EPIC^APPLICATION^DICOM<R>
+<EB>

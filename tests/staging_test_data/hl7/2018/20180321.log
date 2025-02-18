@@ -1,0 +1,32 @@
+2018-03-21 12:35:55.9644|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180321123555|TBD|ORU^R01|2.25.190765639215975267644234761253468781078|P|2.7<R>
+PID|1||ABC451003^^^ABC^MR||JONES^MICHAEL^JAMES^^^^D||19881103|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823277^ALLEN^JOSEPH^B.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084919|||||||||||||||||||||||||20180321123555|||||||V<R>
+ORC|RE|3698977^SYS|7795082812||Prelim||^^^20180321123554^20180321123555^O||20180321123555|T6530209^OLSON^RICHARD||D7823276^WALKER^NICOLE^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3698977^SYS|7795082812|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20180319204420|||||Hosp Perf||||^^^HEART|D7823276^WALKER^NICOLE^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20180321123555||MR|Prelim||^^^20180321123554^20180321123555^O||||^Chest pain||D7823281^HOUSTON^CARLOS^P.^^^^^ABC^^^^HOSP|T6530209^OLSON^RICHARD||20180321123555||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|5|ST|&IMP|2|The analyzed MRI study of the heart reveals stable findings, with||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|6|ST|&IMP|2|preserved systolic function and no evidence of ischemic abnormalities||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|7|ST|&IMP|2|or progressive cardiac disease compared to the earlier examination.||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|8|ST|&IMP|2|In comparison to the prior heart MRI conducted on 2006-07-05, this||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|9|ST|&IMP|2|recent MRI dated 2018-03-19 continues to show normal left ventricular||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|10|ST|&IMP|2|function with an ejection fraction around 62%. The left ventricular||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|11|ST|&IMP|2|dimensions remain within the normal range, and there are no||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|12|ST|&IMP|2|significant changes in wall motion as compared to the previous study.||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|13|ST|&IMP|2|Late gadolinium enhancement reveals no new areas of myocardial||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|14|ST|&IMP|2|scarring or fibrosis since the last examination, indicating stability||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|15|ST|&IMP|2|in the patient's myocardial health. The right ventricle maintains||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|16|ST|&IMP|2|appropriate volumes and morphology as before. The aortic and mitral||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|17|ST|&IMP|2|valves retain normal movement without observed regurgitation or||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|18|ST|&IMP|2|stenosis. No pericardial effusion or other abnormalities exist within||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|19|ST|&IMP|2|the surrounding mediastinal structures. Conclusion: Overall, the MRI||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|20|ST|&IMP|2|findings suggest excellent stability of cardiac morphology and||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|21|ST|&IMP|2|function, with no significant progression of potential pathology||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|22|ST|&IMP|2|observed since the previous imaging on 2006-07-05.||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+OBX|23|ST|&IMP|2|Dictated by: Carlos Houston Interpreter, M.D.||||||Prelim|||||T6530209^OLSON^RICHARD<R>
+ZDS|2.25.307257118766448543149548099450290703975^EPIC^APPLICATION^DICOM<R>
+<EB>

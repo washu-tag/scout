@@ -1,0 +1,11 @@
+2003-07-13 04:59:23.4794|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20030713045923|TBD|ORU^R01|2.25.96534801440031645277982203325692337646|P|2.4<R>
+PID|1||ABC451068^^^ABC^MR~EPIC4485827^^^EPIC^MRN||JONES^PEARL^TAMMY^^^^D||19690709000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451068^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457091^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1788309^SYS|7795083071|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20030710094116|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20030713045923||BHC|||1^^^20030713045923^^U^^URGENT|       |||^Chest pain|D7823241^SANDERS^LISA^A.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|2204139||LISA SANDERS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|2204139||ACC#  Date Time  Exam~~7795083071 Jul 13 2003 04:59AM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The single-view mammogram demonstrates a dense breast parenchyma,~characterized by abundant glandular tissue and minimal adipose~tissue. No masses or architectural distortions are noted. The skin~and nipple contours appear unremarkable, and there are no~calcifications seen in the breast tissue. Comparison with prior~mammogram, if available, shows no interval change, and overall breast~composition remains stable in density from previous years. No~lymphadenopathy is observed in the axillary regions, further~supporting the absence of malignancy.~~IMPRESSION:~In summary, the single-view mammogram dated 2003-07-10 demonstrates~no evidence of malignancy or significant abnormalities. The breasts~are dense, however, there are no masses, calcifications, or~architecturally distorted structures identified. Continued~surveillance in accordance with screening guidelines is recommended,~considering the density of the breast tissue.||||||P<R>
+OBX|3|TX|2204139||Requested By: Marks,Michael R. M.D.~~Dictated By: Lisa Sanders, M.D. on Jul 13 2003 04:59AM~~Pending review by: Joe Medrano, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|2204139|4|7795083071^UK^ZB||||||P<R>
+<EB>

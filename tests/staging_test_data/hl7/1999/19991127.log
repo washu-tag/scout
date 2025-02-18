@@ -1,0 +1,25 @@
+1999-11-27 20:59:59.9016|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19991127205959|TBD|ORU^R01|2.25.129359513451264111794566995359007841358|P|2.7<R>
+PID|1||ABC451022^^^ABC^MR||REYES^MEGAN^PATRICIA^^^^D||19711117|F||DECLINED|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084807|||||||||||||||||||||||||19991127205959|||||||V<R>
+ORC|RE|95425^SYS|7795082886||Final||^^^19991127205958^19991127205959^O||19991127205959|T6530146^MOORE^CURTIS||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|95425^SYS|7795082886|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|19991126065429|||||Hosp Perf||||^^^CHEST|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19991127205959||CR|Final||^^^19991127205958^19991127205959^O||||^Chest pain||D7823241^SANDERS^LISA^A.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||19991127205959||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|Clear chest X-ray; no evidence of active pulmonary disease. Normal||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|study compared to prior imaging dated 1997-07-28, with an unchanged||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|thoracic architecture and no new developments. The frontal chest||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|radiograph reveals a clear cardiac silhouette with no enlargement.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|The mediastinum is midline, and the aortic knob is unremarkable. Lung||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|fields are well aerated without any focal consolidations or pleural||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|effusion. No interstitial markings are observed to suggest pulmonary||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|edema or infiltrations. The diaphragm is positioned appropriately,||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|with no blunting of the costophrenic angles. Visualized bony||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|structures, including ribs and clavicles, exhibit no acute fractures||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|or osteolytic lesions.||||||Final|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|Dictated by: Lisa Sanders Interpreter, M.D.||||||Final|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.54622818122365911657232273659622303426^EPIC^APPLICATION^DICOM<R>
+<EB>

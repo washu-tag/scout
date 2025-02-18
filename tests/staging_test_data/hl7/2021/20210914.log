@@ -1,0 +1,11 @@
+2021-09-14 07:00:33.6920|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210914070033|TBD|ORU^R01|2.25.173126136089602541635627506368752071982|P|2.4<R>
+PID|1||ABC451020^^^ABC^MR~EPIC4485779^^^EPIC^MRN||ΘΕΟΔΩΡΆΚΗΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19971220000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451020^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457214^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4136874^SYS|7795082881|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20210912082918|||PSCRIB|||||^^^^ |D7823238^HUNT^APRIL^MARY^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20210914070033||BHC|||1^^^20210914070033^^U^^URGENT|       |||^Chest pain|D7823231^SMITH^CLARA^T.^^^M.D.|D7823232^MARKS^MICHAEL^R.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|4922821||CLARA SMITH, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|4922821||ACC#  Date Time  Exam~~7795082881 Sep 14 2021 07:00AM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The single-view mammogram reveals breast tissue of heterogeneously~dense composition. No focal masses, calcifications, or architectural~distortions are noted in the imaging result. There is no evidence of~interval change when compared to previous mammograms, and the breast~density appears consistent with normal findings. The skin and nipple~regions are unremarkable with no signs of skin thickening or~retraction present. Areas of asymmetry noted in prior studies on~2021-09-12 are unchanged and do not raise suspicion for malignancy~given no associated findings.~~IMPRESSION:~Overall, the mammogram findings are reassuring, with no evidence of~malignancy or other pathologies. Recommend routine follow-up as per~standard screening guidelines.||||||P<R>
+OBX|3|TX|4922821||Requested By: Hunt,April M. M.D.~~Dictated By: Clara Smith, M.D. on Sep 14 2021 07:00AM~~Pending review by: Michael Marks, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|4922821|4|7795082881^UK^ZB||||||P<R>
+<EB>

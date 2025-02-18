@@ -1,0 +1,11 @@
+2001-06-03 22:48:59.6781|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010603224859|TBD|ORU^R01|2.25.16298343056033596204994170602486385804|P|2.4<R>
+PID|1||ABC451018^^^ABC^MR~EPIC4485777^^^EPIC^MRN||SANCHEZ^LISA^SARAH^^^^D||19850515000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451018^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457161^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1904754^SYS|7795082867|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20010602083010|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20010603224859||BHC|||1^^^20010603224859^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|697430||JENNIFER SMITH, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|697430||ACC#  Date Time  Exam~~7795082867 Jun 03 2001 10:48PM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The single-view mammogram demonstrates a heterogeneously dense breast~parenchyma, which is classified according to BI-RADS density~categories. There is no evidence of conspicuous masses, architectural~distortion, or microcalcifications noted in the region assessed. The~adipose tissue appears normal, and lymph nodes are not enlarged. The~breast tissue demonstrates some scattered fibroglandular densities~but remains within normal limits for a woman of this age.~~IMPRESSION:~Overall, the mammogram is unremarkable with no suspicious findings.~The breast density may warrant close monitoring in future imaging~studies, but there are no indications of malignancy at this time.||||||F<R>
+OBX|3|TX|697430||Requested By: Wright,Jessica M. M.D.~~Dictated By: Jennifer Smith, M.D. on Jun 03 2001 10:48PM~~This document has been electronically signed by: Jennifer Smith, M.D.~on Jun 03 2001 10:48PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|697430|4|7795082867^UK^ZB||||||F<R>
+<EB>

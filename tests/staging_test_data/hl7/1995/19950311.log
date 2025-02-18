@@ -1,0 +1,11 @@
+1995-03-11 19:17:25.4748|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19950311191725|TBD|ORU^R01|2.25.149087411920158522934578972634551478712|P|2.4<R>
+PID|1||ABC451088^^^ABC^MR~EPIC4485847^^^EPIC^MRN||PACHECO^CAROLINA^THERESA^^^^D||19541127000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451088^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457248^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9356713^SYS|7795083153|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||19950310201440|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|19950311191725||BHC|||1^^^19950311191725^^U^^URGENT|       |||^Chest pain|D7823240^PARSONS^ERNESTO^J.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|7183374||ERNESTO PARSONS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7183374||ACC#  Date Time  Exam~~7795083153 Mar 11 1995 07:17PM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram.~~FINDINGS:~The mammogram demonstrates dense breast parenchyma classified as~BI-RADS category C. The established retroareolar zones exhibit no~suspicious masses or calcifications. There are scattered~benign-appearing microcalcifications seen in the right breast,~however no discernible mass effect or architectural distortion is~apparent. Comparison with prior studies shows no new developments nor~interval changes in the breast tissue pattern. The axillary regions~are unremarkable without lymphadenopathy.~~IMPRESSION:~Overall, the mammogram findings indicate no evidence of malignancy,~correlating with normative age-related changes. The breast tissue~density and benign calcifications warrant routine follow-up.~Recommend continued surveillance in accordance with standard~screening protocols.||||||F<R>
+OBX|3|TX|7183374||Requested By: Marks,Michael R. M.D.~~Dictated By: Ernesto Parsons, M.D. on Mar 11 1995 07:17PM~~This document has been electronically signed by: Ernesto Parsons,~M.D. on Mar 11 1995 07:17PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7183374|4|7795083153^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,11 @@
+2015-11-17 22:58:29.7188|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20151117225829|TBD|ORU^R01|2.25.74662216456145653829635990067230386765|P|2.4<R>
+PID|1||ABC451185^^^ABC^MR~EPIC4485944^^^EPIC^MRN||PERALTA^MICHAEL^JEFFREY^^^^D||19970514000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451185^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457231^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8218236^SYS|7795083538|MRI1133^1133 MRI W WO ABDOMEN^UNKDEV|URGENT||20151115082153|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||1133^ABDOMEN MRI|20151117225829||MRI|||1^^^20151117225829^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||1133<R>
+OBX|1|TX|5254858||MICHAEL MARKS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|5254858||ACC#  Date Time  Exam~~7795083538 Nov 17 2015 10:58PM MRI1133 MRI W WO ABDOMEN~~EXAMINATION:~Abdomen MRI~~FINDINGS:~The MRI of the abdomen reveals a well-defined, hypointense lesion in~segment 6 of the liver measuring approximately 3.2 cm, compatible~with a hepatic adenoma. No biliary dilatation is noted. The~gallbladder appears normal without evidence of cholecystitis or mass~lesion. Kidneys demonstrate normal size and shape with no evidence of~calculi or hydronephrosis. The pancreas is of normal contour and~signal intensity without any mass lesions or ductal dilation. The~spleen is unremarkable in size and morphology, and there are no~significant vascular abnormalities.~~IMPRESSION:~The findings demonstrate a hepatic adenoma in the liver segment 6 as~described, which will necessitate follow-up imaging to assess for any~changes in size or characteristics. All other abdominal organs appear~normal with no acute processes or significant abnormalities noted.||||||F<R>
+OBX|3|TX|5254858||Requested By: Marks,Michael R. M.D.~~Dictated By: Michael Marks, M.D. on Nov 17 2015 10:58PM~~This document has been electronically signed by: Michael Marks, M.D.~on Nov 17 2015 10:58PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5254858|4|7795083538^UK^ZB||||||F<R>
+<EB>

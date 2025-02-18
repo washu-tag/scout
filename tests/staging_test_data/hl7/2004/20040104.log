@@ -1,0 +1,11 @@
+2004-01-04 22:38:37.1596|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20040104223837|TBD|ORU^R01|2.25.3611178825608389224189688083318155762|P|2.4<R>
+PID|1||ABC451015^^^ABC^MR~EPIC4485774^^^EPIC^MRN||ELLIOTT^TONYA^SASHA^^^^D||19471006000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451015^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457456^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1350004^SYS|7795082857|OMHEADWO^ MRI BRAIN WITHOUT CONTRAST^UNKDEV|URGENT||20040103130447|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||^HEAD MRI Expedited|20040104223837||OMHEADWO|||1^^^20040104223837^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823243^HAWKINS^CURTIS^K.^^^M.D.||PSCRIB<R>
+OBX|1|TX|591209||JENNIFER SMITH, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|591209||ACC#  Date Time  Exam~~7795082857 Jan 04 2004 10:38PM OMHEADWO MRI BRAIN WITHOUT CONTRAST~~EXAMINATION:~Head MRI~~FINDINGS:~The MRI examination highlights a stable appearance of the previously~noted frontal lobe lesion. The lesion remains hyperintense on~T2-weighted imaging and exhibits no change in size compared to the~previous MRI dated 1999-08-14. The periventricular white matter is~unremarkable without any new developments of microangiopathic~changes. Cerebrospinal fluid pathways are patent, and no evidence of~new infarcts or hemorrhage is noted. All cranial structures appear~normal, with no unusual enhancement post-contrast.~~IMPRESSION:~The known frontal lobe lesion remains stable with no significant~interval change, consistent with previous findings. There is no~indication of acute or progressive disease on this follow-up MRI.~Continued observation is warranted unless clinical changes arise.||||||P<R>
+OBX|3|TX|591209||Requested By: Sanders,Lisa A. M.D.~~Dictated By: Jennifer Smith, M.D. on Jan 04 2004 10:38PM~~Pending review by: Curtis Hawkins, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|591209|4|7795082857^UK^ZB||||||P<R>
+<EB>

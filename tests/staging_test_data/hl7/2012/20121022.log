@@ -1,0 +1,11 @@
+2012-10-22 07:32:48.1089|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20121022073248|TBD|ORU^R01|2.25.316563111297955692928028214203731809559|P|2.4<R>
+PID|1||ABC451098^^^ABC^MR~EPIC4485857^^^EPIC^MRN||SANCHEZ^SHANE^SAUL^^^^D||19760531000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451098^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457206^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4795913^SYS|7795083190|IMG2816^2816 US ABDOMEN LIMITED^UNKDEV|URGENT||20121018092702|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||2816^Ultrasound|20121022073248||IMG|||1^^^20121022073248^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|1737479||KIMBERLY HANSON, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|1737479||ACC#  Date Time  Exam~~7795083190 Oct 22 2012 07:32AM IMG2816 US ABDOMEN LIMITED~~EXAMINATION:~Ultrasound~~FINDINGS:~The abdominal ultrasound demonstrates a normal-sized liver with~homogeneous echotexture. The gallbladder is visualized without stones~or wall thickening, and the common bile duct measures within normal~limits. The kidneys reveal a normal echogenicity with no signs of~hydronephrosis or calculi. The pancreas shows normal morphology with~no mass lesions evident. The aorta presents with no evidence of~aneurysm. Notably, a small simple cyst is identified in the right~kidney, measuring approximately 1.2 cm, which appears benign in~nature. Comparison to the prior PET-MR from 1998 shows no significant~progression in liver pathology and no new lesions identified.~~IMPRESSION:~1. Normal abdominal ultrasound findings with the exception of a~benign simple cyst in the right kidney. 2. No evidence of acute~abdominal pathology or change in liver status since the last~evaluation.||||||F<R>
+OBX|3|TX|1737479||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Kimberly Hanson, M.D. on Oct 22 2012 07:32AM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on Oct 22 2012 07:32AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|1737479|4|7795083190^UK^ZB||||||F<R>
+<EB>

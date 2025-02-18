@@ -1,0 +1,11 @@
+2021-03-11 14:19:47.2791|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210311141947|TBD|ORU^R01|2.25.121061143343144637431575020735590102029|P|2.4<R>
+PID|1||ABC451112^^^ABC^MR~EPIC4485871^^^EPIC^MRN||JIMENEZ^KATHERINE^CARLA^^^^D||19380423000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451112^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457374^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1488646^SYS|7795083248|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20210310085149|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20210311141947||BHC|||1^^^20210311141947^^U^^URGENT|       |||^Chest pain|D7823238^HUNT^APRIL^M.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|6722528||APRIL HUNT, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|6722528||ACC#  Date Time  Exam~~7795083248 Mar 11 2021 02:19PM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The single-view mammogram demonstrates a dense breast parenchyma~which is characteristic for the patient's age. There are no masses,~calcifications, or architectural distortions observed in the breast~tissue. The skin and subcutaneous layers appear normal with no~changes suggestive of malignancy. Comparison with prior studies~reveals stability. There is no evidence of lymphadenopathy in the~axillary region.~~IMPRESSION:~Mammogram is benign with no indication of malignancy. Stable findings~compared to prior imaging.||||||F<R>
+OBX|3|TX|6722528||Requested By: Wright,Jessica M. M.D.~~Dictated By: April Hunt, M.D. on Mar 11 2021 02:19PM~~This document has been electronically signed by: April Hunt, M.D. on~Mar 11 2021 02:19PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6722528|4|7795083248^UK^ZB||||||F<R>
+<EB>

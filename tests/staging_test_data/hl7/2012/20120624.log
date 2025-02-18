@@ -1,0 +1,11 @@
+2012-06-24 18:37:39.4465|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120624183739|TBD|ORU^R01|2.25.60239581954547947974189534830104215353|P|2.4<R>
+PID|1||ABC451127^^^ABC^MR~EPIC4485886^^^EPIC^MRN||KOBAYASHI^AOI^^^^^D||19750818000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451127^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457428^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6366989^SYS|7795083305|IMG5021^5021 PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV|URGENT||20120624090419|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||5021^Brain Petct AC NAC|20120624183739||IMG|||1^^^20120624183739^^U^^URGENT|       |||^Chest pain|D7823234^DONOVAN^WILLIAM^C.^^^M.D.|D7823243^HAWKINS^CURTIS^K.^^^M.D.||PSCRIB|||||||||5021<R>
+OBX|1|TX|2422499||WILLIAM DONOVAN, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|2422499||ACC#  Date Time  Exam~~7795083305 Jun 24 2012 06:37PM IMG5021 PET/CT FDG BRAIN TUMOR~METABOLIC EVALUATION~~EXAMINATION:~Brain PET-CT Scan~~FINDINGS:~The brain PET-CT conducted on 2012-06-24 shows no focal~hypermetabolic lesions within the cerebral hemisphere or the~leptomeningeal spaces. Distribution of metabolic activity is~preserved with normal glucose metabolism throughout the frontal,~parietal, temporal, and occipital lobes. No significant areas of~hypometabolism are detected. The study excludes neoplastic processes~or metabolic derangements commonly associated with neurodegenerative~conditions. Additionally, CT assessment of the intracranial~structures reveals no acute hemorrhagic events, mass effect, or~hydrocephalus.~~IMPRESSION:~The brain PET-CT findings are entirely within normal limits,~effectively ruling out malignancy and significant neurological~deficits. Comparison to other imaging studies displays stable~intracranial metabolism, supporting the absence of neurodegenerative~changes.||||||F<R>
+OBX|3|TX|2422499||Requested By: Donovan,William C. M.D.~~Dictated By: William Donovan, M.D. on Jun 24 2012 06:37PM~~This document has been electronically signed by: William Donovan,~M.D. on Jun 24 2012 06:37PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2422499|4|7795083305^UK^ZB||||||F<R>
+<EB>

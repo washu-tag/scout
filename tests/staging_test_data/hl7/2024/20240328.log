@@ -1,0 +1,11 @@
+2024-03-28 06:47:04.3590|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240328064704|TBD|ORU^R01|2.25.181826648981936113067975040650851074963|P|2.4<R>
+PID|1||ABC451055^^^ABC^MR~EPIC4485814^^^EPIC^MRN||GREEN^RYAN^JASON^^^^D||19741230000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451055^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823227^WOOD^MELISSA^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457402^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1871697^SYS|7795083019|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20240326113910|||PSCRIB|||||^^^^ |D7823225^PARK^JOLENE^REGINA^M.D.^^^^ABC|||||4185^XRay Angiography|20240328064704||IMG|||1^^^20240328064704^^U^^URGENT|       |||^Chest pain|D7823224^MORGAN^JOHN^J.^^^M.D.|D7823219^LOGAN^MICHAEL^D.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|805052||JOHN MORGAN, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|805052||ACC#  Date Time  Exam~~7795083019 Mar 28 2024 06:47AM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray angiography study~~FINDINGS:~The X-ray angiography study shows normal vascular anatomy and~perfusion patterns. All major arteries including common carotids,~vertebrals, and intracranial vessels appear patent, without evidence~of stenosis or occlusion. There are no aneurysms noted, and the~venous structures exhibit normal drainage with no signs of~thrombosis. The contrast enhancement was adequate, elucidating clear~vascular territories without any abnormal collaterals or vascular~malformations. Brain and neck vascular territories are well defined,~and no significant abnormalities were detected.~~IMPRESSION:~The X-ray angiography is unremarkable, displaying well-patent~vascular structures. There are no concerning findings that~necessitate further intervention, and the vascular status is~considered stable based on this imaging.||||||P<R>
+OBX|3|TX|805052||Requested By: Park,Jolene R. M.D.~~Dictated By: John Morgan, M.D. on Mar 28 2024 06:47AM~~Pending review by: Michael Logan, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|805052|4|7795083019^UK^ZB||||||P<R>
+<EB>

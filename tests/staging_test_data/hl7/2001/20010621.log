@@ -1,0 +1,29 @@
+2001-06-21 05:43:19.9188|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010621054319|TBD|ORU^R01|2.25.162814905182208433618056443087658217859|P|2.7<R>
+PID|1||ABC451125^^^ABC^MR||GRIFFIN^GERALD^JAMES^^^^D||19350928|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084955|||||||||||||||||||||||||20010621054319|||||||V<R>
+ORC|RE|8442537^SYS|7795083298||Prelim||^^^20010621054318^20010621054319^O||20010621054319|T6530150^NEAL^EMILY||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8442537^SYS|7795083298|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20010618150419|||||Hosp Perf||||^^^ABDOMEN|D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20010621054319||CR|Prelim||^^^20010621054318^20010621054319^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20010621054319||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|1. No evidence of acute intra-abdominal pathology.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|2. Mild degenerative changes of the lumbar spine, consistent with||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|age.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|3. Otherwise unremarkable abdomen X-ray. The abdominal X-ray||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|demonstrates a moderate amount of intra-abdominal gas with no||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|evidence of free air beneath the diaphragm, suggesting an absence of||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|perforation. The contours of the liver, spleen, and kidneys are||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|reasonably well-defined with no acute abnormalities detected. The||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|bowel gas pattern is within normal limits, and there are no signs of||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|obstruction or ischemia. Although no calculi are noted, slight||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|calcifications around the renal shadows could indicate chronic||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|changes or possible nephrolithiasis. Overall, the examination appears||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|largely unremarkable for a patient of advanced age, aside from minor||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|18|ST|&IMP|2|degenerative changes in the skeletal structure, including early||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|19|ST|&IMP|2|osteoarthritis in the lumbar vertebrae.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|20|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.141636433211387225309312156796139814689^EPIC^APPLICATION^DICOM<R>
+<EB>

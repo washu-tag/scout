@@ -1,0 +1,11 @@
+2023-08-05 03:14:34.4187|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230805031434|TBD|ORU^R01|2.25.16227902591683088888176580597454588264|P|2.4<R>
+PID|1||ABC451163^^^ABC^MR~EPIC4485922^^^EPIC^MRN||LEE^SAMUEL^MARVIN^^Adm.^^D||19480202000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451163^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457347^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||27565^SYS|7795083450|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20230801110859|||PSCRIB|||||^^^^ |D7823216^HALL^JEREMY^GEORGE^M.D.^^^^ABC|||||4185^XRay Angiography|20230805031434||IMG|||1^^^20230805031434^^U^^URGENT|       |||^Chest pain|D7823222^POWELL^CARRIE^J.^^^M.D.|D7823228^MYERS^BRENT^A.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|5571456||CARRIE POWELL, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|5571456||ACC#  Date Time  Exam~~7795083450 Aug 05 2023 03:14AM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray angiography study~~FINDINGS:~The X-ray angiography performed on 2023-08-01 reveals intact vascular~structures with normal arterial supply throughout the visualized~territories. The coronary arteries are free of significant stenosis~or occlusions, and there are no aneurysms seen. In addition, there is~no evidence of collateral circulation and the aorta exhibits no~calcified plaques. The peripheral vascular imaging shows patent~vessels with no relevant abnormalities noted. Contrast enhancement~demonstrates excellent perfusion without extravasation.~~IMPRESSION:~The X-ray angiography study from 2023-08-01 is unremarkable,~indicating good vascular health with no significant pathologies~evident within the coronary or peripheral arterial systems.||||||F<R>
+OBX|3|TX|5571456||Requested By: Hall,Jeremy G. M.D.~~Dictated By: Carrie Powell, M.D. on Aug 05 2023 03:14AM~~This document has been electronically signed by: Carrie Powell, M.D.~on Aug 05 2023 03:14AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5571456|4|7795083450^UK^ZB||||||F<R>
+<EB>

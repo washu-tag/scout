@@ -1,0 +1,30 @@
+2000-05-30 04:16:44.0524|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000530041644|TBD|ORU^R01|2.25.152820896701854909248003624180384164303|P|2.7<R>
+PID|1||ABC451002^^^ABC^MR||HARMON^QUINTIN^IAN^^^^D||19680722|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084861|||||||||||||||||||||||||20000530041644|||||||V<R>
+ORC|RE|4275865^SYS|7795082808||Final||^^^20000530041643^20000530041644^O||20000530041644|T6530150^NEAL^EMILY||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4275865^SYS|7795082808|BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY|O|20000529115604|||||Hosp Perf||||^^^SPINE|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20000530041644||DX|Final||^^^20000530041643^20000530041644^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20000530041644||||||||BED72020^72020 Spine Single View^UNKDEV^^SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Spine X-ray||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|The findings suggest early degenerative disk disease in the lumbar||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|region, consistent with the patient's age. No acute pathology seen.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|The imaging does not indicate any compressive segments or acute||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|spinal instability. Continued observation and conservative management||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|are recommended, along with regular follow-up imaging as clinically||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|indicated. The X-ray of the thoracic and lumbar spine demonstrates||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|normal vertebral alignment without any evidence of acute fractures or||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|dislocations. There is mild degenerative change observed in the||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|lumbar spine with some disk space narrowing at L4-L5 and L5-S1||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|levels. Mild osteophyte formation is present, particularly noted on||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|the anterior aspects of the vertebral bodies at these levels,||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|consistent with early osteoarthritis. Posterior elements appear||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|intact, and the spinous processes are in a normal configuration. No||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|18|ST|&IMP|2|suspicious lesions or lytic processes are noted. Compared to prior||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|19|ST|&IMP|2|X-ray studies, there remains a stable status of degenerative changes,||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|20|ST|&IMP|2|with no significant progression.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|21|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Final|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.288345951983134737492496053119557454191^EPIC^APPLICATION^DICOM<R>
+<EB>

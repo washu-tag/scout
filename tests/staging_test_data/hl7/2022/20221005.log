@@ -1,0 +1,30 @@
+2022-10-05 21:13:50.6915|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20221005211350|TBD|ORU^R01|2.25.336209798857901597699671862603315113518|P|2.7<R>
+PID|1||ABC451123^^^ABC^MR||PALMER^LINDA^JENNIFER^^^^D||19841123|F||OTHER|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084929|||||||||||||||||||||||||20221005211350|||||||V<R>
+ORC|RE|7401252^SYS|7795083290||Wet Read||^^^20221005211349^20221005211350^O||20221005211350|T6530154^ROBERTS^RICARDO||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7401252^SYS|7795083290|M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR|O|20221002082157|||||Hosp Perf||||^^^PELVIS|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20221005211350||MR|Wet Read||^^^20221005211349^20221005211350^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20221005211350||||||||M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Pelvis PET-MR study||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|The PET-MR study indicates no evidence of malignancy or significant||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|pathological changes in the pelvic region. The imaging suggests a||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|benign process with normal metabolic function and anatomical||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|structures. Follow-up imaging may be considered to assure continuity||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|in monitoring. The PET-MR performed on 2022-10-02 shows integrated||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|MRI and metabolic imaging of the pelvic region, revealing no||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|hypermetabolic lesions in the ovaries or surrounding tissues. The||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|uterus appears normal in size and morphology, with a homogeneous||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|myometrium and no fibroids noted. There is no evidence of||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|lymphadenopathy or metastatic disease within the pelvic nodes.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|Splenic and hepatobiliary systems show normal activity patterns.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|Review of the bone marrow signal suggests no abnormalities indicating||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|infiltration or malignancy, and the bladder and gastrointestinal||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|18|ST|&IMP|2|tract are unremarkable. The appended spectral maps show normal||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|19|ST|&IMP|2|metabolic activity consistent with physiological and anatomical||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|20|ST|&IMP|2|benchmarks.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+OBX|21|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Wet Read|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.312847818436766986158359795759040078839^EPIC^APPLICATION^DICOM<R>
+<EB>

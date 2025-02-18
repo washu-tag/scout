@@ -1,0 +1,11 @@
+2020-04-22 01:51:17.1234|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200422015117|TBD|ORU^R01|2.25.20148025568585116873144019821685558701|P|2.4<R>
+PID|1||ABC451000^^^ABC^MR~EPIC4485759^^^EPIC^MRN||ISHIKAWA^SOUMA^^^^^D||19910125000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451000^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823270^KIMURA^RIKU^^^^^^^^^^HOSP|^^|^^|RAD|||||||||V56457249^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||476329^SYS|7795082796|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20200421135453|||PSCRIB|||||^^^^ |D7823270^KIMURA^RIKU|||||^Xr Sing View|20200422015117||MDXREVNT|||1^^^20200422015117^^U^^URGENT|       |||^Chest pain|D7823272^KOBAYASHI^KOTONE^^^^M.D.|D7823268^YAMAMOTO^REN^^^^M.D.||PSCRIB<R>
+OBX|1|TX|6237162||KOTONE KOBAYASHI, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|6237162||ACC#  Date Time  Exam~~7795082796 Apr 22 2020 01:51AM MDXREVNT Radiology Event~~EXAMINATION:~C-spine X-ray~~FINDINGS:~Cervical spine X-rays show a multilevel disc degenerative disease~characterized by disc height loss at C4-C5, C5-C6, and C6-C7 levels.~Osteophyte formation is evident at the lower cervical vertebrae,~contributing to mild central canal stenosis preferentially at C5-C6.~The vertebral bodies and posterior elements appear intact without~evidence of fracture or dislocation. No significant neural foraminal~narrowing was identified. Overall alignment of the cervical spine~shows no abnormalities.~~IMPRESSION:~Degenerative changes of cervical spine with resultant mild central~canal stenosis. Clinical correlation recommended for symptoms if~present.||||||F<R>
+OBX|3|TX|6237162||Requested By: Kimura,Riku null M.D.~~Dictated By: Kotone Kobayashi, M.D. on Apr 22 2020 01:51AM~~This document has been electronically signed by: Kotone Kobayashi,~M.D. on Apr 22 2020 01:51AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6237162|4|7795082796^UK^ZB||||||F<R>
+<EB>

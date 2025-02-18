@@ -1,0 +1,62 @@
+1998-08-13 05:16:19.5190|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19980813051619|TBD|ORU^R01|2.25.186595189711609143154886798304391798776|P|2.7<R>
+PID|1||ABC451174^^^ABC^MR||JONES^MILTON^JOSHUA^^^^D||19630203|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084726|||||||||||||||||||||||||19980813051619|||||||V<R>
+ORC|RE|5978079^SYS|7795083493||Final||^^^19980813051618^19980813051619^O||19980813051619|T6530154^ROBERTS^RICARDO||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5978079^SYS|7795083493|MRI1133^MRI W WO ABDOMEN^UNKDEV^^ABDOMEN MRI|O|19980810131304|||||Hosp Perf||||^^^ABDOMEN|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19980813051619||MR|Final||^^^19980813051618^19980813051619^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||19980813051619||||||||MRI1133^MRI W WO ABDOMEN^UNKDEV^^ABDOMEN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdominal MRI||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|Normal abdominal MRI findings with no significant abnormalities||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|detected. The findings correlate with a healthy abdominal anatomy and||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|function. Continued surveillance may not be necessary unless new||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|symptoms arise or there are clinical concerns. The MRI of the abdomen||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|demonstrates well-defined normal morphology of the liver, spleen,||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|kidneys, and pancreas, with no evidence of masses or lesions. The||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|liver shows normal signal intensity with no signs of steatosis or||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|cirrhosis. The gallbladder is unremarkable and demonstrates no stones||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|or wall thickening. Both kidneys are normal in size and shape,||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|showing no signs of hydronephrosis or cysts.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|The vascular structures, including the aorta and inferior vena cava,||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|are patent with no aneurysms noted. Mesenteric fat does not exhibit||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|18|ST|&IMP|2|any edema and there is no free fluid or free air within the abdominal||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|19|ST|&IMP|2|cavity. Lymph nodes in the retroperitoneal space are within normal||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|20|ST|&IMP|2|limits. No abnormalities are noted in the bowel loops, which appear||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|21|ST|&IMP|2|distended without obstruction.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+OBX|22|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Final|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.282227927571411012939234363484522006937^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+1998-08-13 07:48:56.6548|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19980813074856|TBD|ORU^R01|2.25.178219115280185221765826046772073482145|P|2.7<R>
+PID|1||ABC451076^^^ABC^MR||CAMPBELL^LISA^REBECCA^^^^D||19680803|F||OTHER|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084687|||||||||||||||||||||||||19980813074856|||||||V<R>
+ORC|RE|8143346^SYS|7795083099||Final||^^^19980813074855^19980813074856^O||19980813074856|T6530152^ADKINS^MELLISSA||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8143346^SYS|7795083099|EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY|O|19980809191121|||||Hosp Perf||||^^^TSPINE|D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19980813074856||DX|Final||^^^19980813074855^19980813074856^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||19980813074856||||||||EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV^^THORACIC SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: T-Spine X-ray||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|Overall, the T-spine X-ray performed on 1998-08-09 reveals an||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|unremarkable thoracic spine with mild degenerative changes including||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|spurring at the T5-T6 level but no acute bony pathology. Clinical||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|correlation is recommended to interpret the significance of the mild||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|degenerative findings. The T-spine X-ray demonstrates normal||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|vertebral body height and alignment with no evidence of compression||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|fractures. The intervertebral disc spaces appear well-maintained||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|without any sign of herniation or bulging. The bony cortical margins||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|of the thoracic vertebrae are smooth and intact. Notably, there is||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|some mild degenerative spurring present, predominantly at the T5-T6||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|level, with no significant foraminal stenosis observed. Disc spaces||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|remain hydrated without evidence of significant degenerative changes.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|17|ST|&IMP|2|The thoracic spine maintains normal concavity with no observable||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|18|ST|&IMP|2|kyphotic deformity. There are no paravertebral soft tissue masses or||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|19|ST|&IMP|2|abnormal calcifications identified in the soft tissues adjacent to||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|20|ST|&IMP|2|the thoracic spine.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|21|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.77421434781189109091215721232922382234^EPIC^APPLICATION^DICOM<R>
+<EB>

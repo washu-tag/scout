@@ -1,0 +1,11 @@
+2010-06-16 05:38:53.2838|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100616053853|TBD|ORU^R01|2.25.231020176202611164865759420349361140603|P|2.4<R>
+PID|1||ABC451149^^^ABC^MR~EPIC4485908^^^EPIC^MRN||FOLEY^HEATHER^CASSIE^^^^D||19930826000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451149^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457264^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||892480^SYS|7795083392|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20100614102937|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||^Xr Sing View|20100616053853||MDXREVNT|||1^^^20100616053853^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|1062187||KIMBERLY HANSON, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|1062187||ACC#  Date Time  Exam~~7795083392 Jun 16 2010 05:38AM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~The single-view chest X-ray illustrates clear lung fields with no~evidence of consolidations, effusions, or abnormalities in the~cardio-thoracic ratio. The bony structures are intact, with normal~appearance of the ribs and sternum. The diaphragm is positioned~appropriately and no acute osseous injuries or pathologies are~observed. This chest view is unremarkable and provides no indication~of acute cardiopulmonary issues.~~IMPRESSION:~No acute process identified within the thoracic cavity. The~radiological findings are consistent with normal anatomy.||||||F<R>
+OBX|3|TX|1062187||Requested By: Medrano,Joe J. M.D.~~Dictated By: Kimberly Hanson, M.D. on Jun 16 2010 05:38AM~~This document has been electronically signed by: Kimberly Hanson,~M.D. on Jun 16 2010 05:38AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|1062187|4|7795083392^UK^ZB||||||F<R>
+<EB>

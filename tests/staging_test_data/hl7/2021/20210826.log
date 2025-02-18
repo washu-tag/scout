@@ -1,0 +1,26 @@
+2021-08-26 13:47:49.7844|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210826134749|TBD|ORU^R01|2.25.275996988217190353517254015770362214058|P|2.7<R>
+PID|1||ABC451082^^^ABC^MR||FIELDS^SARA^LISA^^^^D||19511218|F||PCFIS|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084744|||||||||||||||||||||||||20210826134749|||||||V<R>
+ORC|RE|4436184^SYS|7795083125||Final||^^^20210826134748^20210826134749^O||20210826134749|T6530151^WATERS^JESSICA||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4436184^SYS|7795083125|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20210822154150|||||Hosp Perf||||^^^HEART|D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210826134749||NM|Final||^^^20210826134748^20210826134749^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20210826134749||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Nuclear Medicine cardiac study||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|The nuclear medicine cardiac study reveals normal perfusion dynamics||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|with preserved heart function. Results are stable with no||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|abnormalities compared to the last MRI, showing continuity in cardiac||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|health. The cardiac nuclear medicine study provides excellent||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|visualizations of myocardial perfusion. The rest and stress phases||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|indicate no significant perfusion defects. The left ventricular wall||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|motion is normal, and there is no demonstrable regional ischemia.||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|Ejection fractions are approximately 62% at rest, indicating||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|preserved systolic function. Perfusion imaging reveals uniform uptake||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|throughout the myocardium, with no areas of reduced blood flow.||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|Compared to prior studies from 2005, myocardial perfusion remains||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|intact and stable with no evidence of coronary artery disease.||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Final|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.338328168705928820288318982128946612317^EPIC^APPLICATION^DICOM<R>
+<EB>

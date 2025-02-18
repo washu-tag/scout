@@ -1,0 +1,27 @@
+2020-07-11 18:44:15.8537|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200711184415|TBD|ORU^R01|2.25.159691943784644941319428302595585711913|P|2.7<R>
+PID|1||ABC451167^^^ABC^MR||LIM^HYUN-JUN^^^^^D||19420728|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084999|||||||||||||||||||||||||20200711184415|||||||V<R>
+ORC|RE|3729867^SYS|7795083464||Final||^^^20200711184414^20200711184415^O||20200711184415|||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3729867^SYS|7795083464|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20200707163800|||||Hosp Perf|||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20200711184415||OT|Final||^^^20200711184414^20200711184415^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|||20200711184415||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|The findings on the single-view X-ray indicate moderate degenerative||||||Final<R>
+OBX|6|ST|&IMP|2|joint disease within the cervical spine correlating with normal aging||||||Final<R>
+OBX|7|ST|&IMP|2|processes for a 77-year-old male. While degenerative changes are||||||Final<R>
+OBX|8|ST|&IMP|2|present, there is no acute abnormality that requires immediate||||||Final<R>
+OBX|9|ST|&IMP|2|intervention. Consideration for conservative management or further||||||Final<R>
+OBX|10|ST|&IMP|2|diagnostic imaging may be thought if symptomatic progression is||||||Final<R>
+OBX|11|ST|&IMP|2|noted. The single-view X-ray performed provides limited assessment||||||Final<R>
+OBX|12|ST|&IMP|2|but reveals moderate degenerative changes characterized by||||||Final<R>
+OBX|13|ST|&IMP|2|osteophytes at the cervical spine levels C4-5 and C5-6. There is mild||||||Final<R>
+OBX|14|ST|&IMP|2|disc space narrowing consistent with age-related degeneration and||||||Final<R>
+OBX|15|ST|&IMP|2|some evidence of facet joint arthropathy. Alignment appears preserved||||||Final<R>
+OBX|16|ST|&IMP|2|with no acute fractures or dislocations. The visualized soft tissues||||||Final<R>
+OBX|17|ST|&IMP|2|appear unremarkable with no signs of pertinent abnormalities.||||||Final<R>
+OBX|18|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Final<R>
+ZDS|2.25.120329252364734948149191649508351706401^EPIC^APPLICATION^DICOM<R>
+<EB>

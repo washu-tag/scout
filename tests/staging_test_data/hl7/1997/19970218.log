@@ -1,0 +1,11 @@
+1997-02-18 22:34:51.2498|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19970218223451|TBD|ORU^R01|2.25.97070449119106809530030645580548681508|P|2.4<R>
+PID|1||ABC451027^^^ABC^MR~EPIC4485786^^^EPIC^MRN||GARCIA^REGINA^REBECCA^^^^D||19470111000000|F||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451027^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457338^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5067027^SYS|7795082906|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||19970214125120|||PSCRIB|||||^^^^ |D7823237^REESE^AMBER^JENNIFER^M.D.^^^^ABC|||||8452^NM MPI SPECT|19970218223451||H|||1^^^19970218223451^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823244^MEDRANO^JOE^J.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|682189||RUSSELL GALLAGHER, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|682189||ACC#  Date Time  Exam~~7795082906 Feb 18 1997 10:34PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM Study~~FINDINGS:~Cardiac nuclear medicine study dated 1997-02-14 indicates normal left~ventricular function with an ejection fraction of 60%. Stress and~rest images show no significant perfusion deficits. The stress test~reveals no ischemic changes, maintaining a Category I result. The~cardiac wall motion is assessed as normal in all segments, with no~evidence of prior infarction. Additionally, there are no ectopic~beats or significant arrhythmias noted during the assessment.~~IMPRESSION:~The cardiac NM study results are reassuring, reflecting preserved~myocardial perfusion and function. The stress testing indicates low~risk for coronary artery disease. Given the patient’s age and~history, routine follow-ups and ongoing cardiovascular health~monitoring are recommended.||||||F<R>
+OBX|3|TX|682189||Requested By: Reese,Amber J. M.D.~~Dictated By: Russell Gallagher, M.D. on Feb 18 1997 10:34PM~~This document has been electronically signed by: Russell Gallagher,~M.D. on Feb 18 1997 10:34PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|682189|4|7795082906^UK^ZB||||||F<R>
+<EB>

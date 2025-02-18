@@ -1,0 +1,23 @@
+2017-04-02 22:14:12.1869|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170402221412|TBD|ORU^R01|2.25.229711485980535149110742513077192825049|P|2.7<R>
+PID|1||ABC451029^^^ABC^MR||ΜΙΧΌΠΟΥΛΟΣ^ΔΈΣΠΟΙΝΑ^^^^^D||19810423|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084951|||||||||||||||||||||||||20170402221412|||||||V<R>
+ORC|RE|8598644^SYS|7795082913||Final||^^^20170402221411^20170402221412^O||20170402221412|T6530150^NEAL^EMILY||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8598644^SYS|7795082913|CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI|O|20170401192201|||||Hosp Perf||||^^^BRAIN|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20170402221412||MR|Final||^^^20170402221411^20170402221412^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20170402221412||||||||CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|Stable MRI findings compared to the MRI on 2000-07-18; no new||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|intracranial abnormalities, consistent with prior normal results and||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|follow-up. The previously noted cyst remains stable. Comparing to the||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|2000-07-18 study, the 2017 MRI study remains largely stable. The||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|cerebral cortex retains its normal appearance, and there are no new||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|lesions or areas indicative of demyelination. Notably, a small cystic||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|structure in the right temporal lobe is stable in size, and no edema||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|is present. The vascular flow voids appear intact, and the basal||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|ganglia and thalami show no changes.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Final|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.90878636092195866594251910766941305921^EPIC^APPLICATION^DICOM<R>
+<EB>

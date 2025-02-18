@@ -1,0 +1,31 @@
+1996-11-11 00:40:49.6603|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19961111004049|TBD|ORU^R01|2.25.66660566690095631620258817279067317666|P|2.7<R>
+PID|1||ABC451063^^^ABC^MR||COLLINS^MELISSA^JENNIFER^^Adm.^^D||19250507|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823252^NICHOLS^ISAAC^V.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085040|||||||||||||||||||||||||19961111004049|||||||V<R>
+ORC|RE|7983064^SYS|7795083047||Wet Read||^^^19961111004048^19961111004049^O||19961111004049|T6530158^RODRIGUEZ^JESSICA||D7823253^NIXON^MELISSA^D.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7983064^SYS|7795083047|IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED|O|19961107151532|||||Hosp Perf||||^^^CHEST|D7823253^NIXON^MELISSA^D.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19961111004049||MR|Wet Read||^^^19961111004048^19961111004049^O||||^Chest pain||D7823252^NICHOLS^ISAAC^V.^^^^^ABC^^^^HOSP|T6530158^RODRIGUEZ^JESSICA||19961111004049||||||||IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest MRI||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|5|ST|&IMP|2|Findings are consistent with a normal chest MRI, with mild subpleural||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|6|ST|&IMP|2|reticular opacities suspicious for early interstitial lung disease.||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|7|ST|&IMP|2|The other structures in the thoracic cavity appear unremarkable,||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|8|ST|&IMP|2|including the heart and major vessels. Consider monitoring in||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|9|ST|&IMP|2|follow-up imaging due to the subtle findings regarding interstitial||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|10|ST|&IMP|2|lung disease. The chest MRI demonstrated no evidence of mediastinal||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|11|ST|&IMP|2|or hilar lymphadenopathy. The lung parenchyma appeared well-aerated||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|12|ST|&IMP|2|with no focal consolidative opacities or pleural effusions observed.||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|13|ST|&IMP|2|The vascular structures remain patent, and there is no significant||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|14|ST|&IMP|2|endobronchial lesion noted. No significant abnormalities were seen in||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|15|ST|&IMP|2|the cardiac silhouette, and the pericardial space is unremarkable.||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|16|ST|&IMP|2|Overall, the imaging is consistent with normal findings. However,||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|17|ST|&IMP|2|focus on the posterior segments of the lungs did reveal mild,||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|18|ST|&IMP|2|subpleural reticular opacities, possibly indicating early||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|19|ST|&IMP|2|interstitial lung disease, although these are subtle and may warrant||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|20|ST|&IMP|2|follow-up imaging. Additionally, minor degenerative changes are||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|21|ST|&IMP|2|appreciated in the costovertebral joints.||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+OBX|22|ST|&IMP|2|Dictated by: Isaac Nichols Interpreter, M.D.||||||Wet Read|||||T6530158^RODRIGUEZ^JESSICA<R>
+ZDS|2.25.231471413217436742832183212687741413996^EPIC^APPLICATION^DICOM<R>
+<EB>

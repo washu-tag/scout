@@ -1,0 +1,24 @@
+2023-11-11 23:33:11.8917|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20231111233311|TBD|ORU^R01|2.25.57702783653948881145704492165993346662|P|2.7<R>
+PID|1||ABC451154^^^ABC^MR||WHITEHEAD^MICHAEL^ROGER^^^^D||19330116|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823218^LLOYD^JESSICA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084923|||||||||||||||||||||||||20231111233311|||||||V<R>
+ORC|RE|7251197^SYS|7795083417||Wet Read||^^^20231111233310^20231111233311^O||20231111233311|T6530138^FIELDS^VICTORIA||D7823221^MAXWELL^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7251197^SYS|7795083417|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20231107161744|||||Hosp Perf||||^^^HEART|D7823221^MAXWELL^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20231111233311||NM|Wet Read||^^^20231111233310^20231111233311^O||||^Chest pain||D7823217^SANCHEZ^ROY^A.^^^^^ABC^^^^HOSP|T6530138^FIELDS^VICTORIA||20231111233311||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|5|ST|&IMP|2|Cardiac NM findings are reassuring with normal perfusion and||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|6|ST|&IMP|2|ventricular function gauged during testing. There are no indicators||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|7|ST|&IMP|2|of ischemic heart disease or notable functional impairment at this||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|8|ST|&IMP|2|time. The cardiac nuclear medicine study demonstrates preserved||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|9|ST|&IMP|2|ejection fraction with normal perfusion pattern across both||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|10|ST|&IMP|2|ventricles at rest and during stress imaging. No significant ischemic||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|11|ST|&IMP|2|changes are detected. The left ventricular wall motion is uniformly||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|12|ST|&IMP|2|normal, and the right ventricle performs well with no dilation noted.||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|13|ST|&IMP|2|Additionally, no perfusion defects are revealed which might||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|14|ST|&IMP|2|necessitate further investigation.||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+OBX|15|ST|&IMP|2|Dictated by: Roy Sanchez Interpreter, M.D.||||||Wet Read|||||T6530138^FIELDS^VICTORIA<R>
+ZDS|2.25.200653171327948778481052555128629296084^EPIC^APPLICATION^DICOM<R>
+<EB>

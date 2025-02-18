@@ -1,0 +1,26 @@
+2021-10-21 18:45:29.5879|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20211021184529|TBD|ORU^R01|2.25.287471233636188950130354673023711161340|P|2.7<R>
+PID|1||ABC451085^^^ABC^MR||MARTINEZ^ALFRED^DAVID^^^^D||19300126|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084803|||||||||||||||||||||||||20211021184529|||||||V<R>
+ORC|RE|3369007^SYS|7795083140||Wet Read||^^^20211021184528^20211021184529^O||20211021184529|T6530152^ADKINS^MELLISSA||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3369007^SYS|7795083140|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC|O|20211020071116|||||Hosp Perf||||^^^ABDOMEN|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20211021184529||CT|Wet Read||^^^20211021184528^20211021184529^O||||^Chest pain||D7823244^MEDRANO^JOE^J.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20211021184529||||||||CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-CT||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|The mild uptake in the pancreatic region requires close monitoring or||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|further evaluation via endoscopic ultrasound and potentially a biopsy||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|to rule out neoplastic processes. All other abdominal structures||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|appear normal, and no immediate intervention is necessary. The||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|abdomen PET-CT reveals incidental findings of mild tracer uptake in||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|the pancreatic head with an SUVmax of 2.8, alongside normal hepatic||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|and splenic metabolism. The kidneys visualize adequately with no||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|nephrolithiasis or hydronephrosis. No significant mesenteric or||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|retroperitoneal lymphadenopathy is detected. The gastrointestinal||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|tract shows normal uptake patterns without any obstruction or wall||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|thickening. Distal small bowel and colon appear normal, and no||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|suspicious lesions are noted within the bowel segment.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+OBX|17|ST|&IMP|2|Dictated by: Joe Medrano Interpreter, M.D.||||||Wet Read|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.74988482480736078262372467861534950614^EPIC^APPLICATION^DICOM<R>
+<EB>

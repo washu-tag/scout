@@ -1,0 +1,11 @@
+2015-05-30 18:53:45.4043|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150530185345|TBD|ORU^R01|2.25.51540258491446693935205120908795751895|P|2.4<R>
+PID|1||ABC450997^^^ABC^MR~EPIC4485756^^^EPIC^MRN||BOYD^MEGAN^CONNIE^^^^D||19391212000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC450997^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457199^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7903812^SYS|7795082785|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20150527165224|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20150530185345||BHC|||1^^^20150530185345^^U^^URGENT|       |||^Chest pain|D7823234^DONOVAN^WILLIAM^C.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|4227392||WILLIAM DONOVAN, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|4227392||ACC#  Date Time  Exam~~7795082785 May 30 2015 06:53PM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~In comparison to the study on 2014, the most recent mammogram from~2015 continues to display overall stability in the breast tissue~appearance. No new masses or calcifications were observed. There is a~noted stable glandular density with ongoing similarities to previous~imaging. The skin and subcutaneous fat layers exhibit normal~characteristics, and there is no indication of suspicious lesions or~lymphadenopathy. It reinforces a non-problematic presentation~post-menopause without any discernible fluctuation in findings.~~IMPRESSION:~The mammogram demonstrates stability compared to the previous study~on 2014, reassuringly suggesting no evidence of malignancy. Regular~screenings should be performed as per routine guidelines.||||||P<R>
+OBX|3|TX|4227392||Requested By: Marks,Michael R. M.D.~~Dictated By: William Donovan, M.D. on May 30 2015 06:53PM~~Pending review by: Lisa Sanders, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|4227392|4|7795082785^UK^ZB||||||P<R>
+<EB>

@@ -1,0 +1,29 @@
+2006-08-26 11:49:19.2227|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060826114919|TBD|ORU^R01|2.25.292890664541289631412336827773116812413|P|2.7<R>
+PID|1||ABC451025^^^ABC^MR||NAVARRO^LYNETTE^ALISHA^^^^D||19590331|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084865|||||||||||||||||||||||||20060826114919|||||||V<R>
+ORC|RE|6738966^SYS|7795082901||Prelim||^^^20060826114918^20060826114919^O||20060826114919|T6530148^GROSS^CARLY||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6738966^SYS|7795082901|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC|O|20060824205202|||||Hosp Perf||||^^^ABDOMEN|D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060826114919||CT|Prelim||^^^20060826114918^20060826114919^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20060826114919||||||||CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-CT||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|The abdomen PET-CT performed on 2006-08-24 suggests hypermetabolic||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|activity localized in the left colon, raising concern for potential||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|neoplastic processes, possibly indicating an underlying malignancy or||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|inflammatory condition. Further investigation, including potential||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|colonoscopy and biopsy, is recommended to determine the cause of the||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|increased uptake. The fatty infiltration of the pancreas may also||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|suggest a metabolic syndrome, which should be addressed as part of||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|the management plan. The PET-CT scan demonstrates increased FDG||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|uptake in the left lower quadrant and the right iliac fossa, with an||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|SUV max of 4.2 in the left colon region, suggestive of hypermetabolic||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|activity. No significant lymphadenopathy is observed in the||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|mesenteric or retroperitoneal spaces. The liver appears normal in||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|size and texture, but the pancreas shows mild fatty infiltration. No||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|masses are demonstrated in the kidneys or urinary tract. The bowel is||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|visualized without significant obstruction or dilation.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|20|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.311084585296531206505390511159117295435^EPIC^APPLICATION^DICOM<R>
+<EB>

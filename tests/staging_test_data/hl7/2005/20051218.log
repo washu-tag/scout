@@ -1,0 +1,26 @@
+2005-12-18 16:28:31.5950|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20051218162831|TBD|ORU^R01|2.25.33312957371912271465552608282772363990|P|2.7<R>
+PID|1||ABC451044^^^ABC^MR||SHERMAN^LINDA^DESIRAE^^^^D||19520302|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084695|||||||||||||||||||||||||20051218162831|||||||V<R>
+ORC|RE|5252364^SYS|7795082976||Wet Read||^^^20051218162830^20051218162831^O||20051218162831|T6530150^NEAL^EMILY||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5252364^SYS|7795082976|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20051216091002|||||Hosp Perf||||^^^CHEST|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20051218162831||CR|Wet Read||^^^20051218162830^20051218162831^O||||^Chest pain||D7823239^SMITH^JENNIFER^A.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20051218162831||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|The chest X-ray is normal with no acute pathology identified. There||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|are no focal opacities, interstitial edema, or signs of||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|consolidation. This reflects a stable baseline with no immediate||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|concerns. The chest X-ray demonstrates clear lung fields bilaterally||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|with no signs of acute pulmonary disease. The cardiomediastinal||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|silhouette is unremarkable, with a normal-sized heart and no evidence||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|of enlarged hilar structures. The diaphragm is well-contoured, and||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|there is no mediastinal shift or evidence of pleural effusion. The||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|visualized bony thorax appears intact with no signs of acute||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|fracture. No abnormal air-fluid levels are noted in the thoracic||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|cavity. Comparison with a previous chest X-ray dated 2004-05-10 shows||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|no significant changes in the thoracic structures.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|Dictated by: Jennifer Smith Interpreter, M.D.||||||Wet Read|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.262235314013145518036346191440704662628^EPIC^APPLICATION^DICOM<R>
+<EB>

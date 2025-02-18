@@ -1,0 +1,38 @@
+2020-07-09 09:46:39.0881|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20200709094639|TBD|ORU^R01|2.25.133759796552449202487543818775679621234|P|2.7<R>
+PID|1||ABC451046^^^ABC^MR||WILSON^NATHAN^JASON^^^^D||19360913|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084729|||||||||||||||||||||||||20200709094639|||||||V<R>
+ORC|RE|8626459^SYS|7795082983||Final||^^^20200709094638^20200709094639^O||20200709094639|T6530150^NEAL^EMILY||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8626459^SYS|7795082983|MRI1133^MRI W WO ABDOMEN^UNKDEV^^ABDOMEN MRI|O|20200707120258|||||Hosp Perf||||^^^ABDOMEN|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20200709094639||MR|Final||^^^20200709094638^20200709094639^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20200709094639||||||||MRI1133^MRI W WO ABDOMEN^UNKDEV^^ABDOMEN MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdominal MRI||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|1. A 4.5 cm mixed cystic-solid mass in the right kidney, concerning||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|for renal cell carcinoma versus a complex renal cyst; recommend||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|follow-up imaging in six months with a dedicated renal protocol,||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|including contrast. ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|2. Several small hepatic lesions likely representing benign entities;||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|correlation with ultrasound or further MRI with contrast advised for||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|differentiation. ||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|3. Evidence of mild hepatic steatosis not previously noted, which may||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|require assessment for underlying metabolic syndrome. Comparatively,||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|in the prior study on 2019-12-15, the prominent liver steatosis was||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|not explicitly documented, indicating possible progression. The MRI||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|of the abdomen demonstrated a well-defined mixed cystic-solid mass||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|within the right kidney measuring approximately 4.5 cm. The lesion||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|18|ST|&IMP|2|exhibits T2 hyperintensity, and there was no evidence of adjacent||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|19|ST|&IMP|2|organ infiltration. The renal cortex appears intact with no||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|20|ST|&IMP|2|hydronephrosis observed. Additionally, there are small, scattered||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|21|ST|&IMP|2|hepatic lesions in the right lobe, measuring up to 1.2 cm, which may||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|22|ST|&IMP|2|represent focal nodular hyperplasia or hemangiomas; however, further||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|23|ST|&IMP|2|characterization with contrast-enhanced imaging is recommended. The||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|24|ST|&IMP|2|pancreas is normal in size and signal intensity. No lymphadenopathy||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|25|ST|&IMP|2|noted, and the aorta and inferior vena cava remain patent with no||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|26|ST|&IMP|2|thrombus present. The bowel loops demonstrate normal distention||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|27|ST|&IMP|2|without any signs of obstruction or ischemia. Pervasive fatty||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|28|ST|&IMP|2|infiltration of the liver is noted, suggesting steatosis.||||||Final|||||T6530150^NEAL^EMILY<R>
+OBX|29|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Final|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.121470395379877199762175385281801565619^EPIC^APPLICATION^DICOM<R>
+<EB>

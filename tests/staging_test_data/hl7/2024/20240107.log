@@ -1,0 +1,11 @@
+2024-01-07 09:38:10.8812|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240107093810|TBD|ORU^R01|2.25.253661095541013078611730423538009085309|P|2.4<R>
+PID|1||ABC451101^^^ABC^MR~EPIC4485860^^^EPIC^MRN||ΑΡΓΎΡΗΣ^ΜΆΡΘΑ^^^^^D||19761103000000|F||U|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451101^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457260^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8799557^SYS|7795083203|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20240103080640|||PSCRIB|||||^^^^ |D7823226^KENNEDY^JERI^AMANDA^M.D.^^^^ABC|||||4185^XRay Angiography|20240107093810||IMG|||1^^^20240107093810^^U^^URGENT|       |||^Chest pain|D7823221^MAXWELL^MICHAEL^R.^^^M.D.|D7823223^HARPER^MARIA^K.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|4444842||MICHAEL MAXWELL, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4444842||ACC#  Date Time  Exam~~7795083203 Jan 07 2024 09:38AM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray angiography study~~FINDINGS:~The X-ray angiography study conducted on January 3, 2024, presents a~detailed view of the vascular structures of the abdomen and pelvis.~Major vascular systems, including the aorta and its major branches,~exhibit normal luminal diameter with no evidence of stenosis or~occlusions. The renal arteries are open with robust flow, indicating~adequate perfusion to the kidneys. No vascular abnormalities such as~aneurysms or arteriovenous malformations are evident. The imaging~demonstrates good opacification of vessels without non-visualization~of any major branches. Overall, the study suggests healthy~vascularity without acute pathology.~~IMPRESSION:~X-ray angiography shows normal vascular anatomy and function without~significant findings. There is no evidence of acute disease or~vascular compromise. Continued vigilance and routine imaging every~few years are recommended.||||||F<R>
+OBX|3|TX|4444842||Requested By: Kennedy,Jeri A. M.D.~~Dictated By: Michael Maxwell, M.D. on Jan 07 2024 09:38AM~~This document has been electronically signed by: Michael Maxwell,~M.D. on Jan 07 2024 09:38AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4444842|4|7795083203^UK^ZB||||||F<R>
+<EB>

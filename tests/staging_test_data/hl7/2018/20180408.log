@@ -1,0 +1,27 @@
+2018-04-08 04:53:55.1704|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180408045355|TBD|ORU^R01|2.25.147880539761204250579921962474967300799|P|2.7<R>
+PID|1||ABC451118^^^ABC^MR||WILLIS^PATRICK^STEPHEN^^^^D||20000430|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084825|||||||||||||||||||||||||20180408045355|||||||V<R>
+ORC|RE|2901880^SYS|7795083271||Final||^^^20180408045354^20180408045355^O||20180408045355|T6530151^WATERS^JESSICA||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2901880^SYS|7795083271|OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED|O|20180405072048|||||Hosp Perf||||^^^HEAD|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20180408045355||MR|Final||^^^20180408045354^20180408045355^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530151^WATERS^JESSICA||20180408045355||||||||OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV^^HEAD MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head MRI||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|5|ST|&IMP|2|Overall, the MRI findings suggest a normal evaluation of the brain||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|6|ST|&IMP|2|parenchyma with mild chronic changes suggestive of microangiopathy,||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|7|ST|&IMP|2|likely age-related. No acute pathological findings were noted that||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|8|ST|&IMP|2|might explain any neurological deficits. The brain MRI reveals no||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|9|ST|&IMP|2|focal lesions within the cerebral hemispheres, cerebellum, or||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|10|ST|&IMP|2|brainstem. However, there is mild periventricular hyperintensity on||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|11|ST|&IMP|2|T2-weighted images, suggestive of chronic microangiopathy, which may||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|12|ST|&IMP|2|correlate with patient age and lifestyle risk factors such as||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|13|ST|&IMP|2|hypertension or hyperlipidemia. The corpus callosum is intact without||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|14|ST|&IMP|2|signs of demyelination. The ventricular system appears normal in size||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|15|ST|&IMP|2|and contour, and there is no evidence of midline shift or mass||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|16|ST|&IMP|2|effect. DWI sequences show no acute ischemic stroke lesions. The||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|17|ST|&IMP|2|basal ganglia and thalami are normal in signal characteristics.||||||Final|||||T6530151^WATERS^JESSICA<R>
+OBX|18|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Final|||||T6530151^WATERS^JESSICA<R>
+ZDS|2.25.234980331499481127162656174411758342759^EPIC^APPLICATION^DICOM<R>
+<EB>

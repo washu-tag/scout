@@ -1,0 +1,27 @@
+2006-04-22 15:36:47.2626|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060422153647|TBD|ORU^R01|2.25.300917205670789779722284216781649659282|P|2.7<R>
+PID|1||ABC451023^^^ABC^MR||LAWSON^TONYA^EMILY^^^^D||19881007|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084835|||||||||||||||||||||||||20060422153647|||||||V<R>
+ORC|RE|7078945^SYS|7795082893||Prelim||^^^20060422153646^20060422153647^O||20060422153647|T6530145^RUIZ^TARA||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7078945^SYS|7795082893|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC|O|20060422084640|||||Hosp Perf||||^^^ABDOMEN|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060422153647||CT|Prelim||^^^20060422153646^20060422153647^O||||^Chest pain||D7823240^PARSONS^ERNESTO^J.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20060422153647||||||||CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-CT||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|The findings suggest a hypermetabolic renal mass likely indicating||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|malignant etiology. Further evaluation through biopsy and urology||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|consultation is recommended for definitive diagnosis. The PET-CT of||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|the abdomen demonstrates a hypermetabolic mass situated in the right||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|kidney, measuring approximately 3.2 cm in greatest dimension. The||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|SUVmax in this lesion is markedly elevated at 12.4, implicating a||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|possible malignancy. No other hypermetabolic lesions are identified||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|throughout the abdominal cavity. The liver and spleen exhibit normal||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|metabolic activities. Lymph nodes within the retroperitoneum appear||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|unremarkable. No significant ascites or other fluid collections are||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|seen in the peritoneal cavity. The surrounding musculature and bony||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|structures do not show evidence of abnormal uptake or adjacent soft||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|tissue masses.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|Dictated by: Ernesto Parsons Interpreter, M.D.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.330891431968503618949637495665855141373^EPIC^APPLICATION^DICOM<R>
+<EB>

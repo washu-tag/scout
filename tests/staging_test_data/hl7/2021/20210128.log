@@ -1,0 +1,27 @@
+2021-01-28 23:02:14.3333|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210128230214|TBD|ORU^R01|2.25.10701284077074277697987896632712063984|P|2.7<R>
+PID|1||ABC451140^^^ABC^MR||THOMAS^MELISSA^ERIN^^^^D||19720808|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085034|||||||||||||||||||||||||20210128230214|||||||V<R>
+ORC|RE|8608265^SYS|7795083359||Wet Read||^^^20210128230213^20210128230214^O||20210128230214|T6530153^MORAN^JOSHUA||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8608265^SYS|7795083359|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20210126123218|||||Hosp Perf|||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20210128230214||US|Wet Read||^^^20210128230213^20210128230214^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||20210128230214||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|1. Normal abdominal ultrasound findings with a benign appearance of||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|splenosis. 2. Suggest clinical correlation to rule out any underlying||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|pathology. 3. Recommend routine follow-up imaging depending on||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|clinical symptoms. The ultrasound study of the abdomen displays||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|normal liver size and echogenicity with no focal hepatic lesions.||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|Gallbladder appears unremarkable without any signs of cholelithiasis||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|or inflammation. The pancreas and kidneys are additionally normal||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|with no cysts or masses seen. Both adrenal glands are within normal||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|limits. A small area of hypoechoic tissue is noted in the splenic||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|hilum; however, this appears to be benign splenosis. There is no||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|15|ST|&IMP|2|history of trauma documented. This ultrasound was performed following||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|16|ST|&IMP|2|a CT scan on 2020-10-12, during which a similar anomaly was not||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|17|ST|&IMP|2|observed, indicating a recent appearance in the splenic region.||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+OBX|18|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Wet Read|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.133978147942154208232493712267416993995^EPIC^APPLICATION^DICOM<R>
+<EB>

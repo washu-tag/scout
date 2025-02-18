@@ -1,0 +1,27 @@
+2017-06-30 22:20:34.7679|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170630222034|TBD|ORU^R01|2.25.332074357355747575346438122732675676284|P|2.7<R>
+PID|1||ABC451113^^^ABC^MR||ΖΕΡΒΆΝΟΣ^ΊΩΆΝΝΗΣ^^^^^D||19330928|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823295^GARRETT^JOSHUA^C.^M.D.^^^^^^^^HOSP|||RAD|||||||||V42084963|||||||||||||||||||||||||20170630222034|||||||V<R>
+ORC|RE|2270549^SYS|7795083252||Final||^^^20170630222033^20170630222034^O||20170630222034|T6530218^DIAZ^SHEA||D7823292^ALFARO^RICHARD^A.^M.D.^^^^^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2270549^SYS|7795083252|IMG1021^MRI TRANSFER OF OUTSIDE FILMS^UNKDEV^^MRI GENERIC|O|20170628100120|||||Hosp Perf||||^^^CHEST|D7823292^ALFARO^RICHARD^A.^M.D.^^^^^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20170630222034||MR|Final||^^^20170630222033^20170630222034^O||||^Chest pain||D7823291^KLEIN^ANNA^A.^^^^^^^^^HOSP|T6530218^DIAZ^SHEA||20170630222034||||||||IMG1021^MRI TRANSFER OF OUTSIDE FILMS^UNKDEV^^MRI GENERIC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: MRI of the chest||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|5|ST|&IMP|2|Chest MRI findings are consistent with stable anatomy relative to the||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|6|ST|&IMP|2|prior chest X-ray from 2000-03-04. There are no signs of evolving||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|7|ST|&IMP|2|pathology. Continued routine surveillance is recommended as per||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|8|ST|&IMP|2|patient history. Chest MRI was performed following the previous chest||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|9|ST|&IMP|2|X-ray on 2000-03-04. The study demonstrates normal lung volumes||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|10|ST|&IMP|2|without evidence of pulmonary nodules or consolidation. The||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|11|ST|&IMP|2|mediastinal structures, including the aorta and pulmonary arteries,||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|12|ST|&IMP|2|are normal in appearance. No pleural effusion or thickening is noted,||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|13|ST|&IMP|2|and the myocardial assessment shows no signs of ischemic or||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|14|ST|&IMP|2|infiltrative disease. The heart appears normal in size with a||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|15|ST|&IMP|2|preserved left ventricular ejection fraction. Compared to the 2000||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|16|ST|&IMP|2|chest X-ray, there is stability in the pulmonary architecture with no||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|17|ST|&IMP|2|significant interval changes denote ongoing chronic processes.||||||Final|||||T6530218^DIAZ^SHEA<R>
+OBX|18|ST|&IMP|2|Dictated by: Anna Klein Interpreter, M.D.||||||Final|||||T6530218^DIAZ^SHEA<R>
+ZDS|2.25.317080112228259268872298948214424463792^EPIC^APPLICATION^DICOM<R>
+<EB>

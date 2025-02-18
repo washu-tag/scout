@@ -1,0 +1,11 @@
+2023-12-05 13:00:01.7217|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20231205130001|TBD|ORU^R01|2.25.8927606954206596455274636640381969820|P|2.4<R>
+PID|1||ABC451069^^^ABC^MR~EPIC4485828^^^EPIC^MRN||GONZALEZ^MICHAEL^STEPHEN^^^^D||19961009000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451069^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457113^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6105070^SYS|7795083074|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||20231204180449|||PSCRIB|||||^^^^ |D7823232^MARKS^MICHAEL^RICKY^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|20231205130001||IMG|||1^^^20231205130001^^U^^URGENT|       |||^Chest pain|D7823238^HUNT^APRIL^M.^^^M.D.|D7823240^PARSONS^ERNESTO^J.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|9363524||APRIL HUNT, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|9363524||ACC#  Date Time  Exam~~7795083074 Dec 05 2023 01:00PM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~The MRI of the chest demonstrates preserved lung volumes with no~evidence of pleural effusion or significant parenchymal disease.~However, the left lung displays patchy areas of signal abnormality on~T2-weighted sequences that correlate with earlier findings of~hypermetabolism in the PET-CT from 2023-06-25. The hilar and~mediastinal lymph nodes show marked hyperintensity, suggestive of~lymphadenopathy. There is also a notable lymphocytic infiltrate on~imaging, consistent with chronic processes, and the heart size and~function remain normal with no pericardial effusion or thickening~noted.~~IMPRESSION:~The imaging corroborates previously noted findings of pathological~processes in the left lung identified in the PET-CT. The presence of~potential lymphatic involvement indicates the need for further~evaluation to ascertain the nature of these findings, potentially~instructing a follow-up biopsy.||||||F<R>
+OBX|3|TX|9363524||Requested By: Marks,Michael R. M.D.~~Dictated By: April Hunt, M.D. on Dec 05 2023 01:00PM~~This document has been electronically signed by: April Hunt, M.D. on~Dec 05 2023 01:00PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9363524|4|7795083074^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,11 @@
+2013-09-03 20:49:20.4466|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130903204920|TBD|ORU^R01|2.25.212372399514833463983163397899220805415|P|2.4<R>
+PID|1||ABC451110^^^ABC^MR~EPIC4485869^^^EPIC^MRN||THOMPSON^KEVIN^FRANK^Sr.^^^D||19900127000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451110^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823216^HALL^JEREMY^G.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457412^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5114822^SYS|7795083236|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20130903135505|||PSCRIB|||||^^^^ |D7823217^SANCHEZ^ROY^ANDREW^M.D.^^^^ABC|||||4185^XRay Angiography|20130903204920||IMG|||1^^^20130903204920^^U^^URGENT|       |||^Chest pain|D7823218^LLOYD^JESSICA^A.^^^M.D.|D7823222^POWELL^CARRIE^J.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|8811455||JESSICA LLOYD, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|8811455||ACC#  Date Time  Exam~~7795083236 Sep 03 2013 08:49PM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray Angiography Study~~FINDINGS:~The X-ray angiography study reveals patent arterial and venous~structures within the imaged territory, with no evidence of stenosis~or vascular malformations. The aortic arch and its branches are~normal in caliber. All major vessels including the coronary arteries~are well visualized showing no significant occlusion or~atherosclerotic changes. There are no abnormal intraluminal masses or~intravascular devices evident. Enhanced vascular flow dynamics are~observed without significant collateral circulation.~~IMPRESSION:~The angiography study performed on September 03, 2013, suggests a~normal vascular system without significant obstructive or destructive~lesions. There are no notable findings that would suggest vascular~pathology.||||||F<R>
+OBX|3|TX|8811455||Requested By: Sanchez,Roy A. M.D.~~Dictated By: Jessica Lloyd, M.D. on Sep 03 2013 08:49PM~~This document has been electronically signed by: Jessica Lloyd, M.D.~on Sep 03 2013 08:49PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8811455|4|7795083236^UK^ZB||||||F<R>
+<EB>

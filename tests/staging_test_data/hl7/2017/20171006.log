@@ -1,0 +1,26 @@
+2017-10-06 22:36:07.3523|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20171006223607|TBD|ORU^R01|2.25.176121572319584546293302289162880690101|P|2.7<R>
+PID|1||ABC451023^^^ABC^MR||LAWSON^TONYA^EMILY^^^^D||19881007|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823278^HUBBARD^BRADLEY^D.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084836|||||||||||||||||||||||||20171006223607|||||||V<R>
+ORC|RE|9471594^SYS|7795082895||Wet Read||^^^20171006223606^20171006223607^O||20171006223607|T6530212^VANG^DAVID^^III||D7823280^DAVIDSON^SHAUN^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9471594^SYS|7795082895|IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED|O|20171003102949|||||Hosp Perf||||^^^BRAIN|D7823280^DAVIDSON^SHAUN^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20171006223607||MR|Wet Read||^^^20171006223606^20171006223607^O||||^Chest pain||D7823277^ALLEN^JOSEPH^B.^^^^^ABC^^^^HOSP|T6530212^VANG^DAVID||20171006223607||||||||IMG2347^MRI BRAIN WO CONTRAST^UNKDEV^^BRAIN MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain MRI||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|5|ST|&IMP|2|Stability is reaffirmed with no progression or new findings since the||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|6|ST|&IMP|2|last MRI. Continued observation of the periventricular||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|7|ST|&IMP|2|hyperintensities is recommended, although current features are||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|8|ST|&IMP|2|suggestive of a benign process. Comparing this MRI study from October||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|9|ST|&IMP|2|3, 2017, to the previous study conducted on September 11, 2014, there||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|10|ST|&IMP|2|are no new enhancements or changes identified. The periventricular||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|11|ST|&IMP|2|hyperintensities remain stable, and the overall parenchyma||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|12|ST|&IMP|2|demonstrates no new lesions. There is continuity in the normal||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|13|ST|&IMP|2|appearance of the cerebral cortex and white matter structures. No new||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|14|ST|&IMP|2|ischemic strokes are visualized, and there are no abnormalities||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|15|ST|&IMP|2|within the vascular territories assessed. Additionally, the cranial||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|16|ST|&IMP|2|nerves remain unremarkable.||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|17|ST|&IMP|2|Dictated by: Joseph Allen Interpreter, M.D.||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+ZDS|2.25.102318581194625828142473356985186962597^EPIC^APPLICATION^DICOM<R>
+<EB>

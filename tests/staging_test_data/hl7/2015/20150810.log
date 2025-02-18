@@ -1,0 +1,29 @@
+2015-08-10 14:28:31.4098|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150810142831|TBD|ORU^R01|2.25.172305548334750580588922830756240001327|P|2.7<R>
+PID|1||ABC451128^^^ABC^MR||PAUL^JUSTIN^TYRONE^^^^D||19360925|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085005|||||||||||||||||||||||||20150810142831|||||||V<R>
+ORC|RE|3728533^SYS|7795083310||Final||^^^20150810142830^20150810142831^O||20150810142831|T6530148^GROSS^CARLY||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3728533^SYS|7795083310|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20150809112507|||||Hosp Perf||||^^^HEART|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20150810142831||NM|Final||^^^20150810142830^20150810142831^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20150810142831||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac NM study||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|The cardiac NM study demonstrates intact myocardial perfusion with||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|excellent global left ventricular function. No evidence of ischemia||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|or infarction is present. The stability of findings when juxtaposed||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|with previous imaging suggests continued good cardiac health,||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|supporting current management strategies in this patient. The cardiac||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|nuclear medicine study reveals normal myocardial perfusion at rest,||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|with homogeneous tracer uptake across all myocardial segments. There||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|is no evidence of perfusion defects suggestive of ischemia or||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|infarction. The left ventricular function appears preserved with a||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|normal ejection fraction calculated at approximately 60%. The wall||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|motion is also observed as normal without asymmetrical contractions.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|No significant artifacts or motion issues were noted that could||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|obscure interpretation. The results of this study taken on 2015-08-09||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|indicate unequivocal stability when compared to earlier imaging||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|studies, with no significant adverse changes in cardiac health.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|20|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Final|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.63910386289758790273546785362083409389^EPIC^APPLICATION^DICOM<R>
+<EB>

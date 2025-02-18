@@ -1,0 +1,11 @@
+2021-05-28 21:49:25.5426|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210528214925|TBD|ORU^R01|2.25.2196754424095980487499168154121312775|P|2.4<R>
+PID|1||ABC451014^^^ABC^MR~EPIC4485773^^^EPIC^MRN||BOYD^CYNTHIA^JAMIE^^^^D||19980522000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451014^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457442^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6808234^SYS|7795082853|EDXETSP1V^1 XR Thoracic Spine 1 View^UNKDEV|URGENT||20210526092744|||PSCRIB|||||^^^^ |D7823235^SANCHEZ^GUY^JEFFREY^M.D.^^^^ABC|||||1^Thoracic spine 1 View Dx Xray|20210528214925||EDXETSPV|||1^^^20210528214925^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||1<R>
+OBX|1|TX|136170||GUY SANCHEZ, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|136170||ACC#  Date Time  Exam~~7795082853 May 28 2021 09:49PM EDXETSP1V XR Thoracic Spine 1 View~~EXAMINATION:~T-Spine X-ray study~~FINDINGS:~The T-spine X-rays demonstrate normal alignment of the thoracic~vertebrae with no evidence of fractures or acute bony lesions. The~disc spaces appear well-maintained, and there are no signs of acute~disc herniation or significant osteophyte formation. Mild~degenerative changes are present in the lower thoracic region,~predominantly at T8-T9, characterized by slight endplate sclerosis~and reduced disc height, but no acute changes or associated~neuropathy. Compared to studies from 2019, there is stability in~morphology without progression of degenerative disease.~~IMPRESSION:~1. Normal thoracic vertebral alignment with no acute trauma evident.~2. Mild degenerative changes at T8-T9 but stable in appearance~compared to prior imaging. 3. No acute findings indicating~neurological compromise.||||||F<R>
+OBX|3|TX|136170||Requested By: Sanchez,Guy J. M.D.~~Dictated By: Guy Sanchez, M.D. on May 28 2021 09:49PM~~This document has been electronically signed by: Guy Sanchez, M.D. on~May 28 2021 09:49PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|136170|4|7795082853^UK^ZB||||||F<R>
+<EB>

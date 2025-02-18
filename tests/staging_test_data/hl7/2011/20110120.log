@@ -1,0 +1,25 @@
+2011-01-20 05:38:51.9317|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20110120053851|TBD|ORU^R01|2.25.47782362582367119878521621069442697327|P|2.7<R>
+PID|1||ABC451103^^^ABC^MR||COLLINS^NICKOLAS^LARRY^^^^D||19511215|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823219^LOGAN^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084881|||||||||||||||||||||||||20110120053851|||||||V<R>
+ORC|RE|2021172^SYS|7795083212||Wet Read||^^^20110120053850^20110120053851^O||20110120053851|T6530136^RIOS^KRISTIN||D7823219^LOGAN^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2021172^SYS|7795083212|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20110118183623|||||Hosp Perf|||||D7823219^LOGAN^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20110120053851||XA|Wet Read||^^^20110120053850^20110120053851^O||||^Chest pain||D7823218^LLOYD^JESSICA^A.^^^^^ABC^^^^HOSP|T6530136^RIOS^KRISTIN||20110120053851||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|5|ST|&IMP|2|Vascular imaging is normal with no stenotic or occlusive vascular||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|6|ST|&IMP|2|disease identified. The arterial supply appears adequate, ruling out||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|7|ST|&IMP|2|major vascular complications. X-ray angiography conducted||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|8|ST|&IMP|2|demonstrates optimal arterial tree visualization in the abdominal||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|9|ST|&IMP|2|region. Major vascular structures, including the aorta and its||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|10|ST|&IMP|2|branches, show no significant stenosis or occlusion. Collateral||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|11|ST|&IMP|2|circulation is not noted, nor are there any aneurysms. The imaging||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|12|ST|&IMP|2|clearly delineates all relevant arteries and veins without evidence||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|13|ST|&IMP|2|of dissection or abnormal perfusion areas. Numerous branches are||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|14|ST|&IMP|2|noted to have normal caliber and patency throughout the abdominal||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|15|ST|&IMP|2|vascular system.||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+OBX|16|ST|&IMP|2|Dictated by: Jessica Lloyd Interpreter, M.D.||||||Wet Read|||||T6530136^RIOS^KRISTIN<R>
+ZDS|2.25.190506202384378486920939830839071666514^EPIC^APPLICATION^DICOM<R>
+<EB>

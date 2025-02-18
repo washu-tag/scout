@@ -1,0 +1,23 @@
+2023-08-27 08:39:43.1070|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230827083943|TBD|ORU^R01|2.25.293027864695328161781441378471614484187|P|2.7<R>
+PID|1||ABC451112^^^ABC^MR||JIMENEZ^KATHERINE^CARLA^^^^D||19380423|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084937|||||||||||||||||||||||||20230827083943|||||||V<R>
+ORC|RE|1605469^SYS|7795083247||Prelim||^^^20230827083942^20230827083943^O||20230827083943|||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1605469^SYS|7795083247|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20230827062154|||||Hosp Perf|||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20230827083943||OT|Prelim||^^^20230827083942^20230827083943^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|||20230827083943||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Prelim<R>
+OBX|3|ST|&GDT|1|||||||Prelim<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim<R>
+OBX|5|ST|&IMP|2|Normal chest X-ray with no acute abnormalities. The findings are||||||Prelim<R>
+OBX|6|ST|&IMP|2|unremarkable and support a stable thoracic status. The chest X-ray||||||Prelim<R>
+OBX|7|ST|&IMP|2|obtained demonstrates clear lung fields with no signs of||||||Prelim<R>
+OBX|8|ST|&IMP|2|consolidation, pleural effusion, or pneumothorax. The cardiac||||||Prelim<R>
+OBX|9|ST|&IMP|2|silhouette is within normal limits, and the mediastinal contours are||||||Prelim<R>
+OBX|10|ST|&IMP|2|unremarkable. The bony thorax is intact without fractures. There is||||||Prelim<R>
+OBX|11|ST|&IMP|2|no evidence of significant air trapping or structural lung disease.||||||Prelim<R>
+OBX|12|ST|&IMP|2|The diaphragm is well-positioned and rounded. No significant||||||Prelim<R>
+OBX|13|ST|&IMP|2|abnormalities are noted in the visualized upper abdomen.||||||Prelim<R>
+OBX|14|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.126210261926218247155590622262756630672^EPIC^APPLICATION^DICOM<R>
+<EB>

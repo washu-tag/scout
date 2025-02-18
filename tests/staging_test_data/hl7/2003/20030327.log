@@ -1,0 +1,11 @@
+2003-03-27 03:05:56.4408|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20030327030556|TBD|ORU^R01|2.25.294476664098522820225470508626867008887|P|2.4<R>
+PID|1||ABC451088^^^ABC^MR~EPIC4485847^^^EPIC^MRN||PACHECO^CAROLINA^THERESA^^^^D||19541127000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451088^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457246^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7300336^SYS|7795083149|SM71550CH0^715500 MR CHEST WO^UNKDEV|URGENT||20030324114119|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||715500^Chest PtMr|20030327030556||SMCH|||1^^^20030327030556^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823243^HAWKINS^CURTIS^K.^^^M.D.||PSCRIB|||||||||715500<R>
+OBX|1|TX|9866310||MICHAEL MARKS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|9866310||ACC#  Date Time  Exam~~7795083149 Mar 27 2003 03:05AM SM71550CH0 MR CHEST WO~~EXAMINATION:~Chest PET-MR.~~FINDINGS:~The PET-MR examination reveals mild hypermetabolic activity in the~posterior segment of the left upper lobe, with a standardized uptake~value (SUV) max of 3.2. No associated mass is evident on MR~sequences; rather, there is consolidation consistent with possible~infection or inflammatory process. Bilateral hilar and mediastinal~lymph nodes exhibit no significant uptake, indicating absence of~metastatic activity. Cardiac morphology appears within normal limits~with intact wall motion, and no perfusion defects are noted. Relevant~soft tissue structures appear unremarkable.~~IMPRESSION:~The hypermetabolic activity observed in the left upper lobe raises~concern for an infectious process, most likely pneumonia, rather than~malignancy. No evidence of primary thoracic neoplasm or metastatic~disease is found on this imaging modality. Clinical correlation is~advised to further evaluate the pulmonary consolidation.||||||F<R>
+OBX|3|TX|9866310||Requested By: Sanders,Lisa A. M.D.~~Dictated By: Michael Marks, M.D. on Mar 27 2003 03:05AM~~This document has been electronically signed by: Michael Marks, M.D.~on Mar 27 2003 03:05AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9866310|4|7795083149^UK^ZB||||||F<R>
+<EB>

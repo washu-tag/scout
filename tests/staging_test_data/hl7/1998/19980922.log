@@ -1,0 +1,29 @@
+1998-09-22 21:25:06.6627|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19980922212506|TBD|ORU^R01|2.25.222338437688350923378991779016711286647|P|2.7<R>
+PID|1||ABC451098^^^ABC^MR||SANCHEZ^SHANE^SAUL^^^^D||19760531|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084768|||||||||||||||||||||||||19980922212506|||||||V<R>
+ORC|RE|1764467^SYS|7795083189||Final||^^^19980922212505^19980922212506^O||19980922212506|T6530153^MORAN^JOSHUA||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1764467^SYS|7795083189|MABDOMENWO^MR ABD WO^UNKDEV^^ABDOMEN PTMR|O|19980920125020|||||Hosp Perf||||^^^ABDOMEN|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19980922212506||MR|Final||^^^19980922212505^19980922212506^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530153^MORAN^JOSHUA||19980922212506||||||||MABDOMENWO^MR ABD WO^UNKDEV^^ABDOMEN PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-MR||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|5|ST|&IMP|2|1. Focal hypermetabolic lesion in the right lobe of the liver||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|6|ST|&IMP|2|consistent with potential hepatic malignancy. Further workup is||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|7|ST|&IMP|2|recommended, including possible biopsy and additional imaging. 2.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|8|ST|&IMP|2|Otherwise unremarkable abdominal structures. The imaging demonstrates||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|9|ST|&IMP|2|significant physiologic uptake in the liver and splenic uptake||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|10|ST|&IMP|2|consistent with normal metabolism. However, there is a notable focal||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|11|ST|&IMP|2|hypermetabolic lesion located in the right lobe of the liver,||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|12|ST|&IMP|2|measuring approximately 3.5 cm. There is also associated mild||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|13|ST|&IMP|2|surrounding edema visible on the MR sequences. No significant hilar||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|14|ST|&IMP|2|lymphadenopathy or peritoneal thickening was observed. The renal||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|15|ST|&IMP|2|contour appears normal, and no biliary ductal dilation is noted. The||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|16|ST|&IMP|2|aorta is normal in caliber, with no significant aneurysmal changes.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|17|ST|&IMP|2|The vertebral bodies are unremarkable and without signs of osseous||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|18|ST|&IMP|2|metastasis. Overall, the examination shows a concerning||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|19|ST|&IMP|2|hypermetabolic lesion warranting further investigation.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+OBX|20|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Final|||||T6530153^MORAN^JOSHUA<R>
+ZDS|2.25.134124025359324986589001579237752242693^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,11 @@
+2017-05-16 01:17:26.3601|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170516011726|TBD|ORU^R01|2.25.135379932572472371817812503995964860909|P|2.4<R>
+PID|1||ABC451185^^^ABC^MR~EPIC4485944^^^EPIC^MRN||PERALTA^MICHAEL^JEFFREY^^^^D||19970514000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451185^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823281^HOUSTON^CARLOS^P.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457232^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1449112^SYS|7795083540|M755570^755570 MR CARDIAC MRPH FUNC W/O^UNKDEV|URGENT||20170512081927|||PSCRIB|||||^^^^ |D7823283^FOX^DANNY^JORGE^M.D.^^^^ABC|||||755570^HEART MRI Expedited|20170516011726||M|||1^^^20170516011726^^U^^URGENT|       |||^Chest pain|D7823281^HOUSTON^CARLOS^P.^^^M.D.|D7823287^BARRETT^JONATHAN^B.^^^M.D.||PSCRIB|||||||||755570<R>
+OBX|1|TX|8172491||CARLOS HOUSTON, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|8172491||ACC#  Date Time  Exam~~7795083540 May 16 2017 01:17AM M755570 MR CARDIAC MRPH FUNC W/O~~EXAMINATION:~Heart MRI~~FINDINGS:~The cardiac MRI demonstrates normal chamber volumes and wall~thicknesses for both the right and left ventricles. There appears to~be no myocardial edema or late gadolinium enhancement, ruling out any~myocardial scarring or infarction. The coronary arteries appear~patent without stenosis or other anomalies. The aortic root is within~normal limits. The pericardium is thin and without effusion. The~interventricular septum is intact and appears structurally normal.~~IMPRESSION:~Heart MRI results show no evidence of structural or functional~abnormalities. This is consistent with the findings of the cardiac NM~study performed on 2016-10-07. Both studies reinforce a strong~indication of normal cardiac health.||||||P<R>
+OBX|3|TX|8172491||Requested By: Fox,Danny J. M.D.~~Dictated By: Carlos Houston, M.D. on May 16 2017 01:17AM~~Pending review by: Jonathan Barrett, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|8172491|4|7795083540^UK^ZB||||||P<R>
+<EB>

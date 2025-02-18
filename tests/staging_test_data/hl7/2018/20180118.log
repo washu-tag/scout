@@ -1,0 +1,11 @@
+2018-01-18 20:26:13.4382|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180118202613|TBD|ORU^R01|2.25.199019144211241716316493559233726095712|P|2.4<R>
+PID|1||ABC451085^^^ABC^MR~EPIC4485844^^^EPIC^MRN||MARTINEZ^ALFRED^DAVID^^^^D||19300126000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451085^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457239^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7892848^SYS|7795083137|BED71010^71010 71010 Chest 1 view Frontal^UNKDEV|URGENT||20180118115105|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||71010^Chest 1 View Dx Xray|20180118202613||BED|||1^^^20180118202613^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||71010<R>
+OBX|1|TX|5566158||AMBER REESE, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|5566158||ACC#  Date Time  Exam~~7795083137 Jan 18 2018 08:26PM BED71010 71010 Chest 1 view Frontal~~EXAMINATION:~Chest X-ray~~FINDINGS:~The chest X-ray indicates well-maintained lung volumes with no acute~infiltrates or pleural effusions. Cardiothoracic ratio is within~normal limits, with the heart silhouette appearing unremarkable. The~diaphragm is positioned normally, and there are no bony abnormalities~noted in the bony thorax. Mild degenerative changes are present in~the thoracic spine but are consistent with the patient's age. No~significant mediastinal shift is observed.~~IMPRESSION:~The chest X-ray findings are largely unremarkable for acute~pathology. Some degenerative changes are noted as expected for the~age. Routine follow-up imaging may be needed in case of respiratory~symptoms.||||||F<R>
+OBX|3|TX|5566158||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Amber Reese, M.D. on Jan 18 2018 08:26PM~~This document has been electronically signed by: Amber Reese, M.D. on~Jan 18 2018 08:26PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5566158|4|7795083137^UK^ZB||||||F<R>
+<EB>

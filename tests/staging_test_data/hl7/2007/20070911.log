@@ -1,0 +1,11 @@
+2007-09-11 23:16:58.1438|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20070911231658|TBD|ORU^R01|2.25.82157115124242209554005853272374128708|P|2.4<R>
+PID|1||ABC451089^^^ABC^MR~EPIC4485848^^^EPIC^MRN||PEREZ^ALEXA^ELIZABETH^^^^D||19290916000000|F||P|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451089^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823225^PARK^JOLENE^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457253^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5314241^SYS|7795083154|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20070909203601|||PSCRIB|||||^^^^ |D7823221^MAXWELL^MICHAEL^RYAN^M.D.^^^^ABC|||||4185^XRay Angiography|20070911231658||IMG|||1^^^20070911231658^^U^^URGENT|       |||^Chest pain|D7823224^MORGAN^JOHN^J.^^^M.D.|D7823222^POWELL^CARRIE^J.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|5033761||JOHN MORGAN, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|5033761||ACC#  Date Time  Exam~~7795083154 Sep 11 2007 11:16PM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray angiography study~~FINDINGS:~The X-ray angiography performed on 2007-09-09 reveals a patent right~carotid artery with no evidence of significant stenosis or occlusion.~The left carotid artery demonstrates mild atherosclerotic changes,~yet the lumen remains well-preserved. No filling defects were~observed in the cerebral vessels, and the vertebral arteries are~intact and symmetrically visualized. The caliber of the proximal and~distal segments of both carotids appears normal when assessed. No~signs of arteriovenous malformation or aneurysm formation are noted.~~IMPRESSION:~In summary, the X-ray angiography from September 9, 2007,~demonstrates overall normal cerebral arterial anatomy with mild~atherosclerotic change in the left carotid artery. This is consistent~with the patient's age and does not warrant any intervention at this~point. Further follow-up would be prudent in 2 to 3 years, given the~mild plaque formation. No acute intracranial events are evident.||||||P<R>
+OBX|3|TX|5033761||Requested By: Maxwell,Michael R. M.D.~~Dictated By: John Morgan, M.D. on Sep 11 2007 11:16PM~~Pending review by: Carrie Powell, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5033761|4|7795083154^UK^ZB||||||P<R>
+<EB>

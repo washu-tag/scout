@@ -1,0 +1,11 @@
+2021-06-13 16:57:21.1754|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20210613165721|TBD|ORU^R01|2.25.277701982894003540499294992198226718861|P|2.4<R>
+PID|1||ABC451064^^^ABC^MR~EPIC4485823^^^EPIC^MRN||ΑΡΓΎΡΗΣ^ΈΛΙΣΆΒΕΤ^^^^^D||19890111000000|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451064^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457479^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7293369^SYS|7795083052|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20210609065321|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20210613165721||IMG|||1^^^20210613165721^^U^^URGENT|       |||^Chest pain|D7823243^HAWKINS^CURTIS^K.^^^M.D.|D7823236^BARAJAS^JOSEPH^A.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|2631945||CURTIS HAWKINS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|2631945||ACC#  Date Time  Exam~~7795083052 Jun 13 2021 04:57PM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdominal X-ray demonstrates an overall normal gastrointestinal~silhouette and outlines of solid organs. No obstructive signs are~present, with normal gas pattern observed throughout the small and~large intestines. There are no calcifications, masses, or free air~under the diaphragm. The bony structures appear intact without~evidence of fractures or destructive lesions. Renal shadows are~within the expected anatomical locations without sign of~hydronephrosis or obstruction.~~IMPRESSION:~The abdominal X-ray is unremarkable with no acute pathology noted.~The findings suggest that there are no significant abnormalities~present. Correlation with clinical history and symptoms is advised~for any ongoing evaluations.||||||F<R>
+OBX|3|TX|2631945||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Curtis Hawkins, M.D. on Jun 13 2021 04:57PM~~This document has been electronically signed by: Curtis Hawkins, M.D.~on Jun 13 2021 04:57PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2631945|4|7795083052^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,11 @@
+2012-06-26 02:37:19.4572|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20120626023719|TBD|ORU^R01|2.25.330186569013421169708370035810855425784|P|2.4<R>
+PID|1||ABC451113^^^ABC^MR~EPIC4485872^^^EPIC^MRN||ΖΕΡΒΆΝΟΣ^ΊΩΆΝΝΗΣ^^^^^D||19330928000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451113^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457398^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5223393^SYS|7795083249|CMR70553P^70553 70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||20120623131819|||PSCRIB|||||^^^^ |D7823231^SMITH^CLARA^TAMIKA^M.D.^^^^ABC|||||70553^Brain dMRI|20120626023719||CMRP|||1^^^20120626023719^^U^^URGENT|       |||^Chest pain|D7823233^GALLAGHER^RUSSELL^J.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|7348207||RUSSELL GALLAGHER, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|7348207||ACC#  Date Time  Exam~~7795083249 Jun 26 2012 02:37AM CMR70553P 70553P MR HEAD PERFUSION WWO~~EXAMINATION:~MRI of the brain~~FINDINGS:~The MRI reveals an aging brain with notable findings of small vessel~ischemic changes, predominantly in the periventricular white matter,~suggestive of chronic microvascular disease. There is mild~enlargement of the lateral and third ventricles. The cortical sulci~are prominent, correlating with age-related cerebral atrophy. There~is no evidence of acute stroke, mass lesions, or significant edema.~The brainstem and cerebellum appear unremarkable, and no midline~shift is observed. The visualized segments of the circle of Willis~show patency, and there are no significant vascular malformations.~~IMPRESSION:~Findings are compatible with chronic microvascular ischemic changes~and age-related cerebral atrophy. There are no signs of acute~intracranial pathology. Routine follow-up recommended to monitor~progression if clinically warranted.||||||F<R>
+OBX|3|TX|7348207||Requested By: Smith,Clara T. M.D.~~Dictated By: Russell Gallagher, M.D. on Jun 26 2012 02:37AM~~This document has been electronically signed by: Russell Gallagher,~M.D. on Jun 26 2012 02:37AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7348207|4|7795083249^UK^ZB||||||F<R>
+<EB>

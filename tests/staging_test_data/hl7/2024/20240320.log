@@ -1,0 +1,11 @@
+2024-03-20 02:36:57.1808|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240320023657|TBD|ORU^R01|2.25.34714745340809619117478070621797129477|P|2.4<R>
+PID|1||ABC451106^^^ABC^MR~EPIC4485865^^^EPIC^MRN||HUNT^JENNIFER^HEATHER^^^^D||19980310000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451106^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457344^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9614207^SYS|7795083224|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20240317095840|||PSCRIB|||||^^^^ |D7823231^SMITH^CLARA^TAMIKA^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20240320023657||BHC|||1^^^20240320023657^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|8772043||JOE MEDRANO, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|8772043||ACC#  Date Time  Exam~~7795083224 Mar 20 2024 02:36AM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The comparison mammogram performed reveals a stable appearance of the~left breast architecture compared to the previous study on~2022-06-23. Despite prior concern, the architectural distortion has~not progressed, and there are no new masses or calcifications. The~overall breast tissue density remains similar, with features~consistent with fibroadenomatous changes rather than malignancy. The~right breast continues to appear unremarkable with no notable~findings. Both axillary regions retain normal configurations and~sizes.~~IMPRESSION:~1. No evidence of malignancy detected in both breasts, with stable~findings from the previous mammogram. 2. The distortion previously~noted in the left breast has remained stable; routine surveillance is~advised with annual mammography.||||||F<R>
+OBX|3|TX|8772043||Requested By: Smith,Clara T. M.D.~~Dictated By: Joe Medrano, M.D. on Mar 20 2024 02:36AM~~This document has been electronically signed by: Joe Medrano, M.D. on~Mar 20 2024 02:36AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|8772043|4|7795083224^UK^ZB||||||F<R>
+<EB>

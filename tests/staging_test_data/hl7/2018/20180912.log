@@ -1,0 +1,29 @@
+2018-09-12 22:58:21.0095|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20180912225821|TBD|ORU^R01|2.25.84962707903711791938336215258853143997|P|2.7<R>
+PID|1||ABC451191^^^ABC^MR||GRIMES^STEPHEN^LARRY^^^^D||19310301|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084773|||||||||||||||||||||||||20180912225821|||||||V<R>
+ORC|RE|7762734^SYS|7795083562||Wet Read||^^^20180912225820^20180912225821^O||20180912225821|T6530145^RUIZ^TARA||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7762734^SYS|7795083562|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20180909090755|||||Hosp Perf||||^^^HEART|D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20180912225821||NM|Wet Read||^^^20180912225820^20180912225821^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20180912225821||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac nuclear medicine study.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|Normal myocardial perfusion study without signs of ischemia or||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|infarction; excellent left ventricular function evidenced by ejection||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|fraction of 65%. No progression of cardiac disease since prior||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|studies. The cardiac nuclear medicine study performed shows normal||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|myocardial perfusion at rest and during stress imaging. There is||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|homogeneous perfusion of the left ventricle with no evidence of||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|ischemia or infarction demonstrated in any of the specified||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|myocardial territories. The ejection fraction is calculated at 65%,||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|indicative of preserved left ventricular function. No areas of||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|hypoperfusion were identified post-stress in the myocardial||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|scintigraphy, effectively ruling out significant coronary artery||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|disease in this patient at this time. Furthermore, there is no||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|evidence of abnormal wall motion or thickness observed. The results||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|and imaging align favorably compared to previous cardiac assessments||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|19|ST|&IMP|2|performed, indicating continuity of cardiac health.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|20|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.14236420785901074209721145400413047952^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,29 @@
+2017-02-18 12:50:46.5170|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20170218125046|TBD|ORU^R01|2.25.70713555346538683623828788106912977993|P|2.7<R>
+PID|1||ABC451142^^^ABC^MR||NAKAMURA^HARUTO^^^^^D||19750510|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085038|||||||||||||||||||||||||20170218125046|||||||V<R>
+ORC|RE|4560001^SYS|7795083363||Final||^^^20170218125045^20170218125046^O||20170218125046|||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4560001^SYS|7795083363|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20170218060047|||||Hosp Perf|||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20170218125046||OT|Final||^^^20170218125045^20170218125046^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|||20170218125046||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|1. Large left pleural effusion likely secondary to malignant||||||Final<R>
+OBX|6|ST|&IMP|2|involvement, warranting further evaluation through thoracentesis. 2.||||||Final<R>
+OBX|7|ST|&IMP|2|Need to correlate with recent PET findings suggesting progression of||||||Final<R>
+OBX|8|ST|&IMP|2|underlying malignancy. Recommend follow-up imaging after procedural||||||Final<R>
+OBX|9|ST|&IMP|2|intervention. The single-view X-ray of the chest shows an increased||||||Final<R>
+OBX|10|ST|&IMP|2|opacity within the left lung field consistent with a large pleural||||||Final<R>
+OBX|11|ST|&IMP|2|effusion confirmed by blunting of the left costophrenic angle. No||||||Final<R>
+OBX|12|ST|&IMP|2|definitive masses are seen, however, there is suggestive evidence of||||||Final<R>
+OBX|13|ST|&IMP|2|parenchymal involvement in the context of previously diagnosed||||||Final<R>
+OBX|14|ST|&IMP|2|pathology. The right lung is clear with no acute bony abnormalities.||||||Final<R>
+OBX|15|ST|&IMP|2|The cardiac and mediastinal contours remain unchanged from prior||||||Final<R>
+OBX|16|ST|&IMP|2|studies. Compared to the 2013 whole body PET-CT, there is a||||||Final<R>
+OBX|17|ST|&IMP|2|significant presence of fluid accountable for the new clinical||||||Final<R>
+OBX|18|ST|&IMP|2|symptoms the patient has reported, likely secondary to underlying||||||Final<R>
+OBX|19|ST|&IMP|2|malignancy.||||||Final<R>
+OBX|20|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Final<R>
+ZDS|2.25.292617533163014543006488026569976880404^EPIC^APPLICATION^DICOM<R>
+<EB>

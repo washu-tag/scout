@@ -1,0 +1,11 @@
+2005-06-24 21:23:55.9895|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20050624212355|TBD|ORU^R01|2.25.68847935867178535919874508965371706210|P|2.4<R>
+PID|1||ABC451117^^^ABC^MR~EPIC4485876^^^EPIC^MRN||MCLAUGHLIN^NICOLE^LATOYA^III^^^D||19831230000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451117^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457449^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2584189^SYS|7795083266|EDXETSP1V^1 XR Thoracic Spine 1 View^UNKDEV|URGENT||20050623064717|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||1^Thoracic spine 1 View Dx Xray|20050624212355||EDXETSPV|||1^^^20050624212355^^U^^URGENT|       |||^Chest pain|D7823231^SMITH^CLARA^T.^^^M.D.|D7823242^HANSON^KIMBERLY^K.^^^M.D.||PSCRIB|||||||||1<R>
+OBX|1|TX|7906030||CLARA SMITH, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|7906030||ACC#  Date Time  Exam~~7795083266 Jun 24 2005 09:23PM EDXETSP1V XR Thoracic Spine 1 View~~EXAMINATION:~T-spine X-ray~~FINDINGS:~The thoracic spine X-ray reveals normal vertebral body height and~alignment. No acute fractures or dislocations are noted. The disc~spaces maintain normal height, with no signs of degenerative disc~disease. The cortical margins of the vertebrae are intact, with no~sclerotic changes or lytic lesions identified. The spinous processes~are normal in structure, and there is no evidence of soft tissue~masses in the paravertebral region or pleural effusions.~~IMPRESSION:~Overall, the T-spine X-ray is unremarkable, showing no acute or~chronic abnormalities.||||||F<R>
+OBX|3|TX|7906030||Requested By: Wright,Jessica M. M.D.~~Dictated By: Clara Smith, M.D. on Jun 24 2005 09:23PM~~This document has been electronically signed by: Clara Smith, M.D. on~Jun 24 2005 09:23PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7906030|4|7795083266^UK^ZB||||||F<R>
+<EB>

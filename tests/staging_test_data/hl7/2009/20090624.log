@@ -1,0 +1,23 @@
+2009-06-24 01:43:21.2323|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090624014321|TBD|ORU^R01|2.25.76563784650711041942729138585193481209|P|2.4<R>
+PID|1||ABC451050^^^ABC^MR~EPIC4485809^^^EPIC^MRN||MAYNARD^CLIFTON^JASON^^^^D||19411024000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451050^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457288^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7105920^SYS|7795082998|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20090622110209|||PSCRIB|||||^^^^ |D7823236^BARAJAS^JOSEPH^ADAM^M.D.^^^^ABC|||||^Xr Sing View|20090624014321||MDXREVNT|||1^^^20090624014321^^U^^URGENT|       |||^Chest pain|D7823241^SANDERS^LISA^A.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB<R>
+OBX|1|TX|3317051||LISA SANDERS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|3317051||ACC#  Date Time  Exam~~7795082998 Jun 24 2009 01:43AM MDXREVNT Radiology Event~~EXAMINATION:~Single-view chest X-ray~~FINDINGS:~The single-view X-ray demonstrates clear lung fields with no acute~pulmonary disease evident. The cardiothoracic ratio appears to be~within normal limits. The bony thorax shows no signs of destructive~lesions or fractures. However, a small, well-defined calcification is~noted in the right upper lobe, which, when compared to a previous~study dated 2006-07-31, appears stable in character and size. No~significant pleural effusions or infiltrates are observed.~~IMPRESSION:~The findings are consistent with a benign pulmonary nodule due to~prior granulomatous disease process. Given the stability evident on~serial imaging, no immediate intervention is required; however,~routine follow-up imaging is advised.||||||F<R>
+OBX|3|TX|3317051||Requested By: Barajas,Joseph A. M.D.~~Dictated By: Lisa Sanders, M.D. on Jun 24 2009 01:43AM~~This document has been electronically signed by: Lisa Sanders, M.D.~on Jun 24 2009 01:43AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3317051|4|7795082998^UK^ZB||||||F<R>
+<EB><R>
+
+2009-06-24 07:43:49.3432|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090624074349|TBD|ORU^R01|2.25.297144333096254018310636173038003355382|P|2.4<R>
+PID|1||ABC451085^^^ABC^MR~EPIC4485844^^^EPIC^MRN||MARTINEZ^ALFRED^DAVID^^^^D||19300126000000|M||A|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451085^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457241^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5334829^SYS|7795083141|M72195PEL0^721950 MR PELVIS WO^UNKDEV|URGENT||20090623181800|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||721950^Pelvis PtMr|20090624074349||MPEL|||1^^^20090624074349^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823234^DONOVAN^WILLIAM^C.^^^M.D.||PSCRIB|||||||||721950<R>
+OBX|1|TX|6173465||AMBER REESE, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|6173465||ACC#  Date Time  Exam~~7795083141 Jun 24 2009 07:43AM M72195PEL0 MR PELVIS WO~~EXAMINATION:~Pelvis PET-MR~~FINDINGS:~The pelvis PET-MR examination demonstrates increased metabolic~activity in the prostate region, with a Maximum Standardized Uptake~Value (SUVmax) of 3.2. This suggests potential areas of concern,~potentially indicative of prostate pathology. Anatomically, the~pelvic muscles and vasculature appear normal, and there is no~evidence of lymphadenopathy or pelvic organ metastatic disease. The~bladder and rectum maintain normal uptake patterns with no~significant abnormalities. Comparison with previous imaging does not~show evidence of retroperitoneal adenopathy, which supports the~absence of disseminated malignancy. Additionally, bone marrow signal~intensity is homogenous throughout the pelvis with no suspicious~lesions.~~IMPRESSION:~The increased metabolic activity in the prostate warrants further~evaluation, potentially with a biopsy. No signs of metastatic spread~are evident in the pelvis, but close follow-up imaging is~recommended.||||||P<R>
+OBX|3|TX|6173465||Requested By: Sanders,Lisa A. M.D.~~Dictated By: Amber Reese, M.D. on Jun 24 2009 07:43AM~~Pending review by: William Donovan, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|6173465|4|7795083141^UK^ZB||||||P<R>
+<EB>

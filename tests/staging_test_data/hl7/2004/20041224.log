@@ -1,0 +1,26 @@
+2004-12-24 20:55:39.5791|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20041224205539|TBD|ORU^R01|2.25.43785111032221447111628905703020852308|P|2.7<R>
+PID|1||ABC451108^^^ABC^MR||SMITH^RANDALL^STEVEN^^^^D||19490119|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084933|||||||||||||||||||||||||20041224205539|||||||V<R>
+ORC|RE|8822549^SYS|7795083233||Final||^^^20041224205538^20041224205539^O||20041224205539|T6530149^VASQUEZ^MISTY||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8822549^SYS|7795083233|BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY|O|20041221180243|||||Hosp Perf||||^^^ABDOMEN|D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20041224205539||DX|Final||^^^20041224205538^20041224205539^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20041224205539||||||||BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdominal X-ray||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|Abdominal imaging appears normal for this patient with no acute||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|gastrointestinal pathology visualized. The findings suggest a stable||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|abdominal status, consistent with no significant abnormality as||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|compared to prior studies. The abdominal X-ray reveals a homogeneous||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|gas distribution throughout the bowel, without any signs of||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|obstruction or distension. There are no radiopaque calculi within the||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|renal or biliary systems observed. The hepatic contour is preserved||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|with no evidence of sulcus effacement or abnormal air-fluid levels||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|indicating free air. The contrast and morphology of the renal outline||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|appear within normal limits, with the spleen and other||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|intra-abdominal organs showing no notable abnormalities. The fat||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|planes are intact, and no free fluid is noted.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.193677015452830186273172751734421340875^EPIC^APPLICATION^DICOM<R>
+<EB>

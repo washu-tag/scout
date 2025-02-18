@@ -1,0 +1,11 @@
+2015-09-28 12:11:47.4044|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20150928121147|TBD|ORU^R01|2.25.278526403057289575602310690456187245894|P|2.4<R>
+PID|1||ABC451143^^^ABC^MR~EPIC4485902^^^EPIC^MRN||HART^MIGUEL^MATTHEW^^^^D||19230901000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451143^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457096^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8505282^SYS|7795083370|IMG5021^5021 PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV|URGENT||20150928075111|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||5021^Brain Petct AC NAC|20150928121147||IMG|||1^^^20150928121147^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB|||||||||5021<R>
+OBX|1|TX|4507078||GUY SANCHEZ, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4507078||ACC#  Date Time  Exam~~7795083370 Sep 28 2015 12:11PM IMG5021 PET/CT FDG BRAIN TUMOR~METABOLIC EVALUATION~~EXAMINATION:~Brain PET-CT~~FINDINGS:~The brain PET-CT study shows a diffuse pattern of mild hypometabolism~in the bilateral temporoparietal lobes, suggestive of~neurodegenerative changes. Focal uptake in the left frontotemporal~region raises suspicion for localized pathology. Structural~correlation via CT sections reveals similar findings with some~moderate atrophy evident in the medial temporal lobe structures,~consistent with age-related changes. No acute intracranial events~such as hemorrhage or ischemia are observed. The cerebrospinal fluid~spaces are within normal limits overall.~~IMPRESSION:~The imaging findings are indicative of early-stage Alzheimer's~disease or other frontotemporal variants, evidenced by the~characteristic hypometabolism and atrophies in pertinent regions. A~multidisciplinary team should review these changes, prioritizing~clinical assessments and cognitive evaluations to inform further~management.||||||F<R>
+OBX|3|TX|4507078||Requested By: Wright,Jessica M. M.D.~~Dictated By: Guy Sanchez, M.D. on Sep 28 2015 12:11PM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Sep 28 2015 12:11PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4507078|4|7795083370^UK^ZB||||||F<R>
+<EB>

@@ -1,0 +1,11 @@
+2013-09-27 07:12:43.3515|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130927071243|TBD|ORU^R01|2.25.150280884010815975602768761307072621878|P|2.4<R>
+PID|1||ABC451113^^^ABC^MR~EPIC4485872^^^EPIC^MRN||ΖΕΡΒΆΝΟΣ^ΊΩΆΝΝΗΣ^^^^^D||19330928000000|M|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451113^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457399^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1864212^SYS|7795083251|MRI1133^1133 MRI W WO ABDOMEN^UNKDEV|URGENT||20130925144455|||PSCRIB|||||^^^^ |D7823230^WRIGHT^JESSICA^MELINDA^M.D.^^^^ABC|||||1133^ABDOMEN MRI|20130927071243||MRI|||1^^^20130927071243^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823235^SANCHEZ^GUY^J.^^^M.D.||PSCRIB|||||||||1133<R>
+OBX|1|TX|2005074||JOE MEDRANO, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|2005074||ACC#  Date Time  Exam~~7795083251 Sep 27 2013 07:12AM MRI1133 MRI W WO ABDOMEN~~EXAMINATION:~MRI of the abdomen~~FINDINGS:~The abdominal MRI demonstrates a normal liver architecture, with no~imaging evidence of focal lesions or fatty infiltration. The biliary~system appears unremarkable, and the gallbladder is well-distended~without signs of cholelithiasis. The pancreas is of normal size and~shape, and the splenic contour is smooth. No enlarged lymph nodes are~noted in the retroperitoneum or mesentery. The renal cortices are~normal in thickness and echogenicity, with no hydronephrosis~observed. The aorta maintains a normal caliber with no significant~aneurysmal changes. Overall, there are no significant abnormalities~detected.~~IMPRESSION:~No acute or chronic abdominal pathologies identified. MRI findings~are within normal limits for this patient. No further imaging is~required unless new symptoms present.||||||P<R>
+OBX|3|TX|2005074||Requested By: Wright,Jessica M. M.D.~~Dictated By: Joe Medrano, M.D. on Sep 27 2013 07:12AM~~Pending review by: Guy Sanchez, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|2005074|4|7795083251^UK^ZB||||||P<R>
+<EB>

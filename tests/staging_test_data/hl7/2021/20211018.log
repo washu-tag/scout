@@ -1,0 +1,51 @@
+2021-10-18 05:47:09.3497|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20211018054709|TBD|ORU^R01|2.25.265813577658655280058611718311737178747|P|2.7<R>
+PID|1||ABC451082^^^ABC^MR||FIELDS^SARA^LISA^^^^D||19511218|F||UNABLE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084745|||||||||||||||||||||||||20211018054709|||||||V<R>
+ORC|RE|6049432^SYS|7795083127||Prelim||^^^20211018054708^20211018054709^O||20211018054709|T6530152^ADKINS^MELLISSA||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6049432^SYS|7795083127|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20211017134003|||||Hosp Perf|||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20211018054709||XA|Prelim||^^^20211018054708^20211018054709^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20211018054709||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|X-ray angiography reveals stable coronary artery anatomy. No||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|significant changes or abnormalities are noted compared to previous||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|imaging, confirming ongoing cardiovascular health and absence of||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|critical stenosis. The X-ray angiography study shows patent coronary||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|arteries with no significant stenosis or occlusion noted. The left||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|anterior descending, circumflex, and right coronary arteries are all||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|visualized and appear within normal limits. No collateral circulation||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|is evident, and there are no evidence of aneurysms or other abnormal||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|vascular formations. The study correlates well with previous imaging||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|assessments, reaffirming the absence of critical coronary artery||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|disease.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.205725750351931918013782419292496404020^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2021-10-18 21:50:13.1300|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20211018215013|TBD|ORU^R01|2.25.315255931732376030685297419808898092217|P|2.7<R>
+PID|1||ABC451028^^^ABC^MR||FIELDS^STEVEN^BRIAN^^^^D||19980605|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823281^HOUSTON^CARLOS^P.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084935|||||||||||||||||||||||||20211018215013|||||||V<R>
+ORC|RE|4220056^SYS|7795082911||Wet Read||^^^20211018215012^20211018215013^O||20211018215013|T6530212^VANG^DAVID^^III||D7823288^GONZALEZ^AMBER^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4220056^SYS|7795082911|IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED|O|20211016155652|||||Hosp Perf||||^^^CHEST|D7823288^GONZALEZ^AMBER^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20211018215013||MR|Wet Read||^^^20211018215012^20211018215013^O||||^Chest pain||D7823280^DAVIDSON^SHAUN^J.^^^^^ABC^^^^HOSP|T6530212^VANG^DAVID||20211018215013||||||||IMG2400^MRI CHEST WO CONTRAST^UNKDEV^^CHEST MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest MRI||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|5|ST|&IMP|2|1. Normal findings in the chest MRI with no evidence of underlying||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|6|ST|&IMP|2|pathology. 2. Clear lung fields and normal cardiac silhouette. 3. No||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|7|ST|&IMP|2|significant abnormalities established, and results are consistent||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|8|ST|&IMP|2|with normal examination parameters. The chest MRI demonstrates normal||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|9|ST|&IMP|2|thoracic anatomy. The lungs are well expanded with no focal nodular||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|10|ST|&IMP|2|lesions, consolidations, or effusions identified. The heart appears||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|11|ST|&IMP|2|normal in size and contour, with no evidence of pericardial effusion.||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|12|ST|&IMP|2|The thoracic vessels are patent without signs of stenosis. No||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|13|ST|&IMP|2|infiltrative processes noted. The vertebrae and mediastinal||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|14|ST|&IMP|2|structures are also unremarkable with no compression or displacement||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|15|ST|&IMP|2|observed. Musculoskeletal structures show no abnormalities.||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+OBX|16|ST|&IMP|2|Dictated by: Shaun Davidson Interpreter, M.D.||||||Wet Read|||||T6530212^VANG^DAVID^^III<R>
+ZDS|2.25.29774006711208386341453111757508609811^EPIC^APPLICATION^DICOM<R>
+<EB>

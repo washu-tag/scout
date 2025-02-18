@@ -1,0 +1,27 @@
+2000-05-12 04:11:18.0832|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000512041118|TBD|ORU^R01|2.25.97994947672934988056852760837025054817|P|2.7<R>
+PID|1||ABC451077^^^ABC^MR||BENJAMIN^BENJAMIN^JOSHUA^^^^D||19390124|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084655|||||||||||||||||||||||||20000512041118|||||||V<R>
+ORC|RE|600091^SYS|7795083104||Prelim||^^^20000512041117^20000512041118^O||20000512041118|T6530145^RUIZ^TARA||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|600091^SYS|7795083104|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20000508072742|||||Hosp Perf||||^^^HEART|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20000512041118||MR|Prelim||^^^20000512041117^20000512041118^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20000512041118||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|The heart MRI indicates normal left ventricular function with early||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|signs of left ventricular hypertrophy. No significant ischemic or||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|structural diseases are observed at this time. Close follow-up may be||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|considered for monitoring changes in wall thickness over time. The||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|cardiac MRI reveals preserved left ventricular function with an||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|ejection fraction estimated at 60%. There is mildly increased left||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|ventricular wall thickness, predominantly at the interventricular||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|septum, suggestive of early hypertrophy. The right ventricular||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|morphology is normal with no evidence of right ventricular||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|hypertrophy or dilatation. The myocardial signal intensity is||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|homogenous with no areas suggestive of infarction or late gadolinium||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|enhancement. The coronary arteries appear patent without any||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|significant stenosis noted on corresponding angiographic sequences.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Prelim|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.50480852352911465982010381632464943301^EPIC^APPLICATION^DICOM<R>
+<EB>

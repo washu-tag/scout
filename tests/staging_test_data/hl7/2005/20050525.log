@@ -1,0 +1,22 @@
+2005-05-25 02:36:11.8700|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20050525023611|TBD|ORU^R01|2.25.335011202575569819021113549955520851193|P|2.7<R>
+PID|1||ABC451182^^^ABC^MR||TAKAHASHI^MEI^^^^^D||19480612|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084719|||||||||||||||||||||||||20050525023611|||||||V<R>
+ORC|RE|8153288^SYS|7795083526||Wet Read||^^^20050525023610^20050525023611^O||20050525023611|||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8153288^SYS|7795083526|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20050524151703|||||Hosp Perf|||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20050525023611||CR|Wet Read||^^^20050525023610^20050525023611^O||||^Chest pain||D7823242^HANSON^KIMBERLY^K.^^^^^ABC^^^^HOSP|||20050525023611||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray of the chest||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|The X-ray demonstrated normal lung fields and mediastinal structures||||||Wet Read<R>
+OBX|6|ST|&IMP|2|without any acute pathology. Overall, the examination is||||||Wet Read<R>
+OBX|7|ST|&IMP|2|unremarkable. The chest X-ray reveals clear lung fields bilaterally||||||Wet Read<R>
+OBX|8|ST|&IMP|2|with no evidence of acute cardiac or pulmonary processes. The||||||Wet Read<R>
+OBX|9|ST|&IMP|2|mediastinum is midline, and no hilar enlargements or pleural||||||Wet Read<R>
+OBX|10|ST|&IMP|2|effusions are present. The bony thorax is unremarkable with intact||||||Wet Read<R>
+OBX|11|ST|&IMP|2|cortical margins and no osteolytic or sclerotic lesions. The||||||Wet Read<R>
+OBX|12|ST|&IMP|2|diaphragm appears well positioned and smooth.||||||Wet Read<R>
+OBX|13|ST|&IMP|2|Dictated by: Kimberly Hanson Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.251068063009067077171771051334812534024^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,28 @@
+2018-12-09 20:12:04.3573|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20181209201204|TBD|ORU^R01|2.25.235214085480382832481796656834862349119|P|2.7<R>
+PID|1||ABC451063^^^ABC^MR||COLLINS^MELISSA^JENNIFER^^Adm.^^D||19250507|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823220^HESS^BRANDI^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085041|||||||||||||||||||||||||20181209201204|||||||V<R>
+ORC|RE|2466194^SYS|7795083049||Final||^^^20181209201203^20181209201204^O||20181209201204|T6530138^FIELDS^VICTORIA||D7823219^LOGAN^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2466194^SYS|7795083049|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20181208124744|||||Hosp Perf|||||D7823219^LOGAN^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20181209201204||XA|Final||^^^20181209201203^20181209201204^O||||^Chest pain||D7823222^POWELL^CARRIE^J.^^^^^ABC^^^^HOSP|T6530138^FIELDS^VICTORIA||20181209201204||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION:  X-ray Angiography||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|5|ST|&IMP|2|The X-ray angiography shows normal vascular anatomy with no signs of||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|6|ST|&IMP|2|significant stenosis, occlusion, or aneurysm. This study confirms||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|7|ST|&IMP|2|robust vascular health and raises no immediate concerns regarding||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|8|ST|&IMP|2|ischemic disease. The X-ray angiography study revealed normal||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|9|ST|&IMP|2|arterial anatomy without evidence of significant stenosis or||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|10|ST|&IMP|2|occlusion in the major vascular territories. The coronary arteries||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|11|ST|&IMP|2|are patent, and there is no noticeable calcification of the coronary||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|12|ST|&IMP|2|vessels. A review of the carotid arteries revealed no evidence of||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|13|ST|&IMP|2|high-grade stenosis, and the vertebral arteries are also patent||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|14|ST|&IMP|2|bilaterally. The aorta appears normal in caliber with no signs of||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|15|ST|&IMP|2|aneurysm or dissection. There is no significant luminal narrowing||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|16|ST|&IMP|2|noted in the peripheral vascular distributions. Additionally, there||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|17|ST|&IMP|2|is no evidence of vascular malformation or collateral vessel||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|18|ST|&IMP|2|formation.||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+OBX|19|ST|&IMP|2|Dictated by: Carrie Powell Interpreter, M.D.||||||Final|||||T6530138^FIELDS^VICTORIA<R>
+ZDS|2.25.323496486688779830132059164345158363913^EPIC^APPLICATION^DICOM<R>
+<EB>

@@ -1,0 +1,27 @@
+2004-02-02 13:38:33.2108|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20040202133833|TBD|ORU^R01|2.25.121722268969106974167366399704860514540|P|2.7<R>
+PID|1||ABC451154^^^ABC^MR||WHITEHEAD^MICHAEL^ROGER^^^^D||19330116|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823239^SMITH^JENNIFER^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084921|||||||||||||||||||||||||20040202133833|||||||V<R>
+ORC|RE|5954746^SYS|7795083413||Final||^^^20040202133832^20040202133833^O||20040202133833|T6530149^VASQUEZ^MISTY||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5954746^SYS|7795083413|MABDOMENWO^MR ABD WO^UNKDEV^^ABDOMEN PTMR|O|20040130182745|||||Hosp Perf||||^^^ABDOMEN|D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20040202133833||MR|Final||^^^20040202133832^20040202133833^O||||^Chest pain||D7823234^DONOVAN^WILLIAM^C.^^^^^ABC^^^^HOSP|T6530149^VASQUEZ^MISTY||20040202133833||||||||MABDOMENWO^MR ABD WO^UNKDEV^^ABDOMEN PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-MR||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|5|ST|&IMP|2|The findings raise suspicion for hepatic neoplasm due to elevated SUV||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|6|ST|&IMP|2|and liver enlargement. Additionally, the observed ileal wall||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|7|ST|&IMP|2|thickening may indicate an underlying inflammatory process or early||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|8|ST|&IMP|2|malignancy which requires further investigation, possibly via||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|9|ST|&IMP|2|ultrasound or targeted biopsy. The PET-MR examination of the abdomen||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|10|ST|&IMP|2|reveals an increased standard uptake value (SUV) in the hepatic||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|11|ST|&IMP|2|region, suggesting possible neoplastic activity. The liver is||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|12|ST|&IMP|2|enlarged with heterogeneous parenchymal enhancement noted on the MR||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|13|ST|&IMP|2|sequences. The splenic contour appears smooth without any focal||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|14|ST|&IMP|2|lesions, and the kidneys are unremarkable with preserved||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|15|ST|&IMP|2|corticomedullary differentiation. The gastrointestinal tract exhibits||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|16|ST|&IMP|2|no significant abnormalities apart from mild wall thickening in the||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|17|ST|&IMP|2|distal ileum, warranting correlation.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+OBX|18|ST|&IMP|2|Dictated by: William Donovan Interpreter, M.D.||||||Final|||||T6530149^VASQUEZ^MISTY<R>
+ZDS|2.25.189637877509414241302826691873353993532^EPIC^APPLICATION^DICOM<R>
+<EB>

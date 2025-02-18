@@ -1,0 +1,11 @@
+2000-02-16 11:40:57.5453|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000216114057|TBD|ORU^R01|2.25.4550156352746992658473001683345453874|P|2.4<R>
+PID|1||ABC451153^^^ABC^MR~EPIC4485912^^^EPIC^MRN||COLEMAN^ANTHONY^RYAN^^^^D||19620626000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451153^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457334^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8812922^SYS|7795083411|BED70250^70250 70250 Skull < 4 views^UNKDEV|URGENT||20000216073204|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||70250^Skull 1 View Dx Xray|20000216114057||BED|||1^^^20000216114057^^U^^URGENT|       |||^Chest pain|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||70250<R>
+OBX|1|TX|976486||MICHAEL MARKS, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|976486||ACC#  Date Time  Exam~~7795083411 Feb 16 2000 11:40AM BED70250 70250 Skull < 4 views~~EXAMINATION:~Skull X-ray~~FINDINGS:~The skull X-ray reveals an unremarkable cranial vault. No fractures,~suture abnormalities, or gross mass lesions are identified. The~anatomic contours of the skull are well-preserved, and there is no~evidence of effusions or calcifications that would suggest a chronic~process. The temporomandibular joints appear normal bilaterally.~Comparison with the foot X-ray from 1999-11-09 reflects a different~anatomical region but underscores the current absence of acute~pathological changes in the skeletal structure.~~IMPRESSION:~Normal cranial X-ray with no notable abnormalities. No evidence of~acute or chronic skull pathology detected.||||||P<R>
+OBX|3|TX|976486||Requested By: Donovan,William C. M.D.~~Dictated By: Michael Marks, M.D. on Feb 16 2000 11:40AM~~Pending review by: Lisa Sanders, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|976486|4|7795083411^UK^ZB||||||P<R>
+<EB>

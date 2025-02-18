@@ -1,0 +1,25 @@
+1995-09-05 18:07:55.7521|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19950905180755|TBD|ORU^R01|2.25.203357072953837815669619211434458344022|P|2.7<R>
+PID|1||ABC451162^^^ABC^MR||LIM^JI-WOO^^^^^D||19570704|F|||123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084884|||||||||||||||||||||||||19950905180755|||||||V<R>
+ORC|RE|7472917^SYS|7795083446||Wet Read||^^^19950905180754^19950905180755^O||19950905180755|||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7472917^SYS|7795083446|BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM|O|19950903115530|||||Hosp Perf||||^^^BREAST|D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19950905180755||MG|Wet Read||^^^19950905180754^19950905180755^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|||19950905180755||||||||BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Wet Read<R>
+OBX|3|ST|&GDT|1|||||||Wet Read<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read<R>
+OBX|5|ST|&IMP|2|The single-view mammogram performed on September 3, 1995, displays||||||Wet Read<R>
+OBX|6|ST|&IMP|2|typically benign characteristics of breast tissue. No abnormalities||||||Wet Read<R>
+OBX|7|ST|&IMP|2|such as masses or micro-calcifications are identified, suggesting a||||||Wet Read<R>
+OBX|8|ST|&IMP|2|normal mammographic finding at this time. The mammogram reveals||||||Wet Read<R>
+OBX|9|ST|&IMP|2|asymmetric breast density with heterogeneous fibroglandular tissue||||||Wet Read<R>
+OBX|10|ST|&IMP|2|predominating on the medial aspect of the right breast. The left||||||Wet Read<R>
+OBX|11|ST|&IMP|2|breast demonstrates a more homogeneous density pattern. No masses or||||||Wet Read<R>
+OBX|12|ST|&IMP|2|focal asymmetries are noted. The margins and skin contoured are||||||Wet Read<R>
+OBX|13|ST|&IMP|2|unremarkable. No suspicious micro-calcifications are observed.||||||Wet Read<R>
+OBX|14|ST|&IMP|2|Background parenchymal enhancement is within normal limits, and no||||||Wet Read<R>
+OBX|15|ST|&IMP|2|signs of infiltrating ductal carcinoma appear on this study.||||||Wet Read<R>
+OBX|16|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.94012901444097875931482311641771941381^EPIC^APPLICATION^DICOM<R>
+<EB>

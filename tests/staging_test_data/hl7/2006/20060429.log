@@ -1,0 +1,36 @@
+2006-04-29 08:51:03.2677|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20060429085103|TBD|ORU^R01|2.25.189047361186115228498834021778166522024|P|2.7<R>
+PID|1||ABC450999^^^ABC^MR||DAVIS^ROCIO^ANGELA^^^^D||19420318|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084795|||||||||||||||||||||||||20060429085103|||||||V<R>
+ORC|RE|9260066^SYS|7795082794||Final||^^^20060429085102^20060429085103^O||20060429085103|T6530148^GROSS^CARLY||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9260066^SYS|7795082794|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20060425145037|||||Hosp Perf|||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20060429085103||XA|Final||^^^20060429085102^20060429085103^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20060429085103||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|The X-ray angiography study dated 25 April 2006 demonstrates a||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|largely unremarkable vascular system, with patent carotid and||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|vertebral arteries. The descending thoracic aorta shows mild||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|atherosclerotic changes without significant stenosis or aneurysm.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|Overall, the imaging findings suggest stable vascular health with||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|minor degenerative changes likely related to age. Recommendations||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|include routine follow-up imaging if symptomatic changes arise, but||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|indication for surgical intervention is not warranted at this time.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|The X-ray angiography demonstrates a comprehensive evaluation of the||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|vascular structures with a focus on the arterial system. The images||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|reveal a patent carotid artery demonstrating normal caliber and no||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|significant luminal stenosis. The vertebral arteries are also||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|visualized and appear intact without any signs of dissection or||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|occlusion. However, in the descending thoracic aorta, there are||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|19|ST|&IMP|2|subtle irregularities noted in the wall morphology suggesting mild||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|20|ST|&IMP|2|atherosclerotic changes, yet there are no significant aneurysms||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|21|ST|&IMP|2|detected in this segment. Diaphragmatic borders are well-defined||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|22|ST|&IMP|2|without signs of basal lung pathology. Branching vessels along the||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|23|ST|&IMP|2|thoracic and proximal abdominal region show appropriate enhancement||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|24|ST|&IMP|2|without evidence of collateral circulation or vascular compromise.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|25|ST|&IMP|2|Deep venous structures are unremarkable, with no indications of||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|26|ST|&IMP|2|thrombosis.||||||Final|||||T6530148^GROSS^CARLY<R>
+OBX|27|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Final|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.289574550667133534303896054937925761950^EPIC^APPLICATION^DICOM<R>
+<EB>

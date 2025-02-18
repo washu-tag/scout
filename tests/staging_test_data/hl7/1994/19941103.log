@@ -1,0 +1,11 @@
+1994-11-03 21:25:19.6261|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19941103212519|TBD|ORU^R01|2.25.97309197546114157937283229762736561649|P|2.4<R>
+PID|1||ABC451087^^^ABC^MR~EPIC4485846^^^EPIC^MRN||VASQUEZ^JOSHUA^LARRY^^^^D||19420712000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451087^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457196^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6024021^SYS|7795083148|MDXREVNT^ Radiology Event^UNKDEV|URGENT||19941102063853|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||^Xr Sing View|19941103212519||MDXREVNT|||1^^^19941103212519^^U^^URGENT|       |||^Chest pain|D7823242^HANSON^KIMBERLY^K.^^^M.D.|D7823239^SMITH^JENNIFER^A.^^^M.D.||PSCRIB<R>
+OBX|1|TX|6976198||KIMBERLY HANSON, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|6976198||ACC#  Date Time  Exam~~7795083148 Nov 03 1994 09:25PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray of the chest~~FINDINGS:~The single-view chest X-ray demonstrates clear lung fields~bilaterally, with no evidence of pleural effusion or significant~pulmonary nodules identified. The heart size appears to be within~normal limits, and the mediastinal contours are unremarkable. No bony~abnormalities are observable in the thoracic spine or rib cage. The~diaphragmatic contours are intact, and there are no signs of~pneumothorax or hyperinflation of lung fields.~~IMPRESSION:~The imaging study reveals a structurally sound thoracic cavity, with~no acute pathological findings. The heart and lungs maintain normal~radiographic appearances, suggesting a healthy pulmonary system. No~follow-up is needed at this time as the findings are within expected~limits, reflective of a healthy state in the context of the patient's~age.||||||P<R>
+OBX|3|TX|6976198||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Kimberly Hanson, M.D. on Nov 03 1994 09:25PM~~Pending review by: Jennifer Smith, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|6976198|4|7795083148^UK^ZB||||||P<R>
+<EB>

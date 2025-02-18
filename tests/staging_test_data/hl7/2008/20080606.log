@@ -1,0 +1,34 @@
+2008-06-06 10:37:42.1875|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20080606103742|TBD|ORU^R01|2.25.147013492819778238213677386626885626321|P|2.7<R>
+PID|1||ABC451036^^^ABC^MR||DAWSON^LESLIE^CHERYL^^^^D||19660220|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823217^SANCHEZ^ROY^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084874|||||||||||||||||||||||||20080606103742|||||||V<R>
+ORC|RE|7939311^SYS|7795082943||Prelim||^^^20080606103741^20080606103742^O||20080606103742|T6530137^MALDONADO^CRYSTAL||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7939311^SYS|7795082943|H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT|O|20080605132424|||||Hosp Perf||||^^^HEART|D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20080606103742||NM|Prelim||^^^20080606103741^20080606103742^O||||^Chest pain||D7823217^SANCHEZ^ROY^A.^^^^^ABC^^^^HOSP|T6530137^MALDONADO^CRYSTAL||20080606103742||||||||H8452^78452 MPI SPECT Multiple^UNKDEV^^NM MPI SPECT<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cardiac Nuclear Medicine Study||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|5|ST|&IMP|2|The cardiac nuclear medicine study dated June 5, 2008 shows||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|6|ST|&IMP|2|significant changes compared to the prior study dated October 18,||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|7|ST|&IMP|2|2000. The emergence of inferior wall hypoperfusion raises concerns||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|8|ST|&IMP|2|for ischemic changes, with a reduction in myocardial viability and||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|9|ST|&IMP|2|functional capacity, as evidenced by the decreased LVEF of 58%. The||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|10|ST|&IMP|2|findings suggest possible subclinical coronary artery disease and||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|11|ST|&IMP|2|warrant further clinical correlation with non-invasive vascular||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|12|ST|&IMP|2|studies and close monitoring of symptoms. In the comparative cardiac||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|13|ST|&IMP|2|NM study conducted on June 5, 2008, there is a notable increase in||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|14|ST|&IMP|2|the heterogeneity of perfusion throughout the left ventricle compared||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|15|ST|&IMP|2|to the previous study from 2000. The inferior wall demonstrates a||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|16|ST|&IMP|2|moderate area of reduced uptake suggesting possible ischemia, with||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|17|ST|&IMP|2|the LVEF calculated at 58%. Deficits in perfusion are more pronounced||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|18|ST|&IMP|2|during the stress images, indicating potential stress-induced||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|19|ST|&IMP|2|ischemia. The wall motion analysis post-stress reveals hypokinesis in||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|20|ST|&IMP|2|the inferior and posterior segments. No fixed defects are noted, but||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|21|ST|&IMP|2|the increased vascular resistance and diminished flow reserve could||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|22|ST|&IMP|2|suggest underlying coronary artery disease. The diastolic assessment||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|23|ST|&IMP|2|indicates a slight increase in filling pressures, suggesting emerging||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|24|ST|&IMP|2|diastolic dysfunction.||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|25|ST|&IMP|2|Dictated by: Roy Sanchez Interpreter, M.D.||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+ZDS|2.25.280328292999486988415175041818590266760^EPIC^APPLICATION^DICOM<R>
+<EB>

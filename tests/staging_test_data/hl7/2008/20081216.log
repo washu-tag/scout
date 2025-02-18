@@ -1,0 +1,11 @@
+2008-12-16 04:12:08.9099|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20081216041208|TBD|ORU^R01|2.25.322800891241502490472785030839039120033|P|2.4<R>
+PID|1||ABC451067^^^ABC^MR~EPIC4485826^^^EPIC^MRN||MELENDEZ^TARA^LARA^^^^D||19580416000000|F||P|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451067^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823227^WOOD^MELISSA^C.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457487^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5517636^SYS|7795083068|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20081211145110|||PSCRIB|||||^^^^ |D7823220^HESS^BRANDI^MARIA^M.D.^^^^ABC|||||4185^XRay Angiography|20081216041208||IMG|||1^^^20081216041208^^U^^URGENT|       |||^Chest pain|D7823215^PORTER^JAMEL^J.^^^M.D.|D7823229^WADE^KERRI^L.^^^M.D.||PSCRIB|||||||||4185<R>
+OBX|1|TX|6210985||JAMEL PORTER, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6210985||ACC#  Date Time  Exam~~7795083068 Dec 16 2008 04:12AM IMG4185 IR INTRO CATHETER AORTA~BILATERAL~~EXAMINATION:~X-ray angiography study~~FINDINGS:~The angiographic study performed reveals a patent left common carotid~artery with no significant stenosis. The internal carotid artery~exhibits normal caliber and patency; however, there is a noted mild~tortuosity. No anatomic abnormalities or significant atherosclerotic~changes are observed in the external carotid branches. Venous~structures appear unremarkable. No evidence of thrombosis or vascular~malformations is noted.~~IMPRESSION:~The X-ray angiography demonstrates normal findings in the carotid~arterial system with no significant stenosis or abnormalities. This~study serves as a baseline for future assessments.||||||F<R>
+OBX|3|TX|6210985||Requested By: Hess,Brandi M. M.D.~~Dictated By: Jamel Porter, M.D. on Dec 16 2008 04:12AM~~This document has been electronically signed by: Jamel Porter, M.D.~on Dec 16 2008 04:12AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6210985|4|7795083068^UK^ZB||||||F<R>
+<EB>

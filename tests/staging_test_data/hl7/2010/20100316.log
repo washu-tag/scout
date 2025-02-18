@@ -1,0 +1,26 @@
+2010-03-16 17:34:37.4372|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100316173437|TBD|ORU^R01|2.25.283702572656618195052729645313512415596|P|2.7<R>
+PID|1||ABC451103^^^ABC^MR||COLLINS^NICKOLAS^LARRY^^^^D||19511215|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084880|||||||||||||||||||||||||20100316173437|||||||V<R>
+ORC|RE|3980834^SYS|7795083210||Prelim||^^^20100316173436^20100316173437^O||20100316173437|T6530150^NEAL^EMILY||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3980834^SYS|7795083210|IMG5017^PET/CT FDG WHOLE BODY^UNKDEV^^WHOLEBODY PETCT AC NAC|O|20100315155732|||||Hosp Perf||||^^^WHOLEBODY|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20100316173437||CT|Prelim||^^^20100316173436^20100316173437^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20100316173437||||||||IMG5017^PET/CT FDG WHOLE BODY^UNKDEV^^WHOLEBODY PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Whole-body PET-CT||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|1. No evidence of malignancy based on the PET-CT findings. 2. The||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|imaging is consistent with a state of metabolic inactivity indicative||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|of no ongoing neoplastic process. Whole-body PET-CT reveals no||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|hypermetabolic lesions consistent with malignancy in all standard||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|anatomical regions. The mediastinum shows no abnormalities with||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|standard nuclear uptake levels seen in lymph nodes. No suspicious||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|osseous uptake is present throughout the skeletal system. The||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|hepatic, renal, and splenic regions appear without metabolic||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|abnormalities. All observed structures remain within physiological||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|limits. Due to the absence of new hypermetabolic foci, the whole-body||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|assessment is suggestive of an absence of any significant||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|pathological process at this time.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.139470178696477235599834877167617738322^EPIC^APPLICATION^DICOM<R>
+<EB>

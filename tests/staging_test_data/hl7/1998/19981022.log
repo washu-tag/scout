@@ -1,0 +1,26 @@
+1998-10-22 16:17:11.5479|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19981022161711|TBD|ORU^R01|2.25.246760400644641768198073174282783744978|P|2.7<R>
+PID|1||ABC451066^^^ABC^MR||NEAL^KATHLEEN^KATHRYN^^^^D||19550405|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085048|||||||||||||||||||||||||19981022161711|||||||V<R>
+ORC|RE|118720^SYS|7795083063||Prelim||^^^19981022161710^19981022161711^O||19981022161711|T6530154^ROBERTS^RICARDO||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|118720^SYS|7795083063|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|19981020182815|||||Hosp Perf|||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19981022161711||US|Prelim||^^^19981022161710^19981022161711^O||||^Chest pain||D7823236^BARAJAS^JOSEPH^A.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||19981022161711||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound abdomen||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|1. Normal ultrasound of liver and gallbladder. 2. Moderate free||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|pelvic fluid warranting clinical correlation and potential follow-up||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|imaging. Further evaluation may be indicated to assess the source of||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|fluid. Abdominal ultrasound reveals a normal-sized liver with||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|homogeneous echotexture. The gallbladder is visualized without stones||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|or wall thickening. The common bile duct measures within normal||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|limits. No lesions are noted in the pancreas; the kidneys are normal||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|in morphology, with no hydronephrosis or calculi. Bowel loops appear||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|unremarkable. There is moderate free fluid in the pelvic region,||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|which raises the suspicion for an underlying pathologic process that||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|may require further evaluation. No notable enlarged lymph nodes are||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|detected.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.50339557823780436094975622588102020628^EPIC^APPLICATION^DICOM<R>
+<EB>

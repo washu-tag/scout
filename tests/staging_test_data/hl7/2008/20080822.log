@@ -1,0 +1,30 @@
+2008-08-22 17:03:38.8264|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20080822170338|TBD|ORU^R01|2.25.289243715775875162122692266843540983914|P|2.7<R>
+PID|1||ABC451021^^^ABC^MR||BAKER^JASON^BOBBY^^^^D||19510313|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823286^JAMES^TIMOTHY^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084792|||||||||||||||||||||||||20080822170338|||||||V<R>
+ORC|RE|961063^SYS|7795082884||Final||^^^20080822170337^20080822170338^O||20080822170338|T6530211^CHANDLER^JOSEPH||D7823286^JAMES^TIMOTHY^C.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|961063^SYS|7795082884|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20080820192123|||||Hosp Perf||||^^^HEART|D7823286^JAMES^TIMOTHY^C.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20080822170338||MR|Final||^^^20080822170337^20080822170338^O||||^Chest pain||D7823278^HUBBARD^BRADLEY^D.^^^^^ABC^^^^HOSP|T6530211^CHANDLER^JOSEPH||20080822170338||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|5|ST|&IMP|2|Overall, the heart MRI indicates a structurally and functionally||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|6|ST|&IMP|2|normal heart. There are no abnormalities identified at this stage,||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|7|ST|&IMP|2|and the absence of late gadolinium enhancement confirms no evidence||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|8|ST|&IMP|2|of myocardial injury or underlying cardiomyopathy. Recommendations||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|9|ST|&IMP|2|include continued routine cardiac health monitoring, especially||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|10|ST|&IMP|2|considering the patient’s age and history. The MRI study performed||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|11|ST|&IMP|2|demonstrates normal left ventricular size and function with an||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|12|ST|&IMP|2|ejection fraction calculated at 65%. No evidence of myocardial edema,||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|13|ST|&IMP|2|infarction, or fibrotic scarring was detected. The septal and lateral||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|14|ST|&IMP|2|wall segmental analysis shows homogenous resting perfusion. All||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|15|ST|&IMP|2|cardiac valves appear normal without any signs of regurgitation or||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|16|ST|&IMP|2|stenosis. The coronary arteries are patent, and no late gadolinium||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|17|ST|&IMP|2|enhancement is observed, indicating absence of ischemic or||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|18|ST|&IMP|2|non-ischemic cardiomyopathy. Additionally, incidental findings||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|19|ST|&IMP|2|include mild pericardial effusion without compression features noted||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|20|ST|&IMP|2|in adjacent structures.||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+OBX|21|ST|&IMP|2|Dictated by: Bradley Hubbard Interpreter, M.D.||||||Final|||||T6530211^CHANDLER^JOSEPH<R>
+ZDS|2.25.800147031420932093047372097689438681^EPIC^APPLICATION^DICOM<R>
+<EB>

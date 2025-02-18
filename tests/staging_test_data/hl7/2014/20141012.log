@@ -1,0 +1,26 @@
+2014-10-12 16:32:20.5075|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20141012163220|TBD|ORU^R01|2.25.291034882079948834461704354318756274744|P|2.7<R>
+PID|1||ABC451027^^^ABC^MR||GARCIA^REGINA^REBECCA^^^^D||19470111|F||DECLINED|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084900|||||||||||||||||||||||||20141012163220|||||||V<R>
+ORC|RE|8287086^SYS|7795082905||Final||^^^20141012163219^20141012163220^O||20141012163220|||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8287086^SYS|7795082905|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20141011090642|||||Hosp Perf|||||D7823236^BARAJAS^JOSEPH^A.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20141012163220||CR|Final||^^^20141012163219^20141012163220^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|||20141012163220||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|This X-ray demonstrates a stable chest picture since earlier imaging.||||||Final<R>
+OBX|6|ST|&IMP|2|No acute cardiopulmonary processes are identified, and although mild||||||Final<R>
+OBX|7|ST|&IMP|2|degenerative changes in the spine are noted, they are consistent with||||||Final<R>
+OBX|8|ST|&IMP|2|the patient's age. Clinical correlation is advised for any||||||Final<R>
+OBX|9|ST|&IMP|2|symptomatic concerns. The single-view chest X-ray taken on 2014-10-11||||||Final<R>
+OBX|10|ST|&IMP|2|shows clear lung fields with no evidence of pleural effusion or||||||Final<R>
+OBX|11|ST|&IMP|2|pneumothorax. The heart size appears within normal limits, without||||||Final<R>
+OBX|12|ST|&IMP|2|mediastinal widening or calcification seen in vascular structures.||||||Final<R>
+OBX|13|ST|&IMP|2|The thoracic spine shows mild degenerative changes consistent with||||||Final<R>
+OBX|14|ST|&IMP|2|age but does not exhibit acute abnormalities. The diaphragm appears||||||Final<R>
+OBX|15|ST|&IMP|2|intact and well-defined, and bony structures display no overt signs||||||Final<R>
+OBX|16|ST|&IMP|2|of fractures or lesions.||||||Final<R>
+OBX|17|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Final<R>
+ZDS|2.25.84649150886789565037447657322795803744^EPIC^APPLICATION^DICOM<R>
+<EB>

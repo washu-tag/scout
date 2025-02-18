@@ -1,0 +1,27 @@
+2009-11-10 09:31:33.1309|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20091110093133|TBD|ORU^R01|2.25.155082771958583145497381370146616542452|P|2.7<R>
+PID|1||ABC451006^^^ABC^MR||WILLIAMS^RUTH^AMANDA^^^^D||19910916|F||DECLINED|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823234^DONOVAN^WILLIAM^C.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084838|||||||||||||||||||||||||20091110093133|||||||V<R>
+ORC|RE|3883335^SYS|7795082825||Prelim||^^^20091110093132^20091110093133^O||20091110093133|T6530148^GROSS^CARLY||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3883335^SYS|7795082825|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20091109091918|||||Hosp Perf||||^^^CHEST|D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20091110093133||CR|Prelim||^^^20091110093132^20091110093133^O||||^Chest pain||D7823235^SANCHEZ^GUY^J.^^^^^ABC^^^^HOSP|T6530148^GROSS^CARLY||20091110093133||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|5|ST|&IMP|2|Overall, the chest X-ray reveals a clear lung field. There are no||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|6|ST|&IMP|2|acute thoracic findings, and the cardiopulmonary structures appear||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|7|ST|&IMP|2|normal. There is no evidence to suggest pulmonary disease, effusion,||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|8|ST|&IMP|2|or dislocation. The frontal view chest X-ray demonstrates a||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|9|ST|&IMP|2|well-expanded lung field bilaterally without any radiopaque lesions.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|10|ST|&IMP|2|No significant mediastinal shift is observed. The cardiac silhouette||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|11|ST|&IMP|2|appears within normal limits, and the diaphragm is smoothly outlined||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|12|ST|&IMP|2|with no evidence of free air beneath it. Patterns of vascular||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|13|ST|&IMP|2|markings are present and distributed evenly across both hemithoraces,||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|14|ST|&IMP|2|indicative of normal pulmonary vascularity. There are no signs of||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|15|ST|&IMP|2|pleural effusion or pneumothorax. No visualized osseous abnormalities||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|16|ST|&IMP|2|are noted in the thoracic cage, and both hilar regions appear||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|17|ST|&IMP|2|unremarkable.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+OBX|18|ST|&IMP|2|Dictated by: Guy Sanchez Interpreter, M.D.||||||Prelim|||||T6530148^GROSS^CARLY<R>
+ZDS|2.25.173088210644632088720628385680753056715^EPIC^APPLICATION^DICOM<R>
+<EB>

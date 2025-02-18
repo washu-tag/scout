@@ -1,0 +1,11 @@
+1998-09-11 20:44:58.2705|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19980911204458|TBD|ORU^R01|2.25.5762613362275496709927441934495343815|P|2.4<R>
+PID|1||ABC451115^^^ABC^MR~EPIC4485874^^^EPIC^MRN||QUINTERO^NICHOLAS^ERIC^^^^D||19340113000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451115^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457430^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1120153^SYS|7795083257|MDXREVNT^ Radiology Event^UNKDEV|URGENT||19980908122855|||PSCRIB|||||^^^^ |D7823244^MEDRANO^JOE^JOSHUA^M.D.^^^^ABC|||||^Xr Sing View|19980911204458||MDXREVNT|||1^^^19980911204458^^U^^URGENT|       |||^Chest pain|D7823237^REESE^AMBER^J.^^^M.D.|D7823234^DONOVAN^WILLIAM^C.^^^M.D.||PSCRIB<R>
+OBX|1|TX|3316170||AMBER REESE, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|3316170||ACC#  Date Time  Exam~~7795083257 Sep 11 1998 08:44PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray of chest~~FINDINGS:~The single-view chest X-ray demonstrates clear lung fields without~evidence of consolidation or effusion. The cardiac silhouette is~within normal limits, and the mediastinum appears unremarkable. There~is no bony abnormality visualized, and the diaphragm is well~positioned. The vascular markings are normal and there are no signs~of pulmonary edema or acute pathology. A minor degenerative change is~noted in the thoracic spine, but this is age-appropriate and not~clinically significant.~~IMPRESSION:~The X-ray shows clear lungs and a normal cardiac silhouette~indicative of no acute cardiopulmonary issues. Routine follow-up is~suggested but no intervention is required at this time.||||||F<R>
+OBX|3|TX|3316170||Requested By: Medrano,Joe J. M.D.~~Dictated By: Amber Reese, M.D. on Sep 11 1998 08:44PM~~This document has been electronically signed by: Amber Reese, M.D. on~Sep 11 1998 08:44PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3316170|4|7795083257^UK^ZB||||||F<R>
+<EB>

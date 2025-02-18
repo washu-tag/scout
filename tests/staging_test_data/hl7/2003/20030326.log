@@ -1,0 +1,28 @@
+2003-03-26 10:01:08.8980|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20030326100108|TBD|ORU^R01|2.25.61270308299538735769976035762488902644|P|2.7<R>
+PID|1||ABC451189^^^ABC^MR||GRAHAM^WILLIAM^KEVIN^^^^D||19560703|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823240^PARSONS^ERNESTO^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084709|||||||||||||||||||||||||20030326100108|||||||V<R>
+ORC|RE|7996108^SYS|7795083553||Prelim||^^^20030326100107^20030326100108^O||20030326100108|T6530154^ROBERTS^RICARDO||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7996108^SYS|7795083553|BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY|O|20030325195403|||||Hosp Perf||||^^^CSPINE|D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20030326100108||DX|Prelim||^^^20030326100107^20030326100108^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530154^ROBERTS^RICARDO||20030326100108||||||||BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Cervical Spine X-ray||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|5|ST|&IMP|2|1. Mild cervical spondylosis and disc degeneration predominantly at||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|6|ST|&IMP|2|the C5-C6 level. 2. No acute injury or significant foraminal||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|7|ST|&IMP|2|narrowing observed. 3. These findings are progressive compared to the||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|8|ST|&IMP|2|earlier cervical spine X-ray dated 1994-11-25, indicating a gradual||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|9|ST|&IMP|2|onset of degenerative changes. There is evidence of early||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|10|ST|&IMP|2|degenerative changes within the cervical spine, with mild disc space||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|11|ST|&IMP|2|narrowing observed from C5-C6 suggestive of spondylosis. The||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|12|ST|&IMP|2|vertebral alignment is satisfactory, with no signs of subluxation or||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|13|ST|&IMP|2|acute trauma. Osseous structures appear otherwise intact, exhibiting||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|14|ST|&IMP|2|no lucent or blastic lesions. The facet joints show mild osteophyte||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|15|ST|&IMP|2|formation bilaterally at C4-C5 and C5-C6. No neural foraminal||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|16|ST|&IMP|2|encroachment is apparent; however, there is a possible mild posterior||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|17|ST|&IMP|2|bulging of the disc at C5-C6 that may be impinging on the adjacent||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|18|ST|&IMP|2|neural elements.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+OBX|19|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Prelim|||||T6530154^ROBERTS^RICARDO<R>
+ZDS|2.25.30306307063106113103099933408180263821^EPIC^APPLICATION^DICOM<R>
+<EB>

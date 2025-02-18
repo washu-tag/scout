@@ -1,0 +1,28 @@
+1996-01-06 08:30:27.0223|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19960106083027|TBD|ORU^R01|2.25.51554939089529792076848172118680563845|P|2.7<R>
+PID|1||ABC451168^^^ABC^MR||MORRIS^OCTAVIO^MARCUS^^^^D||19481022|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823242^HANSON^KIMBERLY^K.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084667|||||||||||||||||||||||||19960106083027|||||||V<R>
+ORC|RE|5857400^SYS|7795083468||Prelim||^^^19960106083026^19960106083027^O||19960106083027|T6530146^MOORE^CURTIS||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5857400^SYS|7795083468|OMHEADWWO^MRI BRAIN W W/O CONTRAST^UNKDEV^^HEAD MRI|O|19960103114043|||||Hosp Perf||||^^^HEAD|D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||19960106083027||MR|Prelim||^^^19960106083026^19960106083027^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|T6530146^MOORE^CURTIS||19960106083027||||||||OMHEADWWO^MRI BRAIN W W/O CONTRAST^UNKDEV^^HEAD MRI<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Head MRI||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|5|ST|&IMP|2|The findings are suggestive of a low-grade glioma located in the||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|6|ST|&IMP|2|right frontal lobe. Continued monitoring and follow-up imaging are||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|7|ST|&IMP|2|recommended to assess for any changes in size or character of the||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|8|ST|&IMP|2|lesion. Especially relevant is the need to rule out any associated||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|9|ST|&IMP|2|mass effect or significant changes in the adjacent brain parenchyma.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|10|ST|&IMP|2|The MRI reveals a well-defined hyperintense lesion in the right||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|11|ST|&IMP|2|frontal lobe measuring approximately 1.5 cm, consistent with a||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|12|ST|&IMP|2|possible low-grade glioma. Structural imaging reveals no significant||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|13|ST|&IMP|2|midline shift or evidence of herniation. Ventricular size is within||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|14|ST|&IMP|2|normal limits. The cerebellar structures appear intact, and no||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|15|ST|&IMP|2|significant edema is noted in adjacent tissues. The flow voids of the||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|16|ST|&IMP|2|major intracranial vessels in the circle of Willis are patent, and no||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|17|ST|&IMP|2|acute ischemic changes are observed throughout the examined areas. No||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|18|ST|&IMP|2|other significant abnormalities were detected.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+OBX|19|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Prelim|||||T6530146^MOORE^CURTIS<R>
+ZDS|2.25.145770712214230481863894619394941825843^EPIC^APPLICATION^DICOM<R>
+<EB>

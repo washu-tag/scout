@@ -1,0 +1,33 @@
+2016-01-03 01:59:58.5204|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20160103015958|TBD|ORU^R01|2.25.251639863548040306664557798448786610487|P|2.4<R>
+PID|1||ABC451140^^^ABC^MR~EPIC4485899^^^EPIC^MRN||THOMAS^MELISSA^ERIN^^^^D||19720808000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451140^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823215^PORTER^JAMEL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457471^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8297904^SYS|7795083360|IMG4185^4185 IR INTRO CATHETER AORTA BILATERAL^UNKDEV|URGENT||20151230123141|||PSCRIB|||||^^^^ |D7823229^WADE^KERRI^LYNDA^M.D.^^^^ABC|||||4185^XRay Angiography|20160103015958||IMG|||1^^^20160103015958^^U^^URGENT|       |||^Chest pain|D7823217^SANCHEZ^ROY^A.^^^M.D.|D7823223^HARPER^MARIA^K.^^^M.D.||PSCRIB|||||||||4185<R>
+<EB><R>
+
+2016-01-03 23:31:56.4191|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20160103233156|TBD|ORU^R01|2.25.274894252935307097347621353740653960543|P|2.7<R>
+PID|1||ABC451192^^^ABC^MR||POWERS^JENNIFER^RONDA^^^^D||19521224|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084804|||||||||||||||||||||||||20160103233156|||||||V<R>
+ORC|RE|5013737^SYS|7795083565||Final||^^^20160103233155^20160103233156^O||20160103233156|||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5013737^SYS|7795083565|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20151231150303|||||Hosp Perf|||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20160103233156||DX|Final||^^^20160103233155^20160103233156^O||||^Chest pain||D7823231^SMITH^CLARA^T.^^^^^ABC^^^^HOSP|||20160103233156||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view X-ray study||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|The chest X-ray indicates mild cardiomegaly; however, no new findings||||||Final<R>
+OBX|6|ST|&IMP|2|of pulmonary congestion or heart failure are noted in comparison to||||||Final<R>
+OBX|7|ST|&IMP|2|previous studies. Continuation of regular follow-up and monitoring of||||||Final<R>
+OBX|8|ST|&IMP|2|cardiac status is suggested. The single-view chest X-ray performed on||||||Final<R>
+OBX|9|ST|&IMP|2|2015-12-31 shows mild cardiomegaly without obvious pulmonary||||||Final<R>
+OBX|10|ST|&IMP|2|congestion. The vascular pedicle is within normal limits, and lung||||||Final<R>
+OBX|11|ST|&IMP|2|fields reveal no focal opacities or pleural effusion. The diaphragm||||||Final<R>
+OBX|12|ST|&IMP|2|and costophrenic angles appear clear. Overall, there is no acute||||||Final<R>
+OBX|13|ST|&IMP|2|pathology identified within the thoracic cavity. Comparison with||||||Final<R>
+OBX|14|ST|&IMP|2|previous imaging indicates the persistence of mild cardiomegaly||||||Final<R>
+OBX|15|ST|&IMP|2|without significant interval change.||||||Final<R>
+OBX|16|ST|&IMP|2|Dictated by: Clara Smith Interpreter, M.D.||||||Final<R>
+ZDS|2.25.322160807196066714610668940581289315617^EPIC^APPLICATION^DICOM<R>
+<EB>

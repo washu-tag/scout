@@ -1,0 +1,24 @@
+2022-12-10 10:32:30.5567|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20221210103230|TBD|ORU^R01|2.25.79867495142658564522145795927824925991|P|2.7<R>
+PID|1||ABC451078^^^ABC^MR||KELLY^JODI^DAWN^^^^D||19801121|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823224^MORGAN^JOHN^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084682|||||||||||||||||||||||||20221210103230|||||||V<R>
+ORC|RE|6507453^SYS|7795083108||Prelim||^^^20221210103229^20221210103230^O||20221210103230|T6530137^MALDONADO^CRYSTAL||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6507453^SYS|7795083108|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20221206161506|||||Hosp Perf|||||D7823223^HARPER^MARIA^K.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20221210103230||XA|Prelim||^^^20221210103229^20221210103230^O||||^Chest pain||D7823217^SANCHEZ^ROY^A.^^^^^ABC^^^^HOSP|T6530137^MALDONADO^CRYSTAL||20221210103230||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography study||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|5|ST|&IMP|2|Normal angiographic findings; no vascular abnormalities detected.||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|6|ST|&IMP|2|Follow-up imaging not indicated at this time based on current||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|7|ST|&IMP|2|examination and clinical context. The X-ray angiography examination||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|8|ST|&IMP|2|demonstrates normal vascular anatomy without evidence of significant||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|9|ST|&IMP|2|stenosis or occlusion in major arterial vessels. There are no||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|10|ST|&IMP|2|identifiable aneurysms, and flow is preserved throughout the||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|11|ST|&IMP|2|visualized vascular territories. The images exhibit excellent||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|12|ST|&IMP|2|contrast opacification, and the surrounding tissues appear intact||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|13|ST|&IMP|2|with no signs of ischemia or collateral circulation. Image quality is||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|14|ST|&IMP|2|optimal, with clear delineation of arterial structures.||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+OBX|15|ST|&IMP|2|Dictated by: Roy Sanchez Interpreter, M.D.||||||Prelim|||||T6530137^MALDONADO^CRYSTAL<R>
+ZDS|2.25.268358318383057955313702318944380721349^EPIC^APPLICATION^DICOM<R>
+<EB>

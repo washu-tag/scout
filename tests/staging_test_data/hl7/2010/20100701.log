@@ -1,0 +1,23 @@
+2010-07-01 17:33:13.0460|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20100701173313|TBD|ORU^R01|2.25.3682943906715418916814998700282431056|P|2.7<R>
+PID|1||ABC451004^^^ABC^MR||PEREZ^THOMAS^MICHAEL^^^^D||19700404|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084943|||||||||||||||||||||||||20100701173313|||||||V<R>
+ORC|RE|9102863^SYS|7795082813||Prelim||^^^20100701173312^20100701173313^O||20100701173313|T6530152^ADKINS^MELLISSA||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9102863^SYS|7795082813|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20100630102005|||||Hosp Perf|||||D7823231^SMITH^CLARA^T.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20100701173313||US|Prelim||^^^20100701173312^20100701173313^O||||^Chest pain||D7823237^REESE^AMBER^J.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20100701173313||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Ultrasound||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|Ultrasound findings are within normal limits, demonstrating no||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|evidence of pathological findings in the abdominal organs. The||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|ultrasound examination shows a normal echogenic pattern throughout||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|the structures assessed. No focal lesions, cysts, or masses are||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|identified in vital abdominal organs like the liver, kidneys, and||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|spleen. The gallbladder appears unremarkable, devoid of stones or||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|wall thickening. There is no evidence of fluid accumulation in the||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|abdominal cavity, and the vascular structures show normal flow||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|characteristics without any signs of thrombus or embolism.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|Dictated by: Amber Reese Interpreter, M.D.||||||Prelim|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.125832876434983701214568184202769568402^EPIC^APPLICATION^DICOM<R>
+<EB>

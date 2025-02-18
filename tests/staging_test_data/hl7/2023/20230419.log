@@ -1,0 +1,11 @@
+2023-04-19 23:31:06.4581|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230419233106|TBD|ORU^R01|2.25.203986681097436044317615659257103473741|P|2.4<R>
+PID|1||ABC451094^^^ABC^MR~EPIC4485853^^^EPIC^MRN||LESTER^WILLIAM^GEOFFREY^^^^D||19340330000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451094^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457133^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5713249^SYS|7795083172|IMG5021^5021 PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV|URGENT||20230417173349|||PSCRIB|||||^^^^ |D7823241^SANDERS^LISA^ALICIA^M.D.^^^^ABC|||||5021^Brain Petct AC NAC|20230419233106||IMG|||1^^^20230419233106^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB|||||||||5021<R>
+OBX|1|TX|4262287||JOE MEDRANO, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|4262287||ACC#  Date Time  Exam~~7795083172 Apr 19 2023 11:31PM IMG5021 PET/CT FDG BRAIN TUMOR~METABOLIC EVALUATION~~EXAMINATION:~Brain PET-CT~~FINDINGS:~The brain PET-CT shows abnormal hypermetabolism localized to the~right frontal lobe, corresponding with regions of prior known lesion~per clinical history. The SUV max is measured at 8.2, indicating~suspicious metabolic activity. No recent structural changes are~observed on CT, however, the metabolic increase may represent either~a neoplastic process or inflammatory etiology. There are no signs of~corresponding edema or mass effect on the surrounding cerebral~tissue. Other regions of the brain appear metabolic and structurally~stable compared to previous MRI findings dated 2018-02-03.~~IMPRESSION:~The PET-CT examination of the brain indicates hallmark hypermetabolic~activity localized in the right frontal lobe, possibly indicative of~malignancy or active inflammatory process. Differential~considerations should include recurrent tumor vs. post-treatment~reactive changes. Further diagnostic workup and interdisciplinary~consultation recommended.||||||P<R>
+OBX|3|TX|4262287||Requested By: Sanders,Lisa A. M.D.~~Dictated By: Joe Medrano, M.D. on Apr 19 2023 11:31PM~~Pending review by: Jessica Wright, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|4262287|4|7795083172^UK^ZB||||||P<R>
+<EB>

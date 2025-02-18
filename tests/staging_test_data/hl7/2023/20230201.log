@@ -1,0 +1,11 @@
+2023-02-01 18:16:50.8988|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20230201181650|TBD|ORU^R01|2.25.338544636374631020000192980307167073325|P|2.4<R>
+PID|1||ABC451144^^^ABC^MR~EPIC4485903^^^EPIC^MRN||MARTINEZ^MATTHEW^DAVID^^^^D||19920501000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451144^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823243^HAWKINS^CURTIS^K.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457123^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8308397^SYS|7795083373|IMG1259^1259 XR CHEST 1 VIEW^UNKDEV|URGENT||20230128192520|||PSCRIB|||||^^^^ |D7823243^HAWKINS^CURTIS^KENNETH^M.D.^^^^ABC|||||1259^Chest 1 View Xray|20230201181650||IMG|||1^^^20230201181650^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||1259<R>
+OBX|1|TX|5540906||JOSEPH BARAJAS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|5540906||ACC#  Date Time  Exam~~7795083373 Feb 01 2023 06:16PM IMG1259 XR CHEST 1 VIEW~~EXAMINATION:~Chest X-ray~~FINDINGS:~The chest X-ray obtained on 2023-01-28 shows increased opacity in the~right upper lobe, with a notable solitary pulmonary nodule measuring~approximately 2.5 cm in maximum dimension. The left lung fields are~clear, and no pleural effusion or significant lymphadenopathy is~observed. Diaphragm and heart silhouette appear within normal limits,~and bony structures of the thorax exhibit no acute changes.~~IMPRESSION:~The solitary pulmonary nodule in the right upper lobe is concerning~for neoplasm, given the patient's previous hypermetabolic findings in~the mediastinal and retroperitoneal regions. Clinical correlation~with respective risk factors is advised, and further characterization~via CT scan for assessment, as well as potential follow-up with~oncological consultation for possible biopsy, is warranted.||||||F<R>
+OBX|3|TX|5540906||Requested By: Hawkins,Curtis K. M.D.~~Dictated By: Joseph Barajas, M.D. on Feb 01 2023 06:16PM~~This document has been electronically signed by: Joseph Barajas, M.D.~on Feb 01 2023 06:16PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|5540906|4|7795083373^UK^ZB||||||F<R>
+<EB>

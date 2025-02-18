@@ -1,0 +1,30 @@
+2022-09-19 01:00:32.7585|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220919010032|TBD|ORU^R01|2.25.232382789772576472565662126496414851004|P|2.7<R>
+PID|1||ABC451089^^^ABC^MR||PEREZ^ALEXA^ELIZABETH^^^^D||19290916|F||PCFIS|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823241^SANDERS^LISA^A.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084816|||||||||||||||||||||||||20220919010032|||||||V<R>
+ORC|RE|5370857^SYS|7795083155||Final||^^^20220919010031^20220919010032^O||20220919010032|||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5370857^SYS|7795083155|BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM|O|20220918072518|||||Hosp Perf||||^^^BREAST|D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20220919010032||MG|Final||^^^20220919010031^20220919010032^O||||^Chest pain||D7823238^HUNT^APRIL^M.^^^^^ABC^^^^HOSP|||20220919010032||||||||BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|The findings from the mammogram obtained on September 18, 2022,||||||Final<R>
+OBX|6|ST|&IMP|2|indicate stable breast tissue with no radiographic signs of||||||Final<R>
+OBX|7|ST|&IMP|2|malignancy. The identified fibroadenoma, unchanged in size and||||||Final<R>
+OBX|8|ST|&IMP|2|morphology, does not demonstrate any concerning features warranting||||||Final<R>
+OBX|9|ST|&IMP|2|surgical intervention. Recommend routine annual monitoring along with||||||Final<R>
+OBX|10|ST|&IMP|2|clinical breast exams as per standard protocols; patient education||||||Final<R>
+OBX|11|ST|&IMP|2|regarding breast self-examination should continue. The single-view||||||Final<R>
+OBX|12|ST|&IMP|2|mammogram conducted on 2022-09-18 shows diffusely dense breast tissue||||||Final<R>
+OBX|13|ST|&IMP|2|consistent with the patient's age, classified as BI-RADS category C.||||||Final<R>
+OBX|14|ST|&IMP|2|No significant masses, architectural distortions, or calcifications||||||Final<R>
+OBX|15|ST|&IMP|2|are observed in the breast parenchyma. There are no signs of||||||Final<R>
+OBX|16|ST|&IMP|2|malignancy; a well-circumscribed benign-appearing fibroadenoma is||||||Final<R>
+OBX|17|ST|&IMP|2|noted in the upper outer quadrant of the right breast, approximately||||||Final<R>
+OBX|18|ST|&IMP|2|1.2 cm in diameter, stable in appearance since the last examination.||||||Final<R>
+OBX|19|ST|&IMP|2|Lymph nodes in the axilla are unremarkable. No suspicious findings||||||Final<R>
+OBX|20|ST|&IMP|2|are noted on either side.||||||Final<R>
+OBX|21|ST|&IMP|2|Dictated by: April Hunt Interpreter, M.D.||||||Final<R>
+ZDS|2.25.226244780751450477934973523863147386100^EPIC^APPLICATION^DICOM<R>
+<EB>

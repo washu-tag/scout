@@ -1,0 +1,25 @@
+2003-07-10 03:51:41.8546|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20030710035141|TBD|ORU^R01|2.25.177312751691669730763281952003515196769|P|2.7<R>
+PID|1||ABC451008^^^ABC^MR||THOMPSON^AMANDA^NOELLE^^^^D||19720809|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823258^BRYANT^DAVID^T.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084878|||||||||||||||||||||||||20030710035141|||||||V<R>
+ORC|RE|910994^SYS|7795082830||Wet Read||^^^20030710035140^20030710035141^O||20030710035141|T6530163^SMITH^BERNARD||D7823254^CRUZ^JOSEPH^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|910994^SYS|7795082830|M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED|O|20030709160953|||||Hosp Perf||||^^^HEART|D7823254^CRUZ^JOSEPH^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20030710035141||MR|Wet Read||^^^20030710035140^20030710035141^O||||^Chest pain||D7823254^CRUZ^JOSEPH^J.^^^^^ABC^^^^HOSP|T6530163^SMITH^BERNARD||20030710035141||||||||M755570^MR CARDIAC MRPH FUNC W/O^UNKDEV^^HEART MRI EXPEDITED<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Heart MRI||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|5|ST|&IMP|2|The study indicates normal cardiac anatomy and function, confirming||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|6|ST|&IMP|2|the absence of myocardial abnormalities and a stable ejection||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|7|ST|&IMP|2|fraction consistent with the patient's overall cardiac health. The||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|8|ST|&IMP|2|cardiac MRI performed on July 9, 2003, shows a structurally normal||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|9|ST|&IMP|2|heart with intact myocardial walls. There is no evidence of||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|10|ST|&IMP|2|myocardial edema or fibrosis. The left ventricular ejection fraction||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|11|ST|&IMP|2|is recorded at approximately 67%. The right ventricle appears normal||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|12|ST|&IMP|2|in size and function. No significant lesions or perfusion defects||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|13|ST|&IMP|2|were seen in cine imaging. The valves demonstrate normal motion with||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|14|ST|&IMP|2|no stenosis or regurgitation, and the aorta outlines normal||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|15|ST|&IMP|2|parameters.||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+OBX|16|ST|&IMP|2|Dictated by: Joseph Cruz Interpreter, M.D.||||||Wet Read|||||T6530163^SMITH^BERNARD<R>
+ZDS|2.25.270564999471368620154022873353118122907^EPIC^APPLICATION^DICOM<R>
+<EB>

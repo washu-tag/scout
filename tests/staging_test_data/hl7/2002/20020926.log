@@ -1,0 +1,11 @@
+2002-09-26 23:57:24.0435|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20020926235724|TBD|ORU^R01|2.25.18360230954596634836461921691228581219|P|2.4<R>
+PID|1||ABC451163^^^ABC^MR~EPIC4485922^^^EPIC^MRN||LEE^SAMUEL^MARVIN^^Adm.^^D||19480202000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451163^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823253^NIXON^MELISSA^D.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457348^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7424949^SYS|7795083452|IMG2400^2400 MRI CHEST WO CONTRAST^UNKDEV|URGENT||20020926130353|||PSCRIB|||||^^^^ |D7823257^ROBINSON^RALPH^ANTHONY^M.D.^^^^ABC|||||2400^CHEST MRI Expedited|20020926235724||IMG|||1^^^20020926235724^^U^^URGENT|       |||^Chest pain|D7823257^ROBINSON^RALPH^A.^^^M.D.|D7823250^ROBERTSON^MICHELLE^D.^^^M.D.||PSCRIB|||||||||2400<R>
+OBX|1|TX|2410344||RALPH ROBINSON, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|2410344||ACC#  Date Time  Exam~~7795083452 Sep 26 2002 11:57PM IMG2400 MRI CHEST WO CONTRAST~~EXAMINATION:~Chest MRI~~FINDINGS:~The chest MRI shows clear lung fields bilaterally with no signs of~effusion or consolidation. The heart is of normal size and~configuration, with no pericardial effusion present. The thoracic~aorta exhibits normal caliber without evidence of dissection.~Pulmonary vasculature appears unremarkable, and there are no obvious~masses or nodules visualized in the lung parenchyma. The mediastinal~structures are unremarkable. No lymphadenopathy is documented in the~perihilar or mediastinal regions. The diaphragm is intact and~demonstrates appropriate movement on associated sequences.~~IMPRESSION:~The MRI of the chest performed on 2002-09-26 indicates no significant~abnormalities. The structures evaluated are normal, and there is no~evidence of pathological processes within the mediastinum, lungs, or~cardiac silhouette.||||||F<R>
+OBX|3|TX|2410344||Requested By: Robinson,Ralph A. M.D.~~Dictated By: Ralph Robinson, M.D. on Sep 26 2002 11:57PM~~This document has been electronically signed by: Ralph Robinson, M.D.~on Sep 26 2002 11:57PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|2410344|4|7795083452^UK^ZB||||||F<R>
+<EB>

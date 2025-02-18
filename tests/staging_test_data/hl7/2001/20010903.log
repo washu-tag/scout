@@ -1,0 +1,30 @@
+2001-09-03 05:18:17.3219|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20010903051817|TBD|ORU^R01|2.25.235485769019776224969527347936134820818|P|2.7<R>
+PID|1||ABC451145^^^ABC^MR||MILLER^JENNIE^ELIZABETH^^^^D||19530208|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084739|||||||||||||||||||||||||20010903051817|||||||V<R>
+ORC|RE|1797289^SYS|7795083378||Prelim||^^^20010903051816^20010903051817^O||20010903051817|T6530150^NEAL^EMILY||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1797289^SYS|7795083378|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC|O|20010830062525|||||Hosp Perf||||^^^ABDOMEN|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20010903051817||CT|Prelim||^^^20010903051816^20010903051817^O||||^Chest pain||D7823233^GALLAGHER^RUSSELL^J.^^^^^ABC^^^^HOSP|T6530150^NEAL^EMILY||20010903051817||||||||CTABD^PETCT AC+NAC ABDOMEN^UNKDEV^^ABDOMEN PETCT AC NAC<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-CT||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|5|ST|&IMP|2|1. Abnormal uptake noted in the distal ileum; further evaluation||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|6|ST|&IMP|2|through colonoscopy is recommended to assess for inflammatory||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|7|ST|&IMP|2|processes or possible neoplastic changes. 2. No significant||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|8|ST|&IMP|2|abnormalities in the liver, kidneys or biliary tree. 3. Absence of||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|9|ST|&IMP|2|abdominal lymphadenopathy supports a localized condition not||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|10|ST|&IMP|2|indicative of systemic disease. The abdomen PET-CT showcases a solid||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|11|ST|&IMP|2|image of the abdominal organs, with notably increased metabolic||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|12|ST|&IMP|2|activity in the distal portion of the ileum, which is concerning for||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|13|ST|&IMP|2|inflammatory disease or underlying malignancy. However, the||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|14|ST|&IMP|2|surrounding fat planes remain clear without mass effect. The liver||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|15|ST|&IMP|2|appears unremarkable with no focal lesions, and gallbladder||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|16|ST|&IMP|2|functionality is intact. Renal imaging reveals no significant||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|17|ST|&IMP|2|hydronephrosis, and both kidneys and ureters present with normal||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|18|ST|&IMP|2|uptake patterns, with no calculi noted. No significant abdominal||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|19|ST|&IMP|2|lymphadenopathy is visualized, supporting a non-malignant etiology||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|20|ST|&IMP|2|for the ileal uptake observed.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+OBX|21|ST|&IMP|2|Dictated by: Russell Gallagher Interpreter, M.D.||||||Prelim|||||T6530150^NEAL^EMILY<R>
+ZDS|2.25.60572116016788638887866202448713994491^EPIC^APPLICATION^DICOM<R>
+<EB>

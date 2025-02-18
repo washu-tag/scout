@@ -1,0 +1,11 @@
+2016-08-20 15:11:07.3342|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20160820151107|TBD|ORU^R01|2.25.107367259730777181512953425624062094486|P|2.4<R>
+PID|1||ABC451015^^^ABC^MR~EPIC4485774^^^EPIC^MRN||ELLIOTT^TONYA^SASHA^^^^D||19471006000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451015^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457458^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2203482^SYS|7795082861|BED74000^74000 74000 Abdomen single view AP^UNKDEV|URGENT||20160818070513|||PSCRIB|||||^^^^ |D7823231^SMITH^CLARA^TAMIKA^M.D.^^^^ABC|||||74000^Abdomen 1 View Dx Xray|20160820151107||BED|||1^^^20160820151107^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823238^HUNT^APRIL^M.^^^M.D.||PSCRIB|||||||||74000<R>
+OBX|1|TX|112031||JOE MEDRANO, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|112031||ACC#  Date Time  Exam~~7795082861 Aug 20 2016 03:11PM BED74000 74000 Abdomen single view AP~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~The abdominal X-ray shows no evidence of free air under the diaphragm~suggesting no acute perforation or obstruction. Gas patterns in the~bowel are normal with no signs of distension. The liver and spleen~are uniformly outlined without any calcifications or masses apparent.~Renal shadows are noted to be normal in size and shape. No~significant osseous abnormalities are observed. The visualized bony~structures display normal density and alignment.~~IMPRESSION:~Normal abdominal X-ray findings with no acute intra-abdominal~pathology noted. Recommend routine follow-up if clinically indicated~based on abdominal symptoms.||||||F<R>
+OBX|3|TX|112031||Requested By: Smith,Clara T. M.D.~~Dictated By: Joe Medrano, M.D. on Aug 20 2016 03:11PM~~This document has been electronically signed by: Joe Medrano, M.D. on~Aug 20 2016 03:11PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|112031|4|7795082861^UK^ZB||||||F<R>
+<EB>

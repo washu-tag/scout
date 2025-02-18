@@ -1,0 +1,11 @@
+2013-07-08 22:06:00.3506|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130708220600|TBD|ORU^R01|2.25.207021592735357288606829046861489882119|P|2.4<R>
+PID|1||ABC451040^^^ABC^MR~EPIC4485799^^^EPIC^MRN||MOORE^RUSSELL^JOHN^^^^D||19920516000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451040^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457418^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6621387^SYS|7795082962|IMG154^154 XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20130708140640|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||154^Abdomen 1 View Xray|20130708220600||IMG|||1^^^20130708220600^^U^^URGENT|       |||^Chest pain|D7823235^SANCHEZ^GUY^J.^^^M.D.|D7823230^WRIGHT^JESSICA^M.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|4872338||GUY SANCHEZ, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|4872338||ACC#  Date Time  Exam~~7795082962 Jul 08 2013 10:06PM IMG154 XR ABDOMEN AP 1 VIEW~~EXAMINATION:~Abdomen X-ray~~FINDINGS:~Comparing this abdomen X-ray dated 2013-07-08 to the previous study~from 2010-04-02 (UID: 2.25.30232323025321328660912096920320630259),~there is a similar distribution of bowel gas with no signs of~obstruction or abnormal air-fluid levels. Notably, the liver is~slightly enlarged, with borderline hepatomegaly observed. No new~calcifications or masses are present in the visualized kidneys or~spleen. Previous normal findings remain stable with minor changes in~hepatic size noted. The lumbar spine again shows no significant~degenerative changes or bony abnormalities.~~IMPRESSION:~Stable abdominal X-ray findings with minor hepatomegaly; no acute~changes since 2010.||||||F<R>
+OBX|3|TX|4872338||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Guy Sanchez, M.D. on Jul 08 2013 10:06PM~~This document has been electronically signed by: Guy Sanchez, M.D. on~Jul 08 2013 10:06PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4872338|4|7795082962^UK^ZB||||||F<R>
+<EB>

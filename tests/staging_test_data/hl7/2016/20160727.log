@@ -1,0 +1,25 @@
+2016-07-27 02:25:51.9854|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20160727022551|TBD|ORU^R01|2.25.161185324657001644701087920597110079043|P|2.7<R>
+PID|1||ABC451066^^^ABC^MR||NEAL^KATHLEEN^KATHRYN^^^^D||19550405|F||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42085047|||||||||||||||||||||||||20160727022551|||||||V<R>
+ORC|RE|4269158^SYS|7795083061||Final||^^^20160727022550^20160727022551^O||20160727022551|||D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4269158^SYS|7795083061|BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM|O|20160724173400|||||Hosp Perf||||^^^BREAST|D7823244^MEDRANO^JOE^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20160727022551||MG|Final||^^^20160727022550^20160727022551^O||||^Chest pain||D7823232^MARKS^MICHAEL^R.^^^^^ABC^^^^HOSP|||20160727022551||||||||BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram||||||Final<R>
+OBX|3|ST|&GDT|1|||||||Final<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final<R>
+OBX|5|ST|&IMP|2|1. Stable breast mammogram findings with no alarming features. 2.||||||Final<R>
+OBX|6|ST|&IMP|2|Continue routine screening based on stable density and lack of any||||||Final<R>
+OBX|7|ST|&IMP|2|adverse findings. The recent single-view mammogram performed on||||||Final<R>
+OBX|8|ST|&IMP|2|2016-07-24 shows heterogeneously dense breast tissue similar to the||||||Final<R>
+OBX|9|ST|&IMP|2|prior examination dated 1999-02-03. No suspicious masses or||||||Final<R>
+OBX|10|ST|&IMP|2|microcalcifications are identified. There are no signs of||||||Final<R>
+OBX|11|ST|&IMP|2|architectural distortion or significant changes when compared to||||||Final<R>
+OBX|12|ST|&IMP|2|prior mammograms. Axillary lymph nodes remain unremarkable, and||||||Final<R>
+OBX|13|ST|&IMP|2|nipple and skin contours are normal. Breast density has remained||||||Final<R>
+OBX|14|ST|&IMP|2|consistent with previous studies, without the emergence of any||||||Final<R>
+OBX|15|ST|&IMP|2|features suggesting malignancy.||||||Final<R>
+OBX|16|ST|&IMP|2|Dictated by: Michael Marks Interpreter, M.D.||||||Final<R>
+ZDS|2.25.157184648558559083902083509965164934958^EPIC^APPLICATION^DICOM<R>
+<EB>

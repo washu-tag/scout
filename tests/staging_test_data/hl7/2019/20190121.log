@@ -1,0 +1,26 @@
+2019-01-21 00:06:23.8897|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20190121000623|TBD|ORU^R01|2.25.332484644852742323022088648774864231883|P|2.7<R>
+PID|1||ABC451009^^^ABC^MR||WILLIAMS^JAMES^RAUL^^^^D||20001116|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823222^POWELL^CARRIE^J.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084898|||||||||||||||||||||||||20190121000623|||||||V<R>
+ORC|RE|957676^SYS|7795082835||Prelim||^^^20190121000622^20190121000623^O||20190121000623|T6530136^RIOS^KRISTIN||D7823219^LOGAN^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|957676^SYS|7795082835|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20190118141155|||||Hosp Perf|||||D7823219^LOGAN^MICHAEL^D.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20190121000623||XA|Prelim||^^^20190121000622^20190121000623^O||||^Chest pain||D7823218^LLOYD^JESSICA^A.^^^^^ABC^^^^HOSP|T6530136^RIOS^KRISTIN||20190121000623||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray Angiography Study||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|3|ST|&GDT|1|||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|5|ST|&IMP|2|This study indicates a low-risk profile for significant coronary||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|6|ST|&IMP|2|artery disease. The normal findings on angiography align well with||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|7|ST|&IMP|2|the previous MRI results (2017-12-28), showing no ischemic changes or||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|8|ST|&IMP|2|obstructive disease. The X-ray angiography study illustrates patent||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|9|ST|&IMP|2|coronary arteries with no significant stenosis detected in the left||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|10|ST|&IMP|2|main, circumflex, or right coronary arteries. No evidence of||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|11|ST|&IMP|2|collateralization or myocardial ischemia is observed. The aorta and||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|12|ST|&IMP|2|its branches appear unremarkable without any indication of dissection||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|13|ST|&IMP|2|or aneurysm formation. The vasculature demonstrates normal caliber||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|14|ST|&IMP|2|throughout its course with well-visualized individual branches. The||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|15|ST|&IMP|2|soft tissues around major vessels show no abnormalities of||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|16|ST|&IMP|2|significance.||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+OBX|17|ST|&IMP|2|Dictated by: Jessica Lloyd Interpreter, M.D.||||||Prelim|||||T6530136^RIOS^KRISTIN<R>
+ZDS|2.25.93406744100224115106788787725803237339^EPIC^APPLICATION^DICOM<R>
+<EB>

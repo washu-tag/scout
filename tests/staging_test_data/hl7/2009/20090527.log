@@ -1,0 +1,29 @@
+2009-05-27 09:19:09.5108|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20090527091909|TBD|ORU^R01|2.25.177960265244747190045559464473430057942|P|2.7<R>
+PID|1||ABC451013^^^ABC^MR||BISHOP^JAMES^DANIEL^^^^D||19520529|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823238^HUNT^APRIL^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084984|||||||||||||||||||||||||20090527091909|||||||V<R>
+ORC|RE|8790327^SYS|7795082852||Final||^^^20090527091908^20090527091909^O||20090527091909|T6530152^ADKINS^MELLISSA||D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8790327^SYS|7795082852|MABDOMENWO^MR ABD WO^UNKDEV^^ABDOMEN PTMR|O|20090523164004|||||Hosp Perf||||^^^ABDOMEN|D7823237^REESE^AMBER^J.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20090527091909||MR|Final||^^^20090527091908^20090527091909^O||||^Chest pain||D7823230^WRIGHT^JESSICA^M.^^^^^ABC^^^^HOSP|T6530152^ADKINS^MELLISSA||20090527091909||||||||MABDOMENWO^MR ABD WO^UNKDEV^^ABDOMEN PTMR<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen PET-MR||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|5|ST|&IMP|2|The PET-MR suggests mild hypermetabolic activity in the right iliac||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|6|ST|&IMP|2|fossa, which may warrant further clinical correlation given the||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|7|ST|&IMP|2|potential for inflammatory disease. No evidence of malignancy or||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|8|ST|&IMP|2|significant abdominal pathology is present. Close monitoring or||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|9|ST|&IMP|2|further imaging may be useful depending on the patient's clinical||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|10|ST|&IMP|2|status. The PET-MR scan of the abdomen reveals normal metabolic||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|11|ST|&IMP|2|activity in the liver, kidneys, spleen, and pancreas, with no focal||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|12|ST|&IMP|2|lesions seen. The gallbladder is patent and free of calculi, and the||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|13|ST|&IMP|2|bowel is unremarkable. However, there is mild hypermetabolic activity||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|14|ST|&IMP|2|noted in the right iliac fossa, suggestive of inflammation or||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|15|ST|&IMP|2|possible diverticulitis. There are no enlarged lymph nodes or||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|16|ST|&IMP|2|evidence of distant metastasis. The aorta and major vessels are||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|17|ST|&IMP|2|patent, with no abnormalities noted. The imaging demonstrates no||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|18|ST|&IMP|2|signs of cysts, masses, or other significant pathology within the||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|19|ST|&IMP|2|abdominal cavity.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+OBX|20|ST|&IMP|2|Dictated by: Jessica Wright Interpreter, M.D.||||||Final|||||T6530152^ADKINS^MELLISSA<R>
+ZDS|2.25.125587793004258349441397458930698918467^EPIC^APPLICATION^DICOM<R>
+<EB>

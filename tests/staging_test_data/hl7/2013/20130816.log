@@ -1,0 +1,24 @@
+2013-08-16 18:12:01.2409|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20130816181201|TBD|ORU^R01|2.25.14541499223526801531904357459837725070|P|2.7<R>
+PID|1||ABC451040^^^ABC^MR||MOORE^RUSSELL^JOHN^^^^D||19920516|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823229^WADE^KERRI^L.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084981|||||||||||||||||||||||||20130816181201|||||||V<R>
+ORC|RE|5757728^SYS|7795082961||Final||^^^20130816181200^20130816181201^O||20130816181201|T6530139^WHITE^NICHOLAS||D7823229^WADE^KERRI^L.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5757728^SYS|7795082961|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20130816063626|||||Hosp Perf|||||D7823229^WADE^KERRI^L.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20130816181201||XA|Final||^^^20130816181200^20130816181201^O||||^Chest pain||D7823226^KENNEDY^JERI^A.^^^^^ABC^^^^HOSP|T6530139^WHITE^NICHOLAS||20130816181201||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray Angiography Study||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|3|ST|&GDT|1|||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|5|ST|&IMP|2|Abdominal angiography demonstrates expected vascular anatomy with||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|6|ST|&IMP|2|mild atherosclerosis; no significant pathology. The X-ray angiography||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|7|ST|&IMP|2|of the abdominal vasculature reveals patency of the aorta and its||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|8|ST|&IMP|2|main branches: the celiac trunk, superior mesenteric artery, and||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|9|ST|&IMP|2|renal arteries maintain normal caliber without stenosis. There is||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|10|ST|&IMP|2|mild atherosclerotic change observed with non-significant luminal||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|11|ST|&IMP|2|narrowing in the proximal segments. Collateral circulation is well||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|12|ST|&IMP|2|developed, suggesting chronic compensatory changes. No significant||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|13|ST|&IMP|2|aneurysms or vascular malformations are noted corresponding to||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|14|ST|&IMP|2|previous studies.||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+OBX|15|ST|&IMP|2|Dictated by: Jeri Kennedy Interpreter, M.D.||||||Final|||||T6530139^WHITE^NICHOLAS<R>
+ZDS|2.25.203334082049865424632100734798386727839^EPIC^APPLICATION^DICOM<R>
+<EB>

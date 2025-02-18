@@ -1,0 +1,11 @@
+2024-02-23 12:15:58.2315|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20240223121558|TBD|ORU^R01|2.25.71189890209002266782788132490006521433|P|2.4<R>
+PID|1||ABC451126^^^ABC^MR~EPIC4485885^^^EPIC^MRN||BAILEY^WILLIAM^NICHOLAS^^^^D||19460323000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451126^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823235^SANCHEZ^GUY^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457408^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5946297^SYS|7795083300|H8452^8452 78452 MPI SPECT Multiple^UNKDEV|URGENT||20240222153559|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||8452^NM MPI SPECT|20240223121558||H|||1^^^20240223121558^^U^^URGENT|       |||^Chest pain|D7823239^SMITH^JENNIFER^A.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||8452<R>
+OBX|1|TX|4457348||JENNIFER SMITH, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|4457348||ACC#  Date Time  Exam~~7795083300 Feb 23 2024 12:15PM H8452 78452 MPI SPECT Multiple~~EXAMINATION:~Cardiac NM study~~FINDINGS:~The cardiac nuclear medicine study performed on 2024-02-22 reveals~normal myocardial perfusion at rest, with a good uptake noted in the~septal, anterior, and lateral walls. There is no evidence of~perfusion defects or enhancement suggestive of ischemia or~infarction. The approximately moderate to high ejection fraction~calculated was 55%, indicating good cardiac function. However, there~are subtle areas of increased activity in the inferior wall region~that may require further assessment to rule out any microvascular~disease.~~IMPRESSION:~The findings from the cardiac NM study show normal myocardial~perfusion with good heart function overall. While the increased~activity in the inferior wall merits further investigation, no~immediate clinical concern arises from the study. This is a positive~indicator compared to the heart MRI, which indicated potential~ischemic changes, further emphasizing the need to characterize these~atypical findings more closely.||||||P<R>
+OBX|3|TX|4457348||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Jennifer Smith, M.D. on Feb 23 2024 12:15PM~~Pending review by: Lisa Sanders, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|4457348|4|7795083300^UK^ZB||||||P<R>
+<EB>

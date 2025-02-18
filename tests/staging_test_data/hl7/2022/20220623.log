@@ -1,0 +1,11 @@
+2022-06-23 16:36:41.6564|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20220623163641|TBD|ORU^R01|2.25.103818316112670071951147951463217211403|P|2.4<R>
+PID|1||ABC451106^^^ABC^MR~EPIC4485865^^^EPIC^MRN||HUNT^JENNIFER^HEATHER^^^^D||19980310000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451106^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457343^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||6746362^SYS|7795083222|BHC77055^77055 77055 Diag Mammogram Unilateral^UNKDEV|URGENT||20220623083717|||PSCRIB|||||^^^^ |D7823239^SMITH^JENNIFER^ANGEL^M.D.^^^^ABC|||||77055^Diagnostic Mammogram Unilateral|20220623163641||BHC|||1^^^20220623163641^^U^^URGENT|       |||^Chest pain|D7823244^MEDRANO^JOE^J.^^^M.D.|D7823237^REESE^AMBER^J.^^^M.D.||PSCRIB|||||||||77055<R>
+OBX|1|TX|8891571||JOE MEDRANO, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|8891571||ACC#  Date Time  Exam~~7795083222 Jun 23 2022 04:36PM BHC77055 77055 Diag Mammogram~Unilateral~~EXAMINATION:~Single-view mammogram~~FINDINGS:~The single-view mammogram demonstrates asymmetric breast density with~focal areas of architectural distortion noted in the upper outer~quadrant of the left breast. No suspicious masses or calcifications~are observed in either breast. The skin and nipple are characterized~as normal without any signs of retraction or irregularities. Compared~to the prior mammogram from 2022-06-23, there is a notable increase~in density of the left breast, necessitating further investigation.~Axillary regions appear non-enlarged with no lymphadenopathy noted.~~IMPRESSION:~1. Asymmetric density with distortion in the left breast requiring~additional diagnostic evaluation with targeted ultrasound or MRI. 2.~No significant concerns for malignancy detected, yet further imaging~is warranted given changes compared to the previous study.||||||P<R>
+OBX|3|TX|8891571||Requested By: Smith,Jennifer A. M.D.~~Dictated By: Joe Medrano, M.D. on Jun 23 2022 04:36PM~~Pending review by: Amber Reese, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|8891571|4|7795083222^UK^ZB||||||P<R>
+<EB>

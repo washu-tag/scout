@@ -1,0 +1,32 @@
+2010-11-16 10:47:38.3042|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20101116104738|TBD|ORU^R01|2.25.45218543492091843336199415189419898354|P|2.7<R>
+PID|1||ABC451150^^^ABC^MR||ROMAN^RAYMOND^JAMES^^^^D||19590923|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823230^WRIGHT^JESSICA^M.^M.D.^^^^ABC^^^^HOSP|||RAD|||||||||V42084845|||||||||||||||||||||||||20101116104738|||||||V<R>
+ORC|RE|897065^SYS|7795083400||Wet Read||^^^20101116104737^20101116104738^O||20101116104738|T6530145^RUIZ^TARA||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|897065^SYS|7795083400|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20101114095825|||||Hosp Perf||||^^^CHEST|D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20101116104738||CR|Wet Read||^^^20101116104737^20101116104738^O||||^Chest pain||D7823243^HAWKINS^CURTIS^K.^^^^^ABC^^^^HOSP|T6530145^RUIZ^TARA||20101116104738||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Chest X-ray||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|3|ST|&GDT|1|||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|4|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|5|ST|&IMP|2|1. Mild cardiomegaly potentially indicative of underlying cardiac||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|6|ST|&IMP|2|conditions, recommend correlation with clinical history and||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|7|ST|&IMP|2|follow-up. ||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|8|ST|&IMP|2|2. Bilateral bronchial wall thickening is likely linked to chronic||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|9|ST|&IMP|2|irritation or obstructive pulmonary disease, further pulmonary||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|10|ST|&IMP|2|function testing may be warranted. ||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|11|ST|&IMP|2|3. Overall unremarkable lung fields with no acute process observed.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|12|ST|&IMP|2|Suggest routine follow-up imaging as clinically indicated. The chest||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|13|ST|&IMP|2|X-ray performed on November 14, 2010, reveals multiple significant||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|14|ST|&IMP|2|findings. There is evidence of mild cardiomegaly, which suggests||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|15|ST|&IMP|2|possible underlying hypertension or other cardiac pathology. The lung||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|16|ST|&IMP|2|fields are clear bilaterally with no consolidations or pleural||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|17|ST|&IMP|2|effusions noted. However, there are some bilateral bronchial wall||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|18|ST|&IMP|2|thickening changes, indicating a long-standing inflammatory process,||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|19|ST|&IMP|2|possibly chronic bronchitis. The diaphragm appears well positioned||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|20|ST|&IMP|2|and intact, and the mediastinal contours are unremarkable, with no||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|21|ST|&IMP|2|evidence of mass effect. Additionally, the costophrenic angles are||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|22|ST|&IMP|2|sharp, and no abnormalities are evident in the bony thorax.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+OBX|23|ST|&IMP|2|Dictated by: Curtis Hawkins Interpreter, M.D.||||||Wet Read|||||T6530145^RUIZ^TARA<R>
+ZDS|2.25.111307701121925022523019580205899961609^EPIC^APPLICATION^DICOM<R>
+<EB>
