@@ -22,8 +22,3 @@
         state: present
       become: false
 
-    - name: Install kubernetes python package
-      pip:
-        name: kubernetes
-        state: present
-      become: false

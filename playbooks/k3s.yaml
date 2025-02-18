@@ -1,5 +1,5 @@
 ---
-- name: Download k3s installation script
+- name: Shared pre-requisites for K3s
   hosts: k3s_cluster
   vars:
     uninstall_script: "/usr/local/bin/k3s-uninstall.sh"
@@ -15,6 +15,12 @@
         url: https://get.k3s.io
         dest: /root/bin/get.k3s.io.sh
         mode: "0755"
+
+    - name: Add python kubernetes library from system package
+      package:
+        name: python3-kubernetes
+        state: present
+
 
 - hosts: server
   name: Install k3s on server node
