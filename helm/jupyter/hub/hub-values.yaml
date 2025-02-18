@@ -4,6 +4,7 @@ proxy:
 
 hub:
   baseUrl: /jupyter
+  shutdownOnLogout: true
 
 ingress:
   enabled: true
