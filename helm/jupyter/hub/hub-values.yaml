@@ -13,9 +13,8 @@ ingress:
 
 singleuser:
   image:
-    name: local/pyspark-notebook
+    name: ghcr.io/washu-tag/pyspark-notebook:latest
     tag: latest
-    pullPolicy: Never
   cmd: null
   networkPolicy:
     egress:
@@ -25,7 +24,3 @@ singleuser:
                 kubernetes.io/metadata.name: minio
         ports:
           - port: 9000
-
-prePuller:
-  hook:
-    enabled: false
