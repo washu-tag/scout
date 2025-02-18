@@ -117,7 +117,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         // Partition hl7 paths by year, so it can avoid race conditions on writing the files
         final Map<String, List<String>> hl7AbsolutePathsByYear = transformSplitHl7LogOutputPromises.stream()
                 .map(Promise::get)
-                .map(output -> Pair.of(output.date().substring(0, 3), hl7RootPath + "/" + output.relativePath()))
+                .map(output -> Pair.of(output.date().substring(0, 4), hl7RootPath + "/" + output.relativePath()))
                 .collect(
                         Collectors.groupingBy(
                                 Pair::getLeft,
