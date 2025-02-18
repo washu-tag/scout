@@ -1,5 +1,7 @@
 hub:
   config:
+    Authenticator:
+      auto_login: true
     GitHubOAuthenticator:
       client_id: your-client-id
       client_secret: your-client-secret
