@@ -17,6 +17,14 @@ singleuser:
     tag: latest
     pullPolicy: Never
   cmd: null
+  networkPolicy:
+    egress:
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: minio
+        ports:
+          - port: 9000
 
 prePuller:
   hook:
