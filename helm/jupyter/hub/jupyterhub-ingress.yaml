@@ -1,7 +1,7 @@
 spec:
   ingressClassName: traefik
   rules:
-    - host: big-03.minmi-algol.ts.net
+    - host: ${FQDN}
       http:
         paths:
           - backend:
