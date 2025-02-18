@@ -3,8 +3,8 @@ hub:
     Authenticator:
       auto_login: true
     GitHubOAuthenticator:
-      client_id: your-client-id
-      client_secret: your-client-secret
+      client_id: ${JUPYTERHUB_GITHUB_CLIENT_ID}
+      client_secret: ${JUPYTERHUB_GITHUB_CLIENT_SECRET}
       oauth_callback_url: http://${FQDN}/jupyter/hub/oauth_callback
       allowed_organizations:
         - ${JUPYTERHUB_GITHUB_ALLOWED_ORGS}

@@ -17,6 +17,13 @@ Create the JupyterHub namespace:
 kubectl create namespace jupyter
 ```
 
+A few values need to be set in the `hub-values.yaml`, `auth-values.yaml`, and `jupyterhub-ingress.yaml` files before installing JupyterHub.
+
+- `FQDN`: The fully qualified domain name for the JupyterHub instance. 
+- `JUPYTERHUB_GITHUB_CLIENT_ID`: The GitHub OAuth client ID.
+- `JUPYTERHUB_GITHUB_CLIENT_SECRET`: The GitHub OAuth client secret.
+- `JUPYTERHUB_GITHUB_ALLOWED_ORGS`: Users from these GitHub organizations are allowed to log in.
+
 Install JupyterHub with:
 
 ```bash
