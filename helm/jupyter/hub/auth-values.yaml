@@ -3,6 +3,10 @@ hub:
     GitHubOAuthenticator:
       client_id: your-client-id
       client_secret: your-client-secret
-      oauth_callback_url: http://big-03.minmi-algol.ts.net/jupyter/hub/oauth_callback
+      oauth_callback_url: http://${FQDN}/jupyter/hub/oauth_callback
+      allowed_organizations:
+        - ${JUPYTERHUB_GITHUB_ALLOWED_ORGS}
+      scope:
+        - read:org
     JupyterHub:
       authenticator_class: github

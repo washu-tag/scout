@@ -8,12 +8,13 @@ hub:
 ingress:
   enabled: true
   hosts:
-    - big-03.minmi-algol.ts.net
+    - ${FQDN}
 
 singleuser:
   image:
     name: local/pyspark-notebook
     tag: latest
+    pullPolicy: Never
   cmd: null
 
 prePuller:
