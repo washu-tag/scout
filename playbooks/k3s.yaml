@@ -22,6 +22,7 @@
         state: present
 
 
+################################################################################
 - hosts: server
   name: Install k3s on server node
   vars:
@@ -98,6 +99,8 @@
       environment:
         KUBECONFIG: '{{ kubeconfig_yaml }}'
 
+
+################################################################################
 - hosts: agents
   name: Install k3s on agent nodes
   vars:
