@@ -6,13 +6,13 @@
       ansible.builtin.file:
         path: /root/bin
         state: directory
-        mode: "0700"
+        mode: '0700'
 
     - name: Download Helm command line tool
       ansible.builtin.get_url:
         url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
         dest: /root/bin/get-helm-3.sh
-        mode: "0755"
+        mode: '0755'
 
     - name: Install Helm
       ansible.builtin.command:
@@ -26,4 +26,3 @@
         plugin_path: 'https://github.com/databus23/helm-diff'
         state: present
       become: false
-

@@ -2,25 +2,24 @@
 - name: Shared pre-requisites for K3s
   hosts: k3s_cluster
   vars:
-    uninstall_script: "/usr/local/bin/k3s-uninstall.sh"
+    uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
   tasks:
     - name: Create /root/bin directory
       ansible.builtin.file:
         path: /root/bin
         state: directory
-        mode: "0700"
+        mode: '0700'
 
     - name: Download K3s installation script
       ansible.builtin.get_url:
         url: https://get.k3s.io
         dest: /root/bin/get.k3s.io.sh
-        mode: "0755"
+        mode: '0755'
 
     - name: Add python kubernetes library from system package
       package:
         name: python3-kubernetes
         state: present
-
 
 ################################################################################
 - hosts: server
@@ -44,7 +43,7 @@
           --disable=traefik
           --write-kubeconfig-mode=0640
         INSTALL_K3S_VERSION: "{{ k3s_version | default('') }}"
-        K3S_TOKEN: "{{ k3s_token }}"
+        K3S_TOKEN: '{{ k3s_token }}'
         UNINSTALL_K3S_SH: '{{ uninstall_script }}'
 
     - name: Update kubeconfig group permissions since write-kubeconfig-group isn't working
@@ -98,7 +97,6 @@
         wait_timeout: 60
       environment:
         KUBECONFIG: '{{ kubeconfig_yaml }}'
-
 
 ################################################################################
 - hosts: agents

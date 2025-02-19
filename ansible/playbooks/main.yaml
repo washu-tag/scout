@@ -22,4 +22,3 @@
 
 - name: Install Grafana
   import_playbook: grafana.yaml
-
