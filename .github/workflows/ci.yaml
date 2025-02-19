@@ -63,10 +63,9 @@ jobs:
       - uses: actions/checkout@v4.2.1
       - name: 'Prepare inventory.yaml'
         shell: bash
-        run: cp .github/ci_resources/inventory.yaml ansible/
-      - name: 'Install prerequisites'
-        shell: bash
-        run: sudo pip3 install kubernetes
+        run: |
+          sed -e "s/HOSTNAME/$(hostname)/" -e "s/K3S_TOKEN/$(openssl rand -hex 16)/" \
+            .github/ci_resources/inventory.yaml > ansible/inventory.yaml
       - name: 'ansible-galaxy dependencies'
         shell: bash
         run: cd ansible && sudo /opt/pipx_bin/ansible-galaxy install -r collections/requirements.yaml
