@@ -100,8 +100,6 @@ jobs:
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/orchestrator.yaml
           sudo -E kubectl -n minio-scout wait --for=condition=ready --timeout=300s pod -l v1.min.io/tenant=minio-scout
           sudo -E kubectl -n temporal wait --for=condition=complete --timeout=300s job/temporal-schema-1
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
       - name: 'Launch temporal ingestion'
         shell: bash
         run: sudo -E bash .github/ci_resources/launch_temporal_extraction.sh
@@ -117,6 +115,9 @@ jobs:
           cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
           cd tests
           ./gradlew test
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: failure()
       - name: Test Summary
         uses: test-summary/action@v2.4
         if: always()

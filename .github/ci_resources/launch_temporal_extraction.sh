@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo KUBECONFIG is $KUBECONFIG
+
 do_wait="wait"
 for logdate in $(find tests/staging_test_data/hl7 -name '*.log' | xargs -L 1 basename | cut -c1-8 | sort)
 do
