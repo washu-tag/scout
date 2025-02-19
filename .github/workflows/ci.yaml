@@ -78,7 +78,6 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
-          sudo -E kubectl get nodes
       - name: 'Push image to k3s - temporal-java'
         uses: ./.github/actions/k3s-image-import
         with:
@@ -101,6 +100,8 @@ jobs:
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/orchestrator.yaml
           sudo -E kubectl -n minio-scout wait --for=condition=ready --timeout=300s pod -l v1.min.io/tenant=minio-scout
           sudo -E kubectl -n temporal wait --for=condition=complete --timeout=300s job/temporal-schema-1
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: 'Launch temporal ingestion'
         shell: bash
         run: sudo -E bash .github/ci_resources/launch_temporal_extraction.sh
@@ -111,7 +112,7 @@ jobs:
       - name: 'Run tests'
         shell: bash
         run: |
-          minioIp=$(sudo kubectl get services/minio -n minio-scout -o json | jq '.status.loadBalancer.ingress[0].ip' -r)
+          minioIp=$(sudo -E kubectl get services/minio -n minio-scout -o json | jq '.status.loadBalancer.ingress[0].ip' -r)
           sed -i "s/\$IP/$minioIp/g" .github/ci_resources/test_config_template.json
           cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
           cd tests
