@@ -115,9 +115,6 @@ jobs:
           cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
           cd tests
           ./gradlew test
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: failure()
       - name: Test Summary
         uses: test-summary/action@v2.4
         if: always()
