@@ -1,4 +1,4 @@
-FROM quay.io/jupyter/pyspark-notebook
+FROM quay.io/jupyter/pyspark-notebook:spark-3.5.3
 
 COPY --chown=${NB_UID}:${NB_GID} requirements.txt /tmp/
 
