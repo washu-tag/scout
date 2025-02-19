@@ -76,7 +76,7 @@ jobs:
       - name: 'Install k3s'
         shell: bash
         run: |
-          cd ansible && sudo /opt/pipx_bin/ansible-playbook -vvv -i inventory.yaml --diff playbooks/k3s-cluster.yaml
+          cd ansible && sudo /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: 'Push image to k3s - temporal-java'
         uses: ./.github/actions/k3s-image-import
         with:
@@ -87,7 +87,7 @@ jobs:
           image-name: temporal-python
       - name: 'Install helm and helm diff'
         shell: bash
-        run: cd ansible && sudo /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/helm.yaml
+        run: cd ansible && sudo /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
       - name: 'Install minio'
         shell: bash
         run: |
