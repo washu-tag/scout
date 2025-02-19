@@ -9,7 +9,7 @@
     - name: Add Temporal Helm repository
       kubernetes.core.helm_repository:
         name: temporal
-        repo_url: https://go.temporal.io/helm-charts
+        repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
 
     - name: Install/Upgrade Temporal Helm chart
       kubernetes.core.helm:
