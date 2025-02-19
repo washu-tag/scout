@@ -77,6 +77,9 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
+          sudo kubectl get nodes
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: 'Push image to k3s - temporal-java'
         uses: ./.github/actions/k3s-image-import
         with:
