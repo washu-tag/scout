@@ -34,6 +34,12 @@ singleuser:
     name: ghcr.io/washu-tag/pyspark-notebook
     tag: latest
   cmd: null
+  cpu:
+    limit: 4
+    guarantee: 1
+  memory:
+    limit: 16G
+    guarantee: 2G
   networkPolicy:
     egress:
       - to:
