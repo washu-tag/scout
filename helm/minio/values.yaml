@@ -128,7 +128,7 @@ tenant:
     # The number of MinIO Tenant Pods / Servers in this pool.
     # For standalone mode, supply 1. For distributed mode, supply 4 or more.
     # Note that the operator does not support upgrading from standalone to distributed mode.
-    - servers: 1
+    - servers: 4
       ###
       # Custom name for the pool
       name: pool-0
@@ -460,7 +460,10 @@ tenant:
   #  clientCertSecret: null
   #  # Key name to be created on the KMS, default is "my-minio-key"
   #  keyName: ""
-  #  resources: { }
+  resources:
+    requests:
+      cpu: "2"
+      memory: "16Gi"
   #  nodeSelector: { }
   #  affinity:
   #    nodeAffinity: { }
