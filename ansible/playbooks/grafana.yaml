@@ -84,6 +84,7 @@
 
     - name: Install Grafana using Helm
       kubernetes.core.helm:
+        state: present
         name: grafana
         chart_ref: grafana/grafana
         release_namespace: '{{ grafana_namespace }}'
@@ -91,4 +92,10 @@
         chart_version: ^8.0.0
         values_files:
           - '{{ scout_repo_dir }}/helm/grafana/values.yaml'
-        state: present
+        values:
+          ingress:
+            enabled: true
+            ingressClassName: 'traefik'
+            path: '/grafana'
+            hosts:
+              - '{{ server_hostname }}'

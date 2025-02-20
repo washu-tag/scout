@@ -28,7 +28,7 @@ extraScrapeConfigs: |
   - job_name: 'grafana'
     metrics_path: /grafana/metrics
     static_configs:
-      - targets: ['grafana.grafana.svc.cluster.local:3000']
+      - targets: ['grafana.grafana.svc.cluster.local']
 
   - job_name: 'jaeger-agent'
     metrics_path: /metrics
