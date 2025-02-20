@@ -6,4 +6,11 @@ envFrom:
   - secretRef:
       name: s3-secret
   - configMapRef:
-      name: s3-env
+      name: s3-en
+resources:
+  requests:
+    cpu: "8"
+    memory: "64Gi"
+  limits:
+    cpu: "16"
+    memory: "128Gi"

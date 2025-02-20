@@ -23,6 +23,10 @@ server:
       secretName: jupyterhub-metrics-api-token
       mountPath: /etc/secrets/jupyterhub
       readOnly: true
+  resources:
+    requests:
+      cpu: "2"
+      memory: "16Gi"
 
 extraScrapeConfigs: |
   - job_name: 'grafana'

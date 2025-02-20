@@ -18,3 +18,10 @@ volumeMounts:
   - name: hl7logs
     mountPath: /hl7logs
     readOnly: true
+resources:
+  requests:
+    cpu: "8"
+    memory: "64Gi"
+  limits:
+    cpu: "16"
+    memory: "128Gi"

@@ -30,6 +30,10 @@ loki:
       region: us-east-1
       insecure: true
       s3ForcePathStyle: true
+  resources:
+    requests:
+      cpu: "2"
+      memory: "16Gi"
 
 minio:
   enabled: false
