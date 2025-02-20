@@ -99,9 +99,16 @@
               s3:
                 endpoint: 'http://minio.{{ minio_tenant_namespace }}'
                 region: '{{ s3_region }}'
-        set_values:
-          - value: 'volumes[0].hostPath.path={{ log_mount | default("/ceph/tag/home/test_data_v3/hl7ish_logs") }}'
-          - value: 'image.repository={{ temporal_java_image | default("ghcr.io/washu-tag/temporal-java") }}'
+          image:
+            repository: '{{ temporal_java_image | default(omit) }}'
+          volumes: >-
+            {{
+              [{
+                'name': 'hl7logs',
+                'hostPath': { 'path': log_mount }
+              }]
+              if log_mount is defined else omit
+            }}
 
     - name: Deploy Python worker
       kubernetes.core.helm:
@@ -114,5 +121,6 @@
         wait: true
         wait_timeout: 5m
         atomic: true
-        set_values:
-          - value: 'image.repository={{ temporal_python_image | default("ghcr.io/washu-tag/temporal-python") }}'
+        values:
+          image:
+            repository: '{{ temporal_python_image | default(omit) }}'

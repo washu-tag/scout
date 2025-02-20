@@ -70,14 +70,14 @@ jobs:
             .github/ci_resources/inventory.yaml > ansible/inventory.yaml
       - name: 'ansible-galaxy dependencies'
         shell: bash
-        run: cd ansible && sudo -E /opt/pipx_bin/ansible-galaxy install -r collections/requirements.yaml
+        run: cd ansible && sudo -E ansible-galaxy install -r collections/requirements.yaml
       - name: 'Copy scout'
         shell: bash
         run: sudo cp -r . /var/lib/scout # in CI workflow, we want to use current code, not "main" branch. TODO: don't hardcode path here
       - name: 'Install k3s'
         shell: bash
         run: |
-          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
+          cd ansible && sudo -E ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: 'Push image to k3s - temporal-java'
         uses: ./.github/actions/k3s-image-import
         with:
@@ -90,16 +90,16 @@ jobs:
           image-name: temporal-python
       - name: 'Install helm and helm diff'
         shell: bash
-        run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
+        run: cd ansible && sudo -E ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
       - name: 'Install minio'
         shell: bash
         run: |
-          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/minio.yaml
+          cd ansible && sudo -E ansible-playbook -v -i inventory.yaml --diff playbooks/minio.yaml
           sudo -E kubectl describe pod -l v1.min.io/tenant=minio-scout -n minio-scout
       - name: 'Install orchestrator'
         shell: bash
         run: |
-          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/orchestrator.yaml
+          cd ansible && sudo -E ansible-playbook -i inventory.yaml --diff playbooks/orchestrator.yaml
           sudo -E kubectl -n minio-scout wait --for=condition=ready --timeout=300s pod -l v1.min.io/tenant=minio-scout
           sudo -E kubectl -n temporal wait --for=condition=complete --timeout=300s job/temporal-schema-1
       - name: 'Launch temporal ingestion'
