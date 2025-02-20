@@ -7,6 +7,7 @@ k3s_cluster:
           ansible_connection: local
           ansible_python_interpreter: /usr/bin/python3
           k3s_control_node: true
+          external_url: alt.fqdn.edu # omit to use FQDN-leader.edu
     agents:
       hosts:
         FQDN-worker-1.edu:
@@ -23,10 +24,6 @@ k3s_cluster:
     scout_repo_dir: '{{ base_dir }}/scout'
     kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
 
-    # These would only be overwritten for development builds
-    temporal_java_helm_values: '{{ scout_repo_dir }}/helm/orchestration/temporal-java.values.yaml'
-    temporal_python_helm_values: '{{ scout_repo_dir }}/helm/orchestration/temporal-python.values.yaml'
-
     # You probably don't want to change these unless you know these items will be
     # stored in different locations on your system
     helm_plugins_dir: '~/.local/share/helm/plugins'
@@ -37,4 +34,7 @@ k3s_cluster:
     minio_tenant_namespace: minio-scout
     grafana_namespace: grafana
     loki_namespace: loki
+
+    # computed values, used across charts
+    server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
     # End do not change
