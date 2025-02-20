@@ -10,6 +10,14 @@ ingress:
   enabled: true
   hosts:
     - ${FQDN}
+  extraPaths:
+    - path: /jupyter
+      pathType: Prefix
+      backend:
+        service:
+          name: proxy-public
+          port:
+            name: http
 
 singleuser:
   image:
