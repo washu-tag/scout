@@ -13,7 +13,7 @@ ingress:
 
 singleuser:
   image:
-    name: ghcr.io/washu-tag/pyspark-notebook:latest
+    name: ghcr.io/washu-tag/pyspark-notebook
     tag: latest
   cmd: null
   networkPolicy:
