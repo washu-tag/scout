@@ -81,10 +81,12 @@ jobs:
       - name: 'Push image to k3s - temporal-java'
         uses: ./.github/actions/k3s-image-import
         with:
+          subproject: orchestration/temporal-java
           image-name: temporal-java
       - name: 'Push image to k3s - temporal-python'
         uses: ./.github/actions/k3s-image-import
         with:
+          subproject: orchestration/temporal-python
           image-name: temporal-python
       - name: 'Install helm and helm diff'
         shell: bash

@@ -75,7 +75,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             throw ApplicationFailure.newFailure("Expected exactly one file with date " + input.date() + " in " + input.logsDir() + ". Found " + (logFiles == null ? 0 : logFiles.length), "type");
         }
 
-        return new FindHl7LogFileOutput(logFiles[0].getAbsolutePath());
+        return new FindHl7LogFileOutput(input.date(), logFiles[0].getAbsolutePath());
     }
 
     @Override
@@ -109,7 +109,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             logger.warn("Failed to delete temp dir {}", tempdir);
         }
 
-        return new SplitHl7LogActivityOutput(input.rootOutputPath(), destinationPaths);
+        return new SplitHl7LogActivityOutput(input.date(), input.rootOutputPath(), destinationPaths);
     }
 
     @Override
@@ -150,6 +150,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         } catch (IOException ignored) {
             logger.warn("Failed to delete temp dir {}", tempdir);
         }
-        return new TransformSplitHl7LogOutput(input.rootOutputPath(), destinationPath);
+        return new TransformSplitHl7LogOutput(input.date(), input.rootOutputPath(), destinationPath);
     }
 }

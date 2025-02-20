@@ -21,6 +21,7 @@ import io.temporal.workflow.Async;
 import io.temporal.workflow.Promise;
 import io.temporal.workflow.Workflow;
 import io.temporal.workflow.WorkflowInfo;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 
 import java.time.Duration;
@@ -29,7 +30,11 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @WorkflowImpl(taskQueues = "ingest-hl7-log")
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
@@ -64,60 +69,86 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         // Log input values
         logger.debug("Input: {}", input);
 
-        // Determine date
-        String date = determineDate(input.date());
+        // Determine dates
+        List<String> dates = determineDate(input.date());
 
         // Validate input
-        throwOnInvalidInput(input, date);
+        throwOnInvalidInput(input, dates);
 
         String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
 
         // Find log file by date
-        FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(date, input.logsRootPath());
-        FindHl7LogFileOutput findHl7LogFileOutput = hl7LogActivity.findHl7LogFile(findHl7LogFileInput);
+        List<Promise<FindHl7LogFileOutput>> findHl7LogFileOutputPromises = dates.stream()
+                .map(date -> Async.function(hl7LogActivity::findHl7LogFile, new FindHl7LogFileInput(date, input.logsRootPath())))
+                .toList();
+        // Collect async results
+        List<FindHl7LogFileOutput> findHl7LogFileOutputs = findHl7LogFileOutputPromises.stream()
+                .map(Promise::get)
+                .toList();
 
         // Split log file
         String splitLogFileOutputPath = scratchDir + "/split";
-        SplitHl7LogActivityInput splitHl7LogInput = new SplitHl7LogActivityInput(findHl7LogFileOutput.logFileAbsPath(), splitLogFileOutputPath);
-        SplitHl7LogActivityOutput splitHl7LogOutput = hl7LogActivity.splitHl7Log(splitHl7LogInput);
+        List<Promise<SplitHl7LogActivityOutput>> splitHl7LogOutputPromises = findHl7LogFileOutputs.stream()
+                .map(findHl7LogFileOutput -> Async.function(
+                        hl7LogActivity::splitHl7Log,
+                        new SplitHl7LogActivityInput(findHl7LogFileOutput.date(), findHl7LogFileOutput.logFileAbsPath(), splitLogFileOutputPath)
+                ))
+                .toList();
+        // Collect async results
+        List<SplitHl7LogActivityOutput> splitHl7LogOutputs = splitHl7LogOutputPromises.stream()
+                .map(Promise::get)
+                .toList();
 
-        // Fan out
+        // Transform split logs into proper hl7 files
         String hl7RootPath = input.hl7OutputPath().endsWith("/") ? input.hl7OutputPath().substring(0, input.hl7OutputPath().length() - 1) : input.hl7OutputPath();
         List<Promise<TransformSplitHl7LogOutput>> transformSplitHl7LogOutputPromises = new ArrayList<>();
-        for (String splitLogFileRelativePath : splitHl7LogOutput.relativePaths()) {
-            // Async call to transform split log file into HL7
-            String splitLogFilePath = splitHl7LogOutput.rootPath() + "/" + splitLogFileRelativePath;
-            TransformSplitHl7LogInput transformSplitHl7LogInput = new TransformSplitHl7LogInput(splitLogFilePath, hl7RootPath);
-            Promise<TransformSplitHl7LogOutput> transformSplitHl7LogOutputPromise =
-                    Async.function(hl7LogActivity::transformSplitHl7Log, transformSplitHl7LogInput);
-            transformSplitHl7LogOutputPromises.add(transformSplitHl7LogOutputPromise);
+        for (SplitHl7LogActivityOutput splitHl7LogOutput : splitHl7LogOutputs) {
+            String date = splitHl7LogOutput.date();
+            for (String splitLogFileRelativePath : splitHl7LogOutput.relativePaths()) {
+                // Async call to transform a single split log file into HL7
+                String splitLogFilePath = splitHl7LogOutput.rootPath() + "/" + splitLogFileRelativePath;
+                TransformSplitHl7LogInput transformSplitHl7LogInput = new TransformSplitHl7LogInput(date, splitLogFilePath, hl7RootPath);
+                Promise<TransformSplitHl7LogOutput> transformSplitHl7LogOutputPromise =
+                        Async.function(hl7LogActivity::transformSplitHl7Log, transformSplitHl7LogInput);
+                transformSplitHl7LogOutputPromises.add(transformSplitHl7LogOutputPromise);
+            }
         }
         // Collect async results
-        final List<String> hl7AbsolutePaths = transformSplitHl7LogOutputPromises.stream()
+        // Partition hl7 paths by year, so it can avoid race conditions on writing the files
+        final Map<String, List<String>> hl7AbsolutePathsByYear = transformSplitHl7LogOutputPromises.stream()
                 .map(Promise::get)
-                .map(TransformSplitHl7LogOutput::relativePath)
-                .map(relativePath -> hl7RootPath + "/" + relativePath)
-                .toList();
+                .map(output -> Pair.of(output.date().substring(0, 4), hl7RootPath + "/" + output.relativePath()))
+                .collect(
+                        Collectors.groupingBy(
+                                Pair::getLeft,
+                                Collectors.mapping(Pair::getRight, Collectors.toList())
+                        )
+                );
 
         // Ingest HL7 into delta lake
         // We execute the activity using the untyped stub because the activity is implemented in a different language
-        IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
-                INGEST_ACTIVITY_NAME,
-                IngestHl7FilesToDeltaLakeOutput.class,
-                new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), hl7AbsolutePaths)
-        );
+        for (Map.Entry<String, List<String>> hl7AbsolutePathsEntry : hl7AbsolutePathsByYear.entrySet()) {
+            List<String> hl7AbsolutePaths = hl7AbsolutePathsEntry.getValue();
+            logger.info("Launching activity to ingest {} HL7 files for year {}",
+                    hl7AbsolutePaths.size(), hl7AbsolutePathsEntry.getKey());
+            IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
+                    INGEST_ACTIVITY_NAME,
+                    IngestHl7FilesToDeltaLakeOutput.class,
+                    new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), hl7AbsolutePaths)
+            );
+        }
 
         return new IngestHl7LogWorkflowOutput();
     }
 
-    private static void throwOnInvalidInput(IngestHl7LogWorkflowInput input, String date) {
+    private static void throwOnInvalidInput(IngestHl7LogWorkflowInput input, List<String> dates) {
         boolean hasLogsRootPath = input.logsRootPath() != null && !input.logsRootPath().isBlank();
         boolean hasScratchSpaceRootPath = input.scratchSpaceRootPath() != null && !input.scratchSpaceRootPath().isBlank();
         boolean hasHl7OutputPath = input.hl7OutputPath() != null && !input.hl7OutputPath().isBlank();
         boolean hasDeltaLakePath = input.deltaLakePath() != null && !input.deltaLakePath().isBlank();
-        boolean hasDate = date != null;
+        boolean hasDates = dates != null && !dates.isEmpty();
 
-        if (!(hasLogsRootPath && hasScratchSpaceRootPath && hasHl7OutputPath && hasDeltaLakePath && hasDate)) {
+        if (!(hasLogsRootPath && hasScratchSpaceRootPath && hasHl7OutputPath && hasDeltaLakePath && hasDates)) {
             // We know something is missing
             List<String> missingInputs = new ArrayList<>();
             if (!hasLogsRootPath) {
@@ -132,7 +163,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             if (!hasDeltaLakePath) {
                 missingInputs.add("deltaLakePath");
             }
-            if (!hasDate) {
+            if (!hasDates) {
                 missingInputs.add("date");
             }
             String plural = missingInputs.size() == 1 ? "" : "s";
@@ -147,8 +178,8 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
      * @param dateInput The date value from the workflow inputs
      * @return Date to use for the workflow
      */
-    private static String determineDate(String dateInput) {
-        String date;
+    private static List<String> determineDate(String dateInput) {
+        List<String> dates;
         if (dateInput == null) {
             // Get the date from the time the workflow was scheduled to start
             // Note that there isn't a good API for this in the SDK. We have to use a
@@ -160,20 +191,22 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
             if (scheduledTimeUtc == null) {
                 logger.debug("No date input, and scheduled start time not found in search attributes.");
-                date = null;
+                dates = Collections.emptyList();
             } else {
                 // Ingest logs from "yesterday" which we define as the day before the scheduled time in the local timezone
                 ZoneId localTz = ZoneOffset.systemDefault();
                 OffsetDateTime scheduledTimeLocal = scheduledTimeUtc.atZoneSameInstant(localTz).toOffsetDateTime();
                 OffsetDateTime yesterday = scheduledTimeLocal.minusDays(1);
-                date = yesterday.format(YYYYMMDD_FORMAT);
+                String date = yesterday.format(YYYYMMDD_FORMAT);
                 logger.debug("Using date {} from scheduled workflow start time {} ({} in TZ {}) minus one day", date, scheduledTimeUtc, scheduledTimeLocal, localTz);
+                dates = List.of(date);
             }
         } else {
-            // Use the input date, removing any hyphens
-            date = dateInput.replace("-", "");
-            logger.debug("Using date {} from input value {}", date, dateInput);
+            dates = Arrays.stream(dateInput.split(","))
+                    .map(date -> date.replace("-", ""))
+                    .toList();
+            logger.debug("Using dates {} from input value {}", dates, dateInput);
         }
-        return date;
+        return dates;
     }
 }
