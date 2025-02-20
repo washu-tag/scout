@@ -20,8 +20,8 @@ server:
   retention: 15d
   resources:
     requests:
-      cpu: "2"
-      memory: "16Gi"
+      cpu: '2'
+      memory: '16Gi'
 
 extraScrapeConfigs: |
   - job_name: 'grafana'

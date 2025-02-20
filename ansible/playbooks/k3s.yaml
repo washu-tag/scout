@@ -100,7 +100,7 @@
         wait_timeout: 60
 
     - name: Generate TLS certificate using Tailscale
-      command: "tailscale cert {{ hostname }} --cert-file {{ cert_path }} --key-file {{ key_path }}"
+      command: 'tailscale cert {{ server_hostname }} --cert-file {{ cert_path }} --key-file {{ key_path }}'
       creates: '{{ cert_path }}'
 
     - name: Create TLS secret in Kubernetes
