@@ -4,6 +4,13 @@ proxy:
 
 hub:
   baseUrl: /jupyter
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256M
+    limits:
+      cpu: 1
+      memory: 1G
   shutdownOnLogout: true
   services:
     prometheus:
