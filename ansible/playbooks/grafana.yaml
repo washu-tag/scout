@@ -93,6 +93,9 @@
         values_files:
           - '{{ scout_repo_dir }}/helm/grafana/values.yaml'
         values:
+          grafana.ini:
+            server:
+              root_url: 'https://{{ server_hostname }}/grafana'
           ingress:
             enabled: true
             ingressClassName: 'traefik'
