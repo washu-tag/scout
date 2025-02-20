@@ -32,8 +32,8 @@ loki:
       s3ForcePathStyle: true
   resources:
     requests:
-      cpu: "2"
-      memory: "16Gi"
+      cpu: '2'
+      memory: '16Gi'
 
 minio:
   enabled: false

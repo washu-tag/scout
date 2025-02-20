@@ -9,8 +9,8 @@ envFrom:
       name: s3-en
 resources:
   requests:
-    cpu: "8"
-    memory: "64Gi"
+    cpu: '8'
+    memory: '64Gi'
   limits:
-    cpu: "16"
-    memory: "128Gi"
+    cpu: '16'
+    memory: '128Gi'

@@ -74,5 +74,3 @@
               host: '{{ server_hostname }}'
               path: /
               pathType: Prefix
-
-
