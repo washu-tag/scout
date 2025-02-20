@@ -62,3 +62,17 @@
         atomic: true
         values_files:
           - '{{ scout_repo_dir }}/helm/minio/values.yaml'
+        values:
+          tenant:
+            env:
+              - name: MINIO_BROWSER_REDIRECT_URL
+                value: 'https://{{ server_hostname }}'
+          ingress:
+            console:
+              enabled: true
+              ingressClassName: 'traefik'
+              host: '{{ server_hostname }}'
+              path: /
+              pathType: Prefix
+
+
