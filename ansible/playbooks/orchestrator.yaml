@@ -43,6 +43,13 @@
             additionalEnv:
               - name: TEMPORAL_CSRF_COOKIE_INSECURE
                 value: 'true'
+              - name: TEMPORAL_UI_PUBLIC_PATH
+                value: '/temporal'
+            ingress:
+              enabled: true
+              ingressClassName: 'traefik'
+              hosts:
+                - '{{ server_hostname }}/temporal'
 
     - name: Create namespace
       kubernetes.core.k8s:
