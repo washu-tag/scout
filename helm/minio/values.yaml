@@ -462,8 +462,8 @@ tenant:
   #  keyName: ""
   resources:
     requests:
-      cpu: "2"
-      memory: "16Gi"
+      cpu: '2'
+      memory: '16Gi'
   #  nodeSelector: { }
   #  affinity:
   #    nodeAffinity: { }
