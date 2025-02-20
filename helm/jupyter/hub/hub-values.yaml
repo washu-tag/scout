@@ -5,6 +5,16 @@ proxy:
 hub:
   baseUrl: /jupyter
   shutdownOnLogout: true
+  services:
+    prometheus:
+      admin: false
+      # Secret would be preferred, but not clear how to do that in this chart
+      api_token: ${JUPYTERHUB_METRICS_API_TOKEN}
+  loadRoles:
+    metrics:
+      description: 'Read JupyterHub metrics'
+      scopes: [read:metrics]
+      services: [prometheus]
 
 ingress:
   enabled: true
