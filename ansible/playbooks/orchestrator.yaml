@@ -41,8 +41,6 @@
             replicas: 1
           web:
             additionalEnv:
-              - name: TEMPORAL_CSRF_COOKIE_INSECURE
-                value: 'true'
               - name: TEMPORAL_UI_PUBLIC_PATH
                 value: '/temporal'
             ingress:
