@@ -56,8 +56,3 @@ persistence:
 
 livenessProbe:
   initialDelaySeconds: 180
-
-resources:
-  requests:
-    cpu: '2'
-    memory: '16Gi'

@@ -99,34 +99,6 @@
         wait: yes
         wait_timeout: 60
 
-    - name: Generate TLS certificate using Tailscale
-      command: 'tailscale cert {{ server_hostname }} --cert-file {{ cert_path }} --key-file {{ key_path }}'
-      args:
-        creates: '{{ cert_path }}'
-
-    - name: Create TLS secret in Kubernetes
-      kubernetes.core.k8s:
-        name: tls-secret
-        namespace: kube-system
-        state: present
-        type: kubernetes.io/tls
-        data:
-          tls.crt: "{{ lookup('file', cert_path) | b64encode }}"
-          tls.key: "{{ lookup('file', key_path) | b64encode }}"
-
-    - name: Apply Traefik TLSStore configuration
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: traefik.io/v1alpha1
-          kind: TLSStore
-          metadata:
-            name: default
-            namespace: kube-system
-          spec:
-            defaultCertificate:
-              secretName: tls-secret
-
 ################################################################################
 - hosts: agents
   name: Install k3s on agent nodes
