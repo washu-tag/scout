@@ -98,6 +98,11 @@ jobs:
         with:
           subproject: orchestration/temporal-python
           image-name: temporal-python
+      - name: 'Push image to k3s - explorer'
+        uses: ./.github/actions/k3s-image-import
+        with:
+          subproject: explorer
+          image-name: explorer
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
