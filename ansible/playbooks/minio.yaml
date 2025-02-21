@@ -81,11 +81,6 @@
             env:
               - name: MINIO_BROWSER_REDIRECT_URL
                 value: 'https://{{ server_hostname }}/minio/'
-            pools:
-              resources:
-                requests:
-                  cpu: '2'
-                  memory: '16Gi'
           ingress:
             console:
               enabled: true
