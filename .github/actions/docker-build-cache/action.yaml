@@ -10,23 +10,17 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: 'Detect Image Version'
-      id: detect-version
-      shell: bash
-      run: |
-        cd ${{ inputs.subproject }}
-        if [ -f VERSION ]; then
-          echo "VERSION=$(cat VERSION)" >> "$GITHUB_OUTPUT"
-        else
-          echo "Could not find a way to determine version"
-          exit 22
-        fi
+    - name: 'Derive version'
+      id: derive-version
+      uses: ./.github/actions/derive-version
+      with:
+        subproject: ${{ inputs.subproject }}
 
     - name: 'Build/Cache Image'
       uses: docker/build-push-action@v6
       with:
         context: ${{ inputs.subproject }}
-        tags: ${{ ENV.REGISTRY }}/washu-tag/${{ inputs.image-name }}:${{ steps.detect-version.outputs.VERSION }}
+        tags: ${{ ENV.REGISTRY }}/washu-tag/${{ inputs.image-name }}:${{ steps.derive-version.outputs.version }}
         outputs: type=docker,dest=${{ runner.temp }}/${{ inputs.image-name }}.tar
 
     - name: Upload artifact

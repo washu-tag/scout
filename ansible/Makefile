@@ -1,33 +1,56 @@
-.PHONY: all deps install-k3s install-k3s-agent install-helm clone-scout install-minio install-orchestrator install-prometheus install-jaeger install-grafana
+.PHONY: all deps install-k3s install-helm clone-scout install-minio \
+        install-orchestrator install-prometheus install-jaeger install-grafana echo
 
-all: deps clone-scout install-k3s install-k3s-agent install-helm install-minio install-orchestrator install-prometheus install-jaeger install-grafana
+# Variables
+VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
+INVENTORY_FILE      ?= inventory.yaml
+FQDN                := $(shell hostname -f)
+
+# Conditionally prepend ANSIBLE_DEBUGGER=always if ANSIBLE_DEBUGGER is set
+ANSIBLE_DEBUG_ENV   := $(if $(DEBUG),ANSIBLE_ENABLE_TASK_DEBUGGER=True,)
+ANSIBLE_STEP        := $(if $(DEBUG),--step,)
+
+# Conditionally omit --diff if NODIFF is set
+DIFF_FLAG           := $(if $(NODIFF),, --diff)
+
+# Common ansible-playbook command
+ANSIBLE_CMD         := $(ANSIBLE_DEBUG_ENV) ansible-playbook -v -i $(INVENTORY_FILE) \
+                       $(DIFF_FLAG) $(VAULT_PASSWORD_ARG) -l $(FQDN) $(ANSIBLE_STEP)
+
+all: deps
+	$(ANSIBLE_CMD) playbooks/main.yaml
+
+echo:
+	echo "FQDN: $(FQDN)"
+	echo "Inventory: $(INVENTORY_FILE)"
+	echo "Vault Password Arg: $(VAULT_PASSWORD_ARG)"
+	echo "Ansible Debugger, step: $(ANSIBLE_DEBUG_ENV),  $(ANSIBLE_STEP)"
+	echo "Diff Flag: $(DIFF_FLAG)"
+	echo "Full command: $(ANSIBLE_CMD)"
 
 deps:
 	ansible-galaxy install -r collections/requirements.yaml
 
 clone-scout:
-	ansible-playbook -v -i inventory.yaml --diff playbooks/scout.yaml -l $$(hostnamectl --static)
+	$(ANSIBLE_CMD) playbooks/scout.yaml
 
-install-k3s:
-	ansible-playbook -v -i inventory.yaml --diff playbooks/k3s-cluster.yaml --vault-password-file vault/pwd.sh -l $$(hostnamectl --static)
+install-k3s: deps
+	$(ANSIBLE_CMD) playbooks/k3s.yaml
 
-install-k3s-agent:
-	ansible-playbook -v -i inventory.yaml --diff playbooks/k3s-agent.yaml --vault-password-file vault/pwd.sh -l $$(hostnamectl --static)
-
-install-helm:
-	ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml --vault-password-file vault/pwd.sh -l $$(hostnamectl --static)
+install-helm: install-k3s
+	$(ANSIBLE_CMD) playbooks/helm.yaml
 
 install-minio:
-	ansible-playbook -v -i inventory.yaml --diff playbooks/minio.yaml --vault-password-file vault/pwd.sh -l $$(hostnamectl --static)
+	$(ANSIBLE_CMD) playbooks/minio.yaml
 
 install-orchestrator:
-	ansible-playbook -v -i inventory.yaml --diff playbooks/orchestrator.yaml --vault-password-file vault/pwd.sh -l $$(hostnamectl --static)
+	$(ANSIBLE_CMD) playbooks/orchestrator.yaml
 
 install-prometheus:
-	ansible-playbook -v -i inventory.yaml --diff playbooks/prometheus.yaml -l $$(hostnamectl --static)
+	$(ANSIBLE_CMD) playbooks/prometheus.yaml
 
 install-jaeger:
-	ansible-playbook -v -i inventory.yaml --diff playbooks/jaeger.yaml -l $$(hostnamectl --static)
+	$(ANSIBLE_CMD) playbooks/jaeger.yaml
 
 install-grafana:
-	ansible-playbook -v -i inventory.yaml --diff playbooks/grafana.yaml --vault-password-file vault/pwd.sh -l $$(hostnamectl --static)
+	$(ANSIBLE_CMD) playbooks/grafana.yaml

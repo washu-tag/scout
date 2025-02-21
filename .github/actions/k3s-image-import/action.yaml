@@ -1,6 +1,9 @@
 name: 'K3s image import'
 description: 'Downloads docker image tags it for testing'
 inputs:
+  subproject:
+    description: 'Subdirectory for microservice'
+    required: true
   image-name:
     description: 'Name for docker image'
     required: true
@@ -12,7 +15,12 @@ runs:
       with:
         name: ${{ inputs.image-name }}
         path: ${{ runner.temp }}
+    - name: 'Derive version'
+      id: derive-version
+      uses: ./.github/actions/derive-version
+      with:
+        subproject: ${{ inputs.subproject }}
     - name: Import image into k3s
       shell: bash
       run: |
-        sudo k3s ctr -n k8s.io images import --index-name docker.io/local/washu-tag/${{ inputs.image-name }}:latest ${{ runner.temp }}/${{ inputs.image-name }}.tar # TODO: use derived version, not latest
+        sudo k3s ctr -n k8s.io images import --index-name docker.io/local/washu-tag/${{ inputs.image-name }}:${{ steps.derive-version.outputs.version }} ${{ runner.temp }}/${{ inputs.image-name }}.tar

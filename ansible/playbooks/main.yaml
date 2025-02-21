@@ -1,0 +1,24 @@
+---
+- name: Clone Scout repository
+  import_playbook: scout.yaml
+
+- name: Install K3s
+  import_playbook: k3s.yaml
+
+- name: Install Helm
+  import_playbook: helm.yaml
+
+- name: Install MinIO
+  import_playbook: minio.yaml
+
+- name: Install Orchestrator
+  import_playbook: orchestrator.yaml
+
+- name: Install Prometheus
+  import_playbook: prometheus.yaml
+
+- name: Install Jaeger
+  import_playbook: jaeger.yaml
+
+- name: Install Grafana
+  import_playbook: grafana.yaml
