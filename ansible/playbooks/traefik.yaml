@@ -28,6 +28,16 @@
             tls.crt: "{{ lookup('file', cert_path) | b64encode }}"
             tls.key: "{{ lookup('file', key_path) | b64encode }}"
 
+    - name: Wait for helm-install-traefik job to complete
+      command: kubectl -n kube-system wait --for=condition=complete --timeout=300s job/helm-install-traefik
+      register: traefik_install
+      changed_when: false
+
+    - name: Wait for helm-install-traefik-crd job to complete
+      command: kubectl -n kube-system wait --for=condition=complete --timeout=300s job/helm-install-traefik-crd
+      register: traefik_crd_install
+      changed_when: false
+
     - name: Apply Traefik TLSStore configuration
       kubernetes.core.k8s:
         state: present
