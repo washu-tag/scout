@@ -1,0 +1,37 @@
+---
+- name: Install explorer
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+
+  tasks:
+    - name: Install explorer using Helm
+      kubernetes.core.helm:
+        name: explorer
+        release_namespace: explorer
+        create_namespace: true
+        chart_ref: '{{ scout_repo_dir }}/helm/explorer'
+        state: present
+        wait: true
+        wait_timeout: 5m
+        atomic: true
+        values_files:
+          - '{{ scout_repo_dir }}/helm/explorer/values.yaml'
+        values:
+          image:
+            repository: '{{ explorer_image | default(omit) }}'
+          ingress:
+            enabled: true
+            className: traefik
+            hosts:
+              - host: '{{ server_hostname }}'
+                paths:
+                  - path: /
+                    pathType: Prefix
+          resources:
+            requests:
+              cpu: '2'
+              memory: '16Gi'
+

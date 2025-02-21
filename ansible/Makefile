@@ -1,5 +1,6 @@
 .PHONY: all deps install-k3s config-traefik install-helm clone-scout install-minio \
-        install-orchestrator install-prometheus install-jaeger install-grafana echo
+        install-orchestrator install-prometheus install-jaeger install-grafana \
+        install-explorer echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -57,3 +58,6 @@ install-jaeger:
 
 install-grafana:
 	$(ANSIBLE_CMD) playbooks/grafana.yaml
+
+install-explorer:
+	$(ANSIBLE_CMD) playbooks/explorer.yaml

@@ -25,3 +25,6 @@
 
 - name: Install Grafana
   import_playbook: grafana.yaml
+
+- name: Install Explorer
+  import_playbook: explorer.yaml
