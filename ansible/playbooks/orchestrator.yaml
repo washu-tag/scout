@@ -106,13 +106,6 @@
                 region: '{{ s3_region }}'
           image:
             repository: '{{ temporal_java_image | default(omit) }}'
-          resources:
-            requests:
-              cpu: '8'
-              memory: '64Gi'
-            limits:
-              cpu: '16'
-              memory: '128Gi'
           volumes: >-
             {{
               [{
@@ -136,10 +129,3 @@
         values:
           image:
             repository: '{{ temporal_python_image | default(omit) }}'
-          resources:
-            requests:
-              cpu: '8'
-              memory: '64Gi'
-            limits:
-              cpu: '16'
-              memory: '128Gi'

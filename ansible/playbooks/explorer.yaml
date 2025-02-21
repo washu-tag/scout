@@ -30,7 +30,3 @@
                 paths:
                   - path: /
                     pathType: Prefix
-          resources:
-            requests:
-              cpu: '2'
-              memory: '16Gi'
