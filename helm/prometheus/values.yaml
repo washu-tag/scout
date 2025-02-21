@@ -18,10 +18,6 @@ server:
     enabled: true
     storageClass: local-path-retain
   retention: 15d
-  resources:
-    requests:
-      cpu: '2'
-      memory: '16Gi'
 
 extraScrapeConfigs: |
   - job_name: 'grafana'
