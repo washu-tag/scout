@@ -111,6 +111,10 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/minio.yaml
           sudo -E kubectl describe pod -l v1.min.io/tenant=minio-scout -n minio-scout
+      - name: 'Install explorer'
+        shell: bash
+        run: |
+          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/explorer.yaml
       - name: 'Install orchestrator'
         shell: bash
         run: |
