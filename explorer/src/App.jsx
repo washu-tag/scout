@@ -1,19 +1,19 @@
-import React from "react";
-import { FaPython } from "react-icons/fa";
-import { SiMinio, SiTemporal, SiGrafana } from "react-icons/si";
+import React from 'react';
+import { FaPython } from 'react-icons/fa';
+import { SiMinio, SiTemporal, SiGrafana } from 'react-icons/si';
 
 export default function App() {
   const handleLaunchJupyterHub = () => {
-    window.location.href = "/jupyter";
+    window.location.href = '/jupyter';
   };
   const handleLaunchMinIO = () => {
-    window.location.href = "/minio/";
+    window.location.href = '/minio/';
   };
   const handleLaunchTemporal = () => {
-    window.location.href = "/temporal";
+    window.location.href = '/temporal';
   };
   const handleLaunchGrafana = () => {
-    window.location.href = "/grafana";
+    window.location.href = '/grafana';
   };
 
   return (
