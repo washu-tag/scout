@@ -45,6 +45,11 @@ jobs:
         with:
           subproject: orchestration/temporal-python
           image-name: temporal-python
+      - name: 'Build/Cache Image - explorer'
+        uses: ./.github/actions/docker-build-cache
+        with:
+          subproject: explorer
+          image-name: explorer
   unit-test:
     runs-on: ubuntu-latest
     steps:
@@ -159,3 +164,7 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: temporal-python
+      - name: 'Push Image - explorer'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: explorer
