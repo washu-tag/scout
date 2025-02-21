@@ -50,3 +50,22 @@
           spec:
             defaultCertificate:
               secretName: tls-secret
+
+    - name: Apply Traefik configuration to enforce TLS
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: helm.cattle.io/v1
+          kind: HelmChartConfig
+          metadata:
+            name: traefik
+            namespace: kube-system
+          spec:
+            valuesContent: |-
+              ports:
+                websecure:
+                  tls:
+                    enabled: true
+                web:
+                  redirectTo:
+                    port: websecure
