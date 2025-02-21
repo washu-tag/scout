@@ -49,6 +49,20 @@
               export MINIO_REGION_NAME=us-east-1
               export MINIO_REGION=us-east-1
 
+    - name: Create Traefik Middleware to strip /minio prefix
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: Middleware
+          metadata:
+            name: minio-strip-prefix
+            namespace: kube-system
+          spec:
+            stripPrefix:
+              prefixes:
+                - /minio
+
     - name: Install/Upgrade Minio Tenant
       kubernetes.core.helm:
         name: '{{ minio_tenant_namespace }}'
@@ -66,11 +80,14 @@
           tenant:
             env:
               - name: MINIO_BROWSER_REDIRECT_URL
-                value: 'https://{{ server_hostname }}'
+                value: 'https://{{ server_hostname }}/minio/'
           ingress:
             console:
               enabled: true
-              ingressClassName: 'traefik'
+              ingressClassName: traefik
               host: '{{ server_hostname }}'
-              path: /
+              path: /minio
               pathType: Prefix
+              annotations:
+                traefik.ingress.kubernetes.io/router.middlewares: >
+                  kube-system-minio-strip-prefix@kubernetescrd

@@ -1,4 +1,4 @@
-.PHONY: all deps install-k3s install-helm clone-scout install-minio \
+.PHONY: all deps install-k3s config-traefik install-helm clone-scout install-minio \
         install-orchestrator install-prometheus install-jaeger install-grafana echo
 
 # Variables
@@ -37,7 +37,10 @@ clone-scout:
 install-k3s: deps
 	$(ANSIBLE_CMD) playbooks/k3s.yaml
 
-install-helm: install-k3s
+config-traefik: install-k3s
+	$(ANSIBLE_CMD) playbooks/traefik.yaml
+
+install-helm:
 	$(ANSIBLE_CMD) playbooks/helm.yaml
 
 install-minio:

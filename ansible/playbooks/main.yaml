@@ -5,6 +5,9 @@
 - name: Install K3s
   import_playbook: k3s.yaml
 
+- name: Configure traefik
+  import_playbook: traefik.yaml
+
 - name: Install Helm
   import_playbook: helm.yaml
 

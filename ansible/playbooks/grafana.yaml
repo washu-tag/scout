@@ -45,6 +45,12 @@
         values_files:
           - '{{ scout_repo_dir }}/helm/loki/loki-values.yaml'
         state: present
+        values:
+          loki:
+            resources:
+              requests:
+                cpu: '2'
+                memory: '16Gi'
 
     - name: Install Promtail using Helm
       kubernetes.core.helm:
@@ -56,6 +62,12 @@
         values_files:
           - '{{ scout_repo_dir }}/helm/loki/promtail-values.yaml'
         state: present
+        values:
+          promtail:
+            resources:
+              requests:
+                cpu: '2'
+                memory: '4Gi'
 
     - name: Create Grafana namespace
       kubernetes.core.k8s:
@@ -98,7 +110,11 @@
               root_url: 'https://{{ server_hostname }}/grafana'
           ingress:
             enabled: true
-            ingressClassName: 'traefik'
+            ingressClassName: traefik
             path: '/grafana'
             hosts:
               - '{{ server_hostname }}'
+          resources:
+            requests:
+              cpu: '2'
+              memory: '16Gi'

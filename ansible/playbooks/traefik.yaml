@@ -1,0 +1,42 @@
+---
+- name: Configure Traefik
+  hosts: server
+  gather_facts: false
+  vars:
+    cert_path: '/root/{{ server_hostname }}.crt'
+    key_path: '/root/{{ server_hostname }}.key'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+
+  tasks:
+    - name: Generate TLS certificate using Tailscale
+      command: 'tailscale cert --cert-file {{ cert_path }} --key-file {{ key_path }} {{ server_hostname }}'
+      args:
+        creates: '{{ cert_path }}'
+
+    - name: Create TLS secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: tls-secret
+            namespace: kube-system
+          type: kubernetes.io/tls
+          data:
+            tls.crt: "{{ lookup('file', cert_path) | b64encode }}"
+            tls.key: "{{ lookup('file', key_path) | b64encode }}"
+
+    - name: Apply Traefik TLSStore configuration
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: TLSStore
+          metadata:
+            name: default
+            namespace: kube-system
+          spec:
+            defaultCertificate:
+              secretName: tls-secret
