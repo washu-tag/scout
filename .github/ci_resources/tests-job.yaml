@@ -11,7 +11,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: tests
-          image: amazoncorretto:21-alpine
+          image: sapmachine:21
           command: ['/bin/sh', '-c']
           args:
             - cd /app/tests && ./gradlew test
