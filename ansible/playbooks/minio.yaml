@@ -49,7 +49,22 @@
               export MINIO_REGION_NAME=us-east-1
               export MINIO_REGION=us-east-1
 
-    - name: Create Traefik Middleware to strip /minio prefix
+    - name: Create Traefik Middleware to add trailing slash that Minio needs
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: Middleware
+          metadata:
+            name: minio-add-trailing-slash
+            namespace: kube-system
+          spec:
+            redirectRegex:
+              regex: (.*/minio$)
+              replacement: ${1}/
+              permanent: true
+
+    - name: Create Traefik Middleware to strip /minio prefix for internal traffic
       kubernetes.core.k8s:
         state: present
         definition:
@@ -90,4 +105,5 @@
               pathType: Prefix
               annotations:
                 traefik.ingress.kubernetes.io/router.middlewares: >
+                  kube-system-minio-add-trailing-slash@kubernetescrd,
                   kube-system-minio-strip-prefix@kubernetescrd
