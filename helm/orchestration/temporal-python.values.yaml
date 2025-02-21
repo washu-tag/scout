@@ -6,4 +6,4 @@ envFrom:
   - secretRef:
       name: s3-secret
   - configMapRef:
-      name: s3-en
+      name: s3-env

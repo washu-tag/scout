@@ -30,9 +30,15 @@
           grafana:
             enabled: false
           server:
+            replicaCount: 1
             config:
               namespaces:
                 create: true
+          cassandra:
+            config:
+              cluster_size: 1
+          elasticsearch:
+            replicas: 1
           web:
             additionalEnv:
               - name: TEMPORAL_UI_PUBLIC_PATH
