@@ -460,10 +460,7 @@ tenant:
   #  clientCertSecret: null
   #  # Key name to be created on the KMS, default is "my-minio-key"
   #  keyName: ""
-  resources:
-    requests:
-      cpu: '2'
-      memory: '16Gi'
+  #  resources: { }
   #  nodeSelector: { }
   #  affinity:
   #    nodeAffinity: { }
