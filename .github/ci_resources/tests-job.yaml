@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ci-tests
+  namespace: explorer
+spec:
+  completions: 1
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: tests
+          image: amazoncorretto:21-alpine
+          command: ["/bin/sh", "-c"]
+          args:
+            - cd /app/tests && ./gradlew test
+          volumeMounts:
+            - name: test-files
+              mountPath: /app/tests
+
+      volumes:
+        - name: test-files
+          hostPath:
+            path: /var/lib/scout/tests
+            type: Directory

@@ -127,11 +127,13 @@ jobs:
       - name: 'Run tests'
         shell: bash
         run: |
-          minioIp=$(sudo -E kubectl get services/minio -n minio-scout -o json | jq '.status.loadBalancer.ingress[0].ip' -r)
-          sed -i "s/\$IP/$minioIp/g" .github/ci_resources/test_config_template.json
           cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
-          cd tests
-          ./gradlew test
+          sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
+          sudo -E kubectl wait --for=condition=complete job/ci-tests &
+          completion_pid=$!
+          sudo -E kubectl wait --for=condition=failed job/ci-tests && exit 1 &
+          failure_pid=$!
+          wait -n $completion_pid $failure_pid
       - name: Test Summary
         uses: test-summary/action@v2.4
         if: always()
