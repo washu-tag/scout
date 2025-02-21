@@ -1,0 +1,2 @@
+deltalake
+jupyterlab-git

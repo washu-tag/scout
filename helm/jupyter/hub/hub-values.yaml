@@ -1,0 +1,57 @@
+proxy:
+  service:
+    type: ClusterIP
+
+hub:
+  baseUrl: /jupyter
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256M
+    limits:
+      cpu: 1
+      memory: 1G
+  shutdownOnLogout: true
+  services:
+    prometheus:
+      admin: false
+      # Secret would be preferred, but not clear how to do that in this chart
+      api_token: ${JUPYTERHUB_METRICS_API_TOKEN}
+  loadRoles:
+    metrics:
+      description: 'Read JupyterHub metrics'
+      scopes: [read:metrics]
+      services: [prometheus]
+
+ingress:
+  enabled: true
+  hosts:
+    - ${FQDN}
+  extraPaths:
+    - path: /jupyter
+      pathType: Prefix
+      backend:
+        service:
+          name: proxy-public
+          port:
+            name: http
+
+singleuser:
+  image:
+    name: ghcr.io/washu-tag/pyspark-notebook
+    tag: latest
+  cmd: null
+  cpu:
+    limit: 4
+    guarantee: 1
+  memory:
+    limit: 16G
+    guarantee: 2G
+  networkPolicy:
+    egress:
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: minio
+        ports:
+          - port: 9000
