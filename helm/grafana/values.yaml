@@ -6,7 +6,7 @@ grafana.ini:
     org_name: Main Org.
     org_role: Admin
   server:
-    root_url: '%(protocol)s://%(domain)s:%(http_port)s/grafana'
+    root_url: '%(protocol)s://%(domain)s:%(http_port)s/grafana/'
     serve_from_sub_path: true
   metrics:
     enabled: true
@@ -54,5 +54,5 @@ persistence:
   enabled: true
   storageClassName: local-path-retain
 
-service:
-  port: 3000
+livenessProbe:
+  initialDelaySeconds: 180
