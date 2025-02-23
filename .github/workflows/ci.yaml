@@ -138,39 +138,11 @@ jobs:
           sudo -E kubectl wait --for=condition=failed --timeout=300s job/ci-tests -n explorer  && exit 1 &
           failure_pid=$!
           wait -n $completion_pid $failure_pid
-      - name: 'Prep tmate'
-        shell: bash
-        run: |
-          set -e
-          sudo apt-get update
-          sudo apt-get install -y openssh-client xz-utils
-          TMATE_LINUX_VERSION="v2.4.0"
-          TMATE_ARCH="amd64"
-
-          echo "Downloading tmate..."
-          curl -sL "https://github.com/tmate-io/tmate/releases/download/${TMATE_LINUX_VERSION}/tmate-${TMATE_LINUX_VERSION}-static-linux-${TMATE_ARCH}.tar.xz" -o /tmp/tmate.tar.xz
-
-          echo "Extracting tmate..."
-          mkdir -p /tmp/tmate
-          tar x -C /tmp/tmate -f /tmp/tmate.tar.xz --strip-components=1
-
-          echo "Moving tmate into /usr/local/bin..."
-          sudo mv /tmp/tmate/tmate /usr/local/bin/tmate
-          sudo chmod +x /usr/local/bin/tmate
-
-          # Clean up
-          rm -rf /tmp/tmate /tmp/tmate.tar.xz
-          tmate -V
-        if: always()
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          install-dependencies: false
-        if: always()
       - name: Test Logs
         shell: bash
         if: always()
         run: |
+          sudo cat tests/build/reports/tests/test/index.html
           sudo -E kubectl -n explorer logs job/ci-tests
       - name: Test Summary
         uses: test-summary/action@v2.4
