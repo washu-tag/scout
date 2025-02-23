@@ -138,6 +138,9 @@ jobs:
           sudo -E kubectl wait --for=condition=failed --timeout=300s job/ci-tests -n explorer  && exit 1 &
           failure_pid=$!
           wait -n $completion_pid $failure_pid
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: always()
       - name: Test Logs
         shell: bash
         if: always()
