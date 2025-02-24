@@ -52,10 +52,12 @@ settings will apply. This code formatting will apply automatically to any micros
 
 ## Checkstyle (Java)
 
-Unfortunately, the configuration for Java code formatting and linting is less centralized. There is currently only one Java project
-in the repository, which uses a gradle plugin to run [checkstyle](https://checkstyle.sourceforge.io/). The configuration for checkstyle
-is the standard "google_checks.xml" extracted from the checkstyle library. As of this moment, adding other Java projects would require adding
-the same checkstyle plugin and gradle task configuration to the new projects, as well as adding another hook in the pre-commit [config](.pre-commit-config.yaml)
-to enable pre-commit formatting/linting on it. Additionally, unlike the previous hooks which run against only the changed files in a commit,
-this hook will run against the entire project.
-
+Unfortunately, the configuration for Java code formatting and linting is less centralized. There are currently two Java projects
+in the repository, both of which use a gradle plugin to run [checkstyle](https://checkstyle.sourceforge.io/). The configuration for checkstyle
+is contained in [linting_tag_java.xml](../../linting_java_checkstyle.xml). The style is heavily based on Google's Java style guide, with some minor
+changes particularly on increasing indentation and allowing longer lines. As of this moment, adding other Java projects would require adding
+the same checkstyle plugin and gradle task configuration to the new projects, as well as adding another hook in the pre-commit
+[config](../../.pre-commit-config.yaml) to enable pre-commit formatting/linting on it. Additionally, unlike the previous hooks which run against only the
+changed files in a commit, this hook will run against the entire project. To make formatting changes automatically in IntelliJ, you can import
+[intellij_tag_java.xml](../../intellij_tag_java.xml) into the IDE in Settings > Editor > Code Style, and then clicking the gear icon to import
+the XML. After that, reformatting code with Code > Reformat File... (or ⌥⇧⌘L) can apply these rules to your Java code.

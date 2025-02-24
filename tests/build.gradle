@@ -23,7 +23,7 @@ repositories {
 }
 
 final String vQuerySpec = '1.0-SNAPSHOT'
-final String vCheckstyle = '10.18.1'
+final String vCheckstyle = '10.21.2'
 final String vLog4j2Bridge = '2.24.2'
 final String vSparkSql = '3.5.4'
 final String vDeltaSpark = '3.1.0'
@@ -32,8 +32,6 @@ final String vHadoop = '3.2.0'
 configurations {
     all*.exclude group: 'ch.qos.logback', module: 'logback-classic'
     all*.exclude group: 'ch.qos.logback', module: 'logback-core'
-
-    checkstyleConf
 }
 
 test {
@@ -79,10 +77,6 @@ dependencies {
     testImplementation("org.apache.spark:spark-sql_2.12:${vSparkSql}")
     testImplementation("io.delta:delta-spark_2.12:${vDeltaSpark}")
     testImplementation("org.apache.hadoop:hadoop-aws:${vHadoop}")
-
-    checkstyleConf("com.puppycrawl.tools:checkstyle:${vCheckstyle}") {
-        transitive = false
-    }
 }
 
 java {
@@ -91,5 +85,5 @@ java {
 
 checkstyle {
     toolVersion vCheckstyle
-    config = resources.text.fromArchiveEntry(configurations.checkstyleConf, 'google_checks.xml')
+    configFile = file('../linting_java_checkstyle.xml')
 }
