@@ -99,6 +99,6 @@
           ingress:
             enabled: true
             ingressClassName: traefik
-            path: '/grafana'
+            path: /grafana
             hosts:
               - '{{ server_hostname }}'

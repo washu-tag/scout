@@ -126,7 +126,6 @@ jobs:
         run: |
           cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
           sed -i "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml
-          cat .github/ci_resources/tests-job.yaml
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
           sudo -E kubectl wait --for=condition=complete --timeout=300s job/ci-tests -n explorer &
           completion_pid=$!
@@ -137,7 +136,6 @@ jobs:
         shell: bash
         if: always()
         run: |
-          sudo -E kubectl -n explorer describe job/ci-tests
           sudo -E kubectl -n explorer logs job/ci-tests
       - name: Test Summary
         uses: test-summary/action@v2.4
