@@ -142,8 +142,26 @@ jobs:
         shell: bash
         if: always()
         run: |
-          find tests/build
+          find tests
           sudo -E kubectl -n explorer logs job/ci-tests
+      - name: 'Prep tmate'
+        shell: bash
+        run: |
+          set -e
+          TMATE_LINUX_VERSION="v2.4.0"
+          TMATE_ARCH="amd64"
+          echo "Downloading tmate..."
+          curl -sL "https://github.com/tmate-io/tmate/releases/download/${TMATE_LINUX_VERSION}/tmate-${TMATE_LINUX_VERSION}-static-linux-${TMATE_ARCH}.tar.xz" -o /tmp/tmate.tar.xz
+          echo "Extracting tmate..."
+          mkdir -p /tmp/tmate
+          tar x -C /tmp/tmate -f /tmp/tmate.tar.xz --strip-components=1
+          echo "Moving tmate into /usr/local/bin..."
+          sudo mv /tmp/tmate/tmate /usr/local/bin/tmate
+          sudo chmod +x /usr/local/bin/tmate
+          # Clean up
+          rm -rf /tmp/tmate /tmp/tmate.tar.xz
+          tmate -V
+        if: always()
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         with:
