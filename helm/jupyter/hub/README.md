@@ -17,7 +17,8 @@ Create the JupyterHub namespace:
 kubectl create namespace jupyter
 ```
 
-A few values need to be set in the various files before installing JupyterHub:
+Helm doesn't support variable expansion within charts, so users will need to manually replace these variables in the 
+values.yaml files or use the Ansible playbooks to install.
 
 - `FQDN`: The fully qualified domain name for the JupyterHub instance. 
 - `JUPYTERHUB_GITHUB_CLIENT_ID`: The GitHub OAuth client ID.
