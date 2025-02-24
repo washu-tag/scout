@@ -41,8 +41,7 @@ public class TestConfig {
         ).toString();
         if (defaultOverwritten) {
             logger.info(
-                "Config file specified as {}, attempting to read it "
-                    + "from within the test resource directory as: {}",
+                "Config file specified as {}, attempting to read it from within the test resource directory as: {}",
                 providedConfigName,
                 effectivePath
             );
