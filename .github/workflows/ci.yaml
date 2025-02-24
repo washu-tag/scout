@@ -71,6 +71,7 @@ jobs:
     needs: [lint, build-and-upload-artifact, unit-test]
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      WRK_DIR: /var/lib
     steps:
       - uses: actions/checkout@v4.2.1
       - name: 'Prepare inventory.yaml'
@@ -83,7 +84,7 @@ jobs:
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-galaxy install -r collections/requirements.yaml
       - name: 'Copy scout'
         shell: bash
-        run: sudo cp -r . /var/lib/scout # in CI workflow, we want to use current code, not "main" branch. TODO: don't hardcode path here
+        run: sudo cp -r . $WRK_DIR/scout # in CI workflow, we want to use current code, not "main" branch. TODO: don't hardcode path here
       - name: 'Install k3s'
         shell: bash
         run: |
@@ -131,7 +132,7 @@ jobs:
       - name: 'Run tests'
         shell: bash
         run: |
-          cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
+          cp .github/ci_resources/test_config_template.json $WRK_DIR/tests/src/test/resources/config/local.json
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
           sudo -E kubectl wait --for=condition=complete --timeout=300s job/ci-tests -n explorer &
           completion_pid=$!
@@ -142,7 +143,6 @@ jobs:
         shell: bash
         if: always()
         run: |
-          find tests
           sudo -E kubectl -n explorer logs job/ci-tests
       - name: 'Prep tmate'
         shell: bash
@@ -161,17 +161,17 @@ jobs:
           # Clean up
           rm -rf /tmp/tmate /tmp/tmate.tar.xz
           tmate -V
-        if: always()
+        if: failure()
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         with:
           install-dependencies: false
-        if: always()
+        if: failure()
       - name: Test Summary
         uses: test-summary/action@v2.4
         if: always()
         with:
-          paths: 'tests/**/TEST-*.xml'
+          paths: '$WRK_DIR/tests/**/TEST-*.xml'
           show: 'fail, skip'
       - name: Logging (temporal-java)
         shell: bash

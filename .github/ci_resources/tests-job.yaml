@@ -14,7 +14,7 @@ spec:
           image: sapmachine:21
           command: ['/bin/sh', '-c']
           args:
-            - cd /app/tests && ./gradlew test --stacktrace; find .
+            - cd /app/tests && ./gradlew test
           volumeMounts:
             - name: test-files
               mountPath: /app/tests
