@@ -76,7 +76,7 @@ jobs:
       - name: 'Prepare inventory.yaml'
         shell: bash
         run: |
-          sed -e "s/HOSTNAME/$(hostname)/" -e "s/K3S_TOKEN/$(openssl rand -hex 16)/" \
+          sed -e "s/HOSTNAME/$(hostname)/" -e "s/K3S_TOKEN/$(openssl rand -hex 16)/" -e "s/WORK_DIR/$(pwd)/" \
             .github/ci_resources/inventory.yaml > ansible/inventory.yaml
       - name: 'ansible-galaxy dependencies'
         shell: bash
@@ -124,7 +124,8 @@ jobs:
       - name: 'Run tests'
         shell: bash
         run: |
-          cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
+          sed -e "s/WORK_DIR/$(pwd)/" .github/ci_resources/test_config_template.json \
+            tests/src/test/resources/config/local.json
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
           sudo -E kubectl wait --for=condition=complete --timeout=300s job/ci-tests -n explorer &
           completion_pid=$!
