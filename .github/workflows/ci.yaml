@@ -124,7 +124,7 @@ jobs:
       - name: 'Run tests'
         shell: bash
         run: |
-          sed -e "s:WORK_DIR:$(pwd):" .github/ci_resources/test_config_template.json \
+          sed "s:WORK_DIR:$(pwd):" .github/ci_resources/test_config_template.json >
             tests/src/test/resources/config/local.json
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
           sudo -E kubectl wait --for=condition=complete --timeout=300s job/ci-tests -n explorer &
