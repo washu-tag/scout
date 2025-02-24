@@ -84,7 +84,8 @@ jobs:
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-galaxy install -r collections/requirements.yaml
       - name: 'Copy scout'
         shell: bash
-        run: sudo cp -r . $WRK_DIR/scout # in CI workflow, we want to use current code, not "main" branch. TODO: don't hardcode path here
+        run: |
+          sudo cp -r . $WRK_DIR/scout # In CI workflow, we want to use current code, not "main" branch.
       - name: 'Install k3s'
         shell: bash
         run: |
@@ -125,13 +126,10 @@ jobs:
       - name: 'Launch temporal ingestion'
         shell: bash
         run: sudo -E bash .github/ci_resources/launch_temporal_extraction.sh
-      - uses: actions/setup-java@v4
-        with:
-          distribution: ${{ ENV.JAVA_DIST }}
-          java-version: ${{ ENV.JAVA_VERSION }}
       - name: 'Run tests'
         shell: bash
         run: |
+          sudo chmod -R 777 $WRK_DIR/scout
           cp .github/ci_resources/test_config_template.json $WRK_DIR/tests/src/test/resources/config/local.json
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
           sudo -E kubectl wait --for=condition=complete --timeout=300s job/ci-tests -n explorer &
@@ -144,7 +142,7 @@ jobs:
         if: always()
         run: |
           sudo -E kubectl -n explorer logs job/ci-tests
-      - name: 'Prep tmate'
+      - name: Install tmate
         shell: bash
         run: |
           set -e
@@ -165,7 +163,7 @@ jobs:
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         with:
-          install-dependencies: false
+          install-dependencies: false # Mirror download error from `apt-get install -y openssh-client`
         if: failure()
       - name: Test Summary
         uses: test-summary/action@v2.4
