@@ -23,7 +23,7 @@ values.yaml files or use the Ansible playbooks to install.
 - `FQDN`: The fully qualified domain name for the JupyterHub instance. 
 - `JUPYTERHUB_GITHUB_CLIENT_ID`: The GitHub OAuth client ID.
 - `JUPYTERHUB_GITHUB_CLIENT_SECRET`: The GitHub OAuth client secret.
-- `JUPYTERHUB_GITHUB_ALLOWED_ORGS`: Users from these GitHub organizations are allowed to log in.
+- `JUPYTERHUB_GITHUB_ALLOWED_ORG`: Users from this GitHub organization will be allowed to log in. Only one organization is supported.
 - `JUPYTERHUB_METRICS_API_TOKEN`: The token for accessing the JupyterHub metrics endpoint.
 
 Install the metrics-api-token as a secret in the `prometheus` namespace:

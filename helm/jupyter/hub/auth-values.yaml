@@ -7,7 +7,7 @@ hub:
       client_secret: ${JUPYTERHUB_GITHUB_CLIENT_SECRET}
       oauth_callback_url: https://${FQDN}/jupyter/hub/oauth_callback
       allowed_organizations:
-        - ${JUPYTERHUB_GITHUB_ALLOWED_ORGS}
+        - ${JUPYTERHUB_GITHUB_ALLOWED_ORG}
       scope:
         - read:org
     JupyterHub:
