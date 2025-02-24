@@ -29,7 +29,7 @@ values.yaml files or use the Ansible playbooks to install.
 Install the metrics-api-token as a secret in the `prometheus` namespace:
 
 ```bash
-kubectl create secret generic jupyterhub-metrics-api-token --from-file=metrics-api-token -n prometheus 
+kubectl create secret generic jupyterhub-metrics-api-token --from-literal=metrics-api-token=$JUPYTERHUB_METRICS_API_TOKEN -n prometheus 
 ```
 
 Install JupyterHub with:
