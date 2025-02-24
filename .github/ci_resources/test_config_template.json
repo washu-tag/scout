@@ -2,7 +2,7 @@
   "sparkConfig": {
     "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
     "spark.hadoop.fs.s3a.access.key": "minio",
-    "spark.hadoop.fs.s3a.secret.key": "minio1234",
+    "spark.hadoop.fs.s3a.secret.key": "minio123",
     "spark.hadoop.fs.s3a.endpoint": "http://minio.minio-scout",
     "spark.hadoop.fs.s3a.endpoint.region": "us-east-1",
     "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
