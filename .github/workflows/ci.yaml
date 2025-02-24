@@ -45,6 +45,11 @@ jobs:
         with:
           subproject: orchestration/temporal-python
           image-name: temporal-python
+      - name: 'Build/Cache Image - explorer'
+        uses: ./.github/actions/docker-build-cache
+        with:
+          subproject: explorer
+          image-name: explorer
   unit-test:
     runs-on: ubuntu-latest
     steps:
@@ -66,14 +71,11 @@ jobs:
       - name: 'Prepare inventory.yaml'
         shell: bash
         run: |
-          sed -e "s/HOSTNAME/$(hostname)/" -e "s/K3S_TOKEN/$(openssl rand -hex 16)/" \
+          sed -e "s/HOSTNAME/$(hostname)/" -e "s/K3S_TOKEN/$(openssl rand -hex 16)/" -e "s:WORK_DIR:$(pwd):" \
             .github/ci_resources/inventory.yaml > ansible/inventory.yaml
       - name: 'ansible-galaxy dependencies'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-galaxy install -r collections/requirements.yaml
-      - name: 'Copy scout'
-        shell: bash
-        run: sudo cp -r . /var/lib/scout # in CI workflow, we want to use current code, not "main" branch. TODO: don't hardcode path here
       - name: 'Install k3s'
         shell: bash
         run: |
@@ -88,6 +90,11 @@ jobs:
         with:
           subproject: orchestration/temporal-python
           image-name: temporal-python
+      - name: 'Push image to k3s - explorer'
+        uses: ./.github/actions/k3s-image-import
+        with:
+          subproject: explorer
+          image-name: explorer
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
@@ -96,6 +103,10 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/minio.yaml
           sudo -E kubectl describe pod -l v1.min.io/tenant=minio-scout -n minio-scout
+      - name: 'Install explorer'
+        shell: bash
+        run: |
+          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/explorer.yaml
       - name: 'Install orchestrator'
         shell: bash
         run: |
@@ -105,18 +116,24 @@ jobs:
       - name: 'Launch temporal ingestion'
         shell: bash
         run: sudo -E bash .github/ci_resources/launch_temporal_extraction.sh
-      - uses: actions/setup-java@v4
-        with:
-          distribution: ${{ ENV.JAVA_DIST }}
-          java-version: ${{ ENV.JAVA_VERSION }}
       - name: 'Run tests'
         shell: bash
         run: |
-          minioIp=$(sudo -E kubectl get services/minio -n minio-scout -o json | jq '.status.loadBalancer.ingress[0].ip' -r)
-          sed -i "s/\$IP/$minioIp/g" .github/ci_resources/test_config_template.json
           cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
-          cd tests
-          ./gradlew test
+          sed -i "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml
+          cat .github/ci_resources/tests-job.yaml
+          sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
+          sudo -E kubectl wait --for=condition=complete --timeout=300s job/ci-tests -n explorer &
+          completion_pid=$!
+          sudo -E kubectl wait --for=condition=failed --timeout=300s job/ci-tests -n explorer && exit 1 &
+          failure_pid=$!
+          wait -n $completion_pid $failure_pid
+      - name: Test Logs
+        shell: bash
+        if: always()
+        run: |
+          sudo -E kubectl -n explorer describe job/ci-tests
+          sudo -E kubectl -n explorer logs job/ci-tests
       - name: Test Summary
         uses: test-summary/action@v2.4
         if: always()
@@ -159,3 +176,7 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: temporal-python
+      - name: 'Push Image - explorer'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: explorer
