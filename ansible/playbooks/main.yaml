@@ -17,6 +17,9 @@
 - name: Install Orchestrator
   import_playbook: orchestrator.yaml
 
+- name: Install Jupyter
+  import_playbook: jupyter.yaml
+
 - name: Install Prometheus
   import_playbook: prometheus.yaml
 

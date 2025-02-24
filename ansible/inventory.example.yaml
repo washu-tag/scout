@@ -23,6 +23,10 @@ k3s_cluster:
     base_dir: '<Path to directory where your persistent data will be stored. Should be able to accommodate TB of data>'
     scout_repo_dir: '{{ base_dir }}/scout'
     kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
+    github_client_id: $(echo $CLIENT_ID | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    github_client_secret: $(echo $CLIENT_SECRET | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    github_organization: 'org'
+    jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # You probably don't want to change these unless you know these items will be
     # stored in different locations on your system

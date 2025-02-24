@@ -24,9 +24,9 @@
             name: tls-secret
             namespace: kube-system
           type: kubernetes.io/tls
-          data:
-            tls.crt: "{{ lookup('file', cert_path) | b64encode }}"
-            tls.key: "{{ lookup('file', key_path) | b64encode }}"
+          stringData:
+            tls.crt: "{{ lookup('file', cert_path) }}"
+            tls.key: "{{ lookup('file', key_path) }}"
 
     - name: Wait for helm-install-traefik job to complete
       command: kubectl -n kube-system wait --for=condition=complete --timeout=300s job/helm-install-traefik

@@ -50,6 +50,9 @@ install-minio:
 install-orchestrator:
 	$(ANSIBLE_CMD) playbooks/orchestrator.yaml
 
+install-jupyter:
+	$(ANSIBLE_CMD) playbooks/jupyter.yaml
+
 install-prometheus:
 	$(ANSIBLE_CMD) playbooks/prometheus.yaml
 

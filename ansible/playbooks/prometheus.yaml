@@ -2,22 +2,43 @@
 - name: Install Prometheus
   hosts: server
   gather_facts: false
+  vars:
+    prometheus_namespace: prometheus
   environment:
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-
   tasks:
     - name: Add Prometheus Helm repository
       kubernetes.core.helm_repository:
         name: prometheus-community
         repo_url: https://prometheus-community.github.io/helm-charts
 
+    - name: Create namespace
+      kubernetes.core.k8s:
+        name: '{{ prometheus_namespace }}'
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Create JupyterHub metrics API token secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: jupyterhub-metrics-api-token
+            namespace: '{{ prometheus_namespace }}'
+          type: Opaque
+          stringData:
+            metrics-api-token: '{{ jupyter_metrics_api_token }}'
+
     - name: Install Prometheus using Helm
       kubernetes.core.helm:
         state: present
         name: prometheus
         chart_ref: prometheus-community/prometheus
-        release_namespace: prometheus
+        release_namespace: '{{ prometheus_namespace }}'
         create_namespace: true
         update_repo_cache: true
         chart_version: ^26.0.0

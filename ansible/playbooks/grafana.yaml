@@ -79,8 +79,8 @@
             labels:
               grafana_alert: '1'
           type: Opaque
-          data:
-            slack-contact-point.json: "{{ lookup('template', scout_repo_dir + slack_contact_point_j2) | to_nice_json | b64encode}}"
+          stringData:
+            slack-contact-point.json: "{{ lookup('template', scout_repo_dir + slack_contact_point_j2) | to_nice_json }}"
 
     - name: Install Grafana using Helm
       kubernetes.core.helm:
