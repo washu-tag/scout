@@ -2,9 +2,9 @@ name: Post-Commit Tasks
 
 on:
   pull_request:
-    types: [ opened, reopened, edited, synchronize ]
+    types: [opened, reopened, edited, synchronize]
   push:
-    branches: [ main ]
+    branches: [main]
 
 env:
   JAVA_DIST: 'zulu'
@@ -68,7 +68,7 @@ jobs:
         run: cd orchestration/temporal-java && ./gradlew test
   deploy-and-test:
     runs-on: ubuntu-latest
-    needs: [ lint, build-and-upload-artifact, unit-test ]
+    needs: [lint, build-and-upload-artifact, unit-test]
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     steps:
@@ -173,7 +173,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    needs: [ deploy-and-test ]
+    needs: [deploy-and-test]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
