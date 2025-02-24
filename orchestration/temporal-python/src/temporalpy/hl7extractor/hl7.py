@@ -21,36 +21,36 @@ class PatientIdentifier:
 @dataclass(frozen=True)
 class MessageData:
     source_file: Optional[str]
-    msh_7_message_timestamp: Optional[str]
-    msh_4_sending_facility: Optional[str]
-    msh_10_message_control_id: Optional[str]
-    msh_12_version_id: Optional[str]
-    pid_3_patient_id: Optional[str]
-    pid_7_date_time_of_birth: Optional[str]
-    pid_8_administrative_sex: Optional[str]
-    pid_10_race: Optional[str]
-    pid_11_zip_or_postal_code: Optional[str]
-    pid_11_country: Optional[str]
-    pid_22_ethnic_group: Optional[str]
+    message_dt: Optional[str]
+    sending_facility: Optional[str]
+    message_control_id: Optional[str]
+    version_id: Optional[str]
+    patient_id_json: Optional[str]
+    birth_dt: Optional[str]
+    sex: Optional[str]
+    race: Optional[str]
+    zip_or_postal_code: Optional[str]
+    country: Optional[str]
+    ethnic_group: Optional[str]
     orc_2_placer_order_number: Optional[str]
     obr_2_placer_order_number: Optional[str]
     orc_3_filler_order_number: Optional[str]
     obr_3_filler_order_number: Optional[str]
-    obr_4_universal_service_identifier_id: Optional[str]
-    obr_4_universal_service_identifier_text: Optional[str]
-    obr_4_universal_service_identifier_coding_system: Optional[str]
-    obr_6_requested_datetime: Optional[str]
-    obr_7_observation_datetime: Optional[str]
-    obr_8_observation_end_datetime: Optional[str]
-    obr_22_results_rpt_status_chng_datetime: Optional[str]
-    obr_24_diagnostic_serv_sect_id: Optional[str]
+    universal_service_identifier_id: Optional[str]
+    universal_service_identifier_text: Optional[str]
+    universal_service_identifier_coding_system: Optional[str]
+    requested_dt: Optional[str]
+    observation_dt: Optional[str]
+    observation_end_dt: Optional[str]
+    results_report_status_change_dt: Optional[str]
+    diagnostic_service_section_id: Optional[str]
     obr_25_result_status: Optional[str]
-    obx_5_observation_value: Optional[str]
+    report_text: Optional[str]
     obx_11_observation_result_status: Optional[str]
-    dg1_3_diagnosis_code_identifier: Optional[str]
-    dg1_3_diagnosis_code_text: Optional[str]
-    dg1_3_diagnosis_code_coding_system: Optional[str]
-    zds_1_study_instance_uid: Optional[str]
+    diagnosis_code_identifier: Optional[str]
+    diagnosis_code_text: Optional[str]
+    diagnosis_code_coding_system: Optional[str]
+    study_instance_uid: Optional[str]
 
 
 def _read_hl7_message(filename: str) -> hl7.Message:
@@ -216,46 +216,40 @@ def extract_data(message: hl7.Message, path: Optional[str] = None) -> MessageDat
     """Extract data from HL7 message."""
     return MessageData(
         source_file=path,
-        msh_7_message_timestamp=extract_field(message, "MSH", 7),
-        msh_4_sending_facility=extract_field(message, "MSH", 4),
-        msh_10_message_control_id=extract_field(message, "MSH", 10),
-        msh_12_version_id=extract_field(message, "MSH", 12),
-        pid_3_patient_id=json.dumps(
+        message_dt=extract_field(message, "MSH", 7),
+        sending_facility=extract_field(message, "MSH", 4),
+        message_control_id=extract_field(message, "MSH", 10),
+        version_id=extract_field(message, "MSH", 12),
+        patient_id_json=json.dumps(
             list(map(asdict, extract_patient_identifiers(message) or []))
         ),
-        pid_7_date_time_of_birth=extract_field(message, "PID", 7),
-        pid_8_administrative_sex=extract_field(message, "PID", 8),
-        pid_10_race=extract_field(message, "PID", 10),
-        pid_11_zip_or_postal_code=extract_field(message, "PID", 11, component=5),
-        pid_11_country=extract_field(message, "PID", 11, component=6),
-        pid_22_ethnic_group=extract_field(message, "PID", 22),
+        birth_dt=extract_field(message, "PID", 7),
+        sex=extract_field(message, "PID", 8),
+        race=extract_field(message, "PID", 10),
+        zip_or_postal_code=extract_field(message, "PID", 11, component=5),
+        country=extract_field(message, "PID", 11, component=6),
+        ethnic_group=extract_field(message, "PID", 22),
         orc_2_placer_order_number=extract_field(message, "ORC", 2),
         obr_2_placer_order_number=extract_field(message, "OBR", 2),
         orc_3_filler_order_number=extract_field(message, "ORC", 3),
         obr_3_filler_order_number=extract_field(message, "OBR", 3),
-        obr_4_universal_service_identifier_id=extract_field(
-            message, "OBR", 4, component=1
-        ),
-        obr_4_universal_service_identifier_text=extract_field(
-            message, "OBR", 4, component=2
-        ),
-        obr_4_universal_service_identifier_coding_system=extract_field(
+        universal_service_identifier_id=extract_field(message, "OBR", 4, component=1),
+        universal_service_identifier_text=extract_field(message, "OBR", 4, component=2),
+        universal_service_identifier_coding_system=extract_field(
             message, "OBR", 4, component=3
         ),
-        obr_6_requested_datetime=extract_field(message, "OBR", 6),
-        obr_7_observation_datetime=extract_field(message, "OBR", 7),
-        obr_8_observation_end_datetime=extract_field(message, "OBR", 8),
-        obr_22_results_rpt_status_chng_datetime=extract_field(message, "OBR", 22),
-        obr_24_diagnostic_serv_sect_id=extract_field(message, "OBR", 24),
+        requested_dt=extract_field(message, "OBR", 6),
+        observation_dt=extract_field(message, "OBR", 7),
+        observation_end_dt=extract_field(message, "OBR", 8),
+        results_report_status_change_dt=extract_field(message, "OBR", 22),
+        diagnostic_service_section_id=extract_field(message, "OBR", 24),
         obr_25_result_status=extract_field(message, "OBR", 25),
-        obx_5_observation_value=extract_and_join_reports(message),
+        report_text=extract_and_join_reports(message),
         obx_11_observation_result_status=extract_report_status_from_obx11(message),
-        dg1_3_diagnosis_code_identifier=extract_field(message, "DG1", 3, component=1),
-        dg1_3_diagnosis_code_text=extract_field(message, "DG1", 3, component=2),
-        dg1_3_diagnosis_code_coding_system=extract_field(
-            message, "DG1", 3, component=3
-        ),
-        zds_1_study_instance_uid=extract_field(message, "ZDS", 1),
+        diagnosis_code_identifier=extract_field(message, "DG1", 3, component=1),
+        diagnosis_code_text=extract_field(message, "DG1", 3, component=2),
+        diagnosis_code_coding_system=extract_field(message, "DG1", 3, component=3),
+        study_instance_uid=extract_field(message, "ZDS", 1),
     )
 
 
