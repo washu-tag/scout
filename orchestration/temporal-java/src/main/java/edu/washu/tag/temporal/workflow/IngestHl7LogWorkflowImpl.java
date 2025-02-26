@@ -47,7 +47,10 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private final SplitHl7LogActivity hl7LogActivity =
             Workflow.newActivityStub(SplitHl7LogActivity.class,
                     ActivityOptions.newBuilder()
-                            .setStartToCloseTimeout(Duration.ofSeconds(10))
+                            .setStartToCloseTimeout(Duration.ofSeconds(5))
+                            .setRetryOptions(RetryOptions.newBuilder()
+                                    .setMaximumAttempts(5)
+                                    .build())
                             .build());
 
     private static final String INGEST_ACTIVITY_NAME = "ingest_hl7_files_to_delta_lake_activity";
