@@ -56,7 +56,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                             .setRetryOptions(RetryOptions.newBuilder()
                                     .setInitialInterval(Duration.ofMillis(10))
                                     .setMaximumInterval(Duration.ofSeconds(1))
-                                    .setMaximumAttempts(5)
+                                    .setMaximumAttempts(10)
                                     .build())
                             .build());
 
