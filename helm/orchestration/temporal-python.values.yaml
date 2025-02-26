@@ -7,3 +7,18 @@ envFrom:
       name: s3-secret
   - configMapRef:
       name: s3-env
+env:
+  - name: TEMPORAL_ADDRESS
+    value: temporal-frontend.temporal:7233
+  - name: TEMPORAL_NAMESPACE
+    value: default
+  - name: MODALITY_MAP_PATH
+    value: /data/modalitymap.csv
+volumes:
+  - name: data
+    hostPath:
+      path: /ceph/tag/home/data
+volumeMounts:
+  - name: data
+    mountPath: /data
+    readOnly: true

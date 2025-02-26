@@ -109,10 +109,10 @@
           volumes: >-
             {{
               [{
-                'name': 'hl7logs',
-                'hostPath': { 'path': log_mount }
+                'name': 'data',
+                'hostPath': { 'path': orchestration_data_dir }
               }]
-              if log_mount is defined else omit
+              if orchestration_data_dir is defined else omit
             }}
 
     - name: Deploy Python worker
@@ -129,3 +129,11 @@
         values:
           image:
             repository: '{{ temporal_python_image | default(omit) }}'
+          volumes: >-
+            {{
+              [{
+                'name': 'data',
+                'hostPath': { 'path': orchestration_data_dir }
+              }]
+              if orchestration_data_dir is defined else omit
+            }}
