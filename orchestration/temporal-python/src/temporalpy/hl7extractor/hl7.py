@@ -26,7 +26,7 @@ class MessageData:
     message_control_id: Optional[str]
     version_id: Optional[str]
     patient_id_json: Optional[str]
-    birth_dt: Optional[str]
+    birth_date: Optional[str]
     sex: Optional[str]
     race: Optional[str]
     zip_or_postal_code: Optional[str]
@@ -36,18 +36,18 @@ class MessageData:
     obr_2_placer_order_number: Optional[str]
     orc_3_filler_order_number: Optional[str]
     obr_3_filler_order_number: Optional[str]
-    universal_service_identifier_id: Optional[str]
-    universal_service_identifier_text: Optional[str]
-    universal_service_identifier_coding_system: Optional[str]
+    service_identifier: Optional[str]
+    service_name: Optional[str]
+    service_coding_system: Optional[str]
     requested_dt: Optional[str]
     observation_dt: Optional[str]
     observation_end_dt: Optional[str]
     results_report_status_change_dt: Optional[str]
-    diagnostic_service_section_id: Optional[str]
+    diagnostic_service_id: Optional[str]
     obr_25_result_status: Optional[str]
     report_text: Optional[str]
     obx_11_observation_result_status: Optional[str]
-    diagnosis_code_identifier: Optional[str]
+    diagnosis_code: Optional[str]
     diagnosis_code_text: Optional[str]
     diagnosis_code_coding_system: Optional[str]
     study_instance_uid: Optional[str]
@@ -223,7 +223,7 @@ def extract_data(message: hl7.Message, path: Optional[str] = None) -> MessageDat
         patient_id_json=json.dumps(
             list(map(asdict, extract_patient_identifiers(message) or []))
         ),
-        birth_dt=extract_field(message, "PID", 7),
+        birth_date=extract_field(message, "PID", 7),
         sex=extract_field(message, "PID", 8),
         race=extract_field(message, "PID", 10),
         zip_or_postal_code=extract_field(message, "PID", 11, component=5),
@@ -233,20 +233,18 @@ def extract_data(message: hl7.Message, path: Optional[str] = None) -> MessageDat
         obr_2_placer_order_number=extract_field(message, "OBR", 2),
         orc_3_filler_order_number=extract_field(message, "ORC", 3),
         obr_3_filler_order_number=extract_field(message, "OBR", 3),
-        universal_service_identifier_id=extract_field(message, "OBR", 4, component=1),
-        universal_service_identifier_text=extract_field(message, "OBR", 4, component=2),
-        universal_service_identifier_coding_system=extract_field(
-            message, "OBR", 4, component=3
-        ),
+        service_identifier=extract_field(message, "OBR", 4, component=1),
+        service_name=extract_field(message, "OBR", 4, component=2),
+        service_coding_system=extract_field(message, "OBR", 4, component=3),
         requested_dt=extract_field(message, "OBR", 6),
         observation_dt=extract_field(message, "OBR", 7),
         observation_end_dt=extract_field(message, "OBR", 8),
         results_report_status_change_dt=extract_field(message, "OBR", 22),
-        diagnostic_service_section_id=extract_field(message, "OBR", 24),
+        diagnostic_service_id=extract_field(message, "OBR", 24),
         obr_25_result_status=extract_field(message, "OBR", 25),
         report_text=extract_and_join_reports(message),
         obx_11_observation_result_status=extract_report_status_from_obx11(message),
-        diagnosis_code_identifier=extract_field(message, "DG1", 3, component=1),
+        diagnosis_code=extract_field(message, "DG1", 3, component=1),
         diagnosis_code_text=extract_field(message, "DG1", 3, component=2),
         diagnosis_code_coding_system=extract_field(message, "DG1", 3, component=3),
         study_instance_uid=extract_field(message, "ZDS", 1),
