@@ -47,7 +47,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private final SplitHl7LogActivity hl7LogActivity =
             Workflow.newActivityStub(SplitHl7LogActivity.class,
                     ActivityOptions.newBuilder()
-                            .setStartToCloseTimeout(Duration.ofSeconds(5))
+                            .setStartToCloseTimeout(Duration.ofSeconds(10))
                             .setRetryOptions(RetryOptions.newBuilder()
                                     .setMaximumAttempts(5)
                                     .build())
