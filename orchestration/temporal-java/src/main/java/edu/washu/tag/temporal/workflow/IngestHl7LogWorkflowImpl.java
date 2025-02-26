@@ -15,6 +15,7 @@ import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.common.SearchAttributeKey;
 import io.temporal.failure.ApplicationFailure;
+import io.temporal.failure.TemporalFailure;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.ActivityStub;
 import io.temporal.workflow.Async;
@@ -32,8 +33,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 @WorkflowImpl(taskQueues = "ingest-hl7-log")
@@ -81,30 +86,26 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
 
         // Find log file by date
-        List<Promise<FindHl7LogFileOutput>> findHl7LogFileOutputPromises = dates.stream()
+        Deque<Promise<FindHl7LogFileOutput>> findHl7LogFileOutputPromises = dates.stream()
                 .map(date -> Async.function(hl7LogActivity::findHl7LogFile, new FindHl7LogFileInput(date, input.logsRootPath())))
-                .toList();
+                .collect(Collectors.toCollection(LinkedList::new));
         // Collect async results
-        List<FindHl7LogFileOutput> findHl7LogFileOutputs = findHl7LogFileOutputPromises.stream()
-                .map(Promise::get)
-                .toList();
+        List<FindHl7LogFileOutput> findHl7LogFileOutputs = getSuccessfulResults(findHl7LogFileOutputPromises);
 
         // Split log file
         String splitLogFileOutputPath = scratchDir + "/split";
-        List<Promise<SplitHl7LogActivityOutput>> splitHl7LogOutputPromises = findHl7LogFileOutputs.stream()
+        Deque<Promise<SplitHl7LogActivityOutput>> splitHl7LogOutputPromises = findHl7LogFileOutputs.stream()
                 .map(findHl7LogFileOutput -> Async.function(
                         hl7LogActivity::splitHl7Log,
                         new SplitHl7LogActivityInput(findHl7LogFileOutput.date(), findHl7LogFileOutput.logFileAbsPath(), splitLogFileOutputPath)
                 ))
-                .toList();
+                .collect(Collectors.toCollection(LinkedList::new));
         // Collect async results
-        List<SplitHl7LogActivityOutput> splitHl7LogOutputs = splitHl7LogOutputPromises.stream()
-                .map(Promise::get)
-                .toList();
+        List<SplitHl7LogActivityOutput> splitHl7LogOutputs = getSuccessfulResults(splitHl7LogOutputPromises);
 
         // Transform split logs into proper hl7 files
         String hl7RootPath = input.hl7OutputPath().endsWith("/") ? input.hl7OutputPath().substring(0, input.hl7OutputPath().length() - 1) : input.hl7OutputPath();
-        List<Promise<TransformSplitHl7LogOutput>> transformSplitHl7LogOutputPromises = new ArrayList<>();
+        Deque<Promise<TransformSplitHl7LogOutput>> transformSplitHl7LogOutputPromises = new LinkedList<>();
         for (SplitHl7LogActivityOutput splitHl7LogOutput : splitHl7LogOutputs) {
             String date = splitHl7LogOutput.date();
             for (String splitLogFileRelativePath : splitHl7LogOutput.relativePaths()) {
@@ -117,9 +118,10 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             }
         }
         // Collect async results
+        List<TransformSplitHl7LogOutput> transformSplitHl7LogOutputs = getSuccessfulResults(transformSplitHl7LogOutputPromises);
+
         // Partition hl7 paths by year, so it can avoid race conditions on writing the files
-        final Map<String, List<String>> hl7AbsolutePathsByYear = transformSplitHl7LogOutputPromises.stream()
-                .map(Promise::get)
+        final Map<String, List<String>> hl7AbsolutePathsByYear = transformSplitHl7LogOutputs.stream()
                 .map(output -> Pair.of(output.date().substring(0, 4), hl7RootPath + "/" + output.relativePath()))
                 .collect(
                         Collectors.groupingBy(
@@ -211,5 +213,35 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             logger.debug("Using dates {} from input value {}", dates, dateInput);
         }
         return dates;
+    }
+
+    /**
+     * Collect the results of a list of promises, waiting for each to complete.
+     * If one of the activities has failed with a TemporalFailure, it will be logged and ignored.
+     * If one of the activities has failed with another exception, it will be rethrown.
+     * @param promises List of promises to collect results from
+     * @return List of results from the promises that succeeded
+     * @param <T> Type of the results
+     * @throws RuntimeException If one of the activities failed with an exception other than TemporalFailure
+     */
+    private static <T> List<T> getSuccessfulResults(Deque<Promise<T>> promises) throws RuntimeException {
+        // Collect async results
+        List<T> results = new ArrayList<>(promises.size());
+        while (!promises.isEmpty()) {
+            Promise<T> promise = promises.poll();
+            try {
+                results.add(promise.get(10, TimeUnit.MILLISECONDS));
+            } catch (TimeoutException ignored) {
+                // This is benign, it just means the activity hasn't completed yet
+                // Back to the queue
+                promises.add(promise);
+            } catch (TemporalFailure exception) {
+                logger.warn("An activity failed, but we ignore it. The workflow continues.", exception);
+            } catch (Exception exception) {
+                logger.error("An activity failed and the workflow will fail too.", exception);
+                throw exception;
+            }
+        }
+        return results;
     }
 }
