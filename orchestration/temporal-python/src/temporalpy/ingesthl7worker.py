@@ -10,19 +10,21 @@ from temporalio.worker import Worker
 
 from temporalpy.activities.ingesthl7 import (
     TASK_QUEUE_NAME,
-    ingest_hl7_files_to_delta_lake_activity,
+    ingest_hl7_files_activity_wrapper,
 )
 
 log = logging.getLogger("workflow_worker")
 
 
-async def run_worker(temporal_address: str, namespace: str) -> None:
+async def run_worker(
+    temporal_address: str, namespace: str, mapping_file_path: str
+) -> None:
     client = await Client.connect(temporal_address, namespace=namespace)
     with concurrent.futures.ThreadPoolExecutor() as pool:
         worker = Worker(
             client,
             task_queue=TASK_QUEUE_NAME,
-            activities=[ingest_hl7_files_to_delta_lake_activity],
+            activities=[ingest_hl7_files_activity_wrapper(mapping_file_path)],
             activity_executor=pool,
         )
 
@@ -50,13 +52,14 @@ async def main(argv=None):
         "TEMPORAL_ADDRESS", "temporal-frontend.temporal:7233"
     )
     temporal_namespace = os.environ.get("TEMPORAL_NAMESPACE", "default")
+    modality_map_path = os.environ.get("MODALITY_MAP_PATH", "/data/modalitymap.csv")
 
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    await run_worker(temporal_address, temporal_namespace)
+    await run_worker(temporal_address, temporal_namespace, modality_map_path)
 
 
 if __name__ == "__main__":
