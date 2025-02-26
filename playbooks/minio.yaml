@@ -49,6 +49,35 @@
               export MINIO_REGION_NAME=us-east-1
               export MINIO_REGION=us-east-1
 
+    - name: Create Traefik Middleware to add trailing slash that Minio needs
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: Middleware
+          metadata:
+            name: minio-add-trailing-slash
+            namespace: kube-system
+          spec:
+            redirectRegex:
+              regex: (.*/minio$)
+              replacement: ${1}/
+              permanent: true
+
+    - name: Create Traefik Middleware to strip /minio prefix for internal traffic
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: Middleware
+          metadata:
+            name: minio-strip-prefix
+            namespace: kube-system
+          spec:
+            stripPrefix:
+              prefixes:
+                - /minio
+
     - name: Install/Upgrade Minio Tenant
       kubernetes.core.helm:
         name: '{{ minio_tenant_namespace }}'
@@ -62,3 +91,21 @@
         atomic: true
         values_files:
           - '{{ scout_repo_dir }}/helm/minio/values.yaml'
+        values:
+          tenant:
+            env:
+              - name: MINIO_BROWSER_REDIRECT_URL
+                value: 'https://{{ server_hostname }}/minio/'
+              - name: MINIO_PROMETHEUS_AUTH_TYPE
+                value: public
+          ingress:
+            console:
+              enabled: true
+              ingressClassName: traefik
+              host: '{{ server_hostname }}'
+              path: /minio
+              pathType: Prefix
+              annotations:
+                traefik.ingress.kubernetes.io/router.middlewares: >
+                  kube-system-minio-add-trailing-slash@kubernetescrd,
+                  kube-system-minio-strip-prefix@kubernetescrd

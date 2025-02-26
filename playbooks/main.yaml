@@ -5,6 +5,9 @@
 - name: Install K3s
   import_playbook: k3s.yaml
 
+- name: Configure traefik
+  import_playbook: traefik.yaml
+
 - name: Install Helm
   import_playbook: helm.yaml
 
@@ -13,6 +16,9 @@
 
 - name: Install Orchestrator
   import_playbook: orchestrator.yaml
+
+- name: Install Jupyter
+  import_playbook: jupyter.yaml
 
 - name: Install Prometheus
   import_playbook: prometheus.yaml
@@ -23,3 +29,5 @@
 - name: Install Grafana
   import_playbook: grafana.yaml
 
+- name: Install Explorer
+  import_playbook: explorer.yaml

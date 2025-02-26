@@ -1,0 +1,46 @@
+---
+- name: Install JupyterHub
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  tasks:
+    - name: Add JupyterHub Helm repository
+      kubernetes.core.helm_repository:
+        name: jupyterhub
+        repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
+
+    - name: Install JupyterHub using Helm
+      kubernetes.core.helm:
+        state: present
+        name: jupyter
+        chart_ref: jupyterhub/jupyterhub
+        release_namespace: jupyter
+        create_namespace: true
+        update_repo_cache: true
+        chart_version: ^4.0.0
+        values_files:
+          - '{{ scout_repo_dir }}/helm/jupyter/hub/hub-values.yaml'
+          - '{{ scout_repo_dir }}/helm/jupyter/hub/auth-values.yaml'
+        values:
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            hosts:
+              - '{{ server_hostname }}'
+          hub:
+            services:
+              prometheus:
+                api_token: '{{ jupyter_metrics_api_token }}'
+            config:
+              GitHubOAuthenticator:
+                client_id: '{{ github_client_id }}'
+                client_secret: '{{ github_client_secret }}'
+                oauth_callback_url: 'https://{{ server_hostname }}/jupyter/hub/oauth_callback'
+                allowed_organizations:
+                  - '{{ github_organization }}'
+                scope:
+                  - read:org
+              JupyterHub:
+                authenticator_class: github
