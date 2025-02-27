@@ -93,6 +93,9 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                 .collect(Collectors.toCollection(LinkedList::new));
         // Collect async results
         List<FindHl7LogFileOutput> findHl7LogFileOutputs = getSuccessfulResults(findHl7LogFileOutputPromises);
+        if (findHl7LogFileOutputs.isEmpty()) {
+            throw ApplicationFailure.newNonRetryableFailure("No log files found", "type");
+        }
 
         // Split log file
         String splitLogFileOutputPath = scratchDir + "/split";
@@ -104,6 +107,9 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                 .collect(Collectors.toCollection(LinkedList::new));
         // Collect async results
         List<SplitHl7LogActivityOutput> splitHl7LogOutputs = getSuccessfulResults(splitHl7LogOutputPromises);
+        if (splitHl7LogOutputs.isEmpty()) {
+            throw ApplicationFailure.newNonRetryableFailure("Log file splitting failed", "type");
+        }
 
         // Transform split logs into proper hl7 files
         String hl7RootPath = input.hl7OutputPath().endsWith("/") ? input.hl7OutputPath().substring(0, input.hl7OutputPath().length() - 1) : input.hl7OutputPath();
@@ -121,6 +127,9 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         }
         // Collect async results
         List<TransformSplitHl7LogOutput> transformSplitHl7LogOutputs = getSuccessfulResults(transformSplitHl7LogOutputPromises);
+        if (transformSplitHl7LogOutputs.isEmpty()) {
+            throw ApplicationFailure.newNonRetryableFailure("HL7 transformation failed", "type");
+        }
 
         // Partition hl7 paths by year, so it can avoid race conditions on writing the files
         final Map<String, List<String>> hl7AbsolutePathsByYear = transformSplitHl7LogOutputs.stream()
