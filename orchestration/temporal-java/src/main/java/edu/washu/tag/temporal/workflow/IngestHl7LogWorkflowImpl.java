@@ -6,11 +6,11 @@ import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeInput;
 import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeOutput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowOutput;
+import edu.washu.tag.temporal.util.WorkflowUtils;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.common.SearchAttributeKey;
 import io.temporal.failure.ApplicationFailure;
-import io.temporal.failure.TemporalFailure;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.ActivityStub;
 import io.temporal.workflow.Async;
@@ -33,8 +33,6 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 @WorkflowImpl(taskQueues = "ingest-hl7-log")
@@ -85,7 +83,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                         new Hl7FromHl7LogWorkflowInput(date, input.logsRootPath(), input.scratchSpaceRootPath(), input.hl7OutputPath())
                 ))
                 .collect(Collectors.toCollection(LinkedList::new));
-        List<Hl7FromHl7LogWorkflowOutput> childWorkflowResults = getSuccessfulResults(childWorkflowOutputs);
+        List<Hl7FromHl7LogWorkflowOutput> childWorkflowResults = WorkflowUtils.getSuccessfulResults(childWorkflowOutputs, logger);
         if (childWorkflowResults.isEmpty()) {
             throw ApplicationFailure.newNonRetryableFailure("Child workflows failed", "type");
         }
@@ -187,35 +185,5 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             logger.debug("Using dates {} from input value {}", dates, dateInput);
         }
         return dates;
-    }
-
-    /**
-     * Collect the results of a list of promises, waiting for each to complete.
-     * If one of the activities has failed with a TemporalFailure, it will be logged and ignored.
-     * If one of the activities has failed with another exception, it will be rethrown.
-     * @param promises List of promises to collect results from
-     * @return List of results from the promises that succeeded
-     * @param <T> Type of the results
-     * @throws RuntimeException If one of the activities failed with an exception other than TemporalFailure
-     */
-    private static <T> List<T> getSuccessfulResults(Deque<Promise<T>> promises) throws RuntimeException {
-        // Collect async results
-        List<T> results = new ArrayList<>(promises.size());
-        while (!promises.isEmpty()) {
-            Promise<T> promise = promises.poll();
-            try {
-                results.add(promise.get(10, TimeUnit.MILLISECONDS));
-            } catch (TimeoutException ignored) {
-                // This is benign, it just means the activity hasn't completed yet
-                // Back to the queue
-                promises.add(promise);
-            } catch (TemporalFailure exception) {
-                logger.warn("An activity failed, but we ignore it. The workflow continues.", exception);
-            } catch (Exception exception) {
-                logger.error("An activity failed and the workflow will fail too.", exception);
-                throw exception;
-            }
-        }
-        return results;
     }
 }
