@@ -52,11 +52,10 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private final SplitHl7LogActivity hl7LogActivity =
             Workflow.newActivityStub(SplitHl7LogActivity.class,
                     ActivityOptions.newBuilder()
-                            .setStartToCloseTimeout(Duration.ofSeconds(10))
+                            .setStartToCloseTimeout(Duration.ofSeconds(30))
                             .setRetryOptions(RetryOptions.newBuilder()
-                                    .setInitialInterval(Duration.ofMillis(10))
                                     .setMaximumInterval(Duration.ofSeconds(1))
-                                    .setMaximumAttempts(10)
+                                    .setMaximumAttempts(5)
                                     .build())
                             .build());
 
@@ -67,7 +66,8 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                     .setTaskQueue("ingest-hl7-delta-lake")
                     .setStartToCloseTimeout(Duration.ofSeconds(30))
                     .setRetryOptions(RetryOptions.newBuilder()
-                            .setMaximumAttempts(5)
+                            .setMaximumInterval(Duration.ofSeconds(1))
+                            .setMaximumAttempts(10)
                             .build())
                     .build());
 
