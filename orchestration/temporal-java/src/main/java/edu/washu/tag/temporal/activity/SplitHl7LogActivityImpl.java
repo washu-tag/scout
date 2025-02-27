@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Component
-@ActivityImpl(taskQueues = "ingest-hl7-log")
+@ActivityImpl(taskQueues = "split-transform-hl7-log")
 public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private static final Logger logger = Workflow.getLogger(SplitHl7LogActivityImpl.class);
 
@@ -109,7 +109,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             logger.warn("Failed to delete temp dir {}", tempdir);
         }
 
-        return new SplitHl7LogActivityOutput(input.date(), input.rootOutputPath(), destinationPaths);
+        return new SplitHl7LogActivityOutput(input.rootOutputPath(), destinationPaths);
     }
 
     @Override
@@ -150,6 +150,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         } catch (IOException ignored) {
             logger.warn("Failed to delete temp dir {}", tempdir);
         }
-        return new TransformSplitHl7LogOutput(input.date(), input.rootOutputPath(), destinationPath);
+        return new TransformSplitHl7LogOutput(input.rootOutputPath() + "/" + destinationPath);
     }
 }
