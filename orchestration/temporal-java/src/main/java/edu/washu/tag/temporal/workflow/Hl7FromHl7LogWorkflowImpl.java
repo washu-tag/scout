@@ -9,10 +9,10 @@ import edu.washu.tag.temporal.model.SplitHl7LogActivityInput;
 import edu.washu.tag.temporal.model.SplitHl7LogActivityOutput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
+import edu.washu.tag.temporal.util.WorkflowUtils;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.failure.ApplicationFailure;
-import io.temporal.failure.TemporalFailure;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.Async;
 import io.temporal.workflow.Promise;
@@ -25,8 +25,6 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 @WorkflowImpl(taskQueues = "split-transform-hl7-log")
@@ -76,7 +74,7 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
             transformSplitHl7LogOutputPromises.add(transformSplitHl7LogOutputPromise);
         }
         // Collect async results
-        List<TransformSplitHl7LogOutput> transformSplitHl7LogOutputs = getSuccessfulResults(transformSplitHl7LogOutputPromises);
+        List<TransformSplitHl7LogOutput> transformSplitHl7LogOutputs = WorkflowUtils.getSuccessfulResults(transformSplitHl7LogOutputPromises, logger);
         if (transformSplitHl7LogOutputs.isEmpty()) {
             throw ApplicationFailure.newNonRetryableFailure("HL7 transformation failed", "type");
         }
@@ -111,33 +109,4 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
         }
     }
 
-    /**
-     * Collect the results of a list of promises, waiting for each to complete.
-     * If one of the activities has failed with a TemporalFailure, it will be logged and ignored.
-     * If one of the activities has failed with another exception, it will be rethrown.
-     * @param promises List of promises to collect results from
-     * @return List of results from the promises that succeeded
-     * @param <T> Type of the results
-     * @throws RuntimeException If one of the activities failed with an exception other than TemporalFailure
-     */
-    private static <T> List<T> getSuccessfulResults(Deque<Promise<T>> promises) throws RuntimeException {
-        // Collect async results
-        List<T> results = new ArrayList<>(promises.size());
-        while (!promises.isEmpty()) {
-            Promise<T> promise = promises.poll();
-            try {
-                results.add(promise.get(10, TimeUnit.MILLISECONDS));
-            } catch (TimeoutException ignored) {
-                // This is benign, it just means the activity hasn't completed yet
-                // Back to the queue
-                promises.add(promise);
-            } catch (TemporalFailure exception) {
-                logger.warn("An activity failed, but we ignore it. The workflow continues.", exception);
-            } catch (Exception exception) {
-                logger.error("An activity failed and the workflow will fail too.", exception);
-                throw exception;
-            }
-        }
-        return results;
-    }
 }
