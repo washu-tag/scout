@@ -11,10 +11,19 @@ fi
 # Read header from file to get 18-digit timestamp
 # Format: %Y%m%d%H%M%S%f in python strftime notation
 timestamp=$(head -c 24 $f | tr -C -d \[:digit:\])
+if [ -z "$timestamp" ]; then
+    echo "Could not read timestamp from $f" >&2
+    exit 1
+fi
+# We expect 18 digits of timestamp, but at minimum we need 14 (year, month, day, hour, minute, second)
+if [[ ${#timestamp} -lt 14 ]]; then
+    echo "Timestamp \"${timestamp}\" from $f is not long enough. Minimum length 14, expected length 18." >&2
+    exit 1
+fi
 
 # Make a directory to store the file, of the format year/month/day/hour
 directory=${timestamp:0:4}/${timestamp:4:2}/${timestamp:6:2}/${timestamp:8:2}
-mkdir -p $directory
+mkdir -p $directory || exit 1
 
 dest="$directory/$timestamp.hl7"
 
