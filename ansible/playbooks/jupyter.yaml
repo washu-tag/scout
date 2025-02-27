@@ -20,6 +20,9 @@
         create_namespace: true
         update_repo_cache: true
         chart_version: ^4.0.0
+        wait: true
+        wait_timeout: 10m
+        atomic: true
         values_files:
           - '{{ scout_repo_dir }}/helm/jupyter/hub/hub-values.yaml'
           - '{{ scout_repo_dir }}/helm/jupyter/hub/auth-values.yaml'

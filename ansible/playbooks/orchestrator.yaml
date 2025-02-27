@@ -2,7 +2,8 @@
 - name: Install Temporal and workers
   hosts: server
   gather_facts: false
-
+  vars:
+    s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
   environment:
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
@@ -16,7 +17,7 @@
       kubernetes.core.helm:
         name: temporal
         chart_ref: temporal/temporal
-        chart_version: ^0.55.0
+        chart_version: ^0.56.0
         release_namespace: temporal
         create_namespace: true
         release_state: present
@@ -37,17 +38,34 @@
           cassandra:
             config:
               cluster_size: 1
+            persistence:
+              enabled: true
+              storageClass: local-path-retain
           elasticsearch:
             replicas: 1
+            persistence:
+              enabled: true
+            volumeClaimTemplate:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 5Gi
+              storageClassName: local-path-retain
           web:
             additionalEnv:
               - name: TEMPORAL_UI_PUBLIC_PATH
-                value: '/temporal'
+                value: /temporal
             ingress:
               enabled: true
-              ingressClassName: 'traefik'
+              ingressClassName: traefik
               hosts:
                 - '{{ server_hostname }}/temporal'
+
+    - name: Wait for Temporal schema job to complete
+      command: kubectl -n temporal wait --for=condition=complete --timeout=300s job/temporal-schema-1
+      register: temporal_schema
+      changed_when: false
 
     - name: Create namespace
       kubernetes.core.k8s:
@@ -56,9 +74,6 @@
         kind: Namespace
         state: present
 
-    #TODO It might be better to set up secret & configmap from helm chart, but then they collide
-    # because we install the same chart twice with different values for the two types of workers
-    # putting them in different namespaces might solve this issue
     - name: Create S3 secret
       kubernetes.core.k8s:
         state: present
@@ -83,7 +98,7 @@
             name: s3-env
             namespace: '{{ orchestration_worker_namespace }}'
           data:
-            AWS_ENDPOINT_URL: 'http://minio.{{ minio_tenant_namespace }}'
+            AWS_ENDPOINT_URL: '{{ s3_endpoint }}'
             AWS_ALLOW_HTTP: 'true'
             AWS_REGION: '{{ s3_region }}'
 
@@ -102,7 +117,7 @@
           config:
             application:
               s3:
-                endpoint: 'http://minio.{{ minio_tenant_namespace }}'
+                endpoint: '{{ s3_endpoint }}'
                 region: '{{ s3_region }}'
           image:
             repository: '{{ temporal_java_image | default(omit) }}'
