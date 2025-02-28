@@ -1,3 +1,5 @@
 package edu.washu.tag.temporal.model;
 
-public record FindHl7LogFileInput(String date, String logsDir) { }
+import java.util.List;
+
+public record FindHl7LogFileInput(List<String> logPaths, String date, String logsRootPath) { }
