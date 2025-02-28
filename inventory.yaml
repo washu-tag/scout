@@ -50,7 +50,7 @@ k3s_cluster:
       3161
     base_dir: '/ceph/tag/home/scout-slc'
     scout_repo_dir: '{{ base_dir }}/scout'
-    log_mount: '/ceph/tag/rad/intake'
+#    log_mount: '/ceph/tag/rad/intake'
     kubeconfig_group: 'nrg-tag-admin'
     github_client_id: !vault |
       $ANSIBLE_VAULT;1.1;AES256
