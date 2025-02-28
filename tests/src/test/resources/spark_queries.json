@@ -8,11 +8,11 @@
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
-            "pid_8_administrative_sex": ["F"]
+            "sex": ["F"]
           }
         }
       },
-      "sql": "SELECT * FROM syntheticdata WHERE pid_8_administrative_sex='F'",
+      "sql": "SELECT * FROM syntheticdata WHERE sex='F'",
       "id": "sex_equals"
     },
     {
@@ -22,12 +22,12 @@
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
-            "zds_1_study_instance_uid": [null],
-            "msh_12_version_id": ["2.4"]
+            "study_instance_uid": [null],
+            "version_id": ["2.4"]
           }
         }
       },
-      "sql": "SELECT * FROM syntheticdata WHERE zds_1_study_instance_uid IS NULL",
+      "sql": "SELECT * FROM syntheticdata WHERE study_instance_uid IS NULL",
       "id": "uid_missing"
     },
     {
@@ -37,13 +37,13 @@
         "additionalValidation": {
           "type": ".DateComparisonValidation",
           "description": "patient born after 1990-12-31",
-          "columnName": "pid_7_date_time_of_birth",
+          "columnName": "birth_date",
           "truncation": 8,
           "comparisonValue": 19901231,
           "comparisonOperator": "GT"
         }
       },
-      "sql": "SELECT * FROM syntheticdata WHERE SUBSTRING(pid_7_date_time_of_birth, 1, 8) > '19901231'",
+      "sql": "SELECT * FROM syntheticdata WHERE SUBSTRING(birth_date, 1, 8) > '19901231'",
       "id": "dob_greater"
     },
     {
@@ -54,7 +54,7 @@
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
             "orc_2_placer_order_number": [null],
-            "msh_12_version_id": ["2.4"]
+            "version_id": ["2.4"]
           }
         }
       },
@@ -68,12 +68,12 @@
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
-            "pid_8_administrative_sex": ["F"],
-            "pid_10_race": ["B", "BLACK"]
+            "sex": ["F"],
+            "race": ["B", "BLACK"]
           }
         }
       },
-      "sql": "SELECT * FROM syntheticdata WHERE pid_8_administrative_sex='F' AND pid_10_race IN ('BLACK', 'B')",
+      "sql": "SELECT * FROM syntheticdata WHERE sex='F' AND race IN ('BLACK', 'B')",
       "id": "sex_and_race_list_inclusion"
     },
     {
