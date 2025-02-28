@@ -13,7 +13,7 @@ env:
   - name: TEMPORAL_NAMESPACE
     value: default
   - name: MODALITY_MAP_PATH
-    value: /data/modalitymap.csv
+    value: /data/modality_mapping_codes.csv
 volumes:
   - name: data
     hostPath:

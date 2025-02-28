@@ -52,7 +52,9 @@ async def main(argv=None):
         "TEMPORAL_ADDRESS", "temporal-frontend.temporal:7233"
     )
     temporal_namespace = os.environ.get("TEMPORAL_NAMESPACE", "default")
-    modality_map_path = os.environ.get("MODALITY_MAP_PATH", "/data/modalitymap.csv")
+    modality_map_path = os.environ.get(
+        "MODALITY_MAP_PATH", "/data/modality_mapping_codes.csv"
+    )
 
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.INFO,
