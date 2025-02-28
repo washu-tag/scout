@@ -123,11 +123,32 @@ def read_hl7_input(hl7input: Iterable[str]) -> Iterator[MessageData]:
             cache.add(path)
 
 
+def read_hl7_file_path_file(hl7_file_path_file: str) -> Iterable[str]:
+    """Read HL7 file paths from file."""
+    if hl7_file_path_file.startswith("s3://"):
+        global s3filesystem
+        if s3filesystem is None:
+            s3filesystem = s3fs.S3FileSystem()
+        with s3filesystem.open(hl7_file_path_file, "r") as f:
+            yield from (l for line in f if (l := line.strip()))
+    else:
+        with open(hl7_file_path_file, "r") as f:
+            yield from (l for line in f if (l := line.strip()))
+
+
 def import_hl7_files_to_deltalake(
-    delta_table: str, hl7_input: list[str], modality_map_csv_path: str
+    delta_table: str, hl7_file_path_files: list[str], modality_map_csv_path: str
 ):
     """Extract data from HL7 messages and write to Delta Lake."""
-    log.info(f"Reading HL7 messages from {len(hl7_input)} input files or directories")
+    log.info("Reading %d files to find HL7 file paths", len(hl7_file_path_files))
+    hl7_input = [
+        read_hl7_file_path_file(hl7_file_path_file)
+        for hl7_file_path_file in hl7_file_path_files
+    ]
+
+    log.info("Reading HL7 messages from %d HL7 input files", len(hl7_input))
+    log.debug("HL7 files: %s", hl7_input)
+
     if not hl7_input:
         raise ApplicationError("No HL7 input files or directories provided")
 

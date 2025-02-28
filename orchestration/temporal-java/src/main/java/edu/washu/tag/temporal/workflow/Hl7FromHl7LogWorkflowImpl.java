@@ -7,6 +7,8 @@ import edu.washu.tag.temporal.model.SplitHl7LogActivityInput;
 import edu.washu.tag.temporal.model.SplitHl7LogActivityOutput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
+import edu.washu.tag.temporal.model.WriteHl7FilePathsFileInput;
+import edu.washu.tag.temporal.model.WriteHl7FilePathsFileOutput;
 import edu.washu.tag.temporal.util.WorkflowUtils;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
@@ -51,16 +53,15 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
         String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
 
         // Split log file
-        String splitLogFileOutputPath = scratchDir + "/split";
-        SplitHl7LogActivityOutput splitHl7LogOutput = hl7LogActivity.splitHl7Log(new SplitHl7LogActivityInput(input.logPath(), splitLogFileOutputPath));
+        String splitLogFileRootPath = scratchDir + "/split";
+        SplitHl7LogActivityOutput splitHl7LogOutput = hl7LogActivity.splitHl7Log(new SplitHl7LogActivityInput(input.logPath(), splitLogFileRootPath));
 
         // Transform split logs into proper hl7 files
-        String splitLogRootPath = splitHl7LogOutput.rootPath();
         String hl7RootPath = input.hl7OutputPath().endsWith("/") ? input.hl7OutputPath().substring(0, input.hl7OutputPath().length() - 1) : input.hl7OutputPath();
         Deque<Promise<TransformSplitHl7LogOutput>> transformSplitHl7LogOutputPromises = new LinkedList<>();
         for (String splitLogFileRelativePath : splitHl7LogOutput.relativePaths()) {
             // Async call to transform a single split log file into HL7
-            String splitLogFilePath = splitLogRootPath + "/" + splitLogFileRelativePath;
+            String splitLogFilePath = splitLogFileRootPath + "/" + splitLogFileRelativePath;
             TransformSplitHl7LogInput transformSplitHl7LogInput = new TransformSplitHl7LogInput(splitLogFilePath, hl7RootPath);
             Promise<TransformSplitHl7LogOutput> transformSplitHl7LogOutputPromise =
                     Async.function(hl7LogActivity::transformSplitHl7Log, transformSplitHl7LogInput);
@@ -72,14 +73,19 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
             throw ApplicationFailure.newNonRetryableFailure("HL7 transformation failed", "type");
         }
 
-        return new Hl7FromHl7LogWorkflowOutput(transformSplitHl7LogOutputs.stream().map(TransformSplitHl7LogOutput::path).collect(Collectors.toList()));
+        // Write hl7 file paths to a file
+        List<String> hl7FilePaths = transformSplitHl7LogOutputs.stream().map(TransformSplitHl7LogOutput::path).toList();
+        WriteHl7FilePathsFileOutput writeHl7FilePathsFileOutput = hl7LogActivity.writeHl7FilePathsFile(new WriteHl7FilePathsFileInput(hl7FilePaths, scratchDir));
+
+        logger.info("Completed workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
+        return new Hl7FromHl7LogWorkflowOutput(writeHl7FilePathsFileOutput.hl7FilesOutputFilePath(), writeHl7FilePathsFileOutput.numHl7Files());
     }
 
     private static void throwOnInvalidInput(Hl7FromHl7LogWorkflowInput input) {
         List<String> messages = new ArrayList<>();
         Map<String, String> requiredInputs = Map.of(
                 "logPath", input.logPath(),
-                "scratchSpaceRootPath", input.scratchSpaceRootPath(),
+                "scratchSpacePath", input.scratchSpaceRootPath(),
                 "hl7OutputPath", input.hl7OutputPath()
         );
         for (Map.Entry<String, String> entry : requiredInputs.entrySet()) {

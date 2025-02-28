@@ -100,19 +100,23 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             throw ApplicationFailure.newNonRetryableFailure("Child workflows failed", "type");
         }
 
-        // Collect HL7 paths
-        List<String> hl7Paths = childWorkflowResults.stream()
-                .map(Hl7FromHl7LogWorkflowOutput::hl7Paths)
-                .flatMap(List::stream)
+        // Collect HL7 file-path-file paths
+        // This sounds more confusing than it is.
+        // Each child workflow writes a single file with the paths of the HL7 files it created.
+        // We collect the paths to these files (the contents of each being file paths) and pass them to the ingest activity.
+        int[] numHl7FilesHolder = {0};
+        List<String> hl7FilePathFiles = childWorkflowResults.stream()
+                .peek(output -> numHl7FilesHolder[0] += output.numHl7Files())
+                .map(Hl7FromHl7LogWorkflowOutput::hl7FilePathFile)
                 .toList();
 
         // Ingest HL7 into delta lake
         logger.info("WorkflowId {} - Launching activity to ingest {} HL7 files",
-                workflowInfo.getWorkflowId(), hl7Paths.size());
+                workflowInfo.getWorkflowId(), numHl7FilesHolder[0]);
         IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
                 INGEST_ACTIVITY_NAME,
                 IngestHl7FilesToDeltaLakeOutput.class,
-                new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7Paths)
+                new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7FilePathFiles)
         );
 
         return new IngestHl7LogWorkflowOutput();
@@ -179,7 +183,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
         // Always required
         Map<String, String> requiredInputs = Map.of(
-                "scratchSpaceRootPath", input.scratchSpaceRootPath(),
+                "scratchSpacePath", input.scratchSpaceRootPath(),
                 "hl7OutputPath", input.hl7OutputPath(),
                 "deltaLakePath", input.deltaLakePath()
         );
