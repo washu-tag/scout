@@ -1,8 +1,6 @@
 package edu.washu.tag.temporal.workflow;
 
 import edu.washu.tag.temporal.activity.SplitHl7LogActivity;
-import edu.washu.tag.temporal.model.FindHl7LogFileInput;
-import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
 import edu.washu.tag.temporal.model.Hl7FromHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.Hl7FromHl7LogWorkflowOutput;
 import edu.washu.tag.temporal.model.SplitHl7LogActivityInput;
@@ -25,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @WorkflowImpl(taskQueues = "split-transform-hl7-log")
@@ -46,20 +45,14 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
         WorkflowInfo workflowInfo = Workflow.getInfo();
         logger.info("Beginning workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
 
-        // Log input values
-        logger.debug("Input: {}", input);
-
         // Validate input
         throwOnInvalidInput(input);
 
         String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
 
-        // Find log file by date
-        FindHl7LogFileOutput findHl7LogFileOutput = hl7LogActivity.findHl7LogFile(new FindHl7LogFileInput(input.date(), input.logsRootPath()));
-
         // Split log file
         String splitLogFileOutputPath = scratchDir + "/split";
-        SplitHl7LogActivityOutput splitHl7LogOutput = hl7LogActivity.splitHl7Log(new SplitHl7LogActivityInput(findHl7LogFileOutput.logFileAbsPath(), splitLogFileOutputPath));
+        SplitHl7LogActivityOutput splitHl7LogOutput = hl7LogActivity.splitHl7Log(new SplitHl7LogActivityInput(input.logPath(), splitLogFileOutputPath));
 
         // Transform split logs into proper hl7 files
         String splitLogRootPath = splitHl7LogOutput.rootPath();
@@ -79,33 +72,24 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
             throw ApplicationFailure.newNonRetryableFailure("HL7 transformation failed", "type");
         }
 
-        return new Hl7FromHl7LogWorkflowOutput(input.date(), transformSplitHl7LogOutputs.stream().map(TransformSplitHl7LogOutput::path).collect(Collectors.toList()));
+        return new Hl7FromHl7LogWorkflowOutput(transformSplitHl7LogOutputs.stream().map(TransformSplitHl7LogOutput::path).collect(Collectors.toList()));
     }
 
     private static void throwOnInvalidInput(Hl7FromHl7LogWorkflowInput input) {
-        boolean hasLogsRootPath = input.logsRootPath() != null && !input.logsRootPath().isBlank();
-        boolean hasScratchSpaceRootPath = input.scratchSpaceRootPath() != null && !input.scratchSpaceRootPath().isBlank();
-        boolean hasHl7OutputPath = input.hl7OutputPath() != null && !input.hl7OutputPath().isBlank();
-        boolean hasDate = input.date() != null && !input.date().isBlank();
+        List<String> messages = new ArrayList<>();
+        Map<String, String> requiredInputs = Map.of(
+                "logPath", input.logPath(),
+                "scratchSpaceRootPath", input.scratchSpaceRootPath(),
+                "hl7OutputPath", input.hl7OutputPath()
+        );
+        for (Map.Entry<String, String> entry : requiredInputs.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().isBlank()) {
+                messages.add("Missing required input: " + entry.getKey());
+            }
+        }
 
-        if (!(hasLogsRootPath && hasScratchSpaceRootPath && hasHl7OutputPath && hasDate)) {
-            // We know something is missing
-            List<String> missingInputs = new ArrayList<>();
-            if (!hasLogsRootPath) {
-                missingInputs.add("logsRootPath");
-            }
-            if (!hasScratchSpaceRootPath) {
-                missingInputs.add("scratchSpaceRootPath");
-            }
-            if (!hasHl7OutputPath) {
-                missingInputs.add("hl7OutputPath");
-            }
-            if (!hasDate) {
-                missingInputs.add("date");
-            }
-            String plural = missingInputs.size() == 1 ? "" : "s";
-            String missingInputsStr = String.join(", ", missingInputs);
-            throw ApplicationFailure.newNonRetryableFailure("Missing required input" + plural + ": " + missingInputsStr, "type");
+        if (!messages.isEmpty()) {
+            throw ApplicationFailure.newNonRetryableFailure(String.join("; ", messages), "type");
         }
     }
 
