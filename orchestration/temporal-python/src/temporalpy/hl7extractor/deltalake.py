@@ -120,6 +120,14 @@ def import_hl7_files_to_deltalake(
     if not hl7_input:
         raise ApplicationError("No HL7 input files or directories provided")
 
+    s3a_endpoint = os.environ.get("AWS_ENDPOINT_URL")
+    s3a_access_key = os.environ.get("AWS_ACCESS_KEY_ID")
+    s3a_secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    s3a_region = os.environ.get("AWS_REGION", "us-east-1")
+
+    if not s3a_endpoint or not s3a_access_key or not s3a_secret_key:
+        raise ApplicationError("S3 endpoint, access key, and secret key required")
+
     extra_packages = ["org.apache.hadoop:hadoop-aws:3.2.2"]
     log.debug("Creating Spark session")
     spark_builder = (
@@ -131,11 +139,10 @@ def import_hl7_files_to_deltalake(
             "spark.sql.catalog.spark_catalog",
             "org.apache.spark.sql.delta.catalog.DeltaCatalog",
         )
-        # TODO spark config
-        .config("spark.hadoop.fs.s3a.access.key", "admin")
-        .config("spark.hadoop.fs.s3a.secret.key", "password")
-        .config("spark.hadoop.fs.s3a.endpoint", "http://minio.minio:9000")
-        .config("spark.hadoop.fs.s3a.endpoint.region", "us-east-1")
+        .config("spark.hadoop.fs.s3a.access.key", s3a_access_key)
+        .config("spark.hadoop.fs.s3a.secret.key", s3a_secret_key)
+        .config("spark.hadoop.fs.s3a.endpoint", s3a_endpoint)
+        .config("spark.hadoop.fs.s3a.endpoint.region", s3a_region)
         .config("spark.hadoop.fs.s3a.path.style.access", "true")
         .config(
             "spark.hadoop.fs.s3a.aws.credentials.provider",
