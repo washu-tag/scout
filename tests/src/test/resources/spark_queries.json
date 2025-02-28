@@ -53,12 +53,12 @@
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
-            "orc_2_placer_order_number": [null],
+            "placer_order_number": [null],
             "version_id": ["2.4"]
           }
         }
       },
-      "sql": "SELECT * FROM syntheticdata WHERE orc_2_placer_order_number IS NULL",
+      "sql": "SELECT * FROM syntheticdata WHERE placer_order_number IS NULL",
       "id": "placer_order_missing"
     },
     {
