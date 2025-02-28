@@ -1,5 +1,7 @@
 package edu.washu.tag.temporal.util;
 
+import io.temporal.activity.Activity;
+import io.temporal.activity.ActivityInfo;
 import io.temporal.workflow.Workflow;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -26,7 +28,8 @@ public class FileHandlerImpl implements FileHandler {
 
     @Override
     public String put(Path filePath, Path filePathsRoot, URI destination) throws IOException {
-        logger.debug("Put called: filePath {} filePathsRoot {} destination {}", filePath, filePathsRoot, destination);
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+        logger.debug("WorkflowId {} ActivityId {} - Put called: filePath {} filePathsRoot {} destination {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), filePath, filePathsRoot, destination);
         Path relativeFilePath;
         Path absoluteFilePath;
         if (filePath.isAbsolute()) {
@@ -40,13 +43,13 @@ public class FileHandlerImpl implements FileHandler {
             // Upload to S3
             String bucket = destination.getHost();
             String key = destination.getPath() + "/" + relativeFilePath;
-            logger.debug("Uploading file {} to S3 bucket {} key {}", absoluteFilePath, bucket, key);
+            logger.info("WorkflowId {} ActivityId {} - Uploading file {} to S3 bucket {} key {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), absoluteFilePath, bucket, key);
             s3Client.putObject(builder -> builder.bucket(bucket).key(key), absoluteFilePath);
         } else {
             // Copy local files
             Path absDestination = Path.of(destination).resolve(relativeFilePath);
             absDestination.toFile().mkdirs();
-            logger.debug("Copying file {} to {}", absoluteFilePath, absDestination);
+            logger.info("WorkflowId {} ActivityId {} - Copying file {} to {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), absoluteFilePath, absDestination);
             Files.copy(absoluteFilePath, absDestination);
         }
         return relativeFilePath.toString();
@@ -75,6 +78,7 @@ public class FileHandlerImpl implements FileHandler {
 
     @Override
     public Path get(URI source, Path destination) throws IOException {
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
         if (S3.equals(source.getScheme())) {
             // Download from S3
             String bucket = source.getHost();
@@ -82,7 +86,7 @@ public class FileHandlerImpl implements FileHandler {
             if (destination.toFile().isDirectory()) {
                 destination = destination.resolve(Path.of(key).getFileName());
             }
-            logger.debug("Downloading file from S3 bucket {} key {} to {}", bucket, key, destination);
+            logger.debug("WorkflowId {} ActivityId {} - Downloading file from S3 bucket {} key {} to {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), bucket, key, destination);
             s3Client.getObject(builder -> builder.bucket(bucket).key(key), destination);
         } else {
             // Copy local files
@@ -90,7 +94,7 @@ public class FileHandlerImpl implements FileHandler {
             if (destination.toFile().isDirectory()) {
                 destination = destination.resolve(sourcePath.getFileName());
             }
-            logger.debug("Copying file {} to {}", sourcePath, destination);
+            logger.debug("WorkflowId {} ActivityId {} - Copying file {} to {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), sourcePath, destination);
             Files.copy(sourcePath, destination);
         }
         return destination;
