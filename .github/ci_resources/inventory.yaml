@@ -17,7 +17,7 @@ k3s_cluster:
     base_dir: /var/lib
     scout_repo_dir: WORK_DIR
     kubeconfig_group: 'root'
-    log_mount: '{{ scout_repo_dir }}/tests/staging_test_data/hl7'
+    orchestration_data_dir: '{{ scout_repo_dir }}/tests/staging_test_data'
     temporal_java_image: 'docker.io/local/washu-tag/temporal-java'
     temporal_python_image: 'docker.io/local/washu-tag/temporal-python'
     explorer_image: 'docker.io/local/washu-tag/explorer'
