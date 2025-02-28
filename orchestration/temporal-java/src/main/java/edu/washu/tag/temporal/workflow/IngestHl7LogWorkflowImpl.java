@@ -30,6 +30,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -117,58 +118,63 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         return new IngestHl7LogWorkflowOutput();
     }
 
+    /**
+     * Parse and validate input
+     * @param input Workflow input
+     * @return Log paths and "yesterday" date, if we are in a scheduled run
+     */
     private static ParsedLogInput parseInput(IngestHl7LogWorkflowInput input) {
 
         // Need either log paths or logs root path
-        boolean hasLogPaths = input.logPaths() != null && !input.logPaths().isBlank();
-        boolean hasLogsRootPath = input.logsRootPath() != null && !input.logsRootPath().isBlank();
-
-        // We can accept relative log paths, but only if we have a logs root path
-        List<String> logPaths = new ArrayList<>();
+        boolean hasLogPathsInput = input.logPaths() != null && !input.logPaths().isBlank();
+        boolean hasLogsRootPathInput = input.logsRootPath() != null && !input.logsRootPath().isBlank();
+        List<String> logPaths;
         List<String> relativeLogPathsWithoutRoot = new ArrayList<>();
-        Path logsRootPath = hasLogsRootPath ? Path.of(input.logsRootPath()) : null;
-        if (input.logPaths() != null && !input.logPaths().isBlank()) {
+        if (hasLogPathsInput) {
+            logPaths = new ArrayList<>();
+            Path logsRootPath = hasLogsRootPathInput ? Path.of(input.logsRootPath()) : null;
             for (String logPath : input.logPaths().split(",")) {
                 if (logPath.startsWith("/")) {
                     logPaths.add(logPath);
-                } else if (hasLogsRootPath) {
+                } else if (hasLogsRootPathInput) {
                     logPaths.add(logsRootPath.resolve(logPath).toString());
                 } else {
                     relativeLogPathsWithoutRoot.add(logPath);
                 }
             }
+        } else if (hasLogsRootPathInput) {
+            // If we have a logs root path, we will ingest all logs from that path
+            logPaths = List.of(input.logsRootPath());
+        } else {
+            logPaths = Collections.emptyList();
         }
 
-        // If we do not have any log paths, we will ingest logs from "yesterday"
+        // If we are in a scheduled run and we were not given any explicit log paths
+        //   we will ingest logs from "yesterday"
         //   which we define as the day before the scheduled time in the local timezone
-        // Note that we only do this for scheduled runs, so we need to know the scheduled time.
+        // Note: There isn't a good API to find the scheduled start time in the SDK. We have to use a
+        //  search attribute.
+        // See https://docs.temporal.io/workflows#action for docs on the search attribute.
+        // See also https://github.com/temporalio/features/issues/243 where someone asks
+        //  for a better API for this in the SDK.
+        OffsetDateTime scheduledTimeUtc = Workflow.getTypedSearchAttributes().get(SCHEDULED_START_TIME);
+        boolean hasScheduledTime = scheduledTimeUtc != null;
         String yesterday = null;
-        boolean missingScheduledTime = false;
-        if (!hasLogPaths) {
-            // There isn't a good API to find the scheduled start time in the SDK. We have to use a
-            //  search attribute.
-            // See https://docs.temporal.io/workflows#action for docs on the search attribute.
-            // See also https://github.com/temporalio/features/issues/243 where someone asks
-            //  for a better API for this in the SDK.
-            OffsetDateTime scheduledTimeUtc = Workflow.getTypedSearchAttributes().get(SCHEDULED_START_TIME);
-            if (scheduledTimeUtc == null) {
-                missingScheduledTime = true;
-            } else {
+        if (hasScheduledTime && !hasLogPathsInput) {
                 ZoneId localTz = ZoneOffset.systemDefault();
                 OffsetDateTime scheduledTimeLocal = scheduledTimeUtc.atZoneSameInstant(localTz).toOffsetDateTime();
                 OffsetDateTime yesterdayDt = scheduledTimeLocal.minusDays(1);
                 yesterday = yesterdayDt.format(YYYYMMDD_FORMAT);
                 logger.info("Using date {} from scheduled workflow start time {} ({} in TZ {}) minus one day", yesterday, scheduledTimeUtc, scheduledTimeLocal, localTz);
-            }
         }
 
         // Now we have enough information to throw for invalid inputs
-        throwOnInvalidInput(input, hasLogPaths, hasLogsRootPath, relativeLogPathsWithoutRoot, missingScheduledTime);
+        throwOnInvalidInput(input, hasLogPathsInput, hasLogsRootPathInput, relativeLogPathsWithoutRoot, hasScheduledTime);
 
         return new ParsedLogInput(logPaths, yesterday);
     }
 
-    private static void throwOnInvalidInput(IngestHl7LogWorkflowInput input, boolean hasLogPaths, boolean hasLogRootPath, List<String> relativeLogPaths, boolean missingScheduledStartTime) {
+    private static void throwOnInvalidInput(IngestHl7LogWorkflowInput input, boolean hasLogPaths, boolean hasLogRootPath, List<String> relativeLogPaths, boolean hasScheduledTime) {
         List<String> messages = new ArrayList<>();
 
         // Always required
@@ -193,9 +199,9 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             messages.add("Must provide either logPaths or logsRootPath");
         }
 
-        // Missing scheduled start time
-        if (missingScheduledStartTime) {
-            messages.add("Can only run without logPaths for scheduled runs. Scheduled start time not found in search attributes");
+        // If we are in a scheduled run, we need logs root path
+        if (hasScheduledTime && !hasLogRootPath) {
+            messages.add("Must provide logsRootPath for scheduled runs");
         }
 
         if (!messages.isEmpty()) {
