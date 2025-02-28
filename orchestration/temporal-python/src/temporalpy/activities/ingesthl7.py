@@ -11,7 +11,7 @@ TASK_QUEUE_NAME = "ingest-hl7-delta-lake"
 @activity.dataclass(frozen=True)
 class IngestHl7FilesToDeltaLakeActivityInput:
     deltaTable: str
-    hl7Files: list[str]
+    hl7FilePathFiles: list[str]
     modalityMapPath: Optional[str] = None
 
 
@@ -38,7 +38,9 @@ def ingest_hl7_files_activity_wrapper(default_modality_map_path: str):
         )
         modality_map_path = activity_input.modalityMapPath or default_modality_map_path
         import_hl7_files_to_deltalake(
-            activity_input.deltaTable, activity_input.hl7Files, modality_map_path
+            activity_input.deltaTable,
+            activity_input.hl7FilePathFiles,
+            modality_map_path,
         )
 
         return IngestHl7FilesToDeltaLakeActivityOutput()
