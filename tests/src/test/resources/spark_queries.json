@@ -43,7 +43,7 @@
           "comparisonOperator": "GT"
         }
       },
-      "sql": "SELECT * FROM syntheticdata WHERE SUBSTRING(birth_date, 1, 8) > '19901231'",
+      "sql": "SELECT * FROM syntheticdata WHERE YEAR(birth_date) > 1990",
       "id": "dob_greater"
     },
     {
