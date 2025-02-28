@@ -7,7 +7,7 @@ k3s_cluster:
           ansible_connection: local
           ansible_python_interpreter: /usr/bin/python3
           k3s_control_node: true
-          external_url: big-01.minmi-algol.ts.net
+          external_url: tag-big-01.minmi-algol.ts.net
     agents:
       hosts:
         tag-big-[02:03].nrg.wustl.edu:
