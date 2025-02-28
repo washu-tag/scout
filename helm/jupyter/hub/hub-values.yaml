@@ -52,6 +52,6 @@ singleuser:
       - to:
           - namespaceSelector:
               matchLabels:
-                kubernetes.io/metadata.name: minio
+                kubernetes.io/metadata.name: minio-scout
         ports:
-          - port: 9000
+          - port: 80
