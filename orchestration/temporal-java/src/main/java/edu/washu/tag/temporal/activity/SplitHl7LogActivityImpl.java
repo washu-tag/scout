@@ -165,6 +165,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         }
 
         // Return absolute path to file
-        return new WriteHl7FilePathsFileOutput(Path.of(scratch).resolve(hl7PathsFilename).toString(), input.hl7FilePaths().size());
+        return new WriteHl7FilePathsFileOutput(input.scratchSpacePath() + "/" + hl7PathsFilename, input.hl7FilePaths().size());
     }
 }
