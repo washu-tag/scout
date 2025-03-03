@@ -46,6 +46,17 @@ MESSAGE_SCHEMA = dataclass_to_spark_schema(MessageData)
 JSON_ARRAY_SCHEMA = ArrayType(dataclass_to_spark_schema(PatientIdentifier))
 
 
+def parse_timestamp_col(col_name: str):
+    """Convert a timestamp column to a datetime column.
+    Some of our timestamps are missing seconds, so we need to add them."""
+    return F.to_timestamp(
+        F.when(
+            F.length(col_name) == 12, F.concat(F.col(col_name), F.lit("00"))
+        ).otherwise(F.col(col_name)),
+        DT_FORMAT,
+    )
+
+
 def read_hl7_directory(
     directory: str, cache: Optional[set[str]] = None
 ) -> Iterator[MessageData]:
@@ -214,7 +225,7 @@ def import_hl7_files_to_deltalake(
         .select(
             "modality",
             "message_control_id",
-            F.to_timestamp("message_dt", DT_FORMAT).alias("message_dt"),
+            parse_timestamp_col("message_dt").alias("message_dt"),
             F.to_date(
                 F.regexp_extract("birth_date", r"^(\d{8})", 1), DATE_FORMAT
             ).alias("birth_date"),
@@ -230,10 +241,10 @@ def import_hl7_files_to_deltalake(
             "service_identifier",
             "service_name",
             "service_coding_system",
-            F.to_timestamp("requested_dt", DT_FORMAT).alias("requested_dt"),
-            F.to_timestamp("observation_dt", DT_FORMAT).alias("observation_dt"),
-            F.to_timestamp("observation_end_dt", DT_FORMAT).alias("observation_end_dt"),
-            F.to_timestamp("results_report_status_change_dt", DT_FORMAT).alias(
+            parse_timestamp_col("requested_dt").alias("requested_dt"),
+            parse_timestamp_col("observation_dt").alias("observation_dt"),
+            parse_timestamp_col("observation_end_dt").alias("observation_end_dt"),
+            parse_timestamp_col("results_report_status_change_dt").alias(
                 "results_report_status_change_dt"
             ),
             "diagnostic_service_id",
