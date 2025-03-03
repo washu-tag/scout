@@ -38,7 +38,6 @@
           "type": ".DateComparisonValidation",
           "description": "patient born after 1990-12-31",
           "columnName": "birth_date",
-          "truncation": 8,
           "comparisonValue": 19901231,
           "comparisonOperator": "GT"
         }
