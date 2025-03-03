@@ -150,7 +150,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
                     INGEST_ACTIVITY_NAME,
                     IngestHl7FilesToDeltaLakeOutput.class,
-                    new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), hl7AbsolutePaths)
+                    new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7AbsolutePaths)
             );
         }
 
