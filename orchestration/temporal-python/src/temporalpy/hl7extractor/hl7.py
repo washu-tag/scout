@@ -44,8 +44,8 @@ class MessageData:
     observation_end_dt: Optional[str]
     results_report_status_change_dt: Optional[str]
     diagnostic_service_id: Optional[str]
-    obr_25_result_status: Optional[str]
     report_text: Optional[str]
+    report_status: Optional[str]
     obx_11_observation_result_status: Optional[str]
     diagnosis_code: Optional[str]
     diagnosis_code_text: Optional[str]
@@ -241,7 +241,7 @@ def extract_data(message: hl7.Message, path: Optional[str] = None) -> MessageDat
         observation_end_dt=extract_field(message, "OBR", 8),
         results_report_status_change_dt=extract_field(message, "OBR", 22),
         diagnostic_service_id=extract_field(message, "OBR", 24),
-        obr_25_result_status=extract_field(message, "OBR", 25),
+        report_status=extract_field(message, "OBR", 25),
         report_text=extract_and_join_reports(message),
         obx_11_observation_result_status=extract_report_status_from_obx11(message),
         diagnosis_code=extract_field(message, "DG1", 3, component=1),

@@ -221,12 +221,10 @@ def import_hl7_files_to_deltalake(
             "zip_or_postal_code",
             "country",
             "ethnic_group",
-            F.coalesce("orc_2_placer_order_number", "obr_2_placer_order_number").alias(
-                "placer_order_number"
-            ),
-            F.coalesce("orc_3_filler_order_number", "obr_3_filler_order_number").alias(
-                "filler_order_number"
-            ),
+            "orc_2_placer_order_number",
+            "obr_2_placer_order_number",
+            "orc_3_filler_order_number",
+            "obr_3_filler_order_number",
             "service_identifier",
             "service_name",
             "service_coding_system",
@@ -238,9 +236,8 @@ def import_hl7_files_to_deltalake(
             ),
             "diagnostic_service_id",
             "report_text",
-            F.coalesce(
-                "obx_11_observation_result_status", "obr_25_result_status"
-            ).alias("report_status"),
+            "report_status",
+            "obx_11_observation_result_status",
             "diagnosis_code",
             "diagnosis_code_text",
             "diagnosis_code_coding_system",
