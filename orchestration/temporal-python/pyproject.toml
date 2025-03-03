@@ -22,9 +22,7 @@ dependencies = [
     "delta-spark",
     "httpx",
     "hl7",
-    "pandas",
-    "pyspark",
-    "requests",
+    "pyspark==3.5.4",
     "s3fs",
     "temporalio",
 ]
