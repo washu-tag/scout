@@ -1,2 +1,2 @@
-deltalake
+delta-spark
 jupyterlab-git

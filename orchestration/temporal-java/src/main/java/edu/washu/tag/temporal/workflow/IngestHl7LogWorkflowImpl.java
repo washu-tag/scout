@@ -52,7 +52,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private final SplitHl7LogActivity hl7LogActivity =
             Workflow.newActivityStub(SplitHl7LogActivity.class,
                     ActivityOptions.newBuilder()
-                            .setStartToCloseTimeout(Duration.ofSeconds(30))
+                            .setStartToCloseTimeout(Duration.ofMinutes(5))
                             .setRetryOptions(RetryOptions.newBuilder()
                                     .setMaximumInterval(Duration.ofSeconds(1))
                                     .setMaximumAttempts(5)
@@ -64,7 +64,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         Workflow.newUntypedActivityStub(
             ActivityOptions.newBuilder()
                     .setTaskQueue("ingest-hl7-delta-lake")
-                    .setStartToCloseTimeout(Duration.ofSeconds(30))
+                    .setStartToCloseTimeout(Duration.ofMinutes(10))
                     .setRetryOptions(RetryOptions.newBuilder()
                             .setMaximumInterval(Duration.ofSeconds(1))
                             .setMaximumAttempts(10)
@@ -150,7 +150,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
                     INGEST_ACTIVITY_NAME,
                     IngestHl7FilesToDeltaLakeOutput.class,
-                    new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), hl7AbsolutePaths)
+                    new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7AbsolutePaths)
             );
         }
 

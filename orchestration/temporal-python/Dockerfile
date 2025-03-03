@@ -1,35 +1,25 @@
-# Stage 1: Cache pip packages into wheels
-FROM python:3.12-slim AS builder
+FROM spark:3.5.4-scala2.12-java17-python3-ubuntu
 
-# Set the working directory for the build
-WORKDIR /build
+USER root
 
-# Copy the current directory contents into the container at /build
-COPY . /build
+RUN set -ex; \
+    apt-get update; \
+    apt-get install -y python3.10-venv; \
+    rm -rf /var/lib/apt/lists/*
 
-# Install wheel to build wheels
-RUN pip install wheel
+USER spark
 
-# Build wheels for the dependencies
-RUN pip wheel . -w /wheels
-
-# Stage 2: Build the main app and run the Temporal worker
-FROM python:3.12-slim
-
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /app
 
-# Copy the built wheels from the builder stage
-COPY --from=builder /wheels /wheels
-
-# Install the wheels
-RUN pip install --no-cache-dir /wheels/*
-
 # Copy the current directory contents into the container at /app
-COPY . /app
+COPY --chown=spark . /app
+
+# Install the applicationp
+RUN python3 -m venv venv; venv/bin/pip install .
 
 # Define environment variable
 ENV PYTHONUNBUFFERED=1
 
 # Run the worker
-ENTRYPOINT ["python", "-m", "temporalpy.ingesthl7worker"]
+ENTRYPOINT ["venv/bin/python3", "-m", "temporalpy.ingesthl7worker"]

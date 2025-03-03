@@ -11,10 +11,10 @@ env:
   - name: TZ
     value: 'US/Central'
 volumes:
-  - name: hl7logs
+  - name: data
     hostPath:
-      path: /ceph/tag/home/test_data_v3/hl7ish_logs
+      path: /ceph/tag/home/data
 volumeMounts:
-  - name: hl7logs
-    mountPath: /hl7logs
+  - name: data
+    mountPath: /data
     readOnly: true

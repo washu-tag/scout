@@ -1,6 +1,7 @@
 {
   "sparkConfig": {
     "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+    "spark.sql.datetime.java8API.enabled": "true",
     "spark.hadoop.fs.s3a.access.key": "minio",
     "spark.hadoop.fs.s3a.secret.key": "minio123",
     "spark.hadoop.fs.s3a.endpoint": "http://minio.minio-scout",
