@@ -1,6 +1,7 @@
 {
   "sparkConfig": {
     "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+    "spark.sql.datetime.java8API.enabled": "true",
     "spark.hadoop.fs.s3a.access.key": "admin",
     "spark.hadoop.fs.s3a.secret.key": "password",
     "spark.hadoop.fs.s3a.endpoint": "http://10.27.107.3:9000",
