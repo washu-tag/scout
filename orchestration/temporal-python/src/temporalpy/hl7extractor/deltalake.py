@@ -215,7 +215,7 @@ def import_hl7_files_to_deltalake(
             "modality",
             "message_control_id",
             F.to_timestamp("message_dt", DT_FORMAT).alias("message_dt"),
-            F.to_timestamp(
+            F.to_date(
                 F.regexp_extract("birth_date", r"^(\d{8})", 1), DATE_FORMAT
             ).alias("birth_date"),
             "sex",
