@@ -1,5 +1,6 @@
 import argparse
 import dataclasses
+import itertools
 import logging
 import os
 import sys
@@ -141,10 +142,12 @@ def import_hl7_files_to_deltalake(
 ):
     """Extract data from HL7 messages and write to Delta Lake."""
     log.info("Reading %d files to find HL7 file paths", len(hl7_file_path_files))
-    hl7_input = [
-        read_hl7_file_path_file(hl7_file_path_file)
-        for hl7_file_path_file in hl7_file_path_files
-    ]
+    hl7_input = list(
+        itertools.chain.from_iterable(
+            read_hl7_file_path_file(hl7_file_path_file)
+            for hl7_file_path_file in hl7_file_path_files
+        )
+    )
 
     log.info("Reading HL7 messages from %d HL7 input files", len(hl7_input))
     log.debug("HL7 files: %s", hl7_input)
