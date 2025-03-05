@@ -12,6 +12,18 @@ USER spark
 # Set the working directory
 WORKDIR /app
 
+# Copy spark jars
+# These were found by doing an interactive pyspark session with spark.jars.packages set to
+# "org.apache.hadoop:hadoop-aws:3.4.1,io.delta:delta-spark_2.12:3.3.0"
+# and inspecting the logs for what got downloaded
+ADD --chown=spark \
+    https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.3.0/delta-spark_2.12-3.3.0.jar \
+    https://repo1.maven.org/maven2/io/delta/delta-storage/3.3.0/delta-storage-3.3.0.jar \
+    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.4.1/hadoop-aws-3.4.1.jar \
+    https://repo1.maven.org/maven2/org/antlr/antlr4-runtime/4.9.3/antlr4-runtime-4.9.3.jar \
+    https://repo1.maven.org/maven2/software/amazon/awssdk/bundle/2.24.6/bundle-2.24.6.jar \
+    /opt/spark/jars/
+
 # Copy the current directory contents into the container at /app
 COPY --chown=spark . /app
 
