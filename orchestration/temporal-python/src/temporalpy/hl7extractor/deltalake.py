@@ -167,6 +167,8 @@ def import_hl7_files_to_deltalake(
     spark_builder = (
         SparkSession.builder.appName("IngestHL7ToDeltaLake")
         .config("spark.jars", "/opt/spark/jars/*.jar")
+        # TODO Do not merge this, we will need to add a configuration value for this
+        .config("spark.executor.memory", "8g")
         .config("spark.databricks.delta.schema.autoMerge.enabled", "true")
         .config("spark.databricks.delta.merge.repartitionBeforeWrite.enabled", "true")
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
