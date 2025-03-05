@@ -163,10 +163,10 @@ def import_hl7_files_to_deltalake(
     if not s3a_endpoint or not s3a_access_key or not s3a_secret_key:
         raise ApplicationError("S3 endpoint, access key, and secret key required")
 
-    extra_packages = ["org.apache.hadoop:hadoop-aws:3.2.2"]
     log.debug("Creating Spark session")
     spark_builder = (
         SparkSession.builder.appName("IngestHL7ToDeltaLake")
+        .config("spark.jars", "/opt/spark/jars/*.jar")
         .config("spark.databricks.delta.schema.autoMerge.enabled", "true")
         .config("spark.databricks.delta.merge.repartitionBeforeWrite.enabled", "true")
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
@@ -185,9 +185,7 @@ def import_hl7_files_to_deltalake(
         )
         .config("spark.driver.extraJavaOptions", "-Divy.cache.dir=/tmp -Divy.home=/tmp")
     )
-    spark = configure_spark_with_delta_pip(
-        spark_builder, extra_packages=extra_packages
-    ).getOrCreate()
+    spark = configure_spark_with_delta_pip(spark_builder).getOrCreate()
 
     log.debug("Reading HL7 messages")
     df = spark.createDataFrame(
