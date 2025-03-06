@@ -85,9 +85,9 @@
             "total_count": 63
           },
           "XR": {
-            "male_count": 123,
-            "female_count": 72,
-            "total_count": 195
+            "male_count": 95,
+            "female_count": 55,
+            "total_count": 150
           },
           "CT": {
             "male_count": 14,
@@ -118,6 +118,11 @@
             "male_count": 0,
             "female_count": 84,
             "total_count": 84
+          },
+          "US": {
+            "male_count": 28,
+            "female_count": 17,
+            "total_count": 45
           }
         },
         "primaryColumnName": "primary_modality",
