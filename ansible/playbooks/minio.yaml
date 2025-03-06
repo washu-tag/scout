@@ -24,6 +24,7 @@
         wait: true
         wait_timeout: 1m
         atomic: true
+        kubeconfig: '{{ kubeconfig_yaml }}'
 
     - name: Create namespace
       kubernetes.core.k8s:
@@ -89,6 +90,7 @@
         wait: true
         wait_timeout: 5m
         atomic: true
+        kubeconfig: '{{ kubeconfig_yaml }}'
         values_files:
           - '{{ scout_repo_dir }}/helm/minio/values.yaml'
         values:

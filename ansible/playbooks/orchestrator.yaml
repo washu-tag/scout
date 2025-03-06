@@ -24,6 +24,7 @@
         update_repo_cache: true
         wait: true
         wait_timeout: 10m
+        kubeconfig: '{{ kubeconfig_yaml }}'
         atomic: true
         values:
           prometheus:
@@ -63,7 +64,7 @@
                 - '{{ server_hostname }}/temporal'
 
     - name: Wait for Temporal schema job to complete
-      command: kubectl -n temporal wait --for=condition=complete --timeout=300s job/temporal-schema-1
+      command: 'kubectl --kubeconfig {{ kubeconfig_yaml }} -n temporal wait --for=condition=complete --timeout=300s job/temporal-schema-1'
       register: temporal_schema
       changed_when: false
 
@@ -113,6 +114,7 @@
         wait: true
         wait_timeout: 5m
         atomic: true
+        kubeconfig: '{{ kubeconfig_yaml }}'
         values:
           config:
             application:
@@ -140,6 +142,7 @@
         release_state: present
         wait: true
         wait_timeout: 5m
+        kubeconfig: '{{ kubeconfig_yaml }}'
         atomic: true
         values:
           image:
