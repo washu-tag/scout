@@ -2,10 +2,12 @@ package edu.washu.tag.temporal.activity;
 
 import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
+import edu.washu.tag.temporal.workflow.Hl7FromHl7LogWorkflow;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.ActivityImpl;
+import io.temporal.workflow.ChildWorkflowOptions;
 import io.temporal.workflow.Workflow;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -24,6 +26,8 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
 
     @Override
     public FindHl7LogFileOutput findHl7LogFiles(FindHl7LogFileInput input) {
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+        logger.info("WorkflowId {} ActivityId {} - Finding HL7 log files for input {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), input);
         List<String> logFiles;
         if (input.logPaths() != null && !input.logPaths().isEmpty()) {
             // Case 1: We were given explicit log paths
@@ -36,6 +40,8 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
             // Case 3: We have nothing
             logFiles = Collections.emptyList();
         }
+
+        logger.info("WorkflowId {} ActivityId {} - Found {} log files", activityInfo.getWorkflowId(), activityInfo.getActivityId(), logFiles.size());
 
         if (logFiles.isEmpty()) {
             throw ApplicationFailure.newFailure("No log files found for input " + input, "type");
