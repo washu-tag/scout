@@ -77,6 +77,57 @@
     },
     {
       "expectedQueryResult": {
+        "type": ".GroupedAggregationResult",
+        "result": {
+          "NM": {
+            "male_count": 32,
+            "female_count": 31,
+            "total_count": 63
+          },
+          "XR": {
+            "male_count": 123,
+            "female_count": 72,
+            "total_count": 195
+          },
+          "CT": {
+            "male_count": 14,
+            "female_count": 15,
+            "total_count": 29
+          },
+          "IR": {
+            "male_count": 33,
+            "female_count": 35,
+            "total_count": 68
+          },
+          "": {
+            "male_count": 45,
+            "female_count": 24,
+            "total_count": 69
+          },
+          "MR": {
+            "male_count": 150,
+            "female_count": 107,
+            "total_count": 257
+          },
+          "PET": {
+            "male_count": 18,
+            "female_count": 17,
+            "total_count": 35
+          },
+          "MG": {
+            "male_count": 0,
+            "female_count": 84,
+            "total_count": 84
+          }
+        },
+        "primaryColumnName": "primary_modality",
+        "secondaryColumns": ["male_count", "female_count", "total_count"]
+      },
+      "sql": "SELECT modality as primary_modality, COUNT(CASE WHEN sex='M' THEN 1 END) as male_count, COUNT(CASE WHEN sex='F' THEN 1 END) as female_count, COUNT(*) as total_count FROM syntheticdata GROUP BY modality ORDER BY modality",
+      "id": "modality_grouping"
+    },
+    {
+      "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
         "expectedNumResults": 800,
         "additionalValidation": null
