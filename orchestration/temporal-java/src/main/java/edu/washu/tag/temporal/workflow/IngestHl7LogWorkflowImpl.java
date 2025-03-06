@@ -9,6 +9,7 @@ import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeInput;
 import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeOutput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowOutput;
+import edu.washu.tag.temporal.util.AllOfPromiseOnlySuccesses;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.common.SearchAttributeKey;
@@ -86,18 +87,18 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
         // Launch child workflow for each log file
         logger.info("WorkflowId {} - Launching {} child workflows", workflowInfo.getWorkflowId(), findHl7LogFileOutput.logFiles().size());
-        List<Promise<Hl7FromHl7LogWorkflowOutput>> childWorkflowOutputs = findHl7LogFileOutput.logFiles().stream()
+        List<Promise<Hl7FromHl7LogWorkflowOutput>> childWorkflowOutputPromises = findHl7LogFileOutput.logFiles().stream()
                 .map(logFile -> Async.function(
                         hl7FromHl7LogWorkflow::splitAndTransformHl7Log,
                         new Hl7FromHl7LogWorkflowInput(logFile, input.scratchSpaceRootPath(), input.hl7OutputPath())
                 ))
                 .toList();
-        logger.info("WorkflowId {} - Waiting for {} child workflows to complete", workflowInfo.getWorkflowId(), childWorkflowOutputs.size());
-        // Block workflow until all child workflows are complete
-        // and end early if any child workflow fails
-        Promise.allOf(childWorkflowOutputs).get();
 
-        logger.info("WorkflowId {} - Collecting results from {} child workflows", workflowInfo.getWorkflowId(), childWorkflowOutputs.size());
+        // Block workflow until all child workflows are complete or failed
+        logger.info("WorkflowId {} - Waiting for {} child workflows to complete", workflowInfo.getWorkflowId(), childWorkflowOutputPromises.size());
+        List<Hl7FromHl7LogWorkflowOutput> childWorkflowOutputs = new AllOfPromiseOnlySuccesses<>(childWorkflowOutputPromises).get();
+
+        logger.info("WorkflowId {} - Collecting results from {} successful child workflows", workflowInfo.getWorkflowId(), childWorkflowOutputs.size());
 
         // Collect HL7 file-path-file paths
         // This sounds more confusing than it is.
@@ -105,7 +106,6 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         // We collect the paths to these files (the contents of each being file paths) and pass them to the ingest activity.
         int[] numHl7FilesHolder = {0};
         List<String> hl7FilePathFiles = childWorkflowOutputs.stream()
-                .map(Promise::get)
                 .peek(output -> numHl7FilesHolder[0] += output.numHl7Files())
                 .map(Hl7FromHl7LogWorkflowOutput::hl7FilePathFile)
                 .toList();
@@ -119,6 +119,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                 new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7FilePathFiles)
         );
 
+        logger.info("Completed workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
         return new IngestHl7LogWorkflowOutput();
     }
 

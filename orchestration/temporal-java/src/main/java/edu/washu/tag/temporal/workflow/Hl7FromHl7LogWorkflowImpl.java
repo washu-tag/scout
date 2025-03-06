@@ -9,7 +9,7 @@ import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
 import edu.washu.tag.temporal.model.WriteHl7FilePathsFileInput;
 import edu.washu.tag.temporal.model.WriteHl7FilePathsFileOutput;
-import edu.washu.tag.temporal.util.WorkflowUtils;
+import edu.washu.tag.temporal.util.AllOfPromiseOnlySuccesses;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.failure.ApplicationFailure;
@@ -22,11 +22,8 @@ import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @WorkflowImpl(taskQueues = "split-transform-hl7-log")
 public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
@@ -57,8 +54,9 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
         SplitHl7LogActivityOutput splitHl7LogOutput = hl7LogActivity.splitHl7Log(new SplitHl7LogActivityInput(input.logPath(), splitLogFileRootPath));
 
         // Transform split logs into proper hl7 files
+        logger.info("WorkflowId {} - Launching {} async activities", workflowInfo.getWorkflowId(), splitHl7LogOutput.relativePaths().size());
         String hl7RootPath = input.hl7OutputPath().endsWith("/") ? input.hl7OutputPath().substring(0, input.hl7OutputPath().length() - 1) : input.hl7OutputPath();
-        Deque<Promise<TransformSplitHl7LogOutput>> transformSplitHl7LogOutputPromises = new LinkedList<>();
+        List<Promise<TransformSplitHl7LogOutput>> transformSplitHl7LogOutputPromises = new ArrayList<>();
         for (String splitLogFileRelativePath : splitHl7LogOutput.relativePaths()) {
             // Async call to transform a single split log file into HL7
             String splitLogFilePath = splitLogFileRootPath + "/" + splitLogFileRelativePath;
@@ -68,10 +66,13 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
             transformSplitHl7LogOutputPromises.add(transformSplitHl7LogOutputPromise);
         }
         // Collect async results
-        List<TransformSplitHl7LogOutput> transformSplitHl7LogOutputs = WorkflowUtils.getSuccessfulResults(transformSplitHl7LogOutputPromises, logger);
+        logger.info("WorkflowId {} - Waiting for {} async activities to complete", workflowInfo.getWorkflowId(), transformSplitHl7LogOutputPromises.size());
+        List<TransformSplitHl7LogOutput> transformSplitHl7LogOutputs = new AllOfPromiseOnlySuccesses<>(transformSplitHl7LogOutputPromises).get();
         if (transformSplitHl7LogOutputs.isEmpty()) {
             throw ApplicationFailure.newNonRetryableFailure("HL7 transformation failed", "type");
         }
+
+        logger.info("WorkflowId {} - Collecting results for {} successful async activities", workflowInfo.getWorkflowId(), transformSplitHl7LogOutputs.size());
 
         // Write hl7 file paths to a file
         List<String> hl7FilePaths = transformSplitHl7LogOutputs.stream().map(TransformSplitHl7LogOutput::path).toList();
