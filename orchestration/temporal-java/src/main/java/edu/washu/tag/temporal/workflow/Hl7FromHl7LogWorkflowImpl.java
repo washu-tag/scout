@@ -9,7 +9,6 @@ import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
 import edu.washu.tag.temporal.model.WriteHl7FilePathsFileInput;
 import edu.washu.tag.temporal.model.WriteHl7FilePathsFileOutput;
-import edu.washu.tag.temporal.util.AllOfPromiseOnlySuccesses;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.failure.ApplicationFailure;
@@ -67,7 +66,9 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
         }
         // Collect async results
         logger.info("WorkflowId {} - Waiting for {} async activities to complete", workflowInfo.getWorkflowId(), transformSplitHl7LogOutputPromises.size());
-        List<TransformSplitHl7LogOutput> transformSplitHl7LogOutputs = new AllOfPromiseOnlySuccesses<>(transformSplitHl7LogOutputPromises).get();
+        // List<TransformSplitHl7LogOutput> transformSplitHl7LogOutputs = new AllOfPromiseOnlySuccesses<>(transformSplitHl7LogOutputPromises).get();
+        Promise.allOf(transformSplitHl7LogOutputPromises).get();
+        List<TransformSplitHl7LogOutput> transformSplitHl7LogOutputs = transformSplitHl7LogOutputPromises.stream().map(Promise::get).toList();
         if (transformSplitHl7LogOutputs.isEmpty()) {
             throw ApplicationFailure.newNonRetryableFailure("HL7 transformation failed", "type");
         }
