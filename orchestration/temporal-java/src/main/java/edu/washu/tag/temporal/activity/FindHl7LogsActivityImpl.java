@@ -67,6 +67,7 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
                             return Files.walk(logFile.toPath())
                                     .filter(Files::isRegularFile)
                                     .map(Path::toString)
+                                    .filter(s -> s.endsWith(".log"))
                                     .toList();
                         } catch (IOException e) {
                             logger.warn("WorkflowId {} ActivityId {} - Error finding log files in directory {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPath, e);
@@ -88,6 +89,7 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
                     .filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().contains(date))
                     .map(Path::toString)
+                    .filter(s -> s.endsWith(".log"))
                     .findFirst()
                     .orElseThrow(() -> ApplicationFailure.newFailure("No filename contained date " + date + " in " + logsRootPath, "type"));
         } catch (IOException e) {
