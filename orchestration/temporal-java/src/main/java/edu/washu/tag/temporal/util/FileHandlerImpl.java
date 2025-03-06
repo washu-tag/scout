@@ -43,13 +43,13 @@ public class FileHandlerImpl implements FileHandler {
             // Upload to S3
             String bucket = destination.getHost();
             String key = destination.getPath() + "/" + relativeFilePath;
-            logger.info("WorkflowId {} ActivityId {} - Uploading file {} to S3 bucket {} key {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), absoluteFilePath, bucket, key);
+            logger.debug("WorkflowId {} ActivityId {} - Uploading file {} to S3 bucket {} key {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), absoluteFilePath, bucket, key);
             s3Client.putObject(builder -> builder.bucket(bucket).key(key), absoluteFilePath);
         } else {
             // Copy local files
             Path absDestination = Path.of(destination).resolve(relativeFilePath);
             absDestination.toFile().mkdirs();
-            logger.info("WorkflowId {} ActivityId {} - Copying file {} to {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), absoluteFilePath, absDestination);
+            logger.debug("WorkflowId {} ActivityId {} - Copying file {} to {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), absoluteFilePath, absDestination);
             Files.copy(absoluteFilePath, absDestination);
         }
         return relativeFilePath.toString();
