@@ -56,9 +56,11 @@ def import_hl7_files_to_deltalake(
         raise ApplicationError("S3 endpoint, access key, and secret key required")
 
     activity.logger.info("Creating Spark session")
+    extra_packages = ["org.apache.hadoop:hadoop-aws:3.2.2"]
     spark_builder = (
         SparkSession.builder.appName("IngestHL7ToDeltaLake")
-        .config("spark.jars", "/opt/spark/jars/*.jar")
+        # .config("spark.jars", "/opt/spark/jars/*.jar")
+        .config("spark.jars", "/opt/spark/jars/smolder_2.12-0.1.0-SNAPSHOT.jar")
         # TODO Do not merge this, we will need to add a configuration value for this
         .config("spark.executor.memory", "8g")
         .config("spark.databricks.delta.schema.autoMerge.enabled", "true")
@@ -79,7 +81,9 @@ def import_hl7_files_to_deltalake(
         )
         .config("spark.driver.extraJavaOptions", "-Divy.cache.dir=/tmp -Divy.home=/tmp")
     )
-    spark = configure_spark_with_delta_pip(spark_builder).getOrCreate()
+    spark = configure_spark_with_delta_pip(
+        spark_builder, extra_packages=extra_packages
+    ).getOrCreate()
 
     activity.logger.info("Reading %d HL7 file path files", len(hl7_file_path_files))
     hl7_file_path_files = [
