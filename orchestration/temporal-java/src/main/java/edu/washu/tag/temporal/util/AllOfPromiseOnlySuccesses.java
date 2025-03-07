@@ -61,12 +61,10 @@ public class AllOfPromiseOnlySuccesses<T> implements Promise<List<T>> {
                 } else {
                     if (e != null) {
                         logger.warn("Promise {} failed", f, e);
-                        this.notReadyCount.decrementAndGet();
-                        return null;
+                    } else {
+                        logger.info("Promise {} succeeded", f);
+                        this.results.add(r);
                     }
-
-                    logger.info("Promise {} succeeded", f);
-                    this.results.add(r);
 
                     if (this.notReadyCount.decrementAndGet() == 0) {
                         this.impl.complete(this.results);
