@@ -97,6 +97,10 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         // Block workflow until all child workflows are complete or failed
         logger.info("WorkflowId {} - Waiting for {} child workflows to complete", workflowInfo.getWorkflowId(), childWorkflowOutputPromises.size());
         List<Hl7FromHl7LogWorkflowOutput> childWorkflowOutputs = new AllOfPromiseOnlySuccesses<>(childWorkflowOutputPromises).get();
+        if (childWorkflowOutputs.isEmpty()) {
+            throw ApplicationFailure.newNonRetryableFailure("All child workflows failed", "type");
+        }
+
 
         logger.info("WorkflowId {} - Collecting results from {} successful child workflows", workflowInfo.getWorkflowId(), childWorkflowOutputs.size());
 
