@@ -9,6 +9,7 @@ import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeInput;
 import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeOutput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowOutput;
+import edu.washu.tag.temporal.util.AllOfPromiseOnlySuccesses;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.common.SearchAttributeKey;
@@ -95,9 +96,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
         // Block workflow until all child workflows are complete or failed
         logger.info("WorkflowId {} - Waiting for {} child workflows to complete", workflowInfo.getWorkflowId(), childWorkflowOutputPromises.size());
-        // List<Hl7FromHl7LogWorkflowOutput> childWorkflowOutputs = new AllOfPromiseOnlySuccesses<>(childWorkflowOutputPromises).get();
-        Promise.allOf(childWorkflowOutputPromises).get();
-        List<Hl7FromHl7LogWorkflowOutput> childWorkflowOutputs = childWorkflowOutputPromises.stream().map(Promise::get).toList();
+        List<Hl7FromHl7LogWorkflowOutput> childWorkflowOutputs = new AllOfPromiseOnlySuccesses<>(childWorkflowOutputPromises).get();
 
         logger.info("WorkflowId {} - Collecting results from {} successful child workflows", workflowInfo.getWorkflowId(), childWorkflowOutputs.size());
 
