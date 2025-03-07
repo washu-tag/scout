@@ -82,10 +82,15 @@ def import_hl7_files_to_deltalake(
     spark = configure_spark_with_delta_pip(spark_builder).getOrCreate()
 
     activity.logger.info("Reading %d HL7 file path files", len(hl7_file_path_files))
+    hl7_file_path_files = [
+        path.replace("s3://", "s3a://") for path in hl7_file_path_files
+    ]
     file_path_file_df = spark.read.text(hl7_file_path_files)
 
     # I wish I could just have spark read these directly without collecting first but I can't figure out how
-    hl7_file_paths_from_spark = [row.value for row in file_path_file_df.collect()]
+    hl7_file_paths_from_spark = [
+        row.value.replace("s3://", "s3a://") for row in file_path_file_df.collect()
+    ]
     if not hl7_file_paths_from_spark:
         raise ApplicationError("No HL7 files found in HL7 file path files")
 
@@ -102,6 +107,7 @@ def import_hl7_files_to_deltalake(
     activity.logger.info(f"Extracted data from {df.count()} HL7 messages")
 
     # Read modality map
+    modality_map_csv_path = modality_map_csv_path.replace("s3://", "s3a://")
     activity.logger.info("Reading modality map from %s", modality_map_csv_path)
     modality_map = (
         spark.read.option("header", True)
