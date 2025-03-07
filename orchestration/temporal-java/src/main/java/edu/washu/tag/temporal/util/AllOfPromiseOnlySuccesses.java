@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Copy of {@link io.temporal.internal.sync.AllOfPromise AllOfPromise}
@@ -20,7 +21,7 @@ public class AllOfPromiseOnlySuccesses<T> implements Promise<List<T>> {
     private static final Logger logger = Workflow.getLogger(AllOfPromiseOnlySuccesses.class);
 
     private final CompletablePromise<List<T>> impl = Workflow.newPromise();
-    private int notReadyCount;
+    private final AtomicInteger notReadyCount = new AtomicInteger(0);
 
     private final List<T> results;
 
@@ -31,7 +32,7 @@ public class AllOfPromiseOnlySuccesses<T> implements Promise<List<T>> {
             this.addPromise(f);
         }
 
-        if (this.notReadyCount == 0) {
+        if (this.notReadyCount.get() == 0) {
             this.impl.complete(results);
         }
 
@@ -43,7 +44,7 @@ public class AllOfPromiseOnlySuccesses<T> implements Promise<List<T>> {
             this.addPromise(f);
         }
 
-        if (this.notReadyCount == 0) {
+        if (this.notReadyCount.get() == 0) {
             this.impl.complete(results);
         }
 
@@ -51,23 +52,23 @@ public class AllOfPromiseOnlySuccesses<T> implements Promise<List<T>> {
 
     private void addPromise(Promise<T> f) {
         if (!f.isCompleted()) {
-            ++this.notReadyCount;
+            this.notReadyCount.incrementAndGet();
             f.handle((r, e) -> {
-                if (this.notReadyCount == 0) {
+                if (this.notReadyCount.get() == 0) {
                     throw new Error("Unexpected 0 count");
                 } else if (this.impl.isCompleted()) {
                     return null;
                 } else {
                     if (e != null) {
                         logger.warn("Promise {} failed", f, e);
-                        this.notReadyCount--;
+                        this.notReadyCount.decrementAndGet();
                         return null;
                     }
 
                     logger.info("Promise {} succeeded", f);
                     this.results.add(r);
 
-                    if (--this.notReadyCount == 0) {
+                    if (this.notReadyCount.decrementAndGet() == 0) {
                         this.impl.complete(this.results);
                     }
 
