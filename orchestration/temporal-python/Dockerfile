@@ -25,11 +25,18 @@ ADD --chown=spark \
     https://github.com/washu-tag/smolder/releases/download/0.1.0-20250306/smolder_2.12-0.1.0-SNAPSHOT.jar \
     /opt/spark/jars/
 
+# Create venv
+RUN python3 -m venv venv
+
+# Copy the pyproject.toml so we can install the dependencies first
+COPY --chown=spark pyproject.toml /app
+RUN venv/bin/python3 -m pip install --no-cache .
+
 # Copy the current directory contents into the container at /app
 COPY --chown=spark . /app
 
 # Install the applicationp
-RUN python3 -m venv venv; venv/bin/pip install .
+RUN venv/bin/python3 -m pip install .
 
 # Define environment variable
 ENV PYTHONUNBUFFERED=1
