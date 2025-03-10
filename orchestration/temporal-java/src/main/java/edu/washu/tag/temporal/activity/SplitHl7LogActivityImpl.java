@@ -96,7 +96,10 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     @Override
     public TransformSplitHl7LogOutput transformSplitHl7Log(TransformSplitHl7LogInput input) {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
-        logger.info("WorkflowId {} ActivityId {} - Transforming split HL7 log file {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.splitLogFile());
+        logger.info(
+                "WorkflowId {} ActivityId {} - Transforming split HL7 log file {}",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.splitLogFile()
+        );
         ActivityInfo info = Activity.getExecutionContext().getInfo();
 
         URI destination = URI.create(input.rootOutputPath());

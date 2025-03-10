@@ -51,8 +51,9 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
     }
 
     /**
-     * Find log files for the given paths
+     * Find log files for the given paths.
      * If the path is a directory, find all files in the directory recursively
+     *
      * @param logPaths list of paths to search for log files
      * @return list of log files
      */
@@ -60,7 +61,10 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
         return logPaths.stream()
                 .map(logPath -> {
-                    logger.info("WorkflowId {} ActivityId {} - Finding HL7 log files for path {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPath);
+                    logger.info(
+                            "WorkflowId {} ActivityId {} - Finding HL7 log files for path {}",
+                            activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPath
+                    );
                     File logFile = new File(logPath);
                     if (logFile.isDirectory()) {
                         try {
@@ -70,7 +74,10 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
                                     .filter(s -> s.endsWith(".log"))
                                     .toList();
                         } catch (IOException e) {
-                            logger.warn("WorkflowId {} ActivityId {} - Error finding log files in directory {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPath, e);
+                            logger.warn(
+                                    "WorkflowId {} ActivityId {} - Error finding log files in directory {}",
+                                    activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPath, e
+                            );
                             return Collections.<String>emptyList();
                         }
                     } else {
@@ -83,7 +90,10 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
 
     private String findLogFileForDate(String logsRootPath, String date) {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
-        logger.info("WorkflowId {} ActivityId {} - Finding HL7 log file for date {} in root path {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), date, logsRootPath);
+        logger.info(
+                "WorkflowId {} ActivityId {} - Finding HL7 log file for date {} in root path {}",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), date, logsRootPath
+        );
         try {
             return Files.walk(Path.of(logsRootPath))
                     .filter(Files::isRegularFile)

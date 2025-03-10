@@ -57,7 +57,9 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
 
         // Transform split logs into proper hl7 files
         logger.info("WorkflowId {} - Launching {} async activities", workflowInfo.getWorkflowId(), splitHl7LogOutput.relativePaths().size());
-        String hl7RootPath = input.hl7OutputPath().endsWith("/") ? input.hl7OutputPath().substring(0, input.hl7OutputPath().length() - 1) : input.hl7OutputPath();
+        String hl7RootPath = input.hl7OutputPath().endsWith("/")
+                ? input.hl7OutputPath().substring(0, input.hl7OutputPath().length() - 1)
+                : input.hl7OutputPath();
         List<Promise<TransformSplitHl7LogOutput>> transformSplitHl7LogOutputPromises = new ArrayList<>();
         for (String splitLogFileRelativePath : splitHl7LogOutput.relativePaths()) {
             // Async call to transform a single split log file into HL7
@@ -78,7 +80,8 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
 
         // Write hl7 file paths to a file
         List<String> hl7FilePaths = transformSplitHl7LogOutputs.stream().map(TransformSplitHl7LogOutput::path).toList();
-        WriteHl7FilePathsFileOutput writeHl7FilePathsFileOutput = hl7LogActivity.writeHl7FilePathsFile(new WriteHl7FilePathsFileInput(hl7FilePaths, scratchDir));
+        WriteHl7FilePathsFileOutput writeHl7FilePathsFileOutput =
+                hl7LogActivity.writeHl7FilePathsFile(new WriteHl7FilePathsFileInput(hl7FilePaths, scratchDir));
 
         logger.info("Completed workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
         return new Hl7FromHl7LogWorkflowOutput(writeHl7FilePathsFileOutput.hl7FilesOutputFilePath(), writeHl7FilePathsFileOutput.numHl7Files());

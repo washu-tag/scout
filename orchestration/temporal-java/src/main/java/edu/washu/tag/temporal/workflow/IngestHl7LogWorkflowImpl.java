@@ -41,7 +41,7 @@ import static edu.washu.tag.temporal.util.Constants.PYTHON_QUEUE;
 
 @WorkflowImpl(taskQueues = PARENT_QUEUE)
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
-    private record ParsedLogInput(List<String> logPaths, String yesterday) { }
+    private record ParsedLogInput(List<String> logPaths, String yesterday) {}
 
     private static final Logger logger = Workflow.getLogger(IngestHl7LogWorkflowImpl.class);
 
@@ -132,7 +132,8 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     }
 
     /**
-     * Parse and validate input
+     * Parse and validate input.
+     *
      * @param input Workflow input
      * @return Log paths and "yesterday" date, if we are in a scheduled run
      */
@@ -174,20 +175,31 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         boolean hasScheduledTime = scheduledTimeUtc != null;
         String yesterday = null;
         if (hasScheduledTime && !hasLogPathsInput) {
-                ZoneId localTz = ZoneOffset.systemDefault();
-                OffsetDateTime scheduledTimeLocal = scheduledTimeUtc.atZoneSameInstant(localTz).toOffsetDateTime();
-                OffsetDateTime yesterdayDt = scheduledTimeLocal.minusDays(1);
-                yesterday = yesterdayDt.format(YYYYMMDD_FORMAT);
-                logger.info("Using date {} from scheduled workflow start time {} ({} in TZ {}) minus one day", yesterday, scheduledTimeUtc, scheduledTimeLocal, localTz);
+            ZoneId localTz = ZoneOffset.systemDefault();
+            OffsetDateTime scheduledTimeLocal = scheduledTimeUtc.atZoneSameInstant(localTz).toOffsetDateTime();
+            OffsetDateTime yesterdayDt = scheduledTimeLocal.minusDays(1);
+            yesterday = yesterdayDt.format(YYYYMMDD_FORMAT);
+            logger.info(
+                    "Using date {} from scheduled workflow start time {} ({} in TZ {}) minus one day",
+                    yesterday, scheduledTimeUtc, scheduledTimeLocal, localTz
+            );
         }
 
         // Now we have enough information to throw for invalid inputs
-        throwOnInvalidInput(input, hasLogPathsInput, hasLogsRootPathInput, relativeLogPathsWithoutRoot, hasScheduledTime);
+        throwOnInvalidInput(
+                input, hasLogPathsInput, hasLogsRootPathInput, relativeLogPathsWithoutRoot, hasScheduledTime
+        );
 
         return new ParsedLogInput(logPaths, yesterday);
     }
 
-    private static void throwOnInvalidInput(IngestHl7LogWorkflowInput input, boolean hasLogPaths, boolean hasLogRootPath, List<String> relativeLogPaths, boolean hasScheduledTime) {
+    private static void throwOnInvalidInput(
+            IngestHl7LogWorkflowInput input,
+            boolean hasLogPaths,
+            boolean hasLogRootPath,
+            List<String> relativeLogPaths,
+            boolean hasScheduledTime
+    ) {
         List<String> messages = new ArrayList<>();
 
         // Always required
