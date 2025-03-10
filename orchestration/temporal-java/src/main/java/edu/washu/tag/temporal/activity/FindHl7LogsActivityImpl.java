@@ -101,12 +101,7 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
                     .filter(s -> s.endsWith(".log"))
                     .toList();
         } catch (IOException e) {
-            // I don't know how we could get an IOException here, so if we do it should propagate so we can investigate it
-            logger.warn(
-                    "WorkflowId {} ActivityId {} - Error finding log file for date {} in root path {}",
-                    activityInfo.getWorkflowId(), activityInfo.getActivityId(), date, logsRootPath, e
-            );
-            throw Activity.wrap(e);
+            throw ApplicationFailure.newFailure("Error finding log file for date " + date + " in root path " + logsRootPath, "type", e);
         }
     }
 }
