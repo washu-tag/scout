@@ -32,8 +32,5 @@ RUN apk add coreutils
 # Copy the built JAR file from the build stage
 COPY --from=build /app/build/libs/*.jar app.jar
 
-# Copy scripts
-COPY scripts /app/scripts
-
 # Run the jar file
 ENTRYPOINT ["java", "-jar", "app.jar"]
