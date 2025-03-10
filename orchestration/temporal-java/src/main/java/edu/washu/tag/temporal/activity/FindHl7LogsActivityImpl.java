@@ -34,8 +34,7 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
             logFiles = findLogFilesForPaths(input.logPaths());
         } else if (input.logsRootPath() != null && !input.logsRootPath().isEmpty() && input.date() != null && !input.date().isEmpty()) {
             // Case 2: We were given a root path and a date
-            String logFile = findLogFileForDate(input.logsRootPath(), input.date());
-            logFiles = List.of(logFile);
+            logFiles = findLogFileForDate(input.logsRootPath(), input.date());
         } else {
             // Case 3: We have nothing
             logFiles = Collections.emptyList();
@@ -88,7 +87,7 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
                 .toList();
     }
 
-    private String findLogFileForDate(String logsRootPath, String date) {
+    private List<String> findLogFileForDate(String logsRootPath, String date) {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
         logger.info(
                 "WorkflowId {} ActivityId {} - Finding HL7 log file for date {} in root path {}",
@@ -100,8 +99,7 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
                     .filter(path -> path.getFileName().toString().contains(date))
                     .map(Path::toString)
                     .filter(s -> s.endsWith(".log"))
-                    .findFirst()
-                    .orElseThrow(() -> ApplicationFailure.newFailure("No filename contained date " + date + " in " + logsRootPath, "type"));
+                    .toList();
         } catch (IOException e) {
             // I don't know how we could get an IOException here, so if we do it should propagate so we can investigate it
             logger.warn(
