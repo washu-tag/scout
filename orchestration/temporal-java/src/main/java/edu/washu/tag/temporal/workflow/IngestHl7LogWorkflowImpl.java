@@ -1,69 +1,75 @@
 package edu.washu.tag.temporal.workflow;
 
-import edu.washu.tag.temporal.activity.SplitHl7LogActivity;
+import edu.washu.tag.temporal.activity.FindHl7LogsActivity;
 import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
+import edu.washu.tag.temporal.model.Hl7FromHl7LogWorkflowInput;
+import edu.washu.tag.temporal.model.Hl7FromHl7LogWorkflowOutput;
 import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeInput;
 import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeOutput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowOutput;
-import edu.washu.tag.temporal.model.SplitHl7LogActivityInput;
-import edu.washu.tag.temporal.model.SplitHl7LogActivityOutput;
-import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
-import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
+import edu.washu.tag.temporal.util.AllOfPromiseOnlySuccesses;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.common.SearchAttributeKey;
 import io.temporal.failure.ApplicationFailure;
-import io.temporal.failure.TemporalFailure;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.ActivityStub;
 import io.temporal.workflow.Async;
+import io.temporal.workflow.ChildWorkflowOptions;
 import io.temporal.workflow.Promise;
 import io.temporal.workflow.Workflow;
 import io.temporal.workflow.WorkflowInfo;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
-@WorkflowImpl(taskQueues = "ingest-hl7-log")
+import static edu.washu.tag.temporal.util.Constants.PARENT_QUEUE;
+import static edu.washu.tag.temporal.util.Constants.CHILD_QUEUE;
+import static edu.washu.tag.temporal.util.Constants.PYTHON_ACTIVITY;
+import static edu.washu.tag.temporal.util.Constants.PYTHON_QUEUE;
+
+@WorkflowImpl(taskQueues = PARENT_QUEUE)
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
+    private record ParsedLogInput(List<String> logPaths, String yesterday) {}
+
     private static final Logger logger = Workflow.getLogger(IngestHl7LogWorkflowImpl.class);
 
     private static final SearchAttributeKey<OffsetDateTime> SCHEDULED_START_TIME =
             SearchAttributeKey.forOffsetDateTime("TemporalScheduledStartTime");
     private static final DateTimeFormatter YYYYMMDD_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    private final SplitHl7LogActivity hl7LogActivity =
-            Workflow.newActivityStub(SplitHl7LogActivity.class,
+    private final FindHl7LogsActivity findHl7LogsActivity =
+            Workflow.newActivityStub(FindHl7LogsActivity.class,
                     ActivityOptions.newBuilder()
-                            .setStartToCloseTimeout(Duration.ofMinutes(5))
+                            .setStartToCloseTimeout(Duration.ofSeconds(5))
                             .setRetryOptions(RetryOptions.newBuilder()
                                     .setMaximumInterval(Duration.ofSeconds(1))
-                                    .setMaximumAttempts(5)
+                                    .setMaximumAttempts(3)
                                     .build())
                             .build());
 
-    private static final String INGEST_ACTIVITY_NAME = "ingest_hl7_files_to_delta_lake_activity";
+    private final Hl7FromHl7LogWorkflow hl7FromHl7LogWorkflow =
+            Workflow.newChildWorkflowStub(Hl7FromHl7LogWorkflow.class,
+                    ChildWorkflowOptions.newBuilder()
+                            .setTaskQueue(CHILD_QUEUE)
+                            .build()
+            );
+
     private final ActivityStub ingestActivity =
         Workflow.newUntypedActivityStub(
             ActivityOptions.newBuilder()
-                    .setTaskQueue("ingest-hl7-delta-lake")
+                    .setTaskQueue(PYTHON_QUEUE)
                     .setStartToCloseTimeout(Duration.ofMinutes(10))
                     .setRetryOptions(RetryOptions.newBuilder()
                             .setMaximumInterval(Duration.ofSeconds(1))
@@ -76,183 +82,155 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         WorkflowInfo workflowInfo = Workflow.getInfo();
         logger.info("Beginning workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
 
-        // Log input values
-        logger.debug("Input: {}", input);
+        // Parse / validate input
+        ParsedLogInput parsedLogInput = parseInput(input);
 
-        // Determine dates
-        List<String> dates = determineDate(input.date());
+        // Get final list of log paths
+        FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(parsedLogInput.logPaths(), parsedLogInput.yesterday(), input.logsRootPath());
+        FindHl7LogFileOutput findHl7LogFileOutput = findHl7LogsActivity.findHl7LogFiles(findHl7LogFileInput);
 
-        // Validate input
-        throwOnInvalidInput(input, dates);
-
-        String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
-
-        // Find log file by date
-        Deque<Promise<FindHl7LogFileOutput>> findHl7LogFileOutputPromises = dates.stream()
-                .map(date -> Async.function(hl7LogActivity::findHl7LogFile, new FindHl7LogFileInput(date, input.logsRootPath())))
-                .collect(Collectors.toCollection(LinkedList::new));
-        // Collect async results
-        List<FindHl7LogFileOutput> findHl7LogFileOutputs = getSuccessfulResults(findHl7LogFileOutputPromises);
-        if (findHl7LogFileOutputs.isEmpty()) {
-            throw ApplicationFailure.newNonRetryableFailure("No log files found", "type");
-        }
-
-        // Split log file
-        String splitLogFileOutputPath = scratchDir + "/split";
-        Deque<Promise<SplitHl7LogActivityOutput>> splitHl7LogOutputPromises = findHl7LogFileOutputs.stream()
-                .map(findHl7LogFileOutput -> Async.function(
-                        hl7LogActivity::splitHl7Log,
-                        new SplitHl7LogActivityInput(findHl7LogFileOutput.date(), findHl7LogFileOutput.logFileAbsPath(), splitLogFileOutputPath)
+        // Launch child workflow for each log file
+        logger.info("WorkflowId {} - Launching {} child workflows", workflowInfo.getWorkflowId(), findHl7LogFileOutput.logFiles().size());
+        List<Promise<Hl7FromHl7LogWorkflowOutput>> childWorkflowOutputPromises = findHl7LogFileOutput.logFiles().stream()
+                .map(logFile -> Async.function(
+                        hl7FromHl7LogWorkflow::splitAndTransformHl7Log,
+                        new Hl7FromHl7LogWorkflowInput(logFile, input.scratchSpaceRootPath(), input.hl7OutputPath())
                 ))
-                .collect(Collectors.toCollection(LinkedList::new));
-        // Collect async results
-        List<SplitHl7LogActivityOutput> splitHl7LogOutputs = getSuccessfulResults(splitHl7LogOutputPromises);
-        if (splitHl7LogOutputs.isEmpty()) {
-            throw ApplicationFailure.newNonRetryableFailure("Log file splitting failed", "type");
+                .toList();
+
+        // Block workflow until all child workflows are complete or failed
+        logger.info("WorkflowId {} - Waiting for {} child workflows to complete", workflowInfo.getWorkflowId(), childWorkflowOutputPromises.size());
+        List<Hl7FromHl7LogWorkflowOutput> childWorkflowOutputs = new AllOfPromiseOnlySuccesses<>(childWorkflowOutputPromises).get();
+        if (childWorkflowOutputs.isEmpty()) {
+            throw ApplicationFailure.newNonRetryableFailure("All child workflows failed", "type");
         }
 
-        // Transform split logs into proper hl7 files
-        String hl7RootPath = input.hl7OutputPath().endsWith("/") ? input.hl7OutputPath().substring(0, input.hl7OutputPath().length() - 1) : input.hl7OutputPath();
-        Deque<Promise<TransformSplitHl7LogOutput>> transformSplitHl7LogOutputPromises = new LinkedList<>();
-        for (SplitHl7LogActivityOutput splitHl7LogOutput : splitHl7LogOutputs) {
-            String date = splitHl7LogOutput.date();
-            for (String splitLogFileRelativePath : splitHl7LogOutput.relativePaths()) {
-                // Async call to transform a single split log file into HL7
-                String splitLogFilePath = splitHl7LogOutput.rootPath() + "/" + splitLogFileRelativePath;
-                TransformSplitHl7LogInput transformSplitHl7LogInput = new TransformSplitHl7LogInput(date, splitLogFilePath, hl7RootPath);
-                Promise<TransformSplitHl7LogOutput> transformSplitHl7LogOutputPromise =
-                        Async.function(hl7LogActivity::transformSplitHl7Log, transformSplitHl7LogInput);
-                transformSplitHl7LogOutputPromises.add(transformSplitHl7LogOutputPromise);
-            }
-        }
-        // Collect async results
-        List<TransformSplitHl7LogOutput> transformSplitHl7LogOutputs = getSuccessfulResults(transformSplitHl7LogOutputPromises);
-        if (transformSplitHl7LogOutputs.isEmpty()) {
-            throw ApplicationFailure.newNonRetryableFailure("HL7 transformation failed", "type");
-        }
 
-        // Partition hl7 paths by year, so it can avoid race conditions on writing the files
-        final Map<String, List<String>> hl7AbsolutePathsByYear = transformSplitHl7LogOutputs.stream()
-                .map(output -> Pair.of(output.date().substring(0, 4), hl7RootPath + "/" + output.relativePath()))
-                .collect(
-                        Collectors.groupingBy(
-                                Pair::getLeft,
-                                Collectors.mapping(Pair::getRight, Collectors.toList())
-                        )
-                );
+        logger.info("WorkflowId {} - Collecting results from {} successful child workflows", workflowInfo.getWorkflowId(), childWorkflowOutputs.size());
+
+        // Collect HL7 file-path-file paths
+        // This sounds more confusing than it is.
+        // Each child workflow writes a single file with the paths of the HL7 files it created.
+        // We collect the paths to these files (the contents of each being file paths) and pass them to the ingest activity.
+        int[] numHl7FilesHolder = {0};
+        List<String> hl7FilePathFiles = childWorkflowOutputs.stream()
+                .peek(output -> numHl7FilesHolder[0] += output.numHl7Files())
+                .map(Hl7FromHl7LogWorkflowOutput::hl7FilePathFile)
+                .toList();
 
         // Ingest HL7 into delta lake
-        // We execute the activity using the untyped stub because the activity is implemented in a different language
-        for (Map.Entry<String, List<String>> hl7AbsolutePathsEntry : hl7AbsolutePathsByYear.entrySet()) {
-            List<String> hl7AbsolutePaths = hl7AbsolutePathsEntry.getValue();
-            logger.info("Launching activity to ingest {} HL7 files for year {}",
-                    hl7AbsolutePaths.size(), hl7AbsolutePathsEntry.getKey());
-            IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
-                    INGEST_ACTIVITY_NAME,
-                    IngestHl7FilesToDeltaLakeOutput.class,
-                    new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7AbsolutePaths)
-            );
-        }
+        logger.info("WorkflowId {} - Launching activity to ingest {} HL7 files",
+                workflowInfo.getWorkflowId(), numHl7FilesHolder[0]);
+        IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
+                PYTHON_ACTIVITY,
+                IngestHl7FilesToDeltaLakeOutput.class,
+                new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7FilePathFiles)
+        );
 
+        logger.info("Completed workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
         return new IngestHl7LogWorkflowOutput();
     }
 
-    private static void throwOnInvalidInput(IngestHl7LogWorkflowInput input, List<String> dates) {
-        boolean hasLogsRootPath = input.logsRootPath() != null && !input.logsRootPath().isBlank();
-        boolean hasScratchSpaceRootPath = input.scratchSpaceRootPath() != null && !input.scratchSpaceRootPath().isBlank();
-        boolean hasHl7OutputPath = input.hl7OutputPath() != null && !input.hl7OutputPath().isBlank();
-        boolean hasDeltaLakePath = input.deltaLakePath() != null && !input.deltaLakePath().isBlank();
-        boolean hasDates = dates != null && !dates.isEmpty();
-
-        if (!(hasLogsRootPath && hasScratchSpaceRootPath && hasHl7OutputPath && hasDeltaLakePath && hasDates)) {
-            // We know something is missing
-            List<String> missingInputs = new ArrayList<>();
-            if (!hasLogsRootPath) {
-                missingInputs.add("logsRootPath");
-            }
-            if (!hasScratchSpaceRootPath) {
-                missingInputs.add("scratchSpaceRootPath");
-            }
-            if (!hasHl7OutputPath) {
-                missingInputs.add("hl7OutputPath");
-            }
-            if (!hasDeltaLakePath) {
-                missingInputs.add("deltaLakePath");
-            }
-            if (!hasDates) {
-                missingInputs.add("date");
-            }
-            String plural = missingInputs.size() == 1 ? "" : "s";
-            String missingInputsStr = String.join(", ", missingInputs);
-            throw ApplicationFailure.newNonRetryableFailure("Missing required input" + plural + ": " + missingInputsStr, "type");
-        }
-    }
-
     /**
-     * Determine the date to use for the workflow.
-     * If the input date is null, use the scheduled start time of the workflow minus one day—i.e. "yesterday".
-     * @param dateInput The date value from the workflow inputs
-     * @return Date to use for the workflow
+     * Parse and validate input.
+     *
+     * @param input Workflow input
+     * @return Log paths and "yesterday" date, if we are in a scheduled run
      */
-    private static List<String> determineDate(String dateInput) {
-        List<String> dates;
-        if (dateInput == null) {
-            // Get the date from the time the workflow was scheduled to start
-            // Note that there isn't a good API for this in the SDK. We have to use a
-            //  search attribute.
-            // See https://docs.temporal.io/workflows#action for docs on the search attribute.
-            // See also https://github.com/temporalio/features/issues/243 where someone asks
-            //  for a better API for this in the SDK.
-            OffsetDateTime scheduledTimeUtc = Workflow.getTypedSearchAttributes().get(SCHEDULED_START_TIME);
+    private static ParsedLogInput parseInput(IngestHl7LogWorkflowInput input) {
 
-            if (scheduledTimeUtc == null) {
-                logger.debug("No date input, and scheduled start time not found in search attributes.");
-                dates = Collections.emptyList();
-            } else {
-                // Ingest logs from "yesterday" which we define as the day before the scheduled time in the local timezone
-                ZoneId localTz = ZoneOffset.systemDefault();
-                OffsetDateTime scheduledTimeLocal = scheduledTimeUtc.atZoneSameInstant(localTz).toOffsetDateTime();
-                OffsetDateTime yesterday = scheduledTimeLocal.minusDays(1);
-                String date = yesterday.format(YYYYMMDD_FORMAT);
-                logger.debug("Using date {} from scheduled workflow start time {} ({} in TZ {}) minus one day", date, scheduledTimeUtc, scheduledTimeLocal, localTz);
-                dates = List.of(date);
+        // Need either log paths or logs root path
+        boolean hasLogPathsInput = input.logPaths() != null && !input.logPaths().isBlank();
+        boolean hasLogsRootPathInput = input.logsRootPath() != null && !input.logsRootPath().isBlank();
+        List<String> logPaths;
+        List<String> relativeLogPathsWithoutRoot = new ArrayList<>();
+        if (hasLogPathsInput) {
+            logPaths = new ArrayList<>();
+            Path logsRootPath = hasLogsRootPathInput ? Path.of(input.logsRootPath()) : null;
+            for (String logPath : input.logPaths().split(",")) {
+                if (logPath.startsWith("/")) {
+                    logPaths.add(logPath);
+                } else if (hasLogsRootPathInput) {
+                    logPaths.add(logsRootPath.resolve(logPath).toString());
+                } else {
+                    relativeLogPathsWithoutRoot.add(logPath);
+                }
             }
+        } else if (hasLogsRootPathInput) {
+            // If we have a logs root path, we will ingest all logs from that path
+            logPaths = List.of(input.logsRootPath());
         } else {
-            dates = Arrays.stream(dateInput.split(","))
-                    .map(date -> date.replace("-", ""))
-                    .toList();
-            logger.debug("Using dates {} from input value {}", dates, dateInput);
+            logPaths = Collections.emptyList();
         }
-        return dates;
+
+        // If we are in a scheduled run and we were not given any explicit log paths
+        //   we will ingest logs from "yesterday"
+        //   which we define as the day before the scheduled time in the local timezone
+        // Note: There isn't a good API to find the scheduled start time in the SDK. We have to use a
+        //  search attribute.
+        // See https://docs.temporal.io/workflows#action for docs on the search attribute.
+        // See also https://github.com/temporalio/features/issues/243 where someone asks
+        //  for a better API for this in the SDK.
+        OffsetDateTime scheduledTimeUtc = Workflow.getTypedSearchAttributes().get(SCHEDULED_START_TIME);
+        boolean hasScheduledTime = scheduledTimeUtc != null;
+        String yesterday = null;
+        if (hasScheduledTime && !hasLogPathsInput) {
+            ZoneId localTz = ZoneOffset.systemDefault();
+            OffsetDateTime scheduledTimeLocal = scheduledTimeUtc.atZoneSameInstant(localTz).toOffsetDateTime();
+            OffsetDateTime yesterdayDt = scheduledTimeLocal.minusDays(1);
+            yesterday = yesterdayDt.format(YYYYMMDD_FORMAT);
+            logger.info(
+                    "Using date {} from scheduled workflow start time {} ({} in TZ {}) minus one day",
+                    yesterday, scheduledTimeUtc, scheduledTimeLocal, localTz
+            );
+        }
+
+        // Now we have enough information to throw for invalid inputs
+        throwOnInvalidInput(
+                input, hasLogPathsInput, hasLogsRootPathInput, relativeLogPathsWithoutRoot, hasScheduledTime
+        );
+
+        return new ParsedLogInput(logPaths, yesterday);
     }
 
-    /**
-     * Collect the results of a list of promises, waiting for each to complete.
-     * If one of the activities has failed with a TemporalFailure, it will be logged and ignored.
-     * If one of the activities has failed with another exception, it will be rethrown.
-     * @param promises List of promises to collect results from
-     * @return List of results from the promises that succeeded
-     * @param <T> Type of the results
-     * @throws RuntimeException If one of the activities failed with an exception other than TemporalFailure
-     */
-    private static <T> List<T> getSuccessfulResults(Deque<Promise<T>> promises) throws RuntimeException {
-        // Collect async results
-        List<T> results = new ArrayList<>(promises.size());
-        while (!promises.isEmpty()) {
-            Promise<T> promise = promises.poll();
-            try {
-                results.add(promise.get(10, TimeUnit.MILLISECONDS));
-            } catch (TimeoutException ignored) {
-                // This is benign, it just means the activity hasn't completed yet
-                // Back to the queue
-                promises.add(promise);
-            } catch (TemporalFailure exception) {
-                logger.warn("An activity failed, but we ignore it. The workflow continues.", exception);
-            } catch (Exception exception) {
-                logger.error("An activity failed and the workflow will fail too.", exception);
-                throw exception;
+    private static void throwOnInvalidInput(
+            IngestHl7LogWorkflowInput input,
+            boolean hasLogPaths,
+            boolean hasLogRootPath,
+            List<String> relativeLogPaths,
+            boolean hasScheduledTime
+    ) {
+        List<String> messages = new ArrayList<>();
+
+        // Always required
+        Map<String, String> requiredInputs = Map.of(
+                "scratchSpacePath", input.scratchSpaceRootPath(),
+                "hl7OutputPath", input.hl7OutputPath(),
+                "deltaLakePath", input.deltaLakePath()
+        );
+        for (Map.Entry<String, String> entry : requiredInputs.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().isBlank()) {
+                messages.add("Missing required input: " + entry.getKey());
             }
         }
-        return results;
+
+        // Any relative log paths?
+        if (!relativeLogPaths.isEmpty()) {
+            messages.add("Can only use relative logPaths with logsRootPath. Invalid log paths: " + String.join(", ", relativeLogPaths));
+        }
+
+        // Need either log paths or logs root path
+        if (!hasLogPaths && !hasLogRootPath) {
+            messages.add("Must provide either logPaths or logsRootPath");
+        }
+
+        // If we are in a scheduled run, we need logs root path
+        if (hasScheduledTime && !hasLogRootPath) {
+            messages.add("Must provide logsRootPath for scheduled runs");
+        }
+
+        if (!messages.isEmpty()) {
+            throw ApplicationFailure.newNonRetryableFailure(String.join("; ", messages), "type");
+        }
     }
 }

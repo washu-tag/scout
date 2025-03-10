@@ -1,3 +1,5 @@
 package edu.washu.tag.temporal.model;
 
-public record FindHl7LogFileOutput(String date, String logFileAbsPath) { }
+import java.util.List;
+
+public record FindHl7LogFileOutput(List<String> logFiles) {}

@@ -113,3 +113,7 @@ config:
     s3:
       endpoint: 'http://minio.minio-scout'
       region: us-east-1
+
+spark:
+  executor:
+    memory: 1g

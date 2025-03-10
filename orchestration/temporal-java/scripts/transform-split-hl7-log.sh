@@ -32,9 +32,10 @@ dest="$directory/$timestamp.hl7"
 #   2. Remove one footer line
 #   3. Remove <R> at the end of lines
 #   4. Replace \n with \r (yes, this is a requirement for HL7)
+#   5. Use iconv to encode as UTF-8
 # Write new file to timestamped directory
 # TODO sed -e to use sed once
-tail -n +3 $f | sed \$d | sed 's/<R>$//' | tr $'\n' $'\r' > $dest
+tail -n +3 $f | sed \$d | sed 's/<R>$//' | tr $'\n' $'\r' | iconv -f ISO-8859-1 -t UTF-8 > $dest
 
 # output new file relative path
 echo $dest

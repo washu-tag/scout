@@ -4,9 +4,9 @@ import edu.washu.tag.temporal.model.SplitHl7LogActivityInput;
 import edu.washu.tag.temporal.model.SplitHl7LogActivityOutput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogInput;
 import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
+import edu.washu.tag.temporal.model.WriteHl7FilePathsFileInput;
+import edu.washu.tag.temporal.model.WriteHl7FilePathsFileOutput;
 import edu.washu.tag.temporal.util.FileHandler;
-import edu.washu.tag.temporal.model.FindHl7LogFileInput;
-import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
@@ -23,8 +23,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
+import static edu.washu.tag.temporal.util.Constants.CHILD_QUEUE;
+
 @Component
-@ActivityImpl(taskQueues = "ingest-hl7-log")
+@ActivityImpl(taskQueues = CHILD_QUEUE)
 public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private static final Logger logger = Workflow.getLogger(SplitHl7LogActivityImpl.class);
 
@@ -57,30 +59,9 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     }
 
     @Override
-    public FindHl7LogFileOutput findHl7LogFile(FindHl7LogFileInput input) {
-        logger.info("Finding HL7 log file for date {}", input.date());
-        File logsDir = Path.of(input.logsDir()).toFile();
-
-        // First try to find file in this dir
-        File[] logFiles = logsDir.listFiles((dir, name) -> name.contains(input.date()));
-        if (logFiles == null || logFiles.length == 0) {
-            // We didn't find file in root dir. Try to find file in a year subdirectory.
-            String year = input.date().substring(0, 4);
-            File[] yearDirs = logsDir.listFiles((dir, name) -> name.equals(year));
-            if (yearDirs != null && yearDirs.length == 1) {
-                logFiles = yearDirs[0].listFiles((dir, name) -> name.contains(input.date()));
-            }
-        }
-        if (logFiles == null || logFiles.length != 1) {
-            throw ApplicationFailure.newFailure("Expected exactly one file with date " + input.date() + " in " + input.logsDir() + ". Found " + (logFiles == null ? 0 : logFiles.length), "type");
-        }
-
-        return new FindHl7LogFileOutput(input.date(), logFiles[0].getAbsolutePath());
-    }
-
-    @Override
     public SplitHl7LogActivityOutput splitHl7Log(SplitHl7LogActivityInput input) {
-        logger.info("Splitting HL7 log file {}", input.logFilePath());
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+        logger.info("WorkflowId {} ActivityId {} - Splitting HL7 log file {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.logPath());
         ActivityInfo info = Activity.getExecutionContext().getInfo();
 
         URI destination = URI.create(input.rootOutputPath());
@@ -93,7 +74,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
         }
         // TODO configure the path to the script
-        String stdout = runScript(tempdir.toFile(), "/app/scripts/split-hl7-log.sh", input.logFilePath());
+        String stdout = runScript(tempdir.toFile(), "/app/scripts/split-hl7-log.sh", input.logPath());
         List<Path> relativePaths = Arrays.stream(stdout.split("\n")).map(Path::of).toList();
 
         List<String> destinationPaths;
@@ -106,15 +87,19 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             fileHandler.deleteDir(tempdir);
         } catch (IOException ignored) {
-            logger.warn("Failed to delete temp dir {}", tempdir);
+            logger.warn("WorkflowId {} ActivityId {} - Failed to delete temp dir {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), tempdir);
         }
 
-        return new SplitHl7LogActivityOutput(input.date(), input.rootOutputPath(), destinationPaths);
+        return new SplitHl7LogActivityOutput(destinationPaths);
     }
 
     @Override
     public TransformSplitHl7LogOutput transformSplitHl7Log(TransformSplitHl7LogInput input) {
-        logger.info("Transforming split HL7 log file {}", input.splitLogFile());
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+        logger.info(
+                "WorkflowId {} ActivityId {} - Transforming split HL7 log file {}",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.splitLogFile()
+        );
         ActivityInfo info = Activity.getExecutionContext().getInfo();
 
         URI destination = URI.create(input.rootOutputPath());
@@ -148,8 +133,43 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             fileHandler.deleteDir(tempdir);
         } catch (IOException ignored) {
-            logger.warn("Failed to delete temp dir {}", tempdir);
+            logger.warn("WorkflowId {} ActivityId {} - Failed to delete temp dir {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), tempdir);
         }
-        return new TransformSplitHl7LogOutput(input.date(), input.rootOutputPath(), destinationPath);
+        return new TransformSplitHl7LogOutput(input.rootOutputPath() + "/" + destinationPath);
+    }
+
+    @Override
+    public WriteHl7FilePathsFileOutput writeHl7FilePathsFile(WriteHl7FilePathsFileInput input) {
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+        logger.info("WorkflowId {} ActivityId {} - Writing HL7 file paths file", activityInfo.getWorkflowId(), activityInfo.getActivityId());
+
+        // Create tempdir
+        Path tempdir;
+        try {
+            tempdir = Files.createTempDirectory("write-hl7-file-paths-file-" + activityInfo.getWorkflowId() + "-" + activityInfo.getActivityId());
+        } catch (IOException e) {
+            throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
+        }
+
+        String hl7PathsFilename = "hl7-paths.txt";
+
+        // Write hl7 paths to temp file
+        Path logPathsFile = tempdir.resolve(hl7PathsFilename);
+        try {
+            Files.write(logPathsFile, input.hl7FilePaths());
+        } catch (IOException e) {
+            throw ApplicationFailure.newFailureWithCause("Could not write hl7 paths to file", "type", e);
+        }
+
+        // Put file to destination
+        URI scratch = URI.create(input.scratchSpacePath());
+        try {
+            fileHandler.put(logPathsFile, tempdir, scratch);
+        } catch (IOException e) {
+            throw ApplicationFailure.newFailureWithCause("Could not put hl7 paths file to " + scratch, "type", e);
+        }
+
+        // Return absolute path to file
+        return new WriteHl7FilePathsFileOutput(input.scratchSpacePath() + "/" + hl7PathsFilename, input.hl7FilePaths().size());
     }
 }
