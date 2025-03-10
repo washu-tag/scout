@@ -105,7 +105,6 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             throw ApplicationFailure.newNonRetryableFailure("All child workflows failed", "type");
         }
 
-
         logger.info("WorkflowId {} - Collecting results from {} successful child workflows", workflowInfo.getWorkflowId(), childWorkflowOutputs.size());
 
         // Collect HL7 file-path-file paths
