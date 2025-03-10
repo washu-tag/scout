@@ -2,12 +2,10 @@ package edu.washu.tag.temporal.activity;
 
 import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
-import edu.washu.tag.temporal.workflow.Hl7FromHl7LogWorkflow;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.ActivityImpl;
-import io.temporal.workflow.ChildWorkflowOptions;
 import io.temporal.workflow.Workflow;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -19,8 +17,10 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
+import static edu.washu.tag.temporal.util.Constants.PARENT_QUEUE;
+
 @Component
-@ActivityImpl(taskQueues = "ingest-hl7-log")
+@ActivityImpl(taskQueues = PARENT_QUEUE)
 public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
     private static final Logger logger = Workflow.getLogger(FindHl7LogsActivityImpl.class);
 

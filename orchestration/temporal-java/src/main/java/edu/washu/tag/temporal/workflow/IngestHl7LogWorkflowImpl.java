@@ -10,6 +10,7 @@ import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeOutput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowOutput;
 import edu.washu.tag.temporal.util.AllOfPromiseOnlySuccesses;
+import edu.washu.tag.temporal.util.Constants;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.common.SearchAttributeKey;
@@ -34,7 +35,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-@WorkflowImpl(taskQueues = "ingest-hl7-log")
+import static edu.washu.tag.temporal.util.Constants.PARENT_QUEUE;
+import static edu.washu.tag.temporal.util.Constants.CHILD_QUEUE;
+import static edu.washu.tag.temporal.util.Constants.PYTHON_ACTIVITY;
+import static edu.washu.tag.temporal.util.Constants.PYTHON_QUEUE;
+
+@WorkflowImpl(taskQueues = PARENT_QUEUE)
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private record ParsedLogInput(List<String> logPaths, String yesterday) { }
 
@@ -57,15 +63,14 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private final Hl7FromHl7LogWorkflow hl7FromHl7LogWorkflow =
             Workflow.newChildWorkflowStub(Hl7FromHl7LogWorkflow.class,
                     ChildWorkflowOptions.newBuilder()
-                            .setTaskQueue("split-transform-hl7-log")
+                            .setTaskQueue(CHILD_QUEUE)
                             .build()
             );
 
-    private static final String INGEST_ACTIVITY_NAME = "ingest_hl7_files_to_delta_lake_activity";
     private final ActivityStub ingestActivity =
         Workflow.newUntypedActivityStub(
             ActivityOptions.newBuilder()
-                    .setTaskQueue("ingest-hl7-delta-lake")
+                    .setTaskQueue(PYTHON_QUEUE)
                     .setStartToCloseTimeout(Duration.ofMinutes(10))
                     .setRetryOptions(RetryOptions.newBuilder()
                             .setMaximumInterval(Duration.ofSeconds(1))
@@ -118,7 +123,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         logger.info("WorkflowId {} - Launching activity to ingest {} HL7 files",
                 workflowInfo.getWorkflowId(), numHl7FilesHolder[0]);
         IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
-                INGEST_ACTIVITY_NAME,
+                PYTHON_ACTIVITY,
                 IngestHl7FilesToDeltaLakeOutput.class,
                 new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7FilePathFiles)
         );

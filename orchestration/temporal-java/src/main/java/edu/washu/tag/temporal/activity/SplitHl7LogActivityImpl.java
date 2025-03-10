@@ -23,8 +23,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
+import static edu.washu.tag.temporal.util.Constants.CHILD_QUEUE;
+
 @Component
-@ActivityImpl(taskQueues = "split-transform-hl7-log")
+@ActivityImpl(taskQueues = CHILD_QUEUE)
 public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private static final Logger logger = Workflow.getLogger(SplitHl7LogActivityImpl.class);
 

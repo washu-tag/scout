@@ -25,7 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@WorkflowImpl(taskQueues = "split-transform-hl7-log")
+import static edu.washu.tag.temporal.util.Constants.CHILD_QUEUE;
+
+@WorkflowImpl(taskQueues = CHILD_QUEUE)
 public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
     private static final Logger logger = Workflow.getLogger(Hl7FromHl7LogWorkflowImpl.class);
 
