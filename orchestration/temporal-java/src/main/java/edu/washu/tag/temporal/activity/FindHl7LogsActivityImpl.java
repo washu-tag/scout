@@ -103,6 +103,11 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
                     .findFirst()
                     .orElseThrow(() -> ApplicationFailure.newFailure("No filename contained date " + date + " in " + logsRootPath, "type"));
         } catch (IOException e) {
+            // I don't know how we could get an IOException here, so if we do it should propagate so we can investigate it
+            logger.warn(
+                    "WorkflowId {} ActivityId {} - Error finding log file for date {} in root path {}",
+                    activityInfo.getWorkflowId(), activityInfo.getActivityId(), date, logsRootPath, e
+            );
             throw Activity.wrap(e);
         }
     }
