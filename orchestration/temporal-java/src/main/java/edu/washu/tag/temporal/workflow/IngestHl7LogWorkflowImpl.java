@@ -10,7 +10,6 @@ import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeOutput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowOutput;
 import edu.washu.tag.temporal.util.AllOfPromiseOnlySuccesses;
-import edu.washu.tag.temporal.util.Constants;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.common.SearchAttributeKey;
