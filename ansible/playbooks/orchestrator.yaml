@@ -144,6 +144,9 @@
         values:
           image:
             repository: '{{ temporal_python_image | default(omit) }}'
+          spark:
+            executor:
+              memory: '{{ orchestrator_spark_memory }}'
           volumes: >-
             {{
               [{

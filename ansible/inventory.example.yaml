@@ -27,6 +27,7 @@ k3s_cluster:
     github_client_secret: $(echo $CLIENT_SECRET | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     github_organization: 'org'
     jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    orchestration_spark_memory: 8g
 
     # You probably don't want to change these unless you know these items will be
     # stored in different locations on your system

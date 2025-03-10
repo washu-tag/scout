@@ -47,10 +47,12 @@ def import_hl7_files_to_deltalake(
 ):
     """Extract data from HL7 messages and write to Delta Lake."""
 
+    # TODO This should be moved to a configuration file
     s3a_endpoint = os.environ.get("AWS_ENDPOINT_URL")
     s3a_access_key = os.environ.get("AWS_ACCESS_KEY_ID")
     s3a_secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
     s3a_region = os.environ.get("AWS_REGION", "us-east-1")
+    spark_executor_memory = os.environ.get("SPARK_EXECUTOR_MEMORY")
 
     if not s3a_endpoint or not s3a_access_key or not s3a_secret_key:
         raise ApplicationError("S3 endpoint, access key, and secret key required")
@@ -61,8 +63,6 @@ def import_hl7_files_to_deltalake(
         SparkSession.builder.appName("IngestHL7ToDeltaLake")
         # .config("spark.jars", "/opt/spark/jars/*.jar")
         .config("spark.jars", "/opt/spark/jars/smolder_2.12-0.1.0-SNAPSHOT.jar")
-        # TODO Do not merge this, we will need to add a configuration value for this
-        .config("spark.executor.memory", "8g")
         .config("spark.databricks.delta.schema.autoMerge.enabled", "true")
         .config("spark.databricks.delta.merge.repartitionBeforeWrite.enabled", "true")
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
@@ -81,6 +81,9 @@ def import_hl7_files_to_deltalake(
         )
         .config("spark.driver.extraJavaOptions", "-Divy.cache.dir=/tmp -Divy.home=/tmp")
     )
+
+    if spark_executor_memory:
+        spark_builder.config("spark.executor.memory", spark_executor_memory)
     spark = configure_spark_with_delta_pip(
         spark_builder, extra_packages=extra_packages
     ).getOrCreate()
