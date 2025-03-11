@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
  * Utility class for transforming log files into HL7 formatted files. This class processes log files by extracting timestamps, creating appropriate directory
  * structures, and formatting the content according to HL7 standards.
  */
-public class HL7LogTransformer {
+public class Hl7LogTransformer {
 
     // Constants
     private static final int HEADER_LENGTH = 24;

@@ -8,8 +8,8 @@ import edu.washu.tag.temporal.model.TransformSplitHl7LogOutput;
 import edu.washu.tag.temporal.model.WriteHl7FilePathsFileInput;
 import edu.washu.tag.temporal.model.WriteHl7FilePathsFileOutput;
 import edu.washu.tag.temporal.util.FileHandler;
-import edu.washu.tag.temporal.util.HL7LogSplitter;
-import edu.washu.tag.temporal.util.HL7LogTransformer;
+import edu.washu.tag.temporal.util.Hl7LogSplitter;
+import edu.washu.tag.temporal.util.Hl7LogTransformer;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
@@ -57,7 +57,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         List<Path> absolutePaths;
         try {
-            absolutePaths = HL7LogSplitter.splitLogFile(input.logPath(), tempdir);
+            absolutePaths = Hl7LogSplitter.splitLogFile(input.logPath(), tempdir);
         } catch (IOException e) {
             throw ApplicationFailure.newFailureWithCause("Failed to split log file " + input.logPath(), "type", e);
         }
@@ -103,7 +103,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         Path absolutePath;
         try {
-            absolutePath = HL7LogTransformer.transformLogFile(localFile, tempdir);
+            absolutePath = Hl7LogTransformer.transformLogFile(localFile, tempdir);
         } catch (IOException | FileFormatException e) {
             throw ApplicationFailure.newFailureWithCause("Could not transform split file " + localFile + " to HL7", "type", e);
         }

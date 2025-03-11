@@ -1,14 +1,18 @@
 package edu.washu.tag.temporal.util;
 
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Utility class for splitting HL7 log files. Splits a log file into multiple smaller files at empty lines which likely represent message boundaries in HL7
  * logs.
  */
-public class HL7LogSplitter {
+public class Hl7LogSplitter {
 
     /**
      * Splits an HL7 log file into multiple files at empty line boundaries.
@@ -38,8 +42,7 @@ public class HL7LogSplitter {
         return splitLogFile(logFilePath, prefix, outputDirectory);
     }
 
-    private static List<Path> splitLogFile(Path logFilePath, String outputPrefix, Path outputDirectory)
-        throws IOException {
+    private static List<Path> splitLogFile(Path logFilePath, String outputPrefix, Path outputDirectory) throws IOException {
         List<Path> outputFiles = new ArrayList<>();
         try (BufferedReader reader = Files.newBufferedReader(logFilePath)) {
             StringBuilder currentContent = new StringBuilder();
