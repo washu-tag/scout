@@ -2,6 +2,7 @@ package edu.washu.tag.temporal.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,7 +45,7 @@ public class Hl7LogSplitter {
 
     private static List<Path> splitLogFile(Path logFilePath, String outputPrefix, Path outputDirectory) throws IOException {
         List<Path> outputFiles = new ArrayList<>();
-        try (BufferedReader reader = Files.newBufferedReader(logFilePath)) {
+        try (BufferedReader reader = Files.newBufferedReader(logFilePath, StandardCharsets.ISO_8859_1)) {
             StringBuilder currentContent = new StringBuilder();
             String line;
             int fileCounter = 0;
@@ -56,7 +57,7 @@ public class Hl7LogSplitter {
                     if (!currentContent.isEmpty()) {
                         String outputFileName = String.format("%s.%05d", outputPrefix, fileCounter++);
                         Path outputPath = outputDirectory.resolve(outputFileName);
-                        Files.writeString(outputPath, currentContent.toString());
+                        Files.writeString(outputPath, currentContent.toString(), StandardCharsets.UTF_8);
                         outputFiles.add(outputPath);
                         currentContent.setLength(0); // Clear buffer
                     }
