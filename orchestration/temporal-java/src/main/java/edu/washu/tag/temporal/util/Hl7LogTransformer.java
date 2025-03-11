@@ -2,7 +2,6 @@ package edu.washu.tag.temporal.util;
 
 import edu.washu.tag.temporal.exception.FileFormatException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -91,7 +90,7 @@ public class Hl7LogTransformer {
             }
         }
 
-        String headerStr = new String(header, StandardCharsets.ISO_8859_1);
+        String headerStr = new String(header);
         return parseAndValidateTimestamp(headerStr, file.toString());
     }
 
@@ -156,7 +155,7 @@ public class Hl7LogTransformer {
         // Read the file content
         List<String> lines;
         try {
-            lines = Files.readAllLines(sourceFile, StandardCharsets.ISO_8859_1);
+            lines = Files.readAllLines(sourceFile);
         } catch (IOException e) {
             throw new IOException("Failed to read source file " + sourceFile, e);
         }
@@ -174,7 +173,7 @@ public class Hl7LogTransformer {
 
         // Write to destination file
         try {
-            Files.writeString(destinationPath, processedContent, StandardCharsets.UTF_8);
+            Files.writeString(destinationPath, processedContent);
         } catch (IOException e) {
             throw new IOException("Failed to write destination file " + destinationPath, e);
         }
