@@ -13,6 +13,7 @@ import io.temporal.workflow.Workflow;
 import java.net.URI;
 import java.net.URISyntaxException;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -28,6 +29,9 @@ import static edu.washu.tag.temporal.util.Constants.PARENT_QUEUE;
 @ActivityImpl(taskQueues = PARENT_QUEUE)
 public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
     private static final Logger logger = Workflow.getLogger(FindHl7LogsActivityImpl.class);
+
+    @Value("${scout.max-child-workflows}")
+    private int maxChildWorkflows;
 
     private final FileHandler fileHandler;
 
@@ -60,7 +64,7 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
 
         // If number of log files is over the limit, we will need to split our workflow into batches and Continue-As-New
         ContinueIngestWorkflow continued = null;
-        if (logFiles.size() > Constants.RETURN_LOG_LIST_SIZE_LIMIT) {
+        if (logFiles.size() > maxChildWorkflows) {
             continued = writeManifestFile(logFiles, input.manifestFilePath());
             logFiles = logFiles.subList(0, continued.nextIndex());
         }
@@ -104,12 +108,12 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
         // Return the next RETURN_LOG_LIST_SIZE_LIMIT files to process
         try (var lines = Files.lines(manifestFileTempPath)) {
             List<String> logFiles = lines.skip(input.nextIndex())
-                .limit(Constants.RETURN_LOG_LIST_SIZE_LIMIT)
+                .limit(maxChildWorkflows)
                 .toList();
 
             // Do we continue again or are we at the end?
             ContinueIngestWorkflow continued = null;
-            int nextIndex = input.nextIndex() + Constants.RETURN_LOG_LIST_SIZE_LIMIT;
+            int nextIndex = input.nextIndex() + maxChildWorkflows;
             if (nextIndex < logFiles.size()) {
                 continued = new ContinueIngestWorkflow(manifestFilePath, logFiles.size(), nextIndex);
             }
@@ -215,7 +219,7 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
             deleteTempDirectory(tempdir);
         }
 
-        return new ContinueIngestWorkflow(manifestFilePath, logFiles.size(), Constants.RETURN_LOG_LIST_SIZE_LIMIT);
+        return new ContinueIngestWorkflow(manifestFilePath, logFiles.size(), maxChildWorkflows);
     }
 
     private void deleteTempDirectory(Path tempdir) {
