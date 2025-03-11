@@ -1,12 +1,17 @@
 package edu.washu.tag.temporal.activity;
 
+import edu.washu.tag.temporal.model.ContinueIngestWorkflow;
 import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
+import edu.washu.tag.temporal.util.Constants;
+import edu.washu.tag.temporal.util.FileHandler;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.ActivityImpl;
 import io.temporal.workflow.Workflow;
+import java.net.URI;
+import java.net.URISyntaxException;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +28,13 @@ import static edu.washu.tag.temporal.util.Constants.PARENT_QUEUE;
 @ActivityImpl(taskQueues = PARENT_QUEUE)
 public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
     private static final Logger logger = Workflow.getLogger(FindHl7LogsActivityImpl.class);
+
+    private final FileHandler fileHandler;
+
+    public FindHl7LogsActivityImpl(FileHandler fileHandler) {
+        this.fileHandler = fileHandler;
+    }
+
 
     @Override
     public FindHl7LogFileOutput findHl7LogFiles(FindHl7LogFileInput input) {
@@ -46,7 +58,67 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
             throw ApplicationFailure.newFailure("No log files found for input " + input, "type");
         }
 
-        return new FindHl7LogFileOutput(logFiles);
+        // If number of log files is over the limit, we will need to split our workflow into batches and Continue-As-New
+        ContinueIngestWorkflow continued = null;
+        if (logFiles.size() > Constants.RETURN_LOG_LIST_SIZE_LIMIT) {
+            continued = writeManifestFile(logFiles, input.manifestFilePath());
+            logFiles = logFiles.subList(0, continued.nextIndex());
+        }
+
+        return new FindHl7LogFileOutput(logFiles, continued);
+    }
+
+    /**
+     * Continue the ingest workflow with the next batch of log files.
+     *
+     * @param input The input to continue the ingest workflow.
+     * @return The next batch of log files to process. Its continued field will be null if this is the final batch.
+     */
+    @Override
+    public FindHl7LogFileOutput continueIngestHl7LogWorkflow(ContinueIngestWorkflow input) {
+        String manifestFilePath = input.manifestFilePath();
+
+        URI manifestFileUri;
+        try {
+            manifestFileUri = new URI(manifestFilePath);
+        } catch (URISyntaxException e) {
+            throw ApplicationFailure.newFailureWithCause("Manifest file path " + manifestFilePath + " is not a URI", "type", e);
+        }
+
+        Path tempdir;
+        try {
+            tempdir = Files.createTempDirectory(null);
+        } catch (IOException e) {
+            throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
+        }
+        Path manifestFileTempPath = tempdir.resolve("manifest.txt");
+
+        try {
+            fileHandler.get(manifestFileUri, manifestFileTempPath);
+        } catch (IOException e) {
+            throw ApplicationFailure.newFailureWithCause("Could not download manifest file " + manifestFilePath + " to  " + manifestFileTempPath, "type", e);
+        }
+
+        // Read the manifest file
+        // Skip forward to the next index
+        // Return the next RETURN_LOG_LIST_SIZE_LIMIT files to process
+        try (var lines = Files.lines(manifestFileTempPath)) {
+            List<String> logFiles = lines.skip(input.nextIndex())
+                .limit(Constants.RETURN_LOG_LIST_SIZE_LIMIT)
+                .toList();
+
+            // Do we continue again or are we at the end?
+            ContinueIngestWorkflow continued = null;
+            int nextIndex = input.nextIndex() + Constants.RETURN_LOG_LIST_SIZE_LIMIT;
+            if (nextIndex < logFiles.size()) {
+                continued = new ContinueIngestWorkflow(manifestFilePath, logFiles.size(), nextIndex);
+            }
+            return new FindHl7LogFileOutput(logFiles, continued);
+        } catch (IOException e) {
+            throw ApplicationFailure.newFailureWithCause("Could not read manifest file " + manifestFilePath, "type", e);
+        } finally {
+            deleteTempDirectory(tempdir);
+        }
     }
 
     /**
@@ -102,6 +174,56 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
                     .toList();
         } catch (IOException e) {
             throw ApplicationFailure.newFailure("Error finding log file for date " + date + " in root path " + logsRootPath, "type", e);
+        }
+    }
+
+    /**
+     * Write the full list of log files into a manifest file
+     * @param logFiles Full list of log files to process
+     * @param manifestFilePath Path to the manifest file
+     * @return ContinueIngestWorkflow object with the manifest file path and the next index
+     */
+    private ContinueIngestWorkflow writeManifestFile(List<String> logFiles, String manifestFilePath) {
+        // Write out the full list into a manifest file
+        URI manifestFileDestination;
+        try {
+            manifestFileDestination = new URI(manifestFilePath);
+        } catch (URISyntaxException e) {
+            throw ApplicationFailure.newFailureWithCause("Manifest file path " + manifestFilePath + " is not a URI", "type", e);
+        }
+
+        Path tempdir;
+        try {
+            tempdir = Files.createTempDirectory(null);
+        } catch (IOException e) {
+            throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
+        }
+
+        Path manifestFileTempPath = tempdir.resolve("manifest.txt");
+        try {
+            Files.write(manifestFileTempPath, logFiles);
+        } catch (IOException e) {
+            throw ApplicationFailure.newFailureWithCause("Could not write manifest file", "type", e);
+        }
+
+        // Upload the file to the scratch space
+        try {
+            fileHandler.put(manifestFileTempPath, tempdir, manifestFileDestination);
+        } catch (IOException e) {
+            throw ApplicationFailure.newFailureWithCause("Could not write manifest file to  " + manifestFileDestination, "type", e);
+        } finally {
+            deleteTempDirectory(tempdir);
+        }
+
+        return new ContinueIngestWorkflow(manifestFilePath, logFiles.size(), Constants.RETURN_LOG_LIST_SIZE_LIMIT);
+    }
+
+    private void deleteTempDirectory(Path tempdir) {
+        try {
+            fileHandler.deleteDir(tempdir);
+        } catch (IOException ignored) {
+            ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+            logger.warn("WorkflowId {} ActivityId {} - Failed to delete temp dir {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), tempdir);
         }
     }
 }
