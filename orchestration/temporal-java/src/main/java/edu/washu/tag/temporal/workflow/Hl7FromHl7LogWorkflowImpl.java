@@ -31,7 +31,7 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
     private final SplitAndTransformHl7LogActivity hl7LogActivity =
             Workflow.newActivityStub(SplitAndTransformHl7LogActivity.class,
                     ActivityOptions.newBuilder()
-                            .setStartToCloseTimeout(Duration.ofMinutes(30))
+                            .setStartToCloseTimeout(Duration.ofHours(1))
                             .setRetryOptions(RetryOptions.newBuilder()
                                     .setMaximumInterval(Duration.ofSeconds(1))
                                     .setMaximumAttempts(5)

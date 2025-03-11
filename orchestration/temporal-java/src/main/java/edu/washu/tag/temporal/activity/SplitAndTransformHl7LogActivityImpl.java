@@ -8,8 +8,7 @@ import edu.washu.tag.temporal.model.SplitAndTransformHl7LogOutput;
 import edu.washu.tag.temporal.model.WriteHl7FilePathsFileInput;
 import edu.washu.tag.temporal.model.WriteHl7FilePathsFileOutput;
 import edu.washu.tag.temporal.util.FileHandler;
-import edu.washu.tag.temporal.util.HL7LogSplitter;
-import edu.washu.tag.temporal.util.HL7LogTransformer;
+import edu.washu.tag.temporal.util.Hl7LogProcessor;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
@@ -19,13 +18,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import javax.annotation.Nullable;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -59,76 +53,37 @@ public class SplitAndTransformHl7LogActivityImpl implements SplitAndTransformHl7
             throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
         }
 
-        // Step 1: Split the log file
-        List<Path> splitFilePaths;
+        List<Path> hl7LocalPaths;
         try {
-            splitFilePaths = HL7LogSplitter.splitLogFile(input.logPath(), tempdir);
+            hl7LocalPaths = Hl7LogProcessor.processLogFile(input.logPath(), tempdir);
         } catch (IOException e) {
-            throw ApplicationFailure.newFailureWithCause("Failed to split log file " + input.logPath(), "type", e);
+            throw ApplicationFailure.newFailureWithCause("Failed to split log file " + input.logPath() + " into HL7s", "type", e);
         }
 
-        // Step 2: In parallel, transform split files and upload to S3
-        List<String> hl7Paths = transformAndUpload(activityInfo, splitFilePaths, tempdir, destination);
+        List<String> hl7BlobPaths = hl7LocalPaths.stream().map(hl7 -> uploadHl7(hl7, tempdir, destination, activityInfo)).collect(Collectors.toList());
 
         deleteTempDir(activityInfo, tempdir);
 
-        if (hl7Paths.isEmpty()) {
+        if (hl7BlobPaths.isEmpty()) {
             // All the transforms/uploads failed, fail the activity
             logger.error("WorkflowId {} ActivityId {} - All transform and upload jobs failed for log {}", activityInfo.getWorkflowId(),
                 activityInfo.getActivityId(), input.logPath());
             throw ApplicationFailure.newFailure("Transform and upload task failed", "type");
         }
 
-        return new SplitAndTransformHl7LogOutput(hl7Paths);
+        return new SplitAndTransformHl7LogOutput(hl7BlobPaths);
     }
 
-    private List<String> transformAndUpload(ActivityInfo activityInfo, List<Path> splitFilePaths, Path tempdir, URI destination) {
-        List<String> hl7Paths = new ArrayList<>();
-        // Submit transformation tasks
-        for (Path splitFilePath : splitFilePaths) {
-            hl7Paths.add(transformSplitFileAndUpload(activityInfo, splitFilePath, tempdir, destination));
+    private String uploadHl7(Path hl7File, Path tempdir, URI destination, ActivityInfo activityInfo) {
+        String destinationPath;
+        try {
+            destinationPath = fileHandler.putWithRetry(hl7File, tempdir, destination);
+        } catch (IOException e) {
+            logger.error("\"WorkflowId {} ActivityId {} - Failed to upload {} to {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), hl7File,
+                destination, e);
+            return null;
         }
-        return hl7Paths;
-    }
-
-    private List<String> transformAndUploadInParallel(ActivityInfo activityInfo, List<Path> splitFilePaths, Path tempdir, URI destination) {
-        List<String> hl7Paths = new ArrayList<>();
-        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            List<Future<String>> transformFutures = new ArrayList<>();
-
-            // Submit transformation tasks
-            for (Path splitFilePath : splitFilePaths) {
-                transformFutures.add(executor.submit(() -> transformSplitFileAndUpload(activityInfo, splitFilePath, tempdir, destination)));
-            }
-
-            // Track task completion and collect results
-            int completed = 0;
-            int total = transformFutures.size();
-            for (Future<String> future : transformFutures) {
-                try {
-                    String hl7Path = future.get(); // This blocks until the task is done
-                    completed++;
-
-                    if (completed % 10 == 0 || completed == total) {
-                        logger.info("WorkflowId {} ActivityId {} - Transformed and uploaded {}/{} files", activityInfo.getWorkflowId(),
-                            activityInfo.getActivityId(), completed, total);
-                    }
-
-                    // Add the result to our list of paths
-                    if (hl7Path != null) {
-                        hl7Paths.add(hl7Path);
-                    }
-                } catch (ExecutionException ignored) {
-                    // Ignore execution exceptions (we shouldn't ever get them since we're catching and logging
-                    // within the transformSplitFileAndUpload, and just returning `null`)
-                    // We only want to fail this activity if ALL executions fail
-                } catch (InterruptedException e) {
-                    logger.error("WorkflowId {} ActivityId {} - Transform task failed", activityInfo.getWorkflowId(), activityInfo.getActivityId(), e);
-                    throw ApplicationFailure.newFailureWithCause("Transform and upload task interrupted", "type", e);
-                }
-            }
-        }
-        return hl7Paths;
+        return destination.toString() + "/" + destinationPath; // URI#resolve strips trailing path from destination
     }
 
     private void deleteTempDir(ActivityInfo activityInfo, Path tempdir) {
@@ -136,35 +91,6 @@ public class SplitAndTransformHl7LogActivityImpl implements SplitAndTransformHl7
             fileHandler.deleteDir(tempdir);
         } catch (IOException ignored) {
             logger.warn("WorkflowId {} ActivityId {} - Failed to delete temp dir {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), tempdir);
-        }
-    }
-
-    @Nullable
-    private String transformSplitFileAndUpload(ActivityInfo activityInfo, Path splitFilePath, Path tempdir, URI destination) {
-
-        logger.info("WorkflowId {} ActivityId {} - Transforming split HL7 log file {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(),
-            splitFilePath);
-        try {
-            Path hl7File;
-            try {
-                hl7File = HL7LogTransformer.transformLogFile(splitFilePath, tempdir);
-            } catch (IOException | FileFormatException e) {
-                throw ApplicationFailure.newFailureWithCause("Could not transform split file " + splitFilePath + " to HL7", "type", e);
-            }
-
-            String destinationPath;
-            try {
-                destinationPath = fileHandler.putWithRetry(hl7File, tempdir, destination);
-            } catch (IOException e) {
-                logger.error("\"WorkflowId {} ActivityId {} - Failed to upload {} to {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), hl7File,
-                    destination, e);
-                return null;
-            }
-            return destination.toString() + "/" + destinationPath; // URI#resolve strips trailing path from destination
-        } catch (Exception e) {
-            logger.error("WorkflowId {} ActivityId {} - Unexpected error during transform and upload of HL7 log file {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(),
-                splitFilePath);
-            return null;
         }
     }
 
