@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.support.RetrySynchronizationManager;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @Component
@@ -31,18 +32,39 @@ public class FileHandlerImpl implements FileHandler {
 
     @Override
     public String putWithRetry(Path filePath, Path filePathsRoot, URI destination) throws IOException {
+        retryLogging();
+        return put(filePath, filePathsRoot, destination);
+    }
+
+    @Override
+    public String putWithRetry(byte[] data, String relativePath, URI destination) {
+        retryLogging();
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+        if (!S3.equals(destination.getScheme())) {
+            throw new UnsupportedOperationException("Unsupported destination scheme " + destination.getScheme());
+        }
+        String bucket = destination.getHost();
+        String key = destination.getPath() + "/" + relativePath;
+        logger.debug("WorkflowId {} ActivityId {} - Uploading bytes to S3 bucket {} key {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(),
+            bucket, key);
+        s3Client.putObject(builder -> builder.bucket(bucket).key(key), RequestBody.fromBytes(data));
+        return destination + "/" + relativePath; // URI#resolve strips trailing path from destination;
+    }
+
+    private void retryLogging() {
         if (logger.isDebugEnabled()) {
             RetryContext context = RetrySynchronizationManager.getContext();
             if (context != null) {
                 logger.debug("Retry number {}", context.getRetryCount());
             }
         }
-        return put(filePath, filePathsRoot, destination);
     }
 
     @Override
     public String put(Path filePath, Path filePathsRoot, URI destination) throws IOException {
-        logger.debug("Put called: filePath {} filePathsRoot {} destination {}", filePath, filePathsRoot, destination);
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+        logger.debug("WorkflowId {} ActivityId {} - Put called: filePath {} filePathsRoot {} destination {}", activityInfo.getWorkflowId(),
+            activityInfo.getActivityId(), filePath, filePathsRoot, destination);
         Path relativeFilePath;
         Path absoluteFilePath;
         if (filePath.isAbsolute()) {
@@ -52,20 +74,24 @@ public class FileHandlerImpl implements FileHandler {
             relativeFilePath = filePath;
             absoluteFilePath = filePathsRoot.resolve(relativeFilePath);
         }
+
+        String outputPath;
         if (S3.equals(destination.getScheme())) {
             // Upload to S3
             String bucket = destination.getHost();
             String key = destination.getPath() + "/" + relativeFilePath;
             logger.debug("Uploading file {} to S3 bucket {} key {}", absoluteFilePath, bucket, key);
             s3Client.putObject(builder -> builder.bucket(bucket).key(key), absoluteFilePath);
+            outputPath = destination + "/" + relativeFilePath; // URI#resolve strips trailing path from destination;
         } else {
             // Copy local files
             Path absDestination = Path.of(destination).resolve(relativeFilePath);
             Files.createDirectories(absDestination);
             logger.debug("Copying file {} to {}", absoluteFilePath, absDestination);
             Files.copy(absoluteFilePath, absDestination);
+            outputPath = absoluteFilePath.toString();
         }
-        return relativeFilePath.toString();
+        return outputPath;
     }
 
     /**
@@ -75,7 +101,7 @@ public class FileHandlerImpl implements FileHandler {
      * @param filePathsRoot Local root directory of file paths. Will either be used to make relative paths absolute or to make absolute paths relative, as we
      *                      want both.
      * @param destination   URI of destination
-     * @return list of destination file relative paths
+     * @return list of destination file absolute paths
      * @throws IOException if an I/O error occurs
      */
     @Override
