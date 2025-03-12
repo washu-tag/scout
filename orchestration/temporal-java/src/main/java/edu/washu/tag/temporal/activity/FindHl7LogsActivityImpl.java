@@ -3,7 +3,6 @@ package edu.washu.tag.temporal.activity;
 import edu.washu.tag.temporal.model.ContinueIngestWorkflow;
 import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
-import edu.washu.tag.temporal.util.Constants;
 import edu.washu.tag.temporal.util.FileHandler;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
