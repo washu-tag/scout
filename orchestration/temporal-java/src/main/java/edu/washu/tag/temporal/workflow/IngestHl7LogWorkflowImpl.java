@@ -1,6 +1,7 @@
 package edu.washu.tag.temporal.workflow;
 
 import edu.washu.tag.temporal.activity.FindHl7LogsActivity;
+import edu.washu.tag.temporal.model.ContinueIngestWorkflow;
 import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
 import edu.washu.tag.temporal.model.Hl7FromHl7LogWorkflowInput;
@@ -82,12 +83,29 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         WorkflowInfo workflowInfo = Workflow.getInfo();
         logger.info("Beginning workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
 
-        // Parse / validate input
-        ParsedLogInput parsedLogInput = parseInput(input);
+        // Determine if we are starting a new workflow or resuming from a manifest file
+        FindHl7LogFileOutput findHl7LogFileOutput;
+        if (input.continued() == null) {
+            logger.info("WorkflowId {} - Starting new workflow", workflowInfo.getWorkflowId());
+            // Parse / validate input
+            ParsedLogInput parsedLogInput = parseInput(input);
 
-        // Get final list of log paths
-        FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(parsedLogInput.logPaths(), parsedLogInput.yesterday(), input.logsRootPath());
-        FindHl7LogFileOutput findHl7LogFileOutput = findHl7LogsActivity.findHl7LogFiles(findHl7LogFileInput);
+            // Construct a path for a new manifest file
+            String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
+            String manifestFilePath = scratchDir + "/manifest.txt";
+
+            // Get list of log paths to process
+            FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(
+                parsedLogInput.logPaths(), parsedLogInput.yesterday(), input.logsRootPath(), manifestFilePath
+            );
+            findHl7LogFileOutput = findHl7LogsActivity.findHl7LogFiles(findHl7LogFileInput);
+        } else {
+            logger.info("WorkflowId {} - Resuming from continued {}", workflowInfo.getWorkflowId(), input.continued());
+            findHl7LogFileOutput = findHl7LogsActivity.continueIngestHl7LogWorkflow(input.continued());
+        }
+
+        // At this point we have a list of file paths to process.
+        // We may have a manifest file and a next offset into that file; if so we will continue as new at the end.
 
         // Launch child workflow for each log file
         logger.info("WorkflowId {} - Launching {} child workflows", workflowInfo.getWorkflowId(), findHl7LogFileOutput.logFiles().size());
@@ -127,6 +145,24 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         );
 
         logger.info("Completed workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
+
+        // If we have a non-null continuation object, we will continue as new with the next index
+        ContinueIngestWorkflow nextContinued = findHl7LogFileOutput.continued();
+        if (nextContinued != null) {
+            logger.info("WorkflowId {} Continuing as new workflow - nextContinued {}", workflowInfo.getWorkflowId(), nextContinued);
+            Workflow.continueAsNew(
+                new IngestHl7LogWorkflowInput(
+                    input.date(),
+                    input.logsRootPath(),
+                    input.logPaths(),
+                    input.scratchSpaceRootPath(),
+                    input.hl7OutputPath(),
+                    input.deltaLakePath(),
+                    input.modalityMapPath(),
+                    nextContinued
+                )
+            );
+        }
         return new IngestHl7LogWorkflowOutput();
     }
 

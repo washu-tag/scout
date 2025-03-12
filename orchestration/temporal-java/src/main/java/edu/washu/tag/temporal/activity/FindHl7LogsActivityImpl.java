@@ -1,13 +1,20 @@
 package edu.washu.tag.temporal.activity;
 
+import edu.washu.tag.temporal.model.ContinueIngestWorkflow;
 import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
+import edu.washu.tag.temporal.util.FileHandler;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.ActivityImpl;
 import io.temporal.workflow.Workflow;
+import java.io.ByteArrayOutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -23,6 +30,16 @@ import static edu.washu.tag.temporal.util.Constants.PARENT_QUEUE;
 @ActivityImpl(taskQueues = PARENT_QUEUE)
 public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
     private static final Logger logger = Workflow.getLogger(FindHl7LogsActivityImpl.class);
+
+    @Value("${scout.max-child-workflows}")
+    private int maxChildWorkflows;
+
+    private final FileHandler fileHandler;
+
+    public FindHl7LogsActivityImpl(FileHandler fileHandler) {
+        this.fileHandler = fileHandler;
+    }
+
 
     @Override
     public FindHl7LogFileOutput findHl7LogFiles(FindHl7LogFileInput input) {
@@ -46,7 +63,63 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
             throw ApplicationFailure.newFailure("No log files found for input " + input, "type");
         }
 
-        return new FindHl7LogFileOutput(logFiles);
+        // If number of log files is over the limit, we will need to split our workflow into batches and Continue-As-New
+        ContinueIngestWorkflow continued = null;
+        if (logFiles.size() > maxChildWorkflows) {
+            continued = writeManifestFile(logFiles, input.manifestFilePath());
+            logFiles = logFiles.subList(0, continued.nextIndex());
+        }
+
+        return new FindHl7LogFileOutput(logFiles, continued);
+    }
+
+    /**
+     * Continue the ingest workflow with the next batch of log files.
+     *
+     * @param input The input to continue the ingest workflow.
+     * @return The next batch of log files to process. Its continued field will be null if this is the final batch.
+     */
+    @Override
+    public FindHl7LogFileOutput continueIngestHl7LogWorkflow(ContinueIngestWorkflow input) {
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+
+        String manifestFilePath = input.manifestFilePath();
+
+        URI manifestFileUri;
+        try {
+            manifestFileUri = new URI(manifestFilePath);
+        } catch (URISyntaxException e) {
+            throw ApplicationFailure.newFailureWithCause("Manifest file path " + manifestFilePath + " is not a URI", "type", e);
+        }
+
+        // Read the manifest file
+        logger.info("WorkflowId {} ActivityId {} - Reading manifest file {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), manifestFilePath);
+        String manifest;
+        try {
+            byte[] manifestBytes = fileHandler.read(manifestFileUri);
+            manifest = new String(manifestBytes);
+        } catch (IOException e) {
+            throw ApplicationFailure.newFailureWithCause("Failed to read manifest file " + manifestFilePath, "type", e);
+        }
+
+        // Get the next batch of log files to process
+        List<String> logFiles = Arrays.stream(manifest.split("\n"))
+            .skip(input.nextIndex())  // Skip forward to the next index
+            .limit(maxChildWorkflows) // Return the next maxChildWorkflows files to process
+            .toList();
+
+        // Do we continue again or are we at the end?
+        ContinueIngestWorkflow continued = null;
+        int nextIndex = input.nextIndex() + maxChildWorkflows;
+        if (nextIndex < input.numLogFiles()) {
+            logger.info("WorkflowId {} ActivityId {} - We will continue the workflow as new starting with index {}",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), nextIndex);
+            continued = new ContinueIngestWorkflow(manifestFilePath, input.numLogFiles(), nextIndex);
+        } else {
+            logger.info("WorkflowId {} ActivityId {} - nextIndex {} >= numLogFiles {}. This batch is the end of the log files.",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), nextIndex, input.numLogFiles());
+        }
+        return new FindHl7LogFileOutput(logFiles, continued);
     }
 
     /**
@@ -103,5 +176,34 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
         } catch (IOException e) {
             throw ApplicationFailure.newFailure("Error finding log file for date " + date + " in root path " + logsRootPath, "type", e);
         }
+    }
+
+    /**
+     * Write the full list of log files into a manifest file
+     * @param logFiles Full list of log files to process
+     * @param manifestFilePath Path to the manifest file
+     * @return ContinueIngestWorkflow object with the manifest file path and the next index
+     */
+    private ContinueIngestWorkflow writeManifestFile(List<String> logFiles, String manifestFilePath) {
+        // Write out the full list into a manifest file
+        URI manifestFileUri;
+        try {
+            manifestFileUri = new URI(manifestFilePath);
+        } catch (URISyntaxException e) {
+            throw ApplicationFailure.newFailureWithCause("Manifest file path " + manifestFilePath + " is not a URI", "type", e);
+        }
+
+        // Upload the file to the scratch space
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            for (String logFile : logFiles) {
+                outputStream.write(logFile.getBytes());
+                outputStream.write('\n');
+            }
+            fileHandler.putWithRetry(outputStream.toByteArray(), manifestFileUri);
+        } catch (IOException e) {
+            throw ApplicationFailure.newFailureWithCause("Could not write manifest file to  " + manifestFilePath, "type", e);
+        }
+
+        return new ContinueIngestWorkflow(manifestFilePath, logFiles.size(), maxChildWorkflows);
     }
 }
