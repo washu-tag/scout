@@ -62,7 +62,7 @@ public class AllOfPromiseOnlySuccesses<T> implements Promise<List<T>> {
                     if (e != null) {
                         logger.warn("Promise {} failed", f, e);
                     } else {
-                        logger.info("Promise {} succeeded", f);
+                        logger.debug("Promise {} succeeded", f);
                         this.results.add(r);
                     }
 
