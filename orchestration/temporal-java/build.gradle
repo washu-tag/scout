@@ -24,6 +24,8 @@ def checkstyleVersion = "10.21.2"
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.springframework:spring-aspects'
+	implementation 'org.springframework.retry:spring-retry'
 //	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
     implementation "io.temporal:temporal-sdk:${temporalVersion}"

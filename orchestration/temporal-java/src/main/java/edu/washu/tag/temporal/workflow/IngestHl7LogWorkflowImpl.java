@@ -52,7 +52,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private final FindHl7LogsActivity findHl7LogsActivity =
             Workflow.newActivityStub(FindHl7LogsActivity.class,
                     ActivityOptions.newBuilder()
-                            .setStartToCloseTimeout(Duration.ofSeconds(5))
+                            .setStartToCloseTimeout(Duration.ofMinutes(5))
                             .setRetryOptions(RetryOptions.newBuilder()
                                     .setMaximumInterval(Duration.ofSeconds(1))
                                     .setMaximumAttempts(3)
@@ -70,7 +70,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         Workflow.newUntypedActivityStub(
             ActivityOptions.newBuilder()
                     .setTaskQueue(PYTHON_QUEUE)
-                    .setStartToCloseTimeout(Duration.ofMinutes(10))
+                    .setStartToCloseTimeout(Duration.ofMinutes(30))
                     .setRetryOptions(RetryOptions.newBuilder()
                             .setMaximumInterval(Duration.ofSeconds(1))
                             .setMaximumAttempts(10)
@@ -104,7 +104,6 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         if (childWorkflowOutputs.isEmpty()) {
             throw ApplicationFailure.newNonRetryableFailure("All child workflows failed", "type");
         }
-
 
         logger.info("WorkflowId {} - Collecting results from {} successful child workflows", workflowInfo.getWorkflowId(), childWorkflowOutputs.size());
 
