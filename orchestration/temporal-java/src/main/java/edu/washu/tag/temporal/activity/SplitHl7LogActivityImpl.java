@@ -56,7 +56,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         logger.info("WorkflowId {} ActivityId {} - Splitting HL7 log file {} into component HL7 files", activityInfo.getWorkflowId(),
             activityInfo.getActivityId(), input.logPath());
 
-        URI destination = URI.create(input.rootOutputPath());
+        URI destination = URI.create(input.hl7OutputPath());
         List<String> hl7Paths;
         try {
             hl7Paths = processLogFile(input.logPath(), destination);
