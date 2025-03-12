@@ -172,11 +172,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private List<String> processLogFile(String logFile, URI destination) throws IOException {
         Path logFilePath = Paths.get(logFile);
 
-        // Check if file exists
-        if (!Files.exists(logFilePath) || !Files.isRegularFile(logFilePath)) {
-            throw new IllegalArgumentException("File not found: " + logFilePath);
-        }
-
         List<String> outputPaths = new ArrayList<>();
         try (BufferedReader reader = Files.newBufferedReader(logFilePath, StandardCharsets.ISO_8859_1)) {
             List<String> splitContent = new ArrayList<>();
