@@ -112,8 +112,13 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
         // Do we continue again or are we at the end?
         ContinueIngestWorkflow continued = null;
         int nextIndex = input.nextIndex() + maxChildWorkflows;
-        if (nextIndex < logFiles.size()) {
-            continued = new ContinueIngestWorkflow(manifestFilePath, logFiles.size(), nextIndex);
+        if (nextIndex < input.numLogFiles()) {
+            logger.info("WorkflowId {} ActivityId {} - We will continue the workflow as new starting with index {}",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), nextIndex);
+            continued = new ContinueIngestWorkflow(manifestFilePath, input.numLogFiles(), nextIndex);
+        } else {
+            logger.info("WorkflowId {} ActivityId {} - nextIndex {} >= numLogFiles {}. This batch is the end of the log files.",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), nextIndex, input.numLogFiles());
         }
         return new FindHl7LogFileOutput(logFiles, continued);
     }
