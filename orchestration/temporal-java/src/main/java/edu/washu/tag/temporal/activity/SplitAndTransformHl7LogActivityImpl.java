@@ -119,29 +119,19 @@ public class SplitAndTransformHl7LogActivityImpl implements SplitAndTransformHl7
      * @return The extracted timestamp
      * @throws FileFormatException If timestamp extraction fails
      */
-    private static String extractTimestamp(List<String> lines, String sourceInfo) throws FileFormatException {
-        // Combine the first few lines to ensure we have enough bytes for the header
-        StringBuilder headerBuilder = new StringBuilder();
-        for (String line : lines) {
-            headerBuilder.append(line);
-            if (headerBuilder.length() >= HEADER_LENGTH) {
-                break;
-            }
-            headerBuilder.append(System.lineSeparator());  // Add back the newline
-        }
-
-        String headerStr = headerBuilder.toString();
+    private String extractTimestamp(List<String> lines, String sourceInfo) throws FileFormatException {
+        String headerLine = lines.getFirst();
 
         // Check if we have enough bytes
-        if (headerStr.length() < HEADER_LENGTH) {
+        if (headerLine.length() < HEADER_LENGTH) {
             throw new FileFormatException(
-                String.format("Segment header is too short, expected at least %d bytes but got %d",
-                    HEADER_LENGTH, headerStr.length())
+                String.format("Header is too short, expected at least %d bytes but got %d - %s",
+                    HEADER_LENGTH, headerLine.length(), sourceInfo)
             );
         }
 
         // Extract the timestamp from the header
-        return parseAndValidateTimestamp(headerStr.substring(0, HEADER_LENGTH), sourceInfo);
+        return parseAndValidateTimestamp(headerLine.substring(0, HEADER_LENGTH), sourceInfo);
     }
 
     /**
@@ -152,7 +142,7 @@ public class SplitAndTransformHl7LogActivityImpl implements SplitAndTransformHl7
      * @return The parsed timestamp
      * @throws FileFormatException If the timestamp cannot be parsed or is invalid
      */
-    private static String parseAndValidateTimestamp(String headerStr, String sourceInfo) throws FileFormatException {
+    private String parseAndValidateTimestamp(String headerStr, String sourceInfo) throws FileFormatException {
         // Remove all non-digit characters
         String digitsOnly = headerStr.replaceAll("\\D", "");
 
