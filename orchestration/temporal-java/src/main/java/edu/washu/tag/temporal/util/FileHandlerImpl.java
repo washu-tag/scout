@@ -38,17 +38,23 @@ public class FileHandlerImpl implements FileHandler {
 
     @Override
     public String putWithRetry(byte[] data, String relativePath, URI destination) {
+        URI destinationWithRelativePath = URI.create(destination + "/" + relativePath);
+        return putWithRetry(data, destinationWithRelativePath);
+    }
+
+    @Override
+    public String putWithRetry(byte[] data, URI destination) {
         retryLogging();
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
         if (!S3.equals(destination.getScheme())) {
             throw new UnsupportedOperationException("Unsupported destination scheme " + destination.getScheme());
         }
         String bucket = destination.getHost();
-        String key = destination.getPath() + "/" + relativePath;
+        String key = destination.getPath();
         logger.debug("WorkflowId {} ActivityId {} - Uploading bytes to S3 bucket {} key {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(),
             bucket, key);
         s3Client.putObject(builder -> builder.bucket(bucket).key(key), RequestBody.fromBytes(data));
-        return destination + "/" + relativePath; // URI#resolve strips trailing path from destination;
+        return destination.toString();
     }
 
     private void retryLogging() {
@@ -137,6 +143,22 @@ public class FileHandlerImpl implements FileHandler {
             Files.copy(sourcePath, destination);
         }
         return destination;
+    }
+
+    @Override
+    public byte[] read(URI source) throws IOException {
+        retryLogging();
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+        if (S3.equals(source.getScheme())) {
+            String bucket = source.getHost();
+            String key = source.getPath();
+            logger.debug("WorkflowId {} ActivityId {} - Reading file from S3 bucket {} key {}", activityInfo.getWorkflowId(),
+                activityInfo.getActivityId(), bucket, key);
+
+            return s3Client.getObjectAsBytes(builder -> builder.bucket(bucket).key(key)).asByteArray();
+        } else {
+            return Files.readAllBytes(Path.of(source));
+        }
     }
 
     @Override

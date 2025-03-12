@@ -10,8 +10,10 @@ import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.ActivityImpl;
 import io.temporal.workflow.Workflow;
+import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -80,6 +82,8 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
      */
     @Override
     public FindHl7LogFileOutput continueIngestHl7LogWorkflow(ContinueIngestWorkflow input) {
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+
         String manifestFilePath = input.manifestFilePath();
 
         URI manifestFileUri;
@@ -89,40 +93,29 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
             throw ApplicationFailure.newFailureWithCause("Manifest file path " + manifestFilePath + " is not a URI", "type", e);
         }
 
-        Path tempdir;
-        try {
-            tempdir = Files.createTempDirectory(null);
-        } catch (IOException e) {
-            throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
-        }
-        Path manifestFileTempPath = tempdir.resolve("manifest.txt");
-
-        try {
-            fileHandler.get(manifestFileUri, manifestFileTempPath);
-        } catch (IOException e) {
-            throw ApplicationFailure.newFailureWithCause("Could not download manifest file " + manifestFilePath + " to  " + manifestFileTempPath, "type", e);
-        }
-
         // Read the manifest file
-        // Skip forward to the next index
-        // Return the next RETURN_LOG_LIST_SIZE_LIMIT files to process
-        try (var lines = Files.lines(manifestFileTempPath)) {
-            List<String> logFiles = lines.skip(input.nextIndex())
-                .limit(maxChildWorkflows)
-                .toList();
-
-            // Do we continue again or are we at the end?
-            ContinueIngestWorkflow continued = null;
-            int nextIndex = input.nextIndex() + maxChildWorkflows;
-            if (nextIndex < logFiles.size()) {
-                continued = new ContinueIngestWorkflow(manifestFilePath, logFiles.size(), nextIndex);
-            }
-            return new FindHl7LogFileOutput(logFiles, continued);
+        logger.info("WorkflowId {} ActivityId {} - Reading manifest file {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), manifestFilePath);
+        String manifest;
+        try {
+            byte[] manifestBytes = fileHandler.read(manifestFileUri);
+            manifest = new String(manifestBytes);
         } catch (IOException e) {
-            throw ApplicationFailure.newFailureWithCause("Could not read manifest file " + manifestFilePath, "type", e);
-        } finally {
-            deleteTempDirectory(tempdir);
+            throw ApplicationFailure.newFailureWithCause("Failed to read manifest file " + manifestFilePath, "type", e);
         }
+
+        // Get the next batch of log files to process
+        List<String> logFiles = Arrays.stream(manifest.split("\n"))
+            .skip(input.nextIndex())  // Skip forward to the next index
+            .limit(maxChildWorkflows) // Return the next maxChildWorkflows files to process
+            .toList();
+
+        // Do we continue again or are we at the end?
+        ContinueIngestWorkflow continued = null;
+        int nextIndex = input.nextIndex() + maxChildWorkflows;
+        if (nextIndex < logFiles.size()) {
+            continued = new ContinueIngestWorkflow(manifestFilePath, logFiles.size(), nextIndex);
+        }
+        return new FindHl7LogFileOutput(logFiles, continued);
     }
 
     /**
@@ -189,45 +182,24 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
      */
     private ContinueIngestWorkflow writeManifestFile(List<String> logFiles, String manifestFilePath) {
         // Write out the full list into a manifest file
-        URI manifestFileDestination;
+        URI manifestFileUri;
         try {
-            manifestFileDestination = new URI(manifestFilePath);
+            manifestFileUri = new URI(manifestFilePath);
         } catch (URISyntaxException e) {
             throw ApplicationFailure.newFailureWithCause("Manifest file path " + manifestFilePath + " is not a URI", "type", e);
         }
 
-        Path tempdir;
-        try {
-            tempdir = Files.createTempDirectory(null);
-        } catch (IOException e) {
-            throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
-        }
-
-        Path manifestFileTempPath = tempdir.resolve("manifest.txt");
-        try {
-            Files.write(manifestFileTempPath, logFiles);
-        } catch (IOException e) {
-            throw ApplicationFailure.newFailureWithCause("Could not write manifest file", "type", e);
-        }
-
         // Upload the file to the scratch space
-        try {
-            fileHandler.put(manifestFileTempPath, tempdir, manifestFileDestination);
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            for (String logFile : logFiles) {
+                outputStream.write(logFile.getBytes());
+                outputStream.write('\n');
+            }
+            fileHandler.putWithRetry(outputStream.toByteArray(), manifestFileUri);
         } catch (IOException e) {
-            throw ApplicationFailure.newFailureWithCause("Could not write manifest file to  " + manifestFileDestination, "type", e);
-        } finally {
-            deleteTempDirectory(tempdir);
+            throw ApplicationFailure.newFailureWithCause("Could not write manifest file to  " + manifestFilePath, "type", e);
         }
 
         return new ContinueIngestWorkflow(manifestFilePath, logFiles.size(), maxChildWorkflows);
-    }
-
-    private void deleteTempDirectory(Path tempdir) {
-        try {
-            fileHandler.deleteDir(tempdir);
-        } catch (IOException ignored) {
-            ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
-            logger.warn("WorkflowId {} ActivityId {} - Failed to delete temp dir {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), tempdir);
-        }
     }
 }

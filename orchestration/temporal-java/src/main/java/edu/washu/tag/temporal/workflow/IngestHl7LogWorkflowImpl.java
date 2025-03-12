@@ -92,11 +92,11 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
             // Construct a path for a new manifest file
             String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
-            String manifestFilePath = scratchDir + "/log_manifest_" + workflowInfo.getWorkflowId() + ".txt";
+            String manifestFilePath = scratchDir + "/manifest.txt";
 
             // Get list of log paths to process
             FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(
-                parsedLogInput.logPaths(), parsedLogInput.yesterday(), input.logsRootPath(), scratchDir
+                parsedLogInput.logPaths(), parsedLogInput.yesterday(), input.logsRootPath(), manifestFilePath
             );
             findHl7LogFileOutput = findHl7LogsActivity.findHl7LogFiles(findHl7LogFileInput);
         } else {
