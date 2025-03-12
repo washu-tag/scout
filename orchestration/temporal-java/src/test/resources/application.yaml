@@ -15,3 +15,5 @@ spring:
 s3:
   endpoint: 'http://minio.minio:9000'
   region: us-east-1
+scout:
+  max-child-workflows: 100
