@@ -5,8 +5,6 @@ import static edu.washu.tag.temporal.util.Constants.CHILD_QUEUE;
 import edu.washu.tag.temporal.exception.FileFormatException;
 import edu.washu.tag.temporal.model.SplitAndTransformHl7LogInput;
 import edu.washu.tag.temporal.model.SplitAndTransformHl7LogOutput;
-import edu.washu.tag.temporal.model.WriteHl7FilePathsFileInput;
-import edu.washu.tag.temporal.model.WriteHl7FilePathsFileOutput;
 import edu.washu.tag.temporal.util.FileHandler;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
@@ -32,6 +30,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     private static final Logger logger = Workflow.getLogger(SplitHl7LogActivityImpl.class);
     // Constants
+    private static final String HL7_PATHS_FILENAME = "hl7-paths.txt";
     private static final int HEADER_LENGTH = 24;
     private static final int MIN_TIMESTAMP_LENGTH = 14;
     private static final int EXPECTED_TIMESTAMP_LENGTH = 18;
@@ -58,7 +57,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             activityInfo.getActivityId(), input.logPath());
 
         URI destination = URI.create(input.rootOutputPath());
-
         List<String> hl7Paths;
         try {
             hl7Paths = processLogFile(input.logPath(), destination);
@@ -73,42 +71,17 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             throw ApplicationFailure.newFailure("Transform and upload task failed", "type");
         }
 
-        return new SplitAndTransformHl7LogOutput(hl7Paths);
-    }
-
-    @Override
-    public WriteHl7FilePathsFileOutput writeHl7FilePathsFile(WriteHl7FilePathsFileInput input) {
-        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
-        logger.info("WorkflowId {} ActivityId {} - Writing HL7 file paths file", activityInfo.getWorkflowId(), activityInfo.getActivityId());
-
-        // Create tempdir
-        Path tempdir;
+        URI scratchDir = URI.create(input.scratchDir());
+        logger.info("WorkflowId {} ActivityId {} - Uploading log file list to {}", activityInfo.getWorkflowId(),
+            activityInfo.getActivityId(), scratchDir);
+        String uploadedList;
         try {
-            tempdir = Files.createTempDirectory("write-hl7-file-paths-file-" + activityInfo.getWorkflowId() + "-" + activityInfo.getActivityId());
+            uploadedList = uploadHl7PathList(hl7Paths, scratchDir);
         } catch (IOException e) {
-            throw ApplicationFailure.newFailureWithCause("Could not create temp directory", "type", e);
+            throw ApplicationFailure.newFailureWithCause("Failed to upload log file list to {}" + scratchDir, "type", e);
         }
 
-        String hl7PathsFilename = "hl7-paths.txt";
-
-        // Write hl7 paths to temp file
-        Path logPathsFile = tempdir.resolve(hl7PathsFilename);
-        try {
-            Files.write(logPathsFile, input.hl7FilePaths());
-        } catch (IOException e) {
-            throw ApplicationFailure.newFailureWithCause("Could not write hl7 paths to file", "type", e);
-        }
-
-        // Put file to destination
-        URI scratch = URI.create(input.scratchSpacePath());
-        try {
-            fileHandler.put(logPathsFile, tempdir, scratch);
-        } catch (IOException e) {
-            throw ApplicationFailure.newFailureWithCause("Could not put hl7 paths file to " + scratch, "type", e);
-        }
-
-        // Return absolute path to file
-        return new WriteHl7FilePathsFileOutput(input.scratchSpacePath() + "/" + hl7PathsFilename, input.hl7FilePaths().size());
+        return new SplitAndTransformHl7LogOutput(uploadedList, hl7Paths.size());
     }
 
     /**
@@ -230,6 +203,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
      */
     private String transformAndUpload(List<String> lines, URI destination, String sourceInfo)
         throws IOException, FileFormatException {
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
 
         // Need at least 3 lines (2 header lines + content)
         if (lines.size() < 3) {
@@ -241,6 +215,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         // Define output path
         String relativePath = getTimestampPath(timestamp).resolve(timestamp + ".hl7").toString();
+        logger.debug("WorkflowId {} ActivityId {} - Transforming HL7 file {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), relativePath);
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             // Start from the third line (exclude header)
             for (int i = 2; i < lines.size(); i++) {
@@ -251,6 +226,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 outputStream.write('\r');
             }
 
+            logger.debug("WorkflowId {} ActivityId {} - Uploading HL7 file {}/{}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), destination,
+                relativePath);
             // Convert to byte array and upload to S3
             // We could use piped streams to avoid loading the whole thing into memory, but this adds complexity that isn't warranted for these small files
             return fileHandler.putWithRetry(outputStream.toByteArray(), relativePath, destination);
@@ -265,5 +242,14 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         // Create the directory path
         return Path.of(year, month, day, hour);
+    }
+
+    private String uploadHl7PathList(List<String> hl7Paths, URI scratchDir) throws IOException {
+        return fileHandler.putWithRetry(convertListToByteArray(hl7Paths), HL7_PATHS_FILENAME, scratchDir);
+    }
+
+    private byte[] convertListToByteArray(List<String> hl7FilePaths) {
+        String content = String.join(System.lineSeparator(), hl7FilePaths);
+        return content.getBytes(StandardCharsets.UTF_8);
     }
 }
