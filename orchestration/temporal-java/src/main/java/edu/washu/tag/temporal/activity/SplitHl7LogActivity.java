@@ -8,7 +8,7 @@ import io.temporal.activity.ActivityInterface;
 import io.temporal.activity.ActivityMethod;
 
 @ActivityInterface
-public interface SplitAndTransformHl7LogActivity {
+public interface SplitHl7LogActivity {
     @ActivityMethod
     SplitAndTransformHl7LogOutput splitAndTransformHl7Log(SplitAndTransformHl7LogInput input);
 

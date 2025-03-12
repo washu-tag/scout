@@ -1,13 +1,12 @@
 package edu.washu.tag.temporal.workflow;
 
-import edu.washu.tag.temporal.activity.SplitAndTransformHl7LogActivity;
+import edu.washu.tag.temporal.activity.SplitHl7LogActivity;
 import edu.washu.tag.temporal.model.Hl7FromHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.Hl7FromHl7LogWorkflowOutput;
 import edu.washu.tag.temporal.model.SplitAndTransformHl7LogInput;
 import edu.washu.tag.temporal.model.SplitAndTransformHl7LogOutput;
 import edu.washu.tag.temporal.model.WriteHl7FilePathsFileInput;
 import edu.washu.tag.temporal.model.WriteHl7FilePathsFileOutput;
-import edu.washu.tag.temporal.util.AllOfPromiseOnlySuccesses;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.failure.ApplicationFailure;
@@ -28,8 +27,8 @@ public class Hl7FromHl7LogWorkflowImpl implements Hl7FromHl7LogWorkflow {
 
     private static final Logger logger = Workflow.getLogger(Hl7FromHl7LogWorkflowImpl.class);
 
-    private final SplitAndTransformHl7LogActivity hl7LogActivity =
-            Workflow.newActivityStub(SplitAndTransformHl7LogActivity.class,
+    private final SplitHl7LogActivity hl7LogActivity =
+            Workflow.newActivityStub(SplitHl7LogActivity.class,
                     ActivityOptions.newBuilder()
                             .setStartToCloseTimeout(Duration.ofHours(1))
                             .setRetryOptions(RetryOptions.newBuilder()

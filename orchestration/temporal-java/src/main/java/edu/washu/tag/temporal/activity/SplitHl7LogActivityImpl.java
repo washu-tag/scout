@@ -28,9 +28,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @ActivityImpl(taskQueues = CHILD_QUEUE)
-public class SplitAndTransformHl7LogActivityImpl implements SplitAndTransformHl7LogActivity {
+public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
-    private static final Logger logger = Workflow.getLogger(SplitAndTransformHl7LogActivityImpl.class);
+    private static final Logger logger = Workflow.getLogger(SplitHl7LogActivityImpl.class);
     // Constants
     private static final int HEADER_LENGTH = 24;
     private static final int MIN_TIMESTAMP_LENGTH = 14;
@@ -47,7 +47,7 @@ public class SplitAndTransformHl7LogActivityImpl implements SplitAndTransformHl7
     // Autowire FileHandler
     private final FileHandler fileHandler;
 
-    public SplitAndTransformHl7LogActivityImpl(FileHandler fileHandler) {
+    public SplitHl7LogActivityImpl(FileHandler fileHandler) {
         this.fileHandler = fileHandler;
     }
 
