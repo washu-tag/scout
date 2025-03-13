@@ -4440,14 +4440,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "s"
         },
         "overrides": []
       },
@@ -4566,6 +4568,6 @@
   "timezone": "",
   "title": "Temporal",
   "uid": "scout_temporal_dashboard_01",
-  "version": 10,
+  "version": 2,
   "weekStart": ""
 }
