@@ -71,14 +71,14 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             throw ApplicationFailure.newFailure("Transform and upload task failed", "type");
         }
 
-        URI scratchDir = URI.create(input.scratchDir());
+        URI activityHl7ListUri = URI.create(input.scratchDir() + "/" + activityInfo.getActivityId() + "/" + HL7_PATHS_FILENAME);
         logger.info("WorkflowId {} ActivityId {} - Uploading log file list to {}", activityInfo.getWorkflowId(),
-            activityInfo.getActivityId(), scratchDir);
+            activityInfo.getActivityId(), activityHl7ListUri);
         String uploadedList;
         try {
-            uploadedList = uploadHl7PathList(hl7Paths, scratchDir);
+            uploadedList = uploadHl7PathList(hl7Paths, activityHl7ListUri);
         } catch (IOException e) {
-            throw ApplicationFailure.newFailureWithCause("Failed to upload log file list to {}" + scratchDir, "type", e);
+            throw ApplicationFailure.newFailureWithCause("Failed to upload log file list to {}" + activityHl7ListUri, "type", e);
         }
 
         return new SplitAndTransformHl7LogOutput(uploadedList, hl7Paths.size());
@@ -244,8 +244,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         return Path.of(year, month, day, hour);
     }
 
-    private String uploadHl7PathList(List<String> hl7Paths, URI scratchDir) throws IOException {
-        return fileHandler.putWithRetry(convertListToByteArray(hl7Paths), HL7_PATHS_FILENAME, scratchDir);
+    private String uploadHl7PathList(List<String> hl7Paths, URI destination) throws IOException {
+        return fileHandler.putWithRetry(convertListToByteArray(hl7Paths), destination);
     }
 
     private byte[] convertListToByteArray(List<String> hl7FilePaths) {
