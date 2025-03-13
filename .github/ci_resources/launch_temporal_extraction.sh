@@ -10,9 +10,10 @@ logspath="/data/hl7"
 json=$(kubectl exec -n temporal -i service/temporal-admintools -- temporal workflow start \
   --task-queue ingest-hl7-log \
   --type IngestHl7LogWorkflow \
-  --input '{"deltaLakePath":"'$deltalakepath'", "hl7OutputPath": "'$hl7path'", "scratchSpaceRootPath": "'$scratchpath'", "logsRootPath": "'$logspath'"}')
+  --input '{"deltaLakePath":"'$deltalakepath'", "hl7OutputPath": "'$hl7path'", "scratchSpaceRootPath": "'$scratchpath'", "logsRootPath": "'$logspath'"}' \
+  -o json)
 
-workflowId=$(echo $json | awk '{print $4}')
+workflowId=$(echo $json | jq -r '.workflowId')
 
 max_wait=60
 for ((i = 0; i <= max_wait; ++i)); do
