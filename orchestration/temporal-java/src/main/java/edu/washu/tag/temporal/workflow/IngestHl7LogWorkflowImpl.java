@@ -2,14 +2,15 @@ package edu.washu.tag.temporal.workflow;
 
 import edu.washu.tag.temporal.activity.FindHl7LogsActivity;
 import edu.washu.tag.temporal.model.ContinueIngestWorkflow;
+import edu.washu.tag.temporal.activity.SplitHl7LogActivity;
 import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
-import edu.washu.tag.temporal.model.Hl7FromHl7LogWorkflowInput;
-import edu.washu.tag.temporal.model.Hl7FromHl7LogWorkflowOutput;
 import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeInput;
 import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeOutput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowOutput;
+import edu.washu.tag.temporal.model.SplitAndTransformHl7LogInput;
+import edu.washu.tag.temporal.model.SplitAndTransformHl7LogOutput;
 import edu.washu.tag.temporal.util.AllOfPromiseOnlySuccesses;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
@@ -18,7 +19,6 @@ import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.ActivityStub;
 import io.temporal.workflow.Async;
-import io.temporal.workflow.ChildWorkflowOptions;
 import io.temporal.workflow.Promise;
 import io.temporal.workflow.Workflow;
 import io.temporal.workflow.WorkflowInfo;
@@ -60,13 +60,6 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                                     .build())
                             .build());
 
-    private final Hl7FromHl7LogWorkflow hl7FromHl7LogWorkflow =
-            Workflow.newChildWorkflowStub(Hl7FromHl7LogWorkflow.class,
-                    ChildWorkflowOptions.newBuilder()
-                            .setTaskQueue(CHILD_QUEUE)
-                            .build()
-            );
-
     private final ActivityStub ingestActivity =
         Workflow.newUntypedActivityStub(
             ActivityOptions.newBuilder()
@@ -77,6 +70,17 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                             .setMaximumAttempts(10)
                             .build())
                     .build());
+
+    private final SplitHl7LogActivity hl7LogActivity =
+        Workflow.newActivityStub(SplitHl7LogActivity.class,
+            ActivityOptions.newBuilder()
+                .setTaskQueue(CHILD_QUEUE)
+                .setStartToCloseTimeout(Duration.ofHours(1))
+                .setRetryOptions(RetryOptions.newBuilder()
+                    .setMaximumInterval(Duration.ofSeconds(30))
+                    .setMaximumAttempts(5)
+                    .build())
+                .build());
 
     @Override
     public IngestHl7LogWorkflowOutput ingestHl7Log(IngestHl7LogWorkflowInput input) {
@@ -107,32 +111,31 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         // At this point we have a list of file paths to process.
         // We may have a manifest file and a next offset into that file; if so we will continue as new at the end.
 
-        // Launch child workflow for each log file
-        logger.info("WorkflowId {} - Launching {} child workflows", workflowInfo.getWorkflowId(), findHl7LogFileOutput.logFiles().size());
-        List<Promise<Hl7FromHl7LogWorkflowOutput>> childWorkflowOutputPromises = findHl7LogFileOutput.logFiles().stream()
+        // Launch child activity for each log file
+        logger.info("WorkflowId {} - Launching {} async activities", workflowInfo.getWorkflowId(), findHl7LogFileOutput.logFiles().size());
+        List<Promise<SplitAndTransformHl7LogOutput>> transformSplitHl7LogOutputPromises = findHl7LogFileOutput.logFiles().stream()
                 .map(logFile -> Async.function(
-                        hl7FromHl7LogWorkflow::splitAndTransformHl7Log,
-                        new Hl7FromHl7LogWorkflowInput(logFile, input.scratchSpaceRootPath(), input.hl7OutputPath())
+                        hl7LogActivity::splitAndTransformHl7Log,
+                        new SplitAndTransformHl7LogInput(logFile, input.hl7OutputPath(), input.scratchSpaceRootPath())
                 ))
                 .toList();
 
-        // Block workflow until all child workflows are complete or failed
-        logger.info("WorkflowId {} - Waiting for {} child workflows to complete", workflowInfo.getWorkflowId(), childWorkflowOutputPromises.size());
-        List<Hl7FromHl7LogWorkflowOutput> childWorkflowOutputs = new AllOfPromiseOnlySuccesses<>(childWorkflowOutputPromises).get();
-        if (childWorkflowOutputs.isEmpty()) {
-            throw ApplicationFailure.newNonRetryableFailure("All child workflows failed", "type");
+        // Collect async results
+        logger.info("WorkflowId {} - Waiting for {} async activities to complete", workflowInfo.getWorkflowId(), transformSplitHl7LogOutputPromises.size());
+        List<SplitAndTransformHl7LogOutput> transformSplitHl7LogOutputs = new AllOfPromiseOnlySuccesses<>(transformSplitHl7LogOutputPromises).get();
+        if (transformSplitHl7LogOutputs.isEmpty()) {
+            throw ApplicationFailure.newNonRetryableFailure("All split and transformation activities failed", "type");
         }
 
-        logger.info("WorkflowId {} - Collecting results from {} successful child workflows", workflowInfo.getWorkflowId(), childWorkflowOutputs.size());
-
+        logger.info("WorkflowId {} - Collecting results for {} successful async activities", workflowInfo.getWorkflowId(), transformSplitHl7LogOutputs.size());
         // Collect HL7 file-path-file paths
         // This sounds more confusing than it is.
-        // Each child workflow writes a single file with the paths of the HL7 files it created.
+        // Each split and transform activity writes a single file with the paths of the HL7 files it created.
         // We collect the paths to these files (the contents of each being file paths) and pass them to the ingest activity.
         int[] numHl7FilesHolder = {0};
-        List<String> hl7FilePathFiles = childWorkflowOutputs.stream()
+        List<String> hl7FilePathFiles = transformSplitHl7LogOutputs.stream()
                 .peek(output -> numHl7FilesHolder[0] += output.numHl7Files())
-                .map(Hl7FromHl7LogWorkflowOutput::hl7FilePathFile)
+                .map(SplitAndTransformHl7LogOutput::hl7FilesOutputFilePath)
                 .toList();
 
         // Ingest HL7 into delta lake
@@ -172,7 +175,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
      * @param input Workflow input
      * @return Log paths and "yesterday" date, if we are in a scheduled run
      */
-    private static ParsedLogInput parseInput(IngestHl7LogWorkflowInput input) {
+    private ParsedLogInput parseInput(IngestHl7LogWorkflowInput input) {
 
         // Need either log paths or logs root path
         boolean hasLogPathsInput = input.logPaths() != null && !input.logPaths().isBlank();
@@ -228,7 +231,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         return new ParsedLogInput(logPaths, yesterday);
     }
 
-    private static void throwOnInvalidInput(
+    private void throwOnInvalidInput(
             IngestHl7LogWorkflowInput input,
             boolean hasLogPaths,
             boolean hasLogRootPath,

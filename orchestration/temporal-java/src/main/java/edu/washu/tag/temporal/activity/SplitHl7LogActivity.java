@@ -11,7 +11,4 @@ import io.temporal.activity.ActivityMethod;
 public interface SplitHl7LogActivity {
     @ActivityMethod
     SplitAndTransformHl7LogOutput splitAndTransformHl7Log(SplitAndTransformHl7LogInput input);
-
-    @ActivityMethod
-    WriteHl7FilePathsFileOutput writeHl7FilePathsFile(WriteHl7FilePathsFileInput input);
 }
