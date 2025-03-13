@@ -31,8 +31,8 @@ import static edu.washu.tag.temporal.util.Constants.PARENT_QUEUE;
 public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
     private static final Logger logger = Workflow.getLogger(FindHl7LogsActivityImpl.class);
 
-    @Value("${scout.max-child-workflows}")
-    private int maxChildWorkflows;
+    @Value("${scout.max-children}")
+    private int maxChildren;
 
     private final FileHandler fileHandler;
 
@@ -65,7 +65,7 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
 
         // If number of log files is over the limit, we will need to split our workflow into batches and Continue-As-New
         ContinueIngestWorkflow continued = null;
-        if (logFiles.size() > maxChildWorkflows) {
+        if (logFiles.size() > maxChildren) {
             continued = writeManifestFile(logFiles, input.manifestFilePath());
             logFiles = logFiles.subList(0, continued.nextIndex());
         }
@@ -105,12 +105,12 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
         // Get the next batch of log files to process
         List<String> logFiles = Arrays.stream(manifest.split("\n"))
             .skip(input.nextIndex())  // Skip forward to the next index
-            .limit(maxChildWorkflows) // Return the next maxChildWorkflows files to process
+            .limit(maxChildren) // Return the next maxChildren files to process
             .toList();
 
         // Do we continue again or are we at the end?
         ContinueIngestWorkflow continued = null;
-        int nextIndex = input.nextIndex() + maxChildWorkflows;
+        int nextIndex = input.nextIndex() + maxChildren;
         if (nextIndex < input.numLogFiles()) {
             logger.info("WorkflowId {} ActivityId {} - We will continue the workflow as new starting with index {}",
                 activityInfo.getWorkflowId(), activityInfo.getActivityId(), nextIndex);
@@ -204,6 +204,6 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
             throw ApplicationFailure.newFailureWithCause("Could not write manifest file to  " + manifestFilePath, "type", e);
         }
 
-        return new ContinueIngestWorkflow(manifestFilePath, logFiles.size(), maxChildWorkflows);
+        return new ContinueIngestWorkflow(manifestFilePath, logFiles.size(), maxChildren);
     }
 }

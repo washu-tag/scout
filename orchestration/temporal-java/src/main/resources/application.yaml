@@ -14,4 +14,4 @@ s3:
   endpoint: 'http://minio.minio:9000'
   region: us-east-1
 scout:
-  max-child-workflows: 2000
+  max-children: 205 # This is to limit the memory load on Spark in the python worker, set based on an 8GB limit.
