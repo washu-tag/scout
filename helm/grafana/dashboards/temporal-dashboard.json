@@ -1405,7 +1405,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "ms"
         },
         "overrides": []
       },
@@ -1433,7 +1434,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le)(rate(lock_latency_bucket[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le)(rate(lock_latency_bucket[5m]))) * 1000",
           "legendFormat": "Shard",
           "range": true,
           "refId": "A"
@@ -2913,6 +2914,113 @@
       "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus_datasource_01"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 88
+      },
+      "id": 72,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(temporal_workflow_task_schedule_to_start_latency_bucket[5m])))",
+          "legendFormat": "Workflow",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus_datasource_01"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(temporal_activity_schedule_to_start_latency_bucket[5m])))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Activity",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Schedule to Start Latency p95",
+      "type": "timeseries"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -3419,7 +3527,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 15,
         "w": 24,
         "x": 0,
         "y": 106
@@ -3463,7 +3571,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 115
+        "y": 121
       },
       "id": 15,
       "panels": [],
@@ -3535,7 +3643,7 @@
         "h": 10,
         "w": 8,
         "x": 0,
-        "y": 116
+        "y": 122
       },
       "id": 13,
       "options": {
@@ -3643,7 +3751,7 @@
         "h": 10,
         "w": 8,
         "x": 8,
-        "y": 116
+        "y": 122
       },
       "id": 16,
       "options": {
@@ -3741,7 +3849,7 @@
         "h": 10,
         "w": 8,
         "x": 16,
-        "y": 116
+        "y": 122
       },
       "id": 17,
       "options": {
@@ -3831,15 +3939,16 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "s"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 10,
+        "h": 14,
         "w": 24,
         "x": 0,
-        "y": 126
+        "y": 132
       },
       "id": 19,
       "options": {
@@ -3863,10 +3972,12 @@
             "type": "prometheus",
             "uid": "prometheus_datasource_01"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "histogram_quantile(0.95, sum(rate(persistence_latency_bucket[5m])) by (operation, le))",
+          "expr": "histogram_quantile(0.95, sum(rate(persistence_latency_bucket[5m])) by (service_name, operation, le))",
           "interval": "",
-          "legendFormat": "{{operation}}",
+          "legendFormat": "{{service_name}}:{{operation}}",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -3879,7 +3990,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 136
+        "y": 146
       },
       "id": 33,
       "panels": [],
@@ -3934,7 +4045,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -3949,7 +4061,7 @@
         "h": 9,
         "w": 9,
         "x": 0,
-        "y": 137
+        "y": 147
       },
       "id": 31,
       "options": {
@@ -4040,7 +4152,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -4055,7 +4168,7 @@
         "h": 9,
         "w": 7,
         "x": 9,
-        "y": 137
+        "y": 147
       },
       "id": 35,
       "options": {
@@ -4136,7 +4249,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -4151,7 +4265,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 137
+        "y": 147
       },
       "id": 37,
       "options": {
@@ -4247,7 +4361,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 146
+        "y": 156
       },
       "id": 39,
       "options": {
@@ -4358,6 +4472,6 @@
   "timezone": "",
   "title": "Temporal",
   "uid": "scout_temporal_dashboard_01",
-  "version": 7,
+  "version": 2,
   "weekStart": ""
 }
