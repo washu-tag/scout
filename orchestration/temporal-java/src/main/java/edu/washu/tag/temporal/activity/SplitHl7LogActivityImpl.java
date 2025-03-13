@@ -71,14 +71,19 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             throw ApplicationFailure.newFailure("Transform and upload task failed", "type");
         }
 
-        URI activityHl7ListUri = URI.create(input.scratchDir() + "/" + activityInfo.getActivityId() + "/" + HL7_PATHS_FILENAME);
+        String hl7ListFilePath = String.join("/",
+            input.scratchDir(),
+            activityInfo.getWorkflowId(),
+            activityInfo.getActivityId(),
+            HL7_PATHS_FILENAME);
+        URI hl7ListFileUri = URI.create(hl7ListFilePath);
         logger.info("WorkflowId {} ActivityId {} - Uploading log file list to {}", activityInfo.getWorkflowId(),
-            activityInfo.getActivityId(), activityHl7ListUri);
+            activityInfo.getActivityId(), hl7ListFileUri);
         String uploadedList;
         try {
-            uploadedList = uploadHl7PathList(hl7Paths, activityHl7ListUri);
+            uploadedList = uploadHl7PathList(hl7Paths, hl7ListFileUri);
         } catch (IOException e) {
-            throw ApplicationFailure.newFailureWithCause("Failed to upload log file list to {}" + activityHl7ListUri, "type", e);
+            throw ApplicationFailure.newFailureWithCause("Failed to upload log file list to {}" + hl7ListFileUri, "type", e);
         }
 
         return new SplitAndTransformHl7LogOutput(uploadedList, hl7Paths.size());
