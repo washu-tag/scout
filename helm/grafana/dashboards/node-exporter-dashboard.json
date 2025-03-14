@@ -116,7 +116,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "irate(node_pressure_cpu_waiting_seconds_total{node=\"$node\",job=\"$job\"}[$__rate_interval])",
+          "expr": "irate(node_pressure_cpu_waiting_seconds_total{node=\"$node\",job=\"$job\"}[5m])",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -132,7 +132,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "irate(node_pressure_memory_waiting_seconds_total{node=\"$node\",job=\"$job\"}[$__rate_interval])",
+          "expr": "irate(node_pressure_memory_waiting_seconds_total{node=\"$node\",job=\"$job\"}[5m])",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -149,7 +149,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "irate(node_pressure_io_waiting_seconds_total{node=\"$node\",job=\"$job\"}[$__rate_interval])",
+          "expr": "irate(node_pressure_io_waiting_seconds_total{node=\"$node\",job=\"$job\"}[5m])",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -238,7 +238,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "100 * (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\", node=\"$node\"}[$__rate_interval])))",
+          "expr": "100 * (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\", node=\"$node\"}[5m])))",
           "hide": false,
           "instant": true,
           "intervalFactor": 1,
@@ -1237,7 +1237,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"system\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"system\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -1253,7 +1253,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"user\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"user\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -1268,7 +1268,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"iowait\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"iowait\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Busy Iowait",
@@ -1282,7 +1282,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=~\".*irq\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=~\".*irq\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Busy IRQs",
@@ -1296,7 +1296,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\",  mode!='idle',mode!='user',mode!='system',mode!='iowait',mode!='irq',mode!='softirq'}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\",  mode!='idle',mode!='user',mode!='system',mode!='iowait',mode!='irq',mode!='softirq'}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Busy Other",
@@ -1310,7 +1310,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"idle\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"idle\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Idle",
@@ -2289,7 +2289,7 @@
             "type": "prometheus",
             "uid": "prometheus_datasource_01"
           },
-          "expr": "irate(node_network_receive_bytes_total{node=\"$node\",job=\"$job\"}[$__rate_interval])*8",
+          "expr": "irate(node_network_receive_bytes_total{node=\"$node\",job=\"$job\"}[5m])*8",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "recv {{device}}",
@@ -2301,7 +2301,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "irate(node_network_transmit_bytes_total{node=\"$node\",job=\"$job\"}[$__rate_interval])*8",
+          "expr": "irate(node_network_transmit_bytes_total{node=\"$node\",job=\"$job\"}[5m])*8",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "trans {{device}} ",
@@ -2640,7 +2640,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"system\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"system\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -2655,7 +2655,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"user\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"user\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "User - Normal processes executing in user mode",
@@ -2669,7 +2669,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"nice\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"nice\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Nice - Niced processes executing in user mode",
@@ -2683,7 +2683,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum by(instance) (irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"iowait\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum by(instance) (irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"iowait\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Iowait - Waiting for I/O to complete",
@@ -2697,7 +2697,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"irq\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"irq\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Irq - Servicing interrupts",
@@ -2711,7 +2711,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"softirq\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"softirq\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Softirq - Servicing softirqs",
@@ -2725,7 +2725,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"steal\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"steal\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Steal - Time spent in other operating systems when running in a virtualized environment",
@@ -2739,7 +2739,7 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"idle\"}[$__rate_interval])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\", mode=\"idle\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -3585,6 +3585,6 @@
   "title": "Node Exporter",
   "uid": "scout_node_exporter_dashboard_01",
   "id": null,
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
