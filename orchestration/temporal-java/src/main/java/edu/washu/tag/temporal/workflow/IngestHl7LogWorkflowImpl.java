@@ -6,19 +6,20 @@ import edu.washu.tag.temporal.activity.SplitHl7LogActivity;
 import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
 import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeInput;
-import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeOutput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowOutput;
 import edu.washu.tag.temporal.model.SplitAndTransformHl7LogInput;
 import edu.washu.tag.temporal.model.SplitAndTransformHl7LogOutput;
 import edu.washu.tag.temporal.util.AllOfPromiseOnlySuccesses;
 import io.temporal.activity.ActivityOptions;
+import io.temporal.api.common.v1.WorkflowExecution;
+import io.temporal.api.enums.v1.ParentClosePolicy;
 import io.temporal.common.RetryOptions;
 import io.temporal.common.SearchAttributeKey;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.WorkflowImpl;
-import io.temporal.workflow.ActivityStub;
 import io.temporal.workflow.Async;
+import io.temporal.workflow.ChildWorkflowOptions;
 import io.temporal.workflow.Promise;
 import io.temporal.workflow.Workflow;
 import io.temporal.workflow.WorkflowInfo;
@@ -37,8 +38,7 @@ import java.util.Map;
 
 import static edu.washu.tag.temporal.util.Constants.PARENT_QUEUE;
 import static edu.washu.tag.temporal.util.Constants.CHILD_QUEUE;
-import static edu.washu.tag.temporal.util.Constants.PYTHON_ACTIVITY;
-import static edu.washu.tag.temporal.util.Constants.PYTHON_QUEUE;
+import static edu.washu.tag.temporal.util.Constants.INGEST_DELTA_LAKE_QUEUE;
 
 @WorkflowImpl(taskQueues = PARENT_QUEUE)
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
@@ -60,16 +60,14 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                                     .build())
                             .build());
 
-    private final ActivityStub ingestActivity =
-        Workflow.newUntypedActivityStub(
-            ActivityOptions.newBuilder()
-                    .setTaskQueue(PYTHON_QUEUE)
-                    .setStartToCloseTimeout(Duration.ofMinutes(30))
-                    .setRetryOptions(RetryOptions.newBuilder()
-                            .setMaximumInterval(Duration.ofSeconds(1))
-                            .setMaximumAttempts(10)
-                            .build())
-                    .build());
+    private final IngestHl7ToDeltaLakeWorkflow ingestToDeltaLake =
+        Workflow.newChildWorkflowStub(
+            IngestHl7ToDeltaLakeWorkflow.class,
+            ChildWorkflowOptions.newBuilder()
+                .setTaskQueue(INGEST_DELTA_LAKE_QUEUE)
+                .setParentClosePolicy(ParentClosePolicy.PARENT_CLOSE_POLICY_ABANDON)
+                .build()
+        );
 
     private final SplitHl7LogActivity hl7LogActivity =
         Workflow.newActivityStub(SplitHl7LogActivity.class,
@@ -139,20 +137,21 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                 .toList();
 
         // Ingest HL7 into delta lake
-        logger.info("WorkflowId {} - Launching activity to ingest {} HL7 files",
+        logger.info("WorkflowId {} - Launching workflow to ingest {} HL7 files",
                 workflowInfo.getWorkflowId(), numHl7FilesHolder[0]);
-        IngestHl7FilesToDeltaLakeOutput ingestHl7LogWorkflowOutput = ingestActivity.execute(
-                PYTHON_ACTIVITY,
-                IngestHl7FilesToDeltaLakeOutput.class,
-                new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7FilePathFiles)
+        Async.function(
+            ingestToDeltaLake::ingestHl7FileToDeltaLake,
+            new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7FilePathFiles)
         );
-
-        logger.info("Completed workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
+        // Wait for child workflow to start
+        Promise<WorkflowExecution> childPromise = Workflow.getWorkflowExecution(ingestToDeltaLake);
+        WorkflowExecution child = childPromise.get();
+        logger.info("WorkflowId {} - Launched child ingest workflow {}", workflowInfo.getWorkflowId(), child.getWorkflowId());
 
         // If we have a non-null continuation object, we will continue as new with the next index
         ContinueIngestWorkflow nextContinued = findHl7LogFileOutput.continued();
         if (nextContinued != null) {
-            logger.info("WorkflowId {} Continuing as new workflow - nextContinued {}", workflowInfo.getWorkflowId(), nextContinued);
+            logger.info("WorkflowId {} - Continuing as new workflow - nextContinued {}", workflowInfo.getWorkflowId(), nextContinued);
             Workflow.continueAsNew(
                 new IngestHl7LogWorkflowInput(
                     input.date(),
@@ -165,6 +164,8 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                     nextContinued
                 )
             );
+        } else {
+            logger.info("Completed workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
         }
         return new IngestHl7LogWorkflowOutput();
     }

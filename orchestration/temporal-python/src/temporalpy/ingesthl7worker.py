@@ -20,7 +20,7 @@ async def run_worker(
     temporal_address: str, namespace: str, mapping_file_path: str
 ) -> None:
     client = await Client.connect(temporal_address, namespace=namespace)
-    with concurrent.futures.ThreadPoolExecutor() as pool:
+    with concurrent.futures.ProcessPoolExecutor(1) as pool:
         worker = Worker(
             client,
             task_queue=TASK_QUEUE_NAME,
@@ -28,7 +28,7 @@ async def run_worker(
             activity_executor=pool,
         )
 
-        log.info("Starting worker...")
+        log.info("Starting worker. Waiting for activities...")
         await worker.run()
         log.info("Worker stopped")
 

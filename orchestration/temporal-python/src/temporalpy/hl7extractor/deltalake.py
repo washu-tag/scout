@@ -44,7 +44,7 @@ def parse_timestamp_col(col: Column | str) -> Column:
 
 def import_hl7_files_to_deltalake(
     delta_table: str, hl7_file_path_files: list[str], modality_map_csv_path: str
-):
+) -> int:
     """Extract data from HL7 messages and write to Delta Lake."""
 
     # TODO This should be moved to a configuration file
@@ -112,7 +112,8 @@ def import_hl7_files_to_deltalake(
     if df.isEmpty():
         raise ApplicationError("No data extracted from HL7 messages")
 
-    activity.logger.info(f"Extracted data from {df.count()} HL7 messages")
+    num_hl7 = df.count()
+    activity.logger.info("Extracted data from %d HL7 messages", num_hl7)
 
     # Read modality map
     modality_map_csv_path = modality_map_csv_path.replace("s3://", "s3a://")
@@ -275,3 +276,4 @@ def import_hl7_files_to_deltalake(
     spark.stop()
 
     activity.logger.info("Finished")
+    return num_hl7
