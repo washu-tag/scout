@@ -69,8 +69,8 @@
               }
             }
           ],
-          "noDataState": "NoData",
-          "execErrState": "Error",
+          "noDataState": "KeepLast",
+          "execErrState": "KeepLast",
           "for": "10m",
           "annotations": {
             "summary": "Node {{ $labels.node }} has high system load",
