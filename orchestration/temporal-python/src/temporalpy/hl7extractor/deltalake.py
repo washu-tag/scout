@@ -53,6 +53,7 @@ def import_hl7_files_to_deltalake(
     s3a_secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
     s3a_region = os.environ.get("AWS_REGION", "us-east-1")
     spark_executor_memory = os.environ.get("SPARK_EXECUTOR_MEMORY")
+    spark_driver_memory = os.environ.get("SPARK_DRIVER_MEMORY")
 
     if not s3a_endpoint or not s3a_access_key or not s3a_secret_key:
         raise ApplicationError("S3 endpoint, access key, and secret key required")
@@ -90,6 +91,8 @@ def import_hl7_files_to_deltalake(
 
         if spark_executor_memory:
             spark_builder.config("spark.executor.memory", spark_executor_memory)
+        if spark_driver_memory:
+            spark_builder.config("spark.driver.memory", spark_driver_memory)
         spark = configure_spark_with_delta_pip(
             spark_builder, extra_packages=extra_packages
         ).getOrCreate()
