@@ -2407,10 +2407,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "100 - ((node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~'rootfs'} * 100) / node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~'rootfs'})",
+          "editorMode": "code",
+          "expr": "100 - ((node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"} * 100) / node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{mountpoint}}",
+          "range": true,
           "refId": "A",
           "step": 240
         }
@@ -3356,10 +3358,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~'rootfs'} - node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~'rootfs'}",
+          "editorMode": "code",
+          "expr": "node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"} - node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{mountpoint}}",
+          "range": true,
           "refId": "A",
           "step": 240
         }
@@ -3458,12 +3462,14 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~'rootfs'}",
+          "editorMode": "code",
+          "expr": "node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
           "legendFormat": "{{mountpoint}} - Available",
           "metric": "",
+          "range": true,
           "refId": "A",
           "step": 240
         },
@@ -3472,11 +3478,13 @@
             "type": "prometheus",
             "uid": "prometheus_datasource_01"
           },
-          "expr": "node_filesystem_free_bytes{node=\"$node\",job=\"$job\",device!~'rootfs'}",
+          "editorMode": "code",
+          "expr": "node_filesystem_free_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": true,
           "intervalFactor": 1,
           "legendFormat": "{{mountpoint}} - Free",
+          "range": true,
           "refId": "B",
           "step": 240
         },
@@ -3485,11 +3493,13 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~'rootfs'}",
+          "editorMode": "code",
+          "expr": "node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": true,
           "intervalFactor": 1,
           "legendFormat": "{{mountpoint}} - Size",
+          "range": true,
           "refId": "C",
           "step": 240
         }
@@ -7814,7 +7824,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~'rootfs'}",
+          "expr": "node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -7830,7 +7840,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_free_bytes{node=\"$node\",job=\"$job\",device!~'rootfs'}",
+          "expr": "node_filesystem_free_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": true,
           "intervalFactor": 1,
@@ -7845,7 +7855,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~'rootfs'}",
+          "expr": "node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": true,
           "intervalFactor": 1,
@@ -7973,7 +7983,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_files_free{node=\"$node\",job=\"$job\",device!~'rootfs'}",
+          "expr": "node_filesystem_files_free{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -8219,7 +8229,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_files{node=\"$node\",job=\"$job\",device!~'rootfs'}",
+          "expr": "node_filesystem_files{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -8341,7 +8351,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_readonly{node=\"$node\",job=\"$job\",device!~'rootfs'}",
+          "expr": "node_filesystem_readonly{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{mountpoint}} - ReadOnly",
@@ -8355,7 +8365,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_device_error{node=\"$node\",job=\"$job\",device!~'rootfs',fstype!~'tmpfs'}",
+          "expr": "node_filesystem_device_error{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~'tmpfs'}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
