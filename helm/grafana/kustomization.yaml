@@ -58,6 +58,18 @@ configMapGenerator:
       labels:
         grafana_alert: "1"
 
+  - name: high-node-cpu-iowait-usage-alert
+    files: [ alerts/alert-rules/high-node-cpu-iowait-usage-alert.json ]
+    options:
+      labels:
+        grafana_alert: "1"
+
+  - name: high-node-system-load-alert
+    files: [ alerts/alert-rules/high-node-system-load-alert.json ]
+    options:
+      labels:
+        grafana_alert: "1"
+
   - name: slack-notification-template
     files: [ alerts/notification-templates/slack-notification-template.json ]
     options:
