@@ -127,8 +127,19 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             throw ApplicationFailure.newFailureWithCause("Failed to write manifest file " + manifestFilePath, "type", e);
         }
 
-        logger.info("WorkflowId {} ActivityId {} - Finished writing {} HL7 file paths to manifest file {}", activityInfo.getWorkflowId(),
-            activityInfo.getActivityId(), hl7Paths.size(), manifestFilePath);
+        logger.info("WorkflowId {} ActivityId {} - Finished writing {} HL7 file paths to manifest file {}. Deleting {} file path files.", activityInfo.getWorkflowId(),
+            activityInfo.getActivityId(), hl7Paths.size(), manifestFilePath, input.hl7FilePathFiles().size());
+
+        // Delete the HL7 file path files
+        try {
+            fileHandler.deleteMultiple(input.hl7FilePathFiles().stream().map(URI::create).toList());
+        } catch (Exception e) {
+            logger.warn("WorkflowId {} ActivityId {} - Failed to delete HL7 file path files", activityInfo.getWorkflowId(),
+                activityInfo.getActivityId(), e);
+        }
+        logger.info("WorkflowId {} ActivityId {} - Finished deleting {} file path files.", activityInfo.getWorkflowId(),
+            activityInfo.getActivityId(), input.hl7FilePathFiles().size());
+
         return new Hl7ManifestFileOutput(manifestFilePath, hl7Paths.size());
     }
 

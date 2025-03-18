@@ -17,6 +17,7 @@ import org.springframework.retry.support.RetrySynchronizationManager;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 
 @Component
 public class FileHandlerImpl implements FileHandler {
@@ -162,16 +163,17 @@ public class FileHandlerImpl implements FileHandler {
     }
 
     @Override
-    public void deleteDir(Path dir) throws IOException {
-        try (Stream<Path> files = Files.walk(dir)) {
-            files.sorted(Comparator.reverseOrder()) // Sort in reverse order to delete files before directories
-                .forEach(path -> {
-                    try {
-                        Files.delete(path);
-                    } catch (IOException ignored) {
-                        // ignored???
-                    }
-                });
+    public void deleteMultiple(List<URI> uris) {
+        String scheme = uris.getFirst().getScheme();
+        if (!S3.equals(scheme)) {
+            throw new UnsupportedOperationException("Unsupported destination scheme " + scheme);
         }
+        String bucket = uris.getFirst().getHost();
+        List<ObjectIdentifier> keys = uris.stream()
+            .map(URI::getPath)
+            .map(key -> ObjectIdentifier.builder().key(key).build())
+            .toList();
+        logger.debug("Deleting {} keys from S3 bucket {}", keys.size(), bucket);
+        s3Client.deleteObjects(builder -> builder.bucket(bucket).delete(deleteBuilder -> deleteBuilder.objects(keys)));
     }
 }
