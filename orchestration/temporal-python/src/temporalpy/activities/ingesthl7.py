@@ -12,7 +12,7 @@ ACTIVITY_NAME = "ingest_hl7_files_to_delta_lake"
 @dataclass(frozen=True)
 class IngestHl7FilesToDeltaLakeActivityInput:
     deltaTable: str
-    hl7FilePathFiles: list[str]
+    hl7ManifestFilePath: Optional[str] = None
     modalityMapPath: Optional[str] = None
 
 
@@ -48,7 +48,7 @@ class IngestHl7FilesActivity:
         )
         num_hl7_ingested = import_hl7_files_to_deltalake(
             activity_input.deltaTable,
-            activity_input.hl7FilePathFiles,
+            activity_input.hl7ManifestFilePath,
             modality_map_path,
         )
 
