@@ -11,7 +11,7 @@ from temporalio.worker import Worker, SharedStateManager
 
 from temporalpy.activities.ingesthl7 import (
     TASK_QUEUE_NAME,
-    ingest_hl7_files_activity_wrapper,
+    IngestHl7FilesActivity,
 )
 
 log = logging.getLogger("workflow_worker")
@@ -21,11 +21,12 @@ async def run_worker(
     temporal_address: str, namespace: str, mapping_file_path: str
 ) -> None:
     client = await Client.connect(temporal_address, namespace=namespace)
+    ingest_hl7_files_activity = IngestHl7FilesActivity(mapping_file_path)
     with concurrent.futures.ProcessPoolExecutor(1) as pool:
         worker = Worker(
             client,
             task_queue=TASK_QUEUE_NAME,
-            activities=[ingest_hl7_files_activity_wrapper(mapping_file_path)],
+            activities=[ingest_hl7_files_activity.ingest_hl7_files_to_delta_lake],
             activity_executor=pool,
             shared_state_manager=SharedStateManager.create_from_multiprocessing(
                 multiprocessing.Manager()
