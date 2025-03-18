@@ -5,6 +5,8 @@ import edu.washu.tag.temporal.model.ContinueIngestWorkflow;
 import edu.washu.tag.temporal.activity.SplitHl7LogActivity;
 import edu.washu.tag.temporal.model.FindHl7LogFileInput;
 import edu.washu.tag.temporal.model.FindHl7LogFileOutput;
+import edu.washu.tag.temporal.model.Hl7ManifestFileInput;
+import edu.washu.tag.temporal.model.Hl7ManifestFileOutput;
 import edu.washu.tag.temporal.model.IngestHl7FilesToDeltaLakeInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowInput;
 import edu.washu.tag.temporal.model.IngestHl7LogWorkflowOutput;
@@ -85,6 +87,8 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         WorkflowInfo workflowInfo = Workflow.getInfo();
         logger.info("Beginning workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
 
+        String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
+
         // Determine if we are starting a new workflow or resuming from a manifest file
         FindHl7LogFileOutput findHl7LogFileOutput;
         if (input.continued() == null) {
@@ -93,7 +97,6 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             ParsedLogInput parsedLogInput = parseInput(input);
 
             // Construct a path for a new manifest file
-            String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
             String manifestFilePath = scratchDir + "/manifest.txt";
 
             // Get list of log paths to process
@@ -136,12 +139,17 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                 .map(SplitAndTransformHl7LogOutput::hl7FilesOutputFilePath)
                 .toList();
 
+        // Write manifest file
+        logger.info("WorkflowId {} - Collecting {} HL7 files from {} successful async activities into manifest file",
+            workflowInfo.getWorkflowId(), numHl7FilesHolder[0], transformSplitHl7LogOutputs.size());
+        Hl7ManifestFileOutput hl7ManifestFileOutput = hl7LogActivity.writeHl7ManifestFile(new Hl7ManifestFileInput(hl7FilePathFiles, scratchDir));
+
         // Ingest HL7 into delta lake
         logger.info("WorkflowId {} - Launching workflow to ingest {} HL7 files",
-                workflowInfo.getWorkflowId(), numHl7FilesHolder[0]);
+                workflowInfo.getWorkflowId(), hl7ManifestFileOutput.numHl7Files());
         Async.function(
             ingestToDeltaLake::ingestHl7FileToDeltaLake,
-            new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7FilePathFiles)
+            new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7ManifestFileOutput.manifestFilePath())
         );
         // Wait for child workflow to start
         Promise<WorkflowExecution> childPromise = Workflow.getWorkflowExecution(ingestToDeltaLake);

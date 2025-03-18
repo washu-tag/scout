@@ -43,7 +43,7 @@ def parse_timestamp_col(col: Column | str) -> Column:
 
 
 def import_hl7_files_to_deltalake(
-    delta_table: str, hl7_file_path_files: list[str], modality_map_csv_path: str
+    delta_table: str, hl7_manifest_file_path: str, modality_map_csv_path: str
 ) -> int:
     """Extract data from HL7 messages and write to Delta Lake."""
 
@@ -89,11 +89,9 @@ def import_hl7_files_to_deltalake(
         spark_builder, extra_packages=extra_packages
     ).getOrCreate()
 
-    activity.logger.info("Reading %d HL7 file path files", len(hl7_file_path_files))
-    hl7_file_path_files = [
-        path.replace("s3://", "s3a://") for path in hl7_file_path_files
-    ]
-    file_path_file_df = spark.read.text(hl7_file_path_files)
+    activity.logger.info("Reading HL7 manifest file %s", hl7_manifest_file_path)
+    hl7_manifest_file_path = hl7_manifest_file_path.replace("s3://", "s3a://")
+    file_path_file_df = spark.read.text(hl7_manifest_file_path)
 
     # I wish I could just have spark read these directly without collecting first but I can't figure out how
     hl7_file_paths_from_spark = [
