@@ -38,6 +38,7 @@
           cassandra:
             config:
               cluster_size: 1
+              max_heap_size: 8G
             persistence:
               enabled: true
               storageClass: local-path-retain
