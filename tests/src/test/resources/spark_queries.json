@@ -212,7 +212,7 @@
           }
         }
       },
-      "sql": "SELECT * FROM syntheticdata WHERE abc_mr IN (ABC450993, ABC450994, ABC450995, ABC450996, ABC450997)",
+      "sql": "SELECT * FROM syntheticdata WHERE abc_mr IN ('ABC450993', 'ABC450994', 'ABC450995', 'ABC450996', 'ABC450997')",
       "id": "patient_id"
     },
     {
