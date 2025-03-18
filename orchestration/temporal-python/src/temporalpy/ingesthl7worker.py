@@ -2,11 +2,12 @@ import argparse
 import asyncio
 import concurrent.futures
 import logging
+import multiprocessing
 import os
 import sys
 
 from temporalio.client import Client
-from temporalio.worker import Worker
+from temporalio.worker import Worker, SharedStateManager
 
 from temporalpy.activities.ingesthl7 import (
     TASK_QUEUE_NAME,
@@ -26,6 +27,9 @@ async def run_worker(
             task_queue=TASK_QUEUE_NAME,
             activities=[ingest_hl7_files_activity_wrapper(mapping_file_path)],
             activity_executor=pool,
+            shared_state_manager=SharedStateManager.create_from_multiprocessing(
+                multiprocessing.Manager()
+            ),
         )
 
         log.info("Starting worker. Waiting for activities...")
