@@ -20,6 +20,42 @@
         kind: Namespace
         state: present
 
+    - name: Create directory for prometheus data
+      file:
+        path: /scout/monitoring/prometheus
+        state: directory
+        mode: '0777'
+
+    - name: Add prometheus storage class
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: storage.k8s.io/v1
+          kind: StorageClass
+          metadata:
+            name: prometheus-storage
+          provisioner: kubernetes.io/no-provisioner
+          volumeBindingMode: WaitForFirstConsumer
+
+    - name: Add prometheus PV
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolume
+          metadata:
+            name: prometheus-pv
+          spec:
+            capacity:
+              storage: 100Gi
+            volumeMode: Filesystem
+            accessModes:
+              - ReadWriteOnce
+            persistentVolumeReclaimPolicy: Retain
+            storageClassName: prometheus-storage
+            hostPath:
+              path: /scout/monitoring/prometheus
+
     - name: Create JupyterHub metrics API token secret
       kubernetes.core.k8s:
         state: present
@@ -44,3 +80,4 @@
         chart_version: ^26.0.0
         values_files:
           - '{{ scout_repo_dir }}/helm/prometheus/values.yaml'
+

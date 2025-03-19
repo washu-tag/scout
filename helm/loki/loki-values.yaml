@@ -40,7 +40,7 @@ singleBinary:
   replicas: 1
   persistence:
     enabled: true
-    storageClass: local-path-retain
+    storageClass: loki-storage
   extraEnv:
     - name: AWS_ACCESS_KEY_ID
       valueFrom:

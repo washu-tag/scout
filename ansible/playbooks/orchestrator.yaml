@@ -13,6 +13,78 @@
         name: temporal
         repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
 
+    - name: Create directory for cassandra data
+      file:
+        path: /scout/persistence/cassandra
+        state: directory
+        mode: '0777'
+
+    - name: Create directory for elasticsearch data
+      file:
+        path: /scout/persistence/elasticsearch
+        state: directory
+        mode: '0777'
+
+    - name: Add cassandra storage class
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: storage.k8s.io/v1
+          kind: StorageClass
+          metadata:
+            name: cassandra-storage
+          provisioner: kubernetes.io/no-provisioner
+          volumeBindingMode: WaitForFirstConsumer
+
+    - name: Add elasticsearch storage class
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: storage.k8s.io/v1
+          kind: StorageClass
+          metadata:
+            name: elasticsearch-storage
+          provisioner: kubernetes.io/no-provisioner
+          volumeBindingMode: WaitForFirstConsumer
+
+    - name: Add cassandra PV
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolume
+          metadata:
+            name: cassandra-pv
+          spec:
+            capacity:
+              storage: 300Gi
+            volumeMode: Filesystem
+            accessModes:
+              - ReadWriteOnce
+            persistentVolumeReclaimPolicy: Retain
+            storageClassName: cassandra-storage
+            hostPath:
+              path: /scout/persistence/cassandra
+
+    - name: Add elasticsearch PV
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolume
+          metadata:
+            name: elasticsearch-pv
+          spec:
+            capacity:
+              storage: 200Gi
+            volumeMode: Filesystem
+            accessModes:
+              - ReadWriteOnce
+            persistentVolumeReclaimPolicy: Retain
+            storageClassName: elasticsearch-storage
+            hostPath:
+              path: /scout/persistence/elasticsearch
+
     - name: Install/Upgrade Temporal Helm chart
       kubernetes.core.helm:
         name: temporal
@@ -41,7 +113,7 @@
               max_heap_size: 8G
             persistence:
               enabled: true
-              storageClass: local-path-retain
+              storageClass: cassandra-storage
           elasticsearch:
             replicas: 1
             persistence:
@@ -49,10 +121,11 @@
             volumeClaimTemplate:
               accessModes:
                 - ReadWriteOnce
+              storageClassName: elasticsearch-storage
               resources:
                 requests:
-                  storage: 5Gi
-              storageClassName: local-path-retain
+                  storage: 100Gi
+
           web:
             additionalEnv:
               - name: TEMPORAL_UI_PUBLIC_PATH
@@ -156,3 +229,4 @@
               }]
               if orchestration_data_dir is defined else omit
             }}
+
