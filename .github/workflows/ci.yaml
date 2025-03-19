@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
   push:
-    branches: [main, patient_id]
+    branches: [main]
 
 env:
   JAVA_DIST: 'zulu'
