@@ -77,8 +77,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String hl7ListFilePath = String.join("/",
             input.scratchDir(),
             activityInfo.getWorkflowId(),
-            activityInfo.getActivityId(),
-            HL7_PATHS_FILENAME);
+            activityInfo.getActivityId() + "_" + HL7_PATHS_FILENAME);
         URI hl7ListFileUri = URI.create(hl7ListFilePath);
         logger.info("WorkflowId {} ActivityId {} - Uploading log file list to {}", activityInfo.getWorkflowId(),
             activityInfo.getActivityId(), hl7ListFileUri);
