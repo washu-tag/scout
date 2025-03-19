@@ -49,7 +49,7 @@
           cassandra:
             config:
               cluster_size: 1
-              max_heap_size: '{{ temporal_cassandra_max_heap | default(8G) }}'
+              max_heap_size: '{{ temporal_cassandra_max_heap | default("8G") }}'
             persistence:
               enabled: true
               storageClass: cassandra-storage
