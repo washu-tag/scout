@@ -11,7 +11,7 @@ elasticsearch:
     replicaCount: 1
     persistence:
       enabled: true
-      storageClass: local-path-retain
+      storageClass: jaeger-storage
   data:
     replicaCount: 0
   coordinating:

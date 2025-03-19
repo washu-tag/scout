@@ -8,6 +8,17 @@
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
+    - name: Setup storage
+      include_tasks: tasks/storage_setup.yaml
+      vars:
+        storage_definitions:
+          - name: cassandra
+            size: '300Gi'
+            path: '{{ temporal_cassandra_dir }}'
+          - name: elasticsearch
+            size: '200Gi'
+            path: '{{ temporal_elasticsearch_dir }}'
+
     - name: Add Temporal Helm repository
       kubernetes.core.helm_repository:
         name: temporal
@@ -38,9 +49,10 @@
           cassandra:
             config:
               cluster_size: 1
+              max_heap_size: '{{ temporal_cassandra_max_heap | default("8G") }}'
             persistence:
               enabled: true
-              storageClass: local-path-retain
+              storageClass: cassandra-storage
           elasticsearch:
             replicas: 1
             persistence:
@@ -48,10 +60,11 @@
             volumeClaimTemplate:
               accessModes:
                 - ReadWriteOnce
+              storageClassName: elasticsearch-storage
               resources:
                 requests:
-                  storage: 5Gi
-              storageClassName: local-path-retain
+                  storage: 100Gi
+
           web:
             additionalEnv:
               - name: TEMPORAL_UI_PUBLIC_PATH

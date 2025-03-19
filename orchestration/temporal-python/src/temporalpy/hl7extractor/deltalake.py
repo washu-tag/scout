@@ -84,6 +84,7 @@ def import_hl7_files_to_deltalake(
 
     if spark_executor_memory:
         spark_builder.config("spark.executor.memory", spark_executor_memory)
+        spark_builder.config("spark.driver.memory", spark_executor_memory)
     spark = configure_spark_with_delta_pip(
         spark_builder, extra_packages=extra_packages
     ).getOrCreate()
