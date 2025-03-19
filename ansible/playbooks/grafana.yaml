@@ -113,4 +113,3 @@
             path: /grafana
             hosts:
               - '{{ server_hostname }}'
-
