@@ -52,7 +52,7 @@ sidecar:
 
 persistence:
   enabled: true
-  storageClassName: local-path-retain
+  storageClassName: grafana-storage
 
 livenessProbe:
   initialDelaySeconds: 180

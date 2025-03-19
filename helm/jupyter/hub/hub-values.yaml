@@ -22,6 +22,9 @@ hub:
       description: 'Read JupyterHub metrics'
       scopes: [read:metrics]
       services: [prometheus]
+  db:
+    pvc:
+      storageClassName: jupyter-storage
 
 ingress:
   enabled: true
@@ -47,6 +50,9 @@ singleuser:
   memory:
     limit: 16G
     guarantee: 2G
+  storage:
+    dynamic:
+      storageClass: jupyter-storage
   networkPolicy:
     egress:
       - to:

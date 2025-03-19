@@ -78,19 +78,13 @@
               prefixes:
                 - /minio
 
-    - name: Add minio storage class
-      kubernetes.core.k8s:
-        state: present
-        src: '{{ scout_repo_dir }}/helm/minio/storageclass.yaml'
-        wait: yes
-        wait_timeout: 60
-
-    - name: Add minio PV
-      kubernetes.core.k8s:
-        state: present
-        src: '{{ scout_repo_dir }}/helm/minio/pv.yaml'
-        wait: yes
-        wait_timeout: 60
+    - name: Setup storage
+      roles:
+        - role: storage_setup
+          storage_definitions:
+            - name: minio
+              size: '750Gi'
+              path: '{{ minio_dir }}'
 
     - name: Install/Upgrade Minio Tenant
       kubernetes.core.helm:

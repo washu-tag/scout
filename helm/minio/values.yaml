@@ -137,17 +137,7 @@ tenant:
       volumesPerServer: 1
       ###
       # The capacity per volume requested per MinIO Tenant Pod.
-      size: 1000Gi
-      volumeClaimTemplate:
-        metadata:
-          name: data
-        spec:
-          accessModes:
-            - ReadWriteOnce
-          storageClassName: minio-storage
-          resources:
-            requests:
-              storage: 1000Gi
+      size: 750Gi
       ###
       # The `storageClass <https://kubernetes.io/docs/concepts/storage/storage-classes/>`__ to associate with volumes generated for this pool.
       #

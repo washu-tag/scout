@@ -1,0 +1,38 @@
+- name: Create directories for storage
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: '0777'
+  loop: "{{ storage_definitions }}"
+
+- name: Add storage classes
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: "{{ item.name }}-storage"
+      provisioner: kubernetes.io/no-provisioner
+      volumeBindingMode: WaitForFirstConsumer
+  loop: "{{ storage_definitions }}"
+
+- name: Add persistent volumes
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        name: "{{ item.name }}-pv"
+      spec:
+        capacity:
+          storage: "{{ item.size }}"
+        volumeMode: Filesystem
+        accessModes:
+          - ReadWriteOnce
+        persistentVolumeReclaimPolicy: Retain
+        storageClassName: "{{ item.name }}-storage"
+        hostPath:
+          path: "{{ item.path }}"
+  loop: "{{ storage_definitions }}"

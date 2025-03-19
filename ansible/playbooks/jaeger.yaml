@@ -7,6 +7,14 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
+    - name: Setup storage
+      roles:
+        - role: storage_setup
+          storage_definitions:
+            - name: jaeger
+              size: '50Gi'
+              path: '{{ jaeger_dir }}'
+
     - name: Add Jaeger Helm repository
       kubernetes.core.helm_repository:
         name: jaegertracing

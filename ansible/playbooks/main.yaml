@@ -23,8 +23,8 @@
 - name: Install Prometheus
   import_playbook: prometheus.yaml
 
-#- name: Install Jaeger
-#  import_playbook: jaeger.yaml
+- name: Install Jaeger
+  import_playbook: jaeger.yaml
 
 - name: Install Grafana
   import_playbook: grafana.yaml

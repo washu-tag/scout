@@ -9,6 +9,17 @@
     slack_contact_point_j2: '/helm/grafana/alerts/contact-points/slack-contact-point.json.j2'
 
   tasks:
+    - name: Setup storage
+      roles:
+        - role: storage_setup
+          storage_definitions:
+            - name: loki
+              size: '200Gi'
+              path: '{{ loki_dir }}'
+            - name: grafana
+              size: '50Gi'
+              path: '{{ grafana_dir }}'
+
     - name: Add Grafana Helm repository
       kubernetes.core.helm_repository:
         name: grafana
@@ -20,42 +31,6 @@
         api_version: v1
         kind: Namespace
         state: present
-        
-    - name: Create directory for loki data
-      file:
-        path: /scout/monitoring/loki
-        state: directory
-        mode: '0777'
-
-    - name: Add loki storage class
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: storage.k8s.io/v1
-          kind: StorageClass
-          metadata:
-            name: loki-storage
-          provisioner: kubernetes.io/no-provisioner
-          volumeBindingMode: WaitForFirstConsumer
-
-    - name: Add loki PV
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: PersistentVolume
-          metadata:
-            name: loki-pv
-          spec:
-            capacity:
-              storage: 300Gi
-            volumeMode: Filesystem
-            accessModes:
-              - ReadWriteOnce
-            persistentVolumeReclaimPolicy: Retain
-            storageClassName: loki-storage
-            hostPath:
-              path: /scout/monitoring/loki
 
     - name: Create S3 secret for Loki
       kubernetes.core.k8s:
