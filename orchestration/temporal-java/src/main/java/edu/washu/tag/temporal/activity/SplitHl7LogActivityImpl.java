@@ -95,7 +95,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     public Hl7ManifestFileOutput writeHl7ManifestFile(Hl7ManifestFileInput input) {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
 
-        String manifestFilePath = input.manifestFileDirPath() + "/hl7-manifest.txt";
+        String manifestFilePath = input.manifestFileDirPath() + "/" + activityInfo.getRunId() + "_hl7-manifest.txt";
 
         // Read all the file path files and collect the HL7 paths
         logger.info("WorkflowId {} ActivityId {} - Reading {} HL7 file path files", activityInfo.getWorkflowId(),
