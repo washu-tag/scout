@@ -9,15 +9,15 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
     - name: Setup storage
-      roles:
-        - role: storage_setup
-          storage_definitions:
-            - name: cassandra
-              size: '300Gi'
-              path: '{{ temporal_cassandra_dir }}'
-            - name: elasticsearch
-              size: '200Gi'
-              path: '{{ temporal_elasticsearch_dir }}'
+      include_tasks: tasks/storage_setup.yaml
+      vars:
+        storage_definitions:
+          - name: cassandra
+            size: '300Gi'
+            path: '{{ temporal_cassandra_dir }}'
+          - name: elasticsearch
+            size: '200Gi'
+            path: '{{ temporal_elasticsearch_dir }}'
 
     - name: Add Temporal Helm repository
       kubernetes.core.helm_repository:

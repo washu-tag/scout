@@ -7,12 +7,12 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
     - name: Setup storage
-      roles:
-        - role: storage_setup
-          storage_definitions:
-            - name: jupyter
-              size: '250Gi'
-              path: '{{ jupyter_dir }}'
+      include_tasks: tasks/storage_setup.yaml
+      vars:
+        storage_definitions:
+          - name: jupyter
+            size: '250Gi'
+            path: '{{ jupyter_dir }}'
 
     - name: Add JupyterHub Helm repository
       kubernetes.core.helm_repository:

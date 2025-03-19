@@ -79,12 +79,12 @@
                 - /minio
 
     - name: Setup storage
-      roles:
-        - role: storage_setup
-          storage_definitions:
-            - name: minio
-              size: '750Gi'
-              path: '{{ minio_dir }}'
+      include_tasks: tasks/storage_setup.yaml
+      vars:
+        storage_definitions:
+          - name: minio
+            size: '750Gi'
+            path: '{{ minio_dir }}'
 
     - name: Install/Upgrade Minio Tenant
       kubernetes.core.helm:
