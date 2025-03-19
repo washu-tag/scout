@@ -31,6 +31,7 @@ async def run_worker(
             shared_state_manager=SharedStateManager.create_from_multiprocessing(
                 multiprocessing.Manager()
             ),
+            max_concurrent_activities=1,
         )
 
         log.info("Starting worker. Waiting for activities...")
