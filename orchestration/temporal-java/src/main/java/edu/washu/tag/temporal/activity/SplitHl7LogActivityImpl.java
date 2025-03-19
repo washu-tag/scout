@@ -284,7 +284,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 outputStream.write('\r');
             }
 
-            logger.debug("WorkflowId {} ActivityId {} - Uploading HL7 file {}/{}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), destination,
+            logger.info("WorkflowId {} ActivityId {} - Uploading HL7 file {}/{}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), destination,
                 relativePath);
             // Convert to byte array and upload to S3
             // We could use piped streams to avoid loading the whole thing into memory, but this adds complexity that isn't warranted for these small files
