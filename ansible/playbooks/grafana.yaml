@@ -9,6 +9,17 @@
     slack_contact_point_j2: '/helm/grafana/alerts/contact-points/slack-contact-point.json.j2'
 
   tasks:
+    - name: Setup storage
+      include_tasks: tasks/storage_setup.yaml
+      vars:
+        storage_definitions:
+          - name: loki
+            size: '200Gi'
+            path: '{{ loki_dir }}'
+          - name: grafana
+            size: '50Gi'
+            path: '{{ grafana_dir }}'
+
     - name: Add Grafana Helm repository
       kubernetes.core.helm_repository:
         name: grafana
@@ -21,7 +32,7 @@
         kind: Namespace
         state: present
 
-    - name: Create S3 secret
+    - name: Create S3 secret for Loki
       kubernetes.core.k8s:
         state: present
         definition:

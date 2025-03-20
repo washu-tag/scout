@@ -15,7 +15,5 @@ s3:
   region: us-east-1
 scout:
   max-children:
-    150 # This is to limit the memory load on Spark in the python worker, set based on an 8GB memory limit and the data
-    # that is generated from 1.3-1.4MB log files. Based on manual testing, it seems like the delta lake generated from
-    # 250MB of input logs can be written without encountering an OOM in Spark, but performance is a little better with
-    # 200MB of input logs.
+    150 # This is to limit I/O contention during the split & transform operation (java worker) and to try to hit a sweet spot of efficiency
+    # during the delta lake insert (python worker). It's been tested on 1.3-1.4MB log files.

@@ -21,7 +21,19 @@ k3s_cluster:
     temporal_java_image: 'docker.io/local/washu-tag/temporal-java'
     temporal_python_image: 'docker.io/local/washu-tag/temporal-python'
     explorer_image: 'docker.io/local/washu-tag/explorer'
+
+    minio_dir: '{{ base_dir }}/minio'
+    temporal_cassandra_dir: '{{ base_dir }}/cassandra'
+    temporal_elasticsearch_dir: '{{ base_dir }}/elasticsearch'
+    prometheus_dir: '{{ base_dir }}/prometheus'
+    loki_dir: '{{ base_dir }}/loki'
+    grafana_dir: '{{ base_dir }}/grafana'
+    jaeger_dir: '{{ base_dir }}/jaeger'
+    jupyter_dir: '{{ base_dir }}/jupyter'
+
+    # Resources
     orchestrator_spark_memory: 1g
+    temporal_cassandra_max_heap: 1G
 
     # You probably don't want to change these unless you know these items will be
     # stored in different locations on your system

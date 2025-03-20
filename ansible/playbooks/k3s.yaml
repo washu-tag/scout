@@ -92,13 +92,6 @@
       retries: 30
       delay: 5
 
-    - name: Add storage class
-      kubernetes.core.k8s:
-        state: present
-        src: '{{ scout_repo_dir }}/helm/storageclass.yaml'
-        wait: yes
-        wait_timeout: 60
-
 ################################################################################
 - hosts: agents
   name: Install k3s on agent nodes

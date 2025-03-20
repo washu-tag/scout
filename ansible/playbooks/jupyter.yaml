@@ -6,6 +6,14 @@
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
+    - name: Setup storage
+      include_tasks: tasks/storage_setup.yaml
+      vars:
+        storage_definitions:
+          - name: jupyter
+            size: '250Gi'
+            path: '{{ jupyter_dir }}'
+
     - name: Add JupyterHub Helm repository
       kubernetes.core.helm_repository:
         name: jupyterhub
