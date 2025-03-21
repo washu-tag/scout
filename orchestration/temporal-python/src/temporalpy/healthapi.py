@@ -22,10 +22,10 @@ app = FastAPI()
 @app.get("/healthz")
 async def healthz():
     try:
-        log.info("Running health check")
+        log.debug("Running health check")
         if not SPARK_HEALTH_TEMP_FILE.exists():
             # No health information available. Assume healthy.
-            log.info("No health information available (assume healthy)")
+            log.debug("No health information available (assume healthy)")
             return HEALTHY_JSON_RESPONSE
 
         # Read the contents of the temporary file
@@ -48,7 +48,7 @@ def unhealthy_json_response(reason: str) -> JSONResponse:
 
 
 async def start_spark_health_check_server():
-    config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")
+    config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="warning")
     server = uvicorn.Server(config)
     await server.serve()
 
