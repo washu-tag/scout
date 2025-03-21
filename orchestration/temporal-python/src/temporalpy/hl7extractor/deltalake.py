@@ -2,10 +2,13 @@ import os
 
 from delta import configure_spark_with_delta_pip
 from delta.tables import DeltaTable
+from py4j.protocol import Py4JJavaError
 from pyspark.sql import Column, SparkSession
 from pyspark.sql import functions as F
 from temporalio import activity
 from temporalio.exceptions import ApplicationError
+
+from temporalpy.healthapi import report_unhealthy
 
 DATE_FORMAT = "yyyyMMdd"
 DT_FORMAT = "yyyyMMddHHmmss"
@@ -278,8 +281,12 @@ def import_hl7_files_to_deltalake(
             .whenNotMatchedInsertAll()
             .execute()
         )
-    except:
-        activity.logger.exception("Error ingesting HL7 files to Delta Lake")
+    except Py4JJavaError as e:
+        activity.logger.exception("Spark error ingesting HL7 files to Delta Lake", e)
+        report_unhealthy(str(e))
+        raise
+    except Exception as e:
+        activity.logger.exception("Error ingesting HL7 files to Delta Lake", e)
         raise
     finally:
         if spark is not None:
