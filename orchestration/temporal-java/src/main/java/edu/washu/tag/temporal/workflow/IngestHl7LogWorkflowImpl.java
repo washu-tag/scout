@@ -97,7 +97,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             ParsedLogInput parsedLogInput = parseInput(input);
 
             // Construct a path for a new manifest file
-            String manifestFilePath = scratchDir + "/manifest.txt";
+            String manifestFilePath = scratchDir + "/log-manifest.txt";
 
             // Get list of log paths to process
             FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(
