@@ -70,6 +70,12 @@ configMapGenerator:
       labels:
         grafana_alert: "1"
 
+  - name: high-node-mount-inode-usage-alert
+    files: [ alerts/alert-rules/high-node-mount-inode-usage-alert.json ]
+    options:
+      labels:
+        grafana_alert: "1"
+
   - name: slack-notification-template
     files: [ alerts/notification-templates/slack-notification-template.json ]
     options:
