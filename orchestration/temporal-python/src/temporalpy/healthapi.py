@@ -51,3 +51,9 @@ async def start_spark_health_check_server():
     config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")
     server = uvicorn.Server(config)
     await server.serve()
+
+
+def report_unhealthy(content: str):
+    """Report an unhealthy status by writing to the temporary file."""
+    SPARK_HEALTH_TEMP_FILE.write_text(content)
+    log.info("Reported unhealthy status: %s", content)
