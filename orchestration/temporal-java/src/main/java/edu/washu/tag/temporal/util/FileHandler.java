@@ -27,4 +27,7 @@ public interface FileHandler {
     byte[] read(URI source) throws IOException;
 
     void deleteMultiple(List<URI> uris);
+
+    @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 1000, multiplier = 2))
+    List<String> ls(URI source);
 }
