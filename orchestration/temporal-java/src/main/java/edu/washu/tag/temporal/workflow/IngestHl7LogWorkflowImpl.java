@@ -149,7 +149,9 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                 workflowInfo.getWorkflowId(), hl7ManifestFileOutput.numHl7Files());
         Async.function(
             ingestToDeltaLake::ingestHl7FileToDeltaLake,
-            new IngestHl7FilesToDeltaLakeInput(input.deltaLakePath(), input.modalityMapPath(), hl7ManifestFileOutput.manifestFilePath())
+            new IngestHl7FilesToDeltaLakeInput(
+                input.deltaLakePath(), input.modalityMapPath(), input.scratchSpaceRootPath(), hl7ManifestFileOutput.manifestFilePath(), null
+            )
         );
         // Wait for child workflow to start
         Promise<WorkflowExecution> childPromise = Workflow.getWorkflowExecution(ingestToDeltaLake);
