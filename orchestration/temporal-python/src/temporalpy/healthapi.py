@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 log = logging.getLogger(__name__)
 
 # Temporary file for Spark health check
-SPARK_HEALTH_TEMP_FILE = Path(tempfile.tempdir) / "spark_health_check"
+SPARK_HEALTH_TEMP_FILE = Path(tempfile.gettempdir()) / "spark_health_check"
 HEALTHY = "healthy"
 UNHEALTHY = "unhealthy"
 HEALTHY_JSON_RESPONSE = JSONResponse(status_code=200, content={"status": HEALTHY})

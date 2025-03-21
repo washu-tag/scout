@@ -2,7 +2,7 @@ import os
 
 from delta import configure_spark_with_delta_pip
 from delta.tables import DeltaTable
-from py4j.protocol import Py4JJavaError
+from py4j.protocol import Py4JError
 from pyspark.sql import Column, SparkSession
 from pyspark.sql import functions as F
 from temporalio import activity
@@ -60,6 +60,7 @@ def import_hl7_files_to_deltalake(
     if not s3a_endpoint or not s3a_access_key or not s3a_secret_key:
         raise ApplicationError("S3 endpoint, access key, and secret key required")
 
+    spark = None
     try:
         activity.logger.info("Creating Spark session")
         extra_packages = ["org.apache.hadoop:hadoop-aws:3.2.2"]
@@ -281,17 +282,26 @@ def import_hl7_files_to_deltalake(
             .whenNotMatchedInsertAll()
             .execute()
         )
-    except Py4JJavaError as e:
-        activity.logger.exception("Spark error ingesting HL7 files to Delta Lake", e)
-        report_unhealthy(str(e))
+    except Py4JError | ConnectionError as e:
+        activity.logger.exception(
+            "Spark error ingesting HL7 files to Delta Lake", exc_info=e
+        )
+        try:
+            message = str(e)
+        except:
+            message = "Unknown error"
+        report_unhealthy(message)
         raise
     except Exception as e:
-        activity.logger.exception("Error ingesting HL7 files to Delta Lake", e)
+        activity.logger.exception("Error ingesting HL7 files to Delta Lake", exc_info=e)
         raise
     finally:
         if spark is not None:
             activity.logger.info("Stopping spark")
-            spark.stop()
+            try:
+                spark.stop()
+            except:
+                pass
 
     activity.logger.info("Finished")
     return num_hl7
