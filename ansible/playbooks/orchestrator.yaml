@@ -120,7 +120,7 @@
                 default:
                   driver: 'cassandra'
                   cassandra:
-                    hosts: ['temporal-cassandra-dc1-service.temporal.svc.cluster.local']
+                    hosts: ['temporal-cassandra-dc1-service.temporal']
                     port: 9042
                     keyspace: temporal
                     existingSecret: 'temporal-cassandra-superuser'
