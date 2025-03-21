@@ -25,7 +25,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
   "links": [],
   "panels": [
     {
@@ -418,15 +417,13 @@
         "x": 12,
         "y": 9
       },
-      "id": 70,
+      "id": 74,
       "options": {
         "legend": {
-          "calcs": ["min", "max", "mean"],
+          "calcs": [],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true,
-          "sortBy": "Max",
-          "sortDesc": true
+          "showLegend": true
         },
         "tooltip": {
           "hideZeros": false,
@@ -443,14 +440,14 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(container_memory_working_set_bytes{pod!=\"\", namespace=~\"temporal|orchestration-workers\"}) by (namespace)\n+ on (namespace)\n(sum(windows_container_memory_usage_commit_bytes{container_id!=\"\" ,namespace=~\"temporal|orchestration-workers\"} * on (container_id) group_left (container, pod, namespace) max by (container, container_id, pod, namespace) (kube_pod_container_info{container_id!=\"\", namespace=~\"temporal|orchestration-workers\"}) OR kube_namespace_created * 0) by (namespace))\n",
+          "expr": "sum(container_memory_working_set_bytes{namespace=~\"temporal|orchestration-workers\", pod!=\"\"}) by (pod)",
           "interval": "",
-          "legendFormat": "{{ namespace }}",
+          "legendFormat": "{{ pod }}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Memory Utilization by namespace",
+      "title": "Memory usage by Pod",
       "type": "timeseries"
     },
     {
@@ -4568,6 +4565,7 @@
   "timezone": "",
   "title": "Temporal",
   "uid": "scout_temporal_dashboard_01",
+  "id": null,
   "version": 2,
   "weekStart": ""
 }
