@@ -60,6 +60,7 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
             String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
             FindHl7FilesOutput output = findHl7Files.findHl7FilesAndWriteManifest(new FindHl7FilesInput(input.hl7RootPath(), scratchDir));
             hl7ManifestFilePath = output.hl7ManifestFilePath();
+            logger.info("WorkflowId {} - Using manifest file path: {}", workflowInfo.getWorkflowId(), hl7ManifestFilePath);
         } else {
             logger.info("WorkflowId {} - Using provided HL7 manifest file path: {}", workflowInfo.getWorkflowId(), input.hl7ManifestFilePath());
         }
