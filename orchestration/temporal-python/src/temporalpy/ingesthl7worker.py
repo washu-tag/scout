@@ -13,7 +13,6 @@ from temporalpy.activities.ingesthl7 import (
     TASK_QUEUE_NAME,
     IngestHl7FilesActivity,
 )
-from temporalpy.healthapi import start_spark_health_check_server
 
 log = logging.getLogger("workflow_worker")
 
@@ -68,12 +67,7 @@ async def main(argv=None):
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    health_check_task = asyncio.create_task(start_spark_health_check_server())
-    worker_task = asyncio.create_task(
-        run_worker(temporal_address, temporal_namespace, modality_map_path)
-    )
-
-    await asyncio.gather(health_check_task, worker_task)
+    await run_worker(temporal_address, temporal_namespace, modality_map_path)
 
 
 if __name__ == "__main__":
