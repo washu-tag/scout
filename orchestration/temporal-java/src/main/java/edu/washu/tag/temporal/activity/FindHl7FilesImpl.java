@@ -1,7 +1,6 @@
 package edu.washu.tag.temporal.activity;
 
 import static edu.washu.tag.temporal.util.Constants.BUILD_MANIFEST_QUEUE;
-import static edu.washu.tag.temporal.util.Constants.INGEST_DELTA_LAKE_QUEUE;
 
 import edu.washu.tag.temporal.model.FindHl7FilesInput;
 import edu.washu.tag.temporal.model.FindHl7FilesOutput;
