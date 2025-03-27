@@ -1,5 +1,6 @@
 package edu.washu.tag.temporal.workflow;
 
+import static edu.washu.tag.temporal.util.Constants.BUILD_MANIFEST_QUEUE;
 import static edu.washu.tag.temporal.util.Constants.PYTHON_ACTIVITY;
 import static edu.washu.tag.temporal.util.Constants.INGEST_DELTA_LAKE_QUEUE;
 
@@ -25,6 +26,7 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
     private final FindHl7Files findHl7Files =
         Workflow.newActivityStub(FindHl7Files.class,
             ActivityOptions.newBuilder()
+                .setTaskQueue(BUILD_MANIFEST_QUEUE)
                 .setStartToCloseTimeout(Duration.ofMinutes(5))
                 .setRetryOptions(RetryOptions.newBuilder()
                     .setMaximumAttempts(3)

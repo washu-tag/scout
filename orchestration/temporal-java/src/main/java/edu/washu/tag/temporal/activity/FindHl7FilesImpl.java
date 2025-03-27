@@ -1,6 +1,7 @@
 package edu.washu.tag.temporal.activity;
 
-import static edu.washu.tag.temporal.util.Constants.CHILD_QUEUE;
+import static edu.washu.tag.temporal.util.Constants.BUILD_MANIFEST_QUEUE;
+import static edu.washu.tag.temporal.util.Constants.INGEST_DELTA_LAKE_QUEUE;
 
 import edu.washu.tag.temporal.model.FindHl7FilesInput;
 import edu.washu.tag.temporal.model.FindHl7FilesOutput;
@@ -18,7 +19,7 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-@ActivityImpl(taskQueues = CHILD_QUEUE)
+@ActivityImpl(taskQueues = BUILD_MANIFEST_QUEUE)
 public class FindHl7FilesImpl implements FindHl7Files {
     private static final Logger logger = Workflow.getLogger(FindHl7FilesImpl.class);
 
