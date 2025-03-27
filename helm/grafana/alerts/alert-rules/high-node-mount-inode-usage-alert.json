@@ -1,0 +1,88 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "1m-evaluations",
+      "folder": "Scout",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "high_node_mount_inode_usage_alert_01",
+          "title": "High Inode Usage on Node Mountpoint",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus_datasource_01",
+              "model": {
+                "editorMode": "code",
+                "expr": "(1 - (node_filesystem_files_free{device!~'rootfs', fstype!~\"tmpfs|ceph\"} / node_filesystem_files{device!~'rootfs', fstype!~\"tmpfs|ceph\"})) * 100",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "__auto",
+                "maxDataPoints": 43200,
+                "range": false,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [90],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": []
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "avg"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "B",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "KeepLast",
+          "execErrState": "KeepLast",
+          "for": "10m",
+          "annotations": {
+            "summary": "Node {{ $labels.node }} has high inode usage on mountpoint {{ $labels.mountpoint }}",
+            "description": "Inode usage is above 90% on node {{ $labels.node }} for mountpoint {{ $labels.mountpoint }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
+          },
+          "labels": {},
+          "isPaused": false,
+          "notification_settings": {
+            "receiver": "slack-scout"
+          }
+        }
+      ]
+    }
+  ]
+}
