@@ -185,12 +185,13 @@ public class FileHandlerImpl implements FileHandler {
             throw new UnsupportedOperationException("Unsupported destination scheme " + scheme);
         }
         String bucket = source.getHost();
-        String prefix = source.getPath();
-        logger.debug("Listing files in S3 bucket {} with prefix {}", bucket, prefix);
+        String prefix = source.getPath().replaceFirst("^/", "");
+        logger.info("Listing files in S3 bucket {} with prefix {}", bucket, prefix);
         try (Stream<S3Object> paths = s3Client.listObjectsV2Paginator(builder -> builder.bucket(bucket).prefix(prefix))
             .contents()
             .stream()) {
             return paths
+                .peek(s3Object -> logger.debug("Found file: {}", s3Object.key()))
                 .map(s3Object -> "s3://" + bucket + "/" + s3Object.key())
                 .toList();
         } catch (Exception e) {
