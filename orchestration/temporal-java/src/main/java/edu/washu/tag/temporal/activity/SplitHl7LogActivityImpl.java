@@ -241,7 +241,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
      */
     private void transformToHl7AndUpload(List<String> outputPaths, List<String> lines, URI destination, Path logFilePath, int hl7Count) {
         String sourceInfo = logFilePath + " (section " + hl7Count + ")";
-        Activity.getExecutionContext().heartbeat(null);
         try {
             String outputPath = transformAndUpload(lines, destination, sourceInfo);
             outputPaths.add(outputPath);
