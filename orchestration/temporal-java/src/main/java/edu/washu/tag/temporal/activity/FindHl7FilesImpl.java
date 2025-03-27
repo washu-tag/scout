@@ -34,8 +34,7 @@ public class FindHl7FilesImpl implements FindHl7Files {
         logger.info("WorkflowId {} ActivityId {} - Finding HL7 files at root path {}",
             activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.hl7RootPath());
 
-        List<String> hl7Files;
-        hl7Files = fileHandler.ls(URI.create(input.hl7RootPath()));
+        List<String> hl7Files = fileHandler.ls(URI.create(input.hl7RootPath()));
 
         if (hl7Files.isEmpty()) {
             throw ApplicationFailure.newFailure("No HL7 files found", "type", null);
