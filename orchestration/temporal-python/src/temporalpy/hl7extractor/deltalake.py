@@ -1,6 +1,5 @@
 import os
 
-from delta import configure_spark_with_delta_pip
 from delta.tables import DeltaTable
 from pyspark.sql import Column, SparkSession
 from pyspark.sql import functions as F
