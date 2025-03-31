@@ -32,6 +32,7 @@ async def run_worker(
                 multiprocessing.Manager()
             ),
             max_concurrent_activities=1,
+            max_concurrent_activity_task_polls=1,
         )
 
         log.info("Starting worker. Waiting for activities...")
