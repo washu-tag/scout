@@ -13,11 +13,6 @@
           - name: jupyter-hub
             size: '15Gi'
             path: '{{ jupyter_dir }}/hub'
-
-    - name: Setup single-user storage for Jupyter
-      include_tasks: tasks/storage_setup.yaml
-      vars:
-        storage_definitions:
           - name: jupyter-singleuser
             size: '250Gi'
             path: '{{ jupyter_dir }}/singleuser'
