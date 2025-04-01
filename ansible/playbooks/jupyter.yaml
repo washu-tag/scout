@@ -6,7 +6,7 @@
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
-    - name: Setup JupyterHub storage
+    - name: Setup storage
       include_tasks: tasks/storage_setup.yaml
       vars:
         storage_definitions:
