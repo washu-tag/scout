@@ -10,34 +10,17 @@
       include_tasks: tasks/storage_setup.yaml
       vars:
         storage_definitions:
-          - name: jupyter
+          - name: jupyter-hub
             size: '15Gi'
             path: '{{ jupyter_dir }}/hub'
 
-    - name: Create single-user storage directory
-      file:
-        path: '{{ jupyter_dir }}/singleuser'
-        state: directory
-        mode: '0777'
-
-    - name: Create PersistentVolume for single-user storage
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: PersistentVolume
-          metadata:
-            name: jupyter-singleuser-pv
-            namespace: jupyter
-          spec:
-            capacity:
-              storage: 250Gi
-            accessModes:
-              - ReadWriteOnce
-            persistentVolumeReclaimPolicy: Retain
-            storageClassName: manual
-            hostPath:
-              path: '{{ jupyter_dir }}/singleuser'
+    - name: Setup single-user storage for Jupyter
+      include_tasks: tasks/storage_setup.yaml
+      vars:
+        storage_definitions:
+          - name: jupyter-singleuser
+            size: '250Gi'
+            path: '{{ jupyter_dir }}/singleuser'
 
     - name: Create PersistentVolumeClaim for Jupyter single-user storage
       kubernetes.core.k8s:
@@ -54,7 +37,7 @@
             resources:
               requests:
                 storage: 250Gi
-            storageClassName: manual
+            storageClassName: jupyter-singleuser-storage
 
     - name: Add JupyterHub Helm repository
       kubernetes.core.helm_repository:

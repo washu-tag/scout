@@ -24,7 +24,7 @@ hub:
       services: [prometheus]
   db:
     pvc:
-      storageClassName: jupyter-storage
+      storageClassName: jupyter-hub-storage
 
 ingress:
   enabled: true
