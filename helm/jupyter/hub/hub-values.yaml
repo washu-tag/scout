@@ -24,7 +24,7 @@ hub:
       services: [prometheus]
   db:
     pvc:
-      storageClassName: jupyter-storage
+      storageClassName: jupyter-hub-storage
 
 ingress:
   enabled: true
@@ -51,8 +51,11 @@ singleuser:
     limit: 16G
     guarantee: 2G
   storage:
-    dynamic:
-      storageClass: jupyter-storage
+    type: static
+    static:
+      pvcName: jupyter-singleuser-pvc
+      subPath: '{username}'
+    capacity: 10Gi
   networkPolicy:
     egress:
       - to:
