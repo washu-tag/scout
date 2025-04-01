@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 log = logging.getLogger(__name__)
 
 # Temporary file for Spark health check
-SPARK_HEALTH_TEMP_FILE = Path(tempfile.gettempdir()) / "spark_health_check"
+SPARK_HEALTH_TEMP_FILE = Path(tempfile.mkstemp()[1])
 HEALTHY = "healthy"
 UNHEALTHY = "unhealthy"
 HEALTHY_JSON_RESPONSE = JSONResponse(status_code=200, content={"status": HEALTHY})
@@ -51,9 +51,3 @@ async def start_spark_health_check_server():
     config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="warning")
     server = uvicorn.Server(config)
     await server.serve()
-
-
-def report_unhealthy(content: str):
-    """Report an unhealthy status by writing to the temporary file."""
-    SPARK_HEALTH_TEMP_FILE.write_text(content)
-    log.info("Reported unhealthy status: %s", content)

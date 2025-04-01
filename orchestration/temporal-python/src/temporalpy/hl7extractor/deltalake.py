@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from delta import configure_spark_with_delta_pip
 from delta.tables import DeltaTable
@@ -7,8 +8,6 @@ from pyspark.sql import Column, SparkSession
 from pyspark.sql import functions as F
 from temporalio import activity
 from temporalio.exceptions import ApplicationError
-
-from temporalpy.healthapi import report_unhealthy
 
 DATE_FORMAT = "yyyyMMdd"
 DT_FORMAT = "yyyyMMddHHmmss"
@@ -46,7 +45,10 @@ def parse_timestamp_col(col: Column | str) -> Column:
 
 
 def import_hl7_files_to_deltalake(
-    delta_table: str, hl7_manifest_file_path: str, modality_map_csv_path: str
+    delta_table: str,
+    hl7_manifest_file_path: str,
+    modality_map_csv_path: str,
+    health_file: Path,
 ) -> int:
     """Extract data from HL7 messages and write to Delta Lake."""
 
@@ -290,7 +292,9 @@ def import_hl7_files_to_deltalake(
             message = str(e)
         except:
             message = "Unknown error"
-        report_unhealthy(message)
+
+        # Write the error message to the health file
+        health_file.write_text(message)
         raise
     except Exception as e:
         activity.logger.exception("Error ingesting HL7 files to Delta Lake", exc_info=e)
