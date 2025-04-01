@@ -3,6 +3,8 @@ package edu.washu.tag.temporal.activity;
 import static edu.washu.tag.temporal.util.Constants.CHILD_QUEUE;
 
 import edu.washu.tag.temporal.exception.FileFormatException;
+import edu.washu.tag.temporal.model.Hl7ManifestFileInput;
+import edu.washu.tag.temporal.model.Hl7ManifestFileOutput;
 import edu.washu.tag.temporal.model.SplitAndTransformHl7LogInput;
 import edu.washu.tag.temporal.model.SplitAndTransformHl7LogOutput;
 import edu.washu.tag.temporal.util.FileHandler;
@@ -20,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -74,8 +77,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String hl7ListFilePath = String.join("/",
             input.scratchDir(),
             activityInfo.getWorkflowId(),
-            activityInfo.getActivityId(),
-            HL7_PATHS_FILENAME);
+            activityInfo.getActivityId() + "_" + HL7_PATHS_FILENAME);
         URI hl7ListFileUri = URI.create(hl7ListFilePath);
         logger.info("WorkflowId {} ActivityId {} - Uploading log file list to {}", activityInfo.getWorkflowId(),
             activityInfo.getActivityId(), hl7ListFileUri);
@@ -87,6 +89,57 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         }
 
         return new SplitAndTransformHl7LogOutput(uploadedList, hl7Paths.size());
+    }
+
+    @Override
+    public Hl7ManifestFileOutput writeHl7ManifestFile(Hl7ManifestFileInput input) {
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+
+        String manifestFilePath = input.manifestFileDirPath() + "/" + activityInfo.getRunId() + "_hl7-manifest.txt";
+
+        // Read all the file path files and collect the HL7 paths
+        logger.info("WorkflowId {} ActivityId {} - Reading {} HL7 file path files", activityInfo.getWorkflowId(),
+            activityInfo.getActivityId(), input.hl7FilePathFiles().size());
+        List<String> hl7Paths = new ArrayList<>();
+        for (String hl7FilePathFile : input.hl7FilePathFiles()) {
+            try {
+                byte[] hl7PathFileBytes = fileHandler.read(URI.create(hl7FilePathFile));
+                String hl7PathFileStr = new String(hl7PathFileBytes, StandardCharsets.UTF_8);
+                Arrays.stream(hl7PathFileStr.split(System.lineSeparator()))
+                    .filter(line -> !line.isEmpty())
+                    .forEach(hl7Paths::add);
+            } catch (IOException e) {
+                logger.warn("WorkflowId {} ActivityId {} - Failed to read HL7 file {}",
+                    activityInfo.getWorkflowId(), activityInfo.getActivityId(), hl7FilePathFile, e);
+            }
+        }
+
+        // Write the manifest file containing all the HL7 paths
+        logger.info("WorkflowId {} ActivityId {} - Writing {} HL7 file paths to manifest file {}", activityInfo.getWorkflowId(),
+            activityInfo.getActivityId(), hl7Paths.size(), manifestFilePath);
+        try {
+            byte[] manifestFileBytes = convertListToByteArray(hl7Paths);
+            fileHandler.putWithRetry(manifestFileBytes, URI.create(manifestFilePath));
+        } catch (IOException e) {
+            logger.error("WorkflowId {} ActivityId {} - Failed to write manifest file {}",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), manifestFilePath, e);
+            throw ApplicationFailure.newFailureWithCause("Failed to write manifest file " + manifestFilePath, "type", e);
+        }
+
+        logger.info("WorkflowId {} ActivityId {} - Finished writing {} HL7 file paths to manifest file {}. Deleting {} file path files.", activityInfo.getWorkflowId(),
+            activityInfo.getActivityId(), hl7Paths.size(), manifestFilePath, input.hl7FilePathFiles().size());
+
+        // Delete the HL7 file path files
+        try {
+            fileHandler.deleteMultiple(input.hl7FilePathFiles().stream().map(URI::create).toList());
+        } catch (Exception e) {
+            logger.warn("WorkflowId {} ActivityId {} - Failed to delete HL7 file path files", activityInfo.getWorkflowId(),
+                activityInfo.getActivityId(), e);
+        }
+        logger.info("WorkflowId {} ActivityId {} - Finished deleting {} file path files.", activityInfo.getWorkflowId(),
+            activityInfo.getActivityId(), input.hl7FilePathFiles().size());
+
+        return new Hl7ManifestFileOutput(manifestFilePath, hl7Paths.size());
     }
 
     /**
@@ -231,7 +284,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 outputStream.write('\r');
             }
 
-            logger.debug("WorkflowId {} ActivityId {} - Uploading HL7 file {}/{}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), destination,
+            logger.info("WorkflowId {} ActivityId {} - Uploading HL7 file {}/{}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), destination,
                 relativePath);
             // Convert to byte array and upload to S3
             // We could use piped streams to avoid loading the whole thing into memory, but this adds complexity that isn't warranted for these small files

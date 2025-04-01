@@ -2,13 +2,13 @@ package edu.washu.tag.temporal.util;
 
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
+import io.temporal.failure.ApplicationFailure;
 import io.temporal.workflow.Workflow;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -17,6 +17,8 @@ import org.springframework.retry.support.RetrySynchronizationManager;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 @Component
 public class FileHandlerImpl implements FileHandler {
@@ -162,16 +164,38 @@ public class FileHandlerImpl implements FileHandler {
     }
 
     @Override
-    public void deleteDir(Path dir) throws IOException {
-        try (Stream<Path> files = Files.walk(dir)) {
-            files.sorted(Comparator.reverseOrder()) // Sort in reverse order to delete files before directories
-                .forEach(path -> {
-                    try {
-                        Files.delete(path);
-                    } catch (IOException ignored) {
-                        // ignored???
-                    }
-                });
+    public void deleteMultiple(List<URI> uris) {
+        String scheme = uris.getFirst().getScheme();
+        if (!S3.equals(scheme)) {
+            throw new UnsupportedOperationException("Unsupported destination scheme " + scheme);
+        }
+        String bucket = uris.getFirst().getHost();
+        List<ObjectIdentifier> keys = uris.stream()
+            .map(URI::getPath)
+            .map(key -> ObjectIdentifier.builder().key(key).build())
+            .toList();
+        logger.debug("Deleting {} keys from S3 bucket {}", keys.size(), bucket);
+        s3Client.deleteObjects(builder -> builder.bucket(bucket).delete(deleteBuilder -> deleteBuilder.objects(keys)));
+    }
+
+    @Override
+    public List<String> ls(URI source) {
+        String scheme = source.getScheme();
+        if (!S3.equals(scheme)) {
+            throw new UnsupportedOperationException("Unsupported destination scheme " + scheme);
+        }
+        String bucket = source.getHost();
+        String prefix = source.getPath().replaceFirst("^/", "");
+        logger.info("Listing files in S3 bucket {} with prefix {}", bucket, prefix);
+        try (Stream<S3Object> paths = s3Client.listObjectsV2Paginator(builder -> builder.bucket(bucket).prefix(prefix))
+            .contents()
+            .stream()) {
+            return paths
+                .peek(s3Object -> logger.debug("Found file: {}", s3Object.key()))
+                .map(s3Object -> "s3://" + bucket + "/" + s3Object.key())
+                .toList();
+        } catch (Exception e) {
+            throw ApplicationFailure.newFailureWithCause("Error listing files in S3", "type", e);
         }
     }
 }
