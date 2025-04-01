@@ -30,12 +30,13 @@ async def healthz():
 
         # Read the contents of the temporary file
         contents = SPARK_HEALTH_TEMP_FILE.read_text()
-        if contents != HEALTHY:
-            log.warning("Health check file reports failure: %s", contents)
-            return unhealthy_json_response(f"Spark reported status: {contents}")
+        if not contents:
+            # No health information available. Assume healthy.
+            log.debug("No health information available (assume healthy)")
+            return HEALTHY_JSON_RESPONSE
 
-        log.info("Health check succeeded")
-        return HEALTHY_JSON_RESPONSE
+        log.warning('Health check file reports failure: "%s"', contents)
+        return unhealthy_json_response(f"Spark reported status: {contents}")
     except Exception as e:
         log.error("Health check failed with exception", e)
         return unhealthy_json_response(str(e))
