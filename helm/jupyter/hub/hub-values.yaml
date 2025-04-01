@@ -50,13 +50,12 @@ singleuser:
   memory:
     limit: 16G
     guarantee: 2G
-  singleuser:
-    storage:
-      type: static
-      static:
-        pvcName: jupyter-singleuser-pvc
-        subPath: '{username}'
-      capacity: 10Gi
+  storage:
+    type: static
+    static:
+      pvcName: jupyter-singleuser-pvc
+      subPath: '{username}'
+    capacity: 10Gi
   networkPolicy:
     egress:
       - to:
