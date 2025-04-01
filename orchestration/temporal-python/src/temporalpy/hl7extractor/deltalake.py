@@ -42,8 +42,8 @@ def parse_timestamp_col(col: Column | str) -> Column:
 
 
 def import_hl7_files_to_deltalake(
-    delta_table: str, hl7_file_path_files: list[str], modality_map_csv_path: str
-):
+    delta_table: str, hl7_manifest_file_path: str, modality_map_csv_path: str
+) -> int:
     """Extract data from HL7 messages and write to Delta Lake."""
 
     # TODO This should be moved to a configuration file
@@ -83,11 +83,9 @@ def import_hl7_files_to_deltalake(
         spark_builder.config("spark.driver.memory", spark_executor_memory)
     spark = spark_builder.getOrCreate()
 
-    activity.logger.info("Reading %d HL7 file path files", len(hl7_file_path_files))
-    hl7_file_path_files = [
-        path.replace("s3://", "s3a://") for path in hl7_file_path_files
-    ]
-    file_path_file_df = spark.read.text(hl7_file_path_files)
+    activity.logger.info("Reading HL7 manifest file %s", hl7_manifest_file_path)
+    hl7_manifest_file_path = hl7_manifest_file_path.replace("s3://", "s3a://")
+    file_path_file_df = spark.read.text(hl7_manifest_file_path)
 
     # I wish I could just have spark read these directly without collecting first but I can't figure out how
     hl7_file_paths_from_spark = [
@@ -106,7 +104,8 @@ def import_hl7_files_to_deltalake(
     if df.isEmpty():
         raise ApplicationError("No data extracted from HL7 messages")
 
-    activity.logger.info(f"Extracted data from {df.count()} HL7 messages")
+    num_hl7 = df.count()
+    activity.logger.info("Extracted data from %d HL7 messages", num_hl7)
 
     # Read modality map
     modality_map_csv_path = modality_map_csv_path.replace("s3://", "s3a://")
@@ -269,3 +268,4 @@ def import_hl7_files_to_deltalake(
     spark.stop()
 
     activity.logger.info("Finished")
+    return num_hl7

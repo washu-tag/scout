@@ -1,5 +1,3 @@
 package edu.washu.tag.temporal.model;
 
-import java.util.List;
-
-public record IngestHl7FilesToDeltaLakeInput(String deltaTable, String modalityMapPath, List<String> hl7FilePathFiles) {}
+public record IngestHl7FilesToDeltaLakeInput(String deltaTable, String modalityMapPath, String scratchSpaceRootPath, String hl7ManifestFilePath, String hl7RootPath) {}
