@@ -31,6 +31,9 @@ async def run_worker(
             shared_state_manager=SharedStateManager.create_from_multiprocessing(
                 multiprocessing.Manager()
             ),
+            max_cached_workflows=1,
+            max_concurrent_workflow_tasks=1,
+            max_concurrent_workflow_task_polls=1,
             max_concurrent_activities=1,
             max_concurrent_activity_task_polls=1,
         )
