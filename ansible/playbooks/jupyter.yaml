@@ -6,13 +6,55 @@
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
-    - name: Setup storage
+    - name: Setup JupyterHub storage
       include_tasks: tasks/storage_setup.yaml
       vars:
         storage_definitions:
           - name: jupyter
-            size: '250Gi'
-            path: '{{ jupyter_dir }}'
+            size: '15Gi'
+            path: '{{ jupyter_dir }}/hub'
+
+    - name: Create single-user storage directory
+      file:
+        path: '{{ jupyter_dir }}/singleuser'
+        state: directory
+        mode: '0777'
+
+    - name: Create PersistentVolume for single-user storage
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolume
+          metadata:
+            name: jupyter-singleuser-pv
+            namespace: jupyter
+          spec:
+            capacity:
+              storage: 250Gi
+            accessModes:
+              - ReadWriteOnce
+            persistentVolumeReclaimPolicy: Retain
+            storageClassName: manual
+            hostPath:
+              path: '{{ jupyter_dir }}/singleuser'
+
+    - name: Create PersistentVolumeClaim for Jupyter single-user storage
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            name: jupyter-singleuser-pvc
+            namespace: jupyter
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 250Gi
+            storageClassName: manual
 
     - name: Add JupyterHub Helm repository
       kubernetes.core.helm_repository:
@@ -55,3 +97,10 @@
                   - read:org
               JupyterHub:
                 authenticator_class: github
+          singleuser:
+            storage:
+              type: static
+              static:
+                pvcName: jupyter-singleuser-pvc
+                subPath: '{username}'
+              capacity: 10Gi

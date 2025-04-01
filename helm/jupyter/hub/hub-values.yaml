@@ -50,9 +50,6 @@ singleuser:
   memory:
     limit: 16G
     guarantee: 2G
-  storage:
-    dynamic:
-      storageClass: jupyter-storage
   networkPolicy:
     egress:
       - to:
