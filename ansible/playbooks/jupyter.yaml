@@ -75,10 +75,3 @@
                   - read:org
               JupyterHub:
                 authenticator_class: github
-          singleuser:
-            storage:
-              type: static
-              static:
-                pvcName: jupyter-singleuser-pvc
-                subPath: '{username}'
-              capacity: 10Gi
