@@ -34,17 +34,22 @@ async def healthz():
             # No health information available. Assume healthy.
             log.debug("No health information available (assume healthy)")
             return HEALTHY_JSON_RESPONSE
+        messages = [line for line in contents.splitlines() if line]
+        reason = messages[0] if messages else "unknown"
 
-        log.warning('Health check file reports failure: "%s"', contents)
-        return unhealthy_json_response(f"Spark reported status: {contents}")
+        log.warning('Health check file reports failure: "%s"', reason)
+        return unhealthy_json_response(reason, messages)
     except Exception as e:
         log.error("Health check failed with exception", e)
         return unhealthy_json_response(str(e))
 
 
-def unhealthy_json_response(reason: str) -> JSONResponse:
+def unhealthy_json_response(
+    reason: str, messages: list[str] | None = None
+) -> JSONResponse:
     return JSONResponse(
-        status_code=503, content={"status": UNHEALTHY, "reason": reason}
+        status_code=503,
+        content={"status": UNHEALTHY, "reason": reason, "messages": messages or []},
     )
 
 

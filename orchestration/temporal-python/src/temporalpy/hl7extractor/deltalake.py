@@ -285,8 +285,8 @@ def import_hl7_files_to_deltalake(
             .execute()
         )
     except (Py4JError, ConnectionError) as e:
-        activity.logger.exception(
-            "Spark error ingesting HL7 files to Delta Lake", exc_info=e
+        activity.logger.error(
+            "Spark error ingesting HL7 files to Delta Lake. Marking pod unhealthy."
         )
         try:
             message = str(e)
@@ -294,7 +294,8 @@ def import_hl7_files_to_deltalake(
             message = "Unknown error"
 
         # Write the error message to the health file
-        health_file.write_text(message)
+        with health_file.open("a") as f:
+            f.write(message + "\n")
         raise
     except Exception as e:
         activity.logger.exception("Error ingesting HL7 files to Delta Lake", exc_info=e)
