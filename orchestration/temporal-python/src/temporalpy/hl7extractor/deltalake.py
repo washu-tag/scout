@@ -284,7 +284,7 @@ def import_hl7_files_to_deltalake(
             .whenNotMatchedInsertAll()
             .execute()
         )
-    except Py4JError | ConnectionError as e:
+    except (Py4JError, ConnectionError) as e:
         activity.logger.exception(
             "Spark error ingesting HL7 files to Delta Lake", exc_info=e
         )
