@@ -5,6 +5,7 @@ import logging
 import multiprocessing
 import os
 import sys
+from pathlib import Path
 
 from temporalio.client import Client
 from temporalio.worker import Worker, SharedStateManager
@@ -13,15 +14,16 @@ from temporalpy.activities.ingesthl7 import (
     TASK_QUEUE_NAME,
     IngestHl7FilesActivity,
 )
+from temporalpy.healthapi import start_spark_health_check_server, SPARK_HEALTH_TEMP_FILE
 
 log = logging.getLogger("workflow_worker")
 
 
 async def run_worker(
-    temporal_address: str, namespace: str, mapping_file_path: str
+    temporal_address: str, namespace: str, mapping_file_path: str, health_file: Path
 ) -> None:
     client = await Client.connect(temporal_address, namespace=namespace)
-    ingest_hl7_files_activity = IngestHl7FilesActivity(mapping_file_path)
+    ingest_hl7_files_activity = IngestHl7FilesActivity(mapping_file_path, health_file)
     with concurrent.futures.ProcessPoolExecutor(1) as pool:
         worker = Worker(
             client,
@@ -71,7 +73,17 @@ async def main(argv=None):
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    await run_worker(temporal_address, temporal_namespace, modality_map_path)
+    health_check_task = asyncio.create_task(start_spark_health_check_server())
+    worker_task = asyncio.create_task(
+        run_worker(
+            temporal_address,
+            temporal_namespace,
+            modality_map_path,
+            SPARK_HEALTH_TEMP_FILE,
+        )
+    )
+
+    await asyncio.gather(health_check_task, worker_task)
 
 
 if __name__ == "__main__":
