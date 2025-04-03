@@ -61,7 +61,7 @@ jobs:
       - name: 'Build/Cache Image - pyspark-notebook'
         uses: ./.github/actions/docker-build-cache
         with:
-          subproject: orchestration/pyspark-notebook
+          subproject: helm/jupyter/notebook
           image-name: pyspark-notebook
   build-and-upload-explorer:
     runs-on: ubuntu-latest
