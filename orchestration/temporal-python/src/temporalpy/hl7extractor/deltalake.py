@@ -1,4 +1,9 @@
 import os
+
+# I don't know why we have to import this specific exception type, since it is
+# literally just an alias for the builtin TimeoutError.
+# But if we try to catch the builtin TimeoutError, it doesn't work.
+from concurrent.futures._base import TimeoutError
 from pathlib import Path
 
 from delta import configure_spark_with_delta_pip
@@ -295,6 +300,9 @@ def import_hl7_files_to_deltalake(
             .whenNotMatchedInsertAll()
             .execute()
         )
+
+        activity.logger.info("Finished")
+        return num_hl7
     except (Py4JError, ConnectionError) as e:
         activity.logger.error(
             "Spark error ingesting HL7 files to Delta Lake. Marking pod unhealthy."
@@ -308,6 +316,8 @@ def import_hl7_files_to_deltalake(
         with health_file.open("a") as f:
             f.write(message + "\n")
         raise
+    except TimeoutError:
+        activity.logger.info("Temporal activity has been cancelled")
     except Exception as e:
         activity.logger.exception("Error ingesting HL7 files to Delta Lake", exc_info=e)
         raise
@@ -318,6 +328,3 @@ def import_hl7_files_to_deltalake(
                 spark.stop()
             except:
                 pass
-
-    activity.logger.info("Finished")
-    return num_hl7
