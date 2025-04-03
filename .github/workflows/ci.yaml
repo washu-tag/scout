@@ -31,6 +31,7 @@ jobs:
       attestations: write
       id-token: write
     steps:
+      - uses: actions/checkout@v4.2.1
       - name: 'Build/Cache Image - temporal-java'
         uses: ./.github/actions/docker-build-cache
         with:
@@ -43,6 +44,7 @@ jobs:
       attestations: write
       id-token: write
     steps:
+      - uses: actions/checkout@v4.2.1
       - name: 'Build/Cache Image - temporal-python'
         uses: ./.github/actions/docker-build-cache
         with:
@@ -55,6 +57,7 @@ jobs:
       attestations: write
       id-token: write
     steps:
+      - uses: actions/checkout@v4.2.1
       - name: 'Build/Cache Image - pyspark-notebook'
         uses: ./.github/actions/docker-build-cache
         with:
@@ -67,6 +70,7 @@ jobs:
       attestations: write
       id-token: write
     steps:
+      - uses: actions/checkout@v4.2.1
       - name: 'Build/Cache Image - explorer'
         uses: ./.github/actions/docker-build-cache
         with:

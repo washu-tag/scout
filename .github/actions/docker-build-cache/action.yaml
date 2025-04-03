@@ -13,9 +13,6 @@ runs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Checkout GitHub Action
-      uses: actions/checkout@v4.2.1
-
     - name: 'Derive version'
       id: derive-version
       uses: ./.github/actions/derive-version
