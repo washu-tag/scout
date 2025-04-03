@@ -100,6 +100,7 @@ def import_hl7_files_to_deltalake(
             spark_builder, extra_packages=extra_packages
         ).getOrCreate()
 
+        activity.heartbeat()
         activity.logger.info("Reading HL7 manifest file %s", hl7_manifest_file_path)
         hl7_manifest_file_path = hl7_manifest_file_path.replace("s3://", "s3a://")
         file_path_file_df = spark.read.text(hl7_manifest_file_path)
@@ -111,6 +112,7 @@ def import_hl7_files_to_deltalake(
         if not hl7_file_paths_from_spark:
             raise ApplicationError("No HL7 files found in HL7 file path files")
 
+        activity.heartbeat()
         activity.logger.info("Reading %d HL7 messages", len(hl7_file_paths_from_spark))
         df = (
             spark.read.format("hl7")
@@ -122,6 +124,7 @@ def import_hl7_files_to_deltalake(
             raise ApplicationError("No data extracted from HL7 messages")
 
         num_hl7 = df.count()
+        activity.heartbeat()
         activity.logger.info("Extracted data from %d HL7 messages", num_hl7)
 
         # Read modality map
@@ -136,6 +139,7 @@ def import_hl7_files_to_deltalake(
             )
         )
 
+        activity.heartbeat()
         activity.logger.info("Creating report df")
         report_df = (
             df.select(
@@ -168,6 +172,7 @@ def import_hl7_files_to_deltalake(
             )
         )
 
+        activity.heartbeat()
         activity.logger.info("Extracting patient id columns")
         exploded_patient_id_df = df.select(
             "source_file",
@@ -187,6 +192,7 @@ def import_hl7_files_to_deltalake(
             F.split("pid", "\\^").getItem(4).alias("identifier_type_code"),
         )
 
+        activity.heartbeat()
         patient_id_df = (
             # Filter out patient ids with missing fields
             exploded_patient_id_df.filter(EMPTY_FILTER)
@@ -205,7 +211,9 @@ def import_hl7_files_to_deltalake(
             # Assume they only have one patient id for each type
             .agg(F.first("id_number"))
         )
+
         # Note that we do not filter out any patient ids here, so they are all available in the JSON
+        activity.heartbeat()
         patient_id_json_df = exploded_patient_id_df.groupBy("source_file").agg(
             F.to_json(
                 F.collect_list(
@@ -214,6 +222,7 @@ def import_hl7_files_to_deltalake(
             ).alias("patient_id_json")
         )
 
+        activity.heartbeat()
         activity.logger.info("Joining data into report df")
         df = (
             df.select(
@@ -262,6 +271,7 @@ def import_hl7_files_to_deltalake(
         # Create table if it doesn't yet exist
         delta_table = delta_table.replace("s3://", "s3a://")
 
+        activity.heartbeat()
         activity.logger.info(
             "Creating Delta Lake table %s if it does not exist", delta_table
         )
@@ -273,6 +283,7 @@ def import_hl7_files_to_deltalake(
             .execute()
         )
 
+        activity.heartbeat()
         activity.logger.info("Writing data to Delta Lake table %s", delta_table)
         (
             dt.alias("s")
