@@ -4,6 +4,7 @@ import concurrent.futures
 import logging
 import multiprocessing
 import os
+import signal
 import sys
 from pathlib import Path
 
@@ -45,6 +46,10 @@ async def run_worker(
         log.info("Worker stopped")
 
 
+class SigTermException(Exception):
+    pass
+
+
 async def main(argv=None):
     """Main entry point for the CLI."""
     if argv is None:
@@ -73,18 +78,29 @@ async def main(argv=None):
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    health_check_task = asyncio.create_task(start_spark_health_check_server())
-    worker_task = asyncio.create_task(
+    # Handle SIGTERM signal to shut down quickly
+    def on_sigterm(signum, frame):
+        log.info("Received SIGTERM, raising exception")
+        raise SigTermException()
+
+    signal.signal(signal.SIGTERM, on_sigterm)
+
+    # Start the health check server and the temporal worker
+    coros = [
+        start_spark_health_check_server(),
         run_worker(
             temporal_address,
             temporal_namespace,
             modality_map_path,
             SPARK_HEALTH_TEMP_FILE,
-        )
-    )
+        ),
+    ]
 
-    await asyncio.gather(health_check_task, worker_task)
+    await asyncio.gather(*coros)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except SigTermException:
+        log.info("SIGTERM exception caught, shutting down...")
