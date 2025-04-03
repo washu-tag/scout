@@ -89,8 +89,8 @@ jobs:
       - lint
       - build-and-upload-temporal-java
       - build-and-upload-temporal-python
-      - build-and-upload-temporal-pyspark-notebook
-      - build-and-upload-temporal-explorer
+      - build-and-upload-pyspark-notebook
+      - build-and-upload-explorer
       - unit-test
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
