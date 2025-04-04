@@ -133,6 +133,35 @@
     },
     {
       "expectedQueryResult": {
+        "type": ".GroupedAggregationResult",
+        "result": {
+          "Wet Read": {
+            "total_count": 125
+          },
+          "P": {
+            "total_count": 125
+          },
+          "Final": {
+            "total_count": 126
+          },
+          "": {
+            "total_count": 46
+          },
+          "Prelim": {
+            "total_count": 126
+          },
+          "F": {
+            "total_count": 252
+          }
+        },
+        "primaryColumnName": "report_status",
+        "secondaryColumns": ["total_count"]
+      },
+      "sql": "SELECT report_status, COUNT(*) as total_count FROM syntheticdata GROUP BY report_status ORDER BY report_status",
+      "id": "report_status_count"
+    },
+    {
+      "expectedQueryResult": {
         "type": ".ExactRowsResult",
         "uniqueIdColumnName": "message_control_id",
         "rowAssertions": {
