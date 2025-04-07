@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 from temporalio import activity
@@ -30,9 +31,11 @@ class IngestHl7FilesActivity:
     """
 
     default_modality_map_path: str
+    health_file: Path
 
-    def __init__(self, default_modality_map_path: str):
+    def __init__(self, default_modality_map_path: str, health_file: Path):
         self.default_modality_map_path = default_modality_map_path
+        self.health_file = health_file
 
     @activity.defn(name=ACTIVITY_NAME)
     def ingest_hl7_files_to_delta_lake(
@@ -50,6 +53,7 @@ class IngestHl7FilesActivity:
             activity_input.deltaTable,
             activity_input.hl7ManifestFilePath,
             modality_map_path,
+            self.health_file,
         )
 
         return IngestHl7FilesToDeltaLakeActivityOutput(num_hl7_ingested)
