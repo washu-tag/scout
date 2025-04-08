@@ -22,7 +22,10 @@ ADD --chown=spark \
     https://repo1.maven.org/maven2/org/antlr/antlr4-runtime/4.9.3/antlr4-runtime-4.9.3.jar \
     https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.11.563/aws-java-sdk-bundle-1.11.563.jar \
     https://github.com/washu-tag/smolder/releases/download/0.1.0-20250306/smolder_2.12-0.1.0-SNAPSHOT.jar \
-    /opt/spark/jars/
+    ${SPARK_HOME}/jars/
+
+COPY --chown=spark spark-env.sh ${SPARK_HOME}/conf/
+RUN chmod +x ${SPARK_HOME}/conf/spark-env.sh
 
 # Create venv
 RUN python3 -m venv venv

@@ -238,6 +238,8 @@
           spark:
             executor:
               memory: '{{ orchestrator_spark_memory }}'
+            driver:
+              memory: '{{ orchestrator_spark_memory }}'
           volumes: >-
             {{
               [{

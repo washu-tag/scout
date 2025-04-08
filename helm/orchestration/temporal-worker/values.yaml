@@ -126,3 +126,5 @@ config:
 spark:
   executor:
     memory: 1g
+  driver:
+    memory: 1g

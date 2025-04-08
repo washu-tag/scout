@@ -55,48 +55,10 @@ def import_hl7_files_to_deltalake(
     health_file: Path,
 ) -> int:
     """Extract data from HL7 messages and write to Delta Lake."""
-
-    # TODO This should be moved to a configuration file
-    s3a_endpoint = os.environ.get("AWS_ENDPOINT_URL")
-    s3a_access_key = os.environ.get("AWS_ACCESS_KEY_ID")
-    s3a_secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
-    s3a_region = os.environ.get("AWS_REGION", "us-east-1")
-    spark_executor_memory = os.environ.get("SPARK_EXECUTOR_MEMORY")
-
-    if not s3a_endpoint or not s3a_access_key or not s3a_secret_key:
-        raise ApplicationError("S3 endpoint, access key, and secret key required")
-
     spark = None
     try:
         activity.logger.info("Creating Spark session")
-        spark_builder = (
-            SparkSession.builder.appName("IngestHL7ToDeltaLake")
-            .config("spark.databricks.delta.schema.autoMerge.enabled", "true")
-            .config(
-                "spark.databricks.delta.merge.repartitionBeforeWrite.enabled", "true"
-            )
-            .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-            .config(
-                "spark.sql.catalog.spark_catalog",
-                "org.apache.spark.sql.delta.catalog.DeltaCatalog",
-            )
-            .config("spark.hadoop.fs.s3a.access.key", s3a_access_key)
-            .config("spark.hadoop.fs.s3a.secret.key", s3a_secret_key)
-            .config("spark.hadoop.fs.s3a.endpoint", s3a_endpoint)
-            .config("spark.hadoop.fs.s3a.endpoint.region", s3a_region)
-            .config("spark.hadoop.fs.s3a.path.style.access", "true")
-            .config(
-                "spark.hadoop.fs.s3a.aws.credentials.provider",
-                "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
-            )
-            .config(
-                "spark.driver.extraJavaOptions", "-Divy.cache.dir=/tmp -Divy.home=/tmp"
-            )
-        )
-
-        if spark_executor_memory:
-            spark_builder.config("spark.executor.memory", spark_executor_memory)
-            spark_builder.config("spark.driver.memory", spark_executor_memory)
+        spark_builder = SparkSession.builder.appName("IngestHL7ToDeltaLake")
         spark = spark_builder.getOrCreate()
 
         activity.heartbeat()
