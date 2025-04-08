@@ -14,9 +14,6 @@ ADD --chown=${NB_UID}:${NB_GID} \
     https://github.com/washu-tag/smolder/releases/download/0.1.0-20250306/smolder_2.12-0.1.0-SNAPSHOT.jar \
     ${SPARK_HOME}/jars/
 
-COPY --chown=${NB_UID}:${NB_GID} spark-env.sh ${SPARK_HOME}/conf/
-RUN chmod +x ${SPARK_HOME}/conf/spark-env.sh
-
 RUN python3 -m pip install --no-cache-dir -r /tmp/requirements.txt && \
     fix-permissions "${CONDA_DIR}" && \
     fix-permissions "/home/${NB_USER}" && \

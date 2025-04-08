@@ -56,6 +56,14 @@ singleuser:
       pvcName: jupyter-singleuser-pvc
       subPath: '{username}'
     capacity: 10Gi
+    extraVolumes:
+      - name: spark-defaults
+        configMap:
+          name: spark-defaults
+    extraVolumeMounts:
+      - name: spark-defaults
+        mountPath: /usr/local/spark/conf/spark-defaults.conf
+        subPath: spark-defaults.conf
   networkPolicy:
     egress:
       - to:

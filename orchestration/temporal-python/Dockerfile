@@ -24,9 +24,6 @@ ADD --chown=spark \
     https://github.com/washu-tag/smolder/releases/download/0.1.0-20250306/smolder_2.12-0.1.0-SNAPSHOT.jar \
     ${SPARK_HOME}/jars/
 
-COPY --chown=spark spark-env.sh ${SPARK_HOME}/conf/
-RUN chmod +x ${SPARK_HOME}/conf/spark-env.sh
-
 # Create venv
 RUN python3 -m venv venv
 

@@ -17,6 +17,13 @@
             size: '250Gi'
             path: '{{ jupyter_dir }}/singleuser'
 
+    - name: Create Jupyter namespace
+      kubernetes.core.k8s:
+        name: jupyter
+        api_version: v1
+        kind: Namespace
+        state: present
+
     - name: Create PersistentVolumeClaim for Jupyter single-user storage
       kubernetes.core.k8s:
         state: present
@@ -38,6 +45,17 @@
       kubernetes.core.helm_repository:
         name: jupyterhub
         repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
+
+    - name: Copy Temporal Spark ConfigMap to Jupyter namespace
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: spark-defaults
+            namespace: jupyter
+          data: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='ConfigMap', namespace='orchestration-workers', resource_name='temporal-python-spark-defaults').data }}"
 
     - name: Install JupyterHub using Helm
       kubernetes.core.helm:

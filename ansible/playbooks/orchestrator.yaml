@@ -240,6 +240,13 @@
               memory: '{{ orchestrator_spark_memory }}'
             driver:
               memory: '{{ orchestrator_spark_memory }}'
+            hadoop:
+              fs:
+                s3a:
+                  accessKey: '{{ s3_username }}'
+                  secretKey: '{{ s3_password }}'
+                  endpoint: '{{ s3_endpoint }}'
+                  endpointRegion: '{{ s3_region }}'
           volumes: >-
             {{
               [{
