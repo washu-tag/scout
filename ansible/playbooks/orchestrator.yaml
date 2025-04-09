@@ -233,6 +233,15 @@
               if orchestration_data_dir is defined else omit
             }}
 
+    - name: Verify Spark Defaults ConfigMap
+      command: kubectl get configmap spark-defaults -n '{{ orchestration_worker_namespace }}' -o yaml
+      register: spark_defaults_configmap
+      changed_when: false
+
+    - name: Log Spark Defaults ConfigMap
+      debug:
+        var: spark_defaults_configmap.stdout
+
     - name: Deploy Python worker
       kubernetes.core.helm:
         name: temporal-python
