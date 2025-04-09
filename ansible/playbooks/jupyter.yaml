@@ -2,6 +2,8 @@
 - name: Install JupyterHub
   hosts: server
   gather_facts: false
+  vars:
+    s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
   environment:
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
@@ -46,16 +48,17 @@
         name: jupyterhub
         repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
 
-    - name: Copy Temporal Spark ConfigMap to Jupyter namespace
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: ConfigMap
-          metadata:
-            name: spark-defaults
-            namespace: jupyter
-          data: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='ConfigMap', namespace='orchestration-workers', resource_name='temporal-python-spark-defaults').data }}"
+    - name: Setup Spark Defaults ConfigMaps
+      include_tasks: tasks/spark_config_setup.yaml
+      vars:
+        spark_defaults_configmap_name: spark-defaults
+        spark_defaults_configmap_namespace: jupyter
+        s3a_access_key: '{{ s3_username }}'
+        s3a_secret_key: '{{ s3_password }}'
+        s3a_endpoint: '{{ s3_endpoint }}'
+        s3a_region: '{{ s3_region }}'
+        executor_memory: '{{ jupyter_executor_memory }}'
+        driver_memory: '{{ jupyter_driver_memory }}'
 
     - name: Install JupyterHub using Helm
       kubernetes.core.helm:
@@ -93,3 +96,13 @@
                   - read:org
               JupyterHub:
                 authenticator_class: github
+          singleuser:
+            storage:
+              extraVolumes:
+                - name: spark-defaults
+                  configMap:
+                    name: spark-defaults
+              extraVolumeMounts:
+                - name: spark-defaults
+                  mountPath: /usr/local/spark/conf/spark-defaults.conf
+                  subPath: spark-defaults.conf

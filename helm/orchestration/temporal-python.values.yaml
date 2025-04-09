@@ -20,7 +20,7 @@ volumes:
       path: /ceph/tag/home/data
   - name: spark-defaults
     configMap:
-      name: temporal-python-spark-defaults
+      name: spark-defaults
 volumeMounts:
   - name: data
     mountPath: /data

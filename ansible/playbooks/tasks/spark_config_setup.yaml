@@ -1,0 +1,31 @@
+- name: Create namespace
+  kubernetes.core.k8s:
+    name: '{{ spark_defaults_configmap_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Create Spark ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: '{{ spark_defaults_configmap_name }}'
+        namespace: '{{ spark_defaults_configmap_namespace }}'
+      data:
+        spark-defaults.conf: |
+          spark.hadoop.fs.s3a.access.key {{ s3a_access_key }}
+          spark.hadoop.fs.s3a.secret.key {{ s3a_secret_key }}
+          spark.hadoop.fs.s3a.endpoint {{ s3a_endpoint }}
+          spark.hadoop.fs.s3a.endpoint.region {{ s3a_region | default("us-east-1") }}
+          spark.databricks.delta.schema.autoMerge.enabled true
+          spark.databricks.delta.merge.repartitionBeforeWrite.enabled true
+          spark.sql.extensions io.delta.sql.DeltaSparkSessionExtension
+          spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog
+          spark.hadoop.fs.s3a.path.style.access true
+          spark.hadoop.fs.s3a.aws.credentials.provider org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
+          spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
+          spark.executor.memory {{ executor_memory | default("1g") }}
+          spark.driver.memory {{ driver_memory | default("1g") }}

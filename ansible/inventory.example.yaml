@@ -40,6 +40,7 @@ k3s_cluster:
 
     # Resources
     orchestrator_spark_memory: 8g
+    jupyter_spark_memory: 8g
     temporal_cassandra_max_heap: 8G
 
     # You probably don't want to change these unless you know these items will be

@@ -63,8 +63,6 @@ spec:
             {{- end }}
             - name: SPARK_EXECUTOR_MEMORY
               value: "{{ .Values.spark.executor.memory }}"
-            - name: SPARK_DRIVER_MEMORY
-              value: "{{ .Values.spark.driver.memory }}"
           {{- with .Values.envFrom }}
           envFrom:
             {{- toYaml . | nindent 12 }}

@@ -126,20 +126,3 @@ config:
 spark:
   executor:
     memory: 1g
-  driver:
-    memory: 1g
-    extraJavaOptions: '-Divy.cache.dir=/tmp -Divy.home=/tmp'
-  databricks:
-    delta:
-      schemaAutoMergeEnabled: 'true'
-      mergeRepartitionBeforeWriteEnabled: 'true'
-  hadoop:
-    fs:
-      s3a:
-        accessKey:
-        secretKey:
-        endpoint:
-        endpointRegion: 'us-east-1'
-  sql:
-    extensions: 'io.delta.sql.DeltaSparkSessionExtension'
-    catalog: 'org.apache.spark.sql.delta.catalog.DeltaCatalog'
