@@ -57,8 +57,8 @@
         s3a_secret_key: '{{ s3_password }}'
         s3a_endpoint: '{{ s3_endpoint }}'
         s3a_region: '{{ s3_region }}'
-        executor_memory: '{{ jupyter_executor_memory }}'
-        driver_memory: '{{ jupyter_driver_memory }}'
+        executor_memory: '{{ jupyter_spark_memory }}'
+        driver_memory: '{{ jupyter_spark_memory }}'
 
     - name: Install JupyterHub using Helm
       kubernetes.core.helm:
