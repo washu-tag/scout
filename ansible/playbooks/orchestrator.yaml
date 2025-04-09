@@ -14,7 +14,7 @@
             size: '300Gi'
             path: '{{ temporal_cassandra_dir }}'
           - name: elasticsearch
-            size: '200Gi'
+            size: '100Gi'
             path: '{{ temporal_elasticsearch_dir }}'
 
     - name: Add cert-manager Helm repository
@@ -155,6 +155,9 @@
       command: kubectl -n temporal wait --for=condition=complete --timeout=300s job/temporal-schema-1
       register: temporal_schema
       changed_when: false
+
+    - name: Install postgres
+      include_tasks: tasks/postgres.yaml
 
     - name: Create namespace
       kubernetes.core.k8s:

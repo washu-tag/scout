@@ -1,0 +1,72 @@
+- name: Add Postgres Helm repository
+  kubernetes.core.helm_repository:
+    name: cnpg
+    repo_url: https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/
+
+- name: Install/Upgrade Postgres Operator
+  kubernetes.core.helm:
+    name: cnpg
+    chart_ref: cnpg/cloudnative-pg
+    chart_version: 0.23.2
+    release_namespace: cnpg-system
+    create_namespace: true
+    release_state: present
+    update_repo_cache: true
+    wait: true
+    wait_timeout: 1m
+    atomic: true
+
+- name: Create namespace
+  kubernetes.core.k8s:
+    name: '{{ postgres_tenant_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Setup storage
+  include_tasks: tasks/storage_setup.yaml
+  vars:
+    storage_definitions:
+      - name: postgres
+        size: 100Mi
+        path: '{{ postgres_dir }}'
+
+- name: Set up env secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: postgres-user
+        namespace: '{{ postgres_tenant_namespace }}'
+      type: kubernetes.io/basic-auth
+      stringData:
+        username: '{{ postgres_user }}'
+        password: '{{ postgres_password }}'
+
+- name: Create Postgres cluster
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      metadata:
+        name: postgresql-cluster
+        namespace: '{{ postgres_tenant_namespace }}'
+      spec:
+        instances: 1
+        storage:
+          storageClass: postgres-storage
+          size: 100Mi
+        bootstrap:
+          initdb:
+            database: scout
+            owner: '{{ postgres_user }}'
+            secret:
+              name: postgres-user
+
+- name: Wait for Postgres to be ready
+  command: "kubectl -n {{ postgres_tenant_namespace }} wait --for=condition=Ready --timeout=300s cluster/postgresql-cluster"
+  register: postgres_ready
+  changed_when: false
