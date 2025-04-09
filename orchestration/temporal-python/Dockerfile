@@ -12,7 +12,7 @@ USER spark
 # Set the working directory
 WORKDIR /app
 
-# Copy spark jars
+# Copy spark jars, be sure to download the same jars in the pyspark notebook image and the temporal python worker image
 ADD --chown=spark \
     https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.3.0/delta-spark_2.12-3.3.0.jar \
     https://repo1.maven.org/maven2/io/delta/delta-storage/3.3.0/delta-storage-3.3.0.jar \
