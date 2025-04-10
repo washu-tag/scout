@@ -14,7 +14,7 @@ SPARK_HEALTH_TEMP_FILE = Path(tempfile.mkstemp()[1])
 HEALTHY = "healthy"
 UNHEALTHY = "unhealthy"
 HEALTHY_JSON_RESPONSE = JSONResponse(status_code=200, content={"status": HEALTHY})
-
+HEALTH_CHECK_EXCEPTION_MESSAGE = "Health check failed with exception"
 
 app = FastAPI()
 
@@ -40,8 +40,8 @@ async def healthz():
         log.warning('Health check file reports failure: "%s"', reason)
         return unhealthy_json_response(reason, messages)
     except Exception as e:
-        log.exception(e)
-        return unhealthy_json_response("Health check failed with exception")
+        log.exception(HEALTH_CHECK_EXCEPTION_MESSAGE)
+        return unhealthy_json_response(HEALTH_CHECK_EXCEPTION_MESSAGE)
 
 
 def unhealthy_json_response(
