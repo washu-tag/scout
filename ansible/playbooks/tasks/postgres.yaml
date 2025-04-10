@@ -18,7 +18,7 @@
 
 - name: Create namespace
   kubernetes.core.k8s:
-    name: '{{ postgres_tenant_namespace }}'
+    name: '{{ postgres_cluster_namespace }}'
     api_version: v1
     kind: Namespace
     state: present
@@ -39,7 +39,7 @@
       kind: Secret
       metadata:
         name: postgres-user
-        namespace: '{{ postgres_tenant_namespace }}'
+        namespace: '{{ postgres_cluster_namespace }}'
       type: kubernetes.io/basic-auth
       stringData:
         username: '{{ postgres_user }}'
@@ -53,7 +53,7 @@
       kind: Cluster
       metadata:
         name: postgresql-cluster
-        namespace: '{{ postgres_tenant_namespace }}'
+        namespace: '{{ postgres_cluster_namespace }}'
       spec:
         instances: 1
         storage:
@@ -67,6 +67,6 @@
               name: postgres-user
 
 - name: Wait for Postgres to be ready
-  command: 'kubectl -n {{ postgres_tenant_namespace }} wait --for=condition=Ready --timeout=300s cluster/postgresql-cluster'
+  command: 'kubectl -n {{ postgres_cluster_namespace }} wait --for=condition=Ready --timeout=300s cluster/postgresql-cluster'
   register: postgres_ready
   changed_when: false
