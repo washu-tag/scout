@@ -67,6 +67,6 @@
               name: postgres-user
 
 - name: Wait for Postgres to be ready
-  command: "kubectl -n {{ postgres_tenant_namespace }} wait --for=condition=Ready --timeout=300s cluster/postgresql-cluster"
+  command: 'kubectl -n {{ postgres_tenant_namespace }} wait --for=condition=Ready --timeout=300s cluster/postgresql-cluster'
   register: postgres_ready
   changed_when: false
