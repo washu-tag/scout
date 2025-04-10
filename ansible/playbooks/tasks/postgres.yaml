@@ -31,7 +31,7 @@
         size: 100Mi
         path: '{{ postgres_dir }}'
 
-- name: Set up env secret
+- name: Create Postgres user secret
   kubernetes.core.k8s:
     state: present
     definition:
