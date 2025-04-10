@@ -40,8 +40,8 @@ async def healthz():
         log.warning('Health check file reports failure: "%s"', reason)
         return unhealthy_json_response(reason, messages)
     except Exception as e:
-        log.error("Health check failed with exception", e)
-        return unhealthy_json_response(str(e))
+        log.exception(e)
+        return unhealthy_json_response("Health check failed with exception")
 
 
 def unhealthy_json_response(
