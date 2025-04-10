@@ -18,10 +18,16 @@ volumes:
   - name: data
     hostPath:
       path: /ceph/tag/home/data
+  - name: spark-defaults
+    configMap:
+      name: spark-defaults
 volumeMounts:
   - name: data
     mountPath: /data
     readOnly: true
+  - name: spark-defaults
+    mountPath: /opt/spark/conf/spark-defaults.conf
+    subPath: spark-defaults.conf
 ports:
   - containerPort: 8000
 livenessProbe:
