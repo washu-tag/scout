@@ -55,6 +55,7 @@ k3s_cluster:
     grafana_namespace: grafana
     loki_namespace: loki
 
-    # computed values, used across charts
+    # computed values, used across playbooks
+    s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
     server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
     # End do not change

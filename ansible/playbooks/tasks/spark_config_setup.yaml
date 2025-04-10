@@ -16,10 +16,10 @@
         namespace: '{{ spark_defaults_configmap_namespace }}'
       data:
         spark-defaults.conf: |
-          spark.hadoop.fs.s3a.access.key {{ s3a_access_key }}
-          spark.hadoop.fs.s3a.secret.key {{ s3a_secret_key }}
-          spark.hadoop.fs.s3a.endpoint {{ s3a_endpoint }}
-          spark.hadoop.fs.s3a.endpoint.region {{ s3a_region | default("us-east-1") }}
+          spark.hadoop.fs.s3a.access.key {{ s3_username }}
+          spark.hadoop.fs.s3a.secret.key {{ s3_password }}
+          spark.hadoop.fs.s3a.endpoint {{ s3_endpoint }}
+          spark.hadoop.fs.s3a.endpoint.region {{ s3_region | default("us-east-1") }}
           spark.databricks.delta.schema.autoMerge.enabled true
           spark.databricks.delta.merge.repartitionBeforeWrite.enabled true
           spark.sql.extensions io.delta.sql.DeltaSparkSessionExtension
@@ -27,5 +27,5 @@
           spark.hadoop.fs.s3a.path.style.access true
           spark.hadoop.fs.s3a.aws.credentials.provider org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
           spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
-          spark.executor.memory {{ executor_memory | default("1g") }}
-          spark.driver.memory {{ driver_memory | default("1g") }}
+          spark.executor.memory {{ spark_memory | default("1g") }}
+          spark.driver.memory {{ spark_memory | default("1g") }}
