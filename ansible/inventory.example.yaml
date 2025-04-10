@@ -55,7 +55,6 @@ k3s_cluster:
     # Do not change the values below, they are hard-coded various places
     orchestration_worker_namespace: orchestration-workers
     minio_tenant_namespace: minio-scout
-    postgres_cluster_namespace: cloudnative-pg
     grafana_namespace: grafana
     loki_namespace: loki
 
