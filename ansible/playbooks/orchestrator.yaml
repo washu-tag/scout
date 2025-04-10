@@ -2,8 +2,6 @@
 - name: Install Temporal and workers
   hosts: server
   gather_facts: false
-  vars:
-    s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
   environment:
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
@@ -81,7 +79,7 @@
               - name: r1
             config:
               jvm-server-options:
-                initial_heap_size: '{{ temporal_cassandra_max_heap | default("2G") }}'
+                initial_heap_size: '{{ temporal_cassandra_init_heap | default("2G") }}'
                 max_heap_size: '{{ temporal_cassandra_max_heap | default("8G") }}'
 
     - name: Wait for Cassandra to be ready
@@ -104,7 +102,7 @@
         release_state: present
         update_repo_cache: true
         wait: true
-        wait_timeout: 10m
+        wait_timeout: 15m
         atomic: true
         values:
           prometheus:
@@ -198,12 +196,7 @@
       vars:
         spark_defaults_configmap_name: 'spark-defaults'
         spark_defaults_configmap_namespace: '{{ orchestration_worker_namespace }}'
-        s3a_access_key: '{{ s3_username }}'
-        s3a_secret_key: '{{ s3_password }}'
-        s3a_endpoint: '{{ s3_endpoint }}'
-        s3a_region: '{{ s3_region }}'
-        executor_memory: '{{ orchestrator_spark_memory }}'
-        driver_memory: '{{ orchestrator_spark_memory }}'
+        spark_memory: '{{ orchestrator_spark_memory }}'
 
     - name: Deploy Java worker
       kubernetes.core.helm:
