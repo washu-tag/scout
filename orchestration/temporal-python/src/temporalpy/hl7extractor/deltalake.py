@@ -58,8 +58,7 @@ def import_hl7_files_to_deltalake(
     spark = None
     try:
         activity.logger.info("Creating Spark session")
-        spark_builder = SparkSession.builder.appName("IngestHL7ToDeltaLake")
-        spark = spark_builder.getOrCreate()
+        spark = SparkSession.builder.appName("IngestHL7ToDeltaLake").getOrCreate()
 
         activity.heartbeat()
         activity.logger.info("Reading HL7 manifest file %s", hl7_manifest_file_path)
