@@ -14,9 +14,12 @@ ANSIBLE_STEP        := $(if $(DEBUG),--step,)
 # Conditionally omit --diff if NODIFF is set
 DIFF_FLAG           := $(if $(NODIFF),, --diff)
 
+# Additional flags/options
+ANSIBLE_ADDITIONAL_FLAGS := $(if $(ADD),$(ADD),)
+
 # Common ansible-playbook command
 ANSIBLE_CMD         := $(ANSIBLE_DEBUG_ENV) ansible-playbook -v -i $(INVENTORY_FILE) \
-                       $(DIFF_FLAG) $(VAULT_PASSWORD_ARG) -l $(FQDN) $(ANSIBLE_STEP)
+                       $(DIFF_FLAG) $(VAULT_PASSWORD_ARG) -l $(FQDN) $(ANSIBLE_STEP) $(ANSIBLE_ADDITIONAL_FLAGS)
 
 all: deps
 	$(ANSIBLE_CMD) playbooks/main.yaml

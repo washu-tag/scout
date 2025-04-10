@@ -13,6 +13,8 @@
       command: 'tailscale cert --cert-file {{ cert_path }} --key-file {{ key_path }} {{ server_hostname }}'
       args:
         creates: '{{ cert_path }}'
+      tags:
+        - tailscale
 
     - name: Create TLS secret
       kubernetes.core.k8s:
