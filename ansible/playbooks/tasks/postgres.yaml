@@ -13,7 +13,7 @@
     release_state: present
     update_repo_cache: true
     wait: true
-    wait_timeout: 1m
+    wait_timeout: 5m
     atomic: true
 
 - name: Create namespace
