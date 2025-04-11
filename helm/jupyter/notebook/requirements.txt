@@ -1,3 +1,5 @@
 delta-spark
 jupyterlab-git
 jupyter-ai
+gpt4all
+langchain-openai
