@@ -5,11 +5,11 @@ global:
 meshConfig:
   defaultConfig:
     proxyMetadata:
-      ISTIO_META_PROMETHEUS_PORT: "15090"
+      ISTIO_META_PROMETHEUS_PORT: '15090'
 
 pilot:
   env:
-    PILOT_ENABLE_PROMETHEUS_MONITORING: "true"
+    PILOT_ENABLE_PROMETHEUS_MONITORING: 'true'
 
 telemetry:
   enabled: true
