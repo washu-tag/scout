@@ -301,9 +301,17 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
             logger.info("WorkflowId {} ActivityId {} - Uploading HL7 file {}/{}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), destination,
                 relativePath);
-            // Convert to byte array and upload to S3
-            // We could use piped streams to avoid loading the whole thing into memory, but this adds complexity that isn't warranted for these small files
-            return Hl7File.success(logFile, segmentNumber, fileHandler.putWithRetry(outputStream.toByteArray(), relativePath, destination), activityInfo.getWorkflowId(), activityInfo.getActivityId());
+
+            try {
+                // Convert to byte array and upload to S3
+                // We could use piped streams to avoid loading the whole thing into memory, but this adds complexity that isn't warranted for these small files
+                fileHandler.putWithRetry(outputStream.toByteArray(), relativePath, destination);
+            } catch (IOException e) {
+                logger.error("WorkflowId {} ActivityId {} - Failed to upload HL7 file {}/{}",
+                    activityInfo.getWorkflowId(), activityInfo.getActivityId(), destination, relativePath, e);
+                return Hl7File.error(logFile, segmentNumber, destination.toString(), "Failed to upload HL7 file", activityInfo.getWorkflowId(), activityInfo.getActivityId());
+            }
+            return Hl7File.success(logFile, segmentNumber, destination.toString(), activityInfo.getWorkflowId(), activityInfo.getActivityId());
         }
     }
 
