@@ -9,14 +9,16 @@ public record Hl7File(
     String filePath,
     String status,
     String errorMessage,
+    String workflowId,
+    String activityId,
     LocalDateTime processedAt
 ) {
 
-    public static Hl7File success(String logFilePath, int segmentNumber, String filePath) {
-        return new Hl7File(0, logFilePath, segmentNumber, filePath, DbUtils.SUCCEEDED, null, null);
+    public static Hl7File success(String logFilePath, int segmentNumber, String filePath, String workflowId, String activityId) {
+        return new Hl7File(0, logFilePath, segmentNumber, filePath, DbUtils.SUCCEEDED, null, workflowId, activityId, null);
     }
 
-    public static Hl7File error(String logFilePath, int segmentNumber, String filePath, String error) {
-        return new Hl7File(0, logFilePath, segmentNumber, filePath, DbUtils.FAILED, error, null);
+    public static Hl7File error(String logFilePath, int segmentNumber, String filePath, String error, String workflowId, String activityId) {
+        return new Hl7File(0, logFilePath, segmentNumber, filePath, DbUtils.FAILED, error, workflowId, activityId, null);
     }
 }
