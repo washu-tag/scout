@@ -17,8 +17,8 @@ public class IngestDbServiceImpl implements IngestDbService {
 
     @Override
     public void insertLogFile(LogFile logFile) {
-        String insertSql = SqlUtils.getInsertSql(LogFile.class);
-        jdbcTemplate.update(insertSql, SqlUtils.extractValues(logFile));
+        String insertSql = DbUtils.getInsertSql(LogFile.class);
+        jdbcTemplate.update(insertSql, DbUtils.extractValues(logFile));
     }
 
     @Override
@@ -27,14 +27,14 @@ public class IngestDbServiceImpl implements IngestDbService {
             return;
         }
 
-        String insertSql = SqlUtils.getInsertSql(Hl7File.class);
+        String insertSql = DbUtils.getInsertSql(Hl7File.class);
         jdbcTemplate.batchUpdate(
             insertSql,
             new BatchPreparedStatementSetter() {
                 @Override
                 public void setValues(PreparedStatement ps, int i) throws SQLException {
                     Hl7File object = hl7Files.get(i);
-                    Object[] values = SqlUtils.extractValues(object);
+                    Object[] values = DbUtils.extractValues(object);
                     for (int j = 0; j < values.length; j++) {
                         ps.setObject(j + 1, values[j]);
                     }
