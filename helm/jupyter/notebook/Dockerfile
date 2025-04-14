@@ -18,3 +18,5 @@ RUN python3 -m pip install --no-cache-dir -r /tmp/requirements.txt && \
     fix-permissions "${CONDA_DIR}" && \
     fix-permissions "/home/${NB_USER}" && \
     rm /tmp/requirements.txt
+
+ADD --chown=${NB_UID}:${NB_GID} samples /opt/scout/samples
