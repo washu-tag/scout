@@ -1,14 +1,18 @@
 package edu.washu.tag.temporal.db;
 
+import io.temporal.workflow.Workflow;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
+import org.slf4j.Logger;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 public class IngestDbServiceImpl implements IngestDbService {
+    private static final Logger logger = Workflow.getLogger(IngestDbServiceImpl.class);
+
     private final JdbcTemplate jdbcTemplate;
 
     public IngestDbServiceImpl(JdbcTemplate jdbcTemplate) {
@@ -17,6 +21,7 @@ public class IngestDbServiceImpl implements IngestDbService {
 
     @Override
     public void insertLogFile(LogFile logFile) {
+        logger.info("WorkflowId {} ActivityId {} - Inserting log file {} into database", logFile.workflowId(), logFile.activityId(), logFile.filePath());
         String insertSql = DbUtils.getInsertSql(LogFile.class);
         jdbcTemplate.update(insertSql, DbUtils.extractValues(logFile));
     }
@@ -26,6 +31,9 @@ public class IngestDbServiceImpl implements IngestDbService {
         if (hl7Files == null || hl7Files.isEmpty()) {
             return;
         }
+
+        logger.info("WorkflowId {} ActivityId {} - Inserting {} HL7 files into database", hl7Files.getFirst().workflowId(),
+            hl7Files.getFirst().activityId(), hl7Files.size());
 
         String insertSql = DbUtils.getInsertSql(Hl7File.class);
         jdbcTemplate.batchUpdate(
