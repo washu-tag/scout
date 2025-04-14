@@ -33,7 +33,7 @@ public class DbUtils {
      */
     private static <T> String generateInsertSql(Class<T> recordClass) {
         // Get table name from record class name
-        String tableName = camelToSnakeCase(recordClass.getSimpleName());
+        String tableName = camelToSnakeCase(recordClass.getSimpleName()) + "s";
 
         // Get field information
         List<String> columnNames = Arrays.stream(recordClass.getDeclaredFields())
