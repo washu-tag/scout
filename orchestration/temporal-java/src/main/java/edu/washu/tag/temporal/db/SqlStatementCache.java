@@ -12,7 +12,6 @@ import java.util.stream.Stream;
 public class SqlStatementCache {
     private static final Map<Class<?>, String> INSERT_SQL_CACHE = new ConcurrentHashMap<>();
     private static final Pattern CAMEL_CASE_REGEX = Pattern.compile("([a-z])([A-Z])");
-    private static final String UPSERT_SQL_TEMPLATE = "ON CONFLICT (%s) DO %s";
 
     /**
      * Get the cached SQL insert statement for a record class
@@ -20,15 +19,6 @@ public class SqlStatementCache {
      * @return The SQL insert statement
      */
     public static <T> String getInsertSql(Class<T> recordClass) {
-        return INSERT_SQL_CACHE.computeIfAbsent(recordClass, SqlStatementCache::generateInsertSql);
-    }
-
-    /**
-     * Get the SQL upsert statement for a record class
-     * @param recordClass The record class
-     * @return The SQL upsert statement
-     */
-    public static <T> String getUpsertSql(Class<T> recordClass) {
         return INSERT_SQL_CACHE.computeIfAbsent(recordClass, SqlStatementCache::generateInsertSql);
     }
 
