@@ -282,8 +282,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             timestamp = extractTimestamp(lines);
         } catch (FileFormatException e) {
-            logger.error("Unable to extract timestamp: {}", e.getMessage());
-            return Hl7File.error(logFile, segmentNumber, destination.toString(),"Unable to extract timestamp", activityInfo.getWorkflowId(), activityInfo.getActivityId());
+            logger.error("Unable to extract timestamp", e);
+            return Hl7File.error(logFile, segmentNumber, destination.toString(),"Unable to extract timestamp: " + e.getMessage(), activityInfo.getWorkflowId(), activityInfo.getActivityId());
         }
 
         // Define output path
