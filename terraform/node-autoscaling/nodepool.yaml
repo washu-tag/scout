@@ -1,0 +1,29 @@
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: default
+spec:
+  template:
+    metadata:
+      labels:
+        type: karpenter
+    spec:
+      taints:
+        - key: "example.com/dedicated"
+          value: "karpenter"
+          effect: "NoSchedule"
+      requirements:
+        - key: "karpenter.sh/capacity-type"
+          operator: In
+          values: ["on-demand"]
+        - key: "node.kubernetes.io/instance-type"
+          operator: In
+          values: ["t3.medium", "t3.large"]
+        - key: "topology.kubernetes.io/zone"
+          operator: In
+          values: ["us-east-1a", "us-east-1b"]
+      kubelet:
+        maxPods: 110
+  limits:
+    cpu: "1000"
+    memory: "1000Gi"

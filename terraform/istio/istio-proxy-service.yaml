@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: istio-proxy-metrics
+  namespace: argocd
+  labels:
+    app: istio-proxy
+spec:
+  selector:
+    app.kubernetes.io/part-of: argocd
+  ports:
+    - name: http-envoy-prom
+      port: 15090
+      targetPort: 15090
+  clusterIP: None

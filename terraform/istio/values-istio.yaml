@@ -1,0 +1,23 @@
+global:
+  proxy:
+    autoInject: enabled
+
+meshConfig:
+  defaultConfig:
+    proxyMetadata:
+      ISTIO_META_PROMETHEUS_PORT: "15090"
+
+pilot:
+  env:
+    PILOT_ENABLE_PROMETHEUS_MONITORING: "true"
+
+telemetry:
+  enabled: true
+  v2:
+    enabled: true
+    prometheus:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        interval: 15s
+        scrapeAnnotations: false
