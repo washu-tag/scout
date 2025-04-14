@@ -2,6 +2,7 @@ package edu.washu.tag.temporal.activity;
 
 import static edu.washu.tag.temporal.util.Constants.CHILD_QUEUE;
 
+import edu.washu.tag.temporal.db.DbUtils;
 import edu.washu.tag.temporal.db.Hl7File;
 import edu.washu.tag.temporal.db.LogFile;
 import edu.washu.tag.temporal.exception.FileFormatException;
@@ -79,7 +80,10 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         ingestDbService.batchInsertHl7Files(segmentResults);
 
         // If all HL7 files failed, fail the activity
-        List<String> hl7Paths = segmentResults.stream().map(Hl7File::filePath).filter(Objects::nonNull).collect(Collectors.toList());
+        List<String> hl7Paths = segmentResults.stream()
+            .filter(Hl7File::isSuccess)
+            .map(Hl7File::filePath)
+            .collect(Collectors.toList());
         if (segmentResults.isEmpty() || hl7Paths.isEmpty()) {
             // All the transforms/uploads failed, fail the activity
             logger.error("WorkflowId {} ActivityId {} - All transform and upload jobs failed for log {}", activityInfo.getWorkflowId(),

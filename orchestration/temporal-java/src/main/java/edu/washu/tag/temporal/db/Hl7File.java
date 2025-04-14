@@ -21,4 +21,8 @@ public record Hl7File(
     public static Hl7File error(String logFilePath, int segmentNumber, String filePath, String error, String workflowId, String activityId) {
         return new Hl7File(0, logFilePath, segmentNumber, filePath, DbUtils.FAILED, error, workflowId, activityId, null);
     }
+
+    public boolean isSuccess() {
+        return DbUtils.SUCCEEDED.equals(status);
+    }
 }
