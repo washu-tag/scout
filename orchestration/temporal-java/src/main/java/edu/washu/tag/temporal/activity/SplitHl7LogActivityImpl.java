@@ -71,6 +71,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         List<Hl7File> segmentResults;
         try {
             segmentResults = processLogFile(input.logPath(), destination, activityInfo.getWorkflowId(), activityInfo.getActivityId());
+
+            ingestDbService.insertLogFile(LogFile.success(input.logPath(), activityInfo.getWorkflowId(), activityInfo.getActivityId()));
         } catch (IOException e) {
             ingestDbService.insertLogFile(LogFile.error(input.logPath(), e.getMessage(), activityInfo.getWorkflowId(), activityInfo.getActivityId()));
             throw ApplicationFailure.newFailureWithCause("Failed to split log file " + input.logPath() + " into HL7s", "type", e);
