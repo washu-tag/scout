@@ -12,7 +12,7 @@ spring:
         - edu.washu.tag.temporal.workflow
   # Write an external config that fills these in with your database connection details
   datasource:
-    url: jdbc:postgresql://postgres.postgres:5432/error_events
+    url: jdbc:postgresql://postgres.postgres:5432
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
