@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SqlStatementCache {
+public class SqlUtils {
     private static final Map<Class<?>, String> INSERT_SQL_CACHE = new ConcurrentHashMap<>();
     private static final Pattern CAMEL_CASE_REGEX = Pattern.compile("([a-z])([A-Z])");
 
@@ -19,7 +19,7 @@ public class SqlStatementCache {
      * @return The SQL insert statement
      */
     public static <T> String getInsertSql(Class<T> recordClass) {
-        return INSERT_SQL_CACHE.computeIfAbsent(recordClass, SqlStatementCache::generateInsertSql);
+        return INSERT_SQL_CACHE.computeIfAbsent(recordClass, SqlUtils::generateInsertSql);
     }
 
     /**
@@ -34,7 +34,7 @@ public class SqlStatementCache {
         // Get field information
         List<String> columnNames = Arrays.stream(recordClass.getDeclaredFields())
             .map(Field::getName)
-            .map(SqlStatementCache::camelToSnakeCase)
+            .map(SqlUtils::camelToSnakeCase)
             .toList();
 
         // Create a string of column names
