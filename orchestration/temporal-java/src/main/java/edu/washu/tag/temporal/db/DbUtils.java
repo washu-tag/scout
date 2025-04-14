@@ -55,12 +55,15 @@ public class DbUtils {
      * @return Array of values
      */
     public static <T> Object[] extractValues(T record) {
-        return Arrays.stream(record.getClass().getDeclaredFields())
-            .map(field -> {
+        if (!record.getClass().isRecord()) {
+            throw new IllegalArgumentException("Provided object is not a record");
+        }
+        return Arrays.stream(record.getClass().getRecordComponents())
+            .map(component -> {
                 try {
-                    return field.get(record);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
+                    return component.getAccessor().invoke(record);
+                } catch (ReflectiveOperationException e) {
+                    throw new RuntimeException("Failed to extract value from record component: " + component.getName(), e);
                 }
             })
             .toArray(Object[]::new);
