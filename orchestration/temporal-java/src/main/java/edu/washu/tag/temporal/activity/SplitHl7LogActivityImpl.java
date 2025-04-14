@@ -209,7 +209,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
      *
      * @param logFile     The HL7 log file to process
      * @param destination The URI destination
-     * @return List of SegmentInfo containing generated output file paths or error messages
+     * @return List of Hl7File instances containing generated output file paths or error messages
      * @throws IOException If an I/O error occurs
      */
     private List<Hl7File> processLogFile(String logFile, URI destination) throws IOException {
