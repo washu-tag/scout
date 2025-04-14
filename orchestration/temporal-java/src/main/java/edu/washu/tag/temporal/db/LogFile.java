@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public record LogFile(
-    int logId,
+    int id,
     String filePath,
     LocalDate date,
     String status,

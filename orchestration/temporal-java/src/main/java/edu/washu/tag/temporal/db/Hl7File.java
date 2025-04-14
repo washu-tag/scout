@@ -3,7 +3,7 @@ package edu.washu.tag.temporal.db;
 import java.time.LocalDateTime;
 
 public record Hl7File(
-    int hl7Id,
+    int id,
     String logFilePath,
     int segmentNumber,
     String filePath,
