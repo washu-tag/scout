@@ -1,7 +1,7 @@
 variable "tags" {
   type = map(string)
   default = {
-    "user" = "netrix",
+    "user" = "washu",
     "name"  = "eks-demo"
   }
 }
