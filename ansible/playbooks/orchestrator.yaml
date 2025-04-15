@@ -158,8 +158,6 @@
 
     - name: Install postgres
       include_tasks: tasks/postgres.yaml
-      vars:
-        postgres_cluster_namespace: cloudnative-pg
 
     - name: Create namespace
       kubernetes.core.k8s:
@@ -220,6 +218,12 @@
               s3:
                 endpoint: '{{ s3_endpoint }}'
                 region: '{{ s3_region }}'
+              spring:
+                application:
+                  datasource:
+                    url: 'jdbc:postgresql://postgresql-cluster-rw.{{ postgres_cluster_namespace }}:5432/scout'
+                    username: '{{ postgres_user }}'
+                    password: '{{ postgres_password }}'
           image:
             repository: '{{ temporal_java_image | default(omit) }}'
           volumes: >-
