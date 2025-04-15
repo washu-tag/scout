@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
 
-project = "Rad Report Explorer"
+project = "Scout Rad Report Explorer"
 copyright = "2025, Washington University in St. Louis"
 author = "TAG@WashU"
 
@@ -28,7 +28,7 @@ intersphinx_disabled_domains = ["std"]
 
 templates_path = ["_templates"]
 
-html_title = project
+html_title = "Scout Rad Report Explorer"
 html_permalinks_icon = "<span>#</span>"
 html_theme = "sphinxawesome_theme"
 

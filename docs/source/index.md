@@ -1,6 +1,6 @@
-# Rad Report Explorer
+# Scout Radiology Report Explorer
 
-Welcome to the Rad Report Explorer documentation! 
+Welcome to the Scout Radiology Report Explorer documentation! 
 
 ## Contents
 
