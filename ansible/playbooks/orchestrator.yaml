@@ -219,11 +219,10 @@
                 endpoint: '{{ s3_endpoint }}'
                 region: '{{ s3_region }}'
               spring:
-                application:
-                  datasource:
-                    url: '{{ postgres_jdbc_url }}'
-                    username: '{{ postgres_user }}'
-                    password: '{{ postgres_password }}'
+                datasource:
+                  url: '{{ postgres_jdbc_url }}'
+                  username: '{{ postgres_user }}'
+                  password: '{{ postgres_password }}'
           image:
             repository: '{{ temporal_java_image | default(omit) }}'
           volumes: >-
