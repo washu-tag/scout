@@ -1,13 +1,13 @@
 variable "istio_chart_version" {
   description = "Version of Istio Helm charts"
   type        = string
-  default     = "1.20.1"
+  default     = "1.25.2"
 }
 
 variable "kiali_chart_version" {
   description = "Version of Kiali chart"
   type        = string
-  default     = "1.76.0"
+  default     = "2.8.0"
 }
 variable "enable_istio" {
   description = "Enable Istio installation"
