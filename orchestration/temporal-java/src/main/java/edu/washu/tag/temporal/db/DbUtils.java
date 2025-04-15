@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -19,6 +20,7 @@ public class DbUtils {
     private static final Pattern CAMEL_CASE_REGEX = Pattern.compile("([a-z])([A-Z])");
     static final Pattern DATE_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
     static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final Set<String> EXCLUDED_FIELDS = Set.of("id", "processedAt");
 
     /**
      * Get the cached SQL insert statement for a record class
@@ -41,13 +43,16 @@ public class DbUtils {
         // Get field information
         List<String> columnNames = Arrays.stream(recordClass.getDeclaredFields())
             .map(Field::getName)
+            .filter(name -> !EXCLUDED_FIELDS.contains(name))
             .map(DbUtils::camelToSnakeCase)
             .toList();
 
         // Create a string of column names
         String columns = String.join(", ", columnNames);
         // Create a string of "?" placeholders
-        String placeholders = Stream.generate(() -> "?").limit(columnNames.size()).collect(Collectors.joining(", "));
+        String placeholders = Stream.generate(() -> "?")
+            .limit(columnNames.size())
+            .collect(Collectors.joining(", "));
 
         return String.format("INSERT INTO %s (%s) VALUES (%s)", tableName, columns, placeholders);
     }
@@ -62,6 +67,7 @@ public class DbUtils {
             throw new IllegalArgumentException("Provided object is not a record");
         }
         return Arrays.stream(record.getClass().getRecordComponents())
+            .filter(component -> !EXCLUDED_FIELDS.contains(component.getName()))
             .map(component -> {
                 try {
                     return component.getAccessor().invoke(record);
