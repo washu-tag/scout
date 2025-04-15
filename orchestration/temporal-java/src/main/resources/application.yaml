@@ -12,9 +12,9 @@ spring:
         - edu.washu.tag.temporal.workflow
   # Write an external config that fills these in with your database connection details
   datasource:
-    url: jdbc:postgresql://postgres.postgres:5432/scout
-    username: postgres
-    password: postgres
+    #    url: jdbc:postgresql://postgres.postgres:5432/scout
+    #    username: postgres
+    #    password: postgres
     driver-class-name: org.postgresql.Driver
 s3:
   endpoint: 'http://minio.minio:9000'

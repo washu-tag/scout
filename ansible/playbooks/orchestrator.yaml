@@ -221,7 +221,7 @@
               spring:
                 application:
                   datasource:
-                    url: 'jdbc:postgresql://postgresql-cluster-rw.{{ postgres_cluster_namespace }}:5432/scout'
+                    url: '{{ postgres_jdbc_url }}'
                     username: '{{ postgres_user }}'
                     password: '{{ postgres_password }}'
           image:
