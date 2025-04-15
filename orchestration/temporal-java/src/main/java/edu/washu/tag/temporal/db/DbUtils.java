@@ -17,7 +17,7 @@ public class DbUtils {
     public static final String FAILED = "failed";
 
     private static final Map<Class<?>, String> INSERT_SQL_CACHE = new ConcurrentHashMap<>();
-    private static final Pattern CAMEL_CASE_REGEX = Pattern.compile("([a-z])([A-Z])");
+    private static final Pattern CAMEL_CASE_REGEX = Pattern.compile("([a-z0-9])([A-Z])");
     static final Pattern DATE_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
     static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final Set<String> EXCLUDED_FIELDS = Set.of("id", "processedAt");
