@@ -12,6 +12,8 @@ spring:
         - edu.washu.tag.temporal.workflow
     test-server:
       enabled: true
+  flyway:
+    enabled: false
   datasource:
     url: jdbc:postgresql://postgres.postgres:5432/scout
     username: postgres
