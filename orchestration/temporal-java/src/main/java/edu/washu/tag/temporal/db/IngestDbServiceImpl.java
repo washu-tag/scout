@@ -1,6 +1,8 @@
 package edu.washu.tag.temporal.db;
 
+import com.zaxxer.hikari.HikariDataSource;
 import io.temporal.workflow.Workflow;
+import jakarta.annotation.PostConstruct;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
@@ -17,6 +19,20 @@ public class IngestDbServiceImpl implements IngestDbService {
 
     public IngestDbServiceImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+    }
+
+    @PostConstruct
+    public void postInitLogging() {
+        try {
+            if (jdbcTemplate.getDataSource() instanceof HikariDataSource hikariDataSource) {
+                logger.info("Database URL: {}", hikariDataSource.getJdbcUrl());
+                logger.info("Database Username: {}", hikariDataSource.getUsername());
+            } else {
+                logger.warn("DataSource is not an instance of HikariDataSource. Connection parameters may not be accessible.");
+            }
+        } catch (Exception e) {
+            logger.error("Failed to log database connection parameters", e);
+        }
     }
 
     @Override
