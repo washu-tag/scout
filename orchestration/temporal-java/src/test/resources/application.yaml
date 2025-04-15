@@ -12,6 +12,11 @@ spring:
         - edu.washu.tag.temporal.workflow
     test-server:
       enabled: true
+  datasource:
+    url: jdbc:postgresql://postgres.postgres:5432/scout
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
 s3:
   endpoint: 'http://minio.minio:9000'
   region: us-east-1
