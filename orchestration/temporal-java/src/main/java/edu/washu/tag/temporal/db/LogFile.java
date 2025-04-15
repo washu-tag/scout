@@ -3,9 +3,7 @@ package edu.washu.tag.temporal.db;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public record LogFile(
     int id,
@@ -18,14 +16,11 @@ public record LogFile(
     LocalDateTime processedAt
 ) {
 
-    private static final Pattern DATE_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
     private static LocalDate dateFromFilePath(String filePath) {
         String fileName = Paths.get(filePath).getFileName().toString();
-        Matcher m = DATE_PATTERN.matcher(fileName);
+        Matcher m = DbUtils.DATE_PATTERN.matcher(fileName);
         if (m.find()) {
-            return LocalDate.parse(m.group(), DATE_FORMATTER);
+            return LocalDate.parse(m.group(), DbUtils.DATE_FORMATTER);
         }
         return null;
     }
