@@ -1,6 +1,6 @@
 import React from 'react';
 import { FaPython } from 'react-icons/fa';
-import { SiMinio, SiTemporal, SiGrafana } from 'react-icons/si';
+import { SiMinio, SiTemporal, SiGrafana, SiReadthedocs } from 'react-icons/si';
 
 export default function App() {
   const handleLaunchJupyterHub = () => {
@@ -14,6 +14,9 @@ export default function App() {
   };
   const handleLaunchGrafana = () => {
     window.location.href = '/grafana';
+  };
+  const handleReadTheDocs = () => {
+    window.location.href = '/docs'; // TODO: Update this to the actual documentation URL
   };
 
   return (
@@ -66,6 +69,15 @@ export default function App() {
             </button>
           </div>
         </div>
+
+        {/* Documentation Button */}
+        <button
+          onClick={handleReadTheDocs}
+          className="flex items-center justify-center gap-3 rounded-xl bg-purple-50 p-4 text-purple-700 shadow transition-all hover:bg-purple-100 hover:shadow-md hover:-translate-y-1"
+        >
+          <SiReadthedocs className="text-3xl" />
+          <span className="text-lg font-medium">Documentation</span>
+        </button>
       </div>
     </div>
   );
