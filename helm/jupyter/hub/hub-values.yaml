@@ -44,6 +44,20 @@ singleuser:
     name: ghcr.io/washu-tag/pyspark-notebook
     tag: latest
   cmd: null
+  lifecycleHooks:
+    postStart:
+      exec:
+        command:
+          - '/bin/sh'
+          - '-c'
+          - |
+            FLAG_FILE=/home/${NB_USER}/.scout_quickstart
+            if [ ! -f $FLAG_FILE ]; then
+              mkdir -p /home/${NB_USER}/Scout &&
+              cp -r /opt/scout/samples/* /home/${NB_USER}/Scout/ &&
+              chown -R ${NB_USER}:${NB_GID} /home/${NB_USER}/Scout &&
+              touch $FLAG_FILE
+            fi
   cpu:
     limit: 4
     guarantee: 1
