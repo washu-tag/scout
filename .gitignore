@@ -5,3 +5,5 @@ __pycache__/
 .gradle/
 .DS_Store
 notebooks/
+.terraform
+.terraform.lock.hcl
