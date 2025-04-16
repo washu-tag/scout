@@ -220,7 +220,7 @@
                 region: '{{ s3_region }}'
               spring:
                 datasource:
-                  url: '{{ postgres_jdbc_url }}'
+                  url: 'jdbc:postgresql://postgresql-cluster-rw.{{ postgres_cluster_namespace }}:5432/scout'
                   username: '{{ postgres_user }}'
                   password: '{{ postgres_password }}'
           image:
