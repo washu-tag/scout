@@ -16,7 +16,7 @@ export default function App() {
     window.location.href = '/grafana';
   };
   const handleReadTheDocs = () => {
-    window.location.href = '/docs'; // TODO: Update this to the actual documentation URL
+    window.location.href = 'https://washu-scout.readthedocs.io/en/latest/';
   };
 
   return (
