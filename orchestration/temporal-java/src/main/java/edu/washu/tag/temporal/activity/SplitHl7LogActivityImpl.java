@@ -280,6 +280,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         // Need at least 3 lines (2 header lines + content)
         if (lines.size() < 3) {
+            logger.warn("WorkflowId {} ActivityId {} - Segment {} is too short", activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber);
             return Hl7File.error(logFile, segmentNumber, destination.toString(), "Split content has fewer than 3 lines", activityInfo.getWorkflowId(), activityInfo.getActivityId());
         }
 
@@ -288,13 +289,13 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             timestamp = extractTimestamp(lines);
         } catch (FileFormatException e) {
-            logger.error("Unable to extract timestamp", e);
+            logger.warn("WorkflowId {} ActivityId {} - Segment {} unable to extract timestamp: {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber, e.getMessage());
             return Hl7File.error(logFile, segmentNumber, destination.toString(),"Unable to extract timestamp: " + e.getMessage(), activityInfo.getWorkflowId(), activityInfo.getActivityId());
         }
 
         // Define output path
         String relativePath = getTimestampPath(timestamp).resolve(timestamp + ".hl7").toString();
-        logger.debug("WorkflowId {} ActivityId {} - Transforming HL7 file {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), relativePath);
+        logger.info("WorkflowId {} ActivityId {} - Transforming segment {} HL7 file {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber, relativePath);
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             // Start from the third line (exclude header)
             for (int i = 2; i < lines.size(); i++) {
@@ -305,7 +306,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 outputStream.write('\r');
             }
 
-            logger.info("WorkflowId {} ActivityId {} - Uploading HL7 file {}/{}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), destination,
+            logger.info("WorkflowId {} ActivityId {} - Uploading segment {} HL7 file {}/{}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber, destination,
                 relativePath);
 
             try {
@@ -313,8 +314,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 // We could use piped streams to avoid loading the whole thing into memory, but this adds complexity that isn't warranted for these small files
                 fileHandler.putWithRetry(outputStream.toByteArray(), relativePath, destination);
             } catch (IOException e) {
-                logger.error("WorkflowId {} ActivityId {} - Failed to upload HL7 file {}/{}",
-                    activityInfo.getWorkflowId(), activityInfo.getActivityId(), destination, relativePath, e);
+                logger.error("WorkflowId {} ActivityId {} - Failed to upload segment {} HL7 file {}/{}",
+                    activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber, destination, relativePath, e);
                 return Hl7File.error(logFile, segmentNumber, destination.toString(), "Failed to upload HL7 file", activityInfo.getWorkflowId(), activityInfo.getActivityId());
             }
             return Hl7File.success(logFile, segmentNumber, destination.toString(), activityInfo.getWorkflowId(), activityInfo.getActivityId());
