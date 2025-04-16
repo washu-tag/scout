@@ -1,0 +1,6 @@
+auth:
+  strategy: anonymous
+
+external_services:
+  prometheus:
+    url: 'http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090'
