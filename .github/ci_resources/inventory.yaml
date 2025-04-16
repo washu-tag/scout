@@ -20,7 +20,7 @@ k3s_cluster:
     explorer_image: 'docker.io/local/washu-tag/explorer'
     postgres_user: 'scout'
     postgres_password: 'scout123'
-    postgres_cluster_namespace: 'postgres'
+    postgres_cluster_namespace: 'cloudnative-pg'
 
     # Local paths
     base_dir: /var/lib
