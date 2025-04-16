@@ -46,7 +46,7 @@ for ((i = 0; i <= max_wait; ++i)); do
   pendingChildWorkflows=$(kubectl exec -n temporal -i service/temporal-admintools -- temporal workflow list --query "WorkflowType = 'IngestHl7ToDeltaLakeWorkflow' and ExecutionStatus not in ('Completed', 'Failed')" -o json | jq -r '.[].execution.workflowId')
   if [[ -z "$pendingChildWorkflows" ]]; then
       echo "All child workflows complete"
-      break
+      exit 0
   else
       echo "Pending child workflows:"
       echo $pendingChildWorkflows
