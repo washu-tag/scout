@@ -12,7 +12,7 @@ for monitoring and visualization.
 
 From the Scout landing page, launch JupyterHub to access a Jupyter notebook. The JupyterHub service is the primary
 interface for users to access rad report data. On first login, an example Jupyter notebook with sample code to access
-and analyze the rad report data is provided. 
+and analyze the rad report data is provided. Run the notebook to get started with the data exploration process.
 
 Review the [Data Schema](dataschema.md) to understand the structure of the report data in the data lake and the mapping 
 of HL7 fields to the report table columns. The [Services](services.md) page provides an overview of the main services 
