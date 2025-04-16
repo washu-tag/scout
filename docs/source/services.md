@@ -1,8 +1,8 @@
 # Services
 
-The Scout Rad Report Explorer consists of several services that work together to process HL7 reports into a data lake, 
-and provide a user interface for users to access and analyze the data. Below is a list of the main services that make up
-the Rad Report Explorer.
+The Scout Rad Report Explorer consists of several services that work together to process HL7 radiology reports into a 
+data lake, and provide a user interface for users to access and analyze the data. Below is a list of the main services
+that make up Scout.
 
 ## User Services
 
@@ -10,7 +10,7 @@ the Rad Report Explorer.
 
 [JupyterHub](https://jupyterhub.readthedocs.io/en/stable/) is the primary interface for users to access rad report data.
 It provides single-user [Jupyter notebooks](https://jupyter.org/), which can be used to run Python code and interact 
-with report data in the data warehouse. On first login, users are given a Jupyter notebook with example code to extract 
+with report data in the data lake. On first login, users are given a Jupyter notebook with example code to extract 
 and analyze data from the HL7 reports using [PySpark](https://spark.apache.org/docs/latest/api/python/index.html).
 
 ## Admin Services
@@ -25,7 +25,7 @@ Grafana dashboards for Temporal, MinIO, Kubernetes, and other services are avail
 ### MinIO
 
 [MinIO](https://min.io/) is an object storage service that is used to store HL7 reports and other data. Jupyter 
-notebooks users can access MinIO to read the HL7 reports.
+notebooks users can access MinIO to read the rad report data stored here.
 
 ### Temporal
 
