@@ -21,10 +21,12 @@ for ((i = 0; i <= max_wait; ++i)); do
     currentStatus=$(echo $workflowDetails | jq -r '.workflowExecutionInfo.status')
     if [[ $currentStatus == "WORKFLOW_EXECUTION_STATUS_COMPLETED" ]]; then
         echo "Workflow $workflowId completed as expected"
-        exit 0
+        break
+    elif [[ $currentStatus == "WORKFLOW_EXECUTION_STATUS_FAILED" ]]; then
+        echo "Workflow $workflowId failed"
+        exit 1
     else
-        echo "Workflow not complete, waiting and trying again..."
-        echo $workflowDetails
+        echo "Workflow $workflowId status=\"$currentStatus\". Waiting..."
     fi
 
     sleep 5s
@@ -37,3 +39,20 @@ for ((i = 0; i <= max_wait; ++i)); do
         exit 25
     fi
 done
+
+echo "Waiting for all child workflows to be complete"
+childWorkflows=$(kubectl exec -n temporal -i service/temporal-admintools -- temporal workflow list --query "WorkflowType = 'IngestHl7ToDeltaLakeWorkflow'" -o json | jq -r '.[].execution.workflowId')
+for ((i = 0; i <= max_wait; ++i)); do
+  pendingChildWorkflows=$(kubectl exec -n temporal -i service/temporal-admintools -- temporal workflow list --query "WorkflowType = 'IngestHl7ToDeltaLakeWorkflow' and ExecutionStatus not in ('Completed', 'Failed')" -o json | jq -r '.[].execution.workflowId')
+  if [[ -z "$pendingChildWorkflows" ]]; then
+      echo "All child workflows complete"
+      break
+  else
+      echo "Pending child workflows:"
+      echo $pendingChildWorkflows
+      echo "Waiting..."
+      sleep 5s
+  fi
+done
+echo "Waited too long"
+exit 1
