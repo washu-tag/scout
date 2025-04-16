@@ -13,6 +13,10 @@ It provides single-user [Jupyter notebooks](https://jupyter.org/), which can be 
 with report data in the data lake. On first login, users are given a Jupyter notebook with example code to extract 
 and analyze data from the HL7 reports using [PySpark](https://spark.apache.org/docs/latest/api/python/index.html).
 
+The [Jupyter AI](https://jupyter-ai.readthedocs.io/en/latest/) extension is also available to users, which provides
+AI-powered code suggestions and completions to help users write queries and analyze data. Configure the Jupyter AI 
+extension with your LLM provider of choice (e.g., OpenAI, Anthropic, etc.) to enable this feature.
+
 ## Admin Services
 
 The following admin services support the system's backend operations.
@@ -30,5 +34,5 @@ notebooks users can access MinIO to read the rad report data stored here.
 ### Temporal
 
 [Temporal](https://temporal.io/) is a workflow orchestration service that Scout uses to manage the ingestion and 
-processing of HL7 reports.
-
+processing of HL7 reports. Workflow information is available in the Temporal UI and can be used to monitor and debug
+the data ingestion process.
