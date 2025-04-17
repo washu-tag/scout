@@ -14,22 +14,27 @@ k3s_cluster:
     k3s_token: K3S_TOKEN
     slack_token: ''
     slack_channel_id: ''
-    base_dir: /var/lib
-    scout_repo_dir: WORK_DIR
     kubeconfig_group: 'root'
-    orchestration_data_dir: '{{ scout_repo_dir }}/tests/staging_test_data'
     temporal_java_image: 'docker.io/local/washu-tag/temporal-java'
     temporal_python_image: 'docker.io/local/washu-tag/temporal-python'
     explorer_image: 'docker.io/local/washu-tag/explorer'
+    postgres_user: 'scout'
+    postgres_password: 'scout123'
+    postgres_cluster_namespace: 'cloudnative-pg'
 
+    # Local paths
+    base_dir: /var/lib
+    scout_repo_dir: WORK_DIR
     minio_dir: '{{ base_dir }}/minio'
     temporal_cassandra_dir: '{{ base_dir }}/cassandra'
     temporal_elasticsearch_dir: '{{ base_dir }}/elasticsearch'
+    postgres_dir: '{{ base_dir }}/postgres'
     prometheus_dir: '{{ base_dir }}/prometheus'
     loki_dir: '{{ base_dir }}/loki'
     grafana_dir: '{{ base_dir }}/grafana'
     jaeger_dir: '{{ base_dir }}/jaeger'
     jupyter_dir: '{{ base_dir }}/jupyter'
+    orchestration_data_dir: '{{ scout_repo_dir }}/tests/staging_test_data'
 
     # Resources
     orchestrator_spark_memory: 1g
@@ -39,7 +44,7 @@ k3s_cluster:
 
     # You probably don't want to change these unless you know these items will be
     # stored in different locations on your system
-    helm_plugins_dir: '~/.local/share/helm/plugins'
+    helm_plugins_dir: '/root/.local/share/helm/plugins'
     kubeconfig_yaml: '/etc/rancher/k3s/k3s.yaml'
 
     # Do not change the values below, they are hard-coded various places
