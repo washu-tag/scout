@@ -2,7 +2,6 @@ package edu.washu.tag.temporal.activity;
 
 import static edu.washu.tag.temporal.util.Constants.CHILD_QUEUE;
 
-import edu.washu.tag.temporal.db.DbUtils;
 import edu.washu.tag.temporal.db.Hl7File;
 import edu.washu.tag.temporal.db.LogFile;
 import edu.washu.tag.temporal.exception.FileFormatException;
@@ -28,7 +27,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -266,7 +264,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             return transformAndUpload(logFile, lines, destination, segmentNumber);
         } catch (IOException e) {
             logger.error("WorkflowId {} ActivityId {} - Could not write segment {} to HL7 file", workflowId, activityId, segmentNumber, e);
-            return Hl7File.error(logFile, segmentNumber, destination.toString(), "Could not write segment to HL7 file: " + e.getMessage(), workflowId, activityId);
+            return Hl7File.error(logFile, segmentNumber, "Could not write segment to HL7 file: " + e.getMessage(), workflowId, activityId);
         }
     }
 
@@ -286,7 +284,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         // Need at least 3 lines (2 header lines + content)
         if (lines.size() < 3) {
             logger.warn("WorkflowId {} ActivityId {} - Segment {} is too short", activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber);
-            return Hl7File.error(logFile, segmentNumber, destination.toString(), "Split content has fewer than 3 lines", activityInfo.getWorkflowId(), activityInfo.getActivityId());
+            return Hl7File.error(logFile, segmentNumber, "Split content has fewer than 3 lines", activityInfo.getWorkflowId(), activityInfo.getActivityId());
         }
 
         // Extract timestamp from the segment's first HEADER_LENGTH bytes
@@ -295,7 +293,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             timestamp = extractTimestamp(lines);
         } catch (FileFormatException e) {
             logger.warn("WorkflowId {} ActivityId {} - Segment {} unable to extract timestamp: {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber, e.getMessage());
-            return Hl7File.error(logFile, segmentNumber, destination.toString(),"Unable to extract timestamp: " + e.getMessage(), activityInfo.getWorkflowId(), activityInfo.getActivityId());
+            return Hl7File.error(logFile, segmentNumber, "Unable to extract timestamp: " + e.getMessage(), activityInfo.getWorkflowId(), activityInfo.getActivityId());
         }
 
         // Define output path
@@ -322,7 +320,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             } catch (IOException e) {
                 logger.error("WorkflowId {} ActivityId {} - Failed to upload segment {} HL7 file {}/{}",
                     activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber, destination, relativePath, e);
-                return Hl7File.error(logFile, segmentNumber, destination.toString(), "Failed to upload HL7 file", activityInfo.getWorkflowId(), activityInfo.getActivityId());
+                return Hl7File.error(logFile, segmentNumber, "Failed to upload HL7 file", activityInfo.getWorkflowId(), activityInfo.getActivityId());
             }
         }
     }
