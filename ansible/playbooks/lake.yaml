@@ -76,6 +76,11 @@
             - name: AZURE_WASB_ACCESS_KEY
               value: ''
 
+    - name: Wait for Hive to be ready
+      command: kubectl -n hive wait --for=condition=Ready --timeout=300s deployments/hive-metastore
+      register: hive_ready
+      changed_when: false
+
     - name: Add Trino Helm repository
       kubernetes.core.helm_repository:
         name: trino

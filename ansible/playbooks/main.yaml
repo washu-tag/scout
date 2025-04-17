@@ -14,6 +14,12 @@
 - name: Install MinIO
   import_playbook: minio.yaml
 
+- name: Install Postgres
+  import_playbook: postgres.yaml
+
+- name: Install Lake
+  import_playbook: lake.yaml
+
 - name: Install Orchestrator
   import_playbook: orchestrator.yaml
 

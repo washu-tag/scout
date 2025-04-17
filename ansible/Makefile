@@ -1,6 +1,6 @@
 .PHONY: all deps install-k3s config-traefik install-helm clone-scout install-minio \
-        install-orchestrator install-prometheus install-jaeger install-grafana \
-        install-explorer echo
+        install-postgres install-lake install-orchestrator install-prometheus \
+        install-jaeger install-grafana install-explorer echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -49,6 +49,12 @@ install-helm:
 
 install-minio:
 	$(ANSIBLE_CMD) playbooks/minio.yaml
+
+install-postgres:
+	$(ANSIBLE_CMD) playbooks/postgres.yaml
+
+install-lake:
+	$(ANSIBLE_CMD) playbooks/lake.yaml
 
 install-orchestrator:
 	$(ANSIBLE_CMD) playbooks/orchestrator.yaml
