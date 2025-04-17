@@ -12,10 +12,14 @@ for monitoring and visualization.
 
 From the Scout landing page, launch JupyterHub to access a Jupyter notebook. The JupyterHub service is the primary
 interface for users to access radiology report data. On first login, an example Jupyter notebook with sample code to 
-access and analyze the rad report data is provided. Run the notebook to get started with the data exploration process.
+access and analyze the radiology report data is provided. Run the `Scout/Quickstart.ipynb` notebook to get started with 
+the data exploration process. The notebook provides example code to search for reports, filter by various criteria, and 
+export the results to CSV files.
 
-Review the [Data Schema](dataschema.md) to understand the structure of the report data in the data lake and the mapping 
-of HL7 fields to the report table columns. 
+![Scout Quickstart Notebook](images/ScoutQuickstartNotebook.png)
+
+After running the quickstart notebook, review the [Data Schema](dataschema.md) to understand the structure of the report
+data in the data lake and the mapping of HL7 fields to the report table columns.
 
 The [Services](services.md) page provides an overview of the main services 
 that make up the Scout Rad Report Explorer.
