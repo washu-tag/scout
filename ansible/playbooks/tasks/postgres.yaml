@@ -7,7 +7,7 @@
   kubernetes.core.helm:
     name: cnpg
     chart_ref: cnpg/cloudnative-pg
-    chart_version: 0.23.2
+    chart_version: ^0.23.2
     release_namespace: cnpg-system
     create_namespace: true
     release_state: present
