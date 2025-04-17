@@ -6,13 +6,6 @@
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
-    - name: Create hive database in postgres
-      community.postgresql.postgresql_db:
-        name: hive
-        login_host: 'postgresql-cluster-rw.{{ postgres_namespace }}'
-        login_user: '{{ postgres_user }}'
-        login_password: '{{ postgres_password }}'
-
     - name: Install hive metastore service (HMS) with helm
       kubernetes.core.helm:
         name: hive-metastore
@@ -109,13 +102,6 @@
               s3.region={{ s3_region }}
               s3.endpoint={{ s3_endpoint }}
               s3.path-style-access=true
-
-    - name: Create superset database in postgres
-      community.postgresql.postgresql_db:
-        name: superset
-        login_host: 'postgresql-cluster-rw.{{ postgres_namespace }}'
-        login_user: '{{ postgres_user }}'
-        login_password: '{{ postgres_password }}'
 
     - name: Add Superset Helm repository
       kubernetes.core.helm_repository:
