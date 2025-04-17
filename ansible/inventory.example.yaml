@@ -25,6 +25,9 @@ k3s_cluster:
     github_client_secret: $(echo $CLIENT_SECRET | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     github_organization: 'org'
     jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    postgres_user: 'scout'
+    postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    postgres_cluster_namespace: 'cloudnative-pg'
 
     # Local paths
     base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
@@ -32,6 +35,7 @@ k3s_cluster:
     minio_dir: /scout/data/minio
     temporal_cassandra_dir: /scout/persistence/cassandra
     temporal_elasticsearch_dir: /scout/persistence/elasticsearch
+    postgres_dir: /scout/persistence/postgres
     prometheus_dir: /scout/monitoring/prometheus
     loki_dir: /scout/monitoring/loki
     grafana_dir: /scout/monitoring/grafana
