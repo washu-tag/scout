@@ -20,6 +20,7 @@ some fields are derived from others, and some fields may not be directly mapped 
 | `country`                          | PID-11.6         | string         | Yes      | Patient’s country.                                                                                                                   |
 | `ethnic_group`                     | PID-22           | string         | Yes      | Patient’s ethnicity.                                                                                                                 |
 | `patient_id_json`                  |                  | string         | Yes      | JSON representation of all patient identifiers. Patient ID columns are also created for each assigning authority (e.g., `epic_mrn`). |
+| `epic_mrn`                         |                  | string         | Yes      | Patient ID from Epic system.                                                                                                         |
 | `orc_2_placer_order_number`        | ORC-2            | string         | Yes      | Placer order number from the order control segment.                                                                                  |
 | `obr_2_placer_order_number`        | OBR-2            | string         | Yes      | Placer order number from the observation request segment.                                                                            |
 | `orc_3_filler_order_number`        | ORC-3            | string         | Yes      | Filler order number from the order control segment.                                                                                  |
@@ -41,3 +42,25 @@ some fields are derived from others, and some fields may not be directly mapped 
 | `report_status`                    | OBX-11           | string         | Yes      | Status of the diagnostic report.                                                                                                     |
 | `year`                             | Derived          | integer        | Yes      | Year the message was created, derived from `message_dt`.                                                                             |
 
+The `patient_id_json` column contains a JSON representation of all patient identifiers associated with the report.
+
+An example of the JSON representation is shown below:
+
+```json
+[
+  {
+    "id_number": "ABC9587720",
+    "assigning_authority": "ABC",
+    "identifier_type_code": "MR"
+  },
+  {
+    "id_number": "EPIC11381864",
+    "assigning_authority": "EPIC",
+    "identifier_type_code": "MRN"
+  }
+]
+```
+
+The assigning authority and identifier type code are used to create separate columns for each patient ID type to
+facilitate easier querying and analysis. For example, the `epic_mrn` column is created from the assigning authority 
+"EPIC" and identifier type code "MRN". The same applies to other patient ID columns.
