@@ -18,8 +18,8 @@ public class DbUtils {
 
     private static final Map<Class<?>, String> INSERT_SQL_CACHE = new ConcurrentHashMap<>();
     private static final Pattern CAMEL_CASE_REGEX = Pattern.compile("([a-z0-9])([A-Z])");
-    static final Pattern DATE_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
-    static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    static final Pattern DATE_PATTERN = Pattern.compile("\\d{8}");
+    static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     /**
      * Get the cached SQL insert statement for a record class
