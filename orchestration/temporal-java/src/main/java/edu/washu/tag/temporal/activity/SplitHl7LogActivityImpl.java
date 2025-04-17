@@ -74,8 +74,10 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
             ingestDbService.insertLogFile(LogFile.success(input.logPath(), activityInfo.getWorkflowId(), activityInfo.getActivityId()));
         } catch (IOException e) {
+            logger.error("WorkflowId {} ActivityId {} - Could not read log file {}",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.logPath(), e);
             ingestDbService.insertLogFile(LogFile.error(input.logPath(), e.getMessage(), activityInfo.getWorkflowId(), activityInfo.getActivityId()));
-            throw ApplicationFailure.newFailureWithCause("Failed to split log file " + input.logPath() + " into HL7s", "type", e);
+            throw ApplicationFailure.newFailureWithCause("Could not read log file " + input.logPath(), "type", e);
         }
 
         // Insert the HL7 file paths into the database
@@ -105,6 +107,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             uploadedList = uploadHl7PathList(hl7Paths, hl7ListFileUri);
         } catch (IOException e) {
+            logger.error("WorkflowId {} ActivityId {} - Failed to upload log file list to {}",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), hl7ListFileUri, e);
             throw ApplicationFailure.newFailureWithCause("Failed to upload log file list to " + hl7ListFileUri, "type", e);
         }
 
@@ -261,7 +265,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             return transformAndUpload(logFile, lines, destination, segmentNumber);
         } catch (IOException e) {
-            return Hl7File.error(logFile, segmentNumber, destination.toString(), "Unable to transform to HL7: " + e.getMessage(), workflowId, activityId);
+            logger.error("WorkflowId {} ActivityId {} - Could not write segment {} to HL7 file", workflowId, activityId, segmentNumber, e);
+            return Hl7File.error(logFile, segmentNumber, destination.toString(), "Could not write segment to HL7 file: " + e.getMessage(), workflowId, activityId);
         }
     }
 

@@ -37,7 +37,7 @@ public class IngestDbServiceImpl implements IngestDbService {
 
     @Override
     public void insertLogFile(LogFile logFile) {
-        logger.info("WorkflowId {} ActivityId {} - Inserting log file {} record into database", logFile.workflowId(), logFile.activityId(), logFile.filePath());
+        logger.debug("WorkflowId {} ActivityId {} - Inserting log file {} record into database", logFile.workflowId(), logFile.activityId(), logFile.filePath());
         String insertSql = DbUtils.getInsertSql(LogFile.class);
         jdbcTemplate.update(insertSql, DbUtils.extractValues(logFile));
     }
@@ -48,7 +48,7 @@ public class IngestDbServiceImpl implements IngestDbService {
             return;
         }
 
-        logger.info("WorkflowId {} ActivityId {} - Inserting {} HL7 file records into database", hl7Files.getFirst().workflowId(),
+        logger.debug("WorkflowId {} ActivityId {} - Inserting {} HL7 file records into database", hl7Files.getFirst().workflowId(),
             hl7Files.getFirst().activityId(), hl7Files.size());
 
         String insertSql = DbUtils.getInsertSql(Hl7File.class);
