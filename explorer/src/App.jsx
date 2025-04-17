@@ -1,10 +1,14 @@
 import React from 'react';
 import { FaPython } from 'react-icons/fa';
 import { SiMinio, SiTemporal, SiGrafana } from 'react-icons/si';
+import { BiLineChart } from "react-icons/bi";
 
 export default function App() {
   const handleLaunchJupyterHub = () => {
     window.location.href = '/jupyter';
+  };
+  const handleLaunchSuperset = () => {
+    window.location.href = '/superset';
   };
   const handleLaunchMinIO = () => {
     window.location.href = '/minio/';
@@ -21,21 +25,31 @@ export default function App() {
       <div className="flex w-full max-w-6xl flex-col items-center justify-center space-y-12">
         <div className="text-center animate-fade-in">
           <h1 className="mb-6 text-5xl font-bold text-gray-800">
-            Welcome to the WashU Rad Report Explorer!
+            Welcome to the XNAT Scout Rad Report Explorer!
           </h1>
           <p className="text-2xl text-gray-600">
-            Brought to you by the Translational AI Group (TAG)
+            Brought to you by the Translational AI Group (TAG) at WashU
           </p>
         </div>
 
-        {/* Main JupyterHub Button */}
-        <button
-          onClick={handleLaunchJupyterHub}
-          className="flex items-center justify-center gap-6 rounded-2xl bg-blue-50 p-10 text-blue-700 shadow-lg transition-all hover:bg-blue-100 hover:shadow-xl hover:-translate-y-1"
-        >
-          <FaPython className="text-7xl" />
-          <span className="text-3xl font-semibold">Launch JupyterHub</span>
-        </button>
+        {/* Main Tools Buttons */}
+        <div className="flex flex-col md:flex-row gap-6 w-full justify-center">
+          <button
+              onClick={handleLaunchJupyterHub}
+              className="flex items-center justify-center gap-6 rounded-2xl bg-blue-50 p-10 text-blue-700 shadow-lg transition-all hover:bg-blue-100 hover:shadow-xl hover:-translate-y-1"
+          >
+            <FaPython className="text-7xl" />
+            <span className="text-3xl font-semibold">Launch JupyterHub</span>
+          </button>
+
+          <button
+              onClick={handleLaunchSuperset}
+              className="flex items-center justify-center gap-6 rounded-2xl bg-purple-50 p-10 text-purple-700 shadow-lg transition-all hover:bg-purple-100 hover:shadow-xl hover:-translate-y-1"
+          >
+            <BiLineChart className="text-7xl" />
+            <span className="text-3xl font-semibold">Launch Superset</span>
+          </button>
+        </div>
 
         {/* Admin Tools Section */}
         <div className="w-full max-w-4xl rounded-xl bg-white p-6 shadow-lg">
