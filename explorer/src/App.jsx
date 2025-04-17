@@ -1,9 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaPython } from 'react-icons/fa';
 import { SiMinio, SiTemporal, SiGrafana, SiReadthedocs } from 'react-icons/si';
-import { BiLineChart } from 'react-icons/bi'; // Import for Superset icon
+import { BiLineChart } from 'react-icons/bi';
 
 export default function App() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const handleLaunchJupyterHub = () => {
     window.location.href = '/jupyter';
   };
@@ -24,88 +30,107 @@ export default function App() {
   };
 
   return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-gray-50 to-gray-200 p-8">
-        <div className="flex w-full max-w-6xl flex-col items-center justify-center space-y-10">
-          <div className="text-center animate-fade-in">
-            <h1 className="mb-6 text-8xl font-bold text-gray-800">
-              Welcome to Scout!
+      <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6 md:p-8">
+        <div className={`max-w-6xl mx-auto transition-all duration-1000 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+          {/* Hero Section */}
+          <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
+            <h1 className="text-6xl md:text-8xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 mb-6 tracking-tight">
+              Welcome to Scout
             </h1>
-            <p className="text-xl text-gray-600">
+            <p className="text-lg md:text-xl text-gray-600 max-w-xl">
               A radiology report exploration tool brought to you by the Translational AI Group (TAG) at WashU
             </p>
           </div>
 
-          {/* Main Tools Buttons - Larger Size */}
-          <div className="flex flex-col md:flex-row gap-8 w-full justify-center">
+          {/* Main Tools Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-12">
             <button
                 onClick={handleLaunchJupyterHub}
-                className="flex items-center justify-center gap-6 rounded-2xl bg-blue-50 p-12 text-blue-700 shadow-lg transition-all hover:bg-blue-100 hover:shadow-xl hover:-translate-y-1"
+                className="group flex items-center justify-center p-8 md:p-10 bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-blue-100"
             >
-              <FaPython className="text-8xl" />
-              <span className="text-4xl font-semibold">Launch JupyterHub</span>
+              <div className="flex flex-col md:flex-row items-center text-center md:text-left gap-6">
+                <div className="p-5 rounded-full bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors duration-300">
+                  <FaPython className="text-6xl md:text-7xl" />
+                </div>
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-semibold text-gray-800 mb-2">JupyterHub</h2>
+                  <p className="text-gray-600">Launch interactive notebooks for data analysis</p>
+                </div>
+              </div>
             </button>
 
             <button
                 onClick={handleLaunchSuperset}
-                className="flex items-center justify-center gap-6 rounded-2xl bg-yellow-50 p-12 text-yellow-700 shadow-lg transition-all hover:bg-yellow-100 hover:shadow-xl hover:-translate-y-1"
+                className="group flex items-center justify-center p-8 md:p-10 bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-yellow-100"
             >
-              <BiLineChart className="text-8xl" />
-              <span className="text-4xl font-semibold">Launch Superset</span>
+              <div className="flex flex-col md:flex-row items-center text-center md:text-left gap-6">
+                <div className="p-5 rounded-full bg-yellow-50 text-yellow-600 group-hover:bg-yellow-100 transition-colors duration-300">
+                  <BiLineChart className="text-6xl md:text-7xl" />
+                </div>
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-semibold text-gray-800 mb-2">Superset</h2>
+                  <p className="text-gray-600">Explore data visualizations and dashboards</p>
+                </div>
+              </div>
             </button>
           </div>
 
-          {/* Documentation Button */}
-          <button
-              onClick={handleReadTheDocs}
-              className="flex items-center justify-center gap-4 rounded-xl bg-purple-50 p-6 text-purple-700 shadow-md transition-all hover:bg-purple-100 hover:shadow-lg hover:-translate-y-1"
-          >
-            <SiReadthedocs className="text-4xl" />
-            <span className="text-2xl font-medium">Documentation</span>
-          </button>
+          {/* Documentation Section */}
+          <div className="mb-12">
+            <button
+                onClick={handleReadTheDocs}
+                className="group w-full flex items-center justify-center p-6 md:p-8 bg-white bg-opacity-70 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-purple-100"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-4 rounded-full bg-purple-50 text-purple-600 group-hover:bg-purple-100 transition-colors duration-300">
+                  <SiReadthedocs className="text-3xl" />
+                </div>
+                <div className="text-left">
+                  <h2 className="text-2xl font-medium text-gray-800">Documentation</h2>
+                  <p className="text-gray-600">Learn how to use Scout effectively</p>
+                </div>
+              </div>
+            </button>
+          </div>
 
-          {/* Admin Tools Section - Smaller Size */}
-          <div className="w-full max-w-4xl rounded-xl bg-white p-5 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-gray-700">Admin Tools</h2>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {/* Admin Tools Section */}
+          <div className="bg-white bg-opacity-80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-12">
+            <h2 className="text-xl font-semibold text-gray-700 mb-6 flex items-center">
+              <span className="inline-block w-1 h-6 bg-gray-700 mr-3 rounded"></span>
+              Admin Tools
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <button
                   onClick={handleLaunchMinIO}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-red-50 p-3 text-red-700 shadow transition-all hover:bg-red-100 hover:shadow-md hover:-translate-y-1"
+                  className="flex items-center gap-3 p-4 rounded-lg bg-gradient-to-br from-red-50 to-white text-red-700 border border-red-100 shadow hover:shadow-md transition-all duration-300"
               >
                 <SiMinio className="text-2xl" />
-                <span className="text-base font-medium">MinIO</span>
+                <span className="font-medium">MinIO</span>
               </button>
 
               <button
                   onClick={handleLaunchTemporal}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 p-3 text-emerald-700 shadow transition-all hover:bg-emerald-100 hover:shadow-md hover:-translate-y-1"
+                  className="flex items-center gap-3 p-4 rounded-lg bg-gradient-to-br from-emerald-50 to-white text-emerald-700 border border-emerald-100 shadow hover:shadow-md transition-all duration-300"
               >
                 <SiTemporal className="text-2xl" />
-                <span className="text-base font-medium">Temporal</span>
+                <span className="font-medium">Temporal</span>
               </button>
 
               <button
                   onClick={handleLaunchGrafana}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-orange-50 p-3 text-orange-700 shadow transition-all hover:bg-orange-100 hover:shadow-md hover:-translate-y-1"
+                  className="flex items-center gap-3 p-4 rounded-lg bg-gradient-to-br from-orange-50 to-white text-orange-700 border border-orange-100 shadow hover:shadow-md transition-all duration-300"
               >
                 <SiGrafana className="text-2xl" />
-                <span className="text-base font-medium">Grafana</span>
+                <span className="font-medium">Grafana</span>
               </button>
             </div>
+          </div>
+
+          {/* Footer */}
+          <div className="text-center text-gray-500 text-sm py-6">
+            © {new Date().getFullYear()} Translational AI Group, Washington University in St. Louis
           </div>
         </div>
       </div>
   );
 }
-
-// Add the fade-in animation
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-fade-in {
-    animation: fadeIn 0.8s ease-out forwards;
-  }
-`;
-document.head.appendChild(style);
