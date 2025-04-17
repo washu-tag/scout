@@ -6,3 +6,5 @@ __pycache__/
 .DS_Store
 notebooks/
 docs/build
+.terraform
+.terraform.lock.hcl
