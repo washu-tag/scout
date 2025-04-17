@@ -8,7 +8,7 @@ notebooks are provided to users to facilitate data exploration and analysis with
 Temporal for data ingestion and processing, Delta Lake and MinIO for efficient data storage and management, and Grafana
 for monitoring and visualization.
 
-## Getting Started
+## Quickstart
 
 From the Scout landing page, launch JupyterHub to access a Jupyter notebook. The JupyterHub service is the primary
 interface for users to access radiology report data. On first login, an example Jupyter notebook with sample code to 
