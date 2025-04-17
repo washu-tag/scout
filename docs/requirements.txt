@@ -1,0 +1,5 @@
+sphinx
+sphinx-rtd-theme
+sphinxawesome-theme
+myst_parser[sphinx]
+sphinxcontrib-openapi

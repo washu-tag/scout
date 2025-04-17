@@ -37,7 +37,7 @@ public class FindHl7FilesImpl implements FindHl7Files {
         List<String> hl7Files = fileHandler.ls(URI.create(input.hl7RootPath()));
 
         if (hl7Files.isEmpty()) {
-            throw ApplicationFailure.newFailure("No HL7 files found", "type", null);
+            throw ApplicationFailure.newFailure("No HL7 files found", "type");
         }
 
         String manifestFilePath = input.scratchDir() + "/hl7_manifest.txt";

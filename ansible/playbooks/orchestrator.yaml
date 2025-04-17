@@ -157,6 +157,9 @@
       register: temporal_schema
       changed_when: false
 
+    - name: Install postgres
+      include_tasks: tasks/postgres.yaml
+
     - name: Create namespace
       kubernetes.core.k8s:
         name: '{{ orchestration_worker_namespace }}'
@@ -216,6 +219,11 @@
               s3:
                 endpoint: '{{ s3_endpoint }}'
                 region: '{{ s3_region }}'
+              spring:
+                datasource:
+                  url: 'jdbc:postgresql://postgresql-cluster-rw.{{ postgres_cluster_namespace }}:5432/ingest'
+                  username: '{{ postgres_user }}'
+                  password: '{{ postgres_password }}'
           image:
             repository: '{{ temporal_java_image | default(omit) }}'
           volumes: >-

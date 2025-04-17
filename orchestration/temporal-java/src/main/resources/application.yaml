@@ -10,6 +10,16 @@ spring:
       packages:
         - edu.washu.tag.temporal.activity
         - edu.washu.tag.temporal.workflow
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  # Write an external config that fills these in with your database connection details
+  datasource:
+    #    url: jdbc:postgresql://postgres.postgres:5432/scout
+    #    username: postgres
+    #    password: postgres
+    driver-class-name: org.postgresql.Driver
 s3:
   endpoint: 'http://minio.minio:9000'
   region: us-east-1

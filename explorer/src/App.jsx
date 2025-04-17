@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaPython } from 'react-icons/fa';
-import { SiMinio, SiTemporal, SiGrafana } from 'react-icons/si';
-import { BiLineChart } from "react-icons/bi";
+import { SiMinio, SiTemporal, SiGrafana, SiReadthedocs } from 'react-icons/si';
+import { BiLineChart } from 'react-icons/bi'; // Import for Superset icon
 
 export default function App() {
   const handleLaunchJupyterHub = () => {
@@ -19,69 +19,81 @@ export default function App() {
   const handleLaunchGrafana = () => {
     window.location.href = '/grafana';
   };
+  const handleReadTheDocs = () => {
+    window.location.href = 'https://washu-scout.readthedocs.io/en/latest/';
+  };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-gray-50 to-gray-200 p-8">
-      <div className="flex w-full max-w-6xl flex-col items-center justify-center space-y-12">
-        <div className="text-center animate-fade-in">
-          <h1 className="mb-6 text-5xl font-bold text-gray-800">
-            Welcome to the XNAT Scout Rad Report Explorer!
-          </h1>
-          <p className="text-2xl text-gray-600">
-            Brought to you by the Translational AI Group (TAG) at WashU
-          </p>
-        </div>
+      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-gray-50 to-gray-200 p-8">
+        <div className="flex w-full max-w-6xl flex-col items-center justify-center space-y-10">
+          <div className="text-center animate-fade-in">
+            <h1 className="mb-6 text-8xl font-bold text-gray-800">
+              Welcome to Scout!
+            </h1>
+            <p className="text-xl text-gray-600">
+              A radiology report exploration tool brought to you by the Translational AI Group (TAG) at WashU
+            </p>
+          </div>
 
-        {/* Main Tools Buttons */}
-        <div className="flex flex-col md:flex-row gap-6 w-full justify-center">
+          {/* Main Tools Buttons - Larger Size */}
+          <div className="flex flex-col md:flex-row gap-8 w-full justify-center">
+            <button
+                onClick={handleLaunchJupyterHub}
+                className="flex items-center justify-center gap-6 rounded-2xl bg-blue-50 p-12 text-blue-700 shadow-lg transition-all hover:bg-blue-100 hover:shadow-xl hover:-translate-y-1"
+            >
+              <FaPython className="text-8xl" />
+              <span className="text-4xl font-semibold">Launch JupyterHub</span>
+            </button>
+
+            <button
+                onClick={handleLaunchSuperset}
+                className="flex items-center justify-center gap-6 rounded-2xl bg-yellow-50 p-12 text-yellow-700 shadow-lg transition-all hover:bg-yellow-100 hover:shadow-xl hover:-translate-y-1"
+            >
+              <BiLineChart className="text-8xl" />
+              <span className="text-4xl font-semibold">Launch Superset</span>
+            </button>
+          </div>
+
+          {/* Documentation Button */}
           <button
-              onClick={handleLaunchJupyterHub}
-              className="flex items-center justify-center gap-6 rounded-2xl bg-blue-50 p-10 text-blue-700 shadow-lg transition-all hover:bg-blue-100 hover:shadow-xl hover:-translate-y-1"
+              onClick={handleReadTheDocs}
+              className="flex items-center justify-center gap-4 rounded-xl bg-purple-50 p-6 text-purple-700 shadow-md transition-all hover:bg-purple-100 hover:shadow-lg hover:-translate-y-1"
           >
-            <FaPython className="text-7xl" />
-            <span className="text-3xl font-semibold">Launch JupyterHub</span>
+            <SiReadthedocs className="text-4xl" />
+            <span className="text-2xl font-medium">Documentation</span>
           </button>
 
-          <button
-              onClick={handleLaunchSuperset}
-              className="flex items-center justify-center gap-6 rounded-2xl bg-purple-50 p-10 text-purple-700 shadow-lg transition-all hover:bg-purple-100 hover:shadow-xl hover:-translate-y-1"
-          >
-            <BiLineChart className="text-7xl" />
-            <span className="text-3xl font-semibold">Launch Superset</span>
-          </button>
-        </div>
+          {/* Admin Tools Section - Smaller Size */}
+          <div className="w-full max-w-4xl rounded-xl bg-white p-5 shadow-lg">
+            <h2 className="mb-4 text-lg font-semibold text-gray-700">Admin Tools</h2>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <button
+                  onClick={handleLaunchMinIO}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-red-50 p-3 text-red-700 shadow transition-all hover:bg-red-100 hover:shadow-md hover:-translate-y-1"
+              >
+                <SiMinio className="text-2xl" />
+                <span className="text-base font-medium">MinIO</span>
+              </button>
 
-        {/* Admin Tools Section */}
-        <div className="w-full max-w-4xl rounded-xl bg-white p-6 shadow-lg">
-          <h2 className="mb-6 text-xl font-semibold text-gray-700">Admin Tools</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <button
-              onClick={handleLaunchMinIO}
-              className="flex items-center justify-center gap-3 rounded-xl bg-red-50 p-4 text-red-700 shadow transition-all hover:bg-red-100 hover:shadow-md hover:-translate-y-1"
-            >
-              <SiMinio className="text-3xl" />
-              <span className="text-lg font-medium">MinIO</span>
-            </button>
+              <button
+                  onClick={handleLaunchTemporal}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 p-3 text-emerald-700 shadow transition-all hover:bg-emerald-100 hover:shadow-md hover:-translate-y-1"
+              >
+                <SiTemporal className="text-2xl" />
+                <span className="text-base font-medium">Temporal</span>
+              </button>
 
-            <button
-              onClick={handleLaunchTemporal}
-              className="flex items-center justify-center gap-3 rounded-xl bg-emerald-50 p-4 text-emerald-700 shadow transition-all hover:bg-emerald-100 hover:shadow-md hover:-translate-y-1"
-            >
-              <SiTemporal className="text-3xl" />
-              <span className="text-lg font-medium">Temporal</span>
-            </button>
-
-            <button
-              onClick={handleLaunchGrafana}
-              className="flex items-center justify-center gap-3 rounded-xl bg-orange-50 p-4 text-orange-700 shadow transition-all hover:bg-orange-100 hover:shadow-md hover:-translate-y-1"
-            >
-              <SiGrafana className="text-3xl" />
-              <span className="text-lg font-medium">Grafana</span>
-            </button>
+              <button
+                  onClick={handleLaunchGrafana}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-orange-50 p-3 text-orange-700 shadow transition-all hover:bg-orange-100 hover:shadow-md hover:-translate-y-1"
+              >
+                <SiGrafana className="text-2xl" />
+                <span className="text-base font-medium">Grafana</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
   );
 }
 
