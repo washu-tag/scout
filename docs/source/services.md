@@ -1,8 +1,11 @@
 # Services
 
 The Scout Rad Report Explorer consists of several services that work together to process HL7 radiology reports into a 
-data lake, and provide a user interface for users to access and analyze the data. Below is a list of the main services
-that make up Scout.
+data lake, and provide a user interface for users to access and analyze the data.
+
+![Scout System Overview](images/ScoutSystemOverview.png)
+
+Below is a list of the main services that make up Scout.
 
 ## User Services
 
