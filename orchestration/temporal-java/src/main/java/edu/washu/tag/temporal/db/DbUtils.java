@@ -20,7 +20,6 @@ public class DbUtils {
     private static final Pattern CAMEL_CASE_REGEX = Pattern.compile("([a-z0-9])([A-Z])");
     static final Pattern DATE_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
     static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final Set<String> EXCLUDED_FIELDS = Set.of("id", "processedAt");
 
     /**
      * Get the cached SQL insert statement for a record class
@@ -43,7 +42,6 @@ public class DbUtils {
         // Get field information
         List<String> columnNames = Arrays.stream(recordClass.getDeclaredFields())
             .map(Field::getName)
-            .filter(name -> !EXCLUDED_FIELDS.contains(name))
             .map(DbUtils::camelToSnakeCase)
             .toList();
 
@@ -67,7 +65,6 @@ public class DbUtils {
             throw new IllegalArgumentException("Provided object is not a record");
         }
         return Arrays.stream(record.getClass().getRecordComponents())
-            .filter(component -> !EXCLUDED_FIELDS.contains(component.getName()))
             .map(component -> {
                 try {
                     return component.getAccessor().invoke(record);
