@@ -45,7 +45,7 @@
       kubernetes.core.helm:
         name: cass-operator
         chart_ref: k8ssandra/cass-operator
-        chart_version: ^1.23.2
+        chart_version: ^0.55.2
         release_namespace: temporal
         create_namespace: true
         release_state: present
