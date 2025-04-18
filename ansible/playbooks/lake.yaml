@@ -9,9 +9,9 @@
     - name: Install hive metastore service (HMS) with helm
       kubernetes.core.helm:
         name: hive-metastore
-        chart_ref: '{{ scout_repo_dir }}/helm/lake/hive'
+        chart_ref: '{{ scout_repo_dir }}/helm/lake/hive-metastore'
         values_files:
-          - '{{ scout_repo_dir }}/helm/lake/hive/values.yaml'
+          - '{{ scout_repo_dir }}/helm/lake/hive-metastore/values.yaml'
         release_namespace: '{{ hive_namespace }}'
         release_state: present
         wait: true
@@ -28,7 +28,7 @@
             - name: HIVE_METASTORE_PASSWORD
               value: '{{ postgres_password }}'
             - name: HIVE_METASTORE_WAREHOUSE_DIR
-              value: 's3://lake/hive'
+              value: 's3a://lake/hive'
             - name: S3_ENDPOINT
               value: '{{ s3_endpoint }}'
             - name: S3_ACCESS_KEY
@@ -70,7 +70,7 @@
               value: ''
 
     - name: Wait for Hive to be ready
-      command: kubectl -n hive wait --for=condition=Ready --timeout=300s deployments/hive-metastore
+      command: kubectl -n hive wait --for=condition=Available --timeout=300s deployments/hive-metastore
       register: hive_ready
       changed_when: false
 
@@ -103,6 +103,34 @@
               s3.endpoint={{ s3_endpoint }}
               s3.path-style-access=true
 
+    - name: Create Traefik Middleware to strip /superset prefix for internal traffic
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: traefik.io/v1alpha1
+          kind: Middleware
+          metadata:
+            name: superset-strip-prefix
+            namespace: kube-system
+          spec:
+            stripPrefix:
+              prefixes:
+                - /superset
+
+    - name: Create Traefik Middleware to add X-Forwarded-Prefix to Superset traffic
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: Middleware
+          metadata:
+            name: superset-add-forwarded
+            namespace: kube-system
+          spec:
+            headers:
+              customRequestHeaders:
+                X-Forwarded-Prefix: /superset
+
     - name: Add Superset Helm repository
       kubernetes.core.helm_repository:
         name: superset
@@ -118,9 +146,12 @@
         release_state: present
         update_repo_cache: true
         wait: true
-        wait_timeout: 5m
+        wait_timeout: 15m
         atomic: true
         values:
+          extraEnv:
+            SUPERSET_APP_ROOT: '/superset'
+            SUPERSET_WEBSERVER_BASE_URL: https://{{ server_hostname }}/superset
           extraSecretEnv:
             SUPERSET_SECRET_KEY: '{{ superset_secret }}'
           ingress:
@@ -129,14 +160,32 @@
             path: /superset
             hosts:
               - '{{ server_hostname }}'
+            annotations:
+              traefik.ingress.kubernetes.io/router.middlewares: >
+                kube-system-superset-strip-prefix@kubernetescrd,
+                kube-system-superset-add-forward@kubernetescrd
           postgresql:
             enabled: false
-          connections:
-            db_host: 'postgresql-cluster-rw.{{ postgres_namespace }}'
-            db_port: '5432'
-            db_user: '{{ postgres_user }}'
-            db_pass: '{{ postgres_password }}'
-            db_name: superset
+          supersetNode:
+            connections:
+              db_host: 'postgresql-cluster-rw.{{ postgres_namespace }}'
+              db_port: '5432'
+              db_user: '{{ postgres_user }}'
+              db_pass: '{{ postgres_password }}'
+              db_name: superset
+          configOverrides:
+            prefix: |
+              ENABLE_PROXY_FIX = True
+              APPLICATION_ROOT = '/superset'
+              SUPERSET_WEBSERVER_BASE_URL = 'https://{{ server_hostname }}/superset'
+              SESSION_COOKIE_PATH = '/superset'
+              WTF_CSRF_COOKIE_PATH = '/superset'
+          extraConfigs:
+            import_datasources.yaml: |
+              databases:
+                - database_name: scout
+                  sqlalchemy_uri: trino://trino@trino.trino:8080/delta
+                  allow_file_upload: true
           bootstrapScript: |
             #!/bin/bash
             # Install system-level dependencies
@@ -149,6 +198,9 @@
             pip install \
               authlib \
               psycopg2-binary \
+              pyhive \
               trino
 
+            {% raw %}
             if [ ! -f ~/bootstrap ]; then echo 'Running Superset with uid {{ .Values.runAsUser }}' > ~/bootstrap; fi
+            {% endraw %}
