@@ -69,11 +69,8 @@
                   tls:
                     enabled: true
                 web:
-                  redirectTo:
-                    port: websecure
-                superset:
-                  port: 8443
-                  expose: true
-                  protocol: HTTPS
-                  tls:
-                    enabled: true
+                  redirections:
+                    entryPoint:
+                      to: websecure
+                      scheme: https
+                      permanent: true

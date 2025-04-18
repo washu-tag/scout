@@ -69,7 +69,7 @@
               size: 100Mi
             bootstrap:
               initdb:
-                database: ingress
+                database: ingest
                 owner: '{{ postgres_user }}'
                 secret:
                   name: postgres-user

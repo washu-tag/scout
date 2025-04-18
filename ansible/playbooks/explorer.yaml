@@ -28,5 +28,5 @@
             hosts:
               - host: '{{ server_hostname }}'
                 paths:
-                  - path: /
+                  - path: /explorer
                     pathType: Prefix
