@@ -126,6 +126,8 @@
           ingress:
             enabled: true
             ingressClassName: traefik
+            annotations:
+              traefik.ingress.kubernetes.io/router.entrypoints: "superset"
             path: /
             hosts:
               - 'superset.{{ server_hostname }}'

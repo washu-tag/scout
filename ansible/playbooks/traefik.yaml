@@ -10,7 +10,7 @@
 
   tasks:
     - name: Generate TLS certificate using Tailscale
-      command: 'tailscale cert --cert-file {{ cert_path }} --key-file {{ key_path }} {{ server_hostname }} superset.{{ server_hostname }}'
+      command: 'tailscale cert --cert-file {{ cert_path }} --key-file {{ key_path }} {{ server_hostname }}'
       args:
         creates: '{{ cert_path }}'
       tags:
@@ -71,3 +71,9 @@
                 web:
                   redirectTo:
                     port: websecure
+                superset:
+                  port: 8443
+                  expose: true
+                  protocol: HTTPS
+                  tls:
+                    enabled: true
