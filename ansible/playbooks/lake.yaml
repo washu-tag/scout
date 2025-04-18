@@ -103,50 +103,6 @@
               s3.endpoint={{ s3_endpoint }}
               s3.path-style-access=true
 
-    - name: Create Traefik Middleware to strip /superset prefix for internal traffic
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: traefik.io/v1alpha1
-          kind: Middleware
-          metadata:
-            name: superset-strip-prefix
-            namespace: kube-system
-          spec:
-            stripPrefix:
-              prefixes:
-                - /analytics
-
-    - name: Create Traefik Middleware to add headers to Superset traffic
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: traefik.io/v1alpha1
-          kind: Middleware
-          metadata:
-            name: superset-add-headers
-            namespace: kube-system
-          spec:
-            headers:
-              customRequestHeaders:
-                X-Forwarded-Prefix: /analytics
-                X-Script-Name: /analytics
-
-    - name: Create Traefik Middleware for path redirects
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: traefik.io/v1alpha1
-          kind: Middleware
-          metadata:
-            name: superset-redirect-static
-            namespace: kube-system
-          spec:
-            redirectRegex:
-              regex: "^/(static|superset|sqllab|savedqueryview|druid|tablemodelview|databaseasync|dashboardmodelview|slicemodelview|dashboardasync|druiddatasourcemodelview|api|csstemplateasyncmodelview|chart|savedqueryviewapi|r|datasource|sliceaddview)(.*)"
-              replacement: "/analytics/${1}${2}"
-              permanent: true
-
     - name: Add Superset Helm repository
       kubernetes.core.helm_repository:
         name: superset
@@ -165,20 +121,14 @@
         wait_timeout: 15m
         atomic: true
         values:
-          extraEnv:
-            SUPERSET_APP_ROOT: '/analytics'
           extraSecretEnv:
             SUPERSET_SECRET_KEY: '{{ superset_secret }}'
           ingress:
             enabled: true
             ingressClassName: traefik
-            path: /analytics
+            path: /
             hosts:
-              - '{{ server_hostname }}'
-            annotations:
-              traefik.ingress.kubernetes.io/router.middlewares: >
-                kube-system-superset-strip-prefix@kubernetescrd,
-                kube-system-superset-add-headers@kubernetescrd
+              - 'superset.{{ server_hostname }}'
           postgresql:
             enabled: false
           supersetNode:
@@ -188,27 +138,6 @@
               db_user: '{{ postgres_user }}'
               db_pass: '{{ postgres_password }}'
               db_name: superset
-          configOverrides:
-            prefix: |
-              class ReverseProxied(object):
-
-                 def __init__(self, app):
-                      self.app = app
-
-                  def __call__(self, environ, start_response):
-                      script_name = environ.get('HTTP_X_SCRIPT_NAME', '')
-                      if script_name:
-                          environ['SCRIPT_NAME'] = script_name
-                          path_info = environ['PATH_INFO']
-                          if path_info.startswith(script_name):
-                              environ['PATH_INFO'] = path_info[len(script_name):]
-
-                      scheme = environ.get('HTTP_X_SCHEME', '')
-                      if scheme:
-                          environ['wsgi.url_scheme'] = scheme
-                      return self.app(environ, start_response)
-
-              ADDITIONAL_MIDDLEWARE = [ReverseProxied, ]
           extraConfigs:
             import_datasources.yaml: |
               databases:
@@ -233,149 +162,3 @@
             {% raw %}
             if [ ! -f ~/bootstrap ]; then echo 'Running Superset with uid {{ .Values.runAsUser }}' > ~/bootstrap; fi
             {% endraw %}
-
-    - name: Create additional ingress for direct path redirects
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: networking.k8s.io/v1
-          kind: Ingress
-          metadata:
-            name: superset-redirect-paths
-            namespace: superset
-            annotations:
-              kubernetes.io/ingress.class: traefik
-              traefik.ingress.kubernetes.io/router.middlewares: kube-system-superset-redirect-static@kubernetescrd
-              # Higher priority than the main ingress to ensure these rules are evaluated first
-              traefik.ingress.kubernetes.io/router.priority: "100"
-          spec:
-            rules:
-              - host: "{{ server_hostname }}"
-                http:
-                  paths:
-                    - path: /static
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /superset
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /sqllab
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /savedqueryview
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /druid
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /tablemodelview
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /databaseasync
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /dashboardmodelview
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /slicemodelview
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /dashboardasync
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /druiddatasourcemodelview
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /api
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /csstemplateasyncmodelview
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /chart
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /savedqueryviewapi
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /r
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /datasource
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088
-                    - path: /sliceaddview
-                      pathType: Prefix
-                      backend:
-                        service:
-                          name: superset
-                          port:
-                            number: 8088

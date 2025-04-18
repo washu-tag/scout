@@ -60,8 +60,8 @@ def import_hl7_files_to_deltalake(
         activity.logger.info("Creating Spark session")
         spark = (
             SparkSession.builder.appName("IngestHL7ToDeltaLake")
-                 .enableHiveSupport()
-                 .getOrCreate()
+            .enableHiveSupport()
+            .getOrCreate()
         )
 
         activity.heartbeat()

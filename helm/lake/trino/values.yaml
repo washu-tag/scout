@@ -17,13 +17,13 @@ workerNameOverride:
 
 image:
   # -- Image registry, defaults to empty, which results in DockerHub usage
-  registry: ""
+  registry: ''
   # -- Repository location of the Trino image, typically `organization/imagename`
   repository: trinodb/trino
   # -- Image tag, defaults to the Trino release version specified as `appVersion` from Chart.yaml
-  tag: ""
+  tag: ''
   # -- Optional digest value of the image specified as `sha256:abcd...`. A specified value overrides `tag`.
-  digest: ""
+  digest: ''
   # -- When true, only the content in `repository` is used as image reference
   useRepositoryAsSoleImageReference: false
   pullPolicy: IfNotPresent
@@ -53,13 +53,13 @@ server:
       enabled: false
       port: 8443
       keystore:
-        path: ""
+        path: ''
     # -- Trino supports multiple [authentication
     # types](https://trino.io/docs/current/security/authentication-types.html):
     # PASSWORD, CERTIFICATE, OAUTH2, JWT, KERBEROS.
-    authenticationType: ""
+    authenticationType: ''
     query:
-      maxMemory: "4GB"
+      maxMemory: '4GB'
   exchangeManager: {}
   # server.exchangeManager -- Mandatory [exchange manager
   # configuration](https://trino.io/docs/current/admin/fault-tolerant-execution.html#id1).
@@ -82,8 +82,8 @@ server:
   #   - exchange.source-concurrent-readers=4
   # ```
 
-  workerExtraConfig: ""
-  coordinatorExtraConfig: ""
+  workerExtraConfig: ''
+  coordinatorExtraConfig: ''
   # server.autoscaling -- Configure [Horizontal Pod Autoscaling](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
   # for workers (`server.keda.enabled` must be `false`).
   autoscaling:
@@ -496,7 +496,7 @@ service:
   # service.nodePort -- The port the service listens on the host, for the `NodePort` type. If not set, Kubernetes will
   # [allocate a port
   # automatically](https://kubernetes.io/docs/concepts/services-networking/service/#nodeport-custom-port).
-  nodePort: ""
+  nodePort: ''
 
 auth: {}
 # auth -- Available authentication methods.
@@ -524,7 +524,7 @@ serviceAccount:
   create: false
   # -- The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  name: ''
   # -- Annotations to add to the service account
   annotations: {}
 
@@ -572,15 +572,15 @@ coordinator:
     # coordinator.deployment.strategy -- The deployment strategy to use to replace existing pods with new ones.
 
   jvm:
-    maxHeapSize: "8G"
+    maxHeapSize: '8G'
     gcMethod:
-      type: "UseG1GC"
+      type: 'UseG1GC'
       g1:
-        heapRegionSize: "32M"
+        heapRegionSize: '32M'
 
   config:
     memory:
-      heapHeadroomPerNode: ""
+      heapHeadroomPerNode: ''
     nodeScheduler:
       includeCoordinator: false
       # coordinator.config.nodeScheduler.includeCoordinator -- Allows scheduling work on the coordinator so that a
@@ -588,7 +588,7 @@ coordinator:
       # coordinator can negatively impact query performance because the machine's resources are not available for the
       # critical coordinator tasks of scheduling, managing, and monitoring query execution.
     query:
-      maxMemoryPerNode: "1GB"
+      maxMemoryPerNode: '1GB'
 
   additionalJVMConfig: []
 
@@ -742,17 +742,17 @@ worker:
     # worker.deployment.strategy -- The deployment strategy to use to replace existing pods with new ones.
 
   jvm:
-    maxHeapSize: "8G"
+    maxHeapSize: '8G'
     gcMethod:
-      type: "UseG1GC"
+      type: 'UseG1GC'
       g1:
-        heapRegionSize: "32M"
+        heapRegionSize: '32M'
 
   config:
     memory:
-      heapHeadroomPerNode: ""
+      heapHeadroomPerNode: ''
     query:
-      maxMemoryPerNode: "1GB"
+      maxMemoryPerNode: '1GB'
 
   additionalJVMConfig: []
 
@@ -908,7 +908,7 @@ worker:
   # ```
 
 kafka:
-  mountPath: "/etc/trino/schemas"
+  mountPath: '/etc/trino/schemas'
   tableDescriptions: {}
   # kafka.tableDescriptions -- Custom kafka table descriptions that will be mounted in mountPath.
   # @raw
@@ -959,7 +959,7 @@ jmx:
     image: bitnami/jmx-exporter:1.0.1
     pullPolicy: Always
     port: 5556
-    configProperties: ""
+    configProperties: ''
     # jmx.exporter.configProperties -- The string value is templated using `tpl`. The JMX config properties file
     # is mounted to `/etc/jmx-exporter/jmx-exporter-config.yaml`.
     # @raw
@@ -1038,7 +1038,7 @@ serviceMonitor:
   labels:
     prometheus: kube-prometheus
   # serviceMonitor.interval -- The serviceMonitor web endpoint interval
-  interval: "30s"
+  interval: '30s'
   coordinator: {}
   # serviceMonitor.coordinator -- Override ServiceMonitor configurations for the Trino coordinator.
   # @raw
@@ -1065,7 +1065,7 @@ commonLabels: {}
 
 ingress:
   enabled: false
-  className: ""
+  className: ''
   annotations: {}
   hosts: []
   # ingress.hosts -- [Ingress

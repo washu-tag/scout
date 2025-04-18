@@ -84,4 +84,3 @@ singleuser:
                 kubernetes.io/metadata.name: hive
         ports:
           - port: 9083
-
