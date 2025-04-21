@@ -1,6 +1,6 @@
-.PHONY: all deps install-k3s config-traefik install-helm clone-scout install-minio \
-        install-orchestrator install-prometheus install-jaeger install-grafana \
-        install-explorer echo
+.PHONY: all deps install-k3s config-traefik install-helm clone-scout install-postgres \
+        install-lake install-analytics install-orchestrator install-monitor \
+        install-jupyter install-explorer echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -47,8 +47,14 @@ config-traefik: install-k3s
 install-helm:
 	$(ANSIBLE_CMD) playbooks/helm.yaml
 
-install-minio:
-	$(ANSIBLE_CMD) playbooks/minio.yaml
+install-postgres:
+	$(ANSIBLE_CMD) playbooks/postgres.yaml
+
+install-lake:
+	$(ANSIBLE_CMD) playbooks/lake.yaml
+
+install-analytics:
+	$(ANSIBLE_CMD) playbooks/analytics.yaml
 
 install-orchestrator:
 	$(ANSIBLE_CMD) playbooks/orchestrator.yaml
@@ -56,14 +62,8 @@ install-orchestrator:
 install-jupyter:
 	$(ANSIBLE_CMD) playbooks/jupyter.yaml
 
-install-prometheus:
-	$(ANSIBLE_CMD) playbooks/prometheus.yaml
-
-install-jaeger:
-	$(ANSIBLE_CMD) playbooks/jaeger.yaml
-
-install-grafana:
-	$(ANSIBLE_CMD) playbooks/grafana.yaml
+install-monitor:
+	$(ANSIBLE_CMD) playbooks/monitor.yaml
 
 install-explorer:
 	$(ANSIBLE_CMD) playbooks/explorer.yaml

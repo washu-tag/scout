@@ -1,0 +1,18 @@
+---
+- name: Install components for Monitor service
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  tasks:
+    - name: Install Prometheus
+      include_tasks: services/prometheus.yaml
+
+    - name: Install Loki, Promtail, and Grafana
+      include_tasks: services/grafana.yaml
+      vars:
+        slack_contact_point_j2: '/helm/grafana/alerts/contact-points/slack-contact-point.json.j2'
+
+    - name: Install Jaeger
+      include_tasks: services/jaeger.yaml

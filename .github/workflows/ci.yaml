@@ -130,10 +130,14 @@ jobs:
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
-      - name: 'Install minio'
+      - name: 'Install postgres'
         shell: bash
         run: |
-          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/minio.yaml
+          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/postgres.yaml
+      - name: 'Install lake'
+        shell: bash
+        run: |
+          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/lake.yaml
           sudo -E kubectl describe pod -l v1.min.io/tenant=minio-scout -n minio-scout
       - name: 'Install explorer'
         shell: bash

@@ -78,3 +78,9 @@ singleuser:
                 kubernetes.io/metadata.name: minio-scout
         ports:
           - port: 9000
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: hive
+        ports:
+          - port: 9083

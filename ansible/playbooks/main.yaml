@@ -11,8 +11,14 @@
 - name: Install Helm
   import_playbook: helm.yaml
 
-- name: Install MinIO
-  import_playbook: minio.yaml
+- name: Install Postgres
+  import_playbook: postgres.yaml
+
+- name: Install Lake
+  import_playbook: lake.yaml
+
+- name: Install Analytics
+  import_playbook: analytics.yaml
 
 - name: Install Orchestrator
   import_playbook: orchestrator.yaml
@@ -20,14 +26,8 @@
 - name: Install Jupyter
   import_playbook: jupyter.yaml
 
-- name: Install Prometheus
-  import_playbook: prometheus.yaml
-
-- name: Install Jaeger
-  import_playbook: jaeger.yaml
-
-- name: Install Grafana
-  import_playbook: grafana.yaml
+- name: Install Monitor
+  import_playbook: monitor.yaml
 
 - name: Install Explorer
   import_playbook: explorer.yaml

@@ -1,0 +1,28 @@
+- name: Add Trino Helm repository
+  kubernetes.core.helm_repository:
+    name: trino
+    repo_url: https://trinodb.github.io/charts
+
+- name: Install/Upgrade Trino Helm chart
+  kubernetes.core.helm:
+    name: trino
+    chart_ref: trino/trino
+    chart_version: ~1.38.0
+    release_namespace: trino
+    create_namespace: true
+    release_state: present
+    update_repo_cache: true
+    wait: true
+    wait_timeout: 5m
+    atomic: true
+    values:
+      catalogs:
+        delta: |
+          connector.name=delta_lake
+          hive.metastore.uri={{ hive_metastore_endpoint }}
+          fs.native-s3.enabled=true
+          s3.aws-access-key={{ s3_username }}
+          s3.aws-secret-key={{ s3_password }}
+          s3.region={{ s3_region }}
+          s3.endpoint={{ s3_endpoint }}
+          s3.path-style-access=true

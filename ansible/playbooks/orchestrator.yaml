@@ -161,9 +161,6 @@
       register: temporal_schema
       changed_when: false
 
-    - name: Install postgres
-      include_tasks: tasks/postgres.yaml
-
     - name: Create namespace
       kubernetes.core.k8s:
         name: '{{ orchestration_worker_namespace }}'

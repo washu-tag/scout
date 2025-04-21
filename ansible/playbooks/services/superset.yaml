@@ -1,0 +1,67 @@
+- name: Add Superset Helm repository
+  kubernetes.core.helm_repository:
+    name: superset
+    repo_url: https://apache.github.io/superset
+
+- name: Install/Upgrade Superset Helm chart
+  kubernetes.core.helm:
+    name: superset
+    chart_ref: superset/superset
+    chart_version: ~0.14.2
+    release_namespace: superset
+    create_namespace: true
+    release_state: present
+    update_repo_cache: true
+    wait: true
+    wait_timeout: 15m
+    atomic: true
+    values:
+      extraSecretEnv:
+        SUPERSET_SECRET_KEY: '{{ superset_secret }}'
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        path: /
+        hosts:
+          - '{{ server_hostname }}'
+      postgresql:
+        enabled: false
+      supersetNode:
+        connections:
+          db_host: 'postgresql-cluster-rw.{{ postgres_cluster_namespace }}'
+          db_port: '5432'
+          db_user: '{{ postgres_user }}'
+          db_pass: '{{ postgres_password }}'
+          db_name: superset
+      configOverrides:
+        branding: |
+          APP_NAME = "Scout"
+          APP_ICON = "{{ server_hostname }}/landing/scout.png"
+          APP_ICON_WIDTH = 200
+          LOGO_TARGET_PATH = "{{ server_hostname }}/landing"
+          LOGO_TOOLTIP = "Return to Scout"
+          FAVICONS = [{"href": "{{ server_hostname }}/landing/scout.png"}]
+      extraConfigs:
+        import_datasources.yaml: |
+          databases:
+            - database_name: Scout
+              sqlalchemy_uri: trino://trino@trino.trino:8080/delta
+              allow_file_upload: true
+      bootstrapScript: |
+        #!/bin/bash
+        # Install system-level dependencies
+        apt-get update && apt-get install -y \
+          python3-dev \
+          build-essential \
+          pkg-config
+
+        # Install required Python packages
+        pip install \
+          authlib \
+          psycopg2-binary \
+          pyhive \
+          trino
+
+        {% raw %}
+        if [ ! -f ~/bootstrap ]; then echo 'Running Superset with uid {{ .Values.runAsUser }}' > ~/bootstrap; fi
+        {% endraw %}

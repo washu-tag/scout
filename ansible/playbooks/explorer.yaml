@@ -7,6 +7,20 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
+    - name: Create Traefik Middleware to strip /landing prefix for internal traffic
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: traefik.io/v1alpha1
+          kind: Middleware
+          metadata:
+            name: explorer-strip-prefix
+            namespace: kube-system
+          spec:
+            stripPrefix:
+              prefixes:
+                - /landing
+
     - name: Install explorer using Helm
       kubernetes.core.helm:
         name: explorer
@@ -25,8 +39,11 @@
           ingress:
             enabled: true
             className: traefik
+            annotations:
+              traefik.ingress.kubernetes.io/router.middlewares: >
+                kube-system-explorer-strip-prefix@kubernetescrd
             hosts:
               - host: '{{ server_hostname }}'
                 paths:
-                  - path: /
+                  - path: /landing
                     pathType: Prefix

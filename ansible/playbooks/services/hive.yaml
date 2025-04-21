@@ -1,0 +1,68 @@
+- name: Install Hive Metastore Service (HMS) with helm
+  kubernetes.core.helm:
+    name: hive-metastore
+    chart_ref: '{{ scout_repo_dir }}/helm/lake/hive-metastore'
+    values_files:
+      - '{{ scout_repo_dir }}/helm/lake/hive-metastore/values.yaml'
+    release_namespace: '{{ hive_namespace }}'
+    create_namespace: true
+    release_state: present
+    wait: true
+    wait_timeout: 5m
+    atomic: true
+    values:
+      env:
+        - name: HIVE_METASTORE_DRIVER
+          value: 'org.postgresql.Driver'
+        - name: HIVE_METASTORE_JDBC_URL
+          value: 'jdbc:postgresql://postgresql-cluster-rw.{{ postgres_cluster_namespace }}:5432/hive'
+        - name: HIVE_METASTORE_USER
+          value: '{{ postgres_user }}'
+        - name: HIVE_METASTORE_PASSWORD
+          value: '{{ postgres_password }}'
+        - name: HIVE_METASTORE_WAREHOUSE_DIR
+          value: '{{ hive_warehouse }}'
+        - name: S3_ENDPOINT
+          value: '{{ s3_endpoint }}'
+        - name: S3_ACCESS_KEY
+          value: '{{ s3_username }}'
+        - name: S3_SECRET_KEY
+          value: '{{ s3_password }}'
+        - name: S3_PATH_STYLE_ACCESS
+          value: 'true'
+        - name: REGION
+          value: '{{ s3_region }}'
+        - name: HIVE_METASTORE_USERS_IN_ADMIN_ROLE
+          value: 'admin'
+        # All of these empty values must be present
+        - name: GOOGLE_CLOUD_KEY_FILE_PATH
+          value: ''
+        - name: AZURE_ADL_CLIENT_ID
+          value: ''
+        - name: AZURE_ADL_CREDENTIAL
+          value: ''
+        - name: AZURE_ADL_REFRESH_URL
+          value: ''
+        - name: AZURE_ABFS_STORAGE_ACCOUNT
+          value: ''
+        - name: AZURE_ABFS_ACCESS_KEY
+          value: ''
+        - name: AZURE_WASB_STORAGE_ACCOUNT
+          value: ''
+        - name: AZURE_ABFS_OAUTH
+          value: ''
+        - name: AZURE_ABFS_OAUTH_TOKEN_PROVIDER
+          value: ''
+        - name: AZURE_ABFS_OAUTH_CLIENT_ID
+          value: ''
+        - name: AZURE_ABFS_OAUTH_SECRET
+          value: ''
+        - name: AZURE_ABFS_OAUTH_ENDPOINT
+          value: ''
+        - name: AZURE_WASB_ACCESS_KEY
+          value: ''
+
+- name: Wait for Hive to be ready
+  command: kubectl -n hive wait --for=condition=Available --timeout=300s deployments/hive-metastore
+  register: hive_ready
+  changed_when: false

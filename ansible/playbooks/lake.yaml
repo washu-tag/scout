@@ -1,0 +1,13 @@
+---
+- name: Install components for Lake service
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  tasks:
+    - name: Install MinIO
+      include_tasks: services/minio.yaml
+
+    - name: Install Hive Metastore Service (HMS)
+      include_tasks: services/hive.yaml
