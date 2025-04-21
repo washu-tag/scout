@@ -29,7 +29,7 @@ k3s_cluster:
     postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    hive_warehouse: 's3://lake/hive'
+    hive_warehouse: 's3a://lake/hive' # Hadoop requires the s3a prefix, it is used just like s3://
 
     # Namespaces that can be changed
     hive_namespace: hive

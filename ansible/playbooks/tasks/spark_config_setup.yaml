@@ -27,7 +27,7 @@
           spark.hadoop.fs.s3a.path.style.access true
           spark.hadoop.fs.s3a.aws.credentials.provider org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
           spark.hadoop.hive.metastore.uris {{ hive_metastore_endpoint }}
-          spark.sql.warehouse.dir {{ hive_warehouse | replace('s3:', 's3a:') }}
+          spark.sql.warehouse.dir {{ hive_warehouse }}
           spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
           spark.executor.memory {{ spark_memory | default("1g") }}
           spark.driver.memory {{ spark_memory | default("1g") }}

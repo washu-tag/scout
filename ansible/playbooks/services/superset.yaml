@@ -36,11 +36,11 @@
       configOverrides:
         branding: |
           APP_NAME = "Scout"
-          APP_ICON = "{{ server_hostname }}/landing/scout.png"
+          APP_ICON = "https://{{ server_hostname }}/landing/scout.png"
           APP_ICON_WIDTH = 200
           LOGO_TARGET_PATH = "{{ server_hostname }}/landing"
           LOGO_TOOLTIP = "Return to Scout"
-          FAVICONS = [{"href": "{{ server_hostname }}/landing/scout.png"}]
+          FAVICONS = [{"href": "https://{{ server_hostname }}/landing/scout.png"}]
       extraConfigs:
         import_datasources.yaml: |
           databases:
