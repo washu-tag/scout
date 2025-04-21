@@ -1,6 +1,6 @@
 # Services
 
-The Scout Rad Report Explorer consists of several services that work together to process HL7 radiology reports into a 
+The Scout Radiology Report Explorer consists of several services that work together to process HL7 radiology reports into a 
 data lake, and provide a user interface for users to access and analyze the data.
 
 ![Scout System Overview](images/ScoutSystemOverview.png)
@@ -9,9 +9,18 @@ Below is a list of the main services that make up Scout.
 
 ## User Services
 
-### JupyterHub
+### Analytics
 
-[JupyterHub](https://jupyterhub.readthedocs.io/en/stable/) is the primary interface for users to access rad report data.
+##### Superset
+
+[Apache Superset](https://superset.apache.org/) allows users to explore and visualize the radiology report data with a simple, no-code visualization builder or 
+using an integrated SQL IDE.
+
+Under the hood, Superset is able to query the Delta Lake using [Trino](https://trino.io/).
+
+##### JupyterHub
+
+[JupyterHub](https://jupyterhub.readthedocs.io/en/stable/) an interface for power-users to access rad report data.
 It provides single-user [Jupyter notebooks](https://jupyter.org/), which can be used to run Python code and interact 
 with report data in the data lake. On first login, users are given a Jupyter notebook with example code to extract 
 and analyze data from the HL7 reports using [PySpark](https://spark.apache.org/docs/latest/api/python/index.html).
