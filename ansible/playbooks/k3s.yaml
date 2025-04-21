@@ -69,6 +69,7 @@
       failed_when:
         - k3s_systemd_start_k3s is not succeeded
         - not ansible_check_mode
+      changed_when: false
 
     - name: Check that the server is available to accept connections
       ansible.builtin.wait_for:
@@ -77,6 +78,7 @@
         delay: 5
         sleep: 5
         timeout: 300
+      changed_when: false
 
     - name: Check that server is ready
       ansible.builtin.command:

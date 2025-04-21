@@ -16,7 +16,7 @@
       kubernetes.core.helm:
         name: minio-operator
         chart_ref: minio-operator/operator
-        chart_version: ^7.0.0
+        chart_version: ~7.1.0
         release_namespace: minio-operator
         create_namespace: true
         release_state: present
@@ -46,8 +46,8 @@
             config.env: |
               export MINIO_ROOT_USER={{ s3_username }}
               export MINIO_ROOT_PASSWORD={{ s3_password }}
-              export MINIO_REGION_NAME=us-east-1
-              export MINIO_REGION=us-east-1
+              export MINIO_REGION_NAME={{ s3_region }}
+              export MINIO_REGION={{ s3_region }}
 
     - name: Create Traefik Middleware to add trailing slash that Minio needs
       kubernetes.core.k8s:
@@ -90,22 +90,41 @@
       kubernetes.core.helm:
         name: '{{ minio_tenant_namespace }}'
         chart_ref: minio-operator/tenant
-        chart_version: ^7.0.0
+        chart_version: ~7.1.0
         release_namespace: '{{ minio_tenant_namespace }}'
         release_state: present
         update_repo_cache: true
         wait: true
         wait_timeout: 5m
         atomic: true
-        values_files:
-          - '{{ scout_repo_dir }}/helm/minio/values.yaml'
         values:
           tenant:
+            name: minio-scout
+            configSecret:
+              name: minio-scout-env-configuration
+              existingSecret: true
             env:
               - name: MINIO_BROWSER_REDIRECT_URL
                 value: 'https://{{ server_hostname }}/minio/'
               - name: MINIO_PROMETHEUS_AUTH_TYPE
                 value: public
+            pools:
+              - servers: 1
+                name: pool-0
+                volumesPerServer: 1
+                size: 750Gi
+                storageClassName: minio-storage
+            metrics:
+              enabled: true
+              port: 9000
+              protocol: http
+            certificate:
+              requestAutoCert: false
+            buckets:
+              - name: loki-chunks
+              - name: loki-ruler
+              - name: loki-admin
+              - name: lake
           ingress:
             console:
               enabled: true
