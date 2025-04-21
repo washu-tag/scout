@@ -84,6 +84,23 @@ def import_hl7_files_to_deltalake(
             .withColumn("source_file", F.input_file_name())
         )
 
+        # Filter out rows from empty / unparsable HL7 files
+        error_paths_df = (
+            df.filter(F.col("message_control_id").isNull())
+            .select("source_file")
+            .collect()
+        )
+        error_paths = [
+            row.source_file.replace("s3a://", "s3://") for row in error_paths_df
+        ]
+        if error_paths:
+            # Write error paths to db
+            # TODO
+
+            # Remove empty / unparsable rows from df
+            df = df.filter(F.col("message_control_id").isNotNull())
+            pass
+
         if df.isEmpty():
             raise ApplicationError("No data extracted from HL7 messages")
 
