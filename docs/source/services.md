@@ -33,17 +33,17 @@ extension with your LLM provider of choice (e.g., OpenAI, Anthropic, etc.) to en
 
 The following admin services support the system's backend operations.
 
-### Grafana
+### Monitor
 
 [Grafana](https://grafana.com/) is a monitoring and visualization tool used to track system performance and metrics.
 Grafana dashboards for Temporal, MinIO, Kubernetes, and other services are available to system administrators.
 
-### MinIO
+### Lake
 
 [MinIO](https://min.io/) is an object storage service that is used to store HL7 reports and other data. Jupyter 
 notebooks users can access MinIO to read the rad report data stored here.
 
-### Temporal
+### Orchestrator
 
 [Temporal](https://temporal.io/) is a workflow orchestration service that Scout uses to manage the ingestion and 
 processing of HL7 reports. Workflow information is available in the Temporal UI and can be used to monitor and debug

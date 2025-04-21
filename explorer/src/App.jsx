@@ -95,7 +95,7 @@ export default function App() {
               className="flex items-center gap-3 p-4 rounded-lg bg-gradient-to-br from-red-50 to-white text-red-700 border border-red-100 shadow hover:shadow-md transition-all duration-300 no-underline"
             >
               <SiMinio className="text-2xl" />
-              <span className="font-medium">Blob Storage</span>
+              <span className="font-medium">Lake</span>
             </a>
 
             <a

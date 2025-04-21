@@ -7,7 +7,7 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
-    - name: Create Traefik Middleware to strip /landing prefix for internal traffic
+    - name: Create Traefik Middleware to strip /launchpad prefix for internal traffic
       kubernetes.core.k8s:
         state: present
         definition:
@@ -19,7 +19,7 @@
           spec:
             stripPrefix:
               prefixes:
-                - /landing
+                - /launchpad
 
     - name: Install explorer using Helm
       kubernetes.core.helm:
@@ -45,5 +45,5 @@
             hosts:
               - host: '{{ server_hostname }}'
                 paths:
-                  - path: /landing
+                  - path: /launchpad
                     pathType: Prefix
