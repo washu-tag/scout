@@ -1,6 +1,6 @@
 nameOverride: temporal-python
 image:
-  repository: ghcr.io/washu-tag/temporal-python
+  repository: '{{ temporal_python_image | default("ghcr.io/washu-tag/temporal-python") }}'
   tag: latest
 envFrom:
   - secretRef:
@@ -9,7 +9,7 @@ envFrom:
       name: s3-env
 env:
   - name: TEMPORAL_ADDRESS
-    value: temporal-frontend.temporal:7233
+    value: 'temporal-frontend.{{ temporal_namespace }}:7233'
   - name: TEMPORAL_NAMESPACE
     value: default
   - name: MODALITY_MAP_PATH
@@ -17,7 +17,7 @@ env:
 volumes:
   - name: data
     hostPath:
-      path: /ceph/tag/home/data
+      path: '{{ orchestration_data_dir }}'
   - name: spark-defaults
     configMap:
       name: spark-defaults
@@ -36,3 +36,6 @@ livenessProbe:
     port: 8000
   initialDelaySeconds: 30
   periodSeconds: 30
+spark:
+  executor:
+    memory: '{{ orchestrator_spark_memory }}'

@@ -41,6 +41,7 @@ k3s_cluster:
     grafana_dir: /scout/monitoring/grafana
     jaeger_dir: /scout/monitoring/jaeger
     jupyter_dir: /scout/data/jupyter
+    orchestration_data_dir: /scout/data/orchestration
 
     # Resources
     orchestrator_spark_memory: 8g
@@ -58,6 +59,7 @@ k3s_cluster:
     minio_tenant_namespace: minio-scout
     grafana_namespace: grafana
     loki_namespace: loki
+    temporal_namespace: temporal
 
     # computed values, used across playbooks
     s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'

@@ -46,7 +46,7 @@
         name: cass-operator
         chart_ref: k8ssandra/cass-operator
         chart_version: ~0.55.2
-        release_namespace: temporal
+        release_namespace: '{{ temporal_namespace }}'
         create_namespace: true
         release_state: present
         update_repo_cache: true
@@ -62,7 +62,7 @@
           kind: CassandraDatacenter
           metadata:
             name: dc1
-            namespace: temporal
+            namespace: '{{ temporal_namespace }}'
           spec:
             clusterName: temporal-cassandra
             serverType: cassandra
@@ -84,7 +84,7 @@
                 max_heap_size: '{{ temporal_cassandra_max_heap | default("8G") }}'
 
     - name: Wait for Cassandra to be ready
-      command: kubectl -n temporal wait --for=condition=Ready --timeout=300s cassandradatacenter/dc1
+      command: 'kubectl -n {{ temporal_namespace }} wait --for=condition=Ready --timeout=300s cassandradatacenter/dc1'
       register: cassandra_ready
       changed_when: false
 
@@ -94,11 +94,12 @@
         repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
 
     - name: Install/Upgrade Temporal Helm chart
+      register: temporal_helm_result
       kubernetes.core.helm:
         name: temporal
         chart_ref: temporal/temporal
         chart_version: ~0.62.0
-        release_namespace: temporal
+        release_namespace: '{{ temporal_namespace }}'
         create_namespace: true
         release_state: present
         update_repo_cache: true
@@ -119,7 +120,7 @@
                 default:
                   driver: 'cassandra'
                   cassandra:
-                    hosts: ['temporal-cassandra-dc1-service.temporal']
+                    hosts: ['temporal-cassandra-dc1-service.{{ temporal_namespace }}']
                     port: 9042
                     keyspace: temporal
                     existingSecret: 'temporal-cassandra-superuser'
@@ -153,7 +154,10 @@
                 - '{{ server_hostname }}/temporal'
 
     - name: Wait for Temporal schema job to complete
-      command: kubectl -n temporal wait --for=condition=complete --timeout=300s job/temporal-schema-1
+      shell: >-
+        if kubectl -n {{ temporal_namespace }} get jobs temporal-schema-{{ temporal_helm_result.status.revision }} >/dev/null 2>&1; then
+          kubectl -n {{ temporal_namespace }} wait --for=condition=complete --timeout=300s job/temporal-schema-{{ temporal_helm_result.status.revision }}
+        fi
       register: temporal_schema
       changed_when: false
 
@@ -202,67 +206,34 @@
         spark_defaults_configmap_namespace: '{{ orchestration_worker_namespace }}'
         spark_memory: '{{ orchestrator_spark_memory }}'
 
+    - name: Load Java worker values file
+      ansible.builtin.include_vars:
+        file: vars/temporal-java.values.yaml
+        name: java_worker_values
+
     - name: Deploy Java worker
       kubernetes.core.helm:
         name: temporal-java
         chart_ref: '{{ scout_repo_dir }}/helm/orchestration/temporal-worker'
-        values_files:
-          - '{{ scout_repo_dir }}/helm/orchestration/temporal-java.values.yaml'
         release_namespace: '{{ orchestration_worker_namespace }}'
         release_state: present
         wait: true
         wait_timeout: 5m
         atomic: true
-        values:
-          config:
-            application:
-              s3:
-                endpoint: '{{ s3_endpoint }}'
-                region: '{{ s3_region }}'
-              spring:
-                datasource:
-                  url: 'jdbc:postgresql://postgresql-cluster-rw.{{ postgres_cluster_namespace }}:5432/ingest'
-                  username: '{{ postgres_user }}'
-                  password: '{{ postgres_password }}'
-          image:
-            repository: '{{ temporal_java_image | default(omit) }}'
-          volumes: >-
-            {{
-              [{
-                'name': 'data',
-                'hostPath': { 'path': orchestration_data_dir }
-              }]
-              if orchestration_data_dir is defined else omit
-            }}
+        values: '{{ java_worker_values }}'
+
+    - name: Load Python worker values file
+      ansible.builtin.include_vars:
+        file: vars/temporal-python.values.yaml
+        name: python_worker_values
 
     - name: Deploy Python worker
       kubernetes.core.helm:
         name: temporal-python
         chart_ref: '{{ scout_repo_dir }}/helm/orchestration/temporal-worker'
-        values_files:
-          - '{{ scout_repo_dir }}/helm/orchestration/temporal-python.values.yaml'
         release_namespace: '{{ orchestration_worker_namespace }}'
         release_state: present
         wait: true
         wait_timeout: 5m
         atomic: true
-        values:
-          image:
-            repository: '{{ temporal_python_image | default(omit) }}'
-          spark:
-            executor:
-              memory: '{{ orchestrator_spark_memory }}'
-          volumes: >-
-            {{
-              [
-                {
-                  'name': 'data',
-                  'hostPath': { 'path': orchestration_data_dir }
-                },
-                {
-                  'name': 'spark-defaults',
-                  'configMap': { 'name': 'spark-defaults' }
-                }
-              ]
-              if orchestration_data_dir is defined else omit
-            }}
+        values: '{{ python_worker_values }}'
