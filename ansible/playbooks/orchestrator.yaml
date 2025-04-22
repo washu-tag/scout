@@ -94,6 +94,7 @@
         repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
 
     - name: Install/Upgrade Temporal Helm chart
+      register: temporal_helm_result
       kubernetes.core.helm:
         name: temporal
         chart_ref: temporal/temporal
@@ -153,7 +154,10 @@
                 - '{{ server_hostname }}/temporal'
 
     - name: Wait for Temporal schema job to complete
-      command: 'kubectl -n {{ temporal_namespace }} wait --for=condition=complete --timeout=300s job/temporal-schema-1'
+      shell: >-
+        if kubectl -n {{ temporal_namespace }} get jobs temporal-schema-{{ temporal_helm_result.status.revision }} >/dev/null 2>&1; then
+          kubectl -n {{ temporal_namespace }} wait --for=condition=complete --timeout=300s job/temporal-schema-{{ temporal_helm_result.status.revision }}
+        fi
       register: temporal_schema
       changed_when: false
 
