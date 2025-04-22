@@ -59,6 +59,7 @@ k3s_cluster:
     minio_tenant_namespace: minio-scout
     grafana_namespace: grafana
     loki_namespace: loki
+    temporal_namespace: temporal
 
     # computed values, used across playbooks
     s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'

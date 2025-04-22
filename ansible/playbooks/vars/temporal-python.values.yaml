@@ -9,7 +9,7 @@ envFrom:
       name: s3-env
 env:
   - name: TEMPORAL_ADDRESS
-    value: 'temporal-frontend.temporal:7233'
+    value: 'temporal-frontend.{{ temporal_namespace }}:7233'
   - name: TEMPORAL_NAMESPACE
     value: default
   - name: MODALITY_MAP_PATH
