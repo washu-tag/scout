@@ -45,6 +45,7 @@
       kubernetes.core.helm:
         name: cass-operator
         chart_ref: k8ssandra/cass-operator
+        chart_version: ~0.55.2
         release_namespace: temporal
         create_namespace: true
         release_state: present
@@ -96,7 +97,7 @@
       kubernetes.core.helm:
         name: temporal
         chart_ref: temporal/temporal
-        chart_version: ^0.56.0
+        chart_version: ~0.62.0
         release_namespace: temporal
         create_namespace: true
         release_state: present
