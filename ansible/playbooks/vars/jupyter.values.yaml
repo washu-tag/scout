@@ -84,7 +84,7 @@ singleuser:
     type: static
     static:
       pvcName: jupyter-singleuser-pvc
-      subPath: {% raw %} '{username}' {% endraw %}
+      subPath: '{% raw %} {username} {% endraw %}'
     capacity: 10Gi
     extraVolumes:
       - name: spark-defaults

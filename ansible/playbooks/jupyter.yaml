@@ -71,4 +71,3 @@
         wait_timeout: 10m
         atomic: true
         values: '{{ jupyter_values }}'
-
