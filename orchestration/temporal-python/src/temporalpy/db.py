@@ -5,27 +5,22 @@ from psycopg import sql
 from temporalio import activity
 
 
-_connection = None
+_connection_args = None
 
 
-def connect_to_db():
+def get_db_connection_args():
     """Connect to the PostgreSQL database."""
-    global _connection
-    if _connection is None:
+    global _connection_args
+    if _connection_args is None:
         # Load database configuration from environment variables
-        db_host = os.getenv("DB_HOST")
-        db_port = os.getenv("DB_PORT", "5432")
-        db_name = os.getenv("DB_NAME")
-        db_user = os.getenv("DB_USER")
-        db_password = os.getenv("DB_PASSWORD")
-        _connection = psycopg.connect(
-            host=db_host,
-            port=db_port,
-            dbname=db_name,
-            user=db_user,
-            password=db_password,
-        )
-    return _connection
+        _connection_args = {
+            "host": os.getenv("DB_HOST"),
+            "port": os.getenv("DB_PORT", "5432"),
+            "dbname": os.getenv("DB_NAME"),
+            "user": os.getenv("DB_USER"),
+            "password": os.getenv("DB_PASSWORD"),
+        }
+    return _connection_args
 
 
 def write_errors(
@@ -33,8 +28,8 @@ def write_errors(
 ) -> None:
     """Write an error message to the database for a list of HL7 files."""
     activity.logger.info("Writing errors to database for %d HL7 files", len(hl7_files))
-    conn = connect_to_db()
-    with conn.cursor() as cursor:
+    connection_args = get_db_connection_args()
+    with psycopg.connect(**connection_args) as conn, conn.cursor() as cursor:
         # Find existing rows so we can get the log file path and segment number
         # Note: Need to dynamically create the query to have a variable number of placeholders
         cursor.execute(
