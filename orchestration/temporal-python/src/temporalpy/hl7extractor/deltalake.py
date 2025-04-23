@@ -85,10 +85,9 @@ def import_hl7_files_to_deltalake(
         )
 
         # Filter out rows from empty / unparsable HL7 files
+        message_control_id = segment_field("MSH", 10)
         error_paths_df = (
-            df.filter(F.col("message_control_id").isNull())
-            .select("source_file")
-            .collect()
+            df.filter(message_control_id.isNull()).select("source_file").collect()
         )
         error_paths = [
             row.source_file.replace("s3a://", "s3://") for row in error_paths_df
@@ -103,8 +102,7 @@ def import_hl7_files_to_deltalake(
             )
 
             # Remove empty / unparsable rows from df
-            df = df.filter(F.col("message_control_id").isNotNull())
-            pass
+            df = df.filter(message_control_id.isNotNull())
 
         if df.isEmpty():
             raise ApplicationError("No data extracted from HL7 messages")
