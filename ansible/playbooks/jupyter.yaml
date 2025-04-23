@@ -53,6 +53,11 @@
         spark_defaults_configmap_namespace: jupyter
         spark_memory: '{{ jupyter_spark_memory }}'
 
+    - name: Load values file
+      ansible.builtin.include_vars:
+        file: vars/jupyter.values.yaml
+        name: jupyter_values
+
     - name: Install JupyterHub using Helm
       kubernetes.core.helm:
         state: present
@@ -65,37 +70,4 @@
         wait: true
         wait_timeout: 10m
         atomic: true
-        values_files:
-          - '{{ scout_repo_dir }}/helm/jupyter/hub/hub-values.yaml'
-          - '{{ scout_repo_dir }}/helm/jupyter/hub/auth-values.yaml'
-        values:
-          ingress:
-            enabled: true
-            ingressClassName: traefik
-            hosts:
-              - '{{ server_hostname }}'
-          hub:
-            services:
-              prometheus:
-                api_token: '{{ jupyter_metrics_api_token }}'
-            config:
-              GitHubOAuthenticator:
-                client_id: '{{ github_client_id }}'
-                client_secret: '{{ github_client_secret }}'
-                oauth_callback_url: 'https://{{ server_hostname }}/jupyter/hub/oauth_callback'
-                allowed_organizations:
-                  - '{{ github_organization }}'
-                scope:
-                  - read:org
-              JupyterHub:
-                authenticator_class: github
-          singleuser:
-            storage:
-              extraVolumes:
-                - name: spark-defaults
-                  configMap:
-                    name: spark-defaults
-              extraVolumeMounts:
-                - name: spark-defaults
-                  mountPath: /usr/local/spark/conf/spark-defaults.conf
-                  subPath: spark-defaults.conf
+        values: '{{ jupyter_values }}'

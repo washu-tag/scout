@@ -16,7 +16,7 @@ hub:
     prometheus:
       admin: false
       # Secret would be preferred, but not clear how to do that in this chart
-      api_token: ${JUPYTERHUB_METRICS_API_TOKEN}
+      api_token: '{{ jupyter_metrics_api_token }}'
   loadRoles:
     metrics:
       description: 'Read JupyterHub metrics'
@@ -25,11 +25,25 @@ hub:
   db:
     pvc:
       storageClassName: jupyter-hub-storage
+  config:
+    Authenticator:
+      auto_login: true
+    GitHubOAuthenticator:
+      client_id: '{{ github_client_id }}'
+      client_secret: '{{ github_client_secret }}'
+      oauth_callback_url: 'https://{{ server_hostname }}/jupyter/hub/oauth_callback'
+      allowed_organizations:
+        - '{{ github_organization }}'
+      scope:
+        - read:org
+    JupyterHub:
+      authenticator_class: github
 
 ingress:
   enabled: true
+  ingressClassName: traefik
   hosts:
-    - ${FQDN}
+    - '{{ server_hostname }}'
   extraPaths:
     - path: /jupyter
       pathType: Prefix
@@ -51,6 +65,7 @@ singleuser:
           - '/bin/sh'
           - '-c'
           - |
+            {% raw %}
             FLAG_FILE=/home/${NB_USER}/.scout_quickstart
             if [ ! -f $FLAG_FILE ]; then
               mkdir -p /home/${NB_USER}/Scout &&
@@ -58,6 +73,7 @@ singleuser:
               chown -R ${NB_USER}:${NB_GID} /home/${NB_USER}/Scout &&
               touch $FLAG_FILE
             fi
+            {% endraw %}
   cpu:
     limit: 4
     guarantee: 1
@@ -68,13 +84,27 @@ singleuser:
     type: static
     static:
       pvcName: jupyter-singleuser-pvc
-      subPath: '{username}'
+      subPath: '{% raw %} {username} {% endraw %}'
     capacity: 10Gi
+    extraVolumes:
+      - name: spark-defaults
+        configMap:
+          name: spark-defaults
+    extraVolumeMounts:
+      - name: spark-defaults
+        mountPath: /usr/local/spark/conf/spark-defaults.conf
+        subPath: spark-defaults.conf
   networkPolicy:
     egress:
       - to:
           - namespaceSelector:
               matchLabels:
-                kubernetes.io/metadata.name: minio-scout
+                kubernetes.io/metadata.name: '{{ minio_tenant_namespace }}'
         ports:
           - port: 9000
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ hive_namespace }}'
+        ports:
+          - port: 9083

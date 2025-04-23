@@ -58,7 +58,11 @@ def import_hl7_files_to_deltalake(
     spark = None
     try:
         activity.logger.info("Creating Spark session")
-        spark = SparkSession.builder.appName("IngestHL7ToDeltaLake").getOrCreate()
+        spark = (
+            SparkSession.builder.appName("IngestHL7ToDeltaLake")
+            .enableHiveSupport()
+            .getOrCreate()
+        )
 
         activity.heartbeat()
         activity.logger.info("Reading HL7 manifest file %s", hl7_manifest_file_path)
@@ -237,6 +241,7 @@ def import_hl7_files_to_deltalake(
         )
         dt = (
             DeltaTable.createIfNotExists(spark)
+            .tableName("default.reports")
             .location(delta_table)
             .addColumns(df.schema)
             .partitionedBy("year")

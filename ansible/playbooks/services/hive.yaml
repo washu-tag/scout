@@ -1,0 +1,21 @@
+- name: Load values file
+  ansible.builtin.include_vars:
+    file: vars/hive.values.yaml
+    name: hive_values
+
+- name: Install Hive Metastore Service (HMS) with helm
+  kubernetes.core.helm:
+    name: hive-metastore
+    chart_ref: '{{ scout_repo_dir }}/helm/lake/hive-metastore'
+    release_namespace: '{{ hive_namespace }}'
+    create_namespace: true
+    release_state: present
+    wait: true
+    wait_timeout: 5m
+    atomic: true
+    values: '{{ hive_values }}'
+
+- name: Wait for Hive to be ready
+  command: kubectl -n {{ hive_namespace }} wait --for=condition=Available --timeout=300s deployments/hive-metastore
+  register: hive_ready
+  changed_when: false

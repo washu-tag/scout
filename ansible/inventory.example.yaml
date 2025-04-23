@@ -27,7 +27,13 @@ k3s_cluster:
     jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     postgres_user: 'scout'
     postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    postgres_cluster_namespace: 'cloudnative-pg'
+    postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    # Namespaces that can be changed
+    hive_namespace: hive
+    postgres_cluster_namespace: cloudnative-pg
+    prometheus_namespace: prometheus
 
     # Local paths
     base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
@@ -63,5 +69,7 @@ k3s_cluster:
 
     # computed values, used across playbooks
     s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
+    hive_warehouse: 's3a://lake/hive' # Hadoop requires the s3a prefix, it is used just like s3://
+    hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
     server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
     # End do not change
