@@ -1,6 +1,8 @@
 import os
 
 import psycopg
+from psycopg import sql
+from temporalio import activity
 
 
 _connection = None
@@ -30,16 +32,22 @@ def write_errors(
     hl7_files: list[str], error_message: str, workflow_id: str, activity_id: str
 ) -> None:
     """Write an error message to the database for a list of HL7 files."""
+    activity.logger.info("Writing errors to database for %d HL7 files", len(hl7_files))
     conn = connect_to_db()
     with conn.cursor() as cursor:
-        # Find existing rows
+        # Find existing rows so we can get the log file path and segment number
+        # Note: Need to dynamically create the query to have a variable number of placeholders
         cursor.execute(
-            """
-            SELECT DISTINCT file_path, log_file_path, segment_number
-            FROM hl7_files
-            WHERE file_path in %s
-            """,
-            (hl7_files,),
+            sql.SQL(
+                """
+                SELECT DISTINCT file_path, log_file_path, segment_number
+                FROM hl7_files
+                WHERE file_path in ({placeholders})
+                """
+            ).format(
+                placeholders=sql.SQL(", ").join([sql.Placeholder()] * len(hl7_files))
+            ),
+            hl7_files,
         )
         rows = cursor.fetchall()
 
