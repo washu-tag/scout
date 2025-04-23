@@ -3,6 +3,50 @@
     name: superset
     repo_url: https://apache.github.io/superset
 
+- name: Create ConfigMap for datasource and dashboard yaml
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: dashboard-config
+        namespace: superset
+      data:
+        # Metadata file
+        "analytics/metadata.yaml": |
+          {{ lookup('file', '{{scout_repo_dir}}/analytics/metadata.yaml') }}
+
+        # Database definition
+        "analytics/databases/Scout_Data_Lake.yaml": |
+          {{ lookup('file', '{{scout_repo_dir}}/analytics/databases/Scout_Data_Lake.yaml') }}
+
+        # Dataset definition
+        "analytics/datasets/Scout_Data_Lake/reports.yaml": |
+          {{ lookup('file', '{{scout_repo_dir}}/analytics/datasets/Scout_Data_Lake/reports.yaml') }}
+
+        # Charts
+        "analytics/charts/Modality_2.yaml": |
+          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Modality_2.yaml') }}
+        "analytics/charts/Count_1.yaml": |
+          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Count_1.yaml') }}
+        "analytics/charts/Facility_by_date_9.yaml": |
+          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Facility_by_date_9.yaml') }}
+        "analytics/charts/Race_4.yaml": |
+          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Race_4.yaml') }}
+        "analytics/charts/Report_5.yaml": |
+          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Report_5.yaml') }}
+        "analytics/charts/Service_Name_7.yaml": |
+          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Service_Name_7.yaml') }}
+        "analytics/charts/Study_Instance_UID_8.yaml": |
+          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Study_Instance_UID_8.yaml') }}
+        "analytics/charts/Sex_3.yaml": |
+          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Sex_3.yaml') }}
+
+        # Dashboard
+        "analytics/dashboards/Scout_1.yaml": |
+          {{ lookup('file', '{{scout_repo_dir}}/analytics/dashboards/Scout_1.yaml') }}
+
 - name: Install/Upgrade Superset Helm chart
   kubernetes.core.helm:
     name: superset
@@ -41,12 +85,27 @@
           LOGO_TARGET_PATH = "https://{{ server_hostname }}/launchpad"
           LOGO_TOOLTIP = "Scout Launchpad"
           FAVICONS = [{"href": "https://{{ server_hostname }}/launchpad/scout.png"}]
-      extraConfigs:
-        import_datasources.yaml: |
-          databases:
-            - database_name: Scout Data Lake
-              sqlalchemy_uri: trino://trino@trino.trino:8080/delta
-              allow_file_upload: true
+        custom_routing: |
+          from flask import redirect, url_for
+          from flask_appbuilder import expose, IndexView
+
+          from superset.superset_typing import FlaskResponse
+
+          class SupersetIndexView(IndexView):
+              @expose("/")
+              def index(self) -> FlaskResponse:
+                  return redirect(url_for("Superset.dashboard", dashboard_id_or_slug=1))
+
+          FAB_INDEX_VIEW = f"{SupersetIndexView.__module__}.{SupersetIndexView.__name__}"
+      extraVolumes:
+        - name: dashboard-config
+          configMap:
+            name: dashboard-config
+
+      extraVolumeMounts:
+        - name: dashboard-config
+          mountPath: /app/dashboard-config
+
       bootstrapScript: |
         #!/bin/bash
         # Install system-level dependencies
@@ -60,7 +119,23 @@
           authlib \
           psycopg2-binary \
           pyhive \
-          trino
+          trino \
+          pillow
+        
+        # Import the dashboard
+        if [ ! -f ~/dashboard_imported ]; then
+          echo "Importing dashboards..."
+          cd /app/dashboard-config
+          zip -r /app/dashboard-config/dashboard.zip /app/dashboard-config/
+          superset import-dashboards -p /app/dashboard-config/dashboard.zip -u admin
+          result=$?
+          if [[ $result -ne 0 ]]; then 
+            echo "Error importing dashboard"
+            exit $result
+          fi
+          /app/dashboard-config/dashboard.zip
+          echo "Dashboards imported" > ~/dashboard_imported
+        fi
 
         {% raw %}
         if [ ! -f ~/bootstrap ]; then echo 'Running Superset with uid {{ .Values.runAsUser }}' > ~/bootstrap; fi

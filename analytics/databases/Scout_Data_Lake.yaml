@@ -1,0 +1,16 @@
+database_name: Scout Data Lake
+sqlalchemy_uri: trino://trino@trino.trino:8080/delta
+cache_timeout: null
+expose_in_sqllab: true
+allow_run_async: false
+allow_ctas: false
+allow_cvas: false
+allow_dml: false
+allow_file_upload: true
+extra:
+  metadata_params: {}
+  engine_params: {}
+  metadata_cache_timeout: {}
+  schemas_allowed_for_file_upload: []
+uuid: 9ed918e7-ef5a-4aa4-9574-f1946b58d520
+version: 1.0.0

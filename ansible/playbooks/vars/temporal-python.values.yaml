@@ -16,6 +16,8 @@ env:
     value: default
   - name: MODALITY_MAP_PATH
     value: /data/modality_mapping_codes.csv
+  - name: REPORTS_TABLE_NAME
+    value: '{{ reports_table_name }}'
 volumes:
   - name: data
     hostPath:

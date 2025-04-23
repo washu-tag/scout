@@ -52,6 +52,7 @@ def import_hl7_files_to_deltalake(
     delta_table: str,
     hl7_manifest_file_path: str,
     modality_map_csv_path: str,
+    reports_table_name: str,
     health_file: Path,
 ) -> int:
     """Extract data from HL7 messages and write to Delta Lake."""
@@ -264,11 +265,11 @@ def import_hl7_files_to_deltalake(
         )
         dt = (
             DeltaTable.createIfNotExists(spark)
-            .tableName("default.reports")
-            .location(delta_table)
-            .addColumns(df.schema)
-            .partitionedBy("year")
-            .execute()
+                .tableName(f"default.{reports_table_name}")
+                .location(delta_table)
+                .addColumns(df.schema)
+                .partitionedBy("year")
+                .execute()
         )
 
         activity.heartbeat()

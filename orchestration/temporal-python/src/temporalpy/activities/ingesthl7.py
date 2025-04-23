@@ -15,6 +15,7 @@ class IngestHl7FilesToDeltaLakeActivityInput:
     deltaTable: str
     hl7ManifestFilePath: Optional[str] = None
     modalityMapPath: Optional[str] = None
+    reportsTableName: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -31,10 +32,12 @@ class IngestHl7FilesActivity:
     """
 
     default_modality_map_path: str
+    reports_table_name: str
     health_file: Path
 
-    def __init__(self, default_modality_map_path: str, health_file: Path):
+    def __init__(self, default_modality_map_path: str, reports_table_name: str, health_file: Path):
         self.default_modality_map_path = default_modality_map_path
+        self.reports_table_name = reports_table_name
         self.health_file = health_file
 
     @activity.defn(name=ACTIVITY_NAME)
@@ -53,6 +56,7 @@ class IngestHl7FilesActivity:
             activity_input.deltaTable,
             activity_input.hl7ManifestFilePath,
             modality_map_path,
+            self.reports_table_name,
             self.health_file,
         )
 

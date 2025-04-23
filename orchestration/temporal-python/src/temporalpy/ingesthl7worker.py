@@ -20,10 +20,10 @@ log = logging.getLogger("workflow_worker")
 
 
 async def run_worker(
-    temporal_address: str, namespace: str, mapping_file_path: str, health_file: Path
+    temporal_address: str, namespace: str, mapping_file_path: str, reports_table_name: str, health_file: Path
 ) -> None:
     client = await Client.connect(temporal_address, namespace=namespace)
-    ingest_hl7_files_activity = IngestHl7FilesActivity(mapping_file_path, health_file)
+    ingest_hl7_files_activity = IngestHl7FilesActivity(mapping_file_path, reports_table_name, health_file)
     with concurrent.futures.ThreadPoolExecutor(1) as pool:
         worker = Worker(
             client,
@@ -68,6 +68,9 @@ async def main(argv=None):
     modality_map_path = os.environ.get(
         "MODALITY_MAP_PATH", "/data/modality_mapping_codes.csv"
     )
+    reports_table_name = os.environ.get(
+        "REPORTS_TABLE_NAME", "reports"
+    )
 
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.INFO,
@@ -88,6 +91,7 @@ async def main(argv=None):
             temporal_address,
             temporal_namespace,
             modality_map_path,
+            reports_table_name,
             SPARK_HEALTH_TEMP_FILE,
         ),
     ]

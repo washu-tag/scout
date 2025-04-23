@@ -1,0 +1,375 @@
+dashboard_title: Scout
+description: null
+css: ''
+slug: null
+certified_by: ''
+certification_details: ''
+published: true
+uuid: 47457783-1886-46d8-9012-df03fcb684eb
+position:
+  CHART-explore-1-1:
+    children: []
+    id: CHART-explore-1-1
+    meta:
+      chartId: 1
+      height: 50
+      sliceName: Count
+      uuid: 1773eb3a-1525-4116-843c-921e3431b292
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-zi8CO3tw0mUEjxP4JEHdZ
+    type: CHART
+  CHART-explore-2-1:
+    children: []
+    id: CHART-explore-2-1
+    meta:
+      chartId: 2
+      height: 50
+      sliceName: Modality
+      uuid: 36bebe6c-ca5d-4c7f-90f8-d048e7dae6af
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-zi8CO3tw0mUEjxP4JEHdZ
+    type: CHART
+  CHART-explore-3-1:
+    children: []
+    id: CHART-explore-3-1
+    meta:
+      chartId: 3
+      height: 50
+      sliceName: Sex
+      uuid: 3124770b-a500-4b7f-8d15-2762aec1e511
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-I9XV1xbdaofN3nsCygooy
+    type: CHART
+  CHART-explore-4-1:
+    children: []
+    id: CHART-explore-4-1
+    meta:
+      chartId: 4
+      height: 50
+      sliceName: Race
+      uuid: a2b4a702-3484-4939-ae87-1421e9721917
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-I9XV1xbdaofN3nsCygooy
+    type: CHART
+  CHART-explore-5-1:
+    children: []
+    id: CHART-explore-5-1
+    meta:
+      chartId: 5
+      height: 50
+      sliceName: Report
+      uuid: 530e4ec8-8b09-4576-be3f-35f9e0936600
+      width: 9
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-mXRI5NFejrZ9v32hZRlel
+    type: CHART
+  CHART-explore-7-1:
+    children: []
+    id: CHART-explore-7-1
+    meta:
+      chartId: 7
+      height: 50
+      sliceName: Service Name
+      uuid: 9cfca38a-5ddf-424c-a078-e653fb2cd270
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-I9XV1xbdaofN3nsCygooy
+    type: CHART
+  CHART-explore-8-1:
+    children: []
+    id: CHART-explore-8-1
+    meta:
+      chartId: 8
+      height: 50
+      sliceName: Study Instance UID
+      uuid: 6121f340-c0cc-4204-b27f-88694c031327
+      width: 3
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-mXRI5NFejrZ9v32hZRlel
+    type: CHART
+  CHART-explore-9-1:
+    children: []
+    id: CHART-explore-9-1
+    meta:
+      chartId: 9
+      height: 50
+      sliceName: Facility by date
+      uuid: 31a6c707-617e-4f59-acde-4cb272280ca1
+      width: 4
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-nFsic3P3iA1Sck8iiSQFQ
+    type: CHART
+  DASHBOARD_VERSION_KEY: v2
+  GRID_ID:
+    children:
+    - ROW-zi8CO3tw0mUEjxP4JEHdZ
+    - ROW-I9XV1xbdaofN3nsCygooy
+    - ROW-mXRI5NFejrZ9v32hZRlel
+    id: GRID_ID
+    parents:
+    - ROOT_ID
+    type: GRID
+  HEADER_ID:
+    id: HEADER_ID
+    meta:
+      text: Scout
+    type: HEADER
+  ROOT_ID:
+    children:
+    - GRID_ID
+    id: ROOT_ID
+    type: ROOT
+  ROW-I9XV1xbdaofN3nsCygooy:
+    children:
+    - CHART-explore-4-1
+    - CHART-explore-3-1
+    - CHART-explore-7-1
+    id: ROW-I9XV1xbdaofN3nsCygooy
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  ROW-mXRI5NFejrZ9v32hZRlel:
+    children:
+    - CHART-explore-8-1
+    - CHART-explore-5-1
+    id: ROW-mXRI5NFejrZ9v32hZRlel
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  ROW-zi8CO3tw0mUEjxP4JEHdZ:
+    children:
+    - CHART-explore-1-1
+    - CHART-explore-2-1
+    - CHART-explore-9-1
+    id: ROW-zi8CO3tw0mUEjxP4JEHdZ
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+metadata:
+  chart_configuration:
+    '2':
+      id: 2
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 1
+        - 3
+        - 4
+        - 5
+        - 7
+        - 8
+        - 9
+    '3':
+      id: 3
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 1
+        - 2
+        - 4
+        - 5
+        - 7
+        - 8
+        - 9
+    '4':
+      id: 4
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 1
+        - 2
+        - 3
+        - 5
+        - 7
+        - 8
+        - 9
+    '5':
+      id: 5
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 7
+        - 8
+        - 9
+    '8':
+      id: 8
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 7
+        - 9
+    '9':
+      id: 9
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 7
+        - 8
+  global_chart_configuration:
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    chartsInScope:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 7
+    - 8
+    - 9
+  map_label_colors:
+    MR: '#1FA8C9'
+    XR: '#454E7C'
+    MG: '#5AC189'
+    IR: '#FF7F44'
+    <NULL>: '#666666'
+    NM: '#E04355'
+    US: '#FCC700'
+    PET: '#A868B7'
+    CT: '#3CCCCB'
+    ABCHOSP: '#1FA8C9'
+    C: '#1FA8C9'
+    WHITE: '#454E7C'
+    ? ''
+    : '#5AC189'
+    B: '#FF7F44'
+    BLACK: '#666666'
+    A: '#E04355'
+    ASIAN: '#FCC700'
+    OTHER: '#A868B7'
+    R: '#3CCCCB'
+    U: '#A38F79'
+    PCFIS: '#8FD3E4'
+    P: '#A1A6BD'
+    I: '#ACE1C4'
+    AMIND: '#FEC0A1'
+    DECLINED: '#B2B2B2'
+    UNABLE: '#EFA1AA'
+    M: '#1FA8C9'
+    F: '#454E7C'
+    Radiology Event: '#1FA8C9'
+    4185 IR INTRO CATHETER AORTA BILATERAL: '#454E7C'
+    8452 78452 MPI SPECT Multiple: '#454E7C'
+    IR INTRO CATHETER AORTA BILATERAL: '#5AC189'
+    78452 MPI SPECT Multiple: '#5AC189'
+    US ABDOMEN LIMITED: '#FF7F44'
+    2816 US ABDOMEN LIMITED: '#666666'
+    77055 Diag Mammogram Unilateral: '#E04355'
+    77055 77055 Diag Mammogram Unilateral: '#FCC700'
+    70553 70553P MR HEAD PERFUSION WWO: '#A868B7'
+    MRI BRAIN W CONTRAST: '#8FD3E4'
+    70553P MR HEAD PERFUSION WWO: '#3CCCCB'
+    2361 MRI BRAIN W CONTRAST: '#A38F79'
+    2400 MRI CHEST WO CONTRAST: '#A1A6BD'
+    MRI BRAIN WO CONTRAST: '#FEC0A1'
+    MRI BRAIN WITHOUT CONTRAST: '#A1A6BD'
+    MRI CHEST WO CONTRAST: '#EFA1AA'
+    XR ABDOMEN AP 1 VIEW: '#D3B3DA'
+    XR CHEST 1 VIEW: '#9EE5E5'
+    MR CARDIAC MRPH FUNC W/O: '#ACE1C4'
+    154 XR ABDOMEN AP 1 VIEW: '#B2B2B2'
+    755570 MR CARDIAC MRPH FUNC W/O: '#5AC189'
+    1259 XR CHEST 1 VIEW: '#454E7C'
+    2347 MRI BRAIN WO CONTRAST: '#ACE1C4'
+    76140 Outside Exam: '#666666'
+    76140 76140 Outside Exam: '#E04355'
+    77057 Screening Mamm Bilat: '#FCC700'
+    77057 77057 Screening Mamm Bilat: '#A868B7'
+    CT THORAX: '#A38F79'
+    PETCT AC+NAC ABDOMEN: '#3CCCCB'
+    PET/CT FDG WHOLE BODY: '#8FD3E4'
+    5017 PET/CT FDG WHOLE BODY: '#A1A6BD'
+    72040 Spine Cerv 3views or less: '#EFA1AA'
+    72020 72020 Spine Single View: '#ACE1C4'
+    XR Thoracic Spine 1 View: '#FEC0A1'
+    72020 Spine Single View: '#5AC189'
+    74000 Abdomen single view AP: '#D1C6BC'
+    71010 Chest 1 view Frontal: '#FDE380'
+    70250 Skull < 4 views: '#D3B3DA'
+    1 XR Thoracic Spine 1 View: '#D1C6BC'
+    721950 MR PELVIS WO: '#3CCCCB'
+    MR ABD WO: '#666666'
+    MR PELVIS WO: '#A868B7'
+    715500 MR CHEST WO: '#E04355'
+    MR CHEST WO: '#8FD3E4'
+    1133 MRI W WO ABDOMEN: '#A1A6BD'
+    MRI BRAIN W WO CONTRAST: '#FF7F44'
+    MRI W WO ABDOMEN: '#ACE1C4'
+    2370 MRI BRAIN W WO CONTRAST: '#B2B2B2'
+    MRI BRAIN W W/O CONTRAST: '#EFA1AA'
+    MRI TRANSFER OF OUTSIDE FILMS: '#FDE380'
+    1021 MRI TRANSFER OF OUTSIDE FILMS: '#D3B3DA'
+    77056 77056 Diag Mammogram Bilateral: '#9EE5E5'
+    77057 77057A Screen unilateral: '#9EE5E5'
+    77057A Screen unilateral: '#9EE5E5'
+    77056 Diag Mammogram Bilateral: '#D1C6BC'
+    PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION: '#FF7F44'
+    5021 PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION: '#FCC700'
+    74000 74000 Abdomen single view AP: '#B2B2B2'
+    72040 72040 Spine Cerv 3views or less: '#9EE5E5'
+    70250 70250 Skull < 4 views: '#FDE380'
+    71010 71010 Chest 1 view Frontal: '#FDE380'
+    '78699 Brain PET: MR Fusion 78699': '#FF7F44'
+    'Brain PET: MR Fusion 78699': '#A38F79'
+    2403 MRI CHEST W WO CONTRAST: '#FCC700'
+    MRI CHEST W WO CONTRAST: '#FEC0A1'
+    MR CARDIAC MRPH FUNC WWO: '#FDE380'
+    755612 MR CARDIAC MRPH FUNC WWO: '#FDE380'
+  color_scheme: ''
+  refresh_frequency: 0
+  color_scheme_domain: []
+  expanded_slices: {}
+  label_colors: {}
+  shared_label_colors: []
+  timed_refresh_immune_slices: []
+  cross_filters_enabled: true
+  default_filters: '{}'
+version: 1.0.0
