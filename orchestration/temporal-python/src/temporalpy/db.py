@@ -19,7 +19,7 @@ def connect_to_db():
         _connection = psycopg.connect(
             host=db_host,
             port=db_port,
-            database=db_name,
+            dbname=db_name,
             user=db_user,
             password=db_password,
         )
