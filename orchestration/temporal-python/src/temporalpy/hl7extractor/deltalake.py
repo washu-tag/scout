@@ -86,11 +86,11 @@ def import_hl7_files_to_deltalake(
 
         # Filter out rows from empty / unparsable HL7 files
         message_control_id = segment_field("MSH", 10)
-        error_paths_df = (
-            df.filter(message_control_id.isNull()).select("source_file").collect()
-        )
         error_paths = [
-            row.source_file.replace("s3a://", "s3://") for row in error_paths_df
+            row.source_file.replace("s3a://", "s3://")
+            for row in df.filter(message_control_id.isNull())
+            .select("source_file")
+            .collect()
         ]
         if error_paths:
             # Write error paths to db
