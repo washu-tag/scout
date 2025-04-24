@@ -28,6 +28,7 @@ final String vLog4j2Bridge = '2.24.2'
 final String vSparkSql = '3.5.4'
 final String vDeltaSpark = '3.1.0'
 final String vHadoop = '3.2.0'
+final String vPostgres = '42.7.5'
 
 configurations {
     all*.exclude group: 'ch.qos.logback', module: 'logback-classic'
@@ -77,6 +78,7 @@ dependencies {
     testImplementation("org.apache.spark:spark-sql_2.12:${vSparkSql}")
     testImplementation("io.delta:delta-spark_2.12:${vDeltaSpark}")
     testImplementation("org.apache.hadoop:hadoop-aws:${vHadoop}")
+    testImplementation("org.postgresql:postgresql:${vPostgres}")
 }
 
 java {
