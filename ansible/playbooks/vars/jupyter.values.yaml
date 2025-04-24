@@ -27,17 +27,9 @@ hub:
       storageClassName: jupyter-hub-storage
   config:
     Authenticator:
-      auto_login: true
-    GitHubOAuthenticator:
-      client_id: '{{ github_client_id }}'
-      client_secret: '{{ github_client_secret }}'
-      oauth_callback_url: 'https://{{ server_hostname }}/jupyter/hub/oauth_callback'
-      allowed_organizations:
-        - '{{ github_organization }}'
-      scope:
-        - read:org
+      allowed_users: '{{ (jupyter_allowed_users | default([])) }}'
     JupyterHub:
-      authenticator_class: github
+      authenticator_class: '{{ jupyter_auth_class | default("dummy") }}'
 
 ingress:
   enabled: true
@@ -84,7 +76,7 @@ singleuser:
     type: static
     static:
       pvcName: jupyter-singleuser-pvc
-      subPath: '{% raw %} {username} {% endraw %}'
+      subPath: '{username}'
     capacity: 10Gi
     extraVolumes:
       - name: spark-defaults
