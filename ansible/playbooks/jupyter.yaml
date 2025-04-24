@@ -53,10 +53,19 @@
         spark_defaults_configmap_namespace: jupyter
         spark_memory: '{{ jupyter_spark_memory }}'
 
-    - name: Load values file
+    - name: Load base JupyterHub values
       ansible.builtin.include_vars:
         file: vars/jupyter.values.yaml
-        name: jupyter_values
+        name: jupyter_base_values
+
+    - name: Load authentication-specific JupyterHub values
+      ansible.builtin.include_vars:
+        file: vars/jupyter.auth.{{ jupyter_auth_class }}.values.yaml
+        name: jupyter_auth_values
+
+    - name: Merge base and authentication-specific JupyterHub values
+      set_fact:
+        jupyter_values: '{{ jupyter_base_values | combine(jupyter_auth_values, recursive=True) }}'
 
     - name: Install JupyterHub using Helm
       kubernetes.core.helm:
