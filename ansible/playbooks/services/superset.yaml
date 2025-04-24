@@ -179,7 +179,7 @@
           fi
           # Import the dashboard
           if [ -d /app/dashboard-config ]; then
-            echo "Importing dashboards..."
+            echo "Importing dashboard..."
             cd /app/dashboard-config
             zip -r ~/dashboard.zip .
             cd -
@@ -190,7 +190,7 @@
               exit $result
             fi
             rm -f ~/dashboard.zip
-            echo "Dashboards imported successfully"
+            echo "Dashboard imported successfully"
           fi
           {% endraw %}
       
