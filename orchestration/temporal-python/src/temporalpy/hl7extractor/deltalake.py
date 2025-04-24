@@ -1,5 +1,3 @@
-import os
-
 # I don't know why we have to import this specific exception type, since it is
 # literally just an alias for the builtin TimeoutError.
 # But if we try to catch the builtin TimeoutError, it doesn't work.
@@ -12,6 +10,8 @@ from pyspark.sql import Column, SparkSession
 from pyspark.sql import functions as F
 from temporalio import activity
 from temporalio.exceptions import ApplicationError
+
+from temporalpy.db import write_errors
 
 DATE_FORMAT = "yyyyMMdd"
 DT_FORMAT = "yyyyMMddHHmmss"
@@ -81,8 +81,31 @@ def import_hl7_files_to_deltalake(
         df = (
             spark.read.format("hl7")
             .load(hl7_file_paths_from_spark)
-            .withColumn("source_file", F.input_file_name())
+            .withColumn(
+                "source_file",
+                F.regexp_replace(F.input_file_name(), "^s3a://", "^s3://"),
+            )
         )
+
+        # Filter out rows from empty / unparsable HL7 files
+        message_control_id = segment_field("MSH", 10)
+        error_paths = [
+            row.source_file
+            for row in df.filter(message_control_id.isNull())
+            .select("source_file")
+            .collect()
+        ]
+        if error_paths:
+            # Write error paths to db
+            write_errors(
+                error_paths,
+                "HL7 file is empty or unparsable",
+                activity.info().workflow_id,
+                activity.info().activity_id,
+            )
+
+            # Remove empty / unparsable rows from df
+            df = df.filter(message_control_id.isNotNull())
 
         if df.isEmpty():
             raise ApplicationError("No data extracted from HL7 messages")

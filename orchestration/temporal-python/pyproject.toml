@@ -21,6 +21,7 @@ requires-python = ">= 3.8"  # Lower limit is a guess
 dependencies = [
     "delta-spark",
     "fastapi",
+    "psycopg[binary]",
     "pyspark==3.5.4",
     "temporalio",
     "uvicorn",
