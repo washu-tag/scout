@@ -81,13 +81,16 @@ def import_hl7_files_to_deltalake(
         df = (
             spark.read.format("hl7")
             .load(hl7_file_paths_from_spark)
-            .withColumn("source_file", F.input_file_name())
+            .withColumn(
+                "source_file",
+                F.regexp_replace(F.input_file_name(), "^s3a://", "^s3://"),
+            )
         )
 
         # Filter out rows from empty / unparsable HL7 files
         message_control_id = segment_field("MSH", 10)
         error_paths = [
-            row.source_file.replace("s3a://", "s3://")
+            row.source_file
             for row in df.filter(message_control_id.isNull())
             .select("source_file")
             .collect()
