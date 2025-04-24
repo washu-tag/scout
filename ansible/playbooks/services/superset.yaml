@@ -3,6 +3,13 @@
     name: superset
     repo_url: https://apache.github.io/superset
 
+- name: Create namespace
+  kubernetes.core.k8s:
+    name: superset
+    api_version: v1
+    kind: Namespace
+    state: present
+
 - name: Create ConfigMap for datasource and dashboard yaml
   kubernetes.core.k8s:
     state: present
@@ -13,39 +20,31 @@
         name: dashboard-config
         namespace: superset
       data:
-        # Metadata file
-        "analytics/metadata.yaml": |
-          {{ lookup('file', '{{scout_repo_dir}}/analytics/metadata.yaml') }}
+        metadata.yaml: |
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/metadata.yaml') }}
+        Scout_Data_Lake.yaml: |
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/databases/Scout_Data_Lake.yaml') }}
+        reports.yaml: |
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/datasets/Scout_Data_Lake/reports.yaml') }}
+        Modality_2.yaml: |
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Modality_2.yaml') }}
+        Count_1.yaml: |
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Count_1.yaml') }}
+        Facility_by_date_9.yaml: |
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Facility_by_date_9.yaml') }}
+        Race_4.yaml: |
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Race_4.yaml') }}
+        Report_5.yaml: |
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Report_5.yaml') }}
+        Service_Name_7.yaml: |
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Service_Name_7.yaml') }}
+        Study_Instance_UID_8.yaml: |
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Study_Instance_UID_8.yaml') }}
+        Sex_3.yaml: |
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Sex_3.yaml') }}
+        Scout_1.yaml: |
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/dashboards/Scout_1.yaml') }}
 
-        # Database definition
-        "analytics/databases/Scout_Data_Lake.yaml": |
-          {{ lookup('file', '{{scout_repo_dir}}/analytics/databases/Scout_Data_Lake.yaml') }}
-
-        # Dataset definition
-        "analytics/datasets/Scout_Data_Lake/reports.yaml": |
-          {{ lookup('file', '{{scout_repo_dir}}/analytics/datasets/Scout_Data_Lake/reports.yaml') }}
-
-        # Charts
-        "analytics/charts/Modality_2.yaml": |
-          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Modality_2.yaml') }}
-        "analytics/charts/Count_1.yaml": |
-          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Count_1.yaml') }}
-        "analytics/charts/Facility_by_date_9.yaml": |
-          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Facility_by_date_9.yaml') }}
-        "analytics/charts/Race_4.yaml": |
-          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Race_4.yaml') }}
-        "analytics/charts/Report_5.yaml": |
-          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Report_5.yaml') }}
-        "analytics/charts/Service_Name_7.yaml": |
-          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Service_Name_7.yaml') }}
-        "analytics/charts/Study_Instance_UID_8.yaml": |
-          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Study_Instance_UID_8.yaml') }}
-        "analytics/charts/Sex_3.yaml": |
-          {{ lookup('file', '{{scout_repo_dir}}/analytics/charts/Sex_3.yaml') }}
-
-        # Dashboard
-        "analytics/dashboards/Scout_1.yaml": |
-          {{ lookup('file', '{{scout_repo_dir}}/analytics/dashboards/Scout_1.yaml') }}
 
 - name: Install/Upgrade Superset Helm chart
   kubernetes.core.helm:
@@ -101,6 +100,31 @@
         - name: dashboard-config
           configMap:
             name: dashboard-config
+            items:
+              - key: metadata.yaml
+                path: analytics/metadata.yaml
+              - key: Scout_Data_Lake.yaml
+                path: analytics/databases/Scout_Data_Lake.yaml
+              - key: reports.yaml
+                path: analytics/datasets/Scout_Data_Lake/reports.yaml
+              - key: Modality_2.yaml
+                path: analytics/charts/Modality_2.yaml
+              - key: Count_1.yaml
+                path: analytics/charts/Count_1.yaml
+              - key: Facility_by_date_9.yaml
+                path: analytics/charts/Facility_by_date_9.yaml
+              - key: Race_4.yaml
+                path: analytics/charts/Race_4.yaml
+              - key: Report_5.yaml
+                path: analytics/charts/Report_5.yaml
+              - key: Service_Name_7.yaml
+                path: analytics/charts/Service_Name_7.yaml
+              - key: Study_Instance_UID_8.yaml
+                path: analytics/charts/Study_Instance_UID_8.yaml
+              - key: Sex_3.yaml
+                path: analytics/charts/Sex_3.yaml
+              - key: Scout_1.yaml
+                path: analytics/dashboards/Scout_1.yaml
 
       extraVolumeMounts:
         - name: dashboard-config
@@ -112,7 +136,8 @@
         apt-get update && apt-get install -y \
           python3-dev \
           build-essential \
-          pkg-config
+          pkg-config \
+          zip
 
         # Install required Python packages
         pip install \
@@ -121,22 +146,51 @@
           pyhive \
           trino \
           pillow
-        
-        # Import the dashboard
-        if [ ! -f ~/dashboard_imported ]; then
-          echo "Importing dashboards..."
-          cd /app/dashboard-config
-          zip -r /app/dashboard-config/dashboard.zip /app/dashboard-config/
-          superset import-dashboards -p /app/dashboard-config/dashboard.zip -u admin
-          result=$?
-          if [[ $result -ne 0 ]]; then 
-            echo "Error importing dashboard"
-            exit $result
-          fi
-          /app/dashboard-config/dashboard.zip
-          echo "Dashboards imported" > ~/dashboard_imported
-        fi
 
         {% raw %}
         if [ ! -f ~/bootstrap ]; then echo 'Running Superset with uid {{ .Values.runAsUser }}' > ~/bootstrap; fi
         {% endraw %}
+      init:
+        initscript: |-
+          {% raw %}
+          #!/bin/sh
+          set -eu
+          echo "Upgrading DB schema..."
+          superset db upgrade
+          echo "Initializing roles..."
+          superset init
+          {{ if .Values.init.createAdmin }}
+          echo "Creating admin user..."
+          superset fab create-admin \
+                          --username {{ .Values.init.adminUser.username }} \
+                          --firstname {{ .Values.init.adminUser.firstname }} \
+                          --lastname {{ .Values.init.adminUser.lastname }} \
+                          --email {{ .Values.init.adminUser.email }} \
+                          --password {{ .Values.init.adminUser.password }} \
+                          || true
+          {{- end }}
+          {{ if .Values.init.loadExamples }}
+          echo "Loading examples..."
+          superset load_examples
+          {{- end }}
+          if [ -f "{{ .Values.extraConfigMountPath }}/import_datasources.yaml" ]; then
+            echo "Importing database connections.... "
+            superset import_datasources -p {{ .Values.extraConfigMountPath }}/import_datasources.yaml
+          fi
+          # Import the dashboard
+          if [ -d /app/dashboard-config ]; then
+            echo "Importing dashboards..."
+            cd /app/dashboard-config
+            zip -r ~/dashboard.zip .
+            cd -
+            superset import-dashboards -p ~/dashboard.zip -u admin
+            result=$?
+            if [ $result != 0 ]; then
+              echo "Error importing dashboard"
+              exit $result
+            fi
+            rm -f ~/dashboard.zip
+            echo "Dashboards imported successfully"
+          fi
+          {% endraw %}
+      
