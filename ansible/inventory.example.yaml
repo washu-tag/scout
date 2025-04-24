@@ -21,19 +21,17 @@ k3s_cluster:
     slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     slack_channel_id: $(echo $SLACK_CHANNEL | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
-    postgres_user: 'scout'
-    postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-
-    # JupyterHub variables
     jupyter_auth_class: dummy # dummy or github
     github_client_id: $(echo $CLIENT_ID | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     github_client_secret: $(echo $CLIENT_SECRET | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     github_organization: 'org'
-    jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     jupyter_dummy_password: $(echo $JH_DUMMY_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     jupyter_allowed_users: [] # empty list means all users can log in
+    jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    postgres_user: 'scout'
+    postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Namespaces that can be changed
     hive_namespace: hive
