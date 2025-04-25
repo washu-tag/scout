@@ -34,7 +34,7 @@ public class TestStatusDatabase extends BaseTest {
         );
 
         final Hl7FileRow firstHl7Message = Hl7FileRow.success(0, "1995/04/02/07/199504020707509258.hl7");
-        final Hl7FileRow secondHl7Message = Hl7FileRow.success(1, "1995/04/02/07/199504020930172230.hl7");
+        final Hl7FileRow secondHl7Message = Hl7FileRow.success(1, "1995/04/02/09/199504020930172230.hl7");
 
         runHl7FileTest(
             SqlQuery.hl7FileTableQuery("19950402"),
@@ -123,7 +123,12 @@ public class TestStatusDatabase extends BaseTest {
                         resultSet.next();
                         assertThat(resultSet.getString("status")).isEqualTo(hl7FileRow.status);
                         assertThat(resultSet.getInt("segment_number")).isEqualTo(hl7FileRow.segmentNumber);
-                        assertThat(resultSet.getString("file_path")).endsWith(hl7FileRow.filePath);
+                        final String actualPath = resultSet.getString("file_path");
+                        if (hl7FileRow.filePath == null) {
+                            assertThat(actualPath).as("file_path").isNull();
+                        } else {
+                            assertThat(actualPath).endsWith(hl7FileRow.filePath);
+                        }
                         assertThat(resultSet.getString("error_message")).isEqualTo(hl7FileRow.errorMessage);
                     }
                     assertThat(resultSet.next()).as("condition that there are additional rows in table").isFalse();
