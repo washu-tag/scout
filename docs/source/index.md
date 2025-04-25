@@ -16,13 +16,13 @@ analyze and explore the data within Scout Analytics, either
 
 ![Scout Dashboard](images/ScoutDashboard.png)
 
+
 ### Scout Launchpad
-[<img src="images/scout.png" width="40" align="left" style="margin: 0 16px;"/>](images/scout.png) 
 From Scout Analytics, click the "Scout" icon in the top left to navigate to the Scout Launchpad, where you can access other Scout 
 services, including Notebooks, this documentation, and the services for system administrators.
 
-
 ![Scout Launchpad](images/ScoutLaunchpad.png)
+
 
 ### Scout Notebooks
 
