@@ -41,4 +41,4 @@ RUN venv/bin/python3 -m pip install .
 ENV PYTHONUNBUFFERED=1
 
 # Run the worker
-CMD ["venv/bin/python3", "-m", "temporalpy.ingesthl7worker"]
+CMD ["venv/bin/python3", "-m", "hl7scout.ingesthl7worker"]

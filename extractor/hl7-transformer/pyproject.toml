@@ -3,8 +3,8 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "temporalpy"
-version = "0.1.0"
+name = "hl7scout"
+version = "1.0.0"
 description = "Scout Extractor service to read, transform, and upload HL7 file contents to Lake"
 authors = [
     {name = "John Flavin", email = "jflavin@wustl.edu"},

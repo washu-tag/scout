@@ -58,12 +58,12 @@
             AWS_ALLOW_HTTP: 'true'
             AWS_REGION: '{{ s3_region }}'
 
-    - name: Load HL7 Log Extractor values file
+    - name: Load HL7Log Extractor values file
       ansible.builtin.include_vars:
         file: vars/hl7log-extractor.values.yaml
         name: hl7log_extractor_values
 
-    - name: Deploy Java worker
+    - name: Deploy HL7Log Extractor
       kubernetes.core.helm:
         name: hl7log-extractor
         chart_ref: '{{ scout_repo_dir }}/helm/extractor/hl7log-extractor'
@@ -86,7 +86,7 @@
         file: vars/hl7-transformer.values.yaml
         name: hl7_transformer_values
 
-    - name: Deploy HL7 transformer
+    - name: Deploy HL7 Transformer
       kubernetes.core.helm:
         name: hl7-transformer
         chart_ref: '{{ scout_repo_dir }}/helm/extractor/hl7-transformer'
