@@ -33,5 +33,5 @@ cp .github/ci_resources/test_config_template.json tests/src/test/resources/confi
 * Run the tests as a k8s job so they can talk to minio
 ```
 sed "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml | kubectl apply -f -
-kubectl -n explorer logs -f job/ci-tests
+kubectl -n extractor logs -f job/ci-tests
 ```
