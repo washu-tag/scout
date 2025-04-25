@@ -1,6 +1,7 @@
 package edu.washu.tag.tests;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.fail;
 
 import edu.washu.tag.BaseTest;
 import java.sql.Connection;
@@ -81,6 +82,40 @@ public class TestStatusDatabase extends BaseTest {
         runHl7FileTest(
             SqlQuery.hl7FileViewQuery("20240102"),
             repeatedFailingHl7Message
+        );
+    }
+
+    @Test
+    public void testStatusDbHl7MessageParseError() {
+        final LogRow logRow = LogRow.success("2023-01-13", null);
+
+        runLogTest(
+            SqlQuery.logTableQuery("20230113"),
+            logRow
+        );
+
+        runLogTest(
+            SqlQuery.logViewQuery("20230113"),
+            logRow
+        );
+
+        final Hl7FileRow failedExtractionMessage = Hl7FileRow.failure(0, "2023/01/13/12/202301131207178754.hl7", "???");
+        final Hl7FileRow successfulHl7Message = Hl7FileRow.success(1, "2023/01/13/18/202301131807178754.hl7");
+
+        runHl7FileTest(
+            SqlQuery.hl7FileTableQuery("20230113"),
+            failedExtractionMessage,
+            failedExtractionMessage,
+            failedExtractionMessage,
+            failedExtractionMessage,
+            failedExtractionMessage,
+            successfulHl7Message
+        );
+
+        runHl7FileTest(
+            SqlQuery.hl7FileViewQuery("20230113"),
+            failedExtractionMessage,
+            successfulHl7Message
         );
     }
 
