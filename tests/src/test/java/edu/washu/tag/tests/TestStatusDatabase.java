@@ -122,7 +122,7 @@ public class TestStatusDatabase extends BaseTest {
                     for (Hl7FileRow hl7FileRow : expectedHl7Files) {
                         resultSet.next();
                         assertThat(resultSet.getString("status")).isEqualTo(hl7FileRow.status);
-                        assertThat(resultSet.getString("segment_number")).isEqualTo(hl7FileRow.segmentNumber);
+                        assertThat(resultSet.getInt("segment_number")).isEqualTo(hl7FileRow.segmentNumber);
                         assertThat(resultSet.getString("file_path")).endsWith(hl7FileRow.filePath);
                         assertThat(resultSet.getString("error_message")).isEqualTo(hl7FileRow.errorMessage);
                     }

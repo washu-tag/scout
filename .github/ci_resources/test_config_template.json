@@ -9,5 +9,10 @@
     "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
     "spark.hadoop.fs.s3a.path.style.access": "true"
   },
-  "deltaLakeUrl": "s3a://lake/delta"
+  "deltaLakeUrl": "s3a://lake/delta",
+  "postgresConfig": {
+    "url": "jdbc:postgresql://postgresql-cluster-rw.cloudnative-pg:5432/ingest",
+    "username": "scout",
+    "password": "scout123"
+  }
 }
