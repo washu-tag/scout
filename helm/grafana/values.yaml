@@ -49,6 +49,8 @@ sidecar:
     watchMethod: SLEEP
     provider:
       folder: Scout
+  datasources:
+    enabled: true
 
 persistence:
   enabled: true

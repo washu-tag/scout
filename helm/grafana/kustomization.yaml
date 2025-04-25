@@ -40,6 +40,12 @@ configMapGenerator:
       labels:
         grafana_dashboard: "1"
 
+  - name: hl7-ingest-dashboard
+    files: [ dashboards/hl7-ingest-dashboard.json ]
+    options:
+      labels:
+        grafana_dashboard: "1"
+
   - name: high-node-disk-usage-alert
     files: [ alerts/alert-rules/high-node-disk-usage-alert.json ]
     options:

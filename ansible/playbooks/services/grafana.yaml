@@ -82,6 +82,22 @@
       stringData:
         slack-contact-point.json: "{{ lookup('template', scout_repo_dir + slack_contact_point_j2) | to_nice_json }}"
 
+- name: Create temp file for postgres datasource
+  tempfile:
+    state: file
+    suffix: grafana-postgres-datasource-secret.yaml
+  register: temp_file
+
+- name: Render postgres datasource secret template
+  template:
+    src: vars/grafana-postgres-datasource-secret.yaml
+    dest: '{{ temp_file.path }}'
+
+- name: Create postgres datasource secret
+  kubernetes.core.k8s:
+    state: present
+    src: '{{ temp_file.path }}'
+
 - name: Install Grafana using Helm
   kubernetes.core.helm:
     state: present
