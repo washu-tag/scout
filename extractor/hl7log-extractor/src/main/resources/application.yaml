@@ -8,8 +8,8 @@ spring:
     start-workers: true
     workers-auto-discovery:
       packages:
-        - edu.washu.tag.extractor.log.activity
-        - edu.washu.tag.extractor.log.workflow
+        - edu.washu.tag.extractor.hl7log.activity
+        - edu.washu.tag.extractor.hl7log.workflow
   flyway:
     enabled: true
     baseline-on-migrate: true
