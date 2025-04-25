@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "hl7-parser.name" -}}
+{{- define "hl7-transformer.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "hl7-parser.fullname" -}}
+{{- define "hl7-transformer.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "hl7-parser.chart" -}}
+{{- define "hl7-transformer.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "hl7-parser.labels" -}}
-helm.sh/chart: {{ include "hl7-parser.chart" . }}
-{{ include "hl7-parser.selectorLabels" . }}
+{{- define "hl7-transformer.labels" -}}
+helm.sh/chart: {{ include "hl7-transformer.chart" . }}
+{{ include "hl7-transformer.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "hl7-parser.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "hl7-parser.name" . }}
+{{- define "hl7-transformer.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "hl7-transformer.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "hl7-parser.serviceAccountName" -}}
+{{- define "hl7-transformer.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "hl7-parser.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "hl7-transformer.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
