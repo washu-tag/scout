@@ -38,4 +38,4 @@ livenessProbe:
   periodSeconds: 30
 spark:
   executor:
-    memory: '{{ orchestrator_spark_memory }}'
+    memory: '{{ hl7_transformer_spark_memory }}'

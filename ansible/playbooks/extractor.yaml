@@ -58,7 +58,7 @@
             AWS_ALLOW_HTTP: 'true'
             AWS_REGION: '{{ s3_region }}'
 
-    - name: Load Java worker values file
+    - name: Load HL7 Log Extractor values file
       ansible.builtin.include_vars:
         file: vars/hl7log-extractor.values.yaml
         name: hl7log_extractor_values
@@ -81,7 +81,7 @@
         spark_defaults_configmap_namespace: '{{ extractor_namespace }}'
         spark_memory: '{{ hl7_transformer_spark_memory }}'
 
-    - name: Load Python worker values file
+    - name: Load HL7 Transformer values file
       ansible.builtin.include_vars:
         file: vars/hl7-transformer.values.yaml
         name: hl7_transformer_values
