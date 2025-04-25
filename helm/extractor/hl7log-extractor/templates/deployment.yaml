@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "log-extractor.fullname" . }}
+  name: {{ include "hl7log-extractor.fullname" . }}
   labels:
-    {{- include "log-extractor.labels" . | nindent 4 }}
+    {{- include "hl7log-extractor.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "log-extractor.selectorLabels" . | nindent 6 }}
+      {{- include "hl7log-extractor.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,7 +18,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "log-extractor.labels" . | nindent 8 }}
+        {{- include "hl7log-extractor.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -27,7 +27,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "log-extractor.serviceAccountName" . }}
+      serviceAccountName: {{ include "hl7log-extractor.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -71,7 +71,7 @@ spec:
       {{- end }}
         - name: config-volume
           configMap:
-            name: {{ include "log-extractor.fullname" . }}-config
+            name: {{ include "hl7log-extractor.fullname" . }}-config
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

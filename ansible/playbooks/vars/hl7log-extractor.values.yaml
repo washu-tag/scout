@@ -1,5 +1,5 @@
 image:
-  repository: '{{ log_extractor_image | default("ghcr.io/washu-tag/log-extractor") }}'
+  repository: '{{ hl7log_extractor_image | default("ghcr.io/washu-tag/hl7log-extractor") }}'
   tag: latest
 envFrom:
   - secretRef:

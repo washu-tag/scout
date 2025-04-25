@@ -60,19 +60,19 @@
 
     - name: Load Java worker values file
       ansible.builtin.include_vars:
-        file: vars/log-extractor.values.yaml
-        name: log_extractor_values
+        file: vars/hl7log-extractor.values.yaml
+        name: hl7log_extractor_values
 
     - name: Deploy Java worker
       kubernetes.core.helm:
-        name: log-extractor
-        chart_ref: '{{ scout_repo_dir }}/helm/extractor/log-extractor'
+        name: hl7log-extractor
+        chart_ref: '{{ scout_repo_dir }}/helm/extractor/hl7log-extractor'
         release_namespace: '{{ extractor_namespace }}'
         release_state: present
         wait: true
         wait_timeout: 5m
         atomic: true
-        values: '{{ log_extractor_values }}'
+        values: '{{ hl7log_extractor_values }}'
 
     - name: Setup Spark defaults ConfigMap
       include_tasks: tasks/spark_config_setup.yaml

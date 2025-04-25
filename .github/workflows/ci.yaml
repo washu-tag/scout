@@ -24,7 +24,7 @@ jobs:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
       - uses: pre-commit/action@v3.0.1
-  build-and-upload-log-extractor:
+  build-and-upload-hl7log-extractor:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,11 +32,11 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4.2.1
-      - name: 'Build/Cache Image - log-extractor'
+      - name: 'Build/Cache Image - hl7log-extractor'
         uses: ./.github/actions/docker-build-cache
         with:
-          subproject: extractor/log-extractor
-          image-name: log-extractor
+          subproject: extractor/hl7log-extractor
+          image-name: hl7log-extractor
   build-and-upload-hl7-transformer:
     runs-on: ubuntu-latest
     permissions:
@@ -84,14 +84,14 @@ jobs:
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
-      - name: 'Unit tests: log-extractor'
+      - name: 'Unit tests: hl7log-extractor'
         shell: bash
-        run: cd extractor/log-extractor && ./gradlew test
+        run: cd extractor/hl7log-extractor && ./gradlew test
   deploy-and-test:
     runs-on: ubuntu-latest
     needs:
       - lint
-      - build-and-upload-log-extractor
+      - build-and-upload-hl7log-extractor
       - build-and-upload-hl7-transformer
       - build-and-upload-pyspark-notebook
       - build-and-upload-explorer
@@ -112,11 +112,11 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
-      - name: 'Push image to k3s - log-extractor'
+      - name: 'Push image to k3s - hl7log-extractor'
         uses: ./.github/actions/k3s-image-import
         with:
-          subproject: extractor/log-extractor
-          image-name: log-extractor
+          subproject: extractor/hl7log-extractor
+          image-name: hl7log-extractor
       - name: 'Push image to k3s - hl7-transformer'
         uses: ./.github/actions/k3s-image-import
         with:
@@ -180,11 +180,11 @@ jobs:
         with:
           paths: 'tests/**/TEST-*.xml'
           show: 'fail, skip'
-      - name: Logging (log-extractor)
+      - name: Logging (hl7log-extractor)
         shell: bash
         if: failure()
         run: |
-          sudo -E kubectl -n extractor logs deployment/log-extractor
+          sudo -E kubectl -n extractor logs deployment/hl7log-extractor
       - name: Logging (hl7-transformer)
         shell: bash
         if: failure()
@@ -208,10 +208,10 @@ jobs:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: 'Push Image - log-extractor'
+      - name: 'Push Image - hl7log-extractor'
         uses: ./.github/actions/docker-push
         with:
-          image-name: log-extractor
+          image-name: hl7log-extractor
       - name: 'Push Image - hl7-transformer'
         uses: ./.github/actions/docker-push
         with:

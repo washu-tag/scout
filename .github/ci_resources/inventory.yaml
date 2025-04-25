@@ -15,7 +15,7 @@ k3s_cluster:
     slack_token:
     slack_channel_id:
     kubeconfig_group: root
-    log_extractor_image: docker.io/local/washu-tag/log-extractor
+    hl7log_extractor_image: docker.io/local/washu-tag/hl7log-extractor
     hl7_transformer_image: docker.io/local/washu-tag/hl7-transformer
     explorer_image: docker.io/local/washu-tag/explorer
     postgres_user: scout
