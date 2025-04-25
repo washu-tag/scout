@@ -9,5 +9,5 @@
     "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
     "spark.hadoop.fs.s3a.path.style.access": "true"
   },
-  "deltaLakeUrl": "s3a://lake/orchestration/delta/test_data"
+  "deltaLakeUrl": "s3a://lake/delta"
 }

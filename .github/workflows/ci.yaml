@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
   push:
-    branches: [main]
+    branches: [main, service-name-changes]
 
 env:
   JAVA_DIST: 'zulu'
@@ -24,7 +24,7 @@ jobs:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
       - uses: pre-commit/action@v3.0.1
-  build-and-upload-temporal-java:
+  build-and-upload-log-extractor:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,12 +32,12 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4.2.1
-      - name: 'Build/Cache Image - temporal-java'
+      - name: 'Build/Cache Image - log-extractor'
         uses: ./.github/actions/docker-build-cache
         with:
-          subproject: orchestration/temporal-java
-          image-name: temporal-java
-  build-and-upload-temporal-python:
+          subproject: extractor/log-extractor
+          image-name: log-extractor
+  build-and-upload-hl7-transformer:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -45,11 +45,11 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4.2.1
-      - name: 'Build/Cache Image - temporal-python'
+      - name: 'Build/Cache Image - hl7-transformer'
         uses: ./.github/actions/docker-build-cache
         with:
-          subproject: orchestration/temporal-python
-          image-name: temporal-python
+          subproject: extractor/hl7-transformer
+          image-name: hl7-transformer
   build-and-upload-pyspark-notebook:
     runs-on: ubuntu-latest
     permissions:
@@ -84,15 +84,15 @@ jobs:
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
-      - name: 'Unit tests: temporal-java'
+      - name: 'Unit tests: log-extractor'
         shell: bash
-        run: cd orchestration/temporal-java && ./gradlew test
+        run: cd extractor/log-extractor && ./gradlew test
   deploy-and-test:
     runs-on: ubuntu-latest
     needs:
       - lint
-      - build-and-upload-temporal-java
-      - build-and-upload-temporal-python
+      - build-and-upload-log-extractor
+      - build-and-upload-hl7-transformer
       - build-and-upload-pyspark-notebook
       - build-and-upload-explorer
       - unit-test
@@ -112,16 +112,16 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
-      - name: 'Push image to k3s - temporal-java'
+      - name: 'Push image to k3s - log-extractor'
         uses: ./.github/actions/k3s-image-import
         with:
-          subproject: orchestration/temporal-java
-          image-name: temporal-java
-      - name: 'Push image to k3s - temporal-python'
+          subproject: extractor/log-extractor
+          image-name: log-extractor
+      - name: 'Push image to k3s - hl7-transformer'
         uses: ./.github/actions/k3s-image-import
         with:
-          subproject: orchestration/temporal-python
-          image-name: temporal-python
+          subproject: extractor/hl7-transformer
+          image-name: hl7-transformer
       - name: 'Push image to k3s - explorer'
         uses: ./.github/actions/k3s-image-import
         with:
@@ -139,51 +139,57 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/lake.yaml
           sudo -E kubectl describe pod -l v1.min.io/tenant=minio-scout -n minio-scout
-      - name: 'Install explorer'
-        shell: bash
-        run: |
-          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/explorer.yaml
       - name: 'Install orchestrator'
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/orchestrator.yaml
-          sudo -E kubectl -n minio-scout wait --for=condition=ready --timeout=300s pod -l v1.min.io/tenant=minio-scout
-          sudo -E kubectl -n temporal wait --for=condition=complete --timeout=300s job/temporal-schema-1
-      - name: 'Launch temporal ingestion'
+      - name: 'Install extractor'
         shell: bash
-        run: sudo -E bash .github/ci_resources/launch_temporal_extraction.sh
+        run: |
+          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/extractor.yaml
+      - name: 'Install explorer' # This step is technically not needed to run the extraction, but since it's a custom service, I think it's valuable to deploy
+        shell: bash
+        run: |
+          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/explorer.yaml
+      - name: 'Wait for minio'
+        shell: bash
+        run: |
+          sudo -E kubectl -n minio-scout wait --for=condition=ready --timeout=300s pod -l v1.min.io/tenant=minio-scout
+      - name: 'Launch extraction'
+        shell: bash
+        run: sudo -E bash .github/ci_resources/launch_extraction.sh
       - name: 'Run tests'
         shell: bash
         run: |
           cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
           sed -i "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
-          sudo -E kubectl wait --for=condition=complete --timeout=300s job/ci-tests -n explorer &
+          sudo -E kubectl wait --for=condition=complete --timeout=300s job/ci-tests -n extractor &
           completion_pid=$!
-          sudo -E kubectl wait --for=condition=failed --timeout=300s job/ci-tests -n explorer && exit 1 &
+          sudo -E kubectl wait --for=condition=failed --timeout=300s job/ci-tests -n extractor && exit 1 &
           failure_pid=$!
           wait -n $completion_pid $failure_pid
       - name: Test Logs
         shell: bash
         if: always()
         run: |
-          sudo -E kubectl -n explorer logs job/ci-tests
+          sudo -E kubectl -n extractor logs job/ci-tests
       - name: Test Summary
         uses: test-summary/action@v2.4
         if: always()
         with:
           paths: 'tests/**/TEST-*.xml'
           show: 'fail, skip'
-      - name: Logging (temporal-java)
+      - name: Logging (log-extractor)
         shell: bash
-        if: always()
+        if: failure()
         run: |
-          sudo -E kubectl -n orchestration-workers logs deployment/temporal-java
-      - name: Logging (temporal-python)
+          sudo -E kubectl -n extractor logs deployment/log-extractor
+      - name: Logging (hl7-transformer)
         shell: bash
-        if: always()
+        if: failure()
         run: |
-          sudo -E kubectl -n orchestration-workers logs deployment/temporal-python
+          sudo -E kubectl -n extractor logs deployment/hl7-transformer
   publish:
     if: github.ref_name == 'main'
     runs-on: ubuntu-latest
@@ -202,14 +208,14 @@ jobs:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: 'Push Image - temporal-java'
+      - name: 'Push Image - log-extractor'
         uses: ./.github/actions/docker-push
         with:
-          image-name: temporal-java
-      - name: 'Push Image - temporal-python'
+          image-name: log-extractor
+      - name: 'Push Image - hl7-transformer'
         uses: ./.github/actions/docker-push
         with:
-          image-name: temporal-python
+          image-name: hl7-transformer
       - name: 'Push Image - pyspark-notebook'
         uses: ./.github/actions/docker-push
         with:

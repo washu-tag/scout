@@ -1,0 +1,98 @@
+---
+- name: Install extractor services
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  tasks:
+    - name: Create namespace
+      kubernetes.core.k8s:
+        name: '{{ extractor_namespace }}'
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Create Postgres secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: postgres-secret
+            namespace: '{{ extractor_namespace }}'
+          type: Opaque
+          stringData:
+            DB_HOST: 'postgresql-cluster-rw.{{ postgres_cluster_namespace }}'
+            DB_PORT: 5432
+            DB_NAME: ingest
+            DB_USER: '{{ postgres_user }}'
+            DB_PASSWORD: '{{ postgres_password }}'
+
+    - name: Create S3 secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: s3-secret
+            namespace: '{{ extractor_namespace }}'
+          type: Opaque
+          stringData:
+            AWS_ACCESS_KEY_ID: '{{ s3_username }}'
+            AWS_SECRET_ACCESS_KEY: '{{ s3_password }}'
+
+    - name: Create S3 configmap
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: s3-env
+            namespace: '{{ extractor_namespace }}'
+          data:
+            AWS_ENDPOINT_URL: '{{ s3_endpoint }}'
+            AWS_ALLOW_HTTP: true
+            AWS_REGION: '{{ s3_region }}'
+
+    - name: Load Java worker values file
+      ansible.builtin.include_vars:
+        file: vars/log-extractor.values.yaml
+        name: log_extractor_values
+
+    - name: Deploy Java worker
+      kubernetes.core.helm:
+        name: log-extractor
+        chart_ref: '{{ scout_repo_dir }}/helm/extractor/log-extractor'
+        release_namespace: '{{ extractor_namespace }}'
+        release_state: present
+        wait: true
+        wait_timeout: 5m
+        atomic: true
+        values: '{{ log_extractor_values }}'
+
+    - name: Setup Spark defaults ConfigMap
+      include_tasks: tasks/spark_config_setup.yaml
+      vars:
+        spark_defaults_configmap_name: spark-defaults
+        spark_defaults_configmap_namespace: '{{ extractor_namespace }}'
+        spark_memory: '{{ hl7_transformer_spark_memory }}'
+
+    - name: Load Python worker values file
+      ansible.builtin.include_vars:
+        file: vars/hl7-transformer.values.yaml
+        name: hl7_transformer_values
+
+    - name: Deploy HL7 transformer
+      kubernetes.core.helm:
+        name: hl7-transformer
+        chart_ref: '{{ scout_repo_dir }}/helm/extractor/hl7-transformer'
+        release_namespace: '{{ extractor_namespace }}'
+        release_state: present
+        wait: true
+        wait_timeout: 5m
+        atomic: true
+        values: '{{ hl7_transformer_values }}'

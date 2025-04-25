@@ -1,0 +1,32 @@
+image:
+  repository: '{{ log_extractor_image | default("ghcr.io/washu-tag/log-extractor") }}'
+  tag: latest
+envFrom:
+  - secretRef:
+      name: s3-secret
+  - configMapRef:
+      name: s3-env
+env:
+  - name: TZ
+    value: 'US/Central'
+volumes:
+  - name: data
+    hostPath:
+      path: '{{ orchestration_data_dir }}'
+volumeMounts:
+  - name: data
+    mountPath: /data
+    readOnly: true
+config:
+  application:
+    s3:
+      endpoint: '{{ s3_endpoint }}'
+      region: '{{ s3_region }}'
+    spring:
+      datasource:
+        url: 'jdbc:postgresql://postgresql-cluster-rw.{{ postgres_cluster_namespace }}:5432/ingest'
+        username: '{{ postgres_user }}'
+        password: '{{ postgres_password }}'
+      temporal:
+        connection:
+          target: 'temporal-frontend.{{ temporal_namespace }}:7233'
