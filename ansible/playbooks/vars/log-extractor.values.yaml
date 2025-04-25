@@ -12,7 +12,7 @@ env:
 volumes:
   - name: data
     hostPath:
-      path: '{{ orchestration_data_dir }}'
+      path: '{{ extractor_data_dir }}'
 volumeMounts:
   - name: data
     mountPath: /data

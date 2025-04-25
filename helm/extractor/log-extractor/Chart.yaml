@@ -3,4 +3,4 @@ name: log-extractor
 description: Parse HL7 messages from daily log files and trigger ingestion into Lake
 type: application
 version: 1.0.0
-appVersion: 1.0.0
+appVersion: "1.0.0"

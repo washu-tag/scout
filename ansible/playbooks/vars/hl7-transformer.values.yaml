@@ -18,7 +18,7 @@ env:
 volumes:
   - name: data
     hostPath:
-      path: '{{ orchestration_data_dir }}'
+      path: '{{ extractor_data_dir }}'
   - name: spark-defaults
     configMap:
       name: spark-defaults

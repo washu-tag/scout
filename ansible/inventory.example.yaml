@@ -14,9 +14,9 @@ k3s_cluster:
           ansible_connection: local
           ansible_python_interpreter: /usr/bin/python3
   vars:
-    s3_username: 'minio'
+    s3_username: minio
     s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    s3_region: 'us-east-1'
+    s3_region: us-east-1
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     slack_channel_id: $(echo $SLACK_CHANNEL | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -24,11 +24,11 @@ k3s_cluster:
     jupyter_auth_class: dummy # dummy or github
     github_client_id: $(echo $CLIENT_ID | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     github_client_secret: $(echo $CLIENT_SECRET | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    github_organization: 'org'
+    github_organization: org
     jupyter_dummy_password: $(echo $JH_DUMMY_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     jupyter_allowed_users: [] # empty list means all users can log in
     jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    postgres_user: 'scout'
+    postgres_user: scout
     postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -50,7 +50,7 @@ k3s_cluster:
     grafana_dir: /scout/monitoring/grafana
     jaeger_dir: /scout/monitoring/jaeger
     jupyter_dir: /scout/data/jupyter
-    orchestration_data_dir: /scout/data/orchestration
+    extractor_data_dir: /ceph/input/data
 
     # Resources
     hl7_transformer_spark_memory: 8g
