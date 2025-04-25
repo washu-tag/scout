@@ -1,6 +1,5 @@
 image:
   repository: '{{ hl7log_extractor_image | default("ghcr.io/washu-tag/hl7log-extractor") }}'
-  tag: latest
 envFrom:
   - secretRef:
       name: s3-secret

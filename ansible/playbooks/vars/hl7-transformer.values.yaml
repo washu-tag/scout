@@ -1,6 +1,5 @@
 image:
   repository: '{{ hl7_transformer_image | default("ghcr.io/washu-tag/hl7-transformer") }}'
-  tag: latest
 envFrom:
   - secretRef:
       name: s3-secret
