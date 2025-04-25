@@ -147,10 +147,6 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/extractor.yaml
-      - name: 'Install explorer' # This step is technically not needed to run the extraction, but since it's a custom service, I think it's valuable to deploy
-        shell: bash
-        run: |
-          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/explorer.yaml
       - name: 'Wait for minio'
         shell: bash
         run: |

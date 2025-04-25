@@ -25,7 +25,7 @@
           type: Opaque
           stringData:
             DB_HOST: 'postgresql-cluster-rw.{{ postgres_cluster_namespace }}'
-            DB_PORT: 5432
+            DB_PORT: '5432'
             DB_NAME: ingest
             DB_USER: '{{ postgres_user }}'
             DB_PASSWORD: '{{ postgres_password }}'
