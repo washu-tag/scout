@@ -1,0 +1,49 @@
+slice_name: Study Instance UID
+description: null
+certified_by: null
+certification_details: null
+viz_type: table
+params:
+  datasource: 1__table
+  viz_type: table
+  query_mode: aggregate
+  groupby:
+    - study_instance_uid
+  time_grain_sqla: P1D
+  temporal_columns_lookup:
+    message_dt: true
+    birth_date: true
+    requested_dt: true
+    observation_dt: true
+    observation_end_dt: true
+    results_report_status_change_dt: true
+    updated: true
+  all_columns: []
+  percent_metrics: []
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+  order_by_cols: []
+  row_limit: 10000
+  server_page_length: 10
+  order_desc: true
+  table_timestamp_format: smart_date
+  allow_render_html: true
+  show_cell_bars: true
+  color_pn: true
+  comparison_color_scheme: Green
+  comparison_type: values
+  extra_form_data: {}
+  dashboards:
+    - 1
+query_context:
+  '{"datasource":{"id":1,"type":"table"},"force":false,"queries":[{"filters":[{"col":"message_dt","op":"TEMPORAL_RANGE","val":"No
+  filter"}],"extras":{"having":"","where":""},"applied_time_extras":{},"columns":["study_instance_uid"],"metrics":[],"orderby":[],"annotation_layers":[],"row_limit":10000,"series_limit":0,"order_desc":true,"url_params":{},"custom_params":{},"custom_form_data":{},"post_processing":[],"time_offsets":[]}],"form_data":{"datasource":"1__table","viz_type":"table","query_mode":"aggregate","groupby":["study_instance_uid"],"time_grain_sqla":"P1D","temporal_columns_lookup":{"message_dt":true,"birth_date":true,"requested_dt":true,"observation_dt":true,"observation_end_dt":true,"results_report_status_change_dt":true,"updated":true},"all_columns":[],"percent_metrics":[],"adhoc_filters":[{"clause":"WHERE","subject":"message_dt","operator":"TEMPORAL_RANGE","comparator":"No
+  filter","expressionType":"SIMPLE"}],"order_by_cols":[],"row_limit":10000,"server_page_length":10,"order_desc":true,"table_timestamp_format":"smart_date","allow_render_html":true,"show_cell_bars":true,"color_pn":true,"comparison_color_scheme":"Green","comparison_type":"values","extra_form_data":{},"dashboards":[1],"force":false,"result_format":"json","result_type":"full"},"result_format":"json","result_type":"full"}'
+cache_timeout: null
+uuid: 6121f340-c0cc-4204-b27f-88694c031327
+version: 1.0.0
+dataset_uuid: 14cdaed5-905e-499a-b020-13e1b54097c8

@@ -11,14 +11,12 @@ Below is a list of the main services that make up Scout.
 
 ### Analytics
 
-##### Superset
-
 [Apache Superset](https://superset.apache.org/) allows users to explore and visualize the radiology report data with a simple, no-code visualization builder or 
 using an integrated SQL IDE.
 
 Under the hood, Superset is able to query the Delta Lake using [Trino](https://trino.io/).
 
-##### JupyterHub
+### Notebooks
 
 [JupyterHub](https://jupyterhub.readthedocs.io/en/stable/) an interface for power-users to access rad report data.
 It provides single-user [Jupyter notebooks](https://jupyter.org/), which can be used to run Python code and interact 
