@@ -55,7 +55,7 @@
             namespace: '{{ extractor_namespace }}'
           data:
             AWS_ENDPOINT_URL: '{{ s3_endpoint }}'
-            AWS_ALLOW_HTTP: true
+            AWS_ALLOW_HTTP: 'true'
             AWS_REGION: '{{ s3_region }}'
 
     - name: Load Java worker values file
