@@ -31,7 +31,7 @@ extension with your LLM provider of choice (e.g., OpenAI, Anthropic, etc.) to en
 
 ## Admin Services
 
-The following admin services support the system's backend operations.
+The following admin services support the system's backend operations. 
 
 ### Monitor
 
