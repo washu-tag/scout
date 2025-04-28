@@ -7,6 +7,7 @@ import io.temporal.client.WorkflowOptions;
 import io.temporal.client.WorkflowStub;
 import io.temporal.serviceclient.WorkflowServiceStubs;
 import io.temporal.serviceclient.WorkflowServiceStubsOptions;
+import java.util.Map;
 import org.apache.log4j.Logger;
 import org.testng.annotations.BeforeSuite;
 
@@ -22,7 +23,7 @@ public class BaseTest {
     @BeforeSuite
     public void launchIngestion() {
         final WorkflowServiceStubsOptions serviceStubOptions = WorkflowServiceStubsOptions.newBuilder()
-            .setTarget("temporal-frontend:7233")
+            .setTarget("temporal-frontend.temporal.svc:7233")
             .build();
 
         final WorkflowClient client = WorkflowClient.newInstance(
@@ -44,7 +45,7 @@ public class BaseTest {
                 .setScratchSpaceRootPath("s3://lake/orchestration/scratch")
                 .setLogsRootPath("/data/hl7")
         );
-        workflow.getResult(String.class);
+        workflow.getResult(Map.class);
         final WorkflowExecution workflowExecution = workflow.getExecution();
         log.fatal("WORKFLOWID " + workflowExecution.getWorkflowId());
         log.fatal("RUNID " + workflowExecution.getRunId());
