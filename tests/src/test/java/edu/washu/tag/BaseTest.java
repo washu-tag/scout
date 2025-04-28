@@ -2,6 +2,9 @@ package edu.washu.tag;
 
 import edu.washu.tag.model.IngestJobInput;
 import io.temporal.api.common.v1.WorkflowExecution;
+import io.temporal.api.workflowservice.v1.DescribeWorkflowExecutionRequest;
+import io.temporal.api.workflowservice.v1.DescribeWorkflowExecutionResponse;
+import io.temporal.api.workflowservice.v1.WorkflowServiceGrpc.WorkflowServiceStub;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowOptions;
 import io.temporal.client.WorkflowStub;
@@ -23,13 +26,13 @@ public class BaseTest {
 
     @BeforeSuite
     public void launchIngestion() {
-        final WorkflowServiceStubsOptions serviceStubOptions = WorkflowServiceStubsOptions.newBuilder()
+        /*final WorkflowServiceStubsOptions serviceStubOptions = WorkflowServiceStubsOptions.newBuilder()
             .setTarget("temporal-frontend.temporal.svc:7233")
             .build();
 
-        final WorkflowClient client = WorkflowClient.newInstance(
-            WorkflowServiceStubs.newServiceStubs(serviceStubOptions)
-        );
+        final WorkflowServiceStubs workflowServiceStubs = WorkflowServiceStubs.newServiceStubs(serviceStubOptions);
+
+        final WorkflowClient client = WorkflowClient.newInstance(workflowServiceStubs);
 
         final WorkflowStub workflow = client.newUntypedWorkflowStub(
             "IngestHl7LogWorkflow",
@@ -45,13 +48,21 @@ public class BaseTest {
                 .setScratchSpaceRootPath("s3://lake/orchestration/scratch")
                 .setLogsRootPath("/data/hl7")
         );
-        final Map<String, Object> result = workflow.getResult(Map.class);
-        for (Map.Entry<String, Object> entry : result.entrySet()) {
-            log.error("Map entry {} -> {}", entry.getKey(), entry.getValue());
-        }
+        workflow.getResult(Map.class);
         final WorkflowExecution workflowExecution = workflow.getExecution();
-        log.error("WORKFLOWID {}", workflowExecution.getWorkflowId());
+        final String workflowId = workflowExecution.getWorkflowId();
+        log.error("WORKFLOWID {}", workflowId);
         log.error("RUNID {}", workflowExecution.getRunId());
+
+        for (int i = 0; i < 11; i++) {
+            final DescribeWorkflowExecutionResponse describeWorkflowExecutionResponse = workflowServiceStubs.blockingStub().describeWorkflowExecution(
+                DescribeWorkflowExecutionRequest.newBuilder()
+                    .setNamespace("default")
+                    .setExecution(workflowExecution).build()
+            );
+            log.error("Pending activity count: {}", describeWorkflowExecutionResponse.getPendingActivitiesCount());
+        }
+         */
     }
 
 }
