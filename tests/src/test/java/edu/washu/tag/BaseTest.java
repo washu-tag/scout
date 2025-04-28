@@ -8,12 +8,13 @@ import io.temporal.client.WorkflowStub;
 import io.temporal.serviceclient.WorkflowServiceStubs;
 import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeSuite;
 
 public class BaseTest {
 
-    private static final Logger log = Logger.getLogger(BaseTest.class);
+    private static final Logger log = LoggerFactory.getLogger(BaseTest.class);
     protected TestConfig config;
 
     public BaseTest() {
@@ -44,10 +45,13 @@ public class BaseTest {
                 .setScratchSpaceRootPath("s3://lake/orchestration/scratch")
                 .setLogsRootPath("/data/hl7")
         );
-        workflow.getResult(Map.class);
+        final Map<String, Object> result = workflow.getResult(Map.class);
+        for (Map.Entry<String, Object> entry : result.entrySet()) {
+            log.error("Map entry {} -> {}", entry.getKey(), entry.getValue());
+        }
         final WorkflowExecution workflowExecution = workflow.getExecution();
-        log.fatal("WORKFLOWID " + workflowExecution.getWorkflowId());
-        log.fatal("RUNID " + workflowExecution.getRunId());
+        log.error("WORKFLOWID {}", workflowExecution.getWorkflowId());
+        log.error("RUNID {}", workflowExecution.getRunId());
     }
 
 }

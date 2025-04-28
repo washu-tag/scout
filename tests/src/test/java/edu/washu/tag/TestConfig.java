@@ -50,13 +50,13 @@ public class TestConfig {
             defaultOverwritten ? providedConfigName : defaultConfigName
         ).toString();
         if (defaultOverwritten) {
-            logger.info(
+            info(
                 "Config file specified as {}, attempting to read it from within the test resource directory as: {}",
                 providedConfigName,
                 effectivePath
             );
         } else {
-            logger.info("Config file not specified, attempting to read it from: {}", effectivePath);
+            info("Config file not specified, attempting to read it from: {}", effectivePath);
         }
 
         try {
