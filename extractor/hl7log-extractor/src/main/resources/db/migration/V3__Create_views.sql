@@ -19,6 +19,7 @@ WHERE processed_at = (
         (
             file_path IS NULL AND
             h.file_path IS NULL AND
-            log_file_path = h.log_file_path
+            log_file_path = h.log_file_path AND
+            segment_number = h.segment_number
         )
 );
