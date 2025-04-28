@@ -29,6 +29,7 @@ final String vSparkSql = '3.5.4'
 final String vDeltaSpark = '3.1.0'
 final String vHadoop = '3.2.0'
 final String vPostgres = '42.7.5'
+final String vTemporal = '1.27.0'
 
 configurations {
     all*.exclude group: 'ch.qos.logback', module: 'logback-classic'
@@ -79,6 +80,7 @@ dependencies {
     testImplementation("io.delta:delta-spark_2.12:${vDeltaSpark}")
     testImplementation("org.apache.hadoop:hadoop-aws:${vHadoop}")
     testImplementation("org.postgresql:postgresql:${vPostgres}")
+    testImplementation("io.temporal:temporal-sdk:${vTemporal}")
 }
 
 java {
