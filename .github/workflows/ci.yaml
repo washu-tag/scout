@@ -178,12 +178,12 @@ jobs:
           show: 'fail, skip'
       - name: Logging (hl7log-extractor)
         shell: bash
-        if: failure()
+        if: always()
         run: |
           sudo -E kubectl -n extractor logs deployment/hl7log-extractor
       - name: Logging (hl7-transformer)
         shell: bash
-        if: failure()
+        if: always()
         run: |
           sudo -E kubectl -n extractor logs deployment/hl7-transformer
   publish:
