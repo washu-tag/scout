@@ -33,6 +33,7 @@ public class BaseTest {
         final WorkflowStub workflow = client.newUntypedWorkflowStub(
             "IngestHl7LogWorkflow",
             WorkflowOptions.newBuilder()
+                .setWorkflowId()
                 .setWorkflowId("IngestHl7LogWorkflow")
                 .setTaskQueue("ingest-hl7-log")
                 .build()
