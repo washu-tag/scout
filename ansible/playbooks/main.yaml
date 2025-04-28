@@ -23,6 +23,9 @@
 - name: Install Orchestrator
   import_playbook: orchestrator.yaml
 
+- name: Install Extractor
+  import_playbook: extractor.yaml
+
 - name: Install Jupyter
   import_playbook: jupyter.yaml
 

@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hl7scout"
+version = "1.0.0"
+description = "Scout Extractor service to read, transform, and upload HL7 file contents to Lake"
+authors = [
+    {name = "John Flavin", email = "jflavin@wustl.edu"},
+]
+maintainers = [
+    {name = "John Flavin", email = "jflavin@wustl.edu"},
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+]
+requires-python = ">= 3.8"  # Lower limit is a guess
+dependencies = [
+    "delta-spark",
+    "fastapi",
+    "psycopg[binary]",
+    "pyspark==3.5.4",
+    "temporalio",
+    "uvicorn",
+]

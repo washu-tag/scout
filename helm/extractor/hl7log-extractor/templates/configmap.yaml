@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "hl7log-extractor.fullname" . }}-config
+  labels:
+    {{- include "hl7log-extractor.labels" . | nindent 4 }}
+data:
+  application.yaml: |
+    {{- .Values.config.application | toYaml | nindent 4 }}

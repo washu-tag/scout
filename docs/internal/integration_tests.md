@@ -21,17 +21,17 @@ attempt to load a default config in a `local.json`. The JSON configuration corre
 ## To run on a dev cluster
 
 Assuming you are in the `scout` repo:
-* Copy test data from `tests/staging_test_data/hl7` into the local directory you've mounted for the temporal-java worker, e.g.,
+* Copy test data from `tests/staging_test_data/hl7` into the local directory you've mounted for the Extractors, e.g.,
 ```
 cp -r tests/staging_test_data/hl7 ../data/
 ```
-* Run `.github/ci_resources/launch_temporal_extraction.sh`
-* Copy json config, make any modififations necessary for your set up
+* Run `.github/ci_resources/launch_extraction.sh`
+* Copy json config, make any modifications necessary for your set up
 ```
 cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
 ```
 * Run the tests as a k8s job so they can talk to minio
 ```
 sed "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml | kubectl apply -f -
-kubectl -n explorer logs -f job/ci-tests
+kubectl -n extractor logs -f job/ci-tests
 ```

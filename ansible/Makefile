@@ -1,6 +1,6 @@
 .PHONY: all deps install-k3s config-traefik install-helm clone-scout install-postgres \
-        install-lake install-analytics install-orchestrator install-monitor \
-        install-jupyter install-explorer echo
+        install-lake install-analytics install-orchestrator install-extractor \
+        install-monitor install-jupyter install-explorer echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -58,6 +58,9 @@ install-analytics:
 
 install-orchestrator:
 	$(ANSIBLE_CMD) playbooks/orchestrator.yaml
+
+install-extractor:
+	$(ANSIBLE_CMD) playbooks/extractor.yaml
 
 install-jupyter:
 	$(ANSIBLE_CMD) playbooks/jupyter.yaml

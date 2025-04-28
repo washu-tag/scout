@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: ci-tests
-  namespace: explorer
+  namespace: extractor
 spec:
   completions: 1
   backoffLimit: 0

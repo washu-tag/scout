@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hl7-transformer
+description: Read, transform, and upload HL7 file contents to Lake
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
