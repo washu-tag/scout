@@ -124,6 +124,7 @@ public class TestStatusDatabase extends BaseTest {
             final Connection connection = config.getPostgresConfig().getConnection();
             final ResultSet resultSet = connection.prepareStatement(sql.build()).executeQuery()
         ) {
+            logger.info("Issuing query: {}", sql);
             resultValidator.accept(resultSet);
         } catch (SQLException sqlException) {
             throw new RuntimeException(sqlException);

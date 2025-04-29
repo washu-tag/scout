@@ -4,10 +4,12 @@ import edu.washu.tag.model.IngestJobInput;
 import io.temporal.api.common.v1.WorkflowExecution;
 import io.temporal.api.workflowservice.v1.DescribeWorkflowExecutionRequest;
 import io.temporal.api.workflowservice.v1.DescribeWorkflowExecutionResponse;
+import io.temporal.api.workflowservice.v1.GetWorkflowExecutionHistoryRequest;
 import io.temporal.api.workflowservice.v1.WorkflowServiceGrpc.WorkflowServiceStub;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowOptions;
 import io.temporal.client.WorkflowStub;
+import io.temporal.common.WorkflowExecutionHistory;
 import io.temporal.serviceclient.WorkflowServiceStubs;
 import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import java.util.Map;
@@ -26,7 +28,7 @@ public class BaseTest {
 
     @BeforeSuite
     public void launchIngestion() {
-        /*final WorkflowServiceStubsOptions serviceStubOptions = WorkflowServiceStubsOptions.newBuilder()
+        final WorkflowServiceStubsOptions serviceStubOptions = WorkflowServiceStubsOptions.newBuilder()
             .setTarget("temporal-frontend.temporal.svc:7233")
             .build();
 
@@ -62,7 +64,23 @@ public class BaseTest {
             );
             log.error("Pending activity count: {}", describeWorkflowExecutionResponse.getPendingActivitiesCount());
         }
-         */
+
+
+
+
+
+
+
+
+
+
+
+
+        GetWorkflowExecutionHistoryRequest historyRequest = GetWorkflowExecutionHistoryRequest.newBuilder()
+            .setNamespace("default")
+            .setExecution(workflowExecution)
+            .build();
+        new WorkflowExecutionHistory(workflowServiceStubs.blockingStub().getWorkflowExecutionHistory(historyRequest).getHistory())
     }
 
 }
