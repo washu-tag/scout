@@ -119,10 +119,11 @@ public class TestStatusDatabase extends BaseTest {
         );
     }
 
-    private void runDbTest(SqlQuery sql, Consumer<ResultSet> resultValidator) {
+    private void runDbTest(SqlQuery query, Consumer<ResultSet> resultValidator) {
+        final String sql = query.build();
         try (
             final Connection connection = config.getPostgresConfig().getConnection();
-            final ResultSet resultSet = connection.prepareStatement(sql.build()).executeQuery()
+            final ResultSet resultSet = connection.prepareStatement(sql).executeQuery()
         ) {
             logger.info("Issuing query: {}", sql);
             resultValidator.accept(resultSet);
