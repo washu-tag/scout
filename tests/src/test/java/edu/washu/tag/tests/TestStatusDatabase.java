@@ -99,23 +99,25 @@ public class TestStatusDatabase extends BaseTest {
             logRow
         );
 
-        final Hl7FileRow failedExtractionMessage = Hl7FileRow.failure(0, "2023/01/13/12/202301131207178754.hl7", "???");
-        final Hl7FileRow successfulHl7Message = Hl7FileRow.success(1, "2023/01/13/18/202301131807178754.hl7");
+        final String failedFilePath = "2023/01/13/12/202301131207178754.hl7";
+        final Hl7FileRow firstMessageSuccessful = Hl7FileRow.success(0, failedFilePath);
+        final Hl7FileRow secondHl7Message = Hl7FileRow.success(1, "2023/01/13/18/202301131807178754.hl7");
+        final Hl7FileRow thirdHl7Message = Hl7FileRow.success(2, "2023/01/13/20/202301132017309482.hl7");
+        final Hl7FileRow firstMessageFailed = Hl7FileRow.failure(0, failedFilePath, "HL7 file is empty or unparsable");
 
         runHl7FileTest(
             SqlQuery.hl7FileTableQuery("20230113"),
-            failedExtractionMessage,
-            failedExtractionMessage,
-            failedExtractionMessage,
-            failedExtractionMessage,
-            failedExtractionMessage,
-            successfulHl7Message
+            firstMessageSuccessful,
+            secondHl7Message,
+            thirdHl7Message,
+            firstMessageFailed
         );
 
         runHl7FileTest(
             SqlQuery.hl7FileViewQuery("20230113"),
-            failedExtractionMessage,
-            successfulHl7Message
+            secondHl7Message,
+            thirdHl7Message,
+            firstMessageFailed
         );
     }
 
