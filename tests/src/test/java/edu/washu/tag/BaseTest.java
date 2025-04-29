@@ -28,7 +28,7 @@ public class BaseTest {
 
     @BeforeSuite
     public void launchIngestion() {
-        final WorkflowServiceStubsOptions serviceStubOptions = WorkflowServiceStubsOptions.newBuilder()
+        /*final WorkflowServiceStubsOptions serviceStubOptions = WorkflowServiceStubsOptions.newBuilder()
             .setTarget("temporal-frontend.temporal.svc:7233")
             .build();
 
@@ -80,7 +80,7 @@ public class BaseTest {
             .setNamespace("default")
             .setExecution(workflowExecution)
             .build();
-        new WorkflowExecutionHistory(workflowServiceStubs.blockingStub().getWorkflowExecutionHistory(historyRequest).getHistory())
+        new WorkflowExecutionHistory(workflowServiceStubs.blockingStub().getWorkflowExecutionHistory(historyRequest).getHistory())*/
     }
 
 }
