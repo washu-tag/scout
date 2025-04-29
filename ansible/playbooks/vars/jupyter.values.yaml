@@ -45,10 +45,15 @@ ingress:
           port:
             name: http
 
+prePuller:
+  hook:
+    enabled: true
+
 singleuser:
   image:
     name: ghcr.io/washu-tag/pyspark-notebook
     tag: latest
+    pullPolicy: Never
   cmd: null
   lifecycleHooks:
     postStart:
