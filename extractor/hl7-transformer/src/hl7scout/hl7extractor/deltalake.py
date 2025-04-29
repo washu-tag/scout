@@ -83,7 +83,7 @@ def import_hl7_files_to_deltalake(
             .load(hl7_file_paths_from_spark)
             .withColumn(
                 "source_file",
-                F.regexp_replace(F.input_file_name(), "^s3a://", "^s3://"),
+                F.regexp_replace(F.input_file_name(), "^s3a://", "s3://"),
             )
         )
 

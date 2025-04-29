@@ -8,3 +8,4 @@ notebooks/
 docs/build
 .terraform
 .terraform.lock.hcl
+build/
