@@ -1,7 +1,6 @@
 package edu.washu.tag.tests;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.fail;
 
 import edu.washu.tag.BaseTest;
 import java.sql.Connection;
@@ -166,6 +165,7 @@ public class TestStatusDatabase extends BaseTest {
                         if (hl7FileRow.filePath == null) {
                             assertThat(actualPath).as("file_path").isNull();
                         } else {
+                            assertThat(actualPath).startsWith("s3://");
                             assertThat(actualPath).endsWith(hl7FileRow.filePath);
                         }
                         assertThat(resultSet.getString("error_message")).isEqualTo(hl7FileRow.errorMessage);
