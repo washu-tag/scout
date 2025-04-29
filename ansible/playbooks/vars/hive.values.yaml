@@ -107,9 +107,9 @@ env:
   - name: HIVE_METASTORE_JDBC_URL
     value: 'jdbc:postgresql://postgresql-cluster-rw.{{ postgres_cluster_namespace }}:5432/hive'
   - name: HIVE_METASTORE_USER
-    value: '{{ postgres_user }}'
+    value: '{{ hive_postgres_user }}'
   - name: HIVE_METASTORE_PASSWORD
-    value: '{{ postgres_password }}'
+    value: '{{ hive_postgres_password }}'
   - name: HIVE_METASTORE_WAREHOUSE_DIR
     value: '{{ hive_warehouse }}'
   - name: S3_ENDPOINT
