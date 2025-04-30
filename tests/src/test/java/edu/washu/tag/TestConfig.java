@@ -12,6 +12,7 @@ public class TestConfig {
 
     private Map<String, Object> sparkConfig;
     private String deltaLakeUrl;
+    private DatabaseConfig postgresConfig;
     private static final Logger logger = LoggerFactory.getLogger(TestConfig.class);
     public static final TestConfig instance = cache();
 
@@ -29,6 +30,15 @@ public class TestConfig {
 
     public void setDeltaLakeUrl(String deltaLakeUrl) {
         this.deltaLakeUrl = deltaLakeUrl;
+    }
+
+    public DatabaseConfig getPostgresConfig() {
+        return postgresConfig;
+    }
+
+    public TestConfig setPostgresConfig(DatabaseConfig postgresConfig) {
+        this.postgresConfig = postgresConfig;
+        return this;
     }
 
     private static TestConfig cache() {

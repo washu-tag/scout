@@ -96,6 +96,8 @@ jobs:
       - build-and-upload-pyspark-notebook
       - build-and-upload-explorer
       - unit-test
+    permissions:
+      contents: read
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     steps:
