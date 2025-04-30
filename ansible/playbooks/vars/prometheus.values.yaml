@@ -24,11 +24,11 @@ server:
       mountPath: /etc/secrets/jupyterhub
       readOnly: true
 
-extraScrapeConfigs:
+extraScrapeConfigs: |
   - job_name: 'grafana'
     metrics_path: /grafana/metrics
     static_configs:
-      - targets: ['grafana."{{ grafana_namespace }}".svc.cluster.local']
+      - targets: ['grafana.{{ grafana_namespace }}.svc.cluster.local']
 
   - job_name: 'jaeger-agent'
     metrics_path: /metrics
@@ -48,31 +48,31 @@ extraScrapeConfigs:
   - job_name: 'loki'
     metrics_path: /metrics
     static_configs:
-      - targets: ['loki.loki.svc.cluster.local:3100']
+      - targets: ['loki.{{ loki_namespace }}.svc.cluster.local:3100']
 
   - job_name: minio-cluster
     metrics_path: /minio/v2/metrics/cluster
     scheme: http
     static_configs:
-      - targets: ['minio.minio-scout.svc.cluster.local']
+      - targets: ['minio.{{ minio_tenant_namespace }}.svc.cluster.local']
 
   - job_name: minio-bucket
     metrics_path: /minio/v2/metrics/bucket
     scheme: http
     static_configs:
-      - targets: ['minio.minio-scout.svc.cluster.local']
+      - targets: ['minio.{{ minio_tenant_namespace }}.svc.cluster.local']
 
   - job_name: minio-node
     metrics_path: /minio/v2/metrics/node
     scheme: http
     static_configs:
-      - targets: ['minio.minio-scout.svc.cluster.local']
+      - targets: ['minio.{{ minio_tenant_namespace }}.svc.cluster.local']
 
   - job_name: minio-resource
     metrics_path: /minio/v2/metrics/resource
     scheme: http
     static_configs:
-      - targets: ['minio.minio-scout.svc.cluster.local']
+      - targets: ['minio.{{ minio_tenant_namespace }}.svc.cluster.local']
 
   - job_name: jupyterhub
     metrics_path: /jupyter/hub/metrics
