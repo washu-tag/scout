@@ -41,8 +41,8 @@
             namespace: '{{ extractor_namespace }}'
           type: Opaque
           stringData:
-            AWS_ACCESS_KEY_ID: '{{ s3_username }}'
-            AWS_SECRET_ACCESS_KEY: '{{ s3_password }}'
+            AWS_ACCESS_KEY_ID: '{{ s3_lake_writer }}'
+            AWS_SECRET_ACCESS_KEY: '{{ s3_lake_writer_secret }}'
 
     - name: Create S3 configmap
       kubernetes.core.k8s:
@@ -80,6 +80,8 @@
         spark_defaults_configmap_name: spark-defaults
         spark_defaults_configmap_namespace: '{{ extractor_namespace }}'
         spark_memory: '{{ hl7_transformer_spark_memory }}'
+        spark_s3_username: '{{ s3_lake_writer }}'
+        spark_s3_password: '{{ s3_lake_writer_secret }}'
 
     - name: Load HL7 Transformer values file
       ansible.builtin.include_vars:

@@ -32,8 +32,8 @@
         namespace: '{{ loki_namespace }}'
       type: Opaque
       stringData:
-        AWS_ACCESS_KEY_ID: '{{ s3_username }}'
-        AWS_SECRET_ACCESS_KEY: '{{ s3_password }}'
+        AWS_ACCESS_KEY_ID: '{{ s3_loki_writer }}'
+        AWS_SECRET_ACCESS_KEY: '{{ s3_loki_writer_secret }}'
 
 - name: Install Loki using Helm
   kubernetes.core.helm:

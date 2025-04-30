@@ -115,9 +115,9 @@ env:
   - name: S3_ENDPOINT
     value: '{{ s3_endpoint }}'
   - name: S3_ACCESS_KEY
-    value: '{{ s3_username }}'
+    value: '{{ s3_lake_writer }}'
   - name: S3_SECRET_KEY
-    value: '{{ s3_password }}'
+    value: '{{ s3_lake_writer_secret }}'
   - name: S3_PATH_STYLE_ACCESS
     value: 'true'
   - name: REGION

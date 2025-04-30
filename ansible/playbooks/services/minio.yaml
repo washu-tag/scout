@@ -23,23 +23,6 @@
     kind: Namespace
     state: present
 
-- name: Set up env secret
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: minio-scout-env-configuration
-        namespace: '{{ minio_tenant_namespace }}'
-      type: Opaque
-      stringData:
-        config.env: |
-          export MINIO_ROOT_USER={{ s3_username }}
-          export MINIO_ROOT_PASSWORD={{ s3_password }}
-          export MINIO_REGION_NAME={{ s3_region }}
-          export MINIO_REGION={{ s3_region }}
-
 - name: Create Traefik Middleware to add trailing slash that Minio needs
   kubernetes.core.k8s:
     state: present
@@ -76,6 +59,124 @@
       - name: minio
         size: '750Gi'
         path: '{{ minio_dir }}'
+
+- name: Set up env secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: minio-scout-env-configuration
+        namespace: '{{ minio_tenant_namespace }}'
+      type: Opaque
+      stringData:
+        config.env: |
+          export MINIO_ROOT_USER={{ s3_username }}
+          export MINIO_ROOT_PASSWORD={{ s3_password }}
+          export MINIO_REGION_NAME={{ s3_region }}
+          export MINIO_REGION={{ s3_region }}
+
+- name: Create MinIO IAM policies
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: minio.min.io/v2
+      kind: Policy
+      metadata:
+        name: "policy-{{ item.name }}"
+        namespace: '{{ minio_tenant_namespace }}'
+      spec:
+        name: "{{ item.name }}"
+        definition: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": {{ item.actions | to_json }},
+                "Resource": {{ item.resources | to_json }}
+              }
+            ]
+          }
+  loop:
+    - name: lake-r
+      actions:
+        - s3:GetObject
+        - s3:ListBucket
+      resources:
+        - arn:aws:s3:::lake/*
+        - arn:aws:s3:::lake
+    - name: lake-rw
+      actions:
+        - s3:GetObject
+        - s3:ListBucket
+        - s3:PutObject
+        - s3:DeleteObject
+      resources:
+        - arn:aws:s3:::lake/*
+        - arn:aws:s3:::lake
+        - arn:aws:s3:::scratch/*
+        - arn:aws:s3:::scratch
+    - name: loki-rw
+      actions:
+        - s3:GetObject
+        - s3:ListBucket
+        - s3:PutObject
+        - s3:DeleteObject
+      resources:
+        - arn:aws:s3:::loki-chunks/*
+        - arn:aws:s3:::loki-chunks
+        - arn:aws:s3:::loki-ruler/*
+        - arn:aws:s3:::loki-ruler
+        - arn:aws:s3:::loki-admin/*
+        - arn:aws:s3:::loki-admin
+
+- name: Bind policies to users
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: minio.min.io/v2
+      kind: PolicyBinding
+      metadata:
+        name: "binding-{{ item.name }}"
+        namespace: '{{ minio_tenant_namespace }}'
+      spec:
+        policyName: "{{ item.policy_name }}"
+        userRef:
+          name: "{{ item.name }}"
+        tenant: minio-scout
+  loop:
+    - name: lake-reader
+      policy_name: lake-r
+    - name: lake-writer
+      policy_name: lake-rw
+    - name: loki-writer
+      policy_name: loki-rw
+
+- name: Create service account secrets for MinIO users
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ item.name }}-creds"
+        namespace: '{{ minio_tenant_namespace }}'
+      type: Opaque
+      stringData:
+        CONSOLE_ACCESS_KEY: "{{ item.access_key }}"
+        CONSOLE_SECRET_KEY: "{{ item.secret_key }}"
+  loop:
+    - name: lake-reader
+      access_key: "lake-reader"
+      secret_key: "{{ lake_reader_secret }}"
+    - name: lake-writer
+      access_key: "lake-writer"
+      secret_key: "{{ lake_writer_secret }}"
+    - name: loki-writer
+      access_key: "loki-writer"
+      secret_key: "{{ loki_writer_secret }}"
 
 - name: Install/Upgrade Minio Tenant
   kubernetes.core.helm:
@@ -116,6 +217,11 @@
           - name: loki-ruler
           - name: loki-admin
           - name: lake
+          - name: scratch
+        users:
+          - lake-reader-creds
+          - lake-writer-creds
+          - loki-writer-creds
       ingress:
         console:
           enabled: true
