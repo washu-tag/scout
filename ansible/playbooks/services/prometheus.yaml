@@ -31,6 +31,11 @@
       stringData:
         metrics-api-token: '{{ jupyter_metrics_api_token }}'
 
+- name: Load Prometheus values file
+  ansible.builtin.include_vars:
+    file: vars/prometheus.values.yaml
+    name: prometheus_values
+
 - name: Install Prometheus using Helm
   kubernetes.core.helm:
     state: present
@@ -41,4 +46,4 @@
     update_repo_cache: true
     chart_version: ~27.11.0
     values_files:
-      - '{{ scout_repo_dir }}/helm/prometheus/values.yaml'
+      - '{{ prometheus_values }}'

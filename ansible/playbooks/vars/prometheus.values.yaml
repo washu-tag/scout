@@ -24,11 +24,11 @@ server:
       mountPath: /etc/secrets/jupyterhub
       readOnly: true
 
-extraScrapeConfigs: |
+extraScrapeConfigs:
   - job_name: 'grafana'
     metrics_path: /grafana/metrics
     static_configs:
-      - targets: ['grafana.grafana.svc.cluster.local']
+      - targets: ['grafana."{{ grafana_namespace }}".svc.cluster.local']
 
   - job_name: 'jaeger-agent'
     metrics_path: /metrics
@@ -66,13 +66,13 @@ extraScrapeConfigs: |
     metrics_path: /minio/v2/metrics/node
     scheme: http
     static_configs:
-    - targets: ['minio.minio-scout.svc.cluster.local']
+      - targets: ['minio.minio-scout.svc.cluster.local']
 
   - job_name: minio-resource
     metrics_path: /minio/v2/metrics/resource
     scheme: http
     static_configs:
-    - targets: ['minio.minio-scout.svc.cluster.local']
+      - targets: ['minio.minio-scout.svc.cluster.local']
 
   - job_name: jupyterhub
     metrics_path: /jupyter/hub/metrics
