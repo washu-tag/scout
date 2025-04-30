@@ -147,11 +147,11 @@
           name: "{{ item.name }}"
         tenant: minio-scout
   loop:
-    - name: lake-reader
+    - name: '{{ s3_lake_reader }}'
       policy_name: lake-r
-    - name: lake-writer
+    - name: '{{ s3_lake_writer }}'
       policy_name: lake-rw
-    - name: loki-writer
+    - name: '{{ s3_loki_writer }}'
       policy_name: loki-rw
 
 - name: Create service account secrets for MinIO users
@@ -161,21 +161,18 @@
       apiVersion: v1
       kind: Secret
       metadata:
-        name: "{{ item.name }}-creds"
+        name: "{{ item.access_key }}-creds"
         namespace: '{{ minio_tenant_namespace }}'
       type: Opaque
       stringData:
         CONSOLE_ACCESS_KEY: "{{ item.access_key }}"
         CONSOLE_SECRET_KEY: "{{ item.secret_key }}"
   loop:
-    - name: lake-reader
-      access_key: "lake-reader"
+    - access_key: '{{ s3_lake_reader }}'
       secret_key: "{{ lake_reader_secret }}"
-    - name: lake-writer
-      access_key: "lake-writer"
+    - access_key: '{{ s3_lake_writer }}'
       secret_key: "{{ lake_writer_secret }}"
-    - name: loki-writer
-      access_key: "loki-writer"
+    - access_key: '{{ s3_loki_writer }}'
       secret_key: "{{ loki_writer_secret }}"
 
 - name: Install/Upgrade Minio Tenant
@@ -219,9 +216,9 @@
           - name: lake
           - name: scratch
         users:
-          - lake-reader-creds
-          - lake-writer-creds
-          - loki-writer-creds
+          - '{{ s3_lake_reader }}-creds'
+          - '{{ s3_lake_writer }}-creds'
+          - '{{ s3_loki_writer }}-creds'
       ingress:
         console:
           enabled: true
