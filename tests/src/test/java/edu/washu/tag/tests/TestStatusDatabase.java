@@ -21,7 +21,7 @@ public class TestStatusDatabase extends BaseTest {
 
     @Test
     public void testStatusDbSuccess() {
-        final LogRow logRow = LogRow.success("1995-04-02", null);
+        final LogRow logRow = LogRow.success("1995-04-02");
 
         runLogTest(
             SqlQuery.logTableQuery("19950402"),
@@ -51,7 +51,7 @@ public class TestStatusDatabase extends BaseTest {
 
     @Test
     public void testStatusDbTotalFailure() {
-        final LogRow logRowWithRetries = LogRow.success("2024-01-02", null);
+        final LogRow logRowWithRetries = LogRow.success("2024-01-02");
 
         runLogTest(
             SqlQuery.logTableQuery("20240102"),
@@ -86,7 +86,7 @@ public class TestStatusDatabase extends BaseTest {
 
     @Test
     public void testStatusDbHl7MessageParseError() {
-        final LogRow logRow = LogRow.success("2023-01-13", null);
+        final LogRow logRow = LogRow.success("2023-01-13");
 
         runLogTest(
             SqlQuery.logTableQuery("20230113"),
@@ -189,8 +189,8 @@ public class TestStatusDatabase extends BaseTest {
             this.errorMessage = errorMessage;
         }
 
-        private static LogRow success(String date, String errorMessage) {
-            return new LogRow("succeeded", date, errorMessage);
+        private static LogRow success(String date) {
+            return new LogRow("succeeded", date, null);
         }
     }
 
