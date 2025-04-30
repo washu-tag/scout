@@ -1,14 +1,18 @@
 package edu.washu.tag.extractor.hl7log.db;
 
 import com.zaxxer.hikari.HikariDataSource;
+import io.temporal.activity.Activity;
 import io.temporal.workflow.Workflow;
 import jakarta.annotation.PostConstruct;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,9 +20,11 @@ public class IngestDbServiceImpl implements IngestDbService {
     private static final Logger logger = Workflow.getLogger(IngestDbServiceImpl.class);
 
     private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     public IngestDbServiceImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
     }
 
     @PostConstruct
@@ -70,5 +76,19 @@ public class IngestDbServiceImpl implements IngestDbService {
                 }
             }
         );
+    }
+
+    @Override
+    public List<Hl7FileLogFileSegmentNumber> queryHl7FileLogFileSegmentNumbers(List<String> hl7FilePaths) {
+        String querySql = "SELECT DISTINCT file_path, log_file_path, segment_number FROM hl7_files WHERE file_path IN (:hl7FilePaths)";
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue("hl7FilePaths", hl7FilePaths);
+
+        return namedParameterJdbcTemplate.query(querySql, parameters, (rs, rowNum) -> {
+            String hl7FilePath = rs.getString("file_path");
+            String logFilePath = rs.getString("log_file_path");
+            int segmentNumber = rs.getInt("segment_number");
+            return new Hl7FileLogFileSegmentNumber(hl7FilePath, logFilePath, segmentNumber);
+        });
     }
 }

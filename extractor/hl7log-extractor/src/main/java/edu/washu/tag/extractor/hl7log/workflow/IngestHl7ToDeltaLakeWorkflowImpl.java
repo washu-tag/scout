@@ -10,10 +10,13 @@ import edu.washu.tag.extractor.hl7log.model.FindHl7FilesOutput;
 import edu.washu.tag.extractor.hl7log.model.IngestHl7FilesToDeltaLakeActivityInput;
 import edu.washu.tag.extractor.hl7log.model.IngestHl7FilesToDeltaLakeInput;
 import edu.washu.tag.extractor.hl7log.model.IngestHl7FilesToDeltaLakeOutput;
+import edu.washu.tag.extractor.hl7log.model.WriteHl7FilesErrorStatusToDbInput;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
+import io.temporal.failure.ActivityFailure;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.ActivityStub;
+import io.temporal.workflow.Promise;
 import io.temporal.workflow.Workflow;
 import io.temporal.workflow.WorkflowInfo;
 import java.time.Duration;
@@ -67,11 +70,27 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
 
         // Ingest HL7 into delta lake
         logger.info("WorkflowId {} - Launching activity to ingest HL7 files", workflowInfo.getWorkflowId());
-        IngestHl7FilesToDeltaLakeOutput ingestHl7Output = ingestActivity.execute(
+        Promise<IngestHl7FilesToDeltaLakeOutput> ingestHl7Promise = ingestActivity.executeAsync(
             PYTHON_ACTIVITY,
             IngestHl7FilesToDeltaLakeOutput.class,
             new IngestHl7FilesToDeltaLakeActivityInput(input.deltaTable(), input.modalityMapPath(), hl7ManifestFilePath)
         );
+
+        IngestHl7FilesToDeltaLakeOutput ingestHl7Output;
+        try {
+            ingestHl7Output = ingestHl7Promise.get();
+        } catch (ActivityFailure e) {
+            logger.warn("WorkflowId {} - Ingest HL7 files activity failed. Marking all HL7 files as \"failed\" status.", workflowInfo.getWorkflowId());
+            try {
+                findHl7Files.writeHl7FilesErrorStatusToDb(
+                    new WriteHl7FilesErrorStatusToDbInput(hl7ManifestFilePath, "Error ingesting HL7 to delta lake: " + e.getMessage())
+                );
+            } catch (Exception e2) {
+                logger.error("WorkflowId {} - Error marking HL7 files as \"failed\" status", workflowInfo.getWorkflowId(), e2);
+                throw e2;
+            }
+            throw e;
+        }
 
         logger.info("WorkflowId {} - Activity complete, ingested {} HL7 files",
             workflowInfo.getWorkflowId(), ingestHl7Output.numHl7Ingested());
