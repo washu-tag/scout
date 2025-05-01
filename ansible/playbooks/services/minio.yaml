@@ -19,6 +19,30 @@
     wait_timeout: "{{ minio_operator_wait_timeout | default('1m') }}"
     atomic: true
 
+- name: Create tenant namespace
+  kubernetes.core.k8s:
+    name: '{{ minio_tenant_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Set up environment secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ minio_env_secret_name | default('minio-env-configuration') }}"
+        namespace: '{{ minio_tenant_namespace }}'
+      type: Opaque
+      stringData:
+        config.env: |
+          export MINIO_ROOT_USER={{ s3_username }}
+          export MINIO_ROOT_PASSWORD={{ s3_password }}
+          export MINIO_REGION_NAME={{ s3_region }}
+          export MINIO_REGION={{ s3_region }}
+
 - name: Create Traefik Middleware to add trailing slash
   kubernetes.core.k8s:
     state: present
@@ -48,13 +72,6 @@
           prefixes:
             - "/{{ minio_path_prefix | default('minio') }}"
 
-- name: Create tenant namespace
-  kubernetes.core.k8s:
-    name: '{{ minio_tenant_namespace }}'
-    api_version: v1
-    kind: Namespace
-    state: present
-
 - name: Configure Storage for MinIO
   include_tasks: tasks/storage_setup.yaml
   vars:
@@ -62,23 +79,6 @@
       - name: minio
         size: '{{ minio_storage_size }}'
         path: '{{ minio_dir }}'
-
-- name: Set up environment secret
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: "{{ minio_env_secret_name | default('minio-env-configuration') }}"
-        namespace: '{{ minio_tenant_namespace }}'
-      type: Opaque
-      stringData:
-        config.env: |
-          export MINIO_ROOT_USER={{ s3_username }}
-          export MINIO_ROOT_PASSWORD={{ s3_password }}
-          export MINIO_REGION_NAME={{ s3_region }}
-          export MINIO_REGION={{ s3_region }}
 
 - name: Install/Upgrade Minio Tenant
   kubernetes.core.helm:
