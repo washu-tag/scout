@@ -8,19 +8,34 @@ k3s_cluster:
           ansible_python_interpreter: /usr/bin/python3
           k3s_control_node: true
   vars:
-    s3_username: minio
-    s3_password: minio123
-    s3_region: us-east-1
-    k3s_token: K3S_TOKEN
-    slack_token:
-    slack_channel_id:
-    kubeconfig_group: root
     hl7log_extractor_image: docker.io/local/washu-tag/hl7log-extractor
     hl7_transformer_image: docker.io/local/washu-tag/hl7-transformer
     explorer_image: docker.io/local/washu-tag/explorer
+
+    # K3s config
+    k3s_version: v1.32.3+k3s1 # Leave blank for latest stable
+    k3s_token: K3S_TOKEN
+    kubeconfig_group: root
+
+    # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
+    s3_username: minio
+    s3_password: minio123
+    s3_region: us-east-1
+    s3_lake_reader: lake-reader
+    s3_lake_reader_secret: lakereader123
+    s3_lake_writer: lake-writer
+    s3_lake_writer_secret: lakewriter123
+    s3_loki_writer: loki-writer
+    s3_loki_writer_secret: lokiwriter123
+
+    # Postgres config
     postgres_user: scout
     postgres_password: scout123
     postgres_superuser_password: scout123
+    hive_postgres_user: hive
+    hive_postgres_password: hive123
+    superset_postgres_user: superset
+    superset_postgres_password: superset123
 
     # Namespaces that can be changed
     hive_namespace: hive
@@ -61,7 +76,7 @@ k3s_cluster:
 
     # computed values, used across playbooks
     s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
-    hive_warehouse: s3a://lake/hive # Hadoop requires the s3a prefix, it is used just like s3://
+    hive_warehouse: s3a://lake/delta # Hadoop requires the s3a prefix, it is used just like s3://
     hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
     server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
     # End do not change
