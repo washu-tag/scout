@@ -222,7 +222,8 @@
                     . /rootcreds/config.env
 
                     # Set up MinIO client
-                    mc alias set local http://{{ minio_tenant_name }}-hl.{{ minio_tenant_namespace }}:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" --insecure
+                    mc alias set local http://{{ minio_tenant_name }}-hl.{{ minio_tenant_namespace }}:9000 \
+                      "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" --insecure
 
                     # Apply policies and attach to users
                     {% for p in minio_policies %}

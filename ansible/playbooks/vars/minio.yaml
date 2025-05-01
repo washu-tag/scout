@@ -63,9 +63,8 @@ minio_policies:
   - name: lake-r
     actions:
       - s3:GetObject
-      - s3:ListBucket
       - s3:GetBucketLocation
-      - s3:ListBucketMultipartUploads
+      - s3:ListBucket
     resources:
       - arn:aws:s3:::lake
       - arn:aws:s3:::lake/*
