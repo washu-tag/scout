@@ -77,18 +77,47 @@
           export MINIO_REGION_NAME={{ s3_region }}
           export MINIO_REGION={{ s3_region }}
 
-- name: Create MinIO IAM policies
+- name: Define MinIO IAM policies
+  set_fact:
+    minio_policies:
+      - name: lake-r
+        actions:
+          - s3:GetObject
+          - s3:ListBucket
+          - s3:GetBucketLocation
+          - s3:ListBucketMultipartUploads
+        resources:
+          - arn:aws:s3:::lake
+          - arn:aws:s3:::lake/*
+        user: '{{ s3_lake_reader }}'
+      - name: lake-rw
+        actions:
+          - s3:*
+        resources:
+          - arn:aws:s3:::lake
+          - arn:aws:s3:::lake/*
+          - arn:aws:s3:::scratch
+          - arn:aws:s3:::scratch/*
+        user: '{{ s3_lake_writer }}'
+      - name: loki-rw
+        actions:
+          - s3:*
+        resources:
+          - arn:aws:s3:::loki-*
+          - arn:aws:s3:::loki-*/*
+        user: '{{ s3_loki_writer }}'
+
+- name: Create MinIO policy JSON ConfigMaps
   kubernetes.core.k8s:
     state: present
-    definition:
-      apiVersion: minio.min.io/v2
-      kind: Policy
+    definition: |
+      apiVersion: v1
+      kind: ConfigMap
       metadata:
-        name: "policy-{{ item.name }}"
-        namespace: '{{ minio_tenant_namespace }}'
-      spec:
-        name: "{{ item.name }}"
-        definition: |
+        name: policy-{{ item.name }}
+        namespace: {{ minio_tenant_namespace }}
+      data:
+        {{ item.name }}.json: |
           {
             "Version": "2012-10-17",
             "Statement": [
@@ -99,81 +128,28 @@
               }
             ]
           }
-  loop:
-    - name: lake-r
-      actions:
-        - s3:GetObject
-        - s3:ListBucket
-      resources:
-        - arn:aws:s3:::lake/*
-        - arn:aws:s3:::lake
-    - name: lake-rw
-      actions:
-        - s3:GetObject
-        - s3:ListBucket
-        - s3:PutObject
-        - s3:DeleteObject
-      resources:
-        - arn:aws:s3:::lake/*
-        - arn:aws:s3:::lake
-        - arn:aws:s3:::scratch/*
-        - arn:aws:s3:::scratch
-    - name: loki-rw
-      actions:
-        - s3:GetObject
-        - s3:ListBucket
-        - s3:PutObject
-        - s3:DeleteObject
-      resources:
-        - arn:aws:s3:::loki-chunks/*
-        - arn:aws:s3:::loki-chunks
-        - arn:aws:s3:::loki-ruler/*
-        - arn:aws:s3:::loki-ruler
-        - arn:aws:s3:::loki-admin/*
-        - arn:aws:s3:::loki-admin
+  loop: '{{ minio_policies }}'
 
-- name: Bind policies to users
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: minio.min.io/v2
-      kind: PolicyBinding
-      metadata:
-        name: "binding-{{ item.name }}"
-        namespace: '{{ minio_tenant_namespace }}'
-      spec:
-        policyName: "{{ item.policy_name }}"
-        userRef:
-          name: "{{ item.name }}"
-        tenant: minio-scout
-  loop:
-    - name: '{{ s3_lake_reader }}'
-      policy_name: lake-r
-    - name: '{{ s3_lake_writer }}'
-      policy_name: lake-rw
-    - name: '{{ s3_loki_writer }}'
-      policy_name: loki-rw
-
-- name: Create service account secrets for MinIO users
+- name: Create MinIO user credential secrets
   kubernetes.core.k8s:
     state: present
     definition:
       apiVersion: v1
       kind: Secret
       metadata:
-        name: "{{ item.access_key }}-creds"
+        name: '{{ item.access_key }}-creds'
         namespace: '{{ minio_tenant_namespace }}'
       type: Opaque
       stringData:
-        CONSOLE_ACCESS_KEY: "{{ item.access_key }}"
-        CONSOLE_SECRET_KEY: "{{ item.secret_key }}"
+        CONSOLE_ACCESS_KEY: '{{ item.access_key }}'
+        CONSOLE_SECRET_KEY: '{{ item.secret_key }}'
   loop:
     - access_key: '{{ s3_lake_reader }}'
-      secret_key: "{{ lake_reader_secret }}"
+      secret_key: '{{ s3_lake_reader_secret }}'
     - access_key: '{{ s3_lake_writer }}'
-      secret_key: "{{ lake_writer_secret }}"
+      secret_key: '{{ s3_lake_writer_secret }}'
     - access_key: '{{ s3_loki_writer }}'
-      secret_key: "{{ loki_writer_secret }}"
+      secret_key: '{{ s3_loki_writer_secret }}'
 
 - name: Install/Upgrade Minio Tenant
   kubernetes.core.helm:
@@ -216,9 +192,9 @@
           - name: lake
           - name: scratch
         users:
-          - '{{ s3_lake_reader }}-creds'
-          - '{{ s3_lake_writer }}-creds'
-          - '{{ s3_loki_writer }}-creds'
+          - name: '{{ s3_lake_reader }}-creds'
+          - name: '{{ s3_lake_writer }}-creds'
+          - name: '{{ s3_loki_writer }}-creds'
       ingress:
         console:
           enabled: true
@@ -230,3 +206,66 @@
             traefik.ingress.kubernetes.io/router.middlewares: >
               kube-system-minio-add-trailing-slash@kubernetescrd,
               kube-system-minio-strip-prefix@kubernetescrd
+
+- name: Wait for MinIO to be ready
+  command: 'kubectl -n {{ minio_tenant_namespace }} wait --for=condition=Ready --timeout=300s statefulset/minio-scout-pool-0'
+  register: minio_ready
+  changed_when: false
+
+- name: Bootstrap MinIO IAM (policies + bindings)
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: bootstrap-minio-iam
+        namespace: '{{ minio_tenant_namespace }}'
+      spec:
+        ttlSecondsAfterFinished: 600
+        template:
+          spec:
+            restartPolicy: Never
+            serviceAccountName: minio-scout-sa
+            containers:
+              - name: mc
+                image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+                command: ["/bin/sh","-c"]
+                args:
+                  - |
+                    set -euo pipefail
+                    . /rootcreds/config.env
+                    mc alias set local http://minio-scout-hl.{{ minio_tenant_namespace }}:9000  "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" --insecure
+                    {% for p in minio_policies %}
+                    mc admin policy create local {{ p.name }} /policies/{{ p.name }}.json
+                    mc admin policy attach local {{ p.name }} --user {{ p.user }}
+                    {% endfor %}
+                volumeMounts:
+                  - name: policies
+                    mountPath: /policies
+                    readOnly: true
+                  - name: rootcreds
+                    mountPath: /rootcreds
+                    readOnly: true
+            volumes:
+              - name: policies
+                projected:
+                  defaultMode: 0644
+                  sources:
+                    - configMap:
+                        name: policy-lake-r
+                    - configMap:
+                        name: policy-lake-rw
+                    - configMap:
+                        name: policy-loki-rw
+              - name: rootcreds
+                secret:
+                  secretName: minio-scout-env-configuration
+                  items:
+                    - key: config.env
+                      path: config.env
+
+- name: Wait for job to complete
+  command: 'kubectl -n {{ minio_tenant_namespace }} wait --for=condition=complete --timeout=300s job/bootstrap-minio-iam'
+  register: minio_bootstrap_complete
+  changed_when: false

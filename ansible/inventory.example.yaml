@@ -94,7 +94,7 @@ k3s_cluster:
     temporal_namespace: temporal
 
     # computed values, used across playbooks
-    s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
+    s3_endpoint: 'https://minio.{{ minio_tenant_namespace }}'
     hive_warehouse: 's3a://lake/hive' # Hadoop requires the s3a prefix, it is used just like s3://
     hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
     server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
