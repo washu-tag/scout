@@ -31,7 +31,7 @@ public class TestScoutQueries extends BaseTest {
         spark
             .read()
             .format("delta")
-            .load(config.getDeltaLakeUrl())
+            .load(config.getTemporalConfig().getIngestJobInput().getDeltaLakePath())
             .createOrReplaceTempView(exportedQueries.getViewName());
     }
 

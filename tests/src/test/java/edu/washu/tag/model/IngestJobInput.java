@@ -2,9 +2,9 @@ package edu.washu.tag.model;
 
 public class IngestJobInput {
 
-    private String deltaLakePath = "s3://lake/orchestration/delta/test_data";
-    private String hl7OutputPath = "s3://lake/orchestration/hl7";
-    private String scratchSpaceRootPath = "s3://lake/orchestration/scratch";
+    private String deltaLakePath = "s3://lake/delta";
+    private String hl7OutputPath = "s3://lake/hl7";
+    private String scratchSpaceRootPath = "s3://lake/scratch";
     private String logsRootPath = "/data/hl7";
 
     public String getDeltaLakePath() {

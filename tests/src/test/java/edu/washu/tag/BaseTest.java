@@ -4,7 +4,6 @@ import static io.temporal.api.enums.v1.WorkflowExecutionStatus.WORKFLOW_EXECUTIO
 import static io.temporal.api.enums.v1.WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_CONTINUED_AS_NEW;
 import static org.awaitility.Awaitility.await;
 
-import edu.washu.tag.model.IngestJobInput;
 import io.temporal.api.common.v1.WorkflowExecution;
 import io.temporal.api.enums.v1.WorkflowExecutionStatus;
 import io.temporal.api.workflow.v1.PendingChildExecutionInfo;
