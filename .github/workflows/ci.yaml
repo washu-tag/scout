@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
   push:
-    branches: [main]
+    branches: [main, tests-launch-temporal]
 
 env:
   JAVA_DIST: 'zulu'
@@ -14,6 +14,8 @@ env:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4.2.1
       - uses: actions/setup-python@v5.2.0
@@ -78,6 +80,8 @@ jobs:
           image-name: explorer
   unit-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4.2.1
       - uses: actions/setup-java@v4
@@ -149,9 +153,10 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/extractor.yaml
-      - name: 'Launch extraction'
+      - name: 'Wait for minio'
         shell: bash
-        run: sudo -E bash .github/ci_resources/launch_extraction.sh
+        run: |
+          sudo -E kubectl -n minio-scout wait --for=condition=ready --timeout=300s pod -l v1.min.io/tenant=minio-scout
       - name: 'Run tests'
         shell: bash
         run: |
