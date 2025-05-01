@@ -19,30 +19,6 @@
     wait_timeout: "{{ minio_operator_wait_timeout | default('1m') }}"
     atomic: true
 
-- name: Create tenant namespace
-  kubernetes.core.k8s:
-    name: '{{ minio_tenant_namespace }}'
-    api_version: v1
-    kind: Namespace
-    state: present
-
-- name: Set up environment secret
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: "{{ minio_env_secret_name | default('minio-env-configuration') }}"
-        namespace: '{{ minio_tenant_namespace }}'
-      type: Opaque
-      stringData:
-        config.env: |
-          export MINIO_ROOT_USER={{ s3_username }}
-          export MINIO_ROOT_PASSWORD={{ s3_password }}
-          export MINIO_REGION_NAME={{ s3_region }}
-          export MINIO_REGION={{ s3_region }}
-
 - name: Create Traefik Middleware to add trailing slash
   kubernetes.core.k8s:
     state: present
@@ -79,6 +55,45 @@
       - name: minio
         size: '{{ minio_storage_size }}'
         path: '{{ minio_dir }}'
+
+- name: Create tenant namespace
+  kubernetes.core.k8s:
+    name: '{{ minio_tenant_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Set up environment secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ minio_env_secret_name | default('minio-env-configuration') }}"
+        namespace: '{{ minio_tenant_namespace }}'
+      type: Opaque
+      stringData:
+        config.env: |
+          export MINIO_ROOT_USER={{ s3_username }}
+          export MINIO_ROOT_PASSWORD={{ s3_password }}
+          export MINIO_REGION_NAME={{ s3_region }}
+          export MINIO_REGION={{ s3_region }}
+
+- name: Create MinIO user credential secrets
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ item.access_key }}-creds'
+        namespace: '{{ minio_tenant_namespace }}'
+      type: Opaque
+      stringData:
+        CONSOLE_ACCESS_KEY: '{{ item.access_key }}'
+        CONSOLE_SECRET_KEY: '{{ item.secret_key }}'
+  loop: '{{ minio_users }}'
 
 - name: Install/Upgrade Minio Tenant
   kubernetes.core.helm:
@@ -139,21 +154,6 @@
   retries: '{{ minio_wait_retries | default(60) }}'
   delay: '{{ minio_wait_delay | default(5) }}'
   changed_when: false
-
-- name: Create MinIO user credential secrets
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: '{{ item.access_key }}-creds'
-        namespace: '{{ minio_tenant_namespace }}'
-      type: Opaque
-      stringData:
-        CONSOLE_ACCESS_KEY: '{{ item.access_key }}'
-        CONSOLE_SECRET_KEY: '{{ item.secret_key }}'
-  loop: '{{ minio_users }}'
 
 - name: Create MinIO policy JSON ConfigMaps
   kubernetes.core.k8s:
