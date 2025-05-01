@@ -1,3 +1,6 @@
+- name: Include MinIO variables
+  include_vars: vars/minio.yml
+
 - name: Add Minio Helm repository
   kubernetes.core.helm_repository:
     name: minio-operator
@@ -7,67 +10,67 @@
   kubernetes.core.helm:
     name: minio-operator
     chart_ref: minio-operator/operator
-    chart_version: ~7.1.0
+    chart_version: "{{ minio_version | default('~7.1.0') }}"
     release_namespace: minio-operator
     create_namespace: true
     release_state: present
     update_repo_cache: true
     wait: true
-    wait_timeout: 1m
+    wait_timeout: "{{ minio_operator_wait_timeout | default('1m') }}"
     atomic: true
 
-- name: Create namespace
+- name: Create Traefik Middleware to add trailing slash
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: "{{ minio_trailing_slash_middleware | default('minio-add-trailing-slash') }}"
+        namespace: kube-system
+      spec:
+        redirectRegex:
+          regex: "(.*/{{ minio_path_prefix | default('minio') }}$)"
+          replacement: ${1}/
+          permanent: true
+
+- name: Create Traefik Middleware to strip prefix
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: "{{ minio_strip_prefix_middleware | default('minio-strip-prefix') }}"
+        namespace: kube-system
+      spec:
+        stripPrefix:
+          prefixes:
+            - "/{{ minio_path_prefix | default('minio') }}"
+
+- name: Create tenant namespace
   kubernetes.core.k8s:
     name: '{{ minio_tenant_namespace }}'
     api_version: v1
     kind: Namespace
     state: present
 
-- name: Create Traefik Middleware to add trailing slash that Minio needs
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: traefik.io/v1alpha1
-      kind: Middleware
-      metadata:
-        name: minio-add-trailing-slash
-        namespace: kube-system
-      spec:
-        redirectRegex:
-          regex: (.*/minio$)
-          replacement: ${1}/
-          permanent: true
-
-- name: Create Traefik Middleware to strip /minio prefix for internal traffic
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: traefik.io/v1alpha1
-      kind: Middleware
-      metadata:
-        name: minio-strip-prefix
-        namespace: kube-system
-      spec:
-        stripPrefix:
-          prefixes:
-            - /minio
-
-- name: Setup storage
-  include_tasks: tasks/storage_setup.yaml
+- name: Configure Storage for MinIO
+  include_tasks: tasks/storage_setup.yml
   vars:
     storage_definitions:
       - name: minio
-        size: '750Gi'
+        size: '{{ minio_storage_size }}'
         path: '{{ minio_dir }}'
 
-- name: Set up env secret
+- name: Set up environment secret
   kubernetes.core.k8s:
     state: present
     definition:
       apiVersion: v1
       kind: Secret
       metadata:
-        name: minio-scout-env-configuration
+        name: "{{ minio_env_secret_name | default('minio-env-configuration') }}"
         namespace: '{{ minio_tenant_namespace }}'
       type: Opaque
       stringData:
@@ -77,35 +80,80 @@
           export MINIO_REGION_NAME={{ s3_region }}
           export MINIO_REGION={{ s3_region }}
 
-- name: Define MinIO IAM policies
-  set_fact:
-    minio_policies:
-      - name: lake-r
-        actions:
-          - s3:GetObject
-          - s3:ListBucket
-          - s3:GetBucketLocation
-          - s3:ListBucketMultipartUploads
-        resources:
-          - arn:aws:s3:::lake
-          - arn:aws:s3:::lake/*
-        user: '{{ s3_lake_reader }}'
-      - name: lake-rw
-        actions:
-          - s3:*
-        resources:
-          - arn:aws:s3:::lake
-          - arn:aws:s3:::lake/*
-          - arn:aws:s3:::scratch
-          - arn:aws:s3:::scratch/*
-        user: '{{ s3_lake_writer }}'
-      - name: loki-rw
-        actions:
-          - s3:*
-        resources:
-          - arn:aws:s3:::loki-*
-          - arn:aws:s3:::loki-*/*
-        user: '{{ s3_loki_writer }}'
+- name: Install/Upgrade Minio Tenant
+  kubernetes.core.helm:
+    name: '{{ minio_tenant_namespace }}'
+    chart_ref: minio-operator/tenant
+    chart_version: "{{ minio_version | default('~7.1.0') }}"
+    release_namespace: '{{ minio_tenant_namespace }}'
+    release_state: present
+    update_repo_cache: true
+    wait: true
+    wait_timeout: "{{ minio_tenant_wait_timeout | default('5m') }}"
+    atomic: true
+    values:
+      tenant:
+        name: '{{ minio_tenant_name }}'
+        configSecret:
+          name: "{{ minio_env_secret_name | default('minio-env-configuration') }}"
+          existingSecret: true
+        env: '{{ minio_env_variables }}'
+        pools:
+          - servers: '{{ minio_server_count | default(1) }}'
+            name: pool-0
+            volumesPerServer: 1
+            size: '{{ minio_storage_size }}'
+            storageClassName: "{{ minio_storage_class | default('minio-storage') }}"
+        metrics:
+          enabled: true
+          port: 9000
+          protocol: http
+        certificate:
+          requestAutoCert: false
+        buckets: '{{ minio_buckets }}'
+        users: '{{ minio_credentials }}'
+      ingress: '{{ minio_ingress_config }}'
+
+- name: Wait for MinIO StatefulSet to exist
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: StatefulSet
+    name: '{{ minio_tenant_name }}-pool-0'
+    namespace: '{{ minio_tenant_namespace }}'
+  register: minio_statefulset
+  until: minio_statefulset.resources | length > 0
+  retries: '{{ minio_wait_retries | default(60) }}'
+  delay: '{{ minio_wait_delay | default(5) }}'
+  changed_when: false
+
+- name: Wait for MinIO StatefulSet to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: StatefulSet
+    name: '{{ minio_tenant_name }}-pool-0'
+    namespace: '{{ minio_tenant_namespace }}'
+  register: minio_statefulset
+  until:
+    - minio_statefulset.resources[0].status.readyReplicas is defined
+    - minio_statefulset.resources[0].status.readyReplicas == minio_statefulset.resources[0].status.replicas
+  retries: '{{ minio_wait_retries | default(60) }}'
+  delay: '{{ minio_wait_delay | default(5) }}'
+  changed_when: false
+
+- name: Create MinIO user credential secrets
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ item.access_key }}-creds'
+        namespace: '{{ minio_tenant_namespace }}'
+      type: Opaque
+      stringData:
+        CONSOLE_ACCESS_KEY: '{{ item.access_key }}'
+        CONSOLE_SECRET_KEY: '{{ item.secret_key }}'
+  loop: '{{ minio_users }}'
 
 - name: Create MinIO policy JSON ConfigMaps
   kubernetes.core.k8s:
@@ -130,109 +178,6 @@
           }
   loop: '{{ minio_policies }}'
 
-- name: Create MinIO user credential secrets
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: '{{ item.access_key }}-creds'
-        namespace: '{{ minio_tenant_namespace }}'
-      type: Opaque
-      stringData:
-        CONSOLE_ACCESS_KEY: '{{ item.access_key }}'
-        CONSOLE_SECRET_KEY: '{{ item.secret_key }}'
-  loop:
-    - access_key: '{{ s3_lake_reader }}'
-      secret_key: '{{ s3_lake_reader_secret }}'
-    - access_key: '{{ s3_lake_writer }}'
-      secret_key: '{{ s3_lake_writer_secret }}'
-    - access_key: '{{ s3_loki_writer }}'
-      secret_key: '{{ s3_loki_writer_secret }}'
-
-- name: Install/Upgrade Minio Tenant
-  kubernetes.core.helm:
-    name: '{{ minio_tenant_namespace }}'
-    chart_ref: minio-operator/tenant
-    chart_version: ~7.1.0
-    release_namespace: '{{ minio_tenant_namespace }}'
-    release_state: present
-    update_repo_cache: true
-    wait: true
-    wait_timeout: 5m
-    atomic: true
-    values:
-      tenant:
-        name: minio-scout
-        configSecret:
-          name: minio-scout-env-configuration
-          existingSecret: true
-        env:
-          - name: MINIO_BROWSER_REDIRECT_URL
-            value: 'https://{{ server_hostname }}/minio/'
-          - name: MINIO_PROMETHEUS_AUTH_TYPE
-            value: public
-        pools:
-          - servers: 1
-            name: pool-0
-            volumesPerServer: 1
-            size: 750Gi
-            storageClassName: minio-storage
-        metrics:
-          enabled: true
-          port: 9000
-          protocol: http
-        certificate:
-          requestAutoCert: false
-        buckets:
-          - name: loki-chunks
-          - name: loki-ruler
-          - name: loki-admin
-          - name: lake
-          - name: scratch
-        users:
-          - name: '{{ s3_lake_reader }}-creds'
-          - name: '{{ s3_lake_writer }}-creds'
-          - name: '{{ s3_loki_writer }}-creds'
-      ingress:
-        console:
-          enabled: true
-          ingressClassName: traefik
-          host: '{{ server_hostname }}'
-          path: /minio
-          pathType: Prefix
-          annotations:
-            traefik.ingress.kubernetes.io/router.middlewares: >
-              kube-system-minio-add-trailing-slash@kubernetescrd,
-              kube-system-minio-strip-prefix@kubernetescrd
-
-- name: Wait for MinIO StatefulSet to exist
-  kubernetes.core.k8s_info:
-    api_version: apps/v1
-    kind: StatefulSet
-    name: 'minio-scout-pool-0'
-    namespace: '{{ minio_tenant_namespace }}'
-  register: minio_statefulset
-  until: minio_statefulset.resources | length > 0
-  retries: 60
-  delay: 5
-  changed_when: false
-
-- name: Wait for MinIO StatefulSet to be ready
-  kubernetes.core.k8s_info:
-    api_version: apps/v1
-    kind: StatefulSet
-    name: 'minio-scout-pool-0'
-    namespace: '{{ minio_tenant_namespace }}'
-  register: minio_statefulset
-  until:
-    - minio_statefulset.resources[0].status.readyReplicas is defined
-    - minio_statefulset.resources[0].status.readyReplicas == minio_statefulset.resources[0].status.replicas
-  retries: 60
-  delay: 5
-  changed_when: false
-
 - name: Bootstrap MinIO IAM (policies + bindings)
   kubernetes.core.k8s:
     state: present
@@ -242,25 +187,42 @@
       metadata:
         name: bootstrap-minio-iam
         namespace: '{{ minio_tenant_namespace }}'
+        labels:
+          app: minio-bootstrap
+        # Add a unique value to force job recreation when policies change
+        annotations:
+          minio-iam-config-hash: "{{ minio_policies | to_json | hash('md5') }}"
       spec:
         ttlSecondsAfterFinished: 600
+        backoffLimit: 3
         template:
+          metadata:
+            labels:
+              app: minio-bootstrap
           spec:
             restartPolicy: Never
-            serviceAccountName: minio-scout-sa
+            serviceAccountName: '{{ minio_tenant_name }}-sa'
             containers:
               - name: mc
-                image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
-                command: ["/bin/sh","-c"]
+                image: "{{ minio_client_image | default('quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z') }}"
+                command: ['/bin/sh', '-c']
                 args:
                   - |
                     set -euo pipefail
+                    # Source environment variables
                     . /rootcreds/config.env
-                    mc alias set local http://minio-scout-hl.{{ minio_tenant_namespace }}:9000  "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" --insecure
+
+                    # Set up MinIO client
+                    mc alias set local http://{{ minio_tenant_name }}-hl.{{ minio_tenant_namespace }}:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" --insecure
+
+                    # Apply policies and attach to users
                     {% for p in minio_policies %}
+                    echo "Creating policy {{ p.name }}..."
                     mc admin policy create local {{ p.name }} /policies/{{ p.name }}.json
                     mc admin policy attach local {{ p.name }} --user {{ p.user }}
                     {% endfor %}
+
+                    echo "MinIO IAM setup completed successfully"
                 volumeMounts:
                   - name: policies
                     mountPath: /policies
@@ -272,21 +234,29 @@
               - name: policies
                 projected:
                   defaultMode: 0644
-                  sources:
+                  sources: |
+                    {% for p in minio_policies %}
                     - configMap:
-                        name: policy-lake-r
-                    - configMap:
-                        name: policy-lake-rw
-                    - configMap:
-                        name: policy-loki-rw
+                        name: policy-{{ p.name }}
+                    {% endfor %}
               - name: rootcreds
                 secret:
-                  secretName: minio-scout-env-configuration
+                  secretName: "{{ minio_env_secret_name | default('minio-env-configuration') }}"
                   items:
                     - key: config.env
                       path: config.env
 
-- name: Wait for job to complete
-  command: 'kubectl -n {{ minio_tenant_namespace }} wait --for=condition=complete --timeout=300s job/bootstrap-minio-iam'
-  register: minio_bootstrap_complete
+- name: Wait for bootstrap job to complete
+  kubernetes.core.k8s_info:
+    api_version: batch/v1
+    kind: Job
+    name: bootstrap-minio-iam
+    namespace: '{{ minio_tenant_namespace }}'
+  register: minio_bootstrap_job
+  until:
+    - minio_bootstrap_job.resources | length > 0
+    - minio_bootstrap_job.resources[0].status.succeeded is defined
+    - minio_bootstrap_job.resources[0].status.succeeded == 1
+  retries: '{{ minio_bootstrap_wait_retries | default(30) }}'
+  delay: '{{ minio_bootstrap_wait_delay | default(10) }}'
   changed_when: false
