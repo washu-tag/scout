@@ -35,9 +35,9 @@ public class BaseTest {
         WORKFLOW_EXECUTION_STATUS_COMPLETED
     );
     private static final String NAMESPACE = "default";
+    protected static String ingestWorkflowId;
+    protected static List<String> ingestToDeltaLakeWorkflows = new ArrayList<>();
     protected TestConfig config;
-    protected String ingestWorkflowId;
-    protected List<String> ingestToDeltaLakeWorkflows = new ArrayList<>();
 
     public BaseTest() {
         config = TestConfig.instance;

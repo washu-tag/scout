@@ -6,7 +6,10 @@ import edu.washu.tag.BaseTest;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
@@ -37,13 +40,13 @@ public class TestStatusDatabase extends BaseTest {
         final Hl7FileRow secondHl7Message = Hl7FileRow.success(1, "1995/04/02/09/199504020930172230.hl7");
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery("19950402"),
+            SqlQuery.hl7FileTableQuery("19950402", Collections.singletonList(ingestWorkflowId)),
             firstHl7Message,
             secondHl7Message
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileViewQuery("19950402"),
+            SqlQuery.hl7FileViewQuery("19950402", Collections.singletonList(ingestWorkflowId)),
             firstHl7Message,
             secondHl7Message
         );
@@ -70,7 +73,7 @@ public class TestStatusDatabase extends BaseTest {
         final Hl7FileRow repeatedFailingHl7Message = Hl7FileRow.failure(0, null, "Split content has fewer than 3 lines");
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery("20240102"),
+            SqlQuery.hl7FileTableQuery("20240102", Collections.singletonList(ingestWorkflowId)),
             repeatedFailingHl7Message,
             repeatedFailingHl7Message,
             repeatedFailingHl7Message,
@@ -79,7 +82,7 @@ public class TestStatusDatabase extends BaseTest {
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileViewQuery("20240102"),
+            SqlQuery.hl7FileViewQuery("20240102", Collections.singletonList(ingestWorkflowId)),
             repeatedFailingHl7Message
         );
     }
@@ -105,17 +108,25 @@ public class TestStatusDatabase extends BaseTest {
         final Hl7FileRow firstMessageFailed = Hl7FileRow.failure(0, failedFilePath, "HL7 file is empty or unparsable");
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery("20230113"),
+            SqlQuery.hl7FileTableQuery("20230113", Collections.singletonList(ingestWorkflowId)),
             firstMessageSuccessful,
             secondHl7Message,
-            thirdHl7Message,
+            thirdHl7Message
+        );
+
+        runHl7FileTest(
+            SqlQuery.hl7FileTableQuery("20230113", ingestToDeltaLakeWorkflows),
             firstMessageFailed
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileViewQuery("20230113"),
+            SqlQuery.hl7FileViewQuery("20230113", Collections.singletonList(ingestWorkflowId)),
             secondHl7Message,
-            thirdHl7Message,
+            thirdHl7Message
+        );
+
+        runHl7FileTest(
+            SqlQuery.hl7FileViewQuery("20230113", ingestToDeltaLakeWorkflows),
             firstMessageFailed
         );
     }
@@ -220,15 +231,17 @@ public class TestStatusDatabase extends BaseTest {
         private final String tableOrView;
         private final String filterColumn;
         private final String logDate;
+        private final List<String> filteredWorkflowIds;
 
-        private SqlQuery(String tableOrView, String filterColumn, String logDate) {
+        private SqlQuery(String tableOrView, String filterColumn, String logDate, List<String> filteredWorkflowIds) {
             this.tableOrView = tableOrView;
             this.filterColumn = filterColumn;
             this.logDate = logDate;
+            this.filteredWorkflowIds = filteredWorkflowIds;
         }
 
         private static SqlQuery logQuery(String tableOrView, String logDate) {
-            return new SqlQuery(tableOrView, "file_path", logDate);
+            return new SqlQuery(tableOrView, "file_path", logDate, Collections.singletonList(ingestWorkflowId));
         }
 
         private static SqlQuery logTableQuery(String logDate) {
@@ -239,24 +252,35 @@ public class TestStatusDatabase extends BaseTest {
             return logQuery(VIEW_RECENT_LOG_FILES, logDate);
         }
 
-        private static SqlQuery hl7FileQuery(String tableOrView, String logDate) {
-            return new SqlQuery(tableOrView, "log_file_path", logDate);
+        private static SqlQuery hl7FileQuery(String tableOrView, String logDate, List<String> filteredWorkflowIds) {
+            return new SqlQuery(tableOrView, "log_file_path", logDate, filteredWorkflowIds);
         }
 
-        private static SqlQuery hl7FileTableQuery(String logDate) {
-            return hl7FileQuery(TABLE_HL7_FILES, logDate);
+        private static SqlQuery hl7FileTableQuery(String logDate, List<String> filteredWorkflowIds) {
+            return hl7FileQuery(TABLE_HL7_FILES, logDate, filteredWorkflowIds);
         }
 
-        private static SqlQuery hl7FileViewQuery(String logDate) {
-            return hl7FileQuery(VIEW_RECENT_HL7_FILES, logDate);
+        private static SqlQuery hl7FileViewQuery(String logDate, List<String> filteredWorkflowIds) {
+            return hl7FileQuery(VIEW_RECENT_HL7_FILES, logDate, filteredWorkflowIds);
         }
 
         private String build() {
             return String.format(
-                "SELECT * FROM %s WHERE %s LIKE '%%/%s.log' ORDER BY processed_at",
+                "SELECT * FROM %s WHERE %s AND %s LIKE '%%/%s.log' ORDER BY processed_at",
                 tableOrView,
+                buildWorkflowQueryRestriction(),
                 filterColumn,
                 logDate
+            );
+        }
+
+        private String buildWorkflowQueryRestriction() {
+            return String.format(
+                "workflow_id IN (%s)",
+                filteredWorkflowIds
+                    .stream()
+                    .map(x -> "'" + x + "'")
+                    .collect(Collectors.joining(", "))
             );
         }
     }
