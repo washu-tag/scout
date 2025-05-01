@@ -46,7 +46,7 @@ public class BaseTest {
     @BeforeSuite
     public void launchIngestion() {
         final WorkflowServiceStubsOptions serviceStubOptions = WorkflowServiceStubsOptions.newBuilder()
-            .setTarget("temporal-frontend.temporal.svc:7233")
+            .setTarget(config.getTemporalConfig().getTemporalUrl())
             .build();
 
         final WorkflowServiceStubs workflowServiceStubs = WorkflowServiceStubs.newServiceStubs(serviceStubOptions);
@@ -60,13 +60,7 @@ public class BaseTest {
                 .build()
         );
 
-        workflow.start(
-            new IngestJobInput()
-                .setDeltaLakePath("s3://lake/orchestration/delta/test_data")
-                .setHl7OutputPath("s3://lake/orchestration/hl7")
-                .setScratchSpaceRootPath("s3://lake/orchestration/scratch")
-                .setLogsRootPath("/data/hl7")
-        );
+        workflow.start(config.getTemporalConfig().getIngestJobInput());
         workflow.getResult(Map.class);
         final WorkflowExecution workflowExecution = workflow.getExecution();
         ingestWorkflowId = workflowExecution.getWorkflowId();
