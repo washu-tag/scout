@@ -33,8 +33,10 @@ The following services support the system's backend operations.
 
 ### Monitor
 
-[Grafana](https://grafana.com/) is a monitoring and visualization tool used to track system performance and metrics.
-Grafana dashboards for Temporal, MinIO, Kubernetes, and other services are available to system administrators.
+[Grafana](https://grafana.com/) is a monitoring and visualization tool used to track system performance, metrics, and 
+logs. Scout provides pre-configured Grafana dashboards for services such as Temporal, MinIO, Kubernetes, and others. 
+These dashboards are available to system administrators for monitoring and troubleshooting purposes. Additionally, logs
+for each service can be accessed directly through Grafana.
 
 ### Orchestrator
 

@@ -107,17 +107,17 @@ env:
   - name: HIVE_METASTORE_JDBC_URL
     value: 'jdbc:postgresql://postgresql-cluster-rw.{{ postgres_cluster_namespace }}:5432/hive'
   - name: HIVE_METASTORE_USER
-    value: '{{ postgres_user }}'
+    value: '{{ hive_postgres_user }}'
   - name: HIVE_METASTORE_PASSWORD
-    value: '{{ postgres_password }}'
+    value: '{{ hive_postgres_password }}'
   - name: HIVE_METASTORE_WAREHOUSE_DIR
     value: '{{ hive_warehouse }}'
   - name: S3_ENDPOINT
     value: '{{ s3_endpoint }}'
   - name: S3_ACCESS_KEY
-    value: '{{ s3_username }}'
+    value: '{{ s3_lake_writer }}'
   - name: S3_SECRET_KEY
-    value: '{{ s3_password }}'
+    value: '{{ s3_lake_writer_secret }}'
   - name: S3_PATH_STYLE_ACCESS
     value: 'true'
   - name: REGION

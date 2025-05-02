@@ -90,11 +90,13 @@
                 owner: '{{ postgres_user }}'
                 secret:
                   name: postgres-user
-                postInitSQL: # This runs after initialization to create additional databases
-                  - CREATE DATABASE hive OWNER {{ postgres_user }};
-                  - CREATE DATABASE superset OWNER {{ postgres_user }};
-                  - GRANT ALL PRIVILEGES ON DATABASE hive TO {{ postgres_user }};
-                  - GRANT ALL PRIVILEGES ON DATABASE superset TO {{ postgres_user }};
+                postInitSQL:
+                  # Create users for hive and superset databases
+                  - CREATE USER {{ hive_postgres_user }} WITH PASSWORD '{{ hive_postgres_password }}';
+                  - CREATE USER {{ superset_postgres_user }} WITH PASSWORD '{{ superset_postgres_password }}';
+                  # Create databases
+                  - CREATE DATABASE hive OWNER {{ hive_postgres_user }};
+                  - CREATE DATABASE superset OWNER {{ superset_postgres_user }};
 
     - name: Wait for Postgres to be ready
       command: 'kubectl -n {{ postgres_cluster_namespace }} wait --for=condition=Ready --timeout=300s cluster/postgresql-cluster'

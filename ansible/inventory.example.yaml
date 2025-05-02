@@ -14,13 +14,27 @@ k3s_cluster:
           ansible_connection: local
           ansible_python_interpreter: /usr/bin/python3
   vars:
+    # K3s config
+    k3s_version: v1.32.3+k3s1 # Leave blank for latest stable
+    k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
+
+    # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
     s3_username: minio
     s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     s3_region: us-east-1
-    k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    s3_lake_reader: lake-reader
+    s3_lake_reader_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    s3_lake_writer: lake-writer
+    s3_lake_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    s3_loki_writer: loki-writer
+    s3_loki_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    # Grafana config
     slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     slack_channel_id: $(echo $SLACK_CHANNEL | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
+
+    # Jupyter config
     jupyter_auth_class: dummy # dummy or github
     github_client_id: $(echo $CLIENT_ID | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     github_client_secret: $(echo $CLIENT_SECRET | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -28,9 +42,17 @@ k3s_cluster:
     jupyter_dummy_password: $(echo $JH_DUMMY_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     jupyter_allowed_users: [] # empty list means all users can log in
     jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    # Postgres config
     postgres_user: scout
     postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    hive_postgres_user: hive
+    hive_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    superset_postgres_user: superset
+    superset_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    # Superset config
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Namespaces that can be changed
@@ -59,10 +81,11 @@ k3s_cluster:
     temporal_cassandra_init_heap: 2G
     temporal_cassandra_max_heap: 8G
 
+    # BEGIN - DO NOT CHANGE
     # You probably don't want to change these unless you know these items will be
     # stored in different locations on your system
-    helm_plugins_dir: '/root/.local/share/helm/plugins'
-    kubeconfig_yaml: '/etc/rancher/k3s/k3s.yaml'
+    helm_plugins_dir: /root/.local/share/helm/plugins
+    kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 
     # Do not change the values below, they are hard-coded various places
     extractor_namespace: extractor
@@ -72,7 +95,7 @@ k3s_cluster:
 
     # computed values, used across playbooks
     s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
-    hive_warehouse: 's3a://lake/hive' # Hadoop requires the s3a prefix, it is used just like s3://
+    hive_warehouse: 's3a://lake/delta' # Hadoop requires the s3a prefix, it is used just like s3://
     hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
     server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
-    # End do not change
+    # END - DO NOT CHANGE

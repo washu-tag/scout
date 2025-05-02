@@ -72,8 +72,8 @@
         connections:
           db_host: 'postgresql-cluster-rw.{{ postgres_cluster_namespace }}'
           db_port: '5432'
-          db_user: '{{ postgres_user }}'
-          db_pass: '{{ postgres_password }}'
+          db_user: '{{ superset_postgres_user }}'
+          db_pass: '{{ superset_postgres_password }}'
           db_name: superset
       configOverrides:
         branding: |

@@ -16,8 +16,8 @@
         namespace: '{{ spark_defaults_configmap_namespace }}'
       data:
         spark-defaults.conf: |
-          spark.hadoop.fs.s3a.access.key {{ s3_username }}
-          spark.hadoop.fs.s3a.secret.key {{ s3_password }}
+          spark.hadoop.fs.s3a.access.key {{ spark_s3_username | default(s3_lake_reader) }}
+          spark.hadoop.fs.s3a.secret.key {{ spark_s3_password | default(s3_lake_reader_secret) }}
           spark.hadoop.fs.s3a.endpoint {{ s3_endpoint }}
           spark.hadoop.fs.s3a.endpoint.region {{ s3_region | default("us-east-1") }}
           spark.databricks.delta.schema.autoMerge.enabled true

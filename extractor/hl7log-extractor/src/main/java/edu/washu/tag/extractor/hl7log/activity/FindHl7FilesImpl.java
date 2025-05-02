@@ -2,8 +2,13 @@ package edu.washu.tag.extractor.hl7log.activity;
 
 import static edu.washu.tag.extractor.hl7log.util.Constants.BUILD_MANIFEST_QUEUE;
 
+import edu.washu.tag.extractor.hl7log.db.Hl7File;
+import edu.washu.tag.extractor.hl7log.db.Hl7FileLogFileSegmentNumber;
+import edu.washu.tag.extractor.hl7log.db.IngestDbService;
 import edu.washu.tag.extractor.hl7log.model.FindHl7FilesInput;
 import edu.washu.tag.extractor.hl7log.model.FindHl7FilesOutput;
+import edu.washu.tag.extractor.hl7log.model.WriteHl7FilesErrorStatusToDbInput;
+import edu.washu.tag.extractor.hl7log.model.WriteHl7FilesErrorStatusToDbOutput;
 import edu.washu.tag.extractor.hl7log.util.FileHandler;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
@@ -23,9 +28,11 @@ public class FindHl7FilesImpl implements FindHl7Files {
     private static final Logger logger = Workflow.getLogger(FindHl7FilesImpl.class);
 
     private final FileHandler fileHandler;
+    private final IngestDbService ingestDbService;
 
-    public FindHl7FilesImpl(FileHandler fileHandler) {
+    public FindHl7FilesImpl(FileHandler fileHandler, IngestDbService ingestDbService) {
         this.fileHandler = fileHandler;
+        this.ingestDbService = ingestDbService;
     }
 
     @Override
@@ -50,5 +57,42 @@ public class FindHl7FilesImpl implements FindHl7Files {
         } catch (IOException e) {
             throw ApplicationFailure.newFailureWithCause("Error writing HL7 manifest file", "type", e);
         }
+    }
+
+    @Override
+    public WriteHl7FilesErrorStatusToDbOutput writeHl7FilesErrorStatusToDb(WriteHl7FilesErrorStatusToDbInput input) {
+        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+        logger.info("WorkflowId {} ActivityId {} - Reading HL7 file manifest {}",
+            activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.manifestFilePath());
+
+        URI manifestFilePath = URI.create(input.manifestFilePath());
+        List<String> hl7Paths;
+        try {
+            byte[] manifestFileBytes = fileHandler.read(manifestFilePath);
+            hl7Paths = new String(manifestFileBytes, StandardCharsets.UTF_8).lines().toList();
+        } catch (IOException e) {
+            logger.error("Error reading HL7 file manifest", e);
+            throw ApplicationFailure.newFailureWithCause("Error reading HL7 file manifest", "type", e);
+        }
+        logger.info("WorkflowId {} ActivityId {} - Found {} HL7 file paths in manifest file",
+            activityInfo.getWorkflowId(), activityInfo.getActivityId(), hl7Paths.size());
+
+        List<Hl7FileLogFileSegmentNumber> briefHl7Files = ingestDbService.queryHl7FileLogFileSegmentNumbers(hl7Paths);
+
+        List<Hl7File> hl7Files = briefHl7Files.stream()
+            .map(bhl7 -> Hl7File.error(
+                bhl7.logFilePath(), bhl7.segmentNumber(), bhl7.hl7FilePath(), input.errorMessage(), activityInfo.getWorkflowId(), activityInfo.getActivityId()
+            ))
+            .toList();
+
+        logger.info("WorkflowId {} ActivityId {} - Writing {} HL7 file error statuses to database",
+            activityInfo.getWorkflowId(), activityInfo.getActivityId(), hl7Files.size());
+        try {
+            ingestDbService.batchInsertHl7Files(hl7Files);
+        } catch (Exception e) {
+            logger.error("Error writing HL7 file error status to database", e);
+            throw ApplicationFailure.newFailureWithCause("Error writing HL7 file error status to database", "type", e);
+        }
+        return null;
     }
 }
