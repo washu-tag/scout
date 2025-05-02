@@ -93,18 +93,16 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         WorkflowInfo workflowInfo = Workflow.getInfo();
         logger.info("Beginning workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
 
-        String scratchSpaceRootPath;
-        String scratchDir;
+        // Parse / validate input
+        ParsedLogInput parsedLogInput = parseInput(input);
+
+        String scratchSpaceRootPath = parsedLogInput.scratchSpaceRootPath();
+        String scratchDir = scratchSpaceRootPath + "/" + workflowInfo.getWorkflowId();
 
         // Determine if we are starting a new workflow or resuming from a manifest file
         FindHl7LogFileOutput findHl7LogFileOutput;
         if (input.continued() == null) {
             logger.info("WorkflowId {} - Starting new workflow", workflowInfo.getWorkflowId());
-            // Parse / validate input
-            ParsedLogInput parsedLogInput = parseInput(input);
-
-            scratchSpaceRootPath = parsedLogInput.scratchSpaceRootPath();
-            scratchDir = scratchSpaceRootPath + "/" + workflowInfo.getWorkflowId();
 
             // Construct a path for a new manifest file
             String manifestFilePath = scratchDir + "/log-manifest.txt";
@@ -117,8 +115,6 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         } else {
             logger.info("WorkflowId {} - Resuming from continued {}", workflowInfo.getWorkflowId(), input.continued());
             findHl7LogFileOutput = findHl7LogsActivity.continueIngestHl7LogWorkflow(input.continued());
-            scratchSpaceRootPath = input.scratchSpaceRootPath();
-            scratchDir = input.scratchSpaceRootPath() + "/" + workflowInfo.getWorkflowId();
         }
 
         // At this point we have a list of file paths to process.
@@ -129,7 +125,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         List<Promise<SplitAndTransformHl7LogOutput>> transformSplitHl7LogOutputPromises = findHl7LogFileOutput.logFiles().stream()
                 .map(logFile -> Async.function(
                         hl7LogActivity::splitAndTransformHl7Log,
-                        new SplitAndTransformHl7LogInput(logFile, input.hl7OutputPath(), input.scratchSpaceRootPath())
+                        new SplitAndTransformHl7LogInput(logFile, parsedLogInput.hl7OutputPath(), scratchSpaceRootPath)
                 ))
                 .toList();
 
@@ -164,7 +160,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             new IngestHl7FilesToDeltaLakeInput(
                 input.deltaLakePath(),
                 input.modalityMapPath(),
-                input.scratchSpaceRootPath(),
+                scratchSpaceRootPath,
                 hl7ManifestFileOutput.manifestFilePath(),
                 null,
                 input.reportTableName()
