@@ -18,6 +18,10 @@ public record Hl7File(
         return new Hl7File(logFilePath, segmentNumber, null, DbUtils.FAILED, error, workflowId, activityId);
     }
 
+    public static Hl7File error(String logFilePath, int segmentNumber, String hl7FilePath, String error, String workflowId, String activityId) {
+        return new Hl7File(logFilePath, segmentNumber, hl7FilePath, DbUtils.FAILED, error, workflowId, activityId);
+    }
+
     public boolean isSuccess() {
         return DbUtils.SUCCEEDED.equals(status);
     }
