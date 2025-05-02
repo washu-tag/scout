@@ -26,6 +26,7 @@ k3s_cluster:
     hive_namespace: hive
     postgres_cluster_namespace: cloudnative-pg
     prometheus_namespace: prometheus
+    grafana_namespace: grafana
 
     # Local paths
     base_dir: /var/lib
@@ -55,7 +56,6 @@ k3s_cluster:
     # Do not change the values below, they are hard-coded various places
     extractor_namespace: extractor
     minio_tenant_namespace: minio-scout
-    grafana_namespace: grafana
     loki_namespace: loki
     temporal_namespace: temporal
 
