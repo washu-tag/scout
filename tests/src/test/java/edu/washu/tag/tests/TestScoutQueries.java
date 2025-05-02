@@ -10,14 +10,30 @@ import io.delta.sql.DeltaSparkSessionExtension;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class TestScoutQueries extends BaseTest {
 
-    private final SparkSession spark = initSparkSession();
+    private SparkSession spark;
     private static final TestQuerySuite<?> exportedQueries = readQueries();
     private static final Logger logger = LoggerFactory.getLogger(TestScoutQueries.class);
+
+    @BeforeClass
+    public void initSparkSession() {
+        spark = SparkSession.builder()
+            .appName("TestClient")
+            .master("local")
+            .withExtensions(new DeltaSparkSessionExtension())
+            .config(config.getSparkConfig())
+            .getOrCreate();
+        spark
+            .read()
+            .format("delta")
+            .load(config.getTemporalConfig().getIngestJobInput().getDeltaLakePath())
+            .createOrReplaceTempView(exportedQueries.getViewName());
+    }
 
     @DataProvider(name = "known_queries")
     public Object[][] knownQueries() {
@@ -50,21 +66,6 @@ public class TestScoutQueries extends BaseTest {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private SparkSession initSparkSession() {
-        final SparkSession spark = SparkSession.builder()
-            .appName("TestClient")
-            .master("local")
-            .withExtensions(new DeltaSparkSessionExtension())
-            .config(config.getSparkConfig())
-            .getOrCreate();
-        spark
-            .read()
-            .format("delta")
-            .load(config.getDeltaLakeUrl())
-            .createOrReplaceTempView(exportedQueries.getViewName());
-        return spark;
     }
 
 }

@@ -16,7 +16,10 @@ for compatibility with complex configuration requirements. If the name of a conf
 attempt to load a default config in a `local.json`. The JSON configuration corresponds to a serialized version of
 [TestConfig.java](../../tests/src/test/java/edu/washu/tag/TestConfig.java). Currently, the root-level properties are:
 * `sparkConfig`: a dictionary that is passed as-is to spark in order to connect to the delta lake.
-* `deltaLakeUrl`: the URL for the delta lake to be tested.
+* `postgresConfig`: an [object](../../tests/src/test/java/edu/washu/tag/DatabaseConfig.java) defining `url`, `username`, and `password` with which to connect to Scout's postgres instance.
+* `temporalConfig`: an optional [object](../../tests/src/test/java/edu/washu/tag/TemporalConfig.java) allowing overriding of some properties used in communicating with temporal. Child properties are:
+    * `temporalUrl`: in-cluster URL with which the tests can access temporal. Defaults to `temporal-frontend.temporal.svc:7233`.
+    * `ingestJobInput`: an [object](../../tests/src/test/java/edu/washu/tag/model/IngestJobInput.java) passed to temporal to launch ingest.
 
 ## To run on a dev cluster
 
@@ -25,7 +28,6 @@ Assuming you are in the `scout` repo:
 ```
 cp -r tests/staging_test_data/hl7 ../data/
 ```
-* Run `.github/ci_resources/launch_extraction.sh`
 * Copy json config, make any modifications necessary for your set up
 ```
 cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
