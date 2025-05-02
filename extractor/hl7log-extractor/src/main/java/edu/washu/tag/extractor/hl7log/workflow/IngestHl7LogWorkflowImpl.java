@@ -94,6 +94,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         logger.info("Beginning workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
 
         // Parse / validate input
+        input = input == null ? IngestHl7LogWorkflowInput.EMPTY : input;
         ParsedLogInput parsedLogInput = parseInput(input);
 
         String scratchSpaceRootPath = parsedLogInput.scratchSpaceRootPath();
@@ -201,7 +202,6 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
      * @return Log paths and "yesterday" date, if we are in a scheduled run
      */
     private ParsedLogInput parseInput(IngestHl7LogWorkflowInput input) {
-
         // Default values
         String logsRootPath = DefaultArgs.getLogsRootPath(input.logsRootPath());
         String scratchSpaceRootPath = DefaultArgs.getScratchSpaceRootPath(input.scratchSpaceRootPath());
