@@ -153,10 +153,6 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/extractor.yaml
-      - name: 'Wait for minio'
-        shell: bash
-        run: |
-          sudo -E kubectl -n minio-scout wait --for=condition=ready --timeout=300s pod -l v1.min.io/tenant=minio-scout
       - name: 'Run tests'
         shell: bash
         run: |
