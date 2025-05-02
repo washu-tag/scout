@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
   push:
-    branches: [main, tests-launch-temporal]
+    branches: [main]
 
 env:
   JAVA_DIST: 'zulu'

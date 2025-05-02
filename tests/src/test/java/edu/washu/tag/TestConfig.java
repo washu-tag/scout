@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 public class TestConfig {
 
     private Map<String, Object> sparkConfig;
-    private String deltaLakeUrl;
     private DatabaseConfig postgresConfig;
     private TemporalConfig temporalConfig = new TemporalConfig();
     private static final Logger logger = LoggerFactory.getLogger(TestConfig.class);
@@ -23,15 +22,6 @@ public class TestConfig {
 
     public TestConfig setSparkConfig(Map<String, Object> sparkConfig) {
         this.sparkConfig = sparkConfig;
-        return this;
-    }
-
-    public String getDeltaLakeUrl() {
-        return deltaLakeUrl;
-    }
-
-    public TestConfig setDeltaLakeUrl(String deltaLakeUrl) {
-        this.deltaLakeUrl = deltaLakeUrl;
         return this;
     }
 
