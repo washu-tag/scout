@@ -26,3 +26,9 @@
           s3.region={{ s3_region }}
           s3.endpoint={{ s3_endpoint }}
           s3.path-style-access=true
+      coordinator:
+        annotations:
+          prometheus.io/trino_scrape: 'true'
+      worker:
+        annotations:
+          prometheus.io/trino_scrape: 'true'
