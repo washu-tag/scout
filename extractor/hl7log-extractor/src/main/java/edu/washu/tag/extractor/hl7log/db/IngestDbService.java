@@ -5,4 +5,5 @@ import java.util.List;
 public interface IngestDbService {
     void insertLogFile(LogFile logFile);
     void batchInsertHl7Files(List<Hl7File> hl7Files);
+    List<Hl7FileLogFileSegmentNumber> queryHl7FileLogFileSegmentNumbers(List<String> hl7FilePath);
 }

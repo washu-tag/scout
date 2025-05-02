@@ -27,7 +27,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -85,7 +84,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         List<String> hl7Paths = segmentResults.stream()
             .filter(Hl7File::isSuccess)
             .map(Hl7File::filePath)
-            .collect(Collectors.toList());
+            .toList();
         if (segmentResults.isEmpty() || hl7Paths.isEmpty()) {
             // All the transforms/uploads failed, fail the activity
             logger.error("WorkflowId {} ActivityId {} - All transform and upload jobs failed for log {}", activityInfo.getWorkflowId(),
