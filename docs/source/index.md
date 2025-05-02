@@ -50,6 +50,7 @@ for monitoring and visualization.
 
 ```{toctree}
 :hidden:
+install
 services
 dataschema
 tips

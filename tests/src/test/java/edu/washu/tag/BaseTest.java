@@ -4,6 +4,7 @@ import static io.temporal.api.enums.v1.WorkflowExecutionStatus.WORKFLOW_EXECUTIO
 import static io.temporal.api.enums.v1.WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_CONTINUED_AS_NEW;
 import static org.awaitility.Awaitility.await;
 
+import edu.washu.tag.model.IngestJobOutput;
 import io.temporal.api.common.v1.WorkflowExecution;
 import io.temporal.api.enums.v1.WorkflowExecutionStatus;
 import io.temporal.api.workflow.v1.PendingChildExecutionInfo;
@@ -18,10 +19,9 @@ import io.temporal.serviceclient.WorkflowServiceStubs;
 import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeSuite;
@@ -29,7 +29,7 @@ import org.testng.annotations.BeforeSuite;
 public class BaseTest {
 
     private static final Logger log = LoggerFactory.getLogger(BaseTest.class);
-    private static final List<WorkflowExecutionStatus> successfulWorkflowStatuses = Arrays.asList(
+    private static final Set<WorkflowExecutionStatus> successfulWorkflowStatuses = Set.of(
         WORKFLOW_EXECUTION_STATUS_CONTINUED_AS_NEW,
         WORKFLOW_EXECUTION_STATUS_COMPLETED
     );
@@ -60,7 +60,7 @@ public class BaseTest {
         );
 
         workflow.start(config.getTemporalConfig().getIngestJobInput());
-        workflow.getResult(Map.class);
+        workflow.getResult(IngestJobOutput.class); // block on initial workflow done to reduce chatter below
         final WorkflowExecution workflowExecution = workflow.getExecution();
         ingestWorkflowId = workflowExecution.getWorkflowId();
         waitForWorkflowChain(workflowServiceStubs, workflowExecution);
@@ -68,7 +68,7 @@ public class BaseTest {
     }
 
     private DescribeWorkflowExecutionResponse waitForWorkflowInStatus(WorkflowServiceStubs workflowServiceStubs,
-        WorkflowExecution workflowExecution, List<WorkflowExecutionStatus> permittedStatuses) {
+        WorkflowExecution workflowExecution, Set<WorkflowExecutionStatus> permittedStatuses) {
         log.info("Waiting for workflow with ID {} to be in one of the following statuses: {}", workflowExecution.getWorkflowId(), permittedStatuses);
         return await().atMost(Duration.ofMinutes(5)).until(
             () -> workflowServiceStubs.blockingStub().describeWorkflowExecution(
@@ -93,7 +93,7 @@ public class BaseTest {
                 .setWorkflowId(ingestToDeltaLakeWorkflow.getWorkflowId())
                 .setRunId(ingestToDeltaLakeWorkflow.getRunId())
                 .build(),
-            Collections.singletonList(WORKFLOW_EXECUTION_STATUS_COMPLETED)
+            Collections.singleton(WORKFLOW_EXECUTION_STATUS_COMPLETED)
         );
         ingestToDeltaLakeWorkflows.add(ingestToDeltaLakeWorkflow.getWorkflowId());
 
