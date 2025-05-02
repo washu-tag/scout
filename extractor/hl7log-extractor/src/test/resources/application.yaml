@@ -24,3 +24,12 @@ s3:
   region: us-east-1
 scout:
   max-children: 100
+  workflowArgDefaults:
+    ingestHl7Log:
+      logsRootPath: '/path/to/logs'
+      scratchSpaceRootPath: '/path/to/scratch'
+      hl7OutputPath: '/path/to/hl7/output'
+    ingestHl7ToDeltaLake:
+      deltaLakePath: 's3://bucket/path/to/delta'
+      modalityMapPath: '/path/to/modality_map.csv'
+      reportTableName: 'reports'

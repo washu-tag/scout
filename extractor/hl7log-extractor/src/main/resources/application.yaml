@@ -27,3 +27,13 @@ scout:
   max-children:
     150 # This is to limit I/O contention during the split & transform operation (java worker) and to try to hit a sweet spot of efficiency
     # during the delta lake insert (python worker). It's been tested on 1.3-1.4MB log files.
+  # Placeholders for default workflow arguments that can be configured from outside and overridden in the workflow
+  workflowArgDefaults:
+    ingestHl7Log:
+      logsRootPath: ''
+      scratchSpaceRootPath: ''
+      hl7OutputPath: ''
+    ingestHl7ToDeltaLake:
+      deltaLakePath: ''
+      modalityMapPath: ''
+      reportTableName: ''

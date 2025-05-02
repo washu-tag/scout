@@ -11,6 +11,7 @@ import edu.washu.tag.extractor.hl7log.model.IngestHl7FilesToDeltaLakeActivityInp
 import edu.washu.tag.extractor.hl7log.model.IngestHl7FilesToDeltaLakeInput;
 import edu.washu.tag.extractor.hl7log.model.IngestHl7FilesToDeltaLakeOutput;
 import edu.washu.tag.extractor.hl7log.model.WriteHl7FilesErrorStatusToDbInput;
+import edu.washu.tag.extractor.hl7log.util.DefaultArgs;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.failure.ActivityFailure;
@@ -68,12 +69,23 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
             logger.info("WorkflowId {} - Using provided HL7 manifest file path: {}", workflowInfo.getWorkflowId(), input.hl7ManifestFilePath());
         }
 
+        // Validate input
+        String reportTableName = DefaultArgs.getReportTableName(input.reportTableName());
+        String deltaLakePath = DefaultArgs.getDeltaLakePath(input.deltaLakePath());
+        String modalityMapPath = DefaultArgs.getModalityMapPath(input.modalityMapPath());
+        if (deltaLakePath == null || deltaLakePath.isEmpty()) {
+            throw new IllegalArgumentException("deltaLakePath must be provided");
+        }
+        if (modalityMapPath == null || modalityMapPath.isEmpty()) {
+            throw new IllegalArgumentException("modalityMapPath must be provided");
+        }
+
         // Ingest HL7 into delta lake
         logger.info("WorkflowId {} - Launching activity to ingest HL7 files", workflowInfo.getWorkflowId());
         Promise<IngestHl7FilesToDeltaLakeOutput> ingestHl7Promise = ingestActivity.executeAsync(
             PYTHON_ACTIVITY,
             IngestHl7FilesToDeltaLakeOutput.class,
-            new IngestHl7FilesToDeltaLakeActivityInput(input.deltaTable(), input.modalityMapPath(), hl7ManifestFilePath)
+            new IngestHl7FilesToDeltaLakeActivityInput(reportTableName, deltaLakePath, modalityMapPath, hl7ManifestFilePath)
         );
 
         IngestHl7FilesToDeltaLakeOutput ingestHl7Output;

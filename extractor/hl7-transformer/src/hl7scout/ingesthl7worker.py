@@ -20,10 +20,20 @@ log = logging.getLogger("workflow_worker")
 
 
 async def run_worker(
-    temporal_address: str, namespace: str, mapping_file_path: str, health_file: Path
+    temporal_address: str,
+    namespace: str,
+    default_delta_lake_path: str,
+    default_report_delta_table_name: str,
+    default_modality_map_path: str,
+    health_file: Path,
 ) -> None:
     client = await Client.connect(temporal_address, namespace=namespace)
-    ingest_hl7_files_activity = IngestHl7FilesActivity(mapping_file_path, health_file)
+    ingest_hl7_files_activity = IngestHl7FilesActivity(
+        default_delta_lake_path,
+        default_report_delta_table_name,
+        default_modality_map_path,
+        health_file,
+    )
     with concurrent.futures.ThreadPoolExecutor(1) as pool:
         worker = Worker(
             client,
@@ -65,7 +75,11 @@ async def main(argv=None):
         "TEMPORAL_ADDRESS", "temporal-frontend.temporal:7233"
     )
     temporal_namespace = os.environ.get("TEMPORAL_NAMESPACE", "default")
-    modality_map_path = os.environ.get(
+    default_delta_lake_path = os.environ.get("DELTA_LAKE_PATH", "s3://lake/delta")
+    default_report_delta_table_name = os.environ.get(
+        "REPORT_DELTA_TABLE_NAME", "reports"
+    )
+    default_modality_map_path = os.environ.get(
         "MODALITY_MAP_PATH", "/data/modality_mapping_codes.csv"
     )
 
@@ -87,7 +101,9 @@ async def main(argv=None):
         run_worker(
             temporal_address,
             temporal_namespace,
-            modality_map_path,
+            default_delta_lake_path,
+            default_report_delta_table_name,
+            default_modality_map_path,
             SPARK_HEALTH_TEMP_FILE,
         ),
     ]

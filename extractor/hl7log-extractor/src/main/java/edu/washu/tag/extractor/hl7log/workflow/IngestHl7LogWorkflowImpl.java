@@ -13,6 +13,7 @@ import edu.washu.tag.extractor.hl7log.model.IngestHl7LogWorkflowOutput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogInput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogOutput;
 import edu.washu.tag.extractor.hl7log.util.AllOfPromiseOnlySuccesses;
+import edu.washu.tag.extractor.hl7log.util.DefaultArgs;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.api.common.v1.WorkflowExecution;
 import io.temporal.api.enums.v1.ParentClosePolicy;
@@ -44,7 +45,12 @@ import static edu.washu.tag.extractor.hl7log.util.Constants.INGEST_DELTA_LAKE_QU
 
 @WorkflowImpl(taskQueues = PARENT_QUEUE)
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
-    private record ParsedLogInput(List<String> logPaths, String yesterday) {}
+    private record ParsedLogInput(
+        List<String> logPaths,
+        String yesterday,
+        String scratchSpaceRootPath,
+        String hl7OutputPath
+    ) {}
 
     private static final Logger logger = Workflow.getLogger(IngestHl7LogWorkflowImpl.class);
 
@@ -87,7 +93,8 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         WorkflowInfo workflowInfo = Workflow.getInfo();
         logger.info("Beginning workflow {} workflowId {}", this.getClass().getSimpleName(), workflowInfo.getWorkflowId());
 
-        String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
+        String scratchSpaceRootPath;
+        String scratchDir;
 
         // Determine if we are starting a new workflow or resuming from a manifest file
         FindHl7LogFileOutput findHl7LogFileOutput;
@@ -95,6 +102,9 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
             logger.info("WorkflowId {} - Starting new workflow", workflowInfo.getWorkflowId());
             // Parse / validate input
             ParsedLogInput parsedLogInput = parseInput(input);
+
+            scratchSpaceRootPath = parsedLogInput.scratchSpaceRootPath();
+            scratchDir = scratchSpaceRootPath + "/" + workflowInfo.getWorkflowId();
 
             // Construct a path for a new manifest file
             String manifestFilePath = scratchDir + "/log-manifest.txt";
@@ -107,6 +117,8 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         } else {
             logger.info("WorkflowId {} - Resuming from continued {}", workflowInfo.getWorkflowId(), input.continued());
             findHl7LogFileOutput = findHl7LogsActivity.continueIngestHl7LogWorkflow(input.continued());
+            scratchSpaceRootPath = input.scratchSpaceRootPath();
+            scratchDir = input.scratchSpaceRootPath() + "/" + workflowInfo.getWorkflowId();
         }
 
         // At this point we have a list of file paths to process.
@@ -150,7 +162,12 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         Async.function(
             ingestToDeltaLake::ingestHl7FileToDeltaLake,
             new IngestHl7FilesToDeltaLakeInput(
-                input.deltaLakePath(), input.modalityMapPath(), input.scratchSpaceRootPath(), hl7ManifestFileOutput.manifestFilePath(), null
+                input.deltaLakePath(),
+                input.modalityMapPath(),
+                input.scratchSpaceRootPath(),
+                hl7ManifestFileOutput.manifestFilePath(),
+                null,
+                input.reportTableName()
             )
         );
         // Wait for child workflow to start
@@ -167,10 +184,11 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                     input.date(),
                     input.logsRootPath(),
                     input.logPaths(),
-                    input.scratchSpaceRootPath(),
+                    scratchSpaceRootPath,
                     input.hl7OutputPath(),
                     input.deltaLakePath(),
                     input.modalityMapPath(),
+                    input.reportTableName(),
                     nextContinued
                 )
             );
@@ -188,26 +206,31 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
      */
     private ParsedLogInput parseInput(IngestHl7LogWorkflowInput input) {
 
+        // Default values
+        String logsRootPath = DefaultArgs.getLogsRootPath(input.logsRootPath());
+        String scratchSpaceRootPath = DefaultArgs.getScratchSpaceRootPath(input.scratchSpaceRootPath());
+        String hl7OutputPath = DefaultArgs.getHl7OutputPath(input.hl7OutputPath());
+
         // Need either log paths or logs root path
         boolean hasLogPathsInput = input.logPaths() != null && !input.logPaths().isBlank();
-        boolean hasLogsRootPathInput = input.logsRootPath() != null && !input.logsRootPath().isBlank();
+        boolean hasLogsRootPathInput = logsRootPath != null && !logsRootPath.isBlank();
         List<String> logPaths;
         List<String> relativeLogPathsWithoutRoot = new ArrayList<>();
         if (hasLogPathsInput) {
             logPaths = new ArrayList<>();
-            Path logsRootPath = hasLogsRootPathInput ? Path.of(input.logsRootPath()) : null;
+            Path logsRoot = hasLogsRootPathInput ? Path.of(logsRootPath) : null;
             for (String logPath : input.logPaths().split(",")) {
                 if (logPath.startsWith("/")) {
                     logPaths.add(logPath);
                 } else if (hasLogsRootPathInput) {
-                    logPaths.add(logsRootPath.resolve(logPath).toString());
+                    logPaths.add(logsRoot.resolve(logPath).toString());
                 } else {
                     relativeLogPathsWithoutRoot.add(logPath);
                 }
             }
         } else if (hasLogsRootPathInput) {
             // If we have a logs root path, we will ingest all logs from that path
-            logPaths = List.of(input.logsRootPath());
+            logPaths = List.of(logsRootPath);
         } else {
             logPaths = Collections.emptyList();
         }
@@ -236,14 +259,16 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
         // Now we have enough information to throw for invalid inputs
         throwOnInvalidInput(
-                input, hasLogPathsInput, hasLogsRootPathInput, relativeLogPathsWithoutRoot, hasScheduledTime
+                input, scratchSpaceRootPath, hl7OutputPath, hasLogPathsInput, hasLogsRootPathInput, relativeLogPathsWithoutRoot, hasScheduledTime
         );
 
-        return new ParsedLogInput(logPaths, yesterday);
+        return new ParsedLogInput(logPaths, yesterday, scratchSpaceRootPath, hl7OutputPath);
     }
 
     private void throwOnInvalidInput(
             IngestHl7LogWorkflowInput input,
+            String scratchSpaceRootPath,
+            String hl7OutputPath,
             boolean hasLogPaths,
             boolean hasLogRootPath,
             List<String> relativeLogPaths,
@@ -253,9 +278,8 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
         // Always required
         Map<String, String> requiredInputs = Map.of(
-                "scratchSpacePath", input.scratchSpaceRootPath(),
-                "hl7OutputPath", input.hl7OutputPath(),
-                "deltaLakePath", input.deltaLakePath()
+                "scratchSpacePath", scratchSpaceRootPath,
+                "hl7OutputPath", hl7OutputPath
         );
         for (Map.Entry<String, String> entry : requiredInputs.entrySet()) {
             if (entry.getValue() == null || entry.getValue().isBlank()) {

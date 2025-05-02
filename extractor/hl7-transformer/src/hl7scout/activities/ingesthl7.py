@@ -12,9 +12,10 @@ ACTIVITY_NAME = "ingest_hl7_files_to_delta_lake"
 
 @dataclass(frozen=True)
 class IngestHl7FilesToDeltaLakeActivityInput:
-    deltaTable: str
-    hl7ManifestFilePath: Optional[str] = None
+    hl7ManifestFilePath: str
+    deltaLakePath: Optional[str] = None
     modalityMapPath: Optional[str] = None
+    reportTableName: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -25,16 +26,26 @@ class IngestHl7FilesToDeltaLakeActivityOutput:
 class IngestHl7FilesActivity:
     """Create an ingest HL7 files to Delta Lake activity.
 
-    By wrapping the activity in a function, the default modality map CSV path can be
+    By wrapping the activity in a function, several default values can be
     provided once at startup, not for each activity invocation.
-    Though it can be overridden for individual invocations if needed.
+    Though they can be overridden for individual invocations if needed.
     """
 
     default_modality_map_path: str
+    default_delta_lake_path: str
+    default_report_table_name: str
     health_file: Path
 
-    def __init__(self, default_modality_map_path: str, health_file: Path):
+    def __init__(
+        self,
+        default_delta_lake_path: str,
+        default_report_table_name: str,
+        default_modality_map_path: str,
+        health_file: Path,
+    ):
         self.default_modality_map_path = default_modality_map_path
+        self.default_delta_lake_path = default_delta_lake_path
+        self.default_report_table_name = default_report_table_name
         self.health_file = health_file
 
     @activity.defn(name=ACTIVITY_NAME)
@@ -44,15 +55,20 @@ class IngestHl7FilesActivity:
     ) -> IngestHl7FilesToDeltaLakeActivityOutput:
         """Ingest HL7 files to Delta Lake."""
         activity.logger.info(
-            "Ingesting HL7 files to Delta Lake: %s", activity_input.deltaTable
+            "Ingesting HL7 files to Delta Lake: %s", activity_input.deltaLakePath
         )
         modality_map_path = (
             activity_input.modalityMapPath or self.default_modality_map_path
         )
+        delta_lake_path = activity_input.deltaLakePath or self.default_delta_lake_path
+        report_table_name = (
+            activity_input.reportTableName or self.default_report_table_name
+        )
         num_hl7_ingested = import_hl7_files_to_deltalake(
-            activity_input.deltaTable,
             activity_input.hl7ManifestFilePath,
+            delta_lake_path,
             modality_map_path,
+            report_table_name,
             self.health_file,
         )
 

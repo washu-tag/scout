@@ -11,6 +11,7 @@ package edu.washu.tag.extractor.hl7log.model;
  * @param hl7OutputPath Path to write HL7 files.
  * @param deltaLakePath Path to write Delta Lake files.
  * @param modalityMapPath Path to read modality map file, which is the source of the modality column in Delta Lake table.
+ * @param reportTableName Name of the Delta Lake table to write to.
  * @param continued Do not set this on initial workflow run. Parameters needed to resume when workflow is Continued As New.
  */
 public record IngestHl7LogWorkflowInput(
@@ -21,5 +22,6 @@ public record IngestHl7LogWorkflowInput(
         String hl7OutputPath,
         String deltaLakePath,
         String modalityMapPath,
+        String reportTableName,
         ContinueIngestWorkflow continued
 ) {}

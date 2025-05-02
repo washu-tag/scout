@@ -29,3 +29,13 @@ config:
       temporal:
         connection:
           target: 'temporal-frontend.{{ temporal_namespace }}:7233'
+    scout:
+      workflowArgDefaults:
+        ingestHl7Log:
+          logsRootPath: '{{ hl7logs_root_dir }}'
+          scratchSpaceRootPath: '{{ scratch_path }}'
+          hl7OutputPath: '{{ hl7_path }}'
+        ingestHl7ToDeltaLake:
+          reportTableName: '{{ report_delta_table_name }}'
+          deltaLakePath: '{{ delta_lake_path }}'
+          modalityMapPath: '{{ modality_map_path }}'

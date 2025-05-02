@@ -57,6 +57,20 @@ k3s_cluster:
     jupyter_dir: '{{ base_dir }}/jupyter'
     extractor_data_dir: '{{ scout_repo_dir }}/tests/staging_test_data'
 
+    # Within the container mounted paths
+    hl7logs_root_dir: /data
+    modality_map_path: /data/modality_mapping_codes.csv
+
+    # Object storage paths
+    lake_bucket: lake
+    delta_lake_path: s3://{{ lake_bucket }}/delta
+    hl7_path: s3://{{ lake_bucket }}/hl7
+    scratch_path: s3://{{ lake_bucket }}/scratch
+
+    # Database table names
+    report_delta_table_name: reports
+    ingest_postgres_table_name: ingest
+
     # Resources
     hl7_transformer_spark_memory: 1g
     jupyter_spark_memory: 1g
