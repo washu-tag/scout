@@ -40,5 +40,4 @@
     create_namespace: true
     update_repo_cache: true
     chart_version: ~27.11.0
-    values_files:
-      - '{{ scout_repo_dir }}/helm/prometheus/values.yaml'
+    values: '{{ lookup("template", "vars/prometheus.values.yaml") | from_yaml }}'
