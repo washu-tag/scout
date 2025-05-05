@@ -27,12 +27,8 @@ public class TestScoutQueries extends BaseTest {
             .master("local")
             .withExtensions(new DeltaSparkSessionExtension())
             .config(config.getSparkConfig())
+            .enableHiveSupport()
             .getOrCreate();
-        spark
-            .read()
-            .format("delta")
-            .load(config.getTemporalConfig().getIngestJobInput().getDeltaLakePath())
-            .createOrReplaceTempView(exportedQueries.getViewName());
     }
 
     @DataProvider(name = "known_queries")
