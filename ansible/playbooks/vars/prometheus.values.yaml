@@ -147,7 +147,7 @@ extraScrapeConfigs: |
           regex: ".+"
           target_label: container
           action: replace 
-    scheme: https
+    scheme: http
     tls_config:
       insecure_skip_verify: true
     basic_auth:
