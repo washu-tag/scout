@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeSuite;
@@ -70,15 +71,31 @@ public class BaseTest {
     private DescribeWorkflowExecutionResponse waitForWorkflowInStatus(WorkflowServiceStubs workflowServiceStubs,
         WorkflowExecution workflowExecution, Set<WorkflowExecutionStatus> permittedStatuses) {
         log.info("Waiting for workflow with ID {} to be in one of the following statuses: {}", workflowExecution.getWorkflowId(), permittedStatuses);
-        return await().atMost(Duration.ofMinutes(5)).until(
-            () -> workflowServiceStubs.blockingStub().describeWorkflowExecution(
-                DescribeWorkflowExecutionRequest.newBuilder()
-                    .setNamespace(NAMESPACE)
-                    .setExecution(workflowExecution)
-                    .build()
-            ),
-            (response) -> permittedStatuses.contains(response.getWorkflowExecutionInfo().getStatus())
-        );
+        final AtomicReference<DescribeWorkflowExecutionResponse> currentWorkflow = new AtomicReference<>();
+        final AtomicReference<WorkflowExecutionStatus> currentStatus = new AtomicReference<>();
+
+        return await()
+            .pollInterval(Duration.ofMillis(500))
+            .failFast(
+                "Temporal workflow failed",
+                () -> WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_FAILED.equals(currentStatus.get()))
+            .atMost(Duration.ofMinutes(5))
+            .until(
+                () -> {
+                    currentWorkflow.set(
+                        workflowServiceStubs.blockingStub().describeWorkflowExecution(
+                            DescribeWorkflowExecutionRequest.newBuilder()
+                                .setNamespace(NAMESPACE)
+                                .setExecution(workflowExecution)
+                                .build()
+                        )
+                    );
+                    currentStatus.set(currentWorkflow.get().getWorkflowExecutionInfo().getStatus());
+                    log.info("Current workflow state: {}", currentStatus.get());
+                    return currentWorkflow;
+                },
+                (ignored) -> permittedStatuses.contains(currentStatus.get())
+            ).get();
     }
 
     private void waitForWorkflowChain(WorkflowServiceStubs workflowServiceStubs, WorkflowExecution workflowExecution) {
