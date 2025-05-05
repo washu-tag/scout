@@ -27,6 +27,7 @@ volumeMounts:
   - name: data
     mountPath: /data
     readOnly: true
+    mountPropagation: HostToContainer
   - name: spark-defaults
     mountPath: /opt/spark/conf/spark-defaults.conf
     subPath: spark-defaults.conf
