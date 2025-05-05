@@ -93,15 +93,6 @@ extraScrapeConfigs: |
     - source_labels: [__meta_kubernetes_pod_container_name]
       action: keep # dont try to scrape non trino container
       regex: trino-worker
-    - action: hashmod
-      modulus: $(SHARDS)
-      source_labels:
-      - __address__
-      target_label: __tmp_hash
-    - action: keep
-      regex: $(SHARD)
-      source_labels:
-      - __tmp_hash
     - source_labels: [__meta_kubernetes_pod_name]
       action: replace
       target_label: pod
@@ -138,15 +129,6 @@ extraScrapeConfigs: |
     - source_labels: [__meta_kubernetes_pod_container_name]
       action: keep # dont try to scrape non trino container
       regex: trino-coordinator
-    - action: hashmod
-      modulus: $(SHARDS)
-      source_labels:
-      - __address__
-      target_label: __tmp_hash
-    - action: keep
-      regex: $(SHARD)
-      source_labels:
-      - __tmp_hash
     - source_labels: [__meta_kubernetes_pod_name]
       action: replace
       target_label: pod
