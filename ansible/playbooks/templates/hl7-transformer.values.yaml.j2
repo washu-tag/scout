@@ -12,8 +12,10 @@ env:
     value: 'temporal-frontend.{{ temporal_namespace }}:7233'
   - name: TEMPORAL_NAMESPACE
     value: default
+  - name: REPORT_DELTA_TABLE_NAME
+    value: '{{ report_delta_table_name }}'
   - name: MODALITY_MAP_PATH
-    value: /data/modality_mapping_codes.csv
+    value: '{{ modality_map_path }}'
 volumes:
   - name: data
     hostPath:

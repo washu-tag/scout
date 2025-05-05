@@ -2,19 +2,10 @@ package edu.washu.tag.model;
 
 public class IngestJobInput {
 
-    private String deltaLakePath = "s3a://lake/delta";
-    private String hl7OutputPath = "s3://lake/hl7";
-    private String scratchSpaceRootPath = "s3://lake/scratch";
+    private String hl7OutputPath = null;
+    private String scratchSpaceRootPath = null;
     private String logsRootPath = "/data/hl7";
-
-    public String getDeltaLakePath() {
-        return deltaLakePath;
-    }
-
-    public IngestJobInput setDeltaLakePath(String deltaLakePath) {
-        this.deltaLakePath = deltaLakePath;
-        return this;
-    }
+    private String reportTableName = "reports";
 
     public String getHl7OutputPath() {
         return hl7OutputPath;
@@ -43,4 +34,12 @@ public class IngestJobInput {
         return this;
     }
 
+    public String getReportTableName() {
+        return reportTableName;
+    }
+
+    public IngestJobInput setReportTableName(String reportTableName) {
+        this.reportTableName = reportTableName;
+        return this;
+    }
 }

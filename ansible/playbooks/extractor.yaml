@@ -26,7 +26,7 @@
           stringData:
             DB_HOST: 'postgresql-cluster-rw.{{ postgres_cluster_namespace }}'
             DB_PORT: '5432'
-            DB_NAME: ingest
+            DB_NAME: '{{ ingest_postgres_table_name }}'
             DB_USER: '{{ postgres_user }}'
             DB_PASSWORD: '{{ postgres_password }}'
 
@@ -58,11 +58,6 @@
             AWS_ALLOW_HTTP: 'true'
             AWS_REGION: '{{ s3_region }}'
 
-    - name: Load HL7Log Extractor values file
-      ansible.builtin.include_vars:
-        file: vars/hl7log-extractor.values.yaml
-        name: hl7log_extractor_values
-
     - name: Deploy HL7Log Extractor
       kubernetes.core.helm:
         name: hl7log-extractor
@@ -72,7 +67,7 @@
         wait: true
         wait_timeout: 5m
         atomic: true
-        values: '{{ hl7log_extractor_values }}'
+        values: "{{ lookup('template', 'templates/hl7log-extractor.values.yaml.j2') | from_yaml }}"
 
     - name: Setup Spark defaults ConfigMap
       include_tasks: tasks/spark_config_setup.yaml
@@ -83,11 +78,6 @@
         spark_s3_username: '{{ s3_lake_writer }}'
         spark_s3_password: '{{ s3_lake_writer_secret }}'
 
-    - name: Load HL7 Transformer values file
-      ansible.builtin.include_vars:
-        file: vars/hl7-transformer.values.yaml
-        name: hl7_transformer_values
-
     - name: Deploy HL7 Transformer
       kubernetes.core.helm:
         name: hl7-transformer
@@ -97,4 +87,4 @@
         wait: true
         wait_timeout: 5m
         atomic: true
-        values: '{{ hl7_transformer_values }}'
+        values: "{{ lookup('template', 'templates/hl7-transformer.values.yaml.j2') | from_yaml }}"

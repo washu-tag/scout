@@ -86,7 +86,7 @@
               name: superuser-secret
             bootstrap:
               initdb:
-                database: ingest
+                database: '{{ ingest_postgres_table_name }}'
                 owner: '{{ postgres_user }}'
                 secret:
                   name: postgres-user

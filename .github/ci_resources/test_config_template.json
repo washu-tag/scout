@@ -7,11 +7,19 @@
     "spark.hadoop.fs.s3a.endpoint": "http://minio.minio-scout",
     "spark.hadoop.fs.s3a.endpoint.region": "us-east-1",
     "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
-    "spark.hadoop.fs.s3a.path.style.access": "true"
+    "spark.hadoop.fs.s3a.path.style.access": "true",
+    "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
+    "spark.hadoop.hive.metastore.uris": "thrift://hive-metastore.hive:9083",
+    "spark.sql.warehouse.dir": "s3a://lake/delta"
   },
   "postgresConfig": {
     "url": "jdbc:postgresql://postgresql-cluster-r.cloudnative-pg:5432/ingest",
     "username": "scout",
     "password": "scout123"
+  },
+  "temporalConfig": {
+    "ingestJobInput": {
+      "reportTableName": "syntheticdata"
+    }
   }
 }

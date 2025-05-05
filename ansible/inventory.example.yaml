@@ -75,6 +75,20 @@ k3s_cluster:
     jupyter_dir: /scout/data/jupyter
     extractor_data_dir: /ceph/input/data
 
+    # Within the container mounted paths
+    hl7logs_root_dir: /data
+    modality_map_path: /data/modality_mapping_codes.csv
+
+    # Object storage paths
+    lake_bucket: lake
+    hl7_path: s3://{{ lake_bucket }}/hl7
+    scratch_path: s3://{{ lake_bucket }}/scratch
+    delta_lake_path: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefix, it is used just like s3://
+
+    # Database table names
+    report_delta_table_name: reports
+    ingest_postgres_table_name: ingest
+
     # Resources
     hl7_transformer_spark_memory: 8g
     jupyter_spark_memory: 8g
@@ -95,7 +109,6 @@ k3s_cluster:
 
     # computed values, used across playbooks
     s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
-    hive_warehouse: 's3a://lake/delta' # Hadoop requires the s3a prefix, it is used just like s3://
     hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
     server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
     # END - DO NOT CHANGE
