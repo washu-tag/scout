@@ -25,7 +25,6 @@ public class TestScoutQueries extends BaseTest {
         spark = SparkSession.builder()
             .appName("TestClient")
             .master("local")
-            .withExtensions(new DeltaSparkSessionExtension())
             .config(config.getSparkConfig())
             .enableHiveSupport()
             .getOrCreate();
