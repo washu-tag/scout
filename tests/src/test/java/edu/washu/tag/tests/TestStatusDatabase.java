@@ -22,6 +22,13 @@ public class TestStatusDatabase extends BaseTest {
     private static final String TABLE_HL7_FILES = "hl7_files";
     private static final String VIEW_RECENT_HL7_FILES = "recent_hl7_files";
 
+    /**
+     * Tests the state of the ingest database after the test data has been processed by Scout.
+     * In particular, for the date 1995-04-02, there should be 2 HL7 messages represented by the log file.
+     * The {@value #TABLE_LOG_FILES} table and {@value #VIEW_RECENT_LOG_FILES} view should have a single
+     * successful row corresponding to that date, while the {@value #TABLE_HL7_FILES} table and
+     * {@value #VIEW_RECENT_HL7_FILES} view should contain 2 rows for that date, one per file.
+     */
     @Test
     public void testStatusDbSuccess() {
         final LogRow logRow = LogRow.success("1995-04-02");
@@ -52,6 +59,14 @@ public class TestStatusDatabase extends BaseTest {
         );
     }
 
+    /**
+     * Tests the state of the ingest database after the test data has been processed by Scout.
+     * In particular, for the date 2024-01-02, the entire content of the log file is unusable by Scout.
+     * The {@value #TABLE_LOG_FILES} table is expected to have five "successful" rows for that day
+     * from retries because the error is tracked later on while the {@value #VIEW_RECENT_LOG_FILES} view
+     * limits to a single row. The {@value #TABLE_HL7_FILES} table contains the 5 failed rows for that date
+     * with the {@value #VIEW_RECENT_HL7_FILES} view restricting to a single row.
+     */
     @Test
     public void testStatusDbTotalFailure() {
         final LogRow logRowWithRetries = LogRow.success("2024-01-02");
@@ -87,6 +102,16 @@ public class TestStatusDatabase extends BaseTest {
         );
     }
 
+    /**
+     * Tests the state of the ingest database after the test data has been processed by Scout.
+     * In particular, for the date 2023-01-13, the log file contains an unusable HL7 message followed by
+     * 2 usable ones. The {@value #TABLE_LOG_FILES} table and {@value #VIEW_RECENT_LOG_FILES} view should have
+     * a single successful row corresponding to that date. The {@value #TABLE_HL7_FILES} table contains
+     * a successful row for the improper message and 2 rows for the valid messages under the overall workflow id,
+     * with a failing row for the improper message under one of the delta lake ingest child workflows. The
+     * {@value #VIEW_RECENT_HL7_FILES} view contains the same row except for the successful row for the improper
+     * HL7 message.
+     */
     @Test
     public void testStatusDbHl7MessageParseError() {
         final LogRow logRow = LogRow.success("2023-01-13");
