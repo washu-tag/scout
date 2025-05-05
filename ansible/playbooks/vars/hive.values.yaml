@@ -111,7 +111,7 @@ env:
   - name: HIVE_METASTORE_PASSWORD
     value: '{{ hive_postgres_password }}'
   - name: HIVE_METASTORE_WAREHOUSE_DIR
-    value: '{{ hive_warehouse }}'
+    value: '{{ delta_lake_path }}'
   - name: S3_ENDPOINT
     value: '{{ s3_endpoint }}'
   - name: S3_ACCESS_KEY
