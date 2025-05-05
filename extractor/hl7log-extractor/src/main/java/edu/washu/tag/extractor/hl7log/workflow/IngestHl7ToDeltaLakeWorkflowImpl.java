@@ -71,11 +71,7 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
 
         // Validate input
         String reportTableName = DefaultArgs.getReportTableName(input.reportTableName());
-        String deltaLakePath = DefaultArgs.getDeltaLakePath(input.deltaLakePath());
         String modalityMapPath = DefaultArgs.getModalityMapPath(input.modalityMapPath());
-        if (deltaLakePath == null || deltaLakePath.isEmpty()) {
-            throw new IllegalArgumentException("deltaLakePath must be provided");
-        }
         if (modalityMapPath == null || modalityMapPath.isEmpty()) {
             throw new IllegalArgumentException("modalityMapPath must be provided");
         }
@@ -85,7 +81,7 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
         Promise<IngestHl7FilesToDeltaLakeOutput> ingestHl7Promise = ingestActivity.executeAsync(
             PYTHON_ACTIVITY,
             IngestHl7FilesToDeltaLakeOutput.class,
-            new IngestHl7FilesToDeltaLakeActivityInput(reportTableName, deltaLakePath, modalityMapPath, hl7ManifestFilePath)
+            new IngestHl7FilesToDeltaLakeActivityInput(reportTableName, modalityMapPath, hl7ManifestFilePath)
         );
 
         IngestHl7FilesToDeltaLakeOutput ingestHl7Output;

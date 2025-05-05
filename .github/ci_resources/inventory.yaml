@@ -63,9 +63,9 @@ k3s_cluster:
 
     # Object storage paths
     lake_bucket: lake
-    delta_lake_path: s3://{{ lake_bucket }}/delta
     hl7_path: s3://{{ lake_bucket }}/hl7
     scratch_path: s3://{{ lake_bucket }}/scratch
+    delta_lake_path: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefix, it is used just like s3://
 
     # Database table names
     report_delta_table_name: reports
@@ -90,7 +90,6 @@ k3s_cluster:
 
     # computed values, used across playbooks
     s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
-    hive_warehouse: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefix, it is used just like s3://
     hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
     server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
     # End do not change

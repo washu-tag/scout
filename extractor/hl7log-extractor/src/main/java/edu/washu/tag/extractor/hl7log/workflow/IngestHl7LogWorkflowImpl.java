@@ -159,7 +159,6 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         Async.function(
             ingestToDeltaLake::ingestHl7FileToDeltaLake,
             new IngestHl7FilesToDeltaLakeInput(
-                input.deltaLakePath(),
                 input.modalityMapPath(),
                 scratchSpaceRootPath,
                 hl7ManifestFileOutput.manifestFilePath(),
@@ -183,7 +182,6 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                     input.logPaths(),
                     scratchSpaceRootPath,
                     input.hl7OutputPath(),
-                    input.deltaLakePath(),
                     input.modalityMapPath(),
                     input.reportTableName(),
                     nextContinued

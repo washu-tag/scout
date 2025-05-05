@@ -22,14 +22,12 @@ log = logging.getLogger("workflow_worker")
 async def run_worker(
     temporal_address: str,
     namespace: str,
-    default_delta_lake_path: str,
     default_report_delta_table_name: str,
     default_modality_map_path: str,
     health_file: Path,
 ) -> None:
     client = await Client.connect(temporal_address, namespace=namespace)
     ingest_hl7_files_activity = IngestHl7FilesActivity(
-        default_delta_lake_path,
         default_report_delta_table_name,
         default_modality_map_path,
         health_file,
@@ -75,7 +73,6 @@ async def main(argv=None):
         "TEMPORAL_ADDRESS", "temporal-frontend.temporal:7233"
     )
     temporal_namespace = os.environ.get("TEMPORAL_NAMESPACE", "default")
-    default_delta_lake_path = os.environ.get("DELTA_LAKE_PATH", "s3://lake/delta")
     default_report_delta_table_name = os.environ.get(
         "REPORT_DELTA_TABLE_NAME", "reports"
     )
@@ -101,7 +98,6 @@ async def main(argv=None):
         run_worker(
             temporal_address,
             temporal_namespace,
-            default_delta_lake_path,
             default_report_delta_table_name,
             default_modality_map_path,
             SPARK_HEALTH_TEMP_FILE,

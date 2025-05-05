@@ -50,7 +50,6 @@ def parse_timestamp_col(col: Column | str) -> Column:
 
 def import_hl7_files_to_deltalake(
     hl7_manifest_file_path: str,
-    delta_lake_path: str,
     modality_map_csv_path: str,
     report_table_name: str,
     health_file: Path,
@@ -257,23 +256,20 @@ def import_hl7_files_to_deltalake(
         )
 
         # Create table if it doesn't yet exist
-        delta_lake_path = delta_lake_path.replace("s3://", "s3a://")
-
         activity.heartbeat()
         activity.logger.info(
-            "Creating Delta Lake table %s if it does not exist", delta_lake_path
+            "Creating Delta Lake table %s if it does not exist", report_table_name
         )
         dt = (
             DeltaTable.createIfNotExists(spark)
             .tableName(f"default.{report_table_name}")
-            .location(delta_lake_path)
             .addColumns(df.schema)
             .partitionedBy("year")
             .execute()
         )
 
         activity.heartbeat()
-        activity.logger.info("Writing data to Delta Lake table %s", delta_lake_path)
+        activity.logger.info("Writing data to Delta Lake table %s", report_table_name)
         (
             dt.alias("s")
             .merge(

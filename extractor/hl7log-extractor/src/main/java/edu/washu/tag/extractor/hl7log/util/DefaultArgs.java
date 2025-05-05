@@ -10,7 +10,6 @@ public class DefaultArgs {
     private static String logsRootPath;
     private static String scratchSpaceRootPath;
     private static String hl7OutputPath;
-    private static String deltaLakePath;
     private static String modalityMapPath;
     private static String reportTableName;
 
@@ -36,14 +35,6 @@ public class DefaultArgs {
     }
     public static String getHl7OutputPath(String input) {
         return getValueOrDefault(input, hl7OutputPath);
-    }
-
-    @Value("${scout.workflowArgDefaults.ingestHl7ToDeltaLake.deltaLakePath}")
-    public void setDeltaLakePath(String deltaLakePath) {
-        DefaultArgs.deltaLakePath = deltaLakePath;
-    }
-    public static String getDeltaLakePath(String input) {
-        return getValueOrDefault(input, deltaLakePath);
     }
 
     @Value("${scout.workflowArgDefaults.ingestHl7ToDeltaLake.modalityMapPath}")
