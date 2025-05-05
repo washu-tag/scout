@@ -16,6 +16,7 @@ volumeMounts:
   - name: data
     mountPath: /data
     readOnly: true
+    mountPropagation: HostToContainer
 config:
   application:
     s3:
