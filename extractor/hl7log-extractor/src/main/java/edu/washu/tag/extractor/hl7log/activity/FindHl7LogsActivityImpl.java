@@ -13,6 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -166,8 +167,8 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
                 "WorkflowId {} ActivityId {} - Finding HL7 log file for date {} in root path {}",
                 activityInfo.getWorkflowId(), activityInfo.getActivityId(), date, logsRootPath
         );
-        try {
-            return Files.walk(Path.of(logsRootPath))
+        try (Stream<Path> walk = Files.walk(Path.of(logsRootPath))) {
+            return walk
                     .filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().contains(date))
                     .map(Path::toString)
