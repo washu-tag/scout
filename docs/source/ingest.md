@@ -6,14 +6,18 @@ any of the following means can pass the data on to Temporal:
 2. Launching the workflow via Temporal's UI
 3. Launching the workflow by connecting to Temporal via an SDK (done by the tests, but not recommended in production)
 
-The format of the input is the same for the first two options, a JSON object providing the following properties. Some of the properties have corresponding
-analogues available in Ansible variables. For these properties, omitting them will cause the ingest workflow to default to their corresponding Ansible variables.
-- `date`: an optional search parameter to filter to only the log file corresponding to the provided date. Format of the parameter should match the format of the date in the file name.
+The format of the input is the same for the first two options, a JSON object providing the following properties. Some of the properties have
+corresponding analogues available in Ansible variables. For these properties, omitting them will cause the ingest workflow to default to their
+corresponding Ansible variables.
+- `date`: an optional search parameter to filter to only the log file corresponding to the provided date.
+   Format of the parameter should match the format of the date in the file name.
 - `logPaths`: an optional list of specific log files to ingest. Can be absolute or relative to `logsRootPath`.
 - `logsRootPath`: root path to search recursively for log files for ingest. Ansible equivalent: `hl7logs_root_dir`.
-- `scratchSpaceRootPath`: root path to use for temporary files. The directory specified will be created if it does not exist. Ansible equivalent: `scratch_path`.
+- `scratchSpaceRootPath`: root path to use for temporary files. The directory specified will be created if it does not exist.
+   Ansible equivalent: `scratch_path`.
 - `hl7OutputPath`: path to write HL7 files. Note that this is _not_ the path to the resulting delta lake. Ansible equivalent: `hl7_path`.
-- `modalityMapPath`: path to read modality map file, which is the source of the `modality` column in the Delta Lake table. Ansible equivalent: `modality_map_path`.
+- `modalityMapPath`: path to read modality map file, which is the source of the `modality` column in the Delta Lake table.
+   Ansible equivalent: `modality_map_path`.
 - `reportTableName`: name of the Delta Lake table to write to. Ansible equivalent: `report_delta_table_name`.
 
 ## admintools container
