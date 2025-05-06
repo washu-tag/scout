@@ -52,5 +52,6 @@ for monitoring and visualization.
 :hidden:
 services
 dataschema
+ingest
 tips
 ```
