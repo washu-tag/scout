@@ -48,6 +48,8 @@ ingress:
 prePuller:
   hook:
     enabled: true
+  continuous:
+    enabled: false
 
 singleuser:
   image:
