@@ -78,6 +78,19 @@ jobs:
         with:
           subproject: explorer
           image-name: explorer
+  build-and-upload-superset:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4.2.1
+      - name: 'Build/Cache Image - superset'
+        uses: ./.github/actions/docker-build-cache
+        with:
+          subproject: helm/superset
+          image-name: superset
   unit-test:
     runs-on: ubuntu-latest
     permissions:
@@ -99,6 +112,7 @@ jobs:
       - build-and-upload-hl7-transformer
       - build-and-upload-pyspark-notebook
       - build-and-upload-explorer
+      - build-and-upload-superset
       - unit-test
     permissions:
       contents: read
@@ -128,11 +142,6 @@ jobs:
         with:
           subproject: extractor/hl7-transformer
           image-name: hl7-transformer
-      - name: 'Push image to k3s - explorer'
-        uses: ./.github/actions/k3s-image-import
-        with:
-          subproject: explorer
-          image-name: explorer
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
@@ -219,3 +228,7 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: explorer
+      - name: 'Push Image - superset'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: superset
