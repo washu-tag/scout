@@ -166,40 +166,23 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     }
 
     /**
-     * Extracts a timestamp from the "header" lines of a segment. Going backward from the SB tag, attempt to find a line with a timestamp we can use
-     * to uniquely identify the HL7 report in the segment.
+     * Extracts a timestamp from the line immediately preceding the SB tag
      *
-     * @param lines      Content of split file
-     * @param sbTagIndex Index of the SB tag in the lines list. All lines prior could contain timestamps
+     * @param line Line containing timestamp
      * @return The extracted timestamp
      * @throws FileFormatException If timestamp extraction fails
      */
-    private String extractTimestamp(List<String> lines, int sbTagIndex) throws FileFormatException {
-        FileFormatException firstException = null;
-        for (int i = sbTagIndex - 1; i >= 0; i--) {
-            String line = lines.get(i);
-
-            // Check if we have enough bytes
-            if (line.length() < HEADER_LENGTH) {
-                if (firstException == null) {
-                    firstException = new FileFormatException(
-                        String.format("Timestamp header line is too short, expected at least %d bytes but got %d",
-                            HEADER_LENGTH, line.length())
-                    );
-                }
-                continue;
-            }
-
-            try {
-                // Extract the timestamp from the header
-                return parseAndValidateTimestamp(line.substring(0, HEADER_LENGTH));
-            } catch (FileFormatException e) {
-                if (firstException == null) {
-                    firstException = e;
-                }
-            }
+    private String extractTimestamp(String line) throws FileFormatException {
+        // Check if we have enough bytes
+        if (line.length() < HEADER_LENGTH) {
+            throw new FileFormatException(
+                String.format("Timestamp header line is too short, expected at least %d bytes but got %d",
+                    HEADER_LENGTH, line.length())
+            );
         }
-        throw firstException != null ? firstException : new FileFormatException("No timestamp header line before <SB>");
+
+        // Extract the timestamp from the header
+        return parseAndValidateTimestamp(line.substring(0, HEADER_LENGTH));
     }
 
     /**
@@ -300,7 +283,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         // Need at least 3 lines (timestamp line, <SB>, and content)
         if (lines.size() < 3) {
             logger.warn("WorkflowId {} ActivityId {} - Segment {} is too short", activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber);
-            return Hl7File.error(logFile, segmentNumber, "Split content has fewer than 3 lines", activityInfo.getWorkflowId(), activityInfo.getActivityId());
+            return Hl7File.error(logFile, segmentNumber, "Segment has fewer than 3 lines", activityInfo.getWorkflowId(), activityInfo.getActivityId());
         }
 
         int sbTagIndex;
@@ -312,8 +295,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 .findFirst()
                 .orElseThrow(() -> new FileFormatException("No <SB> tag"));
 
-            // Extract timestamp from "header" lines
-            timestamp = extractTimestamp(lines, sbTagIndex);
+            // Extract timestamp from "header" line
+            timestamp = extractTimestamp(lines.get(sbTagIndex - 1));
         } catch (FileFormatException e) {
             logger.warn("WorkflowId {} ActivityId {} - Segment {} unable to parse: {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(),
                 segmentNumber, e.getMessage());
@@ -328,7 +311,12 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             for (int i = sbTagIndex + 1; i < lines.size(); i++) {
-                String processed = lines.get(i).replaceAll("<R>$", "");
+                // Strip the non-HL7 "tags"
+                String processed = lines.get(i).replaceAll("<R>$", "").replaceAll("<EB>", "");
+                if (processed.isBlank()) {
+                    continue;
+                }
+
                 // Write line with carriage return (HL7 requirement)
                 outputStream.write(processed.getBytes(StandardCharsets.UTF_8));
                 outputStream.write('\r');
