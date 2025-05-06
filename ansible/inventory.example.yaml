@@ -42,6 +42,7 @@ k3s_cluster:
     jupyter_dummy_password: $(echo $JH_DUMMY_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     jupyter_allowed_users: [] # empty list means all users can log in
     jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    jupyter_prepuller_continuous: false
 
     # Postgres config
     postgres_user: scout

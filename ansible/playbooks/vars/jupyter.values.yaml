@@ -49,7 +49,7 @@ prePuller:
   hook:
     enabled: true
   continuous:
-    enabled: false
+    enabled: '{{ jupyter_prepuller_continuous | default(false) }}'
 
 singleuser:
   image:
