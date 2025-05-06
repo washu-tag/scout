@@ -100,6 +100,30 @@ class IngestHl7LogWorkflowInputParserTest {
     }
 
     @Test
+    void testParseInput_nonScheduled_date(IngestHl7LogWorkflowInputParserTestWorkflow workflow) {
+        String date = "arbitrary-date";
+        IngestHl7LogWorkflowInput input = new IngestHl7LogWorkflowInput(
+            date,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+
+        IngestHl7LogWorkflowParsedInput parsedInput = workflow.parseInput(input, null);
+
+        assertNotNull(parsedInput);
+        assertEquals(List.of(defaultLogsRootPath), parsedInput.logPaths());
+        assertEquals(date, parsedInput.date());
+        assertEquals(defaultScratchSpaceRootPath, parsedInput.scratchSpaceRootPath());
+        assertEquals(defaultLogsRootPath, parsedInput.logsRootPath());
+        assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
+    }
+
+    @Test
     void testParseInput_scheduled_defaultsOnly(IngestHl7LogWorkflowInputParserTestWorkflow workflow) {
         // Set search attribute to simulate a scheduled run
         OffsetDateTime nowUtc = OffsetDateTime.now(Clock.systemUTC());
@@ -128,6 +152,41 @@ class IngestHl7LogWorkflowInputParserTest {
             null,
             logsRootPath,
             null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+
+        // Set search attribute to simulate a scheduled run
+        OffsetDateTime nowUtc = OffsetDateTime.now(Clock.systemUTC());
+        String yesterdayLocal = nowUtc
+            .atZoneSameInstant(ZoneId.systemDefault())
+            .toOffsetDateTime()
+            .minusDays(1)
+            .format(YYYYMMDD_FORMAT);
+
+        IngestHl7LogWorkflowParsedInput parsedInput = workflow.parseInput(input, nowUtc);
+
+        assertNotNull(parsedInput);
+        assertEquals(List.of(logsRootPath), parsedInput.logPaths());
+        assertEquals(yesterdayLocal, parsedInput.date());
+        assertEquals(defaultScratchSpaceRootPath, parsedInput.scratchSpaceRootPath());
+        assertEquals(logsRootPath, parsedInput.logsRootPath());
+        assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
+    }
+
+    @Test
+    void testParseInput_scheduled_ignoresOtherInputs(IngestHl7LogWorkflowInputParserTestWorkflow workflow) {
+        String date = "arbitrary-date";
+        String logsRootPath = "/nondefault/path/to/logs";
+        List<String> ignoredLogPaths = List.of("/absolute", "relative");
+
+        IngestHl7LogWorkflowInput input = new IngestHl7LogWorkflowInput(
+            date,
+            logsRootPath,
+            String.join(",", ignoredLogPaths),
             null,
             null,
             null,
