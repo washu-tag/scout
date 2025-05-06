@@ -1,4 +1,4 @@
-# Report ingestion
+# Report Ingestion
 
 Handling of the data ingestion process is done by the {ref}`orchestrator service <orchestrator_ref>`. To submit the request,
 any of the following means can pass the data on to Temporal:
