@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -165,25 +166,40 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     }
 
     /**
-     * Extracts a timestamp from the first lines of a segment.
+     * Extracts a timestamp from the "header" lines of a segment. Going backward from the SB tag, attempt to find a line with a timestamp we can use
+     * to uniquely identify the HL7 report in the segment.
      *
-     * @param lines Content of split file
+     * @param lines      Content of split file
+     * @param sbTagIndex Index of the SB tag in the lines list. All lines prior could contain timestamps
      * @return The extracted timestamp
      * @throws FileFormatException If timestamp extraction fails
      */
-    private String extractTimestamp(List<String> lines) throws FileFormatException {
-        String headerLine = lines.getFirst();
+    private String extractTimestamp(List<String> lines, int sbTagIndex) throws FileFormatException {
+        FileFormatException firstException = null;
+        for (int i = sbTagIndex - 1; i >= 0; i--) {
+            String line = lines.get(i);
 
-        // Check if we have enough bytes
-        if (headerLine.length() < HEADER_LENGTH) {
-            throw new FileFormatException(
-                String.format("Header is too short, expected at least %d bytes but got %d",
-                    HEADER_LENGTH, headerLine.length())
-            );
+            // Check if we have enough bytes
+            if (line.length() < HEADER_LENGTH) {
+                if (firstException == null) {
+                    firstException = new FileFormatException(
+                        String.format("Timestamp header line is too short, expected at least %d bytes but got %d",
+                            HEADER_LENGTH, line.length())
+                    );
+                }
+                continue;
+            }
+
+            try {
+                // Extract the timestamp from the header
+                return parseAndValidateTimestamp(line.substring(0, HEADER_LENGTH));
+            } catch (FileFormatException e) {
+                if (firstException == null) {
+                    firstException = e;
+                }
+            }
         }
-
-        // Extract the timestamp from the header
-        return parseAndValidateTimestamp(headerLine.substring(0, HEADER_LENGTH));
+        throw firstException != null ? firstException : new FileFormatException("No timestamp header line before <SB>");
     }
 
     /**
@@ -281,20 +297,27 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         throws IOException {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
 
-        // Need at least 3 lines (2 header lines + content)
+        // Need at least 3 lines (timestamp line, <SB>, and content)
         if (lines.size() < 3) {
             logger.warn("WorkflowId {} ActivityId {} - Segment {} is too short", activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber);
             return Hl7File.error(logFile, segmentNumber, "Split content has fewer than 3 lines", activityInfo.getWorkflowId(), activityInfo.getActivityId());
         }
 
-        // Extract timestamp from the segment's first HEADER_LENGTH bytes
+        int sbTagIndex;
         String timestamp;
         try {
-            timestamp = extractTimestamp(lines);
+            // Find the start of the HL7 content. We are assuming this is after some number of timestamped lines and then one <SB> tag
+            sbTagIndex = IntStream.range(0, lines.size())
+                .filter(i -> lines.get(i).contains("<SB>"))
+                .findFirst()
+                .orElseThrow(() -> new FileFormatException("No <SB> tag"));
+
+            // Extract timestamp from "header" lines
+            timestamp = extractTimestamp(lines, sbTagIndex);
         } catch (FileFormatException e) {
-            logger.warn("WorkflowId {} ActivityId {} - Segment {} unable to extract timestamp: {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(),
+            logger.warn("WorkflowId {} ActivityId {} - Segment {} unable to parse: {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(),
                 segmentNumber, e.getMessage());
-            return Hl7File.error(logFile, segmentNumber, "Unable to extract timestamp: " + e.getMessage(), activityInfo.getWorkflowId(),
+            return Hl7File.error(logFile, segmentNumber, "Unable to parse segment: " + e.getMessage(), activityInfo.getWorkflowId(),
                 activityInfo.getActivityId());
         }
 
@@ -302,19 +325,12 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String relativePath = getTimestampPath(timestamp).resolve(timestamp + ".hl7").toString();
         logger.info("WorkflowId {} ActivityId {} - Transforming segment {} HL7 file {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(),
             segmentNumber, relativePath);
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            List<String> processedLines = lines.stream()
-                // Drop lines until we get to the "<SB>"
-                .dropWhile(line -> !line.contains("<SB>"))
-                // Then, skip the "<SB>" line
-                .skip(1)
-                // Remove trailing "<R>", if present
-                .map(line -> line.replaceAll("<R>$", ""))
-                .toList();
 
-            for (String line : processedLines) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            for (int i = sbTagIndex + 1; i < lines.size(); i++) {
+                String processed = lines.get(i).replaceAll("<R>$", "");
                 // Write line with carriage return (HL7 requirement)
-                outputStream.write(line.getBytes(StandardCharsets.UTF_8));
+                outputStream.write(processed.getBytes(StandardCharsets.UTF_8));
                 outputStream.write('\r');
             }
 
