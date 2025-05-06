@@ -29,6 +29,10 @@ OBX|21|ST|&IMP|2|Dictated by: Joseph Barajas Interpreter, M.D.||||||Final|||||T6
 ZDS|2.25.100405915728099816173320934019894171432^EPIC^APPLICATION^DICOM<R>
 <EB><R>
 
+1999-11-30 23:11:29.1901|INFO|Raw.TcpLogger.TcpLogger|Receiver requested on port 9999
+1999-11-30 23:11:29.2346|INFO|Raw.Application.TcpServer.TcpServer|Port 9999. End Point is 127.0.0.1:9999
+1999-11-30 23:11:29.5508|INFO|Raw.Application.TcpServer.TcpServer|Waiting for a connection.....
+1999-11-30 23:11:29.6882|INFO|Raw.Application.TcpServer.TcpServer|Connection accepted from 127.0.0.2:12345 on port 9999
 1999-11-30 23:11:29.8376|INFO|Raw.Application.TcpServer.TcpServer|
 <SB>
 MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|19991130231129|TBD|ORU^R01|2.25.258872894671527226589049435320087888112|P|2.7<R>
