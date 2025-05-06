@@ -85,7 +85,7 @@ public class TestStatusDatabase extends BaseTest {
             logRowWithRetries
         );
 
-        final Hl7FileRow repeatedFailingHl7Message = Hl7FileRow.failure(0, null, "Split content has fewer than 3 lines");
+        final Hl7FileRow repeatedFailingHl7Message = Hl7FileRow.failure(0, null, "Log did not contain any HL7 messages");
 
         runHl7FileTest(
             SqlQuery.hl7FileTableQuery("20240102", Collections.singletonList(ingestWorkflowId)),
