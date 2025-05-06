@@ -38,6 +38,7 @@ logs. Scout provides pre-configured Grafana dashboards for services such as Temp
 These dashboards are available to system administrators for monitoring and troubleshooting purposes. Additionally, logs
 for each service can be accessed directly through Grafana.
 
+(orchestrator_ref)=
 ### Orchestrator
 
 [Temporal](https://temporal.io/) is a workflow orchestration service that Scout uses to manage the execution of its Extractor services. 
