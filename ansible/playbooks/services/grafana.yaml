@@ -67,6 +67,32 @@
 - name: Apply Grafana dashboard configmaps
   command: 'kubectl apply -k {{ scout_repo_dir }}/helm/grafana -n {{ grafana_namespace }}'
 
+- name: Apply Grafana alert rules as ConfigMaps
+  block:
+    - name: Find all Grafana alerts
+      find:
+        paths: 'templates/'
+        patterns: 'grafana-alert-*.json' # Alerts and notification templates
+      register: alert_files
+
+    - name: Create ConfigMap for each Grafana alert
+      kubernetes.core.k8s:
+        state: present
+        definition: |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: '{{ item.path | basename | regex_replace(".json$", "") }}'
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              grafana_alert: '1'
+          data:
+            '{{ item.path | basename }}': 
+              '{{ lookup("template", item.path) | to_nice_json }}'
+      loop: '{{ alert_files.files }}'
+      loop_control:
+        label: '{{ item.path | basename }}'
+
 - name: Create Slack contact point secret
   kubernetes.core.k8s:
     state: present

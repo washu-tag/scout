@@ -33,6 +33,7 @@ k3s_cluster:
     # Grafana config
     slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     slack_channel_id: $(echo $SLACK_CHANNEL | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    grafana_alert_contact_point: slack-scout
 
     # Jupyter config
     jupyter_auth_class: dummy # dummy or github

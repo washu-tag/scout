@@ -8,8 +8,8 @@
       "interval": "1m",
       "rules": [
         {
-          "uid": "high_system_load_alert_01",
-          "title": "High System Load on Node",
+          "uid": "high_node_mount_inode_usage_alert_01",
+          "title": "High Inode Usage on Node Mountpoint",
           "condition": "B",
           "data": [
             {
@@ -21,7 +21,7 @@
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "avg(node_load1) by (node)",
+                "expr": "(1 - (node_filesystem_files_free{device!~\"rootfs\", fstype!~\"tmpfs|ceph\"} / node_filesystem_files{device!~\"rootfs\", fstype!~\"tmpfs|ceph\"})) * 100",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
@@ -41,7 +41,7 @@
                 "conditions": [
                   {
                     "evaluator": {
-                      "params": [1000],
+                      "params": [90],
                       "type": "gt"
                     },
                     "operator": {
@@ -73,13 +73,13 @@
           "execErrState": "KeepLast",
           "for": "10m",
           "annotations": {
-            "summary": "Node {{ $labels.node }} has high system load",
-            "description": "System load is above 1000 on node {{ $labels.node }}. Current load: {{ printf \"%.3f\" $values.A.Value }}"
+            "summary": "{% raw %}Node {{ $labels.node }} has high inode usage on mountpoint {{ $labels.mountpoint }}{% endraw %}",
+            "description": "{% raw %}Inode usage is above 90% on node {{ $labels.node }} for mountpoint {{ $labels.mountpoint }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%{% endraw %}"
           },
           "labels": {},
           "isPaused": false,
           "notification_settings": {
-            "receiver": "slack-scout"
+            "receiver": "{{ grafana_alert_contact_point }}"
           }
         }
       ]
