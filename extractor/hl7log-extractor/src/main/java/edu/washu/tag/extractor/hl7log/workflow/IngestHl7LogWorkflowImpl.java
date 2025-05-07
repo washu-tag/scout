@@ -10,15 +10,15 @@ import edu.washu.tag.extractor.hl7log.model.Hl7ManifestFileOutput;
 import edu.washu.tag.extractor.hl7log.model.IngestHl7FilesToDeltaLakeInput;
 import edu.washu.tag.extractor.hl7log.model.IngestHl7LogWorkflowInput;
 import edu.washu.tag.extractor.hl7log.model.IngestHl7LogWorkflowOutput;
+import edu.washu.tag.extractor.hl7log.model.IngestHl7LogWorkflowParsedInput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogInput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogOutput;
 import edu.washu.tag.extractor.hl7log.util.AllOfPromiseOnlySuccesses;
-import edu.washu.tag.extractor.hl7log.util.DefaultArgs;
+import edu.washu.tag.extractor.hl7log.util.IngestHl7LogWorkflowInputParser;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.api.common.v1.WorkflowExecution;
 import io.temporal.api.enums.v1.ParentClosePolicy;
 import io.temporal.common.RetryOptions;
-import io.temporal.common.SearchAttributeKey;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.Async;
@@ -28,16 +28,8 @@ import io.temporal.workflow.Workflow;
 import io.temporal.workflow.WorkflowInfo;
 import org.slf4j.Logger;
 
-import java.nio.file.Path;
 import java.time.Duration;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import static edu.washu.tag.extractor.hl7log.util.Constants.PARENT_QUEUE;
 import static edu.washu.tag.extractor.hl7log.util.Constants.CHILD_QUEUE;
@@ -45,18 +37,7 @@ import static edu.washu.tag.extractor.hl7log.util.Constants.INGEST_DELTA_LAKE_QU
 
 @WorkflowImpl(taskQueues = PARENT_QUEUE)
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
-    private record ParsedLogInput(
-        List<String> logPaths,
-        String yesterday,
-        String scratchSpaceRootPath,
-        String hl7OutputPath
-    ) {}
-
     private static final Logger logger = Workflow.getLogger(IngestHl7LogWorkflowImpl.class);
-
-    private static final SearchAttributeKey<OffsetDateTime> SCHEDULED_START_TIME =
-            SearchAttributeKey.forOffsetDateTime("TemporalScheduledStartTime");
-    private static final DateTimeFormatter YYYYMMDD_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final FindHl7LogsActivity findHl7LogsActivity =
             Workflow.newActivityStub(FindHl7LogsActivity.class,
@@ -95,9 +76,9 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
         // Parse / validate input
         input = input == null ? IngestHl7LogWorkflowInput.EMPTY : input;
-        ParsedLogInput parsedLogInput = parseInput(input);
+        IngestHl7LogWorkflowParsedInput parsedInput = IngestHl7LogWorkflowInputParser.parseInput(input);
 
-        String scratchSpaceRootPath = parsedLogInput.scratchSpaceRootPath();
+        String scratchSpaceRootPath = parsedInput.scratchSpaceRootPath();
         String scratchDir = scratchSpaceRootPath + "/" + workflowInfo.getWorkflowId();
 
         // Determine if we are starting a new workflow or resuming from a manifest file
@@ -110,7 +91,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
             // Get list of log paths to process
             FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(
-                parsedLogInput.logPaths(), parsedLogInput.yesterday(), input.logsRootPath(), manifestFilePath
+                parsedInput.logPaths(), parsedInput.date(), parsedInput.logsRootPath(), manifestFilePath
             );
             findHl7LogFileOutput = findHl7LogsActivity.findHl7LogFiles(findHl7LogFileInput);
         } else {
@@ -126,7 +107,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         List<Promise<SplitAndTransformHl7LogOutput>> transformSplitHl7LogOutputPromises = findHl7LogFileOutput.logFiles().stream()
                 .map(logFile -> Async.function(
                         hl7LogActivity::splitAndTransformHl7Log,
-                        new SplitAndTransformHl7LogInput(logFile, parsedLogInput.hl7OutputPath(), scratchSpaceRootPath)
+                        new SplitAndTransformHl7LogInput(logFile, parsedInput.hl7OutputPath(), scratchSpaceRootPath)
                 ))
                 .toList();
 
@@ -193,111 +174,5 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         return new IngestHl7LogWorkflowOutput();
     }
 
-    /**
-     * Parse and validate input.
-     *
-     * @param input Workflow input
-     * @return Log paths and "yesterday" date, if we are in a scheduled run
-     */
-    private ParsedLogInput parseInput(IngestHl7LogWorkflowInput input) {
-        // Default values
-        String logsRootPath = DefaultArgs.getLogsRootPath(input.logsRootPath());
-        String scratchSpaceRootPath = DefaultArgs.getScratchSpaceRootPath(input.scratchSpaceRootPath());
-        String hl7OutputPath = DefaultArgs.getHl7OutputPath(input.hl7OutputPath());
 
-        // Need either log paths or logs root path
-        boolean hasLogPathsInput = input.logPaths() != null && !input.logPaths().isBlank();
-        boolean hasLogsRootPathInput = logsRootPath != null && !logsRootPath.isBlank();
-        List<String> logPaths;
-        List<String> relativeLogPathsWithoutRoot = new ArrayList<>();
-        if (hasLogPathsInput) {
-            logPaths = new ArrayList<>();
-            Path logsRoot = hasLogsRootPathInput ? Path.of(logsRootPath) : null;
-            for (String logPath : input.logPaths().split(",")) {
-                if (logPath.startsWith("/")) {
-                    logPaths.add(logPath);
-                } else if (hasLogsRootPathInput) {
-                    logPaths.add(logsRoot.resolve(logPath).toString());
-                } else {
-                    relativeLogPathsWithoutRoot.add(logPath);
-                }
-            }
-        } else if (hasLogsRootPathInput) {
-            // If we have a logs root path, we will ingest all logs from that path
-            logPaths = List.of(logsRootPath);
-        } else {
-            logPaths = Collections.emptyList();
-        }
-
-        // If we are in a scheduled run and we were not given any explicit log paths
-        //   we will ingest logs from "yesterday"
-        //   which we define as the day before the scheduled time in the local timezone
-        // Note: There isn't a good API to find the scheduled start time in the SDK. We have to use a
-        //  search attribute.
-        // See https://docs.temporal.io/workflows#action for docs on the search attribute.
-        // See also https://github.com/temporalio/features/issues/243 where someone asks
-        //  for a better API for this in the SDK.
-        OffsetDateTime scheduledTimeUtc = Workflow.getTypedSearchAttributes().get(SCHEDULED_START_TIME);
-        boolean hasScheduledTime = scheduledTimeUtc != null;
-        String yesterday = null;
-        if (hasScheduledTime && !hasLogPathsInput) {
-            ZoneId localTz = ZoneOffset.systemDefault();
-            OffsetDateTime scheduledTimeLocal = scheduledTimeUtc.atZoneSameInstant(localTz).toOffsetDateTime();
-            OffsetDateTime yesterdayDt = scheduledTimeLocal.minusDays(1);
-            yesterday = yesterdayDt.format(YYYYMMDD_FORMAT);
-            logger.info(
-                    "Using date {} from scheduled workflow start time {} ({} in TZ {}) minus one day",
-                    yesterday, scheduledTimeUtc, scheduledTimeLocal, localTz
-            );
-        }
-
-        // Now we have enough information to throw for invalid inputs
-        throwOnInvalidInput(
-                input, scratchSpaceRootPath, hl7OutputPath, hasLogPathsInput, hasLogsRootPathInput, relativeLogPathsWithoutRoot, hasScheduledTime
-        );
-
-        return new ParsedLogInput(logPaths, yesterday, scratchSpaceRootPath, hl7OutputPath);
-    }
-
-    private void throwOnInvalidInput(
-            IngestHl7LogWorkflowInput input,
-            String scratchSpaceRootPath,
-            String hl7OutputPath,
-            boolean hasLogPaths,
-            boolean hasLogRootPath,
-            List<String> relativeLogPaths,
-            boolean hasScheduledTime
-    ) {
-        List<String> messages = new ArrayList<>();
-
-        // Always required
-        Map<String, String> requiredInputs = Map.of(
-                "scratchSpacePath", scratchSpaceRootPath,
-                "hl7OutputPath", hl7OutputPath
-        );
-        for (Map.Entry<String, String> entry : requiredInputs.entrySet()) {
-            if (entry.getValue() == null || entry.getValue().isBlank()) {
-                messages.add("Missing required input: " + entry.getKey());
-            }
-        }
-
-        // Any relative log paths?
-        if (!relativeLogPaths.isEmpty()) {
-            messages.add("Can only use relative logPaths with logsRootPath. Invalid log paths: " + String.join(", ", relativeLogPaths));
-        }
-
-        // Need either log paths or logs root path
-        if (!hasLogPaths && !hasLogRootPath) {
-            messages.add("Must provide either logPaths or logsRootPath");
-        }
-
-        // If we are in a scheduled run, we need logs root path
-        if (hasScheduledTime && !hasLogRootPath) {
-            messages.add("Must provide logsRootPath for scheduled runs");
-        }
-
-        if (!messages.isEmpty()) {
-            throw ApplicationFailure.newNonRetryableFailure(String.join("; ", messages), "type");
-        }
-    }
 }
