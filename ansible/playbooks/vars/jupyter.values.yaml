@@ -48,6 +48,8 @@ ingress:
 prePuller:
   hook:
     enabled: true
+  continuous:
+    enabled: '{{ jupyter_prepuller_continuous | default(false) }}'
 
 singleuser:
   image:
