@@ -40,8 +40,8 @@ minio_buckets:
   - name: loki-chunks
   - name: loki-ruler
   - name: loki-admin
-  - name: scratch
-  - name: lake
+  - name: '{{ lake_bucket }}'
+  - name: '{{ scratch_bucket }}'
 
 # S3 User credentials
 minio_users:
@@ -66,17 +66,17 @@ minio_policies:
       - s3:GetBucketLocation
       - s3:ListBucket
     resources:
-      - arn:aws:s3:::lake
-      - arn:aws:s3:::lake/*
+      - 'arn:aws:s3:::{{ lake_bucket }}'
+      - 'arn:aws:s3:::{{ lake_bucket }}/*'
     user: '{{ s3_lake_reader }}'
   - name: lake-rw
     actions:
       - s3:*
     resources:
-      - arn:aws:s3:::lake
-      - arn:aws:s3:::lake/*
-      - arn:aws:s3:::scratch
-      - arn:aws:s3:::scratch/*
+      - 'arn:aws:s3:::{{ lake_bucket }}'
+      - 'arn:aws:s3:::{{ lake_bucket }}/*'
+      - 'arn:aws:s3:::{{ scratch_bucket }}'
+      - 'arn:aws:s3:::{{ scratch_bucket }}/*'
     user: '{{ s3_lake_writer }}'
   - name: loki-rw
     actions:

@@ -61,9 +61,10 @@ k3s_cluster:
     modality_map_path: /data/modality_mapping_codes.csv
 
     # Object storage paths
-    lake_bucket: lake
-    hl7_path: s3://{{ lake_bucket }}/hl7
-    scratch_path: s3://{{ lake_bucket }}/scratch
+    lake_bucket: ci-lake
+    scratch_bucket: ci-scratch
+    hl7_path: 's3://{{ lake_bucket }}/hl7'
+    scratch_path: 's3://{{ scratch_bucket }}'
     delta_lake_path: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefix, it is used just like s3://
 
     # Database table names
