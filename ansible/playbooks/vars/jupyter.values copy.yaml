@@ -1,0 +1,116 @@
+proxy:
+  service:
+    type: ClusterIP
+  chp:
+    networkPolicy:
+      egressAllowRules:
+        nonPrivateIPs: false
+
+hub:
+  baseUrl: /jupyter
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256M
+    limits:
+      cpu: 1
+      memory: 1G
+  shutdownOnLogout: true
+  services:
+    prometheus:
+      admin: false
+      # Secret would be preferred, but not clear how to do that in this chart
+      api_token: '{{ jupyter_metrics_api_token }}'
+  loadRoles:
+    metrics:
+      description: 'Read JupyterHub metrics'
+      scopes: [read:metrics]
+      services: [prometheus]
+  db:
+    pvc:
+      storageClassName: jupyter-hub-storage
+  config:
+    Authenticator:
+      allowed_users: '{{ (jupyter_allowed_users | default([])) }}'
+    JupyterHub:
+      authenticator_class: '{{ jupyter_auth_class | default("dummy") }}'
+  networkPolicy:
+    egressAllowRules:
+      nonPrivateIPs: false
+
+ingress:
+  enabled: true
+  ingressClassName: traefik
+  hosts:
+    - '{{ server_hostname }}'
+  extraPaths:
+    - path: /jupyter
+      pathType: Prefix
+      backend:
+        service:
+          name: proxy-public
+          port:
+            name: http
+
+prePuller:
+  hook:
+    enabled: true
+
+singleuser:
+  image:
+    name: ghcr.io/washu-tag/pyspark-notebook
+    tag: latest
+    pullPolicy: Never
+  cmd: null
+  lifecycleHooks:
+    postStart:
+      exec:
+        command:
+          - '/bin/sh'
+          - '-c'
+          - |
+            {% raw %}
+            FLAG_FILE=/home/${NB_USER}/.scout_quickstart
+            if [ ! -f $FLAG_FILE ]; then
+              mkdir -p /home/${NB_USER}/Scout &&
+              cp -r /opt/scout/samples/* /home/${NB_USER}/Scout/ &&
+              chown -R ${NB_USER}:${NB_GID} /home/${NB_USER}/Scout &&
+              touch $FLAG_FILE
+            fi
+            {% endraw %}
+  cpu:
+    limit: 4
+    guarantee: 1
+  memory:
+    limit: 16G
+    guarantee: 2G
+  storage:
+    type: static
+    static:
+      pvcName: jupyter-singleuser-pvc
+      subPath: '{username}'
+    capacity: 10Gi
+    extraVolumes:
+      - name: spark-defaults
+        configMap:
+          name: spark-defaults
+    extraVolumeMounts:
+      - name: spark-defaults
+        mountPath: /usr/local/spark/conf/spark-defaults.conf
+        subPath: spark-defaults.conf
+  networkPolicy:
+    egressAllowRules:
+      nonPrivateIPs: false
+    egress:
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ minio_tenant_namespace }}'
+        ports:
+          - port: 9000
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ hive_namespace }}'
+        ports:
+          - port: 9083
