@@ -27,7 +27,25 @@ def write_errors(
     hl7_files: list[str], error_message: str, workflow_id: str, activity_id: str
 ) -> None:
     """Write an error message to the database for a list of HL7 files."""
-    activity.logger.info("Writing errors to database for %d HL7 files", len(hl7_files))
+    write_status_to_db(hl7_files, "failed", error_message, workflow_id, activity_id)
+
+
+def write_successes(hl7_files: list[str], workflow_id: str, activity_id: str) -> None:
+    """Write a success status to the database for a list of HL7 files."""
+    write_status_to_db(hl7_files, "success", None, workflow_id, activity_id)
+
+
+def write_status_to_db(
+    hl7_files: list[str],
+    status: str,
+    error_message: str | None,
+    workflow_id: str,
+    activity_id: str,
+) -> None:
+    """Write an error message to the database for a list of HL7 files."""
+    activity.logger.info(
+        "Writing '%s' status to database for %d HL7 files", status, len(hl7_files)
+    )
     connection_args = get_db_connection_args()
     with psycopg.connect(**connection_args) as conn, conn.cursor() as cursor:
         # Find existing rows so we can get the log file path and segment number
@@ -57,14 +75,14 @@ def write_errors(
                 log_file_path,
                 segment_number,
                 hl7_file,
-                "failed",
+                status,
                 error_message,
                 workflow_id,
                 activity_id,
             )
             for hl7_file, log_file_path, segment_number in rows
         ] + [
-            (None, -1, hl7_file, "failed", error_message, workflow_id, activity_id)
+            (None, -1, hl7_file, status, error_message, workflow_id, activity_id)
             for hl7_file in missing_hl7_files
         ]
 
