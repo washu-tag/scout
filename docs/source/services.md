@@ -44,6 +44,7 @@ for each service can be accessed directly through Grafana.
 [Temporal](https://temporal.io/) is a workflow orchestration service that Scout uses to manage the execution of its Extractor services. 
 Workflow information is available in the Temporal UI and can be used to monitor and debug the data ingestion process.
 
+(extractor_ref)=
 ### Extractor
 
 Extractor services are responsible for extracting data from hospital information systems, and landing it into the Lake service.
