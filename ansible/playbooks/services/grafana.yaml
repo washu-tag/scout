@@ -95,15 +95,4 @@
     release_namespace: '{{ grafana_namespace }}'
     update_repo_cache: true
     chart_version: ~8.12.1
-    values_files:
-      - '{{ scout_repo_dir }}/helm/grafana/values.yaml'
-    values:
-      grafana.ini:
-        server:
-          root_url: 'https://{{ server_hostname }}/grafana'
-      ingress:
-        enabled: true
-        ingressClassName: traefik
-        path: /grafana
-        hosts:
-          - '{{ server_hostname }}'
+    values: '{{ lookup("template", "vars/grafana.values.yaml") | from_yaml }}'
