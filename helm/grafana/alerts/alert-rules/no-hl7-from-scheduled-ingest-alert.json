@@ -30,7 +30,7 @@
                 "intervalMs": 86400000,
                 "maxDataPoints": 43200,
                 "rawQuery": true,
-                "rawSql": "SELECT\n  COUNT(*)::integer AS value,\n  to_char(current_date - 1,'YYYY-MM-DD') AS label_day\nFROM recent_hl7_files h\nJOIN recent_log_files l ON l.file_path = h.log_file_path\nWHERE l.date = current_date - 1;",
+                "rawSql": "SELECT\n  COUNT(*)::integer AS value,\n  to_char(current_date - 2,'YYYY-MM-DD') AS label_day\nFROM recent_hl7_files h\nJOIN recent_log_files l ON l.file_path = h.log_file_path\nWHERE l.date = current_date - 2;",
                 "refId": "A",
                 "sql": {
                   "columns": [
@@ -62,18 +62,14 @@
                 "conditions": [
                   {
                     "evaluator": {
-                      "params": [
-                        0
-                      ],
+                      "params": [0],
                       "type": "eq"
                     },
                     "operator": {
                       "type": "and"
                     },
                     "query": {
-                      "params": [
-                        "C"
-                      ]
+                      "params": ["C"]
                     },
                     "reducer": {
                       "params": [],
@@ -101,7 +97,7 @@
           "annotations": {
             "__dashboardUid__": "hl7_ingest_dashboard_01",
             "__panelId__": "3",
-            "description": "Tests whether any HL7 reports were ingested from a log file with yesterday's date",
+            "description": "Tests whether any HL7 reports were ingested from the HL7 listener log file dated 2 days ago (because we ingest yesterday's logs today, and we cannot control when this alert runs, so it could beat the ingest)",
             "summary": "Scheduled ingest of HL7 log from {{ $labels.label_day }} extracted 0 reports. This may mean ingest failed to run, no log was found, or the log didn't contain any HL7."
           },
           "labels": {},
