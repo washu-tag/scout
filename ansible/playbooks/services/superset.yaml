@@ -49,7 +49,7 @@
   kubernetes.core.helm:
     name: superset
     chart_ref: superset/superset
-    chart_version: ~0.14.2
+    chart_version: 0.14.2
     release_namespace: superset
     create_namespace: true
     release_state: present
@@ -58,6 +58,9 @@
     wait_timeout: 15m
     atomic: true
     values:
+      image:
+        repository: '{{ superset_image | default("ghcr.io/washu-tag/superset") }}'
+        tag: 4.1.2
       extraSecretEnv:
         SUPERSET_SECRET_KEY: '{{ superset_secret }}'
       ingress:
@@ -129,26 +132,6 @@
         - name: dashboard-config
           mountPath: /app/dashboard-config
 
-      bootstrapScript: |
-        #!/bin/bash
-        # Install system-level dependencies
-        apt-get update && apt-get install -y \
-          python3-dev \
-          build-essential \
-          pkg-config \
-          zip
-
-        # Install required Python packages
-        pip install \
-          authlib \
-          psycopg2-binary \
-          pyhive \
-          trino \
-          pillow
-
-        {% raw %}
-        if [ ! -f ~/bootstrap ]; then echo 'Running Superset with uid {{ .Values.runAsUser }}' > ~/bootstrap; fi
-        {% endraw %}
       init:
         initscript: |-
           {% raw %}
