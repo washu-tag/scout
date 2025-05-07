@@ -11,7 +11,7 @@ from pyspark.sql import functions as F
 from temporalio import activity
 from temporalio.exceptions import ApplicationError
 
-from hl7scout.db import write_errors
+from hl7scout.db import write_errors, write_successes
 
 DATE_FORMAT = "yyyyMMdd"
 DT_FORMAT = "yyyyMMddHHmmss"
@@ -279,6 +279,12 @@ def import_hl7_files_to_deltalake(
             .whenMatchedUpdateAll()
             .whenNotMatchedInsertAll()
             .execute()
+        )
+
+        activity.heartbeat()
+        success_paths = [row.source_file for row in df.select("source_file").collect()]
+        write_successes(
+            success_paths, activity.info().workflow_id, activity.info().activity_id
         )
 
         activity.logger.info("Finished")
