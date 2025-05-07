@@ -74,13 +74,13 @@
       apiVersion: v1
       kind: Secret
       metadata:
-        name: slack-contact-point
+        name: grafana-contact-point-slack
         namespace: '{{ grafana_namespace }}'
         labels:
           grafana_alert: '1'
       type: Opaque
       stringData:
-        slack-contact-point.json: "{{ lookup('template', scout_repo_dir + slack_contact_point_j2) | to_nice_json }}"
+        slack-contact-point.json: "{{ lookup('template', 'templates/grafana-contact-point-slack.json.j2') | to_nice_json }}"
 
 - name: Create postgres datasource secret
   kubernetes.core.k8s:
