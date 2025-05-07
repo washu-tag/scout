@@ -134,7 +134,16 @@
 - name: Create postgres datasource secret
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('template', 'templates/grafana-postgres-datasource-secret.yaml.j2') | from_yaml }}"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: postgres-ingest-db-secret
+        namespace: '{{ grafana_namespace }}'
+        labels:
+          grafana_datasource: 'true' # default value for: sidecar.datasources.label
+      stringData:
+        pg-db.yaml: "{{ lookup('template', 'templates/grafana-postgres-datasource.yaml') }}"
 
 - name: Install Grafana using Helm
   kubernetes.core.helm:
