@@ -65,7 +65,30 @@
     state: present
 
 - name: Apply Grafana dashboard configmaps
-  command: 'kubectl apply -k {{ scout_repo_dir }}/helm/grafana -n {{ grafana_namespace }}'
+  block:
+    - name: Find all Grafana dashboards
+      find:
+        paths: 'templates/'
+        patterns: 'grafana-dashboard-*.json'
+      register: dashboard_files
+
+    - name: Create ConfigMap for each Grafana dashboard
+      kubernetes.core.k8s:
+        state: present
+        definition: |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: '{{ item.path | basename | regex_replace(".json$", "") }}'
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              grafana_dashboard: '1'
+          data:
+            '{{ item.path | basename }}': 
+              '{{ lookup("template", item.path) | to_nice_json }}'
+      loop: '{{ dashboard_files.files }}'
+      loop_control:
+        label: '{{ item.path | basename }}'
 
 - name: Apply Grafana alert rules as ConfigMaps
   block:

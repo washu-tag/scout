@@ -113,7 +113,7 @@
           "expr": "sum(kube_pod_status_phase{pod=~\"jupyter-.*\"}) by (phase)",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{phase}}",
+          "legendFormat": "{% raw %}{{phase}}{% endraw %}",
           "refId": "A"
         }
       ],
@@ -215,7 +215,7 @@
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "5m",
-          "legendFormat": "{{ pod }}",
+          "legendFormat": "{% raw %}{{ pod }}{% endraw %}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -315,7 +315,7 @@
           "exemplar": true,
           "expr": "sum(container_memory_working_set_bytes{namespace=~\"jupyter\", pod=~\"jupyter.*\"}) by (pod)",
           "interval": "",
-          "legendFormat": "{{ pod }}",
+          "legendFormat": "{% raw %}{{ pod }}{% endraw %}",
           "range": true,
           "refId": "A"
         }

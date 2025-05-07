@@ -343,7 +343,7 @@
           "editorMode": "code",
           "expr": "sum by (status_code) (irate(grafana_http_request_duration_seconds_count{job=~\"$job\", instance=~\"$instance\"}[5m])) ",
           "interval": "",
-          "legendFormat": "{{status_code}}",
+          "legendFormat": "{% raw %}{{status_code}}{% endraw %}",
           "range": true,
           "refId": "A"
         }

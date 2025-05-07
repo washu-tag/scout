@@ -90,7 +90,7 @@
           "instant": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{% raw %}{{instance}}{% endraw %}",
           "metric": "process_start_time_seconds",
           "refId": "A",
           "step": 60
@@ -767,7 +767,7 @@
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "{{bucket}}",
+          "legendFormat": "{% raw %}{{bucket}}{% endraw %}",
           "range": true,
           "refId": "A"
         }
@@ -842,7 +842,7 @@
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "{{bucket}}",
+          "legendFormat": "{% raw %}{{bucket}}{% endraw %}",
           "range": true,
           "refId": "A"
         }
@@ -974,7 +974,7 @@
           "expr": "sum by (bucket) (increase(minio_bucket_usage_object_total[5m]))",
           "interval": "1m",
           "intervalFactor": 2,
-          "legendFormat": "{{bucket}}",
+          "legendFormat": "{% raw %}{{bucket}}{% endraw %}",
           "range": true,
           "refId": "A"
         }
@@ -1106,7 +1106,7 @@
           "expr": "sum by (bucket) (rate(minio_bucket_usage_total_bytes[5m]))",
           "interval": "1m",
           "intervalFactor": 2,
-          "legendFormat": "Usage [{{bucket}}]",
+          "legendFormat": "Usage [{% raw %}{{bucket}}{% endraw %}]",
           "range": true,
           "refId": "A"
         }
@@ -1185,7 +1185,7 @@
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{% raw %}{{instance}}{% endraw %}",
           "metric": "process_start_time_seconds",
           "refId": "A",
           "step": 60
@@ -1286,7 +1286,7 @@
           "expr": "sum by (server) (rate(minio_s3_traffic_received_bytes[5m]))",
           "interval": "1m",
           "intervalFactor": 2,
-          "legendFormat": "Data Received [{{server}}]",
+          "legendFormat": "Data Received [{% raw %}{{server}}{% endraw %}]",
           "range": true,
           "refId": "A"
         }
@@ -1386,7 +1386,7 @@
           "expr": "sum by (server) (rate(minio_s3_traffic_sent_bytes[5m]))",
           "interval": "1m",
           "intervalFactor": 2,
-          "legendFormat": "Data Sent [{{server}}]",
+          "legendFormat": "Data Sent [{% raw %}{{server}}{% endraw %}]",
           "range": true,
           "refId": "A"
         }
@@ -1534,7 +1534,7 @@
           "exemplar": true,
           "expr": "rate(minio_node_process_cpu_total_seconds[5m])",
           "interval": "",
-          "legendFormat": "{{server}}",
+          "legendFormat": "{% raw %}{{server}}{% endraw %}",
           "range": true,
           "refId": "A"
         }
@@ -1613,7 +1613,7 @@
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "{{server}}",
+          "legendFormat": "{% raw %}{{server}}{% endraw %}",
           "range": true,
           "refId": "A"
         }

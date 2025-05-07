@@ -1297,7 +1297,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\",  mode!='idle',mode!='user',mode!='system',mode!='iowait',mode!='irq',mode!='softirq'}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
+          "expr": "sum(irate(node_cpu_seconds_total{node=\"$node\",job=\"$job\",  mode!=\"idle\",mode!=\"user\",mode!=\"system\",mode!=\"iowait\",mode!=\"irq\",mode!=\"softirq\"}[5m])) / scalar(count(count(node_cpu_seconds_total{node=\"$node\",job=\"$job\"}) by (cpu)))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "Busy Other",
@@ -2295,7 +2295,7 @@
           "expr": "irate(node_network_receive_bytes_total{node=\"$node\",job=\"$job\"}[5m])*8",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "recv {{device}}",
+          "legendFormat": "{% raw %}recv {{device}}{% endraw %}",
           "refId": "A",
           "step": 240
         },
@@ -2307,7 +2307,7 @@
           "expr": "irate(node_network_transmit_bytes_total{node=\"$node\",job=\"$job\"}[5m])*8",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "trans {{device}} ",
+          "legendFormat": "{% raw %}trans {{device}}{% endraw %} ",
           "refId": "B",
           "step": 240
         }
@@ -2408,10 +2408,10 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "100 - ((node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"} * 100) / node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"})",
+          "expr": "100 - ((node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"} * 100) / node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"})",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{mountpoint}}",
+          "legendFormat": "{% raw %}{{mountpoint}}{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -3359,10 +3359,10 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"} - node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
+          "expr": "node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"} - node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{mountpoint}}",
+          "legendFormat": "{% raw %}{{mountpoint}}{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -3463,11 +3463,11 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
+          "expr": "node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "{{mountpoint}} - Available",
+          "legendFormat": "{% raw %}{{mountpoint}} - Available{% endraw %}",
           "metric": "",
           "range": true,
           "refId": "A",
@@ -3479,11 +3479,11 @@
             "uid": "prometheus_datasource_01"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_free_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
+          "expr": "node_filesystem_free_bytes{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": true,
           "intervalFactor": 1,
-          "legendFormat": "{{mountpoint}} - Free",
+          "legendFormat": "{% raw %}{{mountpoint}} - Free{% endraw %}",
           "range": true,
           "refId": "B",
           "step": 240
@@ -3494,11 +3494,11 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
+          "expr": "node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": true,
           "intervalFactor": 1,
-          "legendFormat": "{{mountpoint}} - Size",
+          "legendFormat": "{% raw %}{{mountpoint}} - Size{% endraw %}",
           "range": true,
           "refId": "C",
           "step": 240
@@ -3928,7 +3928,7 @@
           "editorMode": "code",
           "expr": "irate(node_disk_reads_completed_total{node=\"$node\",job=\"$job\"}[5m])",
           "intervalFactor": 4,
-          "legendFormat": "{{device}} - Reads completed",
+          "legendFormat": "{% raw %}{{device}} - Reads completed{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -3941,7 +3941,7 @@
           "editorMode": "code",
           "expr": "irate(node_disk_writes_completed_total{node=\"$node\",job=\"$job\"}[5m])",
           "intervalFactor": 1,
-          "legendFormat": "{{device}} - Writes completed",
+          "legendFormat": "{% raw %}{{device}} - Writes completed{% endraw %}",
           "range": true,
           "refId": "B",
           "step": 240
@@ -4160,7 +4160,7 @@
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "{{device}} - Successfully read bytes",
+          "legendFormat": "{% raw %}{{device}} - Successfully read bytes{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -4175,7 +4175,7 @@
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "{{device}} - Successfully written bytes",
+          "legendFormat": "{% raw %}{{device}} - Successfully written bytes{% endraw %}",
           "range": true,
           "refId": "B",
           "step": 240
@@ -4309,7 +4309,7 @@
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{device}}",
+          "legendFormat": "{% raw %}{{device}}{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -4737,7 +4737,7 @@
           "editorMode": "code",
           "expr": "irate(node_disk_reads_completed_total{node=\"$node\",job=\"$job\"}[5m])",
           "intervalFactor": 4,
-          "legendFormat": "{{device}} - Reads completed",
+          "legendFormat": "{% raw %}{{device}} - Reads completed{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -4750,7 +4750,7 @@
           "editorMode": "code",
           "expr": "irate(node_disk_writes_completed_total{node=\"$node\",job=\"$job\"}[5m])",
           "intervalFactor": 1,
-          "legendFormat": "{{device}} - Writes completed",
+          "legendFormat": "{% raw %}{{device}} - Writes completed{% endraw %}",
           "range": true,
           "refId": "B",
           "step": 240
@@ -5166,7 +5166,7 @@
           "expr": "irate(node_disk_read_bytes_total{node=\"$node\",job=\"$job\"}[5m])",
           "format": "time_series",
           "intervalFactor": 4,
-          "legendFormat": "{{device}} - Read bytes",
+          "legendFormat": "{% raw %}{{device}} - Read bytes{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -5180,7 +5180,7 @@
           "expr": "irate(node_disk_written_bytes_total{node=\"$node\",job=\"$job\"}[5m])",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{device}} - Written bytes",
+          "legendFormat": "{% raw %}{{device}} - Written bytes{% endraw %}",
           "range": true,
           "refId": "B",
           "step": 240
@@ -5597,7 +5597,7 @@
           "hide": false,
           "interval": "",
           "intervalFactor": 4,
-          "legendFormat": "{{device}} - Read wait time avg",
+          "legendFormat": "{% raw %}{{device}} - Read wait time avg{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -5612,7 +5612,7 @@
           "hide": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{device}} - Write wait time avg",
+          "legendFormat": "{% raw %}{{device}} - Write wait time avg{% endraw %}",
           "range": true,
           "refId": "B",
           "step": 240
@@ -6017,7 +6017,7 @@
           "expr": "irate(node_disk_io_time_weighted_seconds_total{node=\"$node\",job=\"$job\"}[5m])",
           "interval": "",
           "intervalFactor": 4,
-          "legendFormat": "{{device}}",
+          "legendFormat": "{% raw %}{{device}}{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -6432,7 +6432,7 @@
           "editorMode": "code",
           "expr": "irate(node_disk_reads_merged_total{node=\"$node\",job=\"$job\"}[5m])",
           "intervalFactor": 1,
-          "legendFormat": "{{device}} - Read merged",
+          "legendFormat": "{% raw %}{{device}} - Read merged{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -6445,7 +6445,7 @@
           "editorMode": "code",
           "expr": "irate(node_disk_writes_merged_total{node=\"$node\",job=\"$job\"}[5m])",
           "intervalFactor": 1,
-          "legendFormat": "{{device}} - Write merged",
+          "legendFormat": "{% raw %}{{device}} - Write merged{% endraw %}",
           "range": true,
           "refId": "B",
           "step": 240
@@ -6850,7 +6850,7 @@
           "expr": "irate(node_disk_io_time_seconds_total{node=\"$node\",job=\"$job\"}[5m])",
           "interval": "",
           "intervalFactor": 4,
-          "legendFormat": "{{device}} - IO",
+          "legendFormat": "{% raw %}{{device}} - IO{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -6864,7 +6864,7 @@
           "expr": "irate(node_disk_discard_time_seconds_total{node=\"$node\",job=\"$job\"}[5m])",
           "interval": "",
           "intervalFactor": 4,
-          "legendFormat": "{{device}} - discard",
+          "legendFormat": "{% raw %}{{device}} - discard{% endraw %}",
           "range": true,
           "refId": "B",
           "step": 240
@@ -7269,7 +7269,7 @@
           "expr": "node_disk_io_now{node=\"$node\",job=\"$job\"}",
           "interval": "",
           "intervalFactor": 4,
-          "legendFormat": "{{device}} - IO now",
+          "legendFormat": "{% raw %}{{device}} - IO now{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -7673,7 +7673,7 @@
           "expr": "irate(node_disk_discards_completed_total{node=\"$node\",job=\"$job\"}[5m])",
           "interval": "",
           "intervalFactor": 4,
-          "legendFormat": "{{device}} - Discards completed",
+          "legendFormat": "{% raw %}{{device}} - Discards completed{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -7687,7 +7687,7 @@
           "expr": "irate(node_disk_discards_merged_total{node=\"$node\",job=\"$job\"}[5m])",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{device}} - Discards merged",
+          "legendFormat": "{% raw %}{{device}} - Discards merged{% endraw %}",
           "range": true,
           "refId": "B",
           "step": 240
@@ -7824,11 +7824,11 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
+          "expr": "node_filesystem_avail_bytes{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "{{mountpoint}} - Available",
+          "legendFormat": "{% raw %}{{mountpoint}} - Available{% endraw %}",
           "metric": "",
           "range": true,
           "refId": "A",
@@ -7840,11 +7840,11 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_free_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
+          "expr": "node_filesystem_free_bytes{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": true,
           "intervalFactor": 1,
-          "legendFormat": "{{mountpoint}} - Free",
+          "legendFormat": "{% raw %}{{mountpoint}} - Free{% endraw %}",
           "range": true,
           "refId": "B",
           "step": 240
@@ -7855,11 +7855,11 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
+          "expr": "node_filesystem_size_bytes{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": true,
           "intervalFactor": 1,
-          "legendFormat": "{{mountpoint}} - Size",
+          "legendFormat": "{% raw %}{{mountpoint}} - Size{% endraw %}",
           "range": true,
           "refId": "C",
           "step": 240
@@ -7983,11 +7983,11 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_files_free{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
+          "expr": "node_filesystem_files_free{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "{{mountpoint}} - Free file nodes",
+          "legendFormat": "{% raw %}{{mountpoint}} - Free file nodes{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -8229,11 +8229,11 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_files{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
+          "expr": "node_filesystem_files{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "{{mountpoint}} - File nodes total",
+          "legendFormat": "{% raw %}{{mountpoint}} - File nodes total{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -8351,10 +8351,10 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_readonly{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~\"tmpfs\"}",
+          "expr": "node_filesystem_readonly{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{mountpoint}} - ReadOnly",
+          "legendFormat": "{% raw %}{{mountpoint}} - ReadOnly{% endraw %}",
           "range": true,
           "refId": "A",
           "step": 240
@@ -8365,11 +8365,11 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "node_filesystem_device_error{node=\"$node\",job=\"$job\",device!~'rootfs', fstype!~'tmpfs'}",
+          "expr": "node_filesystem_device_error{node=\"$node\",job=\"$job\",device!~\"rootfs\", fstype!~\"tmpfs\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{mountpoint}} - Device error",
+          "legendFormat": "{% raw %}{{mountpoint}} - Device error{% endraw %}",
           "range": true,
           "refId": "B",
           "step": 240
