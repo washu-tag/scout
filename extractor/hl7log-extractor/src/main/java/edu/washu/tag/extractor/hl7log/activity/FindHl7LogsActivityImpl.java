@@ -13,6 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -45,17 +46,7 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
     public FindHl7LogFileOutput findHl7LogFiles(FindHl7LogFileInput input) {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
         logger.info("WorkflowId {} ActivityId {} - Finding HL7 log files for input {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), input);
-        List<String> logFiles;
-        if (input.logPaths() != null && !input.logPaths().isEmpty()) {
-            // Case 1: We were given explicit log paths
-            logFiles = findLogFilesForPaths(input.logPaths());
-        } else if (input.logsRootPath() != null && !input.logsRootPath().isEmpty() && input.date() != null && !input.date().isEmpty()) {
-            // Case 2: We were given a root path and a date
-            logFiles = findLogFileForDate(input.logsRootPath(), input.date());
-        } else {
-            // Case 3: We have nothing
-            logFiles = Collections.emptyList();
-        }
+        List<String> logFiles = findLogFiles(input.logPaths(), input.date());
 
         logger.info("WorkflowId {} ActivityId {} - Found {} log files", activityInfo.getWorkflowId(), activityInfo.getActivityId(), logFiles.size());
 
@@ -129,8 +120,25 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
      * @param logPaths list of paths to search for log files
      * @return list of log files
      */
-    private List<String> findLogFilesForPaths(List<String> logPaths) {
+    private List<String> findLogFiles(List<String> logPaths, String date) {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+
+        // Filter log files by date if provided
+        Function<Path, Boolean> dateFilter;
+        if (date != null && !date.isBlank()) {
+            logger.info(
+                    "WorkflowId {} ActivityId {} - Finding HL7 log file by date {}",
+                    activityInfo.getWorkflowId(), activityInfo.getActivityId(), date
+            );
+            dateFilter = path -> path.getFileName().toString().contains(date);
+        } else {
+            logger.info(
+                "WorkflowId {} ActivityId {} - Finding all HL7 log files in input paths",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId()
+            );
+            dateFilter = path -> true;
+        }
+
         return logPaths.stream()
                 .map(logPath -> {
                     logger.info(
@@ -157,25 +165,8 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
                     }
                 })
                 .flatMap(List::stream)
+                .filter(path -> dateFilter.apply(Path.of(path)))
                 .toList();
-    }
-
-    private List<String> findLogFileForDate(String logsRootPath, String date) {
-        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
-        logger.info(
-                "WorkflowId {} ActivityId {} - Finding HL7 log file for date {} in root path {}",
-                activityInfo.getWorkflowId(), activityInfo.getActivityId(), date, logsRootPath
-        );
-        try {
-            return Files.walk(Path.of(logsRootPath))
-                    .filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().contains(date))
-                    .map(Path::toString)
-                    .filter(s -> s.endsWith(".log"))
-                    .toList();
-        } catch (IOException e) {
-            throw ApplicationFailure.newFailure("Error finding log file for date " + date + " in root path " + logsRootPath, "type", e);
-        }
     }
 
     /**
