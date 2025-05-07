@@ -96,7 +96,7 @@
           ],
           "dashboardUid": "hl7_ingest_dashboard_01",
           "panelId": 3,
-          "noDataState": "NoData",
+          "noDataState": "Error",
           "execErrState": "Error",
           "annotations": {
             "__dashboardUid__": "hl7_ingest_dashboard_01",
