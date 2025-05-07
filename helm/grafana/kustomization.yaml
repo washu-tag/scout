@@ -82,6 +82,12 @@ configMapGenerator:
       labels:
         grafana_alert: "1"
 
+  - name: no-hl7-from-scheduled-ingest-alert
+    files: [ alerts/alert-rules/no-hl7-from-scheduled-ingest-alert.json ]
+    options:
+      labels:
+        grafana_alert: "1"
+
   - name: slack-notification-template
     files: [ alerts/notification-templates/slack-notification-template.json ]
     options:
