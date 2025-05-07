@@ -85,7 +85,7 @@ public class TestStatusDatabase extends BaseTest {
             logRowWithRetries
         );
 
-        final Hl7FileRow repeatedFailingHl7Message = Hl7FileRow.failure(0, null, "Split content has fewer than 3 lines");
+        final Hl7FileRow repeatedFailingHl7Message = Hl7FileRow.failure(0, null, "Log did not contain any HL7 messages");
 
         runHl7FileTest(
             SqlQuery.hl7FileTableQuery("20240102", Collections.singletonList(ingestWorkflowId)),
@@ -153,6 +153,41 @@ public class TestStatusDatabase extends BaseTest {
         runHl7FileTest(
             SqlQuery.hl7FileViewQuery("20230113", ingestToDeltaLakeWorkflows),
             firstMessageFailed
+        );
+    }
+
+    /**
+     * Tests the state of the ingest database after the test data has been processed by Scout.
+     * This test is essentially the same as {@link #testStatusDbSuccess} but the log file has some extra
+     * chatter in the logs that was causing an issue in production, which is checked by this test.
+     */
+    @Test
+    public void testStatusDbTcpChatter() {
+        final LogRow logRow = LogRow.success("1999-11-30");
+
+        runLogTest(
+            SqlQuery.logTableQuery("19991130"),
+            logRow
+        );
+
+        runLogTest(
+            SqlQuery.logViewQuery("19991130"),
+            logRow
+        );
+
+        final Hl7FileRow firstHl7Message = Hl7FileRow.success(0, "1999/11/30/02/199911300242267124.hl7");
+        final Hl7FileRow secondHl7Message = Hl7FileRow.success(1, "1999/11/30/23/199911302311298376.hl7");
+
+        runHl7FileTest(
+            SqlQuery.hl7FileTableQuery("19991130", Collections.singletonList(ingestWorkflowId)),
+            firstHl7Message,
+            secondHl7Message
+        );
+
+        runHl7FileTest(
+            SqlQuery.hl7FileViewQuery("19991130", Collections.singletonList(ingestWorkflowId)),
+            firstHl7Message,
+            secondHl7Message
         );
     }
 
