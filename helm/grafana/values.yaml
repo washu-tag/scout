@@ -22,13 +22,6 @@ datasources:
         editable: false
         isDefault: true
 
-      - name: Jaeger
-        type: jaeger
-        uid: jaeger_datasource_01
-        url: 'http://jaeger-query.jaeger.svc.cluster.local:80'
-        editable: false
-        isDefault: false
-
       - name: Loki
         type: loki
         datasourceUid: loki_datasource_01

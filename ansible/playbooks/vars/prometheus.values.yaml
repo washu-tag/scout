@@ -30,21 +30,6 @@ extraScrapeConfigs: |
     static_configs:
       - targets: ['grafana.{{ grafana_namespace }}.svc.cluster.local']
 
-  - job_name: 'jaeger-agent'
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['jaeger-agent.jaeger.svc.cluster.local:14271']
-
-  - job_name: 'jaeger-collector'
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['jaeger-collector.jaeger.svc.cluster.local:14269']
-
-  - job_name: 'jaeger-query'
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['jaeger-query.jaeger.svc.cluster.local:16687']
-
   - job_name: 'loki'
     metrics_path: /metrics
     static_configs:

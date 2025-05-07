@@ -72,7 +72,6 @@ k3s_cluster:
     prometheus_dir: /scout/monitoring/prometheus
     loki_dir: /scout/monitoring/loki
     grafana_dir: /scout/monitoring/grafana
-    jaeger_dir: /scout/monitoring/jaeger
     jupyter_dir: /scout/data/jupyter
     extractor_data_dir: /ceph/input/data
 

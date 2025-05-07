@@ -13,6 +13,3 @@
       include_tasks: services/grafana.yaml
       vars:
         slack_contact_point_j2: '/helm/grafana/alerts/contact-points/slack-contact-point.json.j2'
-
-    - name: Install Jaeger
-      include_tasks: services/jaeger.yaml
