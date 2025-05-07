@@ -3,13 +3,13 @@ package edu.washu.tag.extractor.hl7log.activity;
 import static edu.washu.tag.extractor.hl7log.util.Constants.CHILD_QUEUE;
 
 import edu.washu.tag.extractor.hl7log.db.Hl7File;
+import edu.washu.tag.extractor.hl7log.db.IngestDbService;
 import edu.washu.tag.extractor.hl7log.db.LogFile;
 import edu.washu.tag.extractor.hl7log.exception.FileFormatException;
 import edu.washu.tag.extractor.hl7log.model.Hl7ManifestFileInput;
 import edu.washu.tag.extractor.hl7log.model.Hl7ManifestFileOutput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogInput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogOutput;
-import edu.washu.tag.extractor.hl7log.db.IngestDbService;
 import edu.washu.tag.extractor.hl7log.util.FileHandler;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -147,8 +148,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             throw ApplicationFailure.newFailureWithCause("Failed to write manifest file " + manifestFilePath, "type", e);
         }
 
-        logger.info("WorkflowId {} ActivityId {} - Finished writing {} HL7 file paths to manifest file {}. Deleting {} file path files.", activityInfo.getWorkflowId(),
-            activityInfo.getActivityId(), hl7Paths.size(), manifestFilePath, input.hl7FilePathFiles().size());
+        logger.info("WorkflowId {} ActivityId {} - Finished writing {} HL7 file paths to manifest file {}. Deleting {} file path files.",
+            activityInfo.getWorkflowId(), activityInfo.getActivityId(), hl7Paths.size(), manifestFilePath, input.hl7FilePathFiles().size());
 
         // Delete the HL7 file path files
         try {
@@ -164,19 +165,17 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     }
 
     /**
-     * Extracts a timestamp from the first lines of a segment.
+     * Extracts a timestamp from the line immediately preceding the SB tag
      *
-     * @param lines      Content of split file
+     * @param headerLine Line containing timestamp
      * @return The extracted timestamp
      * @throws FileFormatException If timestamp extraction fails
      */
-    private String extractTimestamp(List<String> lines) throws FileFormatException {
-        String headerLine = lines.getFirst();
-
+    private String extractTimestamp(String headerLine) throws FileFormatException {
         // Check if we have enough bytes
         if (headerLine.length() < HEADER_LENGTH) {
             throw new FileFormatException(
-                String.format("Header is too short, expected at least %d bytes but got %d",
+                String.format("Timestamp header line is too short, expected at least %d bytes but got %d",
                     HEADER_LENGTH, headerLine.length())
             );
         }
@@ -188,7 +187,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     /**
      * Parses a timestamp from the header string.
      *
-     * @param headerStr  Header content as a string
+     * @param headerStr Header content as a string
      * @return The parsed timestamp
      * @throws FileFormatException If the timestamp cannot be parsed or is invalid
      */
@@ -197,7 +196,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String digitsOnly = headerStr.replaceAll("\\D", "");
 
         if (digitsOnly.isEmpty()) {
-            throw new FileFormatException("Could not find any digits in header");
+            throw new FileFormatException("Could not find any digits in timestamp header line");
         }
 
         // Validate timestamp length
@@ -223,27 +222,29 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         Path logFilePath = Paths.get(logFile);
 
         List<Hl7File> results = new ArrayList<>();
+        int hl7Count = 0;
         try (BufferedReader reader = Files.newBufferedReader(logFilePath, StandardCharsets.ISO_8859_1)) {
-            List<String> splitContent = new ArrayList<>();
             String line;
-            int hl7Count = 0;
+            String previousLine = null;
+            List<String> hl7Content = new ArrayList<>();
 
             while ((line = reader.readLine()) != null) {
-                // If line is empty, we're at the end of the current HL7 content
-                if (line.isEmpty()) {
-                    if (!splitContent.isEmpty()) {
-                        results.add(transformToHl7AndUpload(logFile, splitContent, destination, hl7Count++, workflowId, activityId));
-                        splitContent.clear();
+                if (line.contains("<SB>")) {
+                    // Collect lines until the next <EB>
+                    while ((line = reader.readLine()) != null && !line.contains("<EB>")) {
+                        hl7Content.add(line);
                     }
-                } else {
-                    splitContent.add(line);
+                    results.add(transformToHl7AndUpload(logFile, hl7Content, previousLine, destination, hl7Count++, workflowId, activityId));
+                    hl7Content.clear();
+                    previousLine = null;
+                    continue;
                 }
+                previousLine = line;
             }
+        }
 
-            // Transform last chunk of content
-            if (!splitContent.isEmpty()) {
-                results.add(transformToHl7AndUpload(logFile, splitContent, destination, hl7Count, workflowId, activityId));
-            }
+        if (hl7Count == 0) {
+            results.add(Hl7File.error(logFile, 0, "Log did not contain any HL7 messages", workflowId, activityId));
         }
 
         return results;
@@ -254,13 +255,19 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
      *
      * @param logFile       Source HL7 log file
      * @param lines         Content of the split log
+     * @param headerLine    Line preceding SB tag
      * @param destination   Base output location
      * @param segmentNumber This HL7 file's index within parent log for error reporting
      * @return An object containing the file path if the operation was successful, or an error message if not
      */
-    private Hl7File transformToHl7AndUpload(String logFile, List<String> lines, URI destination, int segmentNumber, String workflowId, String activityId) {
+    private Hl7File transformToHl7AndUpload(String logFile, List<String> lines, String headerLine, URI destination, int segmentNumber, String workflowId,
+        String activityId) {
+        if (StringUtils.isBlank(headerLine)) {
+            return Hl7File.error(logFile, segmentNumber, "HL7 segment did not contain a timestamp header line", workflowId, activityId);
+        }
+
         try {
-            return transformAndUpload(logFile, lines, destination, segmentNumber);
+            return transformAndUpload(logFile, lines, headerLine, destination, segmentNumber);
         } catch (IOException e) {
             logger.error("WorkflowId {} ActivityId {} - Could not write segment {} to HL7 file", workflowId, activityId, segmentNumber, e);
             return Hl7File.error(logFile, segmentNumber, "Could not write segment to HL7 file: " + e.getMessage(), workflowId, activityId);
@@ -272,44 +279,43 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
      *
      * @param logFile     Source HL7 log file
      * @param lines       Content of the split log
+     * @param headerLine  Line preceding SB tag
      * @param destination Base output location
      * @return An object containing the file path if the operation was successful, or an error message if not
      * @throws IOException If an I/O error occurs
      */
-    private Hl7File transformAndUpload(String logFile, List<String> lines, URI destination, int segmentNumber)
+    private Hl7File transformAndUpload(String logFile, List<String> lines, String headerLine, URI destination, int segmentNumber)
         throws IOException {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
 
-        // Need at least 3 lines (2 header lines + content)
-        if (lines.size() < 3) {
-            logger.warn("WorkflowId {} ActivityId {} - Segment {} is too short", activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber);
-            return Hl7File.error(logFile, segmentNumber, "Split content has fewer than 3 lines", activityInfo.getWorkflowId(), activityInfo.getActivityId());
-        }
-
-        // Extract timestamp from the segment's first HEADER_LENGTH bytes
         String timestamp;
         try {
-            timestamp = extractTimestamp(lines);
+            timestamp = extractTimestamp(headerLine);
         } catch (FileFormatException e) {
-            logger.warn("WorkflowId {} ActivityId {} - Segment {} unable to extract timestamp: {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber, e.getMessage());
-            return Hl7File.error(logFile, segmentNumber, "Unable to extract timestamp: " + e.getMessage(), activityInfo.getWorkflowId(), activityInfo.getActivityId());
+            logger.warn("WorkflowId {} ActivityId {} - Unable to extract timestamp for segment {}: {}", activityInfo.getWorkflowId(),
+                activityInfo.getActivityId(),
+                segmentNumber, e.getMessage());
+            return Hl7File.error(logFile, segmentNumber, "Unable to extract timestamp for segment: " + e.getMessage(), activityInfo.getWorkflowId(),
+                activityInfo.getActivityId());
         }
 
         // Define output path
         String relativePath = getTimestampPath(timestamp).resolve(timestamp + ".hl7").toString();
-        logger.info("WorkflowId {} ActivityId {} - Transforming segment {} HL7 file {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber, relativePath);
+        logger.info("WorkflowId {} ActivityId {} - Transforming segment {} HL7 file {}", activityInfo.getWorkflowId(), activityInfo.getActivityId(),
+            segmentNumber, relativePath);
+
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            // Start from the third line (exclude header)
-            for (int i = 2; i < lines.size(); i++) {
-                String processedLine = lines.get(i).replaceAll("<R>$", "");
+            for (String line : lines) {
+                // Strip the non-HL7 "tags"
+                String processed = line.replaceAll("<R>$", "");
 
                 // Write line with carriage return (HL7 requirement)
-                outputStream.write(processedLine.getBytes(StandardCharsets.UTF_8));
+                outputStream.write(processed.getBytes(StandardCharsets.UTF_8));
                 outputStream.write('\r');
             }
 
-            logger.info("WorkflowId {} ActivityId {} - Uploading segment {} HL7 file {}/{}", activityInfo.getWorkflowId(), activityInfo.getActivityId(), segmentNumber, destination,
-                relativePath);
+            logger.info("WorkflowId {} ActivityId {} - Uploading segment {} HL7 file {}/{}", activityInfo.getWorkflowId(), activityInfo.getActivityId(),
+                segmentNumber, destination, relativePath);
 
             try {
                 // Convert to byte array and upload to S3
