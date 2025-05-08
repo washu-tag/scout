@@ -40,5 +40,6 @@ The `hl7_files` table contains the following columns:
 The Ingest Status DB also contains the following views:
 | View Name | Description |
 |-----------|-------------|
-| `recent_log_file_statuses` | A view that shows the most recent status of each log file. This view is useful for monitoring the progress of the ingestion process. |
-| `recent_hl7_file_statuses` | A view that shows the most recent status of each HL7 file. This view is useful for monitoring the progress of the ingestion process. |
+| `recent_log_file_statuses` | A view that shows the most recent entry in the `file_statuses` table for each log file. |
+| `recent_hl7_file_statuses` | A view that shows the most recent entry in the `file_statuses` table for each HL7 file. This view is useful for monitoring the progress of the ingestion process. |
+| `recent_hl7_files` | A view that shows the most recent status of each HL7 file along with the columns from the `hl7_files` table. This view is also useful for monitoring progress but is more expensive to create as it requires a large join. |
