@@ -182,7 +182,8 @@
             },
             "lineWidth": 1,
             "scaleDistribution": {
-              "type": "linear"
+              "log": 2,
+              "type": "symlog"
             },
             "thresholdsStyle": {
               "mode": "off"
@@ -293,7 +294,8 @@
             },
             "lineWidth": 1,
             "scaleDistribution": {
-              "type": "linear"
+              "log": 2,
+              "type": "symlog"
             },
             "thresholdsStyle": {
               "mode": "off"
