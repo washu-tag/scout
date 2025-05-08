@@ -68,8 +68,8 @@
   block:
     - name: Find all Grafana dashboards
       find:
-        paths: 'templates/'
-        patterns: 'grafana-dashboard-*.json'
+        paths: 'templates/grafana/dashboards/'
+        patterns: '*.json'
       register: dashboard_files
 
     - name: Create ConfigMap for each Grafana dashboard
@@ -94,8 +94,8 @@
   block:
     - name: Find all Grafana alerts
       find:
-        paths: 'templates/'
-        patterns: 'grafana-alert-*.json' # Alerts and notification templates
+        paths: 'templates/grafana/alerts/'
+        patterns: '*.json'
       register: alert_files
 
     - name: Create ConfigMap for each Grafana alert
@@ -143,7 +143,7 @@
         labels:
           grafana_datasource: 'true' # default value for: sidecar.datasources.label
       stringData:
-        pg-db.yaml: "{{ lookup('template', 'templates/grafana-postgres-datasource.yaml') }}"
+        pg-db.yaml: "{{ lookup('template', 'templates/grafana/datasources/grafana-postgres-datasource.yaml') }}"
 
 - name: Install Grafana using Helm
   kubernetes.core.helm:
