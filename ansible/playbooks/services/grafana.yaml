@@ -129,7 +129,7 @@
           grafana_alert: '1'
       type: Opaque
       stringData:
-        slack-contact-point.json: "{{ lookup('template', 'templates/grafana-contact-point-slack.json.j2') | to_nice_json }}"
+        slack-contact-point.json: "{{ lookup('template', 'templates/grafana/contact-points/grafana-contact-point-slack.json') | to_nice_json }}"
 
 - name: Create postgres datasource secret
   kubernetes.core.k8s:
@@ -153,4 +153,4 @@
     release_namespace: '{{ grafana_namespace }}'
     update_repo_cache: true
     chart_version: ~8.12.1
-    values: '{{ lookup("template", "vars/grafana.values.yaml") | from_yaml }}'
+    values: '{{ lookup("template", "templates/grafana/grafana.values.yaml") | from_yaml }}'
