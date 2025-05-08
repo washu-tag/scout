@@ -14,6 +14,7 @@ import edu.washu.tag.extractor.hl7log.model.IngestHl7LogWorkflowParsedInput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogInput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogOutput;
 import edu.washu.tag.extractor.hl7log.util.AllOfPromiseOnlySuccesses;
+import edu.washu.tag.extractor.hl7log.util.DefaultArgs;
 import edu.washu.tag.extractor.hl7log.util.IngestHl7LogWorkflowInputParser;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.api.common.v1.WorkflowExecution;
@@ -30,20 +31,14 @@ import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import static edu.washu.tag.extractor.hl7log.util.Constants.PARENT_QUEUE;
 import static edu.washu.tag.extractor.hl7log.util.Constants.CHILD_QUEUE;
 import static edu.washu.tag.extractor.hl7log.util.Constants.INGEST_DELTA_LAKE_QUEUE;
 
-@Component
 @WorkflowImpl(taskQueues = PARENT_QUEUE)
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private static final Logger logger = Workflow.getLogger(IngestHl7LogWorkflowImpl.class);
-
-    @Value("${scout.split-and-upload-timeout}")
-    private int splitAndUploadTimeout;
 
     private final FindHl7LogsActivity findHl7LogsActivity =
             Workflow.newActivityStub(FindHl7LogsActivity.class,
@@ -63,17 +58,6 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                 .setParentClosePolicy(ParentClosePolicy.PARENT_CLOSE_POLICY_ABANDON)
                 .build()
         );
-
-    private final SplitHl7LogActivity hl7LogActivity =
-        Workflow.newActivityStub(SplitHl7LogActivity.class,
-            ActivityOptions.newBuilder()
-                .setTaskQueue(CHILD_QUEUE)
-                .setStartToCloseTimeout(Duration.ofMinutes(splitAndUploadTimeout))
-                .setRetryOptions(RetryOptions.newBuilder()
-                    .setMaximumInterval(Duration.ofSeconds(30))
-                    .setMaximumAttempts(2)
-                    .build())
-                .build());
 
     @Override
     public IngestHl7LogWorkflowOutput ingestHl7Log(IngestHl7LogWorkflowInput input) {
@@ -97,7 +81,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 
             // Get list of log paths to process
             FindHl7LogFileInput findHl7LogFileInput = new FindHl7LogFileInput(
-                parsedInput.logPaths(), parsedInput.date(), parsedInput.logsRootPath(), manifestFilePath
+                parsedInput.logPaths(), parsedInput.date(), parsedInput.logsRootPath(), manifestFilePath, input.splitAndUploadConcurrency()
             );
             findHl7LogFileOutput = findHl7LogsActivity.findHl7LogFiles(findHl7LogFileInput);
         } else {
@@ -109,6 +93,17 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         // We may have a manifest file and a next offset into that file; if so we will continue as new at the end.
 
         // Launch child activity for each log file
+        SplitHl7LogActivity hl7LogActivity =
+            Workflow.newActivityStub(SplitHl7LogActivity.class,
+                ActivityOptions.newBuilder()
+                    .setTaskQueue(CHILD_QUEUE)
+                    .setStartToCloseTimeout(Duration.ofMinutes(DefaultArgs.getSplitAndUploadTimeout(input.splitAndUploadTimeout())))
+                    .setRetryOptions(RetryOptions.newBuilder()
+                        .setMaximumInterval(Duration.ofSeconds(30))
+                        .setMaximumAttempts(2)
+                        .build())
+                    .build());
+
         logger.info("WorkflowId {} - Launching {} async activities", workflowInfo.getWorkflowId(), findHl7LogFileOutput.logFiles().size());
         List<Promise<SplitAndTransformHl7LogOutput>> transformSplitHl7LogOutputPromises = findHl7LogFileOutput.logFiles().stream()
                 .map(logFile -> Async.function(
@@ -169,6 +164,8 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                     input.logPaths(),
                     scratchSpaceRootPath,
                     input.hl7OutputPath(),
+                    input.splitAndUploadTimeout(),
+                    input.splitAndUploadConcurrency(),
                     input.modalityMapPath(),
                     input.reportTableName(),
                     nextContinued

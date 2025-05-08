@@ -16,6 +16,8 @@ corresponding Ansible variables.
 - `scratchSpaceRootPath`: root path to use for temporary files. The directory specified will be created if it does not exist.
    Ansible equivalent: `scratch_path`.
 - `hl7OutputPath`: path to write HL7 files. Note that this is _not_ the path to the resulting delta lake. Ansible equivalent: `hl7_path`.
+- `splitAndUploadTimeout`: timeout in minutes for the activity that splits the HL7 listener log files and uploads the component HL7 messages to MinIO.
+- `splitAndUploadConcurrency`: number of HL7 listener log files to process concurrently.
 - `modalityMapPath`: path to read modality map file, which is the source of the `modality` column in the Delta Lake table.
    Ansible equivalent: `modality_map_path`.
 - `reportTableName`: name of the Delta Lake table to write to. Ansible equivalent: `report_delta_table_name`.
