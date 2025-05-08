@@ -201,7 +201,7 @@ public class TestStatusDatabase extends BaseTest {
      */
     @Test
     public void testIngestImproperLogPath() {
-        final String improperLog = "/data/a_file_for_20150101.log";
+        final String improperLog = "/data/20150101.log";
         temporalClient.launchIngest(
             new IngestJobInput().setLogPaths(improperLog),
             false
