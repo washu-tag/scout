@@ -62,9 +62,9 @@ public class TestStatusDatabase extends BaseTest {
     /**
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 2024-01-02, the entire content of the log file is unusable by Scout.
-     * The {@value #TABLE_LOG_FILES} table is expected to have five "successful" rows for that day
+     * The {@value #TABLE_LOG_FILES} table is expected to have two "successful" rows for that day
      * from retries because the error is tracked later on while the {@value #VIEW_RECENT_LOG_FILES} view
-     * limits to a single row. The {@value #TABLE_HL7_FILES} table contains the 5 failed rows for that date
+     * limits to a single row. The {@value #TABLE_HL7_FILES} table contains the 2 failed rows for that date
      * with the {@value #VIEW_RECENT_HL7_FILES} view restricting to a single row.
      */
     @Test
@@ -73,9 +73,6 @@ public class TestStatusDatabase extends BaseTest {
 
         runLogTest(
             SqlQuery.logTableQuery("20240102"),
-            logRowWithRetries,
-            logRowWithRetries,
-            logRowWithRetries,
             logRowWithRetries,
             logRowWithRetries
         );
@@ -89,9 +86,6 @@ public class TestStatusDatabase extends BaseTest {
 
         runHl7FileTest(
             SqlQuery.hl7FileTableQuery("20240102", Collections.singletonList(ingestWorkflowId)),
-            repeatedFailingHl7Message,
-            repeatedFailingHl7Message,
-            repeatedFailingHl7Message,
             repeatedFailingHl7Message,
             repeatedFailingHl7Message
         );
