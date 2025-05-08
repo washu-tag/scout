@@ -1,0 +1,80 @@
+grafana.ini:
+  auth:
+    disable_login_form: true
+  auth.anonymous:
+    enabled: true
+    org_name: Main Org.
+    org_role: Admin
+  server:
+    root_url: 'https://{{ server_hostname }}/grafana'
+    serve_from_sub_path: true
+  metrics:
+    enabled: true
+{% if grafana_alert_contact_point == 'email' %}
+  smtp:
+    enabled: true
+    host: "{{ grafana_smtp_host }}"
+    user: $__file{/etc/secrets/smtp-grafana/user}
+    password: $__file{/etc/secrets/smtp-grafana/password}
+    from_address: "{{ grafana_smtp_from_address }}"
+    from_name: "{{ grafana_smtp_from_name | default('Scout') }}"
+    skip_verify: "{{ grafana_smtp_skip_verify | default(false) }}"
+{% endif %}
+
+{% if grafana_alert_contact_point == 'email' %}
+extraSecretMounts:
+  - name: smtp-grafana
+    mountPath: /etc/secrets/smtp-grafana
+    secretName: smtp-grafana
+    readOnly: true
+    optional: false
+    subPath: ""
+{% endif %}
+
+ingress:
+  enabled: true
+  ingressClassName: traefik
+  path: /grafana
+  hosts:
+    - '{{ server_hostname }}'
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus_datasource_01
+        url: 'http://prometheus-server.{{ prometheus_namespace }}.svc.cluster.local:9090'
+        editable: false
+        isDefault: true
+
+      - name: Loki
+        type: loki
+        datasourceUid: loki_datasource_01
+        url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local/'
+        editable: false
+        isDefault: false
+
+sidecar:
+  alerts:
+    enabled: true
+    label: grafana_alert
+    labelValue: '1'
+    watchMethod: SLEEP
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    labelValue: '1'
+    watchMethod: SLEEP
+    provider:
+      folder: Scout
+  datasources:
+    enabled: true
+
+persistence:
+  enabled: true
+  storageClassName: grafana-storage
+
+livenessProbe:
+  initialDelaySeconds: 180
