@@ -58,6 +58,10 @@ class IngestHl7LogWorkflowInputParserTest {
     private String defaultScratchSpaceRootPath;
     @Value("${scout.workflowArgDefaults.ingestHl7Log.hl7OutputPath}")
     private String defaultHl7OutputPath;
+    @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadTimeout}")
+    private Integer defaultSplitAndUploadTimeout;
+    @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadConcurrency}")
+    private Integer defaultSplitAndUploadConcurrency;
 
     @Test
     void testParseInput_nonScheduled_defaultsOnly(IngestHl7LogWorkflowInputParserTestWorkflow workflow) {
@@ -70,7 +74,9 @@ class IngestHl7LogWorkflowInputParserTest {
         assertNull(parsedInput.date());
         assertEquals(defaultScratchSpaceRootPath, parsedInput.scratchSpaceRootPath());
         assertEquals(defaultLogsRootPath, parsedInput.logsRootPath());
-        assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());;
+        assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
+        assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
     }
 
     @Test
@@ -99,6 +105,8 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(defaultScratchSpaceRootPath, parsedInput.scratchSpaceRootPath());
         assertEquals(logsRootPath, parsedInput.logsRootPath());
         assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
+        assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
     }
 
     @Test
@@ -125,6 +133,8 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(defaultScratchSpaceRootPath, parsedInput.scratchSpaceRootPath());
         assertEquals(defaultLogsRootPath, parsedInput.logsRootPath());
         assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
+        assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
     }
 
     @Test
@@ -147,6 +157,8 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(defaultScratchSpaceRootPath, parsedInput.scratchSpaceRootPath());
         assertEquals(defaultLogsRootPath, parsedInput.logsRootPath());
         assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
+        assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
     }
 
     @Test
@@ -181,6 +193,8 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(defaultScratchSpaceRootPath, parsedInput.scratchSpaceRootPath());
         assertEquals(logsRootPath, parsedInput.logsRootPath());
         assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
+        assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
     }
 
     @Test
@@ -218,5 +232,37 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(defaultScratchSpaceRootPath, parsedInput.scratchSpaceRootPath());
         assertEquals(logsRootPath, parsedInput.logsRootPath());
         assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
+        assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
+    }
+
+    @Test
+    void testParseInput_splitAndUploadActivitySettings(IngestHl7LogWorkflowInputParserTestWorkflow workflow) {
+        String date = "arbitrary-date";
+        int timeout = 60;
+        int concurrency = 100;
+        IngestHl7LogWorkflowInput input = new IngestHl7LogWorkflowInput(
+            date,
+            null,
+            null,
+            null,
+            null,
+            timeout,
+            concurrency,
+            null,
+            null,
+            null
+        );
+
+        IngestHl7LogWorkflowParsedInput parsedInput = workflow.parseInput(input, null);
+
+        assertNotNull(parsedInput);
+        assertEquals(List.of(defaultLogsRootPath), parsedInput.logPaths());
+        assertEquals(date, parsedInput.date());
+        assertEquals(defaultScratchSpaceRootPath, parsedInput.scratchSpaceRootPath());
+        assertEquals(defaultLogsRootPath, parsedInput.logsRootPath());
+        assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
+        assertEquals(timeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(concurrency, parsedInput.splitAndUploadConcurrency());
     }
 }
