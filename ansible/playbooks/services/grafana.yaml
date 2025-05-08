@@ -156,7 +156,7 @@
         labels:
           grafana_datasource: 'true' # default value for: sidecar.datasources.label
       stringData:
-        pg-db.yaml: "{{ lookup('template', 'templates/grafana/datasources/postgres-datasource.yaml') }}"
+        pg-db.yaml: "{{ lookup('template', 'templates/grafana/datasources/postgres-datasource.yaml.j2') }}"
 
 - name: Install Grafana using Helm
   kubernetes.core.helm:
