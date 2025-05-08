@@ -23,6 +23,7 @@ spring:
 s3:
   endpoint: 'http://minio.minio:9000'
   region: us-east-1
+  max-connections: 50
 scout:
   # Placeholders for default workflow arguments that can be configured from outside and overridden in the workflow
   workflowArgDefaults:
