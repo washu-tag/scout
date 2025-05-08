@@ -8,4 +8,15 @@ OBX|1|TX|3750492||JOSEPH BARAJAS, M.D.~~~~********Preliminary Report********~~~ 
 OBX|2|TX|3750492||ACC#  Date Time  Exam~~7795083088 Oct 21 2007 03:22PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~A single view of the chest reveals a small left pleural effusion. The~lung fields are clear without any focal lesions or opacities. Heart~size appears normal and there is no evidence of significant~mediastinal shift or pneumothorax. The diaphragm is well visualized~with no signs of elevation or abnormal contour.~~IMPRESSION:~The presence of a small left pleural effusion merits clinical~correlation; however, no acute thoracic pathology is noted.~Recommendations for follow-up imaging or ultrasound to characterize~the effusion further may be useful.||||||P<R>
 OBX|3|TX|3750492||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Joseph Barajas, M.D. on Oct 21 2007 03:22PM~~Pending review by: Clara Smith, M.D.~ ~~~ ~~~ ||||||P<R>
 OBX||RP|3750492|4|7795083088^UK^ZB||||||P<R>
-<EB>
+<EB><R>
+
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20071021152231|TBD|ORU^R01|2.25.171889262008186156123889315933832596192|P|2.4<R>
+PID|1||ABC451073^^^ABC^MR~EPIC4485832^^^EPIC^MRN||LOPEZ^JOSHUA^TRAVIS^^^^D||19320202000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451073^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823232^MARKS^MICHAEL^R.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457148^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1680741^SYS|7795083088|MDXREVNT^ Radiology Event^UNKDEV|URGENT||20071017153407|||PSCRIB|||||^^^^ |D7823233^GALLAGHER^RUSSELL^JOEY^M.D.^^^^ABC|||||^Xr Sing View|20071021152231||MDXREVNT|||1^^^20071021152231^^U^^URGENT|       |||^Chest pain|D7823236^BARAJAS^JOSEPH^A.^^^M.D.|D7823231^SMITH^CLARA^T.^^^M.D.||PSCRIB<R>
+OBX|1|TX|3750492||JOSEPH BARAJAS, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|3750492||ACC#  Date Time  Exam~~7795083088 Oct 21 2007 03:22PM MDXREVNT Radiology Event~~EXAMINATION:~Single-view X-ray~~FINDINGS:~A single view of the chest reveals a small left pleural effusion. The~lung fields are clear without any focal lesions or opacities. Heart~size appears normal and there is no evidence of significant~mediastinal shift or pneumothorax. The diaphragm is well visualized~with no signs of elevation or abnormal contour.~~IMPRESSION:~The presence of a small left pleural effusion merits clinical~correlation; however, no acute thoracic pathology is noted.~Recommendations for follow-up imaging or ultrasound to characterize~the effusion further may be useful.||||||P<R>
+OBX|3|TX|3750492||Requested By: Gallagher,Russell J. M.D.~~Dictated By: Joseph Barajas, M.D. on Oct 21 2007 03:22PM~~Pending review by: Clara Smith, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|3750492|4|7795083088^UK^ZB||||||P<R>
+<EB><R>
