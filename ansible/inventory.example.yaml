@@ -37,8 +37,8 @@ k3s_cluster:
     grafana_smtp_password: $(echo $SMTP_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     grafana_smtp_from_address: ''
     grafana_smtp_from_name: 'Scout'
-    grafana_email_recipients: [''] # Grafana validation requires an address if using email
     grafana_smtp_skip_verify: false
+    grafana_email_recipients: [''] # Grafana validation requires an address if using email
     slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     slack_channel_id: $(echo $SLACK_CHANNEL | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
