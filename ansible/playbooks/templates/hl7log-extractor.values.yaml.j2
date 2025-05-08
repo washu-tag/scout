@@ -36,6 +36,8 @@ config:
           logsRootPath: '{{ hl7logs_root_dir }}'
           scratchSpaceRootPath: '{{ scratch_path }}'
           hl7OutputPath: '{{ hl7_path }}'
+          splitAndUploadTimeout: 180
+          splitAndUploadConcurrency: 150
         ingestHl7ToDeltaLake:
           reportTableName: '{{ report_delta_table_name }}'
           modalityMapPath: '{{ modality_map_path }}'

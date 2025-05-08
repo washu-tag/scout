@@ -10,6 +10,8 @@ public class DefaultArgs {
     private static String logsRootPath;
     private static String scratchSpaceRootPath;
     private static String hl7OutputPath;
+    private static int splitAndUploadTimeout;
+    private static int splitAndUploadConcurrency;
     private static String modalityMapPath;
     private static String reportTableName;
 
@@ -37,6 +39,22 @@ public class DefaultArgs {
         return getValueOrDefault(input, hl7OutputPath);
     }
 
+    @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadTimeout}")
+    public static void setSplitAndUploadTimeout(int splitAndUploadTimeout) {
+        DefaultArgs.splitAndUploadTimeout = splitAndUploadTimeout;
+    }
+    public static int getSplitAndUploadTimeout(int input) {
+        return getValueOrDefault(input, splitAndUploadTimeout);
+    }
+
+    @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadConcurrency}")
+    public static void setSplitAndUploadConcurrency(int splitAndUploadConcurrency) {
+        DefaultArgs.splitAndUploadConcurrency = splitAndUploadConcurrency;
+    }
+    public static int getSplitAndUploadConcurrency(int input) {
+        return getValueOrDefault(input, splitAndUploadConcurrency);
+    }
+
     @Value("${scout.workflowArgDefaults.ingestHl7ToDeltaLake.modalityMapPath}")
     public void setModalityMapPath(String modalityMapPath) {
         DefaultArgs.modalityMapPath = modalityMapPath;
@@ -55,5 +73,8 @@ public class DefaultArgs {
 
     private static String getValueOrDefault(String value, String defaultValue) {
         return (value == null || value.isEmpty()) ? defaultValue : value;
+    }
+    private static int getValueOrDefault(int value, int defaultValue) {
+        return (value == -1) ? defaultValue : value;
     }
 }
