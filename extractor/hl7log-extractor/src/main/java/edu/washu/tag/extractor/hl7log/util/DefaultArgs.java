@@ -40,7 +40,7 @@ public class DefaultArgs {
     }
 
     @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadTimeout}")
-    public static void setSplitAndUploadTimeout(int splitAndUploadTimeout) {
+    public void setSplitAndUploadTimeout(int splitAndUploadTimeout) {
         DefaultArgs.splitAndUploadTimeout = splitAndUploadTimeout;
     }
     public static int getSplitAndUploadTimeout(int input) {
@@ -48,7 +48,7 @@ public class DefaultArgs {
     }
 
     @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadConcurrency}")
-    public static void setSplitAndUploadConcurrency(int splitAndUploadConcurrency) {
+    public void setSplitAndUploadConcurrency(int splitAndUploadConcurrency) {
         DefaultArgs.splitAndUploadConcurrency = splitAndUploadConcurrency;
     }
     public static int getSplitAndUploadConcurrency(int input) {
