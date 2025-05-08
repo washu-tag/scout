@@ -9,7 +9,7 @@
           "uid": "email_scout_contact_point_01",
           "type": "email",
           "settings": {
-            "addresses": "{{ grafana_email_addresses | default([''], true) | join(',') }}",
+            "addresses": "{{ grafana_email_recipients | default([''], true) | join(',') }}",
             "singleEmail": true
           },
           "disableResolveMessage": false

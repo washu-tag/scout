@@ -10,9 +10,26 @@ grafana.ini:
     serve_from_sub_path: true
   metrics:
     enabled: true
+{% if grafana_alert_contact_point == 'email' %}
   smtp:
-    enabled: "{{ grafana_smtp_host | default('', true) | length > 0 }}"
-    host: "{{ grafana_smtp_host | default('') }}"
+    enabled: true
+    host: "{{ grafana_smtp_host }}"
+    user: $__file{/etc/secrets/smtp-grafana/user}
+    password: $__file{/etc/secrets/smtp-grafana/password}
+    from_address: "{{ grafana_smtp_from_address }}"
+    from_name: "{{ grafana_smtp_from_name | default('Scout') }}"
+    skip_verify: "{{ grafana_smtp_skip_verify | default(false) }}"
+{% endif %}
+
+{% if grafana_alert_contact_point == 'email' %}
+extraSecretMounts:
+  - name: smtp-grafana
+    mountPath: /etc/secrets/smtp-grafana
+    secretName: smtp-grafana
+    readOnly: true
+    optional: false
+    subPath: ""
+{% endif %}
 
 ingress:
   enabled: true

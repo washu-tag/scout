@@ -33,7 +33,12 @@ k3s_cluster:
     # Grafana config
     grafana_alert_contact_point: slack # email or slack
     grafana_smtp_host: '' # Include the port in the value
-    grafana_email_addresses: [] # Grafana validation requires an address if using email
+    grafana_smtp_user: $(echo $SMTP_USER | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    grafana_smtp_password: $(echo $SMTP_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    grafana_smtp_from_address: ''
+    grafana_smtp_from_name: 'Scout'
+    grafana_email_recipients: [''] # Grafana validation requires an address if using email
+    grafana_smtp_skip_verify: false
     slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     slack_channel_id: $(echo $SLACK_CHANNEL | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
