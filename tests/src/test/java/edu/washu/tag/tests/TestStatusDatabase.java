@@ -3,7 +3,6 @@ package edu.washu.tag.tests;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import edu.washu.tag.BaseTest;
-import edu.washu.tag.model.IngestJobDetails;
 import edu.washu.tag.model.IngestJobInput;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -177,18 +176,18 @@ public class TestStatusDatabase extends BaseTest {
             "HL7 content did not contain a timestamp header line; this usually means it is a repeat of the previous message's HL7 content");
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflowId)),
+            SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             firstMessageSuccessful,
             nextMessageFailed
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery(date, ingestToDeltaLakeWorkflows),
+            SqlQuery.hl7FileTableQuery(date, ingestWorkflow.getIngestToDeltaLakeWorkflows()),
             firstMessageSuccessful
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileViewQuery(date, Collections.singletonList(ingestWorkflowId)),
+            SqlQuery.hl7FileViewQuery(date, Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             firstMessageSuccessful,
             nextMessageFailed
         );
@@ -219,13 +218,13 @@ public class TestStatusDatabase extends BaseTest {
             "HL7 message content is empty");
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflowId)),
+            SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             messageFailed,
             messageFailed
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileViewQuery(date, Collections.singletonList(ingestWorkflowId)),
+            SqlQuery.hl7FileViewQuery(date, Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             messageFailed
         );
     }
@@ -256,18 +255,18 @@ public class TestStatusDatabase extends BaseTest {
             "File is not parsable as HL7");
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflowId)),
+            SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             messageSuccessful
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery(date, ingestToDeltaLakeWorkflows),
+            SqlQuery.hl7FileTableQuery(date, ingestWorkflow.getIngestToDeltaLakeWorkflows()),
             messageFailed
         );
 
         runHl7FileTest(
             SqlQuery.hl7FileViewQuery(date, List.of(
-                Stream.concat(ingestToDeltaLakeWorkflows.stream(), Stream.of(ingestWorkflowId)).toArray(String[]::new)
+                Stream.concat(ingestWorkflow.getIngestToDeltaLakeWorkflows().stream(), Stream.of(ingestWorkflow.getIngestWorkflowId())).toArray(String[]::new)
             )),
             messageFailed
         );
