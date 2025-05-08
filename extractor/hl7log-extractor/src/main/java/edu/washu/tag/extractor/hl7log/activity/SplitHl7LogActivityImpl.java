@@ -277,7 +277,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         if (lines.stream().allMatch(String::isBlank)) {
             return Hl7File.error(logFile, segmentNumber,
-                "HL7 message is empty",
+                "HL7 message content is empty",
                 workflowId, activityId);
         }
 

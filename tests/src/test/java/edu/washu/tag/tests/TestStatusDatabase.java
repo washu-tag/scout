@@ -120,7 +120,7 @@ public class TestStatusDatabase extends BaseTest {
         final Hl7FileRow firstMessageSuccessful = Hl7FileRow.success(0, failedFilePath);
         final Hl7FileRow secondHl7Message = Hl7FileRow.success(1, "2023/01/13/18/202301131807178754.hl7");
         final Hl7FileRow thirdHl7Message = Hl7FileRow.success(2, "2023/01/13/20/202301132017309482.hl7");
-        final Hl7FileRow firstMessageFailed = Hl7FileRow.failure(0, failedFilePath, "HL7 file is empty or unparsable");
+        final Hl7FileRow firstMessageFailed = Hl7FileRow.failure(0, failedFilePath, "File is not parsable as HL7");
 
         runHl7FileTest(
             SqlQuery.hl7FileTableQuery("20230113", Collections.singletonList(ingestWorkflowId)),
@@ -170,7 +170,7 @@ public class TestStatusDatabase extends BaseTest {
 
         final String filePath = "2007/10/21/15/200710211522316785.hl7";
         final Hl7FileRow firstMessageSuccessful = Hl7FileRow.success(0, filePath);
-        final Hl7FileRow nextMessageFailed = Hl7FileRow.failure(0, "",
+        final Hl7FileRow nextMessageFailed = Hl7FileRow.failure(1, "",
             "HL7 content did not contain a timestamp header line; this usually means it is a repeat of the previous message's HL7 content");
 
         runHl7FileTest(
@@ -213,7 +213,7 @@ public class TestStatusDatabase extends BaseTest {
 
         final String filePath = "2019/01/06/11/201901061149256599.hl7";
         final Hl7FileRow messageFailed = Hl7FileRow.failure(0, filePath,
-            "HL7 message is empty");
+            "HL7 message content is empty");
 
         runHl7FileTest(
             SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflowId)),
@@ -249,7 +249,7 @@ public class TestStatusDatabase extends BaseTest {
         final String filePath = "2016/08/29/12/201608291211093942.hl7";
         final Hl7FileRow messageSuccessful = Hl7FileRow.success(0, filePath);
         final Hl7FileRow messageFailed = Hl7FileRow.failure(0, filePath,
-            "HL7 message is not parsable");
+            "File is not parsable as HL7");
 
         runHl7FileTest(
             SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflowId)),

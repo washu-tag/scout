@@ -99,7 +99,7 @@ def import_hl7_files_to_deltalake(
             # Write error paths to db
             write_errors(
                 error_paths,
-                "HL7 file is not parsable",
+                "File is not parsable as HL7",
                 activity.info().workflow_id,
                 activity.info().activity_id,
             )
