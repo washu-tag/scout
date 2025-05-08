@@ -1,9 +1,11 @@
 package edu.washu.tag.extractor.hl7log.db;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface IngestDbService {
-    void insertLogFile(LogFile logFile);
+    void insertFileStatus(FileStatus fileStatus);
     void batchInsertHl7Files(List<Hl7File> hl7Files);
-    List<Hl7FileLogFileSegmentNumber> queryHl7FileLogFileSegmentNumbers(List<String> hl7FilePath);
+    void batchInsertFileStatuses(List<FileStatus> fileStatuses);
+    void batchInsertNewHl7FileStatuses(List<FileStatus> fileStatuses, String logPath, LocalDate date);
 }

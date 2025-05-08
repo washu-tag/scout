@@ -2,8 +2,8 @@ package edu.washu.tag.extractor.hl7log.activity;
 
 import static edu.washu.tag.extractor.hl7log.util.Constants.BUILD_MANIFEST_QUEUE;
 
-import edu.washu.tag.extractor.hl7log.db.Hl7File;
-import edu.washu.tag.extractor.hl7log.db.Hl7FileLogFileSegmentNumber;
+import edu.washu.tag.extractor.hl7log.db.DbUtils.FileStatusType;
+import edu.washu.tag.extractor.hl7log.db.FileStatus;
 import edu.washu.tag.extractor.hl7log.db.IngestDbService;
 import edu.washu.tag.extractor.hl7log.model.FindHl7FilesInput;
 import edu.washu.tag.extractor.hl7log.model.FindHl7FilesOutput;
@@ -77,18 +77,16 @@ public class FindHl7FilesImpl implements FindHl7Files {
         logger.info("WorkflowId {} ActivityId {} - Found {} HL7 file paths in manifest file",
             activityInfo.getWorkflowId(), activityInfo.getActivityId(), hl7Paths.size());
 
-        List<Hl7FileLogFileSegmentNumber> briefHl7Files = ingestDbService.queryHl7FileLogFileSegmentNumbers(hl7Paths);
-
-        List<Hl7File> hl7Files = briefHl7Files.stream()
-            .map(bhl7 -> Hl7File.error(
-                bhl7.logFilePath(), bhl7.segmentNumber(), bhl7.hl7FilePath(), input.errorMessage(), activityInfo.getWorkflowId(), activityInfo.getActivityId()
+        List<FileStatus> fileStatuses = hl7Paths.stream()
+            .map(path -> FileStatus.failed(
+                path, FileStatusType.HL7, input.errorMessage(), activityInfo.getWorkflowId(), activityInfo.getActivityId()
             ))
             .toList();
 
         logger.info("WorkflowId {} ActivityId {} - Writing {} HL7 file error statuses to database",
-            activityInfo.getWorkflowId(), activityInfo.getActivityId(), hl7Files.size());
+            activityInfo.getWorkflowId(), activityInfo.getActivityId(), fileStatuses.size());
         try {
-            ingestDbService.batchInsertHl7Files(hl7Files);
+            ingestDbService.batchInsertFileStatuses(fileStatuses);
         } catch (Exception e) {
             logger.error("Error writing HL7 file error status to database", e);
             throw ApplicationFailure.newFailureWithCause("Error writing HL7 file error status to database", "type", e);
