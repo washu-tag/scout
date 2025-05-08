@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 
 import static edu.washu.tag.extractor.hl7log.util.Constants.PARENT_QUEUE;
 import static edu.washu.tag.extractor.hl7log.util.Constants.CHILD_QUEUE;
@@ -38,6 +39,9 @@ import static edu.washu.tag.extractor.hl7log.util.Constants.INGEST_DELTA_LAKE_QU
 @WorkflowImpl(taskQueues = PARENT_QUEUE)
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
     private static final Logger logger = Workflow.getLogger(IngestHl7LogWorkflowImpl.class);
+
+    @Value("${scout.split-and-upload-timeout}")
+    private int splitAndUploadTimeout;
 
     private final FindHl7LogsActivity findHl7LogsActivity =
             Workflow.newActivityStub(FindHl7LogsActivity.class,
@@ -62,10 +66,10 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
         Workflow.newActivityStub(SplitHl7LogActivity.class,
             ActivityOptions.newBuilder()
                 .setTaskQueue(CHILD_QUEUE)
-                .setStartToCloseTimeout(Duration.ofHours(1))
+                .setStartToCloseTimeout(Duration.ofMinutes(splitAndUploadTimeout))
                 .setRetryOptions(RetryOptions.newBuilder()
                     .setMaximumInterval(Duration.ofSeconds(30))
-                    .setMaximumAttempts(5)
+                    .setMaximumAttempts(2)
                     .build())
                 .build());
 
