@@ -116,20 +116,33 @@
       loop_control:
         label: '{{ item.path | basename }}'
 
-- name: Create Slack contact point secret
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: slack-contact-point
-        namespace: '{{ grafana_namespace }}'
-        labels:
-          grafana_alert: '1'
-      type: Opaque
-      stringData:
-        slack-contact-point.json: "{{ lookup('template', 'templates/grafana/contact-points/slack-contact-point.json') | to_nice_json }}"
+- name: Create contact point secrets
+  block:
+    - name: Find all Grafana contact points
+      find:
+        paths: 'templates/grafana/contact-points/'
+        patterns: '*.json.j2'
+      register: contact_point_files
+
+    - name: Create ConfigMap for each Grafana contact point
+      kubernetes.core.k8s:
+        state: present
+        definition: |
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: '{{ item.path | basename | regex_replace(".json$", "") }}'
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              grafana_alert: '1'
+          type: Opaque
+          stringData:
+            '{{ item.path | basename }}': 
+              '{{ lookup("template", item.path) | to_nice_json }}'
+      loop: '{{ contact_point_files.files }}'
+      when: grafana_alert_contact_point in (item.path | basename)
+      loop_control:
+        label: '{{ item.path | basename }}'
 
 - name: Create postgres datasource secret
   kubernetes.core.k8s:

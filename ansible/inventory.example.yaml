@@ -31,9 +31,11 @@ k3s_cluster:
     s3_loki_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Grafana config
+    grafana_alert_contact_point: slack # email or slack
+    grafana_smtp_host: '' # Include the port in the value
+    grafana_email_addresses: [] # Grafana validation requires an address if using email
     slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     slack_channel_id: $(echo $SLACK_CHANNEL | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    grafana_alert_contact_point: slack-scout
 
     # Jupyter config
     jupyter_auth_class: dummy # dummy or github

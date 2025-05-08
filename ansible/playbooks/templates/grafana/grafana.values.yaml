@@ -10,6 +10,9 @@ grafana.ini:
     serve_from_sub_path: true
   metrics:
     enabled: true
+  smtp:
+    enabled: "{{ grafana_smtp_host | default('', true) | length > 0 }}"
+    host: "{{ grafana_smtp_host | default('') }}"
 
 ingress:
   enabled: true
