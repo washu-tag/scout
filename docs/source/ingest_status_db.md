@@ -33,7 +33,7 @@ The `hl7_files` table contains the following columns:
 |-------------|-----------|-------------|
 | `hl7_file_path` | string | The path to the HL7 file. |
 | `log_file_path` | string | The path to the log file. |
-| `segment_number` | integer | The segment of the log file from which the HL7 file was extracted. |
+| `message_number` | integer | The message within the log file from which the HL7 file was extracted. |
 | `date` | date | The date of the log file. |
 
 ## Database Views
