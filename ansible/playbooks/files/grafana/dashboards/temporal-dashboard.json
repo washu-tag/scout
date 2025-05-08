@@ -140,7 +140,7 @@
           "format": "time_series",
           "hide": false,
           "interval": "",
-          "legendFormat": "{% raw %}{{ namespace }}{% endraw %}",
+          "legendFormat": "{{ namespace }}",
           "range": true,
           "refId": "A"
         }
@@ -242,7 +242,7 @@
           "exemplar": true,
           "expr": "sum(container_memory_working_set_bytes{pod!=\"\", namespace=~\"temporal|orchestration-workers\"}) by (namespace)\n+ on (namespace)\n(sum(windows_container_memory_usage_commit_bytes{container_id!=\"\" ,namespace=~\"temporal|orchestration-workers\"} * on (container_id) group_left (container, pod, namespace) max by (container, container_id, pod, namespace) (kube_pod_container_info{container_id!=\"\", namespace=~\"temporal|orchestration-workers\"}) OR kube_namespace_created * 0) by (namespace))\n",
           "interval": "",
-          "legendFormat": "{% raw %}{{ namespace }}{% endraw %}",
+          "legendFormat": "{{ namespace }}",
           "range": true,
           "refId": "A"
         }
@@ -342,7 +342,7 @@
           "exemplar": true,
           "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"temporal|orchestration-workers\", pod!=\"\"}[5m])) by (pod)",
           "interval": "1m",
-          "legendFormat": "{% raw %}{{ pod }}{% endraw %}",
+          "legendFormat": "{{ pod }}",
           "range": true,
           "refId": "A"
         }
@@ -442,7 +442,7 @@
           "exemplar": true,
           "expr": "sum(container_memory_working_set_bytes{namespace=~\"temporal|orchestration-workers\", pod!=\"\"}) by (pod)",
           "interval": "",
-          "legendFormat": "{% raw %}{{ pod }}{% endraw %}",
+          "legendFormat": "{{ pod }}",
           "range": true,
           "refId": "A"
         }
@@ -1339,7 +1339,7 @@
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{% raw %}{{ kubernetes_pod_name }}{% endraw %}",
+          "legendFormat": "{{ kubernetes_pod_name }}",
           "refId": "A"
         }
       ],
@@ -1532,7 +1532,7 @@
           },
           "expr": "sum by (temporal_service_type) (restarts)",
           "interval": "",
-          "legendFormat": "{% raw %}{{ temporal_service_type }}{% endraw %}",
+          "legendFormat": "{{ temporal_service_type }}",
           "refId": "A"
         }
       ],
@@ -1631,7 +1631,7 @@
           },
           "expr": "num_goroutines",
           "interval": "",
-          "legendFormat": "{% raw %}{{kubernetes_pod_name}}{% endraw %}",
+          "legendFormat": "{{kubernetes_pod_name}}",
           "refId": "A"
         }
       ],
@@ -1730,7 +1730,7 @@
           },
           "expr": "memory_allocated",
           "interval": "",
-          "legendFormat": "{% raw %}{{kubernetes_pod_name}}{% endraw %}",
+          "legendFormat": "{{kubernetes_pod_name}}",
           "refId": "A"
         }
       ],
@@ -1829,7 +1829,7 @@
           },
           "expr": "memory_heap",
           "interval": "",
-          "legendFormat": "{% raw %}{{kubernetes_pod_name}}{% endraw %}",
+          "legendFormat": "{{kubernetes_pod_name}}",
           "refId": "A"
         }
       ],
@@ -1927,7 +1927,7 @@
           },
           "expr": "memory_stack",
           "interval": "",
-          "legendFormat": "{% raw %}{{kubernetes_pod_name}}{% endraw %}",
+          "legendFormat": "{{kubernetes_pod_name}}",
           "refId": "A"
         }
       ],
@@ -2026,7 +2026,7 @@
           "editorMode": "code",
           "expr": "sum by (kubernetes_pod_name) (rate(memory_num_gc[5m]))",
           "interval": "",
-          "legendFormat": "{% raw %}{{kubernetes_pod_name}}{% endraw %}",
+          "legendFormat": "{{kubernetes_pod_name}}",
           "range": true,
           "refId": "A"
         }
@@ -2126,7 +2126,7 @@
           "expr": "histogram_quantile(0.95, sum(rate(memory_gc_pause_ms_bucket[5m])) by (kubernetes_pod_name, le))",
           "hide": false,
           "interval": "",
-          "legendFormat": "{% raw %}{{ kubernetes_pod_name }}{% endraw %}",
+          "legendFormat": "{{ kubernetes_pod_name }}",
           "refId": "A"
         }
       ],
@@ -2515,7 +2515,7 @@
           },
           "expr": "sum by (temporal_namespace) (rate(workflow_success{ operation=\"CompletionStats\"}[5m]))",
           "interval": "",
-          "legendFormat": "{% raw %}{{ temporal_namespace }}{% endraw %} ",
+          "legendFormat": "{{ temporal_namespace }} ",
           "refId": "A"
         }
       ],
@@ -2612,7 +2612,7 @@
           },
           "expr": "sum by (temporal_namespace) (rate(workflow_failed{ operation=\"CompletionStats\"}[5m]))",
           "interval": "",
-          "legendFormat": "{% raw %}{{ temporal_namespace }}{% endraw %} ",
+          "legendFormat": "{{ temporal_namespace }} ",
           "refId": "A"
         }
       ],
@@ -2709,7 +2709,7 @@
           },
           "expr": "sum by (temporal_namespace) (rate(workflow_timeout{ operation=\"CompletionStats\"}[5m]))",
           "interval": "",
-          "legendFormat": "{% raw %}{{ temporal_namespace }}{% endraw %} ",
+          "legendFormat": "{{ temporal_namespace }} ",
           "refId": "A"
         }
       ],
@@ -2806,7 +2806,7 @@
           },
           "expr": "sum by (temporal_namespace) (rate(workflow_terminate{ operation=\"CompletionStats\"}[5m]))",
           "interval": "",
-          "legendFormat": "{% raw %}{{ temporal_namespace }}{% endraw %} ",
+          "legendFormat": "{{ temporal_namespace }} ",
           "refId": "A"
         }
       ],
@@ -2903,7 +2903,7 @@
           },
           "expr": "sum by (temporal_namespace) (rate(workflow_cancel{ operation=\"CompletionStats\"}[5m]))",
           "interval": "",
-          "legendFormat": "{% raw %}{{ temporal_namespace }}{% endraw %} ",
+          "legendFormat": "{{ temporal_namespace }} ",
           "refId": "A"
         }
       ],
@@ -3120,7 +3120,7 @@
           },
           "expr": "sum by (operation) (rate(service_requests[5m]))",
           "interval": "",
-          "legendFormat": "{% raw %}{{operation}}{% endraw %}",
+          "legendFormat": "{{operation}}",
           "refId": "A"
         }
       ],
@@ -3251,7 +3251,7 @@
           "expr": "sum by (__name__) (rate({__name__=~\"service_errors_.*\"}[5m]))",
           "hide": true,
           "interval": "",
-          "legendFormat": "{% raw %}{{ $__name__ }}{% endraw %}",
+          "legendFormat": "{{ $__name__ }}",
           "refId": "D"
         }
       ],
@@ -3447,7 +3447,7 @@
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum(rate(service_latency_bucket[5m])) by (service_name, operation, le))",
           "interval": "",
-          "legendFormat": "{% raw %}{{service_name}}:{{operation}}{% endraw %}",
+          "legendFormat": "{{service_name}}:{{operation}}",
           "range": true,
           "refId": "A"
         }
@@ -3868,7 +3868,7 @@
           },
           "expr": " sum by (operation) (rate(persistence_requests[5m]))",
           "interval": "",
-          "legendFormat": "{% raw %}{{operation}}{% endraw %}",
+          "legendFormat": "{{operation}}",
           "refId": "A"
         }
       ],
@@ -4067,7 +4067,7 @@
           "exemplar": true,
           "expr": "histogram_quantile(0.95, sum(rate(persistence_latency_bucket[5m])) by (service_name, operation, le))",
           "interval": "",
-          "legendFormat": "{% raw %}{{service_name}}:{{operation}}{% endraw %}",
+          "legendFormat": "{{service_name}}:{{operation}}",
           "range": true,
           "refId": "A"
         }
@@ -4285,7 +4285,7 @@
           },
           "expr": "sum by (operation) (rate(client_requests[5m]))",
           "interval": "",
-          "legendFormat": "{% raw %}{{operation}}{% endraw %}",
+          "legendFormat": "{{operation}}",
           "refId": "A"
         }
       ],
@@ -4382,7 +4382,7 @@
           },
           "expr": "sum by (operation) (rate(client_errors[5m]))",
           "interval": "",
-          "legendFormat": "{% raw %}{{operation}}{% endraw %}",
+          "legendFormat": "{{operation}}",
           "refId": "A"
         }
       ],
@@ -4480,7 +4480,7 @@
           },
           "expr": "histogram_quantile(0.95, sum(rate(client_latency_bucket[5m])) by (operation, le))",
           "interval": "",
-          "legendFormat": "{% raw %}{{operation}}{% endraw %}",
+          "legendFormat": "{{operation}}",
           "refId": "A"
         }
       ],

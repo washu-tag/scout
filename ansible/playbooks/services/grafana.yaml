@@ -68,7 +68,7 @@
   block:
     - name: Find all Grafana dashboards
       find:
-        paths: 'templates/grafana/dashboards/'
+        paths: 'files/grafana/dashboards/'
         patterns: '*.json'
       register: dashboard_files
 
@@ -96,7 +96,7 @@
       find:
         paths: 'templates/grafana/alerts/'
         patterns: '*.json.j2'
-      register: alert_files
+      register: alert_templates
 
     - name: Create ConfigMap for each Grafana alert
       kubernetes.core.k8s:
@@ -112,7 +112,7 @@
           data:
             '{{ item.path | basename }}': 
               '{{ lookup("template", item.path) | to_nice_json }}'
-      loop: '{{ alert_files.files }}'
+      loop: '{{ alert_templates.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
 
@@ -122,7 +122,7 @@
       find:
         paths: 'templates/grafana/contact-points/'
         patterns: '*.json.j2'
-      register: contact_point_files
+      register: contact_point_templates
 
     - name: Create ConfigMap for each Grafana contact point
       kubernetes.core.k8s:
@@ -139,7 +139,7 @@
           stringData:
             '{{ item.path | basename }}': 
               '{{ lookup("template", item.path) | to_nice_json }}'
-      loop: '{{ contact_point_files.files }}'
+      loop: '{{ contact_point_templates.files }}'
       when: grafana_alert_contact_point in (item.path | basename)
       loop_control:
         label: '{{ item.path | basename }}'

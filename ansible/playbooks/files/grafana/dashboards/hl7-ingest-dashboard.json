@@ -131,7 +131,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "{% raw %}SELECT \n  TO_CHAR(l.date, \"YYYY-MM-DD\") as date,\n  h.error_message,\n  \"HL7\" as type,\n  h.file_path,\n  h.processed_at,\n  h.workflow_id,\n  h.activity_id\nFROM recent_hl7_files h\nLEFT JOIN recent_log_files l\n  ON l.file_path = h.log_file_path\nWHERE \n  h.error_message IS NOT NULL\n  AND l.date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n\nUNION ALL\n\nSELECT \n  TO_CHAR(date, \"YYYY-MM-DD\") as date,\n  error_message,\n  \"Log\" as type,\n  file_path,\n  processed_at,\n  workflow_id,\n  activity_id\nFROM recent_log_files\nWHERE \n  error_message IS NOT NULL\n  AND date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n\nORDER BY date DESC, processed_at DESC;\n{% endraw %}",
+          "rawSql": "SELECT \n  TO_CHAR(l.date, 'YYYY-MM-DD') as date,\n  h.error_message,\n  'HL7' as type,\n  h.file_path,\n  h.processed_at,\n  h.workflow_id,\n  h.activity_id\nFROM recent_hl7_files h\nLEFT JOIN recent_log_files l\n  ON l.file_path = h.log_file_path\nWHERE \n  h.error_message IS NOT NULL\n  AND l.date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n\nUNION ALL\n\nSELECT \n  TO_CHAR(date, 'YYYY-MM-DD') as date,\n  error_message,\n  'Log' as type,\n  file_path,\n  processed_at,\n  workflow_id,\n  activity_id\nFROM recent_log_files\nWHERE \n  error_message IS NOT NULL\n  AND date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n\nORDER BY date DESC, processed_at DESC;\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -182,8 +182,7 @@
             },
             "lineWidth": 1,
             "scaleDistribution": {
-              "log": 2,
-              "type": "symlog"
+              "type": "linear"
             },
             "thresholdsStyle": {
               "mode": "off"
@@ -244,7 +243,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "{% raw %}WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    \"1 day\"::interval\n  )::date AS date\n),\nsuccess_counts AS (\n  SELECT \n    l.date,\n    COUNT(h.*) as success_count\n  FROM recent_hl7_files h\n  LEFT JOIN recent_log_files l on h.log_file_path = l.file_path\n  WHERE h.error_message IS NULL\n  AND l.date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n  GROUP BY l.date\n)\nSELECT \n  TO_CHAR(date_series.date, \"YYYY-MM-DD\") as date,\n  COALESCE(success_counts.success_count, 0) as successful_files\nFROM date_series\nLEFT JOIN success_counts ON date_series.date = success_counts.date\nORDER BY date_series.date;{% endraw %}",
+          "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    '1 day'::interval\n  )::date AS date\n),\nsuccess_counts AS (\n  SELECT \n    l.date,\n    COUNT(h.*) as success_count\n  FROM recent_hl7_files h\n  LEFT JOIN recent_log_files l on h.log_file_path = l.file_path\n  WHERE h.error_message IS NULL\n  AND l.date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n  GROUP BY l.date\n)\nSELECT \n  TO_CHAR(date_series.date, 'YYYY-MM-DD') as date,\n  COALESCE(success_counts.success_count, 0) as successful_files\nFROM date_series\nLEFT JOIN success_counts ON date_series.date = success_counts.date\nORDER BY date_series.date;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -294,8 +293,7 @@
             },
             "lineWidth": 1,
             "scaleDistribution": {
-              "log": 2,
-              "type": "symlog"
+              "type": "linear"
             },
             "thresholdsStyle": {
               "mode": "off"
@@ -354,7 +352,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "{% raw %}WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    \"1 day\"::interval\n  )::date AS date\n),\nerror_counts AS (\n  SELECT \n    l.date,\n    COUNT(h.*) as error_count\n  FROM recent_hl7_files h\n  LEFT JOIN recent_log_files l on h.log_file_path = l.file_path\n  WHERE h.error_message IS NOT NULL\n  AND l.date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n  GROUP BY l.date\n)\nSELECT \n  TO_CHAR(date_series.date, \"YYYY-MM-DD\") as date,\n  COALESCE(error_counts.error_count, 0) as error_files\nFROM date_series\nLEFT JOIN error_counts ON date_series.date = error_counts.date\nORDER BY date_series.date;{% endraw %}",
+          "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    '1 day'::interval\n  )::date AS date\n),\nerror_counts AS (\n  SELECT \n    l.date,\n    COUNT(h.*) as error_count\n  FROM recent_hl7_files h\n  LEFT JOIN recent_log_files l on h.log_file_path = l.file_path\n  WHERE h.error_message IS NOT NULL\n  AND l.date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n  GROUP BY l.date\n)\nSELECT \n  TO_CHAR(date_series.date, 'YYYY-MM-DD') as date,\n  COALESCE(error_counts.error_count, 0) as error_files\nFROM date_series\nLEFT JOIN error_counts ON date_series.date = error_counts.date\nORDER BY date_series.date;",
           "refId": "A",
           "sql": {
             "columns": [
