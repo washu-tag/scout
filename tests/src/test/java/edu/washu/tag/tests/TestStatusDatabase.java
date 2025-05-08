@@ -210,7 +210,7 @@ public class TestStatusDatabase extends BaseTest {
         final LogRow logRowWithRetries = LogRow.failed("2015-01-01", improperLog);
 
         runLogTest(
-            SqlQuery.logTableQuery("20150101"),
+            SqlQuery.logTableQuery("20150101").overwriteWorkflowIds(Collections.singletonList(workflowId)),
             logRowWithRetries,
             logRowWithRetries,
             logRowWithRetries,
