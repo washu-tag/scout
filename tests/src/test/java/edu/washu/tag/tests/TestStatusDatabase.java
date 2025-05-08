@@ -203,7 +203,8 @@ public class TestStatusDatabase extends BaseTest {
 
         runLogTest(
             SqlQuery.logTableQuery(date),
-            logRow
+            logRow,
+            logRow //TODO why would this be here?
         );
 
         runLogTest(
