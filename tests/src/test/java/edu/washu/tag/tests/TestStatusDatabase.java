@@ -6,7 +6,6 @@ import edu.washu.tag.BaseTest;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -214,8 +213,7 @@ public class TestStatusDatabase extends BaseTest {
             logRowWithRetries
         );
 
-        final String filePath = "2019/01/06/11/201901061149256599.hl7";
-        final Hl7FileRow messageFailed = Hl7FileRow.failure(0, filePath,
+        final Hl7FileRow messageFailed = Hl7FileRow.failure(0, "",
             "HL7 message content is empty");
 
         runHl7FileTest(
