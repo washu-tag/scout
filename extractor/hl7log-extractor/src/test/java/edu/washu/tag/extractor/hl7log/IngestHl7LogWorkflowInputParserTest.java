@@ -84,6 +84,8 @@ class IngestHl7LogWorkflowInputParserTest {
             String.join(",", logPathsInput),
             null,
             null,
+            -1,
+            -1,
             null,
             null,
             null
@@ -108,6 +110,8 @@ class IngestHl7LogWorkflowInputParserTest {
             null,
             null,
             null,
+            -1,
+            -1,
             null,
             null,
             null
@@ -154,6 +158,8 @@ class IngestHl7LogWorkflowInputParserTest {
             null,
             null,
             null,
+            -1,
+            -1,
             null,
             null,
             null
@@ -189,6 +195,8 @@ class IngestHl7LogWorkflowInputParserTest {
             String.join(",", ignoredLogPaths),
             null,
             null,
+            -1,
+            -1,
             null,
             null,
             null
