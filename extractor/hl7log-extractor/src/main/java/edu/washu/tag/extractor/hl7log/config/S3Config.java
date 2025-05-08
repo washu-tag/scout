@@ -1,5 +1,6 @@
 package edu.washu.tag.extractor.hl7log.config;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +22,9 @@ public class S3Config {
     @Value("${s3.region}")
     private String region;
 
+    @Value("${s3.max-connections}")
+    private Integer maxConnections;
+
     @Bean
     public S3Client s3Client() {
         return S3Client.builder()
@@ -31,7 +35,7 @@ public class S3Config {
                         .pathStyleAccessEnabled(true)
                         .build())
                 .httpClientBuilder(ApacheHttpClient.builder()
-                        .maxConnections(100)
+                        .maxConnections(ObjectUtils.defaultIfNull(maxConnections, 50))
                         .connectionTimeout(Duration.ofSeconds(5)))
                 .build();
     }
