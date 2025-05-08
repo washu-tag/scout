@@ -8,8 +8,8 @@
       "interval": "1m",
       "rules": [
         {
-          "uid": "high_node_cpu_usage_alert_01",
-          "title": "High CPU Usage on Node",
+          "uid": "high_node_disk_usage_alert_01",
+          "title": "High Disk Usage on Node",
           "condition": "B",
           "data": [
             {
@@ -21,7 +21,7 @@
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "100 - (avg by(node) (rate(node_cpu_seconds_total{mode=\"idle\"}[10m])) * 100)",
+                "expr": "(1 - (avg by(node, mountpoint) (node_filesystem_free_bytes{fstype!~\"tmpfs|rootfs\"}) / avg by(node, mountpoint) (node_filesystem_size_bytes{fstype!~\"tmpfs|rootfs\"}))) * 100",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
@@ -41,7 +41,7 @@
                 "conditions": [
                   {
                     "evaluator": {
-                      "params": [90],
+                      "params": [85],
                       "type": "gt"
                     },
                     "operator": {
@@ -73,13 +73,13 @@
           "execErrState": "KeepLast",
           "for": "10m",
           "annotations": {
-            "summary": "Node {{ $labels.node }} has high CPU usage",
-            "description": "CPU usage is above 90% on node {{ $labels.node }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
+            "summary": "{% raw %}Node {{ $labels.node }} has high disk usage{% endraw %}",
+            "description": "{% raw %}Disk usage is above 85% on node {{ $labels.node }} for mountpoint {{ $labels.mountpoint }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%{% endraw %}"
           },
           "labels": {},
           "isPaused": false,
           "notification_settings": {
-            "receiver": "slack-scout"
+            "receiver": "{{ grafana_alert_contact_point }}"
           }
         }
       ]
