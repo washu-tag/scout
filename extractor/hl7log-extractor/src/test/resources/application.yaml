@@ -4,7 +4,7 @@ spring:
   temporal:
     connection:
       target: 127.0.0.1:7233
-      target.namespace: default
+    namespace: default
     start-workers: true
     workers-auto-discovery:
       packages:
@@ -22,13 +22,15 @@ spring:
 s3:
   endpoint: 'http://minio.minio:9000'
   region: us-east-1
+  max-connections: 50
 scout:
-  max-children: 100
   workflowArgDefaults:
     ingestHl7Log:
       logsRootPath: '/path/to/logs'
       scratchSpaceRootPath: '/path/to/scratch'
       hl7OutputPath: '/path/to/hl7/output'
+      splitAndUploadTimeout: 180
+      splitAndUploadConcurrency: 150
     ingestHl7ToDeltaLake:
       modalityMapPath: '/path/to/modality_map.csv'
       reportTableName: 'reports'

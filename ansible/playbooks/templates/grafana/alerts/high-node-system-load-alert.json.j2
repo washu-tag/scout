@@ -8,8 +8,8 @@
       "interval": "1m",
       "rules": [
         {
-          "uid": "high_node_cpu_iowait_usage_alert_01",
-          "title": "High IOWait CPU Usage on Node",
+          "uid": "high_system_load_alert_01",
+          "title": "High System Load on Node",
           "condition": "B",
           "data": [
             {
@@ -21,7 +21,7 @@
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "avg by(node) (rate(node_cpu_seconds_total{mode=\"iowait\"}[10m]) * 100)",
+                "expr": "avg(node_load1) by (node)",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
@@ -41,7 +41,7 @@
                 "conditions": [
                   {
                     "evaluator": {
-                      "params": [70],
+                      "params": [1000],
                       "type": "gt"
                     },
                     "operator": {
@@ -73,13 +73,13 @@
           "execErrState": "KeepLast",
           "for": "10m",
           "annotations": {
-            "summary": "Node {{ $labels.node }} has high IOwait CPU usage",
-            "description": "IOwait CPU usage is above 70% on node {{ $labels.node }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
+            "summary": "{% raw %}Node {{ $labels.node }} has high system load{% endraw %}",
+            "description": "{% raw %}System load is above 1000 on node {{ $labels.node }}. Current load: {{ printf \"%.3f\" $values.A.Value }}%{% endraw %}"
           },
           "labels": {},
           "isPaused": false,
           "notification_settings": {
-            "receiver": "slack-scout"
+            "receiver": "{{ grafana_alert_contact_point }}"
           }
         }
       ]

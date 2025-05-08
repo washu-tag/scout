@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IngestHl7LogWorkflowInputParser {
+
     private static final Logger logger = LoggerFactory.getLogger(IngestHl7LogWorkflowInputParser.class);
 
     /**
@@ -48,6 +49,9 @@ public class IngestHl7LogWorkflowInputParser {
         String scratchSpaceRootPath = DefaultArgs.getScratchSpaceRootPath(input.scratchSpaceRootPath());
         String hl7OutputPath = DefaultArgs.getHl7OutputPath(input.hl7OutputPath());
 
+        Integer splitAndUploadTimeout = DefaultArgs.getSplitAndUploadTimeout(input.splitAndUploadTimeout());
+        Integer splitAndUploadConcurrency = DefaultArgs.getSplitAndUploadConcurrency(input.splitAndUploadConcurrency());
+
         // Do we have values?
         boolean hasLogPathsInput = input.logPaths() != null && !input.logPaths().isBlank();
         boolean hasLogsRootPathInput = logsRootPath != null && !logsRootPath.isBlank();
@@ -72,7 +76,9 @@ public class IngestHl7LogWorkflowInputParser {
                 "WorkflowId {} - Using date {} from scheduled workflow start time {} ({} in TZ {}) minus one day",
                 workflowInfo.getWorkflowId(), date, scheduledTimeUtc, scheduledTimeLocal, localTz
             );
-            return new IngestHl7LogWorkflowParsedInput(List.of(logsRootPath), date, scratchSpaceRootPath, logsRootPath, hl7OutputPath);
+            return new IngestHl7LogWorkflowParsedInput(
+                List.of(logsRootPath), date, scratchSpaceRootPath, logsRootPath, hl7OutputPath, splitAndUploadTimeout, splitAndUploadConcurrency
+            );
         } else if (isScheduledRun) {
             // We are in a scheduled run without a root path. This is an error.
             logger.error(
@@ -109,7 +115,9 @@ public class IngestHl7LogWorkflowInputParser {
             input, scratchSpaceRootPath, hl7OutputPath, hasLogPathsInput, hasLogsRootPathInput, relativeLogPathsWithoutRoot
         );
 
-        return new IngestHl7LogWorkflowParsedInput(logPaths, input.date(), scratchSpaceRootPath, logsRootPath, hl7OutputPath);
+        return new IngestHl7LogWorkflowParsedInput(
+            logPaths, input.date(), scratchSpaceRootPath, logsRootPath, hl7OutputPath, splitAndUploadTimeout, splitAndUploadConcurrency
+        );
     }
 
     private static void throwOnInvalidInput(

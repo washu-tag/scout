@@ -8,8 +8,8 @@
       "interval": "1m",
       "rules": [
         {
-          "uid": "high_node_mount_inode_usage_alert_01",
-          "title": "High Inode Usage on Node Mountpoint",
+          "uid": "high_node_cpu_usage_alert_01",
+          "title": "High CPU Usage on Node",
           "condition": "B",
           "data": [
             {
@@ -21,7 +21,7 @@
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "(1 - (node_filesystem_files_free{device!~'rootfs', fstype!~\"tmpfs|ceph\"} / node_filesystem_files{device!~'rootfs', fstype!~\"tmpfs|ceph\"})) * 100",
+                "expr": "100 - (avg by(node) (rate(node_cpu_seconds_total{mode=\"idle\"}[10m])) * 100)",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
@@ -73,13 +73,13 @@
           "execErrState": "KeepLast",
           "for": "10m",
           "annotations": {
-            "summary": "Node {{ $labels.node }} has high inode usage on mountpoint {{ $labels.mountpoint }}",
-            "description": "Inode usage is above 90% on node {{ $labels.node }} for mountpoint {{ $labels.mountpoint }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
+            "summary": "{% raw %}Node {{ $labels.node }} has high CPU usage{% endraw %}",
+            "description": "{% raw %}CPU usage is above 90% on node {{ $labels.node }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%{% endraw %}"
           },
           "labels": {},
           "isPaused": false,
           "notification_settings": {
-            "receiver": "slack-scout"
+            "receiver": "{{ grafana_alert_contact_point }}"
           }
         }
       ]

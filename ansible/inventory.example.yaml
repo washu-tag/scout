@@ -31,6 +31,14 @@ k3s_cluster:
     s3_loki_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Grafana config
+    grafana_alert_contact_point: slack # email or slack
+    grafana_smtp_host: '' # Include the port in the value
+    grafana_smtp_user: $(echo $SMTP_USER | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    grafana_smtp_password: $(echo $SMTP_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    grafana_smtp_from_address: ''
+    grafana_smtp_from_name: 'Scout'
+    grafana_smtp_skip_verify: false
+    grafana_email_recipients: [''] # Grafana validation requires an address if using email
     slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     slack_channel_id: $(echo $SLACK_CHANNEL | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
@@ -89,6 +97,10 @@ k3s_cluster:
     # Database table names
     report_delta_table_name: reports
     ingest_postgres_table_name: ingest
+
+    # Extractor performance tuning
+    hl7log_extractor_timeout: 180
+    hl7log_extractor_concurrency: 150
 
     # Resources
     hl7_transformer_spark_memory: 8g
