@@ -84,8 +84,8 @@
             labels:
               grafana_dashboard: '1'
           data:
-            '{{ item.path | basename }}': 
-              '{{ lookup("template", item.path) | to_nice_json }}'
+            '{{ item.path | basename }}':
+              {{ lookup("file", item.path) | to_nice_json }}
       loop: '{{ dashboard_files.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
@@ -105,12 +105,12 @@
           apiVersion: v1
           kind: ConfigMap
           metadata:
-            name: '{{ item.path | basename | regex_replace(".json$", "") }}'
+            name: '{{ item.path | basename | regex_replace(".json.j2$", "") }}'
             namespace: '{{ grafana_namespace }}'
             labels:
               grafana_alert: '1'
           data:
-            '{{ item.path | basename }}': 
+            '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}': 
               '{{ lookup("template", item.path) | to_nice_json }}'
       loop: '{{ alert_templates.files }}'
       loop_control:
@@ -131,13 +131,13 @@
           apiVersion: v1
           kind: Secret
           metadata:
-            name: '{{ item.path | basename | regex_replace(".json$", "") }}'
+            name: '{{ item.path | basename | regex_replace(".json.j2$", "") }}'
             namespace: '{{ grafana_namespace }}'
             labels:
               grafana_alert: '1'
           type: Opaque
           stringData:
-            '{{ item.path | basename }}': 
+            '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}':
               '{{ lookup("template", item.path) | to_nice_json }}'
       loop: '{{ contact_point_templates.files }}'
       when: grafana_alert_contact_point in (item.path | basename)
