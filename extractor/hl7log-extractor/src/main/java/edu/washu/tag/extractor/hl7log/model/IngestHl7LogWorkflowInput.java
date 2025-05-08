@@ -21,8 +21,8 @@ public record IngestHl7LogWorkflowInput(
         String logPaths,
         String scratchSpaceRootPath,
         String hl7OutputPath,
-        int splitAndUploadTimeout,
-        int splitAndUploadConcurrency,
+        Integer splitAndUploadTimeout,
+        Integer splitAndUploadConcurrency,
         String modalityMapPath,
         String reportTableName,
         ContinueIngestWorkflow continued
@@ -33,8 +33,8 @@ public record IngestHl7LogWorkflowInput(
             null,
             null,
             null,
-            -1,
-            -1,
+            null,
+            null,
             null,
             null,
             null

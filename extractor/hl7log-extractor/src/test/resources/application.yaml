@@ -29,6 +29,8 @@ scout:
       logsRootPath: '/path/to/logs'
       scratchSpaceRootPath: '/path/to/scratch'
       hl7OutputPath: '/path/to/hl7/output'
+      splitAndUploadTimeout: 180
+      splitAndUploadConcurrency: 150
     ingestHl7ToDeltaLake:
       modalityMapPath: '/path/to/modality_map.csv'
       reportTableName: 'reports'
