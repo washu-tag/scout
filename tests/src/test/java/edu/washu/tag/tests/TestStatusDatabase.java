@@ -202,10 +202,10 @@ public class TestStatusDatabase extends BaseTest {
     @Test
     public void testIngestImproperLogPath() {
         final String improperLog = "/data/20150101.log";
-        temporalClient.launchIngest(
+        final String workflowId = temporalClient.launchIngest(
             new IngestJobInput().setLogPaths(improperLog),
             false
-        );
+        ).getIngestWorkflowId();
 
         final LogRow logRowWithRetries = LogRow.failed("2015-01-01", improperLog);
 
@@ -219,7 +219,7 @@ public class TestStatusDatabase extends BaseTest {
         );
 
         runLogTest(
-            SqlQuery.logViewQuery("20150101"),
+            SqlQuery.logViewQuery("20150101").overwriteWorkflowIds(Collections.singletonList(workflowId)),
             logRowWithRetries
         );
     }
@@ -328,7 +328,7 @@ public class TestStatusDatabase extends BaseTest {
         private final String tableOrView;
         private final String filterColumn;
         private final String logDate;
-        private final List<String> filteredWorkflowIds;
+        private List<String> filteredWorkflowIds;
 
         private SqlQuery(String tableOrView, String filterColumn, String logDate, List<String> filteredWorkflowIds) {
             this.tableOrView = tableOrView;
@@ -359,6 +359,11 @@ public class TestStatusDatabase extends BaseTest {
 
         private static SqlQuery hl7FileViewQuery(String logDate, List<String> filteredWorkflowIds) {
             return hl7FileQuery(VIEW_RECENT_HL7_FILES, logDate, filteredWorkflowIds);
+        }
+
+        private SqlQuery overwriteWorkflowIds(List<String> workflowIds) {
+            filteredWorkflowIds = workflowIds;
+            return this;
         }
 
         private String build() {
