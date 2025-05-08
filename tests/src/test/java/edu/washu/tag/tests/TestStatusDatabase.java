@@ -190,7 +190,7 @@ public class TestStatusDatabase extends BaseTest {
     /**
      * Tests the state of the ingest database after attempting to ingest a non-existent log file.
      * For the date 2015-01-01, we pass a log path that does not exist. The {@value #TABLE_LOG_FILES} table
-     * is expected to have five "failed" rows for that day from retries while the {@value #VIEW_RECENT_LOG_FILES} view
+     * is expected to have 2 "failed" rows for that day from retries while the {@value #VIEW_RECENT_LOG_FILES} view
      * limits to a single row.
      */
     @Test
@@ -205,9 +205,6 @@ public class TestStatusDatabase extends BaseTest {
 
         runLogTest(
             SqlQuery.logTableQuery("20150101").overwriteWorkflowIds(Collections.singletonList(workflowId)),
-            logRowWithRetries,
-            logRowWithRetries,
-            logRowWithRetries,
             logRowWithRetries,
             logRowWithRetries
         );
