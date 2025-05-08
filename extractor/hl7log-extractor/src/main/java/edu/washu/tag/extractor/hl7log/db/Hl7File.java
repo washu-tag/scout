@@ -1,28 +1,17 @@
 package edu.washu.tag.extractor.hl7log.db;
 
+import java.time.LocalDate;
+
 public record Hl7File(
+    String hl7FilePath,
     String logFilePath,
-    int segmentNumber,
-    String filePath,
-    String status,
-    String errorMessage,
-    String workflowId,
-    String activityId
+    int messageNumber,
+    LocalDate date
 ) {
-
-    public static Hl7File success(String logFilePath, int segmentNumber, String filePath, String workflowId, String activityId) {
-        return new Hl7File(logFilePath, segmentNumber, filePath, DbUtils.SUCCEEDED, null, workflowId, activityId);
-    }
-
-    public static Hl7File error(String logFilePath, int segmentNumber, String error, String workflowId, String activityId) {
-        return new Hl7File(logFilePath, segmentNumber, null, DbUtils.FAILED, error, workflowId, activityId);
-    }
-
-    public static Hl7File error(String logFilePath, int segmentNumber, String hl7FilePath, String error, String workflowId, String activityId) {
-        return new Hl7File(logFilePath, segmentNumber, hl7FilePath, DbUtils.FAILED, error, workflowId, activityId);
-    }
-
-    public boolean isSuccess() {
-        return DbUtils.SUCCEEDED.equals(status);
+    private static final String UPSERT_ON_CONFLICT_SQL =
+         "ON CONFLICT (log_file_path, message_number) "
+            + "DO UPDATE SET hl7_file_path = EXCLUDED.hl7_file_path, date = EXCLUDED.date";
+    public static String getUpsertSql() {
+        return UPSERT_ON_CONFLICT_SQL;
     }
 }

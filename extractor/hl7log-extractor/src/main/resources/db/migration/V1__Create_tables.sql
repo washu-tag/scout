@@ -12,5 +12,6 @@ CREATE TABLE hl7_files (
    hl7_file_path TEXT,
    log_file_path TEXT,
    message_number INT,
-   date DATE
+   date DATE,
+   UNIQUE (log_file_path, message_number)
 );
