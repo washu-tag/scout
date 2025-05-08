@@ -10,8 +10,8 @@ public class DefaultArgs {
     private static String logsRootPath;
     private static String scratchSpaceRootPath;
     private static String hl7OutputPath;
-    private static int splitAndUploadTimeout;
-    private static int splitAndUploadConcurrency;
+    private static Integer splitAndUploadTimeout;
+    private static Integer splitAndUploadConcurrency;
     private static String modalityMapPath;
     private static String reportTableName;
 
@@ -40,18 +40,18 @@ public class DefaultArgs {
     }
 
     @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadTimeout}")
-    public void setSplitAndUploadTimeout(int splitAndUploadTimeout) {
+    public void setSplitAndUploadTimeout(Integer splitAndUploadTimeout) {
         DefaultArgs.splitAndUploadTimeout = splitAndUploadTimeout;
     }
-    public static int getSplitAndUploadTimeout(int input) {
+    public static Integer getSplitAndUploadTimeout(Integer input) {
         return getValueOrDefault(input, splitAndUploadTimeout);
     }
 
     @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadConcurrency}")
-    public void setSplitAndUploadConcurrency(int splitAndUploadConcurrency) {
+    public void setSplitAndUploadConcurrency(Integer splitAndUploadConcurrency) {
         DefaultArgs.splitAndUploadConcurrency = splitAndUploadConcurrency;
     }
-    public static int getSplitAndUploadConcurrency(int input) {
+    public static Integer getSplitAndUploadConcurrency(Integer input) {
         return getValueOrDefault(input, splitAndUploadConcurrency);
     }
 
@@ -74,7 +74,7 @@ public class DefaultArgs {
     private static String getValueOrDefault(String value, String defaultValue) {
         return (value == null || value.isEmpty()) ? defaultValue : value;
     }
-    private static int getValueOrDefault(int value, int defaultValue) {
-        return (value == -1) ? defaultValue : value;
+    private static Integer getValueOrDefault(Integer value, Integer defaultValue) {
+        return (value == null || value == -1) ? defaultValue : value;
     }
 }
