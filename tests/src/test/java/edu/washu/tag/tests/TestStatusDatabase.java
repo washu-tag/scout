@@ -171,7 +171,7 @@ public class TestStatusDatabase extends BaseTest {
 
         final String filePath = "2007/10/21/15/200710211522316785.hl7";
         final Hl7FileRow firstMessageSuccessful = Hl7FileRow.success(0, filePath);
-        final Hl7FileRow nextMessageFailed = Hl7FileRow.failure(1, null,
+        final Hl7FileRow nextMessageFailed = Hl7FileRow.failure(1, "",
             "HL7 content did not contain a timestamp header line; this usually means it is a repeat of the previous message's HL7 content");
 
         runHl7FileTest(
