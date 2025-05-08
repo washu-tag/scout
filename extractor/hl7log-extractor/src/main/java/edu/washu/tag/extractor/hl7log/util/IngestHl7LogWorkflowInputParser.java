@@ -27,12 +27,16 @@ public class IngestHl7LogWorkflowInputParser {
     /**
      * Parse and validate input.
      * <p>
-     * Ways this workflow can be invoked: 1. In a scheduled run, we ignore the other args and use the scheduled time to find "yesterday's" logs. These logs must
-     * be found under the logsRootPath (either provided in the args or the default), and they must have a date in the file name in the format YYYYMMDD. 2. In a
-     * non-scheduled run we must find logs using the other args. We first assemble a list of paths to check for logs. 2a. We have a logPaths input value. The
-     * paths can be absolute (used as-is) or relative (resolved against logsRootPath). 2b. With no logPaths input, we will use logsRootPath to find all log
-     * files under that path. Regardless of the source of the paths, we will check each path for log files. If a path is a directory we search it recursively
-     * for files ending in ".log". If a path is a file we use it as-is. If a date arg is provided, we will only look for logs with that date in the file name.
+     * Ways this workflow can be invoked:
+     * 1. In a scheduled run, we ignore the other args and use the scheduled time to find "yesterday's" logs.
+     *    These logs must be found under the logsRootPath (either provided in the args or the default), and they
+     *    must have a date in the file name in the format YYYYMMDD.
+     * 2. In a non-scheduled run we must find logs using the other args. We first assemble a list of paths to check for logs.
+     *  2a. We have a logPaths input value. The paths can be absolute (used as-is) or relative (resolved against logsRootPath).
+     *  2b. With no logPaths input, we will use logsRootPath to find all log files under that path.
+     *  Regardless of the source of the paths, we will check each path for log files. If a path is a directory we search
+     *  it recursively for files ending in ".log". If a path is a file we use it as-is.
+     *  If a date arg is provided, we will only look for logs with that date in the file name.
      *
      * @param input Workflow input
      * @return Resolved inputs against defaults and paths made absolute
