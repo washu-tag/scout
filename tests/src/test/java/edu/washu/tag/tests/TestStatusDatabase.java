@@ -172,7 +172,7 @@ public class TestStatusDatabase extends BaseTest {
 
         final String filePath = "2007/10/21/15/200710211522316785.hl7";
         final Hl7FileRow firstMessageSuccessful = Hl7FileRow.success(0, filePath);
-        final Hl7FileRow nextMessageFailed = Hl7FileRow.failure(1, "",
+        final Hl7FileRow nextMessageFailed = Hl7FileRow.failure(1, null,
             "HL7 content did not contain a timestamp header line; this usually means it is a repeat of the previous message's HL7 content");
 
         runHl7FileTest(
@@ -320,7 +320,7 @@ public class TestStatusDatabase extends BaseTest {
             false
         ).getIngestWorkflowId();
 
-        final LogRow logRowWithRetries = LogRow.failed("2015-01-01", improperLog);
+        final LogRow logRowWithRetries = LogRow.failed("2015-01-01", "NoSuchFileException: " + improperLog);
 
         runLogTest(
             SqlQuery.logTableQuery("20150101").overwriteWorkflowIds(Collections.singletonList(workflowId)),

@@ -76,7 +76,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         } catch (IOException e) {
             logger.error("WorkflowId {} ActivityId {} - Could not read log file {}",
                 activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.logPath(), e);
-            ingestDbService.insertLogFile(LogFile.error(input.logPath(), String.format("%s: %s", e.getClass(), e.getMessage()), workflowId, activityId));
+            ingestDbService.insertLogFile(LogFile.error(input.logPath(), String.format("%s: %s", e.getClass().getSimpleName(), e.getMessage()), workflowId, activityId));
             throw ApplicationFailure.newFailureWithCause("Could not read log file " + input.logPath(), "type", e);
         }
 
