@@ -198,18 +198,18 @@ public class TestStatusDatabase extends BaseTest {
      */
     @Test
     public void testStatusDbHl7EmptyError() {
-        final LogRow logRow = LogRow.success("2019-01-06");
-        final String date = logRow.date.replaceAll("-", "");
+        final LogRow logRowWithRetries = LogRow.success("2019-01-06");
+        final String date = logRowWithRetries.date.replaceAll("-", "");
 
         runLogTest(
             SqlQuery.logTableQuery(date),
-            logRow,
-            logRow //TODO why would this be here?
+            logRowWithRetries,
+            logRowWithRetries
         );
 
         runLogTest(
             SqlQuery.logViewQuery(date),
-            logRow
+            logRowWithRetries
         );
 
         final String filePath = "2019/01/06/11/201901061149256599.hl7";
@@ -218,6 +218,7 @@ public class TestStatusDatabase extends BaseTest {
 
         runHl7FileTest(
             SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflowId)),
+            messageFailed,
             messageFailed
         );
 
