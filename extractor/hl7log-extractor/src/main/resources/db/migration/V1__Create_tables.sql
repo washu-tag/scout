@@ -1,7 +1,7 @@
-CREATE TABLE log_files (
+CREATE TABLE file_statuses (
    id SERIAL PRIMARY KEY,
    file_path TEXT,
-   date DATE,
+   type TEXT,
    status TEXT,
    error_message TEXT,
    workflow_id TEXT,
@@ -9,13 +9,9 @@ CREATE TABLE log_files (
    processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE hl7_files (
-   id SERIAL PRIMARY KEY,
+   hl7_file_path TEXT,
    log_file_path TEXT,
-   segment_number INT,
-   file_path TEXT,
-   status TEXT,
-   error_message TEXT,
-   workflow_id TEXT,
-   activity_id TEXT,
-   processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+   message_number INT,
+   date DATE,
+   UNIQUE (log_file_path, message_number)
 );
