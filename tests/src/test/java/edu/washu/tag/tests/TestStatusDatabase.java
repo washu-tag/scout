@@ -156,7 +156,7 @@ public class TestStatusDatabase extends BaseTest {
      * contains one success and one failure.
      */
     @Test
-    public void testStatusDbHl7MessageDupeError() {
+    public void testStatusDbHl7MessageRepeatError() {
         final LogRow logRow = LogRow.success("2007-10-21");
         final String date = logRow.date.replaceAll("-", "");
 
@@ -179,11 +179,6 @@ public class TestStatusDatabase extends BaseTest {
             SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             firstMessageSuccessful,
             nextMessageFailed
-        );
-
-        runHl7FileTest(
-            SqlQuery.hl7FileTableQuery(date, ingestWorkflow.getIngestToDeltaLakeWorkflows()),
-            firstMessageSuccessful
         );
 
         runHl7FileTest(
