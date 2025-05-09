@@ -1,0 +1,29 @@
+# In Grafana, the entire notification policy tree is considered a single, large resource. Add new specific policies as sub-policies
+# under the root policy. Since specific policies may depend on each other, you cannot provision subsets of the policy tree; the
+# entire tree must be defined in a single place.
+# Source: https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/#import-notification-policies
+apiVersion: 1
+policies:
+  - orgId: 1
+    receiver: "{{ grafana_alert_contact_point }}"
+    group_by:
+      - grafana_folder
+      - alertname
+    mute_time_intervals: [ ]
+    # <duration> How long to initially wait to send a notification for a group
+    #            of alerts. Allows to collect more initial alerts for the same group.
+    #            (Usually ~0s to few minutes), default = 30s
+    group_wait: 30s
+    # <duration> How long to wait before sending a notification about new alerts that
+    #            are added to a group of alerts for which an initial notification has
+    #            already been sent. (Usually ~5m or more), default = 5m
+    group_interval: 5m
+    # <duration>  How long to wait before sending a notification again if it has already
+    #             been sent successfully for an alert. (Usually ~3h or more), default = 4h
+    repeat_interval: 4h
+    # <list> Zero or more child policies. The schema is the same as the root policy.
+    routes:
+      - receiver: "{{ grafana_alert_contact_point }}"
+        matchers:
+          - alertname = no_hl7_from_scheduled_ingest_alert_01
+        repeat_interval: 25h # Setting to 25hrs makes the date change, so it is no longer the same alert
