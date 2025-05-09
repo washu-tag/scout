@@ -3,6 +3,7 @@ package edu.washu.tag.extractor.hl7log.activity;
 import static edu.washu.tag.extractor.hl7log.util.Constants.CHILD_QUEUE;
 
 import edu.washu.tag.extractor.hl7log.db.DbUtils;
+import edu.washu.tag.extractor.hl7log.db.DbUtils.FileStatusStatus;
 import edu.washu.tag.extractor.hl7log.db.DbUtils.FileStatusType;
 import edu.washu.tag.extractor.hl7log.db.FileStatus;
 import edu.washu.tag.extractor.hl7log.db.IngestDbService;
@@ -95,6 +96,16 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.logPath(), e);
             ingestDbService.insertFileStatus(FileStatus.failed(input.logPath(), FileStatusType.LOG, String.format("%s: %s", e.getClass().getSimpleName(), e.getMessage()), workflowId, activityId));
             throw ApplicationFailure.newFailureWithCause("Could not read log file " + input.logPath(), "type", e);
+        }
+
+        // If we parsed no HL7 messages, fail the activity
+        if (segmentResults.size() == 1 && segmentResults.getFirst().type().equals(FileStatusType.LOG.getType())
+            && segmentResults.getFirst().status().equals(FileStatusStatus.FAILED.getStatus())) {
+            // Write the log file status to the database
+            ingestDbService.insertFileStatus(segmentResults.getFirst());
+            // Fail the activity
+            logger.error("WorkflowId {} ActivityId {} - No HL7 messages found in log file {}", workflowId, activityId, input.logPath());
+            throw ApplicationFailure.newFailure("No HL7 messages found in log file", "type");
         }
 
         // Insert the HL7 file paths into the database
