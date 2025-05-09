@@ -10,7 +10,7 @@
     "spark.hadoop.fs.s3a.path.style.access": "true",
     "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
     "spark.hadoop.hive.metastore.uris": "thrift://hive-metastore.hive:9083",
-    "spark.sql.warehouse.dir": "s3a://lake/delta"
+    "spark.sql.warehouse.dir": "s3a://ci-lake/delta"
   },
   "postgresConfig": {
     "url": "jdbc:postgresql://postgresql-cluster-r.cloudnative-pg:5432/ingest",

@@ -87,7 +87,7 @@ def import_hl7_files_to_deltalake(
             )
         )
 
-        # Filter out rows from empty / unparsable HL7 files
+        # Filter out rows from unparsable HL7 files
         message_control_id = segment_field("MSH", 10)
         error_paths = [
             row.source_file
@@ -99,7 +99,7 @@ def import_hl7_files_to_deltalake(
             # Write error paths to db
             write_errors(
                 error_paths,
-                "HL7 file is empty or unparsable",
+                "File is not parsable as HL7",
                 activity.info().workflow_id,
                 activity.info().activity_id,
             )

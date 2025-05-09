@@ -3,7 +3,6 @@ package edu.washu.tag.tests;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import edu.washu.tag.BaseTest;
-import edu.washu.tag.model.IngestJobDetails;
 import edu.washu.tag.model.IngestJobInput;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -12,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
@@ -25,11 +25,10 @@ public class TestStatusDatabase extends BaseTest {
     private static final String VIEW_RECENT_HL7_FILES = "recent_hl7_files";
 
     /**
-     * Tests the state of the ingest database after the test data has been processed by Scout.
-     * In particular, for the date 1995-04-02, there should be 2 HL7 messages represented by the log file.
-     * The {@value #TABLE_LOG_FILES} table and {@value #VIEW_RECENT_LOG_FILES} view should have a single
-     * successful row corresponding to that date, while the {@value #TABLE_HL7_FILES} table and
-     * {@value #VIEW_RECENT_HL7_FILES} view should contain 2 rows for that date, one per file.
+     * Tests the state of the ingest database after the test data has been processed by Scout. In particular, for the date 1995-04-02, there should be 2 HL7
+     * messages represented by the log file. The {@value #TABLE_LOG_FILES} table and {@value #VIEW_RECENT_LOG_FILES} view should have a single successful row
+     * corresponding to that date, while the {@value #TABLE_HL7_FILES} table and {@value #VIEW_RECENT_HL7_FILES} view should contain 2 rows for that date, one
+     * per file.
      */
     @Test
     public void testStatusDbSuccess() {
@@ -99,14 +98,11 @@ public class TestStatusDatabase extends BaseTest {
     }
 
     /**
-     * Tests the state of the ingest database after the test data has been processed by Scout.
-     * In particular, for the date 2023-01-13, the log file contains an unusable HL7 message followed by
-     * 2 usable ones. The {@value #TABLE_LOG_FILES} table and {@value #VIEW_RECENT_LOG_FILES} view should have
-     * a single successful row corresponding to that date. The {@value #TABLE_HL7_FILES} table contains
-     * a successful row for the improper message and 2 rows for the valid messages under the overall workflow id,
-     * with a failing row for the improper message under one of the delta lake ingest child workflows. The
-     * {@value #VIEW_RECENT_HL7_FILES} view contains the same row except for the successful row for the improper
-     * HL7 message.
+     * Tests the state of the ingest database after the test data has been processed by Scout. In particular, for the date 2023-01-13, the log file contains an
+     * unusable HL7 message followed by 2 usable ones. The {@value #TABLE_LOG_FILES} table and {@value #VIEW_RECENT_LOG_FILES} view should have a single
+     * successful row corresponding to that date. The {@value #TABLE_HL7_FILES} table contains a successful row for the improper message and 2 rows for the
+     * valid messages under the overall workflow id, with a failing row for the improper message under one of the delta lake ingest child workflows. The
+     * {@value #VIEW_RECENT_HL7_FILES} view contains the same row except for the successful row for the improper HL7 message.
      */
     @Test
     public void testStatusDbHl7MessageParseError() {
@@ -126,7 +122,7 @@ public class TestStatusDatabase extends BaseTest {
         final Hl7FileRow firstMessageSuccessful = Hl7FileRow.success(0, failedFilePath);
         final Hl7FileRow secondHl7Message = Hl7FileRow.success(1, "2023/01/13/18/202301131807178754.hl7");
         final Hl7FileRow thirdHl7Message = Hl7FileRow.success(2, "2023/01/13/20/202301132017309482.hl7");
-        final Hl7FileRow firstMessageFailed = Hl7FileRow.failure(0, failedFilePath, "HL7 file is empty or unparsable");
+        final Hl7FileRow firstMessageFailed = Hl7FileRow.failure(0, failedFilePath, "File is not parsable as HL7");
 
         runHl7FileTest(
             SqlQuery.hl7FileTableQuery("20230113", Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
@@ -153,9 +149,127 @@ public class TestStatusDatabase extends BaseTest {
     }
 
     /**
-     * Tests the state of the ingest database after the test data has been processed by Scout.
-     * This test is essentially the same as {@link #testStatusDbSuccess} but the log file has some extra
-     * chatter in the logs that was causing an issue in production, which is checked by this test.
+     * Tests the state of the ingest database after the test data has been processed by Scout. In particular, for the date 2007-10-21, the log file contains
+     * an HL7 message with repeated content. The {@value #TABLE_LOG_FILES} table and {@value #VIEW_RECENT_LOG_FILES} view should have a single
+     * successful row corresponding to that date. The {@value #TABLE_HL7_FILES} table contains a successful row for the HL7 and a failure for the repeat
+     * as part of the ingest workflow, and then a successful row for the HL7 as part of the delta lake workflow. The {@value #VIEW_RECENT_HL7_FILES} view
+     * contains one success and one failure.
+     */
+    @Test
+    public void testStatusDbHl7MessageRepeatError() {
+        final LogRow logRow = LogRow.success("2007-10-21");
+        final String date = logRow.date.replaceAll("-", "");
+
+        runLogTest(
+            SqlQuery.logTableQuery(date),
+            logRow
+        );
+
+        runLogTest(
+            SqlQuery.logViewQuery(date),
+            logRow
+        );
+
+        final String filePath = "2007/10/21/15/200710211522316785.hl7";
+        final Hl7FileRow firstMessageSuccessful = Hl7FileRow.success(0, filePath);
+        final Hl7FileRow nextMessageFailed = Hl7FileRow.failure(1, null,
+            "HL7 content did not contain a timestamp header line; this usually means it is a repeat of the previous message's HL7 content");
+
+        runHl7FileTest(
+            SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
+            firstMessageSuccessful,
+            nextMessageFailed
+        );
+
+        runHl7FileTest(
+            SqlQuery.hl7FileViewQuery(date, Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
+            firstMessageSuccessful,
+            nextMessageFailed
+        );
+    }
+
+    /**
+     * Tests the state of the ingest database after the test data has been processed by Scout. In particular, for the date 2019-01-06, the log file contains
+     * an HL7 message with no content. The {@value #TABLE_LOG_FILES} table and {@value #VIEW_RECENT_LOG_FILES} view should have a single
+     * successful row corresponding to that date. The {@value #TABLE_HL7_FILES} table contains a failure, as does the {@value #VIEW_RECENT_HL7_FILES} view.
+     */
+    @Test
+    public void testStatusDbHl7EmptyError() {
+        final LogRow logRowWithRetries = LogRow.success("2019-01-06");
+        final String date = logRowWithRetries.date.replaceAll("-", "");
+
+        runLogTest(
+            SqlQuery.logTableQuery(date),
+            logRowWithRetries,
+            logRowWithRetries
+        );
+
+        runLogTest(
+            SqlQuery.logViewQuery(date),
+            logRowWithRetries
+        );
+
+        final Hl7FileRow messageFailed = Hl7FileRow.failure(0, null,
+            "HL7 message content is empty");
+
+        runHl7FileTest(
+            SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
+            messageFailed,
+            messageFailed
+        );
+
+        runHl7FileTest(
+            SqlQuery.hl7FileViewQuery(date, Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
+            messageFailed
+        );
+    }
+
+    /**
+     * Tests the state of the ingest database after the test data has been processed by Scout. In particular, for the date 2016-08-29, the log file contains
+     * an HL7 message with garbage content. The {@value #TABLE_LOG_FILES} table and {@value #VIEW_RECENT_LOG_FILES} view should have a single
+     * successful row corresponding to that date. The {@value #TABLE_HL7_FILES} table contains a failure, as does the {@value #VIEW_RECENT_HL7_FILES} view.
+     */
+    @Test
+    public void testStatusDbHl7GarbageError() {
+        final LogRow logRow = LogRow.success("2016-08-29");
+        final String date = logRow.date.replaceAll("-", "");
+
+        runLogTest(
+            SqlQuery.logTableQuery(date),
+            logRow
+        );
+
+        runLogTest(
+            SqlQuery.logViewQuery(date),
+            logRow
+        );
+
+        final String filePath = "2016/08/29/12/201608291211093942.hl7";
+        final Hl7FileRow messageSuccessful = Hl7FileRow.success(0, filePath);
+        final Hl7FileRow messageFailed = Hl7FileRow.failure(0, filePath,
+            "File is not parsable as HL7");
+
+        runHl7FileTest(
+            SqlQuery.hl7FileTableQuery(date, Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
+            messageSuccessful
+        );
+
+        runHl7FileTest(
+            SqlQuery.hl7FileTableQuery(date, ingestWorkflow.getIngestToDeltaLakeWorkflows()),
+            messageFailed
+        );
+
+        runHl7FileTest(
+            SqlQuery.hl7FileViewQuery(date, List.of(
+                Stream.concat(ingestWorkflow.getIngestToDeltaLakeWorkflows().stream(), Stream.of(ingestWorkflow.getIngestWorkflowId())).toArray(String[]::new)
+            )),
+            messageFailed
+        );
+    }
+
+    /**
+     * Tests the state of the ingest database after the test data has been processed by Scout. This test is essentially the same as {@link #testStatusDbSuccess}
+     * but the log file has some extra chatter in the logs that was causing an issue in production, which is checked by this test.
      */
     @Test
     public void testStatusDbTcpChatter() {
@@ -201,7 +315,7 @@ public class TestStatusDatabase extends BaseTest {
             false
         ).getIngestWorkflowId();
 
-        final LogRow logRowWithRetries = LogRow.failed("2015-01-01", improperLog);
+        final LogRow logRowWithRetries = LogRow.failed("2015-01-01", "NoSuchFileException: " + improperLog);
 
         runLogTest(
             SqlQuery.logTableQuery("20150101").overwriteWorkflowIds(Collections.singletonList(workflowId)),
@@ -274,6 +388,7 @@ public class TestStatusDatabase extends BaseTest {
     }
 
     private static class LogRow {
+
         private final String status;
         private final String date;
         private final String errorMessage;
@@ -294,6 +409,7 @@ public class TestStatusDatabase extends BaseTest {
     }
 
     private static class Hl7FileRow {
+
         private final String status;
         private final int segmentNumber;
         private final String filePath;
@@ -316,6 +432,7 @@ public class TestStatusDatabase extends BaseTest {
     }
 
     private static class SqlQuery {
+
         private final String tableOrView;
         private final String filterColumn;
         private final String logDate;
