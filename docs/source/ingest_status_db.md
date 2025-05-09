@@ -36,6 +36,9 @@ The `hl7_files` table contains the following columns:
 | `message_number` | integer | The message within the log file from which the HL7 file was extracted. |
 | `date` | date | The date of the log file. |
 
+The `log_file_path` and `message_number` paths will have a unique constraint, meaning that a log file can only have one HL7 file for each message number.
+This is because the HL7 files are extracted from the log files based on the message number.
+
 ## Database Views
 The Ingest Status DB also contains the following views:
 | View Name | Description |
