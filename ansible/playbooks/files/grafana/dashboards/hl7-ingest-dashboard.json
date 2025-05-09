@@ -29,140 +29,6 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "date"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 95
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_message"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 289
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "file_path"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 234
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "type"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 74
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 3,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": ["sum"],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": []
-      },
-      "pluginVersion": "11.6.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "postgres_ingest_db_datasource_01"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT \n  TO_CHAR(l.date, 'YYYY-MM-DD') as date,\n  h.error_message,\n  'HL7' as type,\n  h.file_path,\n  h.processed_at,\n  h.workflow_id,\n  h.activity_id\nFROM recent_hl7_files h\nLEFT JOIN recent_log_files l\n  ON l.file_path = h.log_file_path\nWHERE \n  h.error_message IS NOT NULL\n  AND l.date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n\nUNION ALL\n\nSELECT \n  TO_CHAR(date, 'YYYY-MM-DD') as date,\n  error_message,\n  'Log' as type,\n  file_path,\n  processed_at,\n  workflow_id,\n  activity_id\nFROM recent_log_files\nWHERE \n  error_message IS NOT NULL\n  AND date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n\nORDER BY date DESC, processed_at DESC;\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "Error Messages",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "postgres_ingest_db_datasource_01"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
             "fixedColor": "green",
             "mode": "fixed"
           },
@@ -182,8 +48,7 @@
             },
             "lineWidth": 1,
             "scaleDistribution": {
-              "log": 2,
-              "type": "symlog"
+              "type": "linear"
             },
             "thresholdsStyle": {
               "mode": "off"
@@ -205,10 +70,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 12,
+        "h": 9,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 0
       },
       "id": 1,
       "options": {
@@ -244,7 +109,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    '1 day'::interval\n  )::date AS date\n),\nsuccess_counts AS (\n  SELECT \n    l.date,\n    COUNT(h.*) as success_count\n  FROM recent_hl7_files h\n  LEFT JOIN recent_log_files l on h.log_file_path = l.file_path\n  WHERE h.error_message IS NULL\n  AND l.date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n  GROUP BY l.date\n)\nSELECT \n  TO_CHAR(date_series.date, 'YYYY-MM-DD') as date,\n  COALESCE(success_counts.success_count, 0) as successful_files\nFROM date_series\nLEFT JOIN success_counts ON date_series.date = success_counts.date\nORDER BY date_series.date;",
+          "rawSql": "SELECT\n  date_trunc('day', date) AS time,\n  COUNT(*)                AS count\nFROM recent_hl7_files\nWHERE $__timeFilter(date)\n  AND status != 'failed'\nGROUP BY 1\nORDER BY 1;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -319,7 +184,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 19
+        "y": 9
       },
       "id": 2,
       "options": {
@@ -354,7 +219,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    '1 day'::interval\n  )::date AS date\n),\nerror_counts AS (\n  SELECT \n    l.date,\n    COUNT(h.*) as error_count\n  FROM recent_hl7_files h\n  LEFT JOIN recent_log_files l on h.log_file_path = l.file_path\n  WHERE h.error_message IS NOT NULL\n  AND l.date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n  GROUP BY l.date\n)\nSELECT \n  TO_CHAR(date_series.date, 'YYYY-MM-DD') as date,\n  COALESCE(error_counts.error_count, 0) as error_files\nFROM date_series\nLEFT JOIN error_counts ON date_series.date = error_counts.date\nORDER BY date_series.date;",
+          "rawSql": "SELECT\n  date_trunc('day', date) AS time,\n  COUNT(*)                AS count\nFROM recent_hl7_files\nWHERE $__timeFilter(date)\n  AND status = 'failed'\nGROUP BY 1\nORDER BY 1;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -375,8 +240,290 @@
           }
         }
       ],
-      "title": "HL7 Ingest Errors",
+      "title": "HL7 Ingest Errors (Log Scale)",
       "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres_ingest_db_datasource_01"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "date"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_message"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 289
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "file_path"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 392
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "type"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 74
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "date"
+          }
+        ]
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres_ingest_db_datasource_01"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT h.date,\n       fs.file_path,\n       fs.error_message,\n       fs.status,\n       fs.processed_at\nFROM hl7_files h\nJOIN (\n    SELECT DISTINCT ON (file_path)\n           file_path,\n           error_message,\n           status,\n           processed_at\n    FROM   file_statuses\n    WHERE  type = 'HL7'\n    ORDER  BY file_path, processed_at DESC          -- DESC is what makes it “latest”\n) AS fs\nON fs.file_path = h.hl7_file_path\nWHERE $__timeFilter(h.date) and status = 'failed'",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Error Messages",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres_ingest_db_datasource_01"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "date"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_message"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 289
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "file_path"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 392
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "type"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 74
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "date"
+          }
+        ]
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres_ingest_db_datasource_01"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT DISTINCT ON (file_path)\n    file_path,\n    error_message,\n    status,\n    processed_at\nFROM   file_statuses\nWHERE  type = 'Log' and status = 'failed'\nORDER  BY file_path, processed_at DESC          -- DESC is what makes it “latest”",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "HL7 Listener Log Errors",
+      "type": "table"
     }
   ],
   "preload": false,
