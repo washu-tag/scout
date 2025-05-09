@@ -3,6 +3,8 @@ package edu.washu.tag.tests;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import edu.washu.tag.BaseTest;
+import edu.washu.tag.model.IngestJobDetails;
+import edu.washu.tag.model.IngestJobInput;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -47,13 +49,13 @@ public class TestStatusDatabase extends BaseTest {
         final Hl7FileRow secondHl7Message = Hl7FileRow.success(1, "1995/04/02/09/199504020930172230.hl7");
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery("19950402", Collections.singletonList(ingestWorkflowId)),
+            SqlQuery.hl7FileTableQuery("19950402", Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             firstHl7Message,
             secondHl7Message
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileViewQuery("19950402", Collections.singletonList(ingestWorkflowId)),
+            SqlQuery.hl7FileViewQuery("19950402", Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             firstHl7Message,
             secondHl7Message
         );
@@ -62,9 +64,9 @@ public class TestStatusDatabase extends BaseTest {
     /**
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 2024-01-02, the entire content of the log file is unusable by Scout.
-     * The {@value #TABLE_LOG_FILES} table is expected to have five "successful" rows for that day
+     * The {@value #TABLE_LOG_FILES} table is expected to have two "successful" rows for that day
      * from retries because the error is tracked later on while the {@value #VIEW_RECENT_LOG_FILES} view
-     * limits to a single row. The {@value #TABLE_HL7_FILES} table contains the 5 failed rows for that date
+     * limits to a single row. The {@value #TABLE_HL7_FILES} table contains the 2 failed rows for that date
      * with the {@value #VIEW_RECENT_HL7_FILES} view restricting to a single row.
      */
     @Test
@@ -73,9 +75,6 @@ public class TestStatusDatabase extends BaseTest {
 
         runLogTest(
             SqlQuery.logTableQuery("20240102"),
-            logRowWithRetries,
-            logRowWithRetries,
-            logRowWithRetries,
             logRowWithRetries,
             logRowWithRetries
         );
@@ -88,16 +87,13 @@ public class TestStatusDatabase extends BaseTest {
         final Hl7FileRow repeatedFailingHl7Message = Hl7FileRow.failure(0, null, "Log did not contain any HL7 messages");
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery("20240102", Collections.singletonList(ingestWorkflowId)),
-            repeatedFailingHl7Message,
-            repeatedFailingHl7Message,
-            repeatedFailingHl7Message,
+            SqlQuery.hl7FileTableQuery("20240102", Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             repeatedFailingHl7Message,
             repeatedFailingHl7Message
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileViewQuery("20240102", Collections.singletonList(ingestWorkflowId)),
+            SqlQuery.hl7FileViewQuery("20240102", Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             repeatedFailingHl7Message
         );
     }
@@ -133,25 +129,25 @@ public class TestStatusDatabase extends BaseTest {
         final Hl7FileRow firstMessageFailed = Hl7FileRow.failure(0, failedFilePath, "HL7 file is empty or unparsable");
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery("20230113", Collections.singletonList(ingestWorkflowId)),
+            SqlQuery.hl7FileTableQuery("20230113", Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             firstMessageSuccessful,
             secondHl7Message,
             thirdHl7Message
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery("20230113", ingestToDeltaLakeWorkflows),
+            SqlQuery.hl7FileTableQuery("20230113", ingestWorkflow.getIngestToDeltaLakeWorkflows()),
             firstMessageFailed
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileViewQuery("20230113", Collections.singletonList(ingestWorkflowId)),
+            SqlQuery.hl7FileViewQuery("20230113", Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             secondHl7Message,
             thirdHl7Message
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileViewQuery("20230113", ingestToDeltaLakeWorkflows),
+            SqlQuery.hl7FileViewQuery("20230113", ingestWorkflow.getIngestToDeltaLakeWorkflows()),
             firstMessageFailed
         );
     }
@@ -179,15 +175,43 @@ public class TestStatusDatabase extends BaseTest {
         final Hl7FileRow secondHl7Message = Hl7FileRow.success(1, "1999/11/30/23/199911302311298376.hl7");
 
         runHl7FileTest(
-            SqlQuery.hl7FileTableQuery("19991130", Collections.singletonList(ingestWorkflowId)),
+            SqlQuery.hl7FileTableQuery("19991130", Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             firstHl7Message,
             secondHl7Message
         );
 
         runHl7FileTest(
-            SqlQuery.hl7FileViewQuery("19991130", Collections.singletonList(ingestWorkflowId)),
+            SqlQuery.hl7FileViewQuery("19991130", Collections.singletonList(ingestWorkflow.getIngestWorkflowId())),
             firstHl7Message,
             secondHl7Message
+        );
+    }
+
+    /**
+     * Tests the state of the ingest database after attempting to ingest a non-existent log file.
+     * For the date 2015-01-01, we pass a log path that does not exist. The {@value #TABLE_LOG_FILES} table
+     * is expected to have 2 "failed" rows for that day from retries while the {@value #VIEW_RECENT_LOG_FILES} view
+     * limits to a single row.
+     */
+    @Test
+    public void testIngestImproperLogPath() {
+        final String improperLog = "/data/20150101.log";
+        final String workflowId = temporalClient.launchIngest(
+            new IngestJobInput().setLogPaths(improperLog),
+            false
+        ).getIngestWorkflowId();
+
+        final LogRow logRowWithRetries = LogRow.failed("2015-01-01", improperLog);
+
+        runLogTest(
+            SqlQuery.logTableQuery("20150101").overwriteWorkflowIds(Collections.singletonList(workflowId)),
+            logRowWithRetries,
+            logRowWithRetries
+        );
+
+        runLogTest(
+            SqlQuery.logViewQuery("20150101").overwriteWorkflowIds(Collections.singletonList(workflowId)),
+            logRowWithRetries
         );
     }
 
@@ -263,6 +287,10 @@ public class TestStatusDatabase extends BaseTest {
         private static LogRow success(String date) {
             return new LogRow("succeeded", date, null);
         }
+
+        private static LogRow failed(String date, String errorMessage) {
+            return new LogRow("failed", date, errorMessage);
+        }
     }
 
     private static class Hl7FileRow {
@@ -291,7 +319,7 @@ public class TestStatusDatabase extends BaseTest {
         private final String tableOrView;
         private final String filterColumn;
         private final String logDate;
-        private final List<String> filteredWorkflowIds;
+        private List<String> filteredWorkflowIds;
 
         private SqlQuery(String tableOrView, String filterColumn, String logDate, List<String> filteredWorkflowIds) {
             this.tableOrView = tableOrView;
@@ -301,7 +329,7 @@ public class TestStatusDatabase extends BaseTest {
         }
 
         private static SqlQuery logQuery(String tableOrView, String logDate) {
-            return new SqlQuery(tableOrView, "file_path", logDate, Collections.singletonList(ingestWorkflowId));
+            return new SqlQuery(tableOrView, "file_path", logDate, Collections.singletonList(ingestWorkflow.getIngestWorkflowId()));
         }
 
         private static SqlQuery logTableQuery(String logDate) {
@@ -322,6 +350,11 @@ public class TestStatusDatabase extends BaseTest {
 
         private static SqlQuery hl7FileViewQuery(String logDate, List<String> filteredWorkflowIds) {
             return hl7FileQuery(VIEW_RECENT_HL7_FILES, logDate, filteredWorkflowIds);
+        }
+
+        private SqlQuery overwriteWorkflowIds(List<String> workflowIds) {
+            filteredWorkflowIds = workflowIds;
+            return this;
         }
 
         private String build() {
