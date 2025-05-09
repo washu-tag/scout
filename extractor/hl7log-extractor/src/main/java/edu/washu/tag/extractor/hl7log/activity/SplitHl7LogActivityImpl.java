@@ -27,9 +27,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -54,6 +57,10 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private static final int DAY_END = 8;
     private static final int HOUR_START = 8;
     private static final int HOUR_END = 10;
+
+    // Log file date pattern
+    private static final Pattern DATE_PATTERN = Pattern.compile("\\d{8}");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final FileHandler fileHandler;
     private final IngestDbService ingestDbService;
@@ -224,17 +231,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     }
 
     /**
-     * Extracts the date from the header line
-     *
-     * @param headerLine Line containing timestamp
-     * @return The extracted date
-     */
-    private LocalDate extractDate(String headerLine) throws FileFormatException {
-        String dateString = parseAndValidateTimestamp(headerLine).substring(YEAR_START, DAY_END);
-        return LocalDate.parse(dateString, DbUtils.DATE_FORMATTER);
-    }
-
-    /**
      * Splits and transforms an HL7 log file into multiple HL7 formatted files
      *
      * @param logFile     The HL7 log file to process
@@ -250,7 +246,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         Path logFilePath = Paths.get(logFile);
 
-        LocalDate date = null;
+        LocalDate date = dateFromLogFilePath(logFile);
         List<FileStatus> results = new ArrayList<>();
         int hl7Count = 0;
         try (BufferedReader reader = Files.newBufferedReader(logFilePath, StandardCharsets.ISO_8859_1)) {
@@ -276,14 +272,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                     ctx.heartbeat(hl7Count);
                     results.add(validateWriteAndUploadHl7(logFile, hl7Content, previousLine, destination, hl7Count++, workflowId, activityId));
                     hl7Content.clear();
-                    if (date == null && results.getLast().wasStaged() && previousLine != null) {
-                        try {
-                            date = extractDate(previousLine);
-                        } catch (FileFormatException e) {
-                            // We should never get here because we check the header line in validateWriteAndUploadHl7
-                            logger.error("WorkflowId {} ActivityId {} - Unexpected error extracting date for segment {}: {}", workflowId, activityId, hl7Count, e);
-                        }
-                    }
                     previousLine = null;
                     continue;
                 }
@@ -414,4 +402,14 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String content = String.join(System.lineSeparator(), hl7FilePaths);
         return content.getBytes(StandardCharsets.UTF_8);
     }
+
+    private static LocalDate dateFromLogFilePath(String filePath) {
+        String fileName = Paths.get(filePath).getFileName().toString();
+        Matcher m = DATE_PATTERN.matcher(fileName);
+        if (m.find()) {
+            return LocalDate.parse(m.group(), DATE_FORMATTER);
+        }
+        return null;
+    }
+
 }
