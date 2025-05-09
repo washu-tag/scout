@@ -128,7 +128,7 @@
         labels:
           grafana_alert: '1'
       data:
-        notification-policy.yaml: "{{ lookup('template', 'templates/grafana/notification-policy.yaml.j2') | to_nice_yaml }}"
+        notification-policy.yaml: "{{ lookup('template', 'templates/grafana/notification-policy.yaml.j2') }}"
 
 - name: Create contact point secrets
   block:
