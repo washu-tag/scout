@@ -1,6 +1,7 @@
 package edu.washu.tag.extractor.hl7log.db;
 
 import com.zaxxer.hikari.HikariDataSource;
+import edu.washu.tag.extractor.hl7log.db.DbUtils.FileStatusType;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.workflow.Workflow;
@@ -122,12 +123,16 @@ public class IngestDbServiceImpl implements IngestDbService {
         if (fileStatuses == null || fileStatuses.isEmpty()) {
             return;
         }
+        batchInsertFileStatuses(fileStatuses);
 
-        List<Hl7File> hl7Files = IntStream.range(0, fileStatuses.size())
-            .mapToObj(i -> new Hl7File(fileStatuses.get(i).filePath(), logPath, i, date))
+        // Filter out Log file statuses
+        List<FileStatus> hl7FileStatuses = fileStatuses.stream()
+            .filter(fileStatus -> FileStatusType.HL7.getType().equals(fileStatus.type()))
+            .toList();
+        // Create Hl7File records from the filtered file statuses, assigning the message number based on the index in the list
+        List<Hl7File> hl7Files = IntStream.range(0, hl7FileStatuses.size())
+            .mapToObj(i -> new Hl7File(hl7FileStatuses.get(i).filePath(), logPath, i, date))
             .toList();
         batchInsertHl7Files(hl7Files);
-
-        batchInsertFileStatuses(fileStatuses);
     }
 }
