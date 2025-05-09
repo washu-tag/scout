@@ -1,0 +1,43 @@
+# Re-usable task: create one ConfigMap per source file.
+# Expected vars passed in via include_tasks loop:
+#   obj.path        : directory to search
+#   obj.pattern     : glob pattern (e.g. '*.json*')
+#   obj.label_key   : label to set on the ConfigMap
+#
+- name: Find matching files
+  find:
+    paths: "{{ obj.path }}"
+    patterns: "{{ obj.pattern }}"
+  register: source_templates
+
+- name: Create ConfigMap for each file
+  kubernetes.core.k8s:
+    state: present
+    definition: |-
+      {%- set base = item.path | basename -%}
+      {%- set cm_name = base
+          | regex_replace('\.json(\.j2)?$', '')
+          | regex_replace('\.yaml(\.j2)?$', '') -%}
+      {%- set key_name = base | regex_replace('\.j2$', '') -%}
+      {%- set is_json = base.endswith('.json') or base.endswith('.json.j2') -%}
+      {%- set use_template = base.endswith('.j2') -%}
+
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: {{ cm_name }}
+        namespace: {{ grafana_namespace }}
+        labels:
+          {{ obj.label_key }}: '1'
+      data:
+        {{ key_name }}: |
+          {%- if is_json -%}
+          {{ lookup('template' if use_template else 'file', item.path)
+               | to_nice_json }}
+          {%- else -%}
+          {{ lookup('template' if use_template else 'file', item.path)
+               | to_nice_yaml }}
+          {%- endif -%}
+  loop: "{{ source_templates.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
