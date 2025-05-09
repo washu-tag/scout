@@ -30,7 +30,7 @@
                 "intervalMs": 86400000,
                 "maxDataPoints": 43200,
                 "rawQuery": true,
-                "rawSql": "SELECT\n  COUNT(*)::integer AS value,\n  to_char(current_date - 2, ''YYYY-MM-DD'') AS day,\n  ''{{ server_hostname }}'' AS cluster\nFROM recent_hl7_files h\nJOIN recent_log_files l ON l.file_path = h.log_file_path\nWHERE l.date = current_date - 2;",
+                "rawSql": "SELECT\n  COUNT(*) AS value,\n  to_char(current_date - 2, ''YYYY-MM-DD'') AS day,\n  ''{{ server_hostname }}'' AS cluster\nFROM recent_hl7_files h\nJOIN recent_log_files l ON l.file_path = h.log_file_path\nWHERE l.date = current_date - 2;",
                 "refId": "A",
                 "sql": {
                   "columns": [
