@@ -64,22 +64,71 @@
     kind: Namespace
     state: present
 
-- name: Apply all Grafana ConfigMaps (dashboards, alerts, policies)
-  include_tasks: tasks/configmap_from_templates.yaml
-  loop:
-    - path: "files/grafana/dashboards/"
-      pattern: "*.json"
-      label_key: grafana_dashboard
+- name: Apply Grafana dashboard configmaps
+  block:
+    - name: Find all Grafana dashboards
+      find:
+        paths: 'files/grafana/dashboards/'
+        patterns: '*.json'
+      register: dashboard_files
 
-    - path: "templates/grafana/alerts/"
-      pattern: "*.json.j2"
-      label_key: grafana_alert
+    - name: Create ConfigMap for each Grafana dashboard
+      kubernetes.core.k8s:
+        state: present
+        definition: |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: '{{ item.path | basename | regex_replace(".json$", "") }}'
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              grafana_dashboard: '1'
+          data:
+            '{{ item.path | basename }}':
+              {{ lookup("file", item.path) | to_nice_json }}
+      loop: '{{ dashboard_files.files }}'
+      loop_control:
+        label: '{{ item.path | basename }}'
 
-    - path: "templates/grafana/notification-policies/"
-      pattern: "*.yaml.j2"
-      label_key: grafana_alert
-  loop_control:
-    loop_var: obj
+- name: Apply Grafana alert rules as ConfigMaps
+  block:
+    - name: Find all Grafana alerts
+      find:
+        paths: 'templates/grafana/alerts/'
+        patterns: '*.json.j2'
+      register: alert_templates
+
+    - name: Create ConfigMap for each Grafana alert
+      kubernetes.core.k8s:
+        state: present
+        definition: |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: '{{ item.path | basename | regex_replace(".json.j2$", "") }}'
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              grafana_alert: '1'
+          data:
+            '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}': 
+              '{{ lookup("template", item.path) | to_nice_json }}'
+      loop: '{{ alert_templates.files }}'
+      loop_control:
+        label: '{{ item.path | basename }}'
+
+- name: Create Grafana notification policy as ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: notification-policy
+        namespace: '{{ grafana_namespace }}'
+        labels:
+          grafana_alert: '1'
+      data:
+        notification-policy.yaml: "{{ lookup('template', 'templates/grafana/notification-policy.yaml.j2') | to_nice_yaml }}"
 
 - name: Create contact point secrets
   block:
