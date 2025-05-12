@@ -255,9 +255,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                         hl7Content.add(processed);
                     }
 
-                    if (hl7Count % 100 == 0) {
-                        ctx.heartbeat(hl7Count);
-                    }
+                    ctx.heartbeat(hl7Count);
                     results.add(validateWriteAndUploadHl7(logFile, hl7Content, previousLine, destination, hl7Count++, workflowId, activityId));
                     hl7Content.clear();
                     previousLine = null;
