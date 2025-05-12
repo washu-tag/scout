@@ -11,6 +11,7 @@ public class DefaultArgs {
     private static String scratchSpaceRootPath;
     private static String hl7OutputPath;
     private static Integer splitAndUploadTimeout;
+    private static Integer splitAndUploadHeartbeatTimeout;
     private static Integer splitAndUploadConcurrency;
     private static String modalityMapPath;
     private static String reportTableName;
@@ -46,6 +47,14 @@ public class DefaultArgs {
     }
     public static Integer getSplitAndUploadTimeout(Integer input) {
         return getValueOrDefault(input, splitAndUploadTimeout);
+    }
+
+    @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadHeartbeatTimeout}")
+    public void setSplitAndUploadHeartbeatTimeout(Integer splitAndUploadHeartbeatTimeout) {
+        DefaultArgs.splitAndUploadHeartbeatTimeout = splitAndUploadHeartbeatTimeout;
+    }
+    public static Integer getSplitAndUploadHeartbeatTimeout(Integer input) {
+        return getValueOrDefault(input, splitAndUploadHeartbeatTimeout);
     }
 
     @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadConcurrency}")

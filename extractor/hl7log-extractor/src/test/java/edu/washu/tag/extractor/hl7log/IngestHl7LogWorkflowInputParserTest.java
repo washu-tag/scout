@@ -60,6 +60,8 @@ class IngestHl7LogWorkflowInputParserTest {
     private String defaultHl7OutputPath;
     @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadTimeout}")
     private Integer defaultSplitAndUploadTimeout;
+    @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadHeartbeatTimeout}")
+    private Integer defaultSplitAndUploadHeartbeatTimeout;
     @Value("${scout.workflowArgDefaults.ingestHl7Log.splitAndUploadConcurrency}")
     private Integer defaultSplitAndUploadConcurrency;
 
@@ -76,6 +78,7 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(defaultLogsRootPath, parsedInput.logsRootPath());
         assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
         assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(defaultSplitAndUploadHeartbeatTimeout, parsedInput.splitAndUploadHeartbeatTimeout());
         assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
     }
 
@@ -95,6 +98,7 @@ class IngestHl7LogWorkflowInputParserTest {
             null,
             null,
             null,
+            null,
             null
         );
 
@@ -107,6 +111,7 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(logsRootPath, parsedInput.logsRootPath());
         assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
         assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(defaultSplitAndUploadHeartbeatTimeout, parsedInput.splitAndUploadHeartbeatTimeout());
         assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
     }
 
@@ -115,6 +120,7 @@ class IngestHl7LogWorkflowInputParserTest {
         String date = "arbitrary-date";
         IngestHl7LogWorkflowInput input = new IngestHl7LogWorkflowInput(
             date,
+            null,
             null,
             null,
             null,
@@ -136,6 +142,7 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(defaultLogsRootPath, parsedInput.logsRootPath());
         assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
         assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(defaultSplitAndUploadHeartbeatTimeout, parsedInput.splitAndUploadHeartbeatTimeout());
         assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
     }
 
@@ -160,6 +167,7 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(defaultLogsRootPath, parsedInput.logsRootPath());
         assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
         assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(defaultSplitAndUploadHeartbeatTimeout, parsedInput.splitAndUploadHeartbeatTimeout());
         assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
     }
 
@@ -169,6 +177,7 @@ class IngestHl7LogWorkflowInputParserTest {
         IngestHl7LogWorkflowInput input = new IngestHl7LogWorkflowInput(
             null,
             logsRootPath,
+            null,
             null,
             null,
             null,
@@ -197,6 +206,7 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(logsRootPath, parsedInput.logsRootPath());
         assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
         assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(defaultSplitAndUploadHeartbeatTimeout, parsedInput.splitAndUploadHeartbeatTimeout());
         assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
     }
 
@@ -217,6 +227,7 @@ class IngestHl7LogWorkflowInputParserTest {
             null,
             null,
             null,
+            null,
             null
         );
 
@@ -237,6 +248,7 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(logsRootPath, parsedInput.logsRootPath());
         assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
         assertEquals(defaultSplitAndUploadTimeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(defaultSplitAndUploadHeartbeatTimeout, parsedInput.splitAndUploadHeartbeatTimeout());
         assertEquals(defaultSplitAndUploadConcurrency, parsedInput.splitAndUploadConcurrency());
     }
 
@@ -244,6 +256,7 @@ class IngestHl7LogWorkflowInputParserTest {
     void testParseInput_splitAndUploadActivitySettings(IngestHl7LogWorkflowInputParserTestWorkflow workflow) {
         String date = "arbitrary-date";
         int timeout = 60;
+        int heartbeatTimeout = 15;
         int concurrency = 100;
         IngestHl7LogWorkflowInput input = new IngestHl7LogWorkflowInput(
             date,
@@ -252,6 +265,7 @@ class IngestHl7LogWorkflowInputParserTest {
             null,
             null,
             timeout,
+            heartbeatTimeout,
             concurrency,
             null,
             null,
@@ -268,6 +282,7 @@ class IngestHl7LogWorkflowInputParserTest {
         assertEquals(defaultLogsRootPath, parsedInput.logsRootPath());
         assertEquals(defaultHl7OutputPath, parsedInput.hl7OutputPath());
         assertEquals(timeout, parsedInput.splitAndUploadTimeout());
+        assertEquals(heartbeatTimeout, parsedInput.splitAndUploadHeartbeatTimeout());
         assertEquals(concurrency, parsedInput.splitAndUploadConcurrency());
     }
 }

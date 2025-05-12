@@ -31,8 +31,10 @@ scout:
       logsRootPath: ''
       scratchSpaceRootPath: ''
       hl7OutputPath: ''
-      # Timeout (in minutes) for log split and upload activity
+      # Timeout (in minutes) for the entire log split and upload activity
       splitAndUploadTimeout: 180
+      # Heartbeat timeout (in minutes) within the split and upload activity
+      splitAndUploadHeartbeatTimeout: 30
       # This is to limit I/O contention during the split and upload operation (java worker) and to try to hit a sweet spot of efficiency
       # during the delta lake insert (python worker). It's been tested on 1.3-1.4MB log files, as well as 15-45MB log files.
       splitAndUploadConcurrency: 150

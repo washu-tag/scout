@@ -19,6 +19,7 @@ import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogInput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogOutput;
 import edu.washu.tag.extractor.hl7log.util.AllOfPromiseOnlySuccesses;
 import edu.washu.tag.extractor.hl7log.util.IngestHl7LogWorkflowInputParser;
+import io.temporal.activity.ActivityCancellationType;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.api.common.v1.WorkflowExecution;
 import io.temporal.api.enums.v1.ParentClosePolicy;
@@ -97,6 +98,9 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                 ActivityOptions.newBuilder()
                     .setTaskQueue(CHILD_QUEUE)
                     .setStartToCloseTimeout(Duration.ofMinutes(parsedInput.splitAndUploadTimeout()))
+                    .setHeartbeatTimeout(Duration.ofMinutes(parsedInput.splitAndUploadHeartbeatTimeout()))
+                    .setCancellationType(ActivityCancellationType
+                        .WAIT_CANCELLATION_COMPLETED)
                     .setRetryOptions(RetryOptions.newBuilder()
                         .setMaximumInterval(Duration.ofSeconds(30))
                         .setMaximumAttempts(2)
@@ -165,6 +169,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                     scratchSpaceRootPath,
                     input.hl7OutputPath(),
                     input.splitAndUploadTimeout(),
+                    input.splitAndUploadHeartbeatTimeout(),
                     input.splitAndUploadConcurrency(),
                     input.modalityMapPath(),
                     input.reportTableName(),

@@ -30,6 +30,7 @@ scout:
       scratchSpaceRootPath: '/path/to/scratch'
       hl7OutputPath: '/path/to/hl7/output'
       splitAndUploadTimeout: 180
+      splitAndUploadHeartbeatTimeout: 30
       splitAndUploadConcurrency: 150
     ingestHl7ToDeltaLake:
       deltaIngestTimeout: 60
