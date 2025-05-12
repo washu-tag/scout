@@ -2,7 +2,6 @@ package edu.washu.tag.extractor.hl7log.activity;
 
 import static edu.washu.tag.extractor.hl7log.util.Constants.CHILD_QUEUE;
 
-import edu.washu.tag.extractor.hl7log.db.DbUtils;
 import edu.washu.tag.extractor.hl7log.db.DbUtils.FileStatusStatus;
 import edu.washu.tag.extractor.hl7log.db.DbUtils.FileStatusType;
 import edu.washu.tag.extractor.hl7log.db.FileStatus;
@@ -35,7 +34,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -83,13 +81,9 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         URI destination = URI.create(input.hl7OutputPath());
         List<FileStatus> segmentResults;
-        LocalDate date;
         try {
-            Pair<List<FileStatus>, LocalDate> processedResults = processLogFile(input.logPath(), destination);
-            segmentResults = processedResults.getLeft();
-            date = processedResults.getRight();
-
             ctx.heartbeat("Updating status");
+            segmentResults = processLogFile(input.logPath(), destination);
             ingestDbService.insertFileStatus(FileStatus.parsed(input.logPath(), workflowId, activityId));
         } catch (IOException e) {
             logger.error("WorkflowId {} ActivityId {} - Could not read log file {}",
@@ -110,7 +104,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         // Insert the HL7 file paths into the database
         ctx.heartbeat("Processed " + segmentResults.size() + " messages");
-        ingestDbService.batchInsertNewHl7FileStatuses(segmentResults, input.logPath(), date);
+        ingestDbService.batchInsertNewHl7FileStatuses(segmentResults, input.logPath(), dateFromLogFilePath(input.logPath()));
 
         // If all HL7 files failed, fail the activity
         List<String> hl7Paths = segmentResults.stream()
@@ -249,7 +243,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
      * @return List of Hl7File instances containing generated output file paths or error messages
      * @throws IOException If an I/O error occurs
      */
-    private Pair<List<FileStatus>, LocalDate> processLogFile(String logFile, URI destination) throws IOException {
+    private List<FileStatus> processLogFile(String logFile, URI destination) throws IOException {
         ActivityExecutionContext ctx = Activity.getExecutionContext();
         ActivityInfo activityInfo = ctx.getInfo();
         String workflowId = activityInfo.getWorkflowId();
@@ -257,7 +251,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         Path logFilePath = Paths.get(logFile);
 
-        LocalDate date = dateFromLogFilePath(logFile);
         List<FileStatus> results = new ArrayList<>();
         int hl7Count = 0;
         try (BufferedReader reader = Files.newBufferedReader(logFilePath, StandardCharsets.ISO_8859_1)) {
@@ -294,7 +287,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             results.add(FileStatus.failed(logFile, FileStatusType.LOG, "Log did not contain any HL7 messages", workflowId, activityId));
         }
 
-        return Pair.of(results, date);
+        return results;
     }
 
     /**
