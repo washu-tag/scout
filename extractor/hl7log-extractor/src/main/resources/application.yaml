@@ -32,7 +32,7 @@ scout:
       scratchSpaceRootPath: ''
       hl7OutputPath: ''
       # Timeout (in minutes) for the entire log split and upload activity
-      splitAndUploadTimeout: 180
+      splitAndUploadTimeout: 480
       # Heartbeat timeout (in minutes) within the split and upload activity
       splitAndUploadHeartbeatTimeout: 30
       # This is to limit I/O contention during the split and upload operation (java worker) and to try to hit a sweet spot of efficiency

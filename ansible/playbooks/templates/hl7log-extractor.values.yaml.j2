@@ -36,7 +36,8 @@ config:
           logsRootPath: '{{ hl7logs_root_dir }}'
           scratchSpaceRootPath: '{{ scratch_path }}'
           hl7OutputPath: '{{ hl7_path }}'
-          splitAndUploadTimeout: {{ hl7log_extractor_timeout | default(180) }}
+          splitAndUploadTimeout: {{ hl7log_extractor_timeout | default(480) }}
+          splitAndUploadHeartbeatTimeout: {{ hl7log_extractor_heartbeat_timeout | default(30) }}
           splitAndUploadConcurrency: {{ hl7log_extractor_concurrency | default(150) }}
         ingestHl7ToDeltaLake:
           deltaIngestTimeout: {{ hl7_transformer_timeout | default(60) }}
