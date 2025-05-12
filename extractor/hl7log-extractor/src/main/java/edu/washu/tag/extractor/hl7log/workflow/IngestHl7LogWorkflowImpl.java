@@ -99,8 +99,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                     .setTaskQueue(CHILD_QUEUE)
                     .setStartToCloseTimeout(Duration.ofMinutes(parsedInput.splitAndUploadTimeout()))
                     .setHeartbeatTimeout(Duration.ofMinutes(parsedInput.splitAndUploadHeartbeatTimeout()))
-                    .setCancellationType(ActivityCancellationType
-                        .WAIT_CANCELLATION_COMPLETED)
+                    .setCancellationType(ActivityCancellationType.WAIT_CANCELLATION_COMPLETED)
                     .setRetryOptions(RetryOptions.newBuilder()
                         .setMaximumInterval(Duration.ofSeconds(30))
                         .setMaximumAttempts(2)

@@ -116,7 +116,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             throw ApplicationFailure.newFailureWithCause("Failed to upload log file list to " + hl7ListFileUri, "type", e);
         }
 
-        ctx.heartbeat("Completed reading " + segmentResults.size() + " messages");
+        ctx.heartbeat("Completed upload of " + segmentResults.size() + " messages");
         return new SplitAndTransformHl7LogOutput(uploadedList, hl7Paths.size());
     }
 
