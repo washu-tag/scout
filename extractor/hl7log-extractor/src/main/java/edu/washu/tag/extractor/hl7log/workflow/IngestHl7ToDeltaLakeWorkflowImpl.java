@@ -38,20 +38,20 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
                 .build()
         );
 
-    private final ActivityStub ingestActivity =
-        Workflow.newUntypedActivityStub(
-            ActivityOptions.newBuilder()
-                .setTaskQueue(INGEST_DELTA_LAKE_QUEUE)
-                .setStartToCloseTimeout(Duration.ofMinutes(30))
-                .setRetryOptions(RetryOptions.newBuilder()
-                    .setMaximumInterval(Duration.ofSeconds(1))
-                    .setMaximumAttempts(10)
-                    .build())
-                .build());
-
     @Override
     public IngestHl7FilesToDeltaLakeOutput ingestHl7FileToDeltaLake(IngestHl7FilesToDeltaLakeInput input) {
         WorkflowInfo workflowInfo = Workflow.getInfo();
+
+        final ActivityStub ingestActivity =
+            Workflow.newUntypedActivityStub(
+                ActivityOptions.newBuilder()
+                    .setTaskQueue(INGEST_DELTA_LAKE_QUEUE)
+                    .setStartToCloseTimeout(Duration.ofMinutes(DefaultArgs.getDeltaIngestTimeout(input.deltaIngestTimeout())))
+                    .setRetryOptions(RetryOptions.newBuilder()
+                        .setMaximumInterval(Duration.ofMinutes(5))
+                        .setMaximumAttempts(5)
+                        .build())
+                    .build());
 
         String hl7ManifestFilePath = input.hl7ManifestFilePath();
         if (input.hl7ManifestFilePath() == null || input.hl7ManifestFilePath().isEmpty()) {

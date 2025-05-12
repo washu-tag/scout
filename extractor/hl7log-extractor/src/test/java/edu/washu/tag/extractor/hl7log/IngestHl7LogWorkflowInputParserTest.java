@@ -94,6 +94,7 @@ class IngestHl7LogWorkflowInputParserTest {
             null,
             null,
             null,
+            null,
             null
         );
 
@@ -114,6 +115,7 @@ class IngestHl7LogWorkflowInputParserTest {
         String date = "arbitrary-date";
         IngestHl7LogWorkflowInput input = new IngestHl7LogWorkflowInput(
             date,
+            null,
             null,
             null,
             null,
@@ -174,6 +176,7 @@ class IngestHl7LogWorkflowInputParserTest {
             null,
             null,
             null,
+            null,
             null
         );
 
@@ -207,6 +210,7 @@ class IngestHl7LogWorkflowInputParserTest {
             date,
             logsRootPath,
             String.join(",", ignoredLogPaths),
+            null,
             null,
             null,
             null,
@@ -249,6 +253,7 @@ class IngestHl7LogWorkflowInputParserTest {
             null,
             timeout,
             concurrency,
+            null,
             null,
             null,
             null
