@@ -80,10 +80,10 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         logger.info("WorkflowId {} ActivityId {} - Splitting HL7 log file {} into component HL7 files", workflowId, activityId, input.logPath());
 
         URI destination = URI.create(input.hl7OutputPath());
-        List<FileStatus> segmentResults;
+        List<FileStatus> fileStatuses;
         try {
             ctx.heartbeat("Updating status");
-            segmentResults = processLogFile(input.logPath(), destination);
+            fileStatuses = processLogFile(input.logPath(), destination);
             ingestDbService.insertFileStatus(FileStatus.parsed(input.logPath(), workflowId, activityId));
         } catch (IOException e) {
             logger.error("WorkflowId {} ActivityId {} - Could not read log file {}",
@@ -93,25 +93,25 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         }
 
         // If we parsed no HL7 messages, fail the activity
-        if (segmentResults.size() == 1 && segmentResults.getFirst().type().equals(FileStatusType.LOG.getType())
-            && segmentResults.getFirst().status().equals(FileStatusStatus.FAILED.getStatus())) {
+        if (fileStatuses.size() == 1 && fileStatuses.getFirst().type().equals(FileStatusType.LOG.getType())
+            && fileStatuses.getFirst().status().equals(FileStatusStatus.FAILED.getStatus())) {
             // Write the log file status to the database
-            ingestDbService.insertFileStatus(segmentResults.getFirst());
+            ingestDbService.insertFileStatus(fileStatuses.getFirst());
             // Fail the activity
             logger.error("WorkflowId {} ActivityId {} - No HL7 messages found in log file {}", workflowId, activityId, input.logPath());
             throw ApplicationFailure.newFailure("No HL7 messages found in log file", "type");
         }
 
         // Insert the HL7 file paths into the database
-        ctx.heartbeat("Processed " + segmentResults.size() + " messages");
-        ingestDbService.batchInsertNewHl7FileStatuses(segmentResults, input.logPath(), dateFromLogFilePath(input.logPath()));
+        ctx.heartbeat("Processed " + fileStatuses.size() + " messages");
+        ingestDbService.batchInsertNewHl7FileStatuses(fileStatuses, input.logPath(), dateFromLogFilePath(input.logPath()));
 
         // If all HL7 files failed, fail the activity
-        List<String> hl7Paths = segmentResults.stream()
+        List<String> hl7Paths = fileStatuses.stream()
             .filter(FileStatus::wasStaged)
             .map(FileStatus::filePath)
             .toList();
-        if (segmentResults.isEmpty() || hl7Paths.isEmpty()) {
+        if (fileStatuses.isEmpty() || hl7Paths.isEmpty()) {
             // All the transforms/uploads failed, fail the activity
             logger.error("WorkflowId {} ActivityId {} - All transform and upload jobs failed for log {}", workflowId, activityId, input.logPath());
             throw ApplicationFailure.newFailure("Transform and upload task failed", "type");
@@ -134,7 +134,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             throw ApplicationFailure.newFailureWithCause("Failed to upload log file list to " + hl7ListFileUri, "type", e);
         }
 
-        ctx.heartbeat("Completed upload of " + segmentResults.size() + " messages");
+        ctx.heartbeat("Completed upload of " + fileStatuses.size() + " messages");
         return new SplitAndTransformHl7LogOutput(uploadedList, hl7Paths.size());
     }
 
@@ -321,11 +321,11 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try {
             timestamp = extractTimestamp(headerLine);
         } catch (FileFormatException e) {
-            logger.warn("WorkflowId {} ActivityId {} - Unable to extract timestamp for segment {}: {}", workflowId, activityId, messageNumber, e.getMessage());
+            logger.warn("WorkflowId {} ActivityId {} - Unable to extract timestamp for message {}: {}", workflowId, activityId, messageNumber, e.getMessage());
             return FileStatus.failed(
                 createPlaceholderHl7FilePath(logFile, messageNumber),
                 FileStatusType.HL7,
-                "Unable to extract timestamp for segment: " + e.getMessage(),
+                "Unable to extract timestamp for message: " + e.getMessage(),
                 workflowId,
                 activityId
             );
@@ -339,8 +339,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         }
     }
 
-    private String createPlaceholderHl7FilePath(String logFile, int segmentNumber) {
-        return logFile + "_" + segmentNumber;
+    private String createPlaceholderHl7FilePath(String logFile, int messageNumber) {
+        return logFile + "_" + messageNumber;
     }
 
 
@@ -362,7 +362,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         // Define output path
         String relativePath = getTimestampPath(timestamp).resolve(timestamp + ".hl7").toString();
-        logger.info("WorkflowId {} ActivityId {} - Transforming segment {} HL7 file {}", workflowId, activityId,
+        logger.info("WorkflowId {} ActivityId {} - Transforming message {} HL7 file {}", workflowId, activityId,
             messageNumber, relativePath);
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
@@ -372,7 +372,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 outputStream.write('\r');
             }
 
-            logger.info("WorkflowId {} ActivityId {} - Uploading segment {} HL7 file {}/{}", workflowId, activityId,
+            logger.info("WorkflowId {} ActivityId {} - Uploading message {} HL7 file {}/{}", workflowId, activityId,
                 messageNumber, destination, relativePath);
 
             try {
@@ -381,7 +381,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 String outputPath = fileHandler.putWithRetry(outputStream.toByteArray(), relativePath, destination);
                 return FileStatus.staged(outputPath, FileStatusType.HL7, workflowId, activityId);
             } catch (IOException e) {
-                logger.error("WorkflowId {} ActivityId {} - Failed to upload segment {} HL7 file {}/{}",
+                logger.error("WorkflowId {} ActivityId {} - Failed to upload message {} HL7 file {}/{}",
                     workflowId, activityId, messageNumber, destination, relativePath, e);
                 return FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7, "Failed to upload HL7 file", workflowId, activityId);
             }
