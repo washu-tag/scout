@@ -29,16 +29,16 @@ public record IngestHl7LogWorkflowInput(
         ContinueIngestWorkflow continued
 ) {
     public static IngestHl7LogWorkflowInput EMPTY = new IngestHl7LogWorkflowInput(
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null
     );
 }
