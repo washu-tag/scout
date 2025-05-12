@@ -18,6 +18,8 @@ minio_env_variables:
     value: 'https://{{ server_hostname }}/minio/'
   - name: MINIO_PROMETHEUS_AUTH_TYPE
     value: public
+  - name: MINIO_SCANNER_SPEED
+    value: slowest
 
 # Ingress configuration
 minio_path_prefix: minio
