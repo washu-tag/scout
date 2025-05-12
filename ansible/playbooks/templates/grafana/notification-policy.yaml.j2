@@ -25,5 +25,5 @@ policies:
     routes:
       - receiver: "{{ grafana_alert_contact_point }}"
         matchers:
-          - alertname = no_hl7_from_scheduled_ingest_alert_01
-        repeat_interval: 25h # Setting to 25hrs makes the date change, so it is no longer the same alert
+          - alertname = No HL7 from scheduled ingest
+        repeat_interval: 999w # Essentially, do not repeat
