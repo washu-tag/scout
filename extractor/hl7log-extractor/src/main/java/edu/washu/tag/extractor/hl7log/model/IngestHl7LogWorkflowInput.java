@@ -25,18 +25,20 @@ public record IngestHl7LogWorkflowInput(
         Integer splitAndUploadConcurrency,
         String modalityMapPath,
         String reportTableName,
+        Integer deltaIngestTimeout,
         ContinueIngestWorkflow continued
 ) {
     public static IngestHl7LogWorkflowInput EMPTY = new IngestHl7LogWorkflowInput(
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
     );
 }

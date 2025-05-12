@@ -37,5 +37,7 @@ scout:
       # during the delta lake insert (python worker). It's been tested on 1.3-1.4MB log files, as well as 15-45MB log files.
       splitAndUploadConcurrency: 150
     ingestHl7ToDeltaLake:
+      # Timeout (in minutes) for transform and upload to delta lake activity
+      deltaIngestTimeout: 60
       modalityMapPath: ''
       reportTableName: ''

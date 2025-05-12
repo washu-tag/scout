@@ -14,6 +14,7 @@ public class DefaultArgs {
     private static Integer splitAndUploadConcurrency;
     private static String modalityMapPath;
     private static String reportTableName;
+    private static Integer deltaIngestTimeout;
 
     @Value("${scout.workflowArgDefaults.ingestHl7Log.logsRootPath}")
     public void setLogsRootPath(String logsRootPath) {
@@ -69,6 +70,14 @@ public class DefaultArgs {
     }
     public static String getReportTableName(String input) {
         return getValueOrDefault(input, reportTableName);
+    }
+
+    @Value("${scout.workflowArgDefaults.ingestHl7ToDeltaLake.deltaIngestTimeout}")
+    public void setDeltaIngestTimeout(Integer deltaIngestTimeout) {
+        DefaultArgs.deltaIngestTimeout = deltaIngestTimeout;
+    }
+    public static Integer getDeltaIngestTimeout(Integer input) {
+        return getValueOrDefault(input, deltaIngestTimeout);
     }
 
     private static String getValueOrDefault(String value, String defaultValue) {

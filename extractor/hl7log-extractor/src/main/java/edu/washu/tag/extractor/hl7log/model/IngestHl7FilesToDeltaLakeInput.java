@@ -5,5 +5,6 @@ public record IngestHl7FilesToDeltaLakeInput(
     String scratchSpaceRootPath,
     String hl7ManifestFilePath,
     String hl7RootPath,
-    String reportTableName
+    String reportTableName,
+    Integer deltaIngestTimeout
 ) {}
