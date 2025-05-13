@@ -33,6 +33,7 @@ public class TestStatusDatabase extends BaseTest {
 
     private static final String PARSED = "parsed";
     private static final String STAGED = "staged";
+    private static final String SUCCESS = "success";
     private static final String FAILED = "failed";
     private static final String LOG_TYPE = "Log";
     private static final String HL7_TYPE = "HL7";
@@ -44,42 +45,58 @@ public class TestStatusDatabase extends BaseTest {
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 1995-04-02, there should be 2 HL7 messages represented by the log file.
      * The {@value #TABLE_FILE_STATUSES} table and {@value #VIEW_RECENT_LOG_FILE_STATUSES} view should have
-     * a single successful row with a `file_path` corresponding to that date, while the {@value #TABLE_HL7_FILES} table and
-     * {@value #VIEW_RECENT_HL7_FILES} view should contain 2 rows for that date, one per file.
+     * a single successful row with a `file_path` corresponding to that date.
+     * The {@value #TABLE_HL7_FILES} table should contain one "staged" row and one "success" row per file.
+     * The {@value #VIEW_RECENT_HL7_FILES} view should contain only the two "success" rows, one per file.
      */
     @Test
     public void testStatusDbSuccess() {
-        final List<String> workflows = Collections.singletonList(ingestWorkflow.getIngestWorkflowId());
+        final List<String> parentWorkflowId = Collections.singletonList(ingestWorkflow.getIngestWorkflowId());
+        final List<String> ingestWorkflowIds = Stream.concat(
+            parentWorkflowId.stream(),
+            ingestWorkflow.getIngestToDeltaLakeWorkflows().stream()
+        ).toList();
         final String date = "19950402";
 
         final FileStatus logRow = FileStatus.parsedLog();
-        runLogStatusTest(FileStatusLogQuery.tableQuery(date, workflows), logRow);
-        runLogStatusTest(FileStatusLogQuery.viewQuery(date, workflows), logRow);
+        runLogStatusTest(FileStatusLogQuery.tableQuery(date, parentWorkflowId), logRow);
+        runLogStatusTest(FileStatusLogQuery.viewQuery(date, parentWorkflowId), logRow);
 
-        final RecentHl7FileRow h0 = RecentHl7FileRow.staged("1995/04/02/07/199504020707509258.hl7", 0, date);
-        final RecentHl7FileRow h1 = RecentHl7FileRow.staged("1995/04/02/09/199504020930172230.hl7", 1, date);
+        final Hl7FilesRow h0 = new Hl7FilesRow("1995/04/02/07/199504020707509258.hl7", 0, date);
+        final Hl7FilesRow h1 = new Hl7FilesRow("1995/04/02/09/199504020930172230.hl7", 1, date);
+        final FileStatus h0Staged = FileStatus.staged(h0.hl7FilePath);
+        final FileStatus h0Success = FileStatus.success(h0.hl7FilePath);
+        final FileStatus h1Staged = FileStatus.staged(h1.hl7FilePath);
+        final FileStatus h1Success = FileStatus.success(h1.hl7FilePath);
 
         runHl7FilesTest(
             new Hl7FileTableQuery(date),
-            h0.hl7FilesRow,
-            h1.hl7FilesRow
-        );
-
-        runHl7FileStatusTest(
-            FileStatusHl7Query.tableQuery(date, workflows),
-            h0.fileStatus,
-            h1.fileStatus
-        );
-        runHl7FileStatusTest(
-            FileStatusHl7Query.viewQuery(date, workflows),
-            h0.fileStatus,
-            h1.fileStatus
-        );
-
-        runRecentHl7FilesTest(
-            new RecentHl7FilesViewQuery(date, workflows),
             h0,
             h1
+        );
+
+        runHl7FileStatusTest(
+            FileStatusHl7Query.tableQuery(date, ingestWorkflowIds),
+            h0Staged,
+            h1Staged,
+            h0Success,
+            h1Success
+        );
+        runHl7FileStatusTest(
+            FileStatusHl7Query.viewQuery(date, ingestWorkflowIds),
+            h0Success,
+            h1Success
+        );
+
+        runHl7FilesTest(
+            new Hl7FileTableQuery(date),
+            h0,
+            h1
+        );
+        runRecentHl7FilesTest(
+            new RecentHl7FilesViewQuery(date, ingestWorkflowIds),
+            new RecentHl7FileRow(h0, h0Success),
+            new RecentHl7FileRow(h1, h1Success)
         );
     }
 
@@ -125,9 +142,9 @@ public class TestStatusDatabase extends BaseTest {
      * The {@value #TABLE_FILE_STATUSES} table and {@value #VIEW_RECENT_LOG_FILE_STATUSES} view should have a single
      * successful row for that log file.
      * The {@value #TABLE_FILE_STATUSES} table contains
-     *  1. a "staged" row for the improper HL7 message (with the first workflow id),
-     *  2. one row for each of the two valid HL7 messages (with the first workflow id), and
-     *  3. a "failed" row for the improper HL7 message (with one of the delta lake ingest child workflow ids).
+     *  1. a "staged" row for all three HL7 messages (with the first workflow id),
+     *  2. a "failed" row for the improper HL7 message (with one of the delta lake ingest child workflow ids), and
+     *  3. a "success" row for the two proper HL7 messages (with the second workflow id).
      * The {@value #VIEW_RECENT_HL7_FILES} view contains 2. and 3. but not 1.
      * The {@value #TABLE_HL7_FILES} table contains entries for all three HL7 messages.
      */
@@ -152,39 +169,45 @@ public class TestStatusDatabase extends BaseTest {
         ).toList();
 
         final Hl7FilesRow hl70 = new Hl7FilesRow("2023/01/13/12/202301131207178754.hl7", 0, date);
-        final FileStatus hl70Staged = FileStatus.stagedHl7(hl70.hl7FilePath);
+        final Hl7FilesRow hl71 = new Hl7FilesRow("2023/01/13/18/202301131807178754.hl7", 1, date);
+        final Hl7FilesRow hl72 = new Hl7FilesRow("2023/01/13/20/202301132017309482.hl7", 2, date);
+        final FileStatus hl70Staged = FileStatus.staged(hl70.hl7FilePath);
+        final FileStatus hl71Staged = FileStatus.staged(hl71.hl7FilePath);
+        final FileStatus hl72Staged = FileStatus.staged(hl72.hl7FilePath);
         final FileStatus hl70Failed = FileStatus.failedHl7(hl70.hl7FilePath, "File is not parsable as HL7");
-        final RecentHl7FileRow hl7Message1 = RecentHl7FileRow.staged("2023/01/13/18/202301131807178754.hl7", 1, date);
-        final RecentHl7FileRow hl7Message2 = RecentHl7FileRow.staged("2023/01/13/20/202301132017309482.hl7", 2, date);
+        final FileStatus hl71Success = FileStatus.success(hl71.hl7FilePath);
+        final FileStatus hl72Success = FileStatus.success(hl72.hl7FilePath);
 
         // All four statuses
         runHl7FileStatusTest(
             FileStatusHl7Query.tableQuery(date, ingestWorkflowIds),
             hl70Staged,
-            hl7Message1.fileStatus,
-            hl7Message2.fileStatus,
-            hl70Failed
+            hl71Staged,
+            hl72Staged,
+            hl70Failed,
+            hl71Success,
+            hl72Success
         );
         // Only three most recent statuses
         runHl7FileStatusTest(
             FileStatusHl7Query.viewQuery(date, ingestWorkflowIds),
-            hl7Message1.fileStatus,
-            hl7Message2.fileStatus,
-            hl70Failed
+            hl70Failed,
+            hl71Success,
+            hl72Success
         );
         // Three files
         runHl7FilesTest(
             new Hl7FileTableQuery(date),
             hl70,
-            hl7Message1.hl7FilesRow,
-            hl7Message2.hl7FilesRow
+            hl71,
+            hl72
         );
         // Three files + most recent statuses
         runRecentHl7FilesTest(
             new RecentHl7FilesViewQuery(date, ingestWorkflowIds),
-            hl7Message1,
-            hl7Message2,
-            new RecentHl7FileRow(hl70, hl70Failed)
+            new RecentHl7FileRow(hl70, hl70Failed),
+            new RecentHl7FileRow(hl71, hl71Success),
+            new RecentHl7FileRow(hl72, hl72Success)
         );
     }
 
@@ -193,40 +216,48 @@ public class TestStatusDatabase extends BaseTest {
      * In particular, for the date 2007-10-21, the log file contains an HL7 message with repeated content.
      * The {@value #TABLE_FILE_STATUSES} table and {@value #VIEW_RECENT_LOG_FILE_STATUSES} view should have a single
      * successful row for the log file corresponding to that date.
-     * The {@value #TABLE_FILE_STATUSES} table contains one "staged" row and one "failed" row for the HL7 message.
+     * The {@value #TABLE_FILE_STATUSES} table contains one "staged" row and one "success" row for the
+     * first HL7 message, and one "failed" row for the repeated message.
      * The {@value #TABLE_HL7_FILES} table contains a row for the HL7 file.
-     * The {@value #VIEW_RECENT_HL7_FILES} view contains one success and one failure.
+     * The {@value #VIEW_RECENT_HL7_FILES} view contains the "failed" row for the repeated message and
+     * the "success" row for the first message.
      */
     @Test
     public void testStatusDbHl7MessageRepeatError() {
         final String date = "20071021";
-        final List<String> workflows = Collections.singletonList(ingestWorkflow.getIngestWorkflowId());
+        final List<String> parentWorkflowId = Collections.singletonList(ingestWorkflow.getIngestWorkflowId());
+        final List<String> ingestWorkflowIds = Stream.concat(
+            parentWorkflowId.stream(),
+            ingestWorkflow.getIngestToDeltaLakeWorkflows().stream()
+        ).toList();
 
         final FileStatus logRow = FileStatus.parsedLog();
         runLogStatusTest(
-            FileStatusLogQuery.tableQuery(date, workflows),
+            FileStatusLogQuery.tableQuery(date, parentWorkflowId),
             logRow
         );
         runLogStatusTest(
-            FileStatusLogQuery.viewQuery(date, workflows),
+            FileStatusLogQuery.viewQuery(date, parentWorkflowId),
             logRow
         );
 
         final Hl7FilesRow hl70 = new Hl7FilesRow("2007/10/21/15/200710211522316785.hl7", 0, date);
         final Hl7FilesRow hl71 = new Hl7FilesRow(null, 1, date);
-        final FileStatus hl70Staged = FileStatus.stagedHl7(hl70.hl7FilePath);
+        final FileStatus hl70Staged = FileStatus.staged(hl70.hl7FilePath);
+        final FileStatus hl70Success = FileStatus.success(hl70.hl7FilePath);
         final FileStatus hl71Failed = FileStatus.failedHl7(hl71.hl7FilePath,
             "HL7 content did not contain a timestamp header line; this usually means it is a repeat of the previous message's HL7 content");
 
         runHl7FileStatusTest(
-            FileStatusHl7Query.tableQuery(date, workflows),
+            FileStatusHl7Query.tableQuery(date, ingestWorkflowIds),
             hl70Staged,
-            hl71Failed
+            hl71Failed,
+            hl70Success
         );
         runHl7FileStatusTest(
-            FileStatusHl7Query.viewQuery(date, workflows),
-            hl70Staged,
-            hl71Failed
+            FileStatusHl7Query.viewQuery(date, ingestWorkflowIds),
+            hl71Failed,
+            hl70Success
         );
 
         runHl7FilesTest(
@@ -235,9 +266,9 @@ public class TestStatusDatabase extends BaseTest {
             hl71
         );
         runRecentHl7FilesTest(
-            new RecentHl7FilesViewQuery(date, workflows),
-            new RecentHl7FileRow(hl70, hl70Staged),
-            new RecentHl7FileRow(hl71, hl71Failed)
+            new RecentHl7FilesViewQuery(date, ingestWorkflowIds),
+            new RecentHl7FileRow(hl71, hl71Failed),
+            new RecentHl7FileRow(hl70, hl70Success)
         );
     }
 
@@ -313,7 +344,7 @@ public class TestStatusDatabase extends BaseTest {
 
         final String filePath = "2016/08/29/12/201608291211093942.hl7";
         final Hl7FilesRow hl7File = new Hl7FilesRow(filePath, 0, date);
-        final FileStatus hl7Staged = FileStatus.stagedHl7(filePath);
+        final FileStatus hl7Staged = FileStatus.staged(filePath);
         final FileStatus hl7Error = FileStatus.failedHl7(filePath, "File is not parsable as HL7");
         runHl7FileStatusTest(
             FileStatusHl7Query.tableQuery(date, ingestWorkflowIds),
@@ -340,37 +371,52 @@ public class TestStatusDatabase extends BaseTest {
      */
     @Test
     public void testStatusDbTcpChatter() {
-        final List<String> workflows = Collections.singletonList(ingestWorkflow.getIngestWorkflowId());
+        final List<String> parentWorkflowId = Collections.singletonList(ingestWorkflow.getIngestWorkflowId());
+        final List<String> ingestWorkflowIds = Stream.concat(
+            parentWorkflowId.stream(),
+            ingestWorkflow.getIngestToDeltaLakeWorkflows().stream()
+        ).toList();
         final String date = "19991130";
 
         final FileStatus logRow = FileStatus.parsedLog();
-        runLogStatusTest(FileStatusLogQuery.tableQuery(date, workflows), logRow);
-        runLogStatusTest(FileStatusLogQuery.viewQuery(date, workflows), logRow);
+        runLogStatusTest(FileStatusLogQuery.tableQuery(date, parentWorkflowId), logRow);
+        runLogStatusTest(FileStatusLogQuery.viewQuery(date, parentWorkflowId), logRow);
 
-        final RecentHl7FileRow h0 = RecentHl7FileRow.staged("1999/11/30/02/199911300242267124.hl7", 0, date);
-        final RecentHl7FileRow h1 = RecentHl7FileRow.staged("1999/11/30/23/199911302311298376.hl7", 1, date);
+        final Hl7FilesRow h0 = new Hl7FilesRow("1999/11/30/02/199911300242267124.hl7", 0, date);
+        final Hl7FilesRow h1 = new Hl7FilesRow("1999/11/30/23/199911302311298376.hl7", 1, date);
+        final FileStatus h0Staged = FileStatus.staged(h0.hl7FilePath);
+        final FileStatus h0Success = FileStatus.success(h0.hl7FilePath);
+        final FileStatus h1Staged = FileStatus.staged(h1.hl7FilePath);
+        final FileStatus h1Success = FileStatus.success(h1.hl7FilePath);
 
         runHl7FilesTest(
             new Hl7FileTableQuery(date),
-            h0.hl7FilesRow,
-            h1.hl7FilesRow
-        );
-
-        runHl7FileStatusTest(
-            FileStatusHl7Query.tableQuery(date, workflows),
-            h0.fileStatus,
-            h1.fileStatus
-        );
-        runHl7FileStatusTest(
-            FileStatusHl7Query.viewQuery(date, workflows),
-            h0.fileStatus,
-            h1.fileStatus
-        );
-
-        runRecentHl7FilesTest(
-            new RecentHl7FilesViewQuery(date, workflows),
             h0,
             h1
+        );
+
+        runHl7FileStatusTest(
+            FileStatusHl7Query.tableQuery(date, ingestWorkflowIds),
+            h0Staged,
+            h1Staged,
+            h0Success,
+            h1Success
+        );
+        runHl7FileStatusTest(
+            FileStatusHl7Query.viewQuery(date, ingestWorkflowIds),
+            h0Success,
+            h1Success
+        );
+
+        runHl7FilesTest(
+            new Hl7FileTableQuery(date),
+            h0,
+            h1
+        );
+        runRecentHl7FilesTest(
+            new RecentHl7FilesViewQuery(date, ingestWorkflowIds),
+            new RecentHl7FileRow(h0, h0Success),
+            new RecentHl7FileRow(h1, h1Success)
         );
     }
 
@@ -545,8 +591,12 @@ public class TestStatusDatabase extends BaseTest {
             return new FileStatus(null, PARSED, LOG_TYPE, null);
         }
 
-        private static FileStatus stagedHl7(String filePath) {
+        private static FileStatus staged(String filePath) {
             return new FileStatus(filePath, STAGED, HL7_TYPE, null);
+        }
+
+        private static FileStatus success(String filePath) {
+            return new FileStatus(filePath, SUCCESS, HL7_TYPE, null);
         }
 
         private static FileStatus failedLog(String errorMessage) {
@@ -575,7 +625,14 @@ public class TestStatusDatabase extends BaseTest {
         static RecentHl7FileRow staged(String filePath, int messageNumber, String date) {
             return new RecentHl7FileRow(
                 new Hl7FilesRow(filePath, messageNumber, date),
-                FileStatus.stagedHl7(filePath)
+                FileStatus.staged(filePath)
+            );
+        }
+
+        static RecentHl7FileRow success(String filePath, int messageNumber, String date) {
+            return new RecentHl7FileRow(
+                new Hl7FilesRow(filePath, messageNumber, date),
+                FileStatus.success(filePath)
             );
         }
     }
