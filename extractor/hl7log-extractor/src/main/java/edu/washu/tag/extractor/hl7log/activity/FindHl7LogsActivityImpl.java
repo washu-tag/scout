@@ -179,16 +179,13 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
                         );
                         return Collections.<String>emptyList();
                     }
-                } else if (Files.isRegularFile(logPath)) {
+                } else {
+                    // If a user has passed a file, don't filter for anything but date (if they've passed a file plus a mismatched date,
+                    // they should get an error)
                     String fileName = logPath.getFileName().toString();
-                    if (logFileFilter.test(fileName)) {
+                    if (dateFilter.test(fileName)) {
                         matchingLogs.add(logPath.toString());
                     }
-                } else {
-                    logger.warn(
-                        "WorkflowId {} ActivityId {} - Path is neither a directory nor a regular file: {}",
-                        activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPathString
-                    );
                 }
                 return matchingLogs;
             })
