@@ -60,7 +60,7 @@ public class TestStatusDatabase extends BaseTest {
         final RecentHl7FileRow h1 = RecentHl7FileRow.staged("1995/04/02/09/199504020930172230.hl7", 1, date);
 
         runHl7FilesTest(
-            new Hl7FileTableQuery(date, workflows),
+            new Hl7FileTableQuery(date),
             h0.hl7FilesRow,
             h1.hl7FilesRow
         );
@@ -111,7 +111,7 @@ public class TestStatusDatabase extends BaseTest {
             logRow1
         );
 
-        runHl7FilesTest(new Hl7FileTableQuery(date, workflows));
+        runHl7FilesTest(new Hl7FileTableQuery(date));
         runHl7FileStatusTest(FileStatusHl7Query.tableQuery(date, workflows));
         runHl7FileStatusTest(FileStatusHl7Query.viewQuery(date, workflows));
 
@@ -174,7 +174,7 @@ public class TestStatusDatabase extends BaseTest {
         );
         // Three files
         runHl7FilesTest(
-            new Hl7FileTableQuery(date, ingestWorkflowIds),
+            new Hl7FileTableQuery(date),
             hl70,
             hl7Message1.hl7FilesRow,
             hl7Message2.hl7FilesRow
@@ -230,7 +230,7 @@ public class TestStatusDatabase extends BaseTest {
         );
 
         runHl7FilesTest(
-            new Hl7FileTableQuery(date, workflows),
+            new Hl7FileTableQuery(date),
             hl70,
             hl71
         );
@@ -325,7 +325,7 @@ public class TestStatusDatabase extends BaseTest {
             hl7Error
         );
         runHl7FilesTest(
-            new Hl7FileTableQuery(date, ingestWorkflowIds),
+            new Hl7FileTableQuery(date),
             hl7File
         );
         runRecentHl7FilesTest(new RecentHl7FilesViewQuery(date, ingestWorkflowIds),
@@ -351,7 +351,7 @@ public class TestStatusDatabase extends BaseTest {
         final RecentHl7FileRow h1 = RecentHl7FileRow.staged("1999/11/30/23/199911302311298376.hl7", 1, date);
 
         runHl7FilesTest(
-            new Hl7FileTableQuery(date, workflows),
+            new Hl7FileTableQuery(date),
             h0.hl7FilesRow,
             h1.hl7FilesRow
         );
@@ -656,8 +656,8 @@ public class TestStatusDatabase extends BaseTest {
     }
 
     private static class Hl7FileTableQuery extends SqlQuery {
-        private Hl7FileTableQuery(String logDate, List<String> filteredWorkflowIds) {
-            super(TABLE_HL7_FILES, LOG_FILE_PATH, logDate, filteredWorkflowIds);
+        private Hl7FileTableQuery(String logDate) {
+            super(TABLE_HL7_FILES, LOG_FILE_PATH, logDate, Collections.emptyList());
         }
 
         @Override
