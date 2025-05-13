@@ -1,5 +1,7 @@
 package edu.washu.tag.extractor.hl7log.activity;
 
+import static edu.washu.tag.extractor.hl7log.util.Constants.PARENT_QUEUE;
+
 import edu.washu.tag.extractor.hl7log.model.ContinueIngestWorkflow;
 import edu.washu.tag.extractor.hl7log.model.FindHl7LogFileInput;
 import edu.washu.tag.extractor.hl7log.model.FindHl7LogFileOutput;
@@ -10,26 +12,27 @@ import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.ActivityImpl;
 import io.temporal.workflow.Workflow;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.function.Function;
-import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import java.io.File;
-import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import static edu.washu.tag.extractor.hl7log.util.Constants.PARENT_QUEUE;
+import java.util.function.Predicate;
+import org.slf4j.Logger;
+import org.springframework.stereotype.Component;
 
 @Component
 @ActivityImpl(taskQueues = PARENT_QUEUE)
 public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
+
     private static final Logger logger = Workflow.getLogger(FindHl7LogsActivityImpl.class);
 
     private final FileHandler fileHandler;
@@ -111,8 +114,7 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
     }
 
     /**
-     * Find log files for the given paths.
-     * If the path is a directory, find all files in the directory recursively
+     * Find log files for the given paths. If the path is a directory, find all files in the directory recursively
      *
      * @param logPaths list of paths to search for log files
      * @return list of log files
@@ -121,55 +123,84 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
 
         // Filter log files by date if provided
-        Function<Path, Boolean> dateFilter;
+        Predicate<String> dateFilter;
         if (date != null && !date.isBlank()) {
             logger.info(
-                    "WorkflowId {} ActivityId {} - Finding HL7 log file by date {}",
-                    activityInfo.getWorkflowId(), activityInfo.getActivityId(), date
+                "WorkflowId {} ActivityId {} - Finding HL7 log file by date {}",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), date
             );
-            dateFilter = path -> path.getFileName().toString().contains(date);
+            dateFilter = fileName -> fileName.contains(date);
         } else {
             logger.info(
                 "WorkflowId {} ActivityId {} - Finding all HL7 log files in input paths",
                 activityInfo.getWorkflowId(), activityInfo.getActivityId()
             );
-            dateFilter = path -> true;
+            dateFilter = fileName -> true;
         }
 
+        // Also exclude hidden files, non-log files
+        Predicate<String> logFileFilter = fileName -> !fileName.startsWith(".") && fileName.endsWith(".log") && dateFilter.test(fileName);
+
         return logPaths.stream()
-                .map(logPath -> {
-                    logger.info(
-                            "WorkflowId {} ActivityId {} - Finding HL7 log files for path {}",
-                            activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPath
-                    );
-                    File logFile = new File(logPath);
-                    if (logFile.isDirectory()) {
-                        try {
-                            return Files.walk(logFile.toPath())
-                                    .filter(Files::isRegularFile)
-                                    .map(Path::toString)
-                                    .filter(s -> s.endsWith(".log"))
-                                    .toList();
-                        } catch (IOException e) {
-                            logger.warn(
-                                    "WorkflowId {} ActivityId {} - Error finding log files in directory {}",
-                                    activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPath, e
-                            );
-                            return Collections.<String>emptyList();
-                        }
-                    } else {
-                        return List.of(logPath);
+            .map(logPathString -> {
+                logger.info(
+                    "WorkflowId {} ActivityId {} - Finding HL7 log files for path {}",
+                    activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPathString
+                );
+                Path logPath = Paths.get(logPathString);
+                List<String> matchingLogs = new ArrayList<>();
+                if (Files.isDirectory(logPath)) {
+                    try {
+                        Files.walkFileTree(logPath, new SimpleFileVisitor<>() {
+                            @Override
+                            public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+                                String fileName = path.getFileName().toString();
+
+                                if (attrs.isRegularFile() && logFileFilter.test(fileName)) {
+                                    matchingLogs.add(path.toString());
+                                }
+                                return FileVisitResult.CONTINUE;
+                            }
+
+                            @Override
+                            public FileVisitResult visitFileFailed(Path file, IOException innerException) {
+                                logger.warn(
+                                    "WorkflowId {} ActivityId {} - Error accessing file {} during directory walk",
+                                    activityInfo.getWorkflowId(), activityInfo.getActivityId(),
+                                    file, innerException
+                                );
+                                return FileVisitResult.CONTINUE;
+                            }
+                        });
+                    } catch (IOException e) {
+                        logger.warn(
+                            "WorkflowId {} ActivityId {} - Error finding log files in directory {}",
+                            activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPathString, e
+                        );
+                        return Collections.<String>emptyList();
                     }
-                })
-                .flatMap(List::stream)
-                .filter(path -> dateFilter.apply(Path.of(path)))
-                .toList();
+                } else if (Files.isRegularFile(logPath)) {
+                    String fileName = logPath.getFileName().toString();
+                    if (logFileFilter.test(fileName)) {
+                        matchingLogs.add(logPath.toString());
+                    }
+                } else {
+                    logger.warn(
+                        "WorkflowId {} ActivityId {} - Path is neither a directory nor a regular file: {}",
+                        activityInfo.getWorkflowId(), activityInfo.getActivityId(), logPathString
+                    );
+                }
+                return matchingLogs;
+            })
+            .flatMap(List::stream)
+            .toList();
     }
 
     /**
      * Write the full list of log files into a manifest file
-     * @param logFiles Full list of log files to process
-     * @param manifestFilePath Path to the manifest file
+     *
+     * @param logFiles                  Full list of log files to process
+     * @param manifestFilePath          Path to the manifest file
      * @param splitAndUploadConcurrency Number of concurrent split and upload jobs
      * @return ContinueIngestWorkflow object with the manifest file path and the next index
      */
