@@ -9,5 +9,6 @@ public record IngestHl7LogWorkflowParsedInput(
     String logsRootPath,
     String hl7OutputPath,
     Integer splitAndUploadTimeout,
+    Integer splitAndUploadHeartbeatTimeout,
     Integer splitAndUploadConcurrency
 ) {}

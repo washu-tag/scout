@@ -12,6 +12,7 @@ import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogInput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogOutput;
 import edu.washu.tag.extractor.hl7log.util.FileHandler;
 import io.temporal.activity.Activity;
+import io.temporal.activity.ActivityExecutionContext;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.ActivityImpl;
@@ -61,17 +62,20 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     @Override
     public SplitAndTransformHl7LogOutput splitAndTransformHl7Log(SplitAndTransformHl7LogInput input) {
-        ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+        ActivityExecutionContext ctx = Activity.getExecutionContext();
+        ActivityInfo activityInfo = ctx.getInfo();
         String workflowId = activityInfo.getWorkflowId();
         String activityId = activityInfo.getActivityId();
 
+        ctx.heartbeat("Starting");
         logger.info("WorkflowId {} ActivityId {} - Splitting HL7 log file {} into component HL7 files", workflowId, activityId, input.logPath());
 
         URI destination = URI.create(input.hl7OutputPath());
         List<Hl7File> segmentResults;
         try {
-            segmentResults = processLogFile(input.logPath(), destination, workflowId, activityId);
+            segmentResults = processLogFile(input.logPath(), destination);
 
+            ctx.heartbeat("Updating status");
             ingestDbService.insertLogFile(LogFile.success(input.logPath(), workflowId, activityId));
         } catch (IOException e) {
             logger.error("WorkflowId {} ActivityId {} - Could not read log file {}",
@@ -81,6 +85,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         }
 
         // Insert the HL7 file paths into the database
+        ctx.heartbeat("Processed " + segmentResults.size() + " messages");
         ingestDbService.batchInsertHl7Files(segmentResults);
 
         // If all HL7 files failed, fail the activity
@@ -95,6 +100,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         }
 
         // Write the list of HL7 file paths to a file
+        ctx.heartbeat("Writing manifest file");
         String hl7ListFilePath = String.join("/",
             input.scratchDir(),
             activityInfo.getWorkflowId(),
@@ -110,6 +116,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             throw ApplicationFailure.newFailureWithCause("Failed to upload log file list to " + hl7ListFileUri, "type", e);
         }
 
+        ctx.heartbeat("Completed upload of " + segmentResults.size() + " messages");
         return new SplitAndTransformHl7LogOutput(uploadedList, hl7Paths.size());
     }
 
@@ -215,12 +222,15 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
      *
      * @param logFile     The HL7 log file to process
      * @param destination The URI destination
-     * @param workflowId  The workflow identifier for logs
-     * @param activityId  The activity identifier for logs
      * @return List of Hl7File instances containing generated output file paths or error messages
      * @throws IOException If an I/O error occurs
      */
-    private List<Hl7File> processLogFile(String logFile, URI destination, String workflowId, String activityId) throws IOException {
+    private List<Hl7File> processLogFile(String logFile, URI destination) throws IOException {
+        ActivityExecutionContext ctx = Activity.getExecutionContext();
+        ActivityInfo activityInfo = ctx.getInfo();
+        String workflowId = activityInfo.getWorkflowId();
+        String activityId = activityInfo.getActivityId();
+
         Path logFilePath = Paths.get(logFile);
 
         List<Hl7File> results = new ArrayList<>();
@@ -244,6 +254,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                         }
                         hl7Content.add(processed);
                     }
+
+                    ctx.heartbeat(hl7Count);
                     results.add(validateWriteAndUploadHl7(logFile, hl7Content, previousLine, destination, hl7Count++, workflowId, activityId));
                     hl7Content.clear();
                     previousLine = null;

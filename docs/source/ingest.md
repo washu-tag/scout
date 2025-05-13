@@ -18,6 +18,10 @@ corresponding Ansible variables.
 - `hl7OutputPath`: path to write HL7 files. Note that this is _not_ the path to the resulting delta lake. Ansible equivalent: `hl7_path`.
 - `splitAndUploadTimeout`: timeout in minutes for the activity that splits the HL7 listener log files and uploads the component HL7 messages to MinIO. 
 Ansible equivalent: `hl7log_extractor_timeout`
+- `splitAndUploadHeartbeatTimeout`: timeout in minutes for **heartbeats** during the activity that splits the HL7 listener log files and uploads 
+the component HL7 messages to MinIO. At a minimum, this is roughly the time to parse and upload one HL7 message, but it also includes steps like writing the manifest 
+file and updating the database. (Note also: the temporal client only sends the heartbeats to the server periodically; in between sends, it queues up
+heartbeats internally and could coalesce or drop heartbeats if they are too frequent.) Ansible equivalent: `hl7log_extractor_heartbeat_timeout`
 - `splitAndUploadConcurrency`: number of HL7 listener log files to process concurrently. Ansible equivalent: `hl7log_extractor_concurrency`
 - `modalityMapPath`: path to read modality map file, which is the source of the `modality` column in the Delta Lake table.
    Ansible equivalent: `modality_map_path`.
