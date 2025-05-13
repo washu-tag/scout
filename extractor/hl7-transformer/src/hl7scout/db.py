@@ -39,13 +39,31 @@ def write_errors(
     hl7_files: list[str], error_message: str, workflow_id: str, activity_id: str
 ) -> None:
     """Write an error message to the database for a list of HL7 files."""
-    activity.logger.info("Writing errors to database for %d HL7 files", len(hl7_files))
-    # Prepare the rows to insert
+    write_status_to_db(hl7_files, "failed", error_message, workflow_id, activity_id)
+
+
+def write_successes(hl7_files: list[str], workflow_id: str, activity_id: str) -> None:
+    """Write a success status to the database for a list of HL7 files."""
+    write_status_to_db(hl7_files, "success", None, workflow_id, activity_id)
+
+
+def write_status_to_db(
+    hl7_files: list[str],
+    status: str,
+    error_message: str | None,
+    workflow_id: str,
+    activity_id: str,
+) -> None:
+    """Write an error message to the database for a list of HL7 files."""
+    activity.logger.info(
+        "Writing '%s' status to database for %d HL7 files", status, len(hl7_files)
+    )
+
     insert_rows = [
         (
             hl7_file,
             "HL7",
-            "failed",
+            status,
             error_message,
             workflow_id,
             activity_id,
