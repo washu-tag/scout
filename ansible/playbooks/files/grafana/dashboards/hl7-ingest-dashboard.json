@@ -109,7 +109,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  date_trunc('day', date) AS time,\n  COUNT(*)                AS count\nFROM recent_hl7_files\nWHERE $__timeFilter(date)\n  AND status != 'failed'\nGROUP BY 1\nORDER BY 1;",
+          "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    '1 day'::interval\n  )::date AS date\n),\ncounts AS (\n  SELECT \n    date,\n    COUNT(*) as count\n  FROM recent_hl7_files\n  WHERE status != 'failed'\n  AND date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n  GROUP BY date\n)\nSELECT \n  TO_CHAR(date_series.date, 'YYYY-MM-DD') as date,\n  COALESCE(counts.count, 0) as files\nFROM date_series\nLEFT JOIN counts ON date_series.date = counts.date\nORDER BY date_series.date;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -199,7 +199,7 @@
           "showLegend": false
         },
         "orientation": "auto",
-        "showValue": "never",
+        "showValue": "always",
         "stacking": "none",
         "tooltip": {
           "hideZeros": false,
@@ -219,7 +219,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  date_trunc('day', date) AS time,\n  COUNT(*)                AS count\nFROM recent_hl7_files\nWHERE $__timeFilter(date)\n  AND status = 'failed'\nGROUP BY 1\nORDER BY 1;",
+          "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    '1 day'::interval\n  )::date AS date\n),\ncounts AS (\n  SELECT \n    date,\n    COUNT(*) as count\n  FROM recent_hl7_files\n  WHERE status = 'failed'\n  AND date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n  GROUP BY date\n)\nSELECT \n  TO_CHAR(date_series.date, 'YYYY-MM-DD') as date,\n  COALESCE(counts.count, 0) as files\nFROM date_series\nLEFT JOIN counts ON date_series.date = counts.date\nORDER BY date_series.date;",
           "refId": "A",
           "sql": {
             "columns": [
