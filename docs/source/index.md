@@ -44,6 +44,8 @@ Superset analytics and Jupyter notebooks are provided to users to facilitate dat
 Temporal for data ingestion and processing, Delta Lake and MinIO for efficient data storage and management, and Prometheus and Grafana
 for monitoring and visualization.
 
+* The [Technical Documentation](technical/index.md) provides more information about the technical aspects of the Scout system.
+
 * Explore the [Tips & Tricks](tips.md) page for helpful hints for using Scout services.
 
 * Report an issue via [Jira](https://xnat.atlassian.net/jira/software/projects/SCOUT/summary)
@@ -54,4 +56,5 @@ services
 dataschema
 ingest
 tips
+technical/index
 ```
