@@ -33,6 +33,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -63,6 +66,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     private final FileHandler fileHandler;
     private final IngestDbService ingestDbService;
+
+    private record SplitHl7LogTuple(int messageNumber, String headerLine, List<String> hl7Content) {}
 
     public SplitHl7LogActivityImpl(FileHandler fileHandler, IngestDbService ingestDbService) {
         this.fileHandler = fileHandler;
@@ -252,6 +257,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         Path logFilePath = Paths.get(logFile);
 
         List<FileStatus> results = new ArrayList<>();
+        List<SplitHl7LogTuple> splitHl7Messages = new ArrayList<>();
         int hl7Count = 0;
         try (BufferedReader reader = Files.newBufferedReader(logFilePath, StandardCharsets.ISO_8859_1)) {
             String line;
@@ -274,7 +280,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                     }
 
                     ctx.heartbeat(hl7Count);
-                    results.add(validateWriteAndUploadHl7(logFile, hl7Content, previousLine, destination, hl7Count++, workflowId, activityId));
+                    splitHl7Messages.add(new SplitHl7LogTuple(hl7Count++, previousLine, new ArrayList<>(hl7Content)));
                     hl7Content.clear();
                     previousLine = null;
                     continue;
@@ -285,7 +291,12 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         if (hl7Count == 0) {
             results.add(FileStatus.failed(logFile, FileStatusType.LOG, "Log did not contain any HL7 messages", workflowId, activityId));
+
+            return results;
         }
+
+        // Validate, zip, and upload the HL7 messages
+        results.addAll(validateZipAndUploadHl7(logFile, splitHl7Messages, destination, workflowId, activityId));
 
         return results;
     }
@@ -293,109 +304,113 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     /**
      * Validate HL7 message has content, write to file, upload to S3, and return status object
      *
-     * @param logFile       Source HL7 log file
-     * @param lines         Content of the HL7 message, split from the log
-     * @param headerLine    Line preceding SB tag
-     * @param destination   Base output location
-     * @param messageNumber This HL7 file's index within parent log for error reporting
-     * @param workflowId    The workflow identifier for logs
-     * @param activityId    The activity identifier for logs
+     * @param logFile          Source HL7 log file
+     * @param splitHl7Messages Split HL7 message tuple with content and header
+     * @param destination      Base output location
+     * @param workflowId       The workflow identifier for logs
+     * @param activityId       The activity identifier for logs
      * @return An object containing the file path if the operation was successful, or an error message if not
      */
-    private FileStatus validateWriteAndUploadHl7(String logFile, List<String> lines, String headerLine, URI destination, int messageNumber, String workflowId,
-        String activityId) {
+    private List<FileStatus> validateZipAndUploadHl7(String logFile, List<SplitHl7LogTuple> splitHl7Messages, URI destination, String workflowId, String activityId) {
+        List<FileStatus> results = new ArrayList<>();
+        Path logFilePath = Paths.get(logFile);
+        String logFileName = logFilePath.getFileName().toString();
+        String logFileNameWithoutExtension = logFileName.substring(0, logFileName.lastIndexOf('.'));
 
-        if (lines.stream().allMatch(String::isBlank)) {
-            return FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7,
-                "HL7 message content is empty",
-                workflowId, activityId);
-        }
+        List<String> zippedHl7Files = new ArrayList<>();
 
-        if (StringUtils.isBlank(headerLine)) {
-            return FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7,
-                "HL7 content did not contain a timestamp header line; this usually means it is a repeat of the previous message's HL7 content",
-                workflowId, activityId);
-        }
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+             ZipOutputStream zipOut = new ZipOutputStream(byteArrayOutputStream)) {
 
-        String timestamp;
-        try {
-            timestamp = extractTimestamp(headerLine);
-        } catch (FileFormatException e) {
-            logger.warn("WorkflowId {} ActivityId {} - Unable to extract timestamp for message {}: {}", workflowId, activityId, messageNumber, e.getMessage());
-            return FileStatus.failed(
-                createPlaceholderHl7FilePath(logFile, messageNumber),
-                FileStatusType.HL7,
-                "Unable to extract timestamp for message: " + e.getMessage(),
-                workflowId,
-                activityId
-            );
-        }
+            for (SplitHl7LogTuple splitHl7Message : splitHl7Messages) {
 
-        try {
-            return writeAndUpload(logFile, lines, timestamp, destination, messageNumber, workflowId, activityId);
+                int messageNumber = splitHl7Message.messageNumber();
+                String headerLine = splitHl7Message.headerLine();
+                List<String> lines = splitHl7Message.hl7Content();
+
+                if (lines.stream().allMatch(String::isBlank)) {
+                    results.add(
+                            FileStatus.failed(
+                                    createPlaceholderHl7FilePath(logFile, messageNumber),
+                                    FileStatusType.HL7,
+                                    "HL7 message content is empty",
+                                    workflowId, activityId
+                    ));
+                }
+
+                if (StringUtils.isBlank(headerLine)) {
+                    results.add(
+                            FileStatus.failed(
+                                    createPlaceholderHl7FilePath(logFile, messageNumber),
+                                    FileStatusType.HL7,
+                                    "HL7 content did not contain a timestamp header line; this usually means it is a repeat of the previous message's HL7 content",
+                                    workflowId, activityId
+                            ));
+                }
+
+                String timestamp;
+                try {
+                    timestamp = extractTimestamp(headerLine);
+                } catch (FileFormatException e) {
+                    logger.warn("WorkflowId {} ActivityId {} - Unable to extract timestamp for message {}: {}", workflowId, activityId, messageNumber, e.getMessage());
+                    results.add(
+                        FileStatus.failed(
+                            createPlaceholderHl7FilePath(logFile, messageNumber),
+                            FileStatusType.HL7,
+                            "Unable to extract timestamp for message: " + e.getMessage(),
+                            workflowId,
+                            activityId
+                    ));
+
+                    continue;
+                }
+
+                // Add HL7 content to the zip file
+                String fileName = timestamp + ".hl7";
+                ZipEntry zipEntry = new ZipEntry(fileName);
+                zipOut.putNextEntry(zipEntry);
+                for (String line : lines) {
+                    // Write line with carriage return (HL7 requirement)
+                    zipOut.write(line.getBytes(StandardCharsets.UTF_8));
+                    zipOut.write('\r');
+                }
+                zipOut.closeEntry();
+                zippedHl7Files.add(fileName);
+            }
+
+            // Upload the zip file to S3
+            zipOut.close();
+            String relativePath = getTimestampPath(logFileNameWithoutExtension).resolve(logFileNameWithoutExtension + ".zip").toString();
+            String uploadedPath = fileHandler.putWithRetry(byteArrayOutputStream.toByteArray(), relativePath, destination);
+
+            // Add successful HL7 file to results
+            for (String fileName : zippedHl7Files) {
+                String outputPath = uploadedPath + "/" + fileName;
+                results.add(
+                    FileStatus.staged(outputPath, FileStatusType.HL7, workflowId, activityId)
+                );
+            }
         } catch (IOException e) {
-            logger.error("WorkflowId {} ActivityId {} - Could not write message {} to HL7 file", workflowId, activityId, messageNumber, e);
-            return FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7, "Could not write message to HL7 file: " + e.getMessage(), workflowId, activityId);
+            logger.error("WorkflowId {} ActivityId {} - Failed to create or upload zip file to {}", workflowId, activityId, destination, e);
+            for (SplitHl7LogTuple splitHl7Message : splitHl7Messages) {
+                int messageNumber = splitHl7Message.messageNumber();
+                results.add(FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7, "Failed to create or upload zip file: " + e.getMessage(), workflowId, activityId));
+            }
         }
+
+        return results;
     }
 
     private String createPlaceholderHl7FilePath(String logFile, int messageNumber) {
         return logFile + "_" + messageNumber;
     }
 
-
-    /**
-     * Write HL7 message to file, upload to S3, and return status object
-     *
-     * @param logFile       Source HL7 log file
-     * @param lines         Content of the HL7 message, split from the log
-     * @param timestamp     Timestamp for naming the HL7 file
-     * @param destination   Base output location in S3
-     * @param messageNumber This HL7 file's index within parent log for error reporting
-     * @param workflowId    The workflow identifier for logs
-     * @param activityId    The activity identifier for logs
-     * @return An object containing the file path if the operation was successful, or an error message if not
-     * @throws IOException If an I/O error occurs
-     */
-    private FileStatus writeAndUpload(String logFile, List<String> lines, String timestamp, URI destination, int messageNumber, String workflowId,
-        String activityId) throws IOException {
-
-        // Define output path
-        String relativePath = getTimestampPath(timestamp).resolve(timestamp + ".hl7").toString();
-        logger.info("WorkflowId {} ActivityId {} - Transforming message {} HL7 file {}", workflowId, activityId,
-            messageNumber, relativePath);
-
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            for (String line : lines) {
-                // Write line with carriage return (HL7 requirement)
-                outputStream.write(line.getBytes(StandardCharsets.UTF_8));
-                outputStream.write('\r');
-            }
-
-            logger.info("WorkflowId {} ActivityId {} - Uploading message {} HL7 file {}/{}", workflowId, activityId,
-                messageNumber, destination, relativePath);
-
-            try {
-                // Convert to byte array and upload to S3
-                // We could use piped streams to avoid loading the whole thing into memory, but this adds complexity that isn't warranted for these small files
-                String outputPath = fileHandler.putWithRetry(outputStream.toByteArray(), relativePath, destination);
-                return FileStatus.staged(outputPath, FileStatusType.HL7, workflowId, activityId);
-            } catch (IOException e) {
-                logger.error("WorkflowId {} ActivityId {} - Failed to upload message {} HL7 file {}/{}",
-                    workflowId, activityId, messageNumber, destination, relativePath, e);
-                return FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7, "Failed to upload HL7 file", workflowId, activityId);
-            }
-        }
-    }
-
     private Path getTimestampPath(String timestamp) {
         String year = timestamp.substring(YEAR_START, YEAR_END);
         String month = timestamp.substring(MONTH_START, MONTH_END);
         String day = timestamp.substring(DAY_START, DAY_END);
-        String hour = timestamp.substring(HOUR_START, HOUR_END);
-
         // Create the directory path
-        return Path.of(year, month, day, hour);
+        return Path.of(year, month, day);
     }
 
     private String uploadHl7PathList(List<String> hl7Paths, URI destination) throws IOException {
