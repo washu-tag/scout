@@ -30,7 +30,7 @@
         "defaults": {
           "color": {
             "fixedColor": "green",
-            "mode": "fixed"
+            "mode": "palette-classic"
           },
           "custom": {
             "axisBorderShow": false,
@@ -55,7 +55,6 @@
             }
           },
           "decimals": 0,
-          "displayName": "Files",
           "mappings": [],
           "min": 0,
           "thresholds": {
@@ -109,7 +108,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  date_trunc('day', date) AS time,\n  COUNT(*)                AS count\nFROM recent_hl7_files\nWHERE $__timeFilter(date)\n  AND status != 'failed'\nGROUP BY 1\nORDER BY 1;",
+          "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    '1 day'::interval\n  )::date AS date\n),\ncounts AS (\n  SELECT \n    date,\n    status,\n    COUNT(*) as count\n  FROM recent_hl7_files\n  WHERE status != 'failed'\n  AND date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n  GROUP BY date, status\n)\nSELECT \n  date_series.date as date,\n  counts.status as status,\n  COALESCE(counts.count, 0) as files\nFROM date_series\nLEFT JOIN counts ON date_series.date = counts.date\nORDER BY date_series.date;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -131,6 +130,39 @@
         }
       ],
       "title": "HL7 Files Ingested",
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "dateFormat": "YYYY-MM-DD",
+                "destinationType": "string",
+                "targetField": "date",
+                "timezone": "utc"
+              }
+            ],
+            "fields": {}
+          }
+        },
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "status",
+            "emptyValue": "zero",
+            "rowField": "date",
+            "valueField": "files"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": ["date\\status", "success", "staged"]
+            }
+          }
+        }
+      ],
       "type": "barchart"
     },
     {
@@ -199,7 +231,7 @@
           "showLegend": false
         },
         "orientation": "auto",
-        "showValue": "never",
+        "showValue": "always",
         "stacking": "none",
         "tooltip": {
           "hideZeros": false,
@@ -219,7 +251,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  date_trunc('day', date) AS time,\n  COUNT(*)                AS count\nFROM recent_hl7_files\nWHERE $__timeFilter(date)\n  AND status = 'failed'\nGROUP BY 1\nORDER BY 1;",
+          "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    '1 day'::interval\n  )::date AS date\n),\ncounts AS (\n  SELECT \n    date,\n    COUNT(*) as count\n  FROM recent_hl7_files\n  WHERE status = 'failed'\n  AND date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n  GROUP BY date\n)\nSELECT \n  date_series.date as date,\n  COALESCE(counts.count, 0) as files\nFROM date_series\nLEFT JOIN counts ON date_series.date = counts.date\nORDER BY date_series.date;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -241,6 +273,12 @@
         }
       ],
       "title": "HL7 Ingest Errors (Log Scale)",
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {}
+        }
+      ],
       "type": "barchart"
     },
     {
@@ -529,7 +567,7 @@
     "list": []
   },
   "time": {
-    "from": "now-90d",
+    "from": "now-30d",
     "to": "now"
   },
   "timepicker": {},
