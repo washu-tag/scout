@@ -25,5 +25,7 @@ policies:
     routes:
       - receiver: "{{ grafana_alert_contact_point }}"
         matchers:
-          - alertname = No HL7 from scheduled ingest
+          - alertname = "No HL7 from scheduled ingest"
+          - grafana_folder = "Scout"
         repeat_interval: 999w # Essentially, do not repeat
+        group_interval: 999w
