@@ -69,6 +69,15 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         this.ingestDbService = ingestDbService;
     }
 
+    private static LocalDate dateFromLogFilePath(String filePath) {
+        String fileName = Paths.get(filePath).getFileName().toString();
+        Matcher m = DATE_PATTERN.matcher(fileName);
+        if (m.find()) {
+            return LocalDate.parse(m.group(), DATE_FORMATTER);
+        }
+        return null;
+    }
+
     @Override
     public SplitAndTransformHl7LogOutput splitAndTransformHl7Log(SplitAndTransformHl7LogInput input) {
         ActivityExecutionContext ctx = Activity.getExecutionContext();
@@ -88,7 +97,9 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         } catch (Exception e) {
             logger.error("WorkflowId {} ActivityId {} - Could not read log file {}",
                 activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.logPath(), e);
-            ingestDbService.insertFileStatus(FileStatus.failed(input.logPath(), FileStatusType.LOG, String.format("%s: %s", e.getClass().getSimpleName(), e.getMessage()), workflowId, activityId));
+            ingestDbService.insertFileStatus(
+                FileStatus.failed(input.logPath(), FileStatusType.LOG, String.format("%s: %s", e.getClass().getSimpleName(), e.getMessage()), workflowId,
+                    activityId));
             throw ApplicationFailure.newFailureWithCause("Could not read log file " + input.logPath(), "type", e);
         }
 
@@ -304,6 +315,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
      */
     private FileStatus validateWriteAndUploadHl7(String logFile, List<String> lines, String headerLine, URI destination, int messageNumber, String workflowId,
         String activityId) {
+
         if (lines.stream().allMatch(String::isBlank)) {
             return FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7,
                 "HL7 message content is empty",
@@ -342,7 +354,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private String createPlaceholderHl7FilePath(String logFile, int messageNumber) {
         return logFile + "_" + messageNumber;
     }
-
 
     /**
      * Write HL7 message to file, upload to S3, and return status object
@@ -383,7 +394,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             } catch (Exception e) {
                 logger.error("WorkflowId {} ActivityId {} - Failed to upload message {} HL7 file {}/{}",
                     workflowId, activityId, messageNumber, destination, relativePath, e);
-                return FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7, "Failed to upload HL7 file", workflowId, activityId);
+                return FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7,
+                    "Failed to upload HL7 file", workflowId, activityId);
             }
         }
     }
@@ -405,15 +417,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private byte[] convertListToByteArray(List<String> hl7FilePaths) {
         String content = String.join(System.lineSeparator(), hl7FilePaths);
         return content.getBytes(StandardCharsets.UTF_8);
-    }
-
-    private static LocalDate dateFromLogFilePath(String filePath) {
-        String fileName = Paths.get(filePath).getFileName().toString();
-        Matcher m = DATE_PATTERN.matcher(fileName);
-        if (m.find()) {
-            return LocalDate.parse(m.group(), DATE_FORMATTER);
-        }
-        return null;
     }
 
 }
