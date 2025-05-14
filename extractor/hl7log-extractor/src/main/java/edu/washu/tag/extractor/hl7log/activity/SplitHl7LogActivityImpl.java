@@ -85,7 +85,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             ctx.heartbeat("Updating status");
             fileStatuses = processLogFile(input.logPath(), destination);
             ingestDbService.insertFileStatus(FileStatus.parsed(input.logPath(), workflowId, activityId));
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("WorkflowId {} ActivityId {} - Could not read log file {}",
                 activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.logPath(), e);
             ingestDbService.insertFileStatus(FileStatus.failed(input.logPath(), FileStatusType.LOG, String.format("%s: %s", e.getClass().getSimpleName(), e.getMessage()), workflowId, activityId));
@@ -128,7 +128,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String uploadedList;
         try {
             uploadedList = uploadHl7PathList(hl7Paths, hl7ListFileUri);
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("WorkflowId {} ActivityId {} - Failed to upload log file list to {}",
                 activityInfo.getWorkflowId(), activityInfo.getActivityId(), hl7ListFileUri, e);
             throw ApplicationFailure.newFailureWithCause("Failed to upload log file list to " + hl7ListFileUri, "type", e);
@@ -304,7 +304,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
      */
     private FileStatus validateWriteAndUploadHl7(String logFile, List<String> lines, String headerLine, URI destination, int messageNumber, String workflowId,
         String activityId) {
-
         if (lines.stream().allMatch(String::isBlank)) {
             return FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7,
                 "HL7 message content is empty",
@@ -333,9 +332,10 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
         try {
             return writeAndUpload(logFile, lines, timestamp, destination, messageNumber, workflowId, activityId);
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("WorkflowId {} ActivityId {} - Could not write message {} to HL7 file", workflowId, activityId, messageNumber, e);
-            return FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7, "Could not write message to HL7 file: " + e.getMessage(), workflowId, activityId);
+            return FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7,
+                "Could not write message to HL7 file: " + e.getMessage(), workflowId, activityId);
         }
     }
 
@@ -380,7 +380,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 // We could use piped streams to avoid loading the whole thing into memory, but this adds complexity that isn't warranted for these small files
                 String outputPath = fileHandler.putWithRetry(outputStream.toByteArray(), relativePath, destination);
                 return FileStatus.staged(outputPath, FileStatusType.HL7, workflowId, activityId);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.error("WorkflowId {} ActivityId {} - Failed to upload message {} HL7 file {}/{}",
                     workflowId, activityId, messageNumber, destination, relativePath, e);
                 return FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7, "Failed to upload HL7 file", workflowId, activityId);
