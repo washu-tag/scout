@@ -1643,7 +1643,7 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "MinIO",
+    "title": "MinIO (main line)",
     "uid": "scout_minio_dashbaord_01",
     "id": null,
     "version": 1,
