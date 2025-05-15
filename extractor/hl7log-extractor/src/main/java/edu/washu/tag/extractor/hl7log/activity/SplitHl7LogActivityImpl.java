@@ -67,7 +67,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private final FileHandler fileHandler;
     private final IngestDbService ingestDbService;
 
-    private record SplitHl7LogTuple(int messageNumber, String headerLine, List<String> hl7Content) {}
+    private record Hl7LogEntry(int messageNumber, String headerLine, List<String> hl7Content) {}
 
     public SplitHl7LogActivityImpl(FileHandler fileHandler, IngestDbService ingestDbService) {
         this.fileHandler = fileHandler;
@@ -257,7 +257,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         Path logFilePath = Paths.get(logFile);
 
         List<FileStatus> results = new ArrayList<>();
-        List<SplitHl7LogTuple> splitHl7Messages = new ArrayList<>();
+        List<Hl7LogEntry> splitHl7LogEntries = new ArrayList<>();
         int hl7Count = 0;
         try (BufferedReader reader = Files.newBufferedReader(logFilePath, StandardCharsets.ISO_8859_1)) {
             String line;
@@ -280,7 +280,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                     }
 
                     ctx.heartbeat(hl7Count);
-                    splitHl7Messages.add(new SplitHl7LogTuple(hl7Count++, previousLine, new ArrayList<>(hl7Content)));
+                    splitHl7LogEntries.add(new Hl7LogEntry(hl7Count++, previousLine, new ArrayList<>(hl7Content)));
                     hl7Content.clear();
                     previousLine = null;
                     continue;
@@ -296,7 +296,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         }
 
         // Validate, zip, and upload the HL7 messages
-        results.addAll(validateZipAndUploadHl7(logFile, splitHl7Messages, destination, workflowId, activityId));
+        results.addAll(validateZipAndUploadHl7(logFile, splitHl7LogEntries, destination, workflowId, activityId));
 
         return results;
     }
@@ -304,14 +304,14 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     /**
      * Validate HL7 message has content, write to file, upload to S3, and return status object
      *
-     * @param logFile          Source HL7 log file
-     * @param splitHl7Messages Split HL7 message tuple with content and header
-     * @param destination      Base output location
-     * @param workflowId       The workflow identifier for logs
-     * @param activityId       The activity identifier for logs
+     * @param logFile            Source HL7 log file
+     * @param splitHl7LogEntries Split HL7 log entries
+     * @param destination        Base output location
+     * @param workflowId         The workflow identifier for logs
+     * @param activityId         The activity identifier for logs
      * @return An object containing the file path if the operation was successful, or an error message if not
      */
-    private List<FileStatus> validateZipAndUploadHl7(String logFile, List<SplitHl7LogTuple> splitHl7Messages, URI destination, String workflowId, String activityId) {
+    private List<FileStatus> validateZipAndUploadHl7(String logFile, List<Hl7LogEntry> splitHl7LogEntries, URI destination, String workflowId, String activityId) {
         List<FileStatus> results = new ArrayList<>();
         Path logFilePath = Paths.get(logFile);
         String logFileName = logFilePath.getFileName().toString();
@@ -322,11 +322,11 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              ZipOutputStream zipOut = new ZipOutputStream(byteArrayOutputStream)) {
 
-            for (SplitHl7LogTuple splitHl7Message : splitHl7Messages) {
+            for (Hl7LogEntry hl7LogEntry : splitHl7LogEntries) {
 
-                int messageNumber = splitHl7Message.messageNumber();
-                String headerLine = splitHl7Message.headerLine();
-                List<String> lines = splitHl7Message.hl7Content();
+                int messageNumber = hl7LogEntry.messageNumber();
+                String headerLine = hl7LogEntry.headerLine();
+                List<String> lines = hl7LogEntry.hl7Content();
 
                 if (lines.stream().allMatch(String::isBlank)) {
                     results.add(
@@ -393,8 +393,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             }
         } catch (IOException e) {
             logger.error("WorkflowId {} ActivityId {} - Failed to create or upload zip file to {}", workflowId, activityId, destination, e);
-            for (SplitHl7LogTuple splitHl7Message : splitHl7Messages) {
-                int messageNumber = splitHl7Message.messageNumber();
+            for (Hl7LogEntry hl7LogEntry : splitHl7LogEntries) {
+                int messageNumber = hl7LogEntry.messageNumber();
                 results.add(FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7, "Failed to create or upload zip file: " + e.getMessage(), workflowId, activityId));
             }
         }
