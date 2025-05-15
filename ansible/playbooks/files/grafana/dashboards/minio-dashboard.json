@@ -3799,26 +3799,12 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "text": ["All"],
-          "value": ["$__all"]
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${datasource}"
-        },
-        "definition": "label_values(job)",
-        "includeAll": true,
-        "multi": true,
-        "name": "scrape_jobs",
+        "name": "datasource",
         "options": [],
-        "query": {
-          "query": "label_values(job)",
-          "refId": "StandardVariableQuery"
-        },
+        "query": "prometheus",
         "refresh": 1,
         "regex": "",
-        "type": "query"
+        "type": "datasource"
       }
     ]
   },
