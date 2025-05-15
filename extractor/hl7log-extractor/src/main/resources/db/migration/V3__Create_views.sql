@@ -1,22 +1,16 @@
 -- View for log files
 CREATE OR REPLACE VIEW recent_log_file_statuses AS
-SELECT *
-FROM file_statuses f
-WHERE f.type = 'Log' AND processed_at = (
-    SELECT MAX(processed_at)
-    FROM file_statuses
-    WHERE file_path = f.file_path
-);
+SELECT DISTINCT ON (file_path) *
+FROM file_statuses
+WHERE type = 'Log'
+ORDER BY file_path, processed_at DESC;
 
 -- View for hl7 files
 CREATE OR REPLACE VIEW recent_hl7_file_statuses AS
-SELECT *
-FROM file_statuses f
-WHERE f.type = 'HL7' AND processed_at = (
-    SELECT MAX(processed_at)
-    FROM file_statuses
-    WHERE file_path = f.file_path
-);
+SELECT DISTINCT ON (file_path) *
+FROM file_statuses
+WHERE type = 'HL7'
+ORDER BY file_path, processed_at DESC;
 
 -- View for hl7 files with file information
 CREATE OR REPLACE VIEW recent_hl7_files AS
