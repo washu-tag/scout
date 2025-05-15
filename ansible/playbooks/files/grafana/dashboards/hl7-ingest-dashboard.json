@@ -396,7 +396,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT h.date,\n       fs.file_path,\n       fs.error_message,\n       fs.status,\n       fs.processed_at\nFROM hl7_files h\nJOIN (\n    SELECT DISTINCT ON (file_path)\n           file_path,\n           error_message,\n           status,\n           processed_at\n    FROM   file_statuses\n    WHERE  type = 'HL7'\n    ORDER  BY file_path, processed_at DESC          -- DESC is what makes it “latest”\n) AS fs\nON fs.file_path = h.hl7_file_path\nWHERE $__timeFilter(h.date) and status = 'failed'",
+          "rawSql": "SELECT * FROM error_messages WHERE $__timeFilter(date)",
           "refId": "A",
           "sql": {
             "columns": [
