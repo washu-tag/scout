@@ -108,7 +108,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    '1 day'::interval\n  )::date AS date\n),\ncounts AS (\n  SELECT \n    date,\n    status,\n    COUNT(*) as count\n  FROM recent_hl7_files\n  WHERE status != 'failed'\n  AND date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n  GROUP BY date, status\n)\nSELECT \n  date_series.date as date,\n  counts.status as status,\n  COALESCE(counts.count, 0) as files\nFROM date_series\nLEFT JOIN counts ON date_series.date = counts.date\nORDER BY date_series.date;",
+          "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    '1 day'::interval\n  )::date AS date\n)\nSELECT \n  date_series.date as date,\n  h.status as status,\n  h.files as files\nFROM date_series\nLEFT JOIN hl7_file_counts h ON date_series.date = h.date AND status != 'failed'\nORDER BY date_series.date;\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -251,7 +251,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    '1 day'::interval\n  )::date AS date\n),\ncounts AS (\n  SELECT \n    date,\n    COUNT(*) as count\n  FROM recent_hl7_files\n  WHERE status = 'failed'\n  AND date BETWEEN $__timeFrom()::date AND $__timeTo()::date\n  GROUP BY date\n)\nSELECT \n  date_series.date as date,\n  COALESCE(counts.count, 0) as files\nFROM date_series\nLEFT JOIN counts ON date_series.date = counts.date\nORDER BY date_series.date;",
+          "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    $__timeFrom()::date,\n    $__timeTo()::date,\n    '1 day'::interval\n  )::date AS date\n)\nSELECT \n  date_series.date as date,\n  h.status as status,\n  h.files as files\nFROM date_series\nLEFT JOIN hl7_file_counts h ON date_series.date = h.date AND status = 'failed'\nORDER BY date_series.date;\n",
           "refId": "A",
           "sql": {
             "columns": [
