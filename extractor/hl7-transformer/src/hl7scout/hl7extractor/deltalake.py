@@ -91,6 +91,7 @@ def import_hl7_files_to_deltalake(
 ) -> int:
     """Extract data from HL7 messages and write to Delta Lake."""
     spark = None
+    temp_dir = None
     try:
         activity.logger.info("Creating Spark session")
         spark = (
