@@ -315,7 +315,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         List<FileStatus> results = new ArrayList<>();
         Path logFilePath = Paths.get(logFile);
         String logFileName = logFilePath.getFileName().toString();
-        String logFileNameWithoutExtension = logFileName.substring(0, logFileName.lastIndexOf('.'));
+        String logFileNameWOExtension = logFileName.substring(0, logFileName.lastIndexOf('.'));
 
         List<String> zippedHl7Files = new ArrayList<>();
 
@@ -367,7 +367,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
                 // Add HL7 content to the zip file
                 String fileName = timestamp + ".hl7";
-                ZipEntry zipEntry = new ZipEntry(fileName);
+                String zipPath = getZipTimestampPath(timestamp).resolve(fileName).toString();
+                ZipEntry zipEntry = new ZipEntry(zipPath);
                 zipOut.putNextEntry(zipEntry);
                 for (String line : lines) {
                     // Write line with carriage return (HL7 requirement)
@@ -375,15 +376,15 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                     zipOut.write('\r');
                 }
                 zipOut.closeEntry();
-                zippedHl7Files.add(fileName);
+                zippedHl7Files.add(zipPath);
             }
 
             // Upload the zip file to S3
             zipOut.close();
-            String relativePath = getTimestampPath(logFileNameWithoutExtension).resolve(logFileNameWithoutExtension + ".zip").toString();
+            String relativePath = getBucketTimestampPath(logFileNameWOExtension).resolve(logFileNameWOExtension + ".zip").toString();
             String uploadedPath = fileHandler.putWithRetry(byteArrayOutputStream.toByteArray(), relativePath, destination);
 
-            // Add successful HL7 file to results
+            // Add successful HL7 files to results
             for (String fileName : zippedHl7Files) {
                 String outputPath = uploadedPath + "/" + fileName;
                 results.add(
@@ -405,12 +406,19 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         return logFile + "_" + messageNumber;
     }
 
-    private Path getTimestampPath(String timestamp) {
+    private Path getBucketTimestampPath(String timestamp) {
+        String year = timestamp.substring(YEAR_START, YEAR_END);
+        // Create the directory path
+        return Path.of(year);
+    }
+
+    private Path getZipTimestampPath(String timestamp) {
         String year = timestamp.substring(YEAR_START, YEAR_END);
         String month = timestamp.substring(MONTH_START, MONTH_END);
         String day = timestamp.substring(DAY_START, DAY_END);
+        String hour = timestamp.substring(HOUR_START, HOUR_END);
         // Create the directory path
-        return Path.of(year, month, day);
+        return Path.of(year, month, day, hour);
     }
 
     private String uploadHl7PathList(List<String> hl7Paths, URI destination) throws IOException {
