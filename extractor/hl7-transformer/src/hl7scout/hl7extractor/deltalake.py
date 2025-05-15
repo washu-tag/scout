@@ -3,6 +3,7 @@
 # But if we try to catch the builtin TimeoutError, it doesn't work.
 from concurrent.futures._base import TimeoutError
 from pathlib import Path
+from s3fs import S3FileSystem
 
 from delta.tables import DeltaTable
 from py4j.protocol import Py4JError
@@ -12,6 +13,11 @@ from temporalio import activity
 from temporalio.exceptions import ApplicationError
 
 from hl7scout.db import write_errors, write_successes
+
+import os
+import shutil
+import tempfile
+import zipfile
 
 DATE_FORMAT = "yyyyMMdd"
 DT_FORMAT = "yyyyMMddHHmmss"
@@ -48,6 +54,35 @@ def parse_timestamp_col(col: Column | str) -> Column:
     )
 
 
+def parse_s3_zip_paths(hl7_file_paths: list[str]) -> dict[str, list[str]]:
+    # Map zip_path -> list of hl7 file names inside the zip
+    zip_map = {}
+    for path in hl7_file_paths:
+        # Example: s3://lake/hl7/2011/06/20/20110620.zip/201106201715065624.hl7
+        parts = path.split(".zip/")
+        zip_path = parts[0] + ".zip"
+        hl7_inside_zip = parts[1]
+        zip_map.setdefault(zip_path, []).append(hl7_inside_zip)
+    return zip_map
+
+
+def download_and_extract_zips(zip_map, local_dir):
+    fs = S3FileSystem()
+    extracted_files = []
+    for s3_zip_path, hl7_files in zip_map.items():
+        local_zip = os.path.join(local_dir, os.path.basename(s3_zip_path))
+        with fs.open(s3_zip_path, "rb") as s3f, open(local_zip, "wb") as outf:
+            outf.write(s3f.read())
+        with zipfile.ZipFile(local_zip, "r") as z:
+            for hl7_file in hl7_files:
+                out_path = os.path.join(local_dir, hl7_file)
+                os.makedirs(os.path.dirname(out_path), exist_ok=True)
+                with z.open(hl7_file) as src, open(out_path, "wb") as dst:
+                    dst.write(src.read())
+                extracted_files.append(out_path)
+    return extracted_files
+
+
 def import_hl7_files_to_deltalake(
     hl7_manifest_file_path: str,
     modality_map_csv_path: str,
@@ -76,11 +111,19 @@ def import_hl7_files_to_deltalake(
         if not hl7_file_paths_from_spark:
             raise ApplicationError("No HL7 files found in HL7 file path files")
 
+        # Download and extract zip files to a temp dir
+        temp_dir = tempfile.mkdtemp()
+        zip_map = parse_s3_zip_paths(hl7_file_paths_from_spark)
+        local_hl7_files = download_and_extract_zips(zip_map, temp_dir)
+
+        if not local_hl7_files:
+            raise ApplicationError("No HL7 files extracted from zip files")
+
         activity.heartbeat()
-        activity.logger.info("Reading %d HL7 messages", len(hl7_file_paths_from_spark))
+        activity.logger.info("Reading %d HL7 messages", len(local_hl7_files))
         df = (
             spark.read.format("hl7")
-            .load(hl7_file_paths_from_spark)
+            .load(local_hl7_files)
             .withColumn(
                 "source_file",
                 F.regexp_replace(F.input_file_name(), "^s3a://", "s3://"),
@@ -314,3 +357,11 @@ def import_hl7_files_to_deltalake(
                 spark.stop()
             except:
                 pass
+
+        if temp_dir is not None:
+            # CLean up temp dir after Spark is finished processing
+            activity.logger.info("Cleaning up temp dir %s", temp_dir)
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception as e:
+                activity.logger.error("Error cleaning up temp dir %s", e)
