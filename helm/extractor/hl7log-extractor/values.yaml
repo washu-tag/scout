@@ -56,7 +56,9 @@ securityContext:
   # runAsNonRoot: true
   # runAsUser: 1000
 
-ports: []
+service:
+  type: ClusterIP
+  port: 8080
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:

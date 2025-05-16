@@ -1,6 +1,6 @@
 spring:
   application:
-    name: log-extractor
+    name: hl7log-extractor
   temporal:
     connection:
       target: 'temporal-frontend.temporal:7233'
@@ -36,6 +36,10 @@ management:
       exposure:
         include:
           - prometheus # Access by /actuator/prometheus
+  metrics:
+    tags:
+      namespace: extractor
+      application: ${spring.application.name}
 scout:
   # Placeholders for default workflow arguments that can be configured from outside and overridden in the workflow
   workflowArgDefaults:
