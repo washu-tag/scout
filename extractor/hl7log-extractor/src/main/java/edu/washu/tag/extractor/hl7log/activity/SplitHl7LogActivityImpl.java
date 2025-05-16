@@ -415,7 +415,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                     FileStatus.staged(outputPath, FileStatusType.HL7, workflowId, activityId)
                 );
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("WorkflowId {} ActivityId {} - Failed to create or upload zip file to {}", workflowId, activityId, destination, e);
             for (Hl7LogEntry hl7LogEntry : splitHl7LogEntries) {
                 int messageNumber = hl7LogEntry.messageNumber();
