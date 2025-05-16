@@ -287,8 +287,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                         hl7Content.add(processed);
                     }
 
-                    ctx.heartbeat(hl7Count);
                     splitHl7LogEntries.add(new Hl7LogEntry(hl7Count++, previousLine, new ArrayList<>(hl7Content)));
+                    ctx.heartbeat("Parsed " + hl7Count);
                     hl7Content.clear();
                     previousLine = null;
                     continue;
@@ -339,7 +339,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 int messageNumber = hl7LogEntry.messageNumber();
                 String headerLine = hl7LogEntry.headerLine();
                 List<String> lines = hl7LogEntry.hl7Content();
-                ctx.heartbeat(messageNumber);
+                ctx.heartbeat("Writing " + messageNumber);
 
                 if (lines.stream().allMatch(String::isBlank)) {
                     results.add(
