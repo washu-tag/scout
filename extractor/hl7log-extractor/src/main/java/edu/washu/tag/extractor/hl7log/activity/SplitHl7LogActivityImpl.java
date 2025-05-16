@@ -304,7 +304,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         }
 
         // Validate, zip, and upload the HL7 messages
-        results.addAll(validateZipAndUploadHl7(logFile, splitHl7LogEntries, destination, workflowId, activityId));
+        results.addAll(validateZipAndUploadHl7(logFile, splitHl7LogEntries, destination));
 
         return results;
     }
@@ -315,12 +315,15 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
      * @param logFile            Source HL7 log file
      * @param splitHl7LogEntries Split HL7 log entries
      * @param destination        Base output location
-     * @param workflowId         The workflow identifier for logs
-     * @param activityId         The activity identifier for logs
      * @return An object containing the file path if the operation was successful, or an error message if not
      */
-    private List<FileStatus> validateZipAndUploadHl7(String logFile, List<Hl7LogEntry> splitHl7LogEntries, URI destination, String workflowId,
-        String activityId) {
+    private List<FileStatus> validateZipAndUploadHl7(String logFile, List<Hl7LogEntry> splitHl7LogEntries, URI destination) {
+
+        ActivityExecutionContext ctx = Activity.getExecutionContext();
+        ActivityInfo activityInfo = ctx.getInfo();
+        String workflowId = activityInfo.getWorkflowId();
+        String activityId = activityInfo.getActivityId();
+
         List<FileStatus> results = new ArrayList<>();
         Path logFilePath = Paths.get(logFile);
         String logFileName = logFilePath.getFileName().toString();
@@ -336,6 +339,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 int messageNumber = hl7LogEntry.messageNumber();
                 String headerLine = hl7LogEntry.headerLine();
                 List<String> lines = hl7LogEntry.hl7Content();
+                ctx.heartbeat(messageNumber);
 
                 if (lines.stream().allMatch(String::isBlank)) {
                     results.add(
@@ -405,6 +409,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
             // Upload the zip file to S3
             zipOut.close();
+
+            ctx.heartbeat("Upload zip to S3");
             String relativePath = getBucketTimestampPath(logFileNameWOExtension).resolve(logFileNameWOExtension + ".zip").toString();
             String uploadedPath = fileHandler.putWithRetry(byteArrayOutputStream.toByteArray(), relativePath, destination);
 

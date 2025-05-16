@@ -25,7 +25,7 @@ spring:
       maximum-pool-size: 50 # must be < postgres max_connections (default 100)
       minimum-idle: 10
       connection-timeout: 300000
-      leak-detection-threshold: 10000  # log stack-trace if a connection is held >10 s
+      leak-detection-threshold: 240000  # log stack-trace if a connection is held >4m
 s3:
   endpoint: 'http://minio.minio:9000'
   region: us-east-1
