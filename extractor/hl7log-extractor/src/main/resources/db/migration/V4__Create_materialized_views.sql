@@ -8,6 +8,10 @@ FROM recent_hl7_files f
 GROUP BY date, status
 WITH DATA;
 
+-- Add a unique index to the materialized view (so we can refresh it concurrently)
+CREATE UNIQUE INDEX idx_hl7_file_counts_date_status
+    ON hl7_file_counts(date, status);
+
 -- View for dashboard: error messages
 CREATE MATERIALIZED VIEW error_messages AS
 SELECT h.date, fs.*
@@ -26,6 +30,10 @@ JOIN (
     ORDER BY file_path, processed_at DESC
 ) fs ON fs.file_path = h.hl7_file_path
 WITH DATA;
+
+-- Add a unique index to the error messages materialized view
+CREATE UNIQUE INDEX idx_error_messages_file_path
+    ON error_messages(file_path);
 
 -- Add a timestamp column to track when the view was last refreshed
 CREATE TABLE view_refresh_log (
