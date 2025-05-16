@@ -65,7 +65,7 @@ extraScrapeConfigs: |
     scheme: http
     static_configs:
       - targets: ['proxy-public.jupyter']
-  
+
   - job_name: hl7log-extractor
     scrape_interval: 15s
     metrics_path: /actuator/prometheus
