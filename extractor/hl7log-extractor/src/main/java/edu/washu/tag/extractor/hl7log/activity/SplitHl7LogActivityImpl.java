@@ -96,7 +96,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             ctx.heartbeat("Updating status");
             fileStatuses = processLogFile(input.logPath(), destination);
             ingestDbService.insertFileStatus(FileStatus.parsed(input.logPath(), workflowId, activityId));
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("WorkflowId {} ActivityId {} - Could not read log file {}",
                 activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.logPath(), e);
             ingestDbService.insertFileStatus(
@@ -141,7 +141,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String uploadedList;
         try {
             uploadedList = uploadHl7PathList(hl7Paths, hl7ListFileUri);
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("WorkflowId {} ActivityId {} - Failed to upload log file list to {}",
                 activityInfo.getWorkflowId(), activityInfo.getActivityId(), hl7ListFileUri, e);
             throw ApplicationFailure.newFailureWithCause("Failed to upload log file list to " + hl7ListFileUri, "type", e);
@@ -458,5 +458,4 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private record Hl7LogEntry(int messageNumber, String headerLine, List<String> hl7Content) {
 
     }
-
 }
