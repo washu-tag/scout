@@ -407,9 +407,13 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                 }
             }
 
-            // Upload the zip file to S3
             zipOut.close();
+            if (zippedHl7Files.isEmpty()) {
+                // Nothing is in the zip, return the failures
+                return results;
+            }
 
+            // Upload the zip file to S3
             ctx.heartbeat("Upload zip to S3");
             String relativePath = getBucketTimestampPath(logFileNameWOExtension).resolve(logFileNameWOExtension + ".zip").toString();
             String uploadedPath = fileHandler.putWithRetry(byteArrayOutputStream.toByteArray(), relativePath, destination);

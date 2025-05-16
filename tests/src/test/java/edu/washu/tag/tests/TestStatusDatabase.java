@@ -106,7 +106,7 @@ public class TestStatusDatabase extends BaseTest {
     /**
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 2024-01-02, the entire content of the log file is unusable by Scout.
-     * The {@value #TABLE_FILE_STATUSES} table is expected to have four rows for that day—
+     * The {@value #TABLE_FILE_STATUSES} table is expected to have multiple rows for that day—
      * one "{@value #PARSED}" row and one "{@value #FAILED}" row for each of the retries—while the
      * {@value #VIEW_RECENT_LOG_FILE_STATUSES} view will show only a single "{@value #FAILED}" row.
      * The {@value #TABLE_HL7_FILES} and {@value #VIEW_RECENT_HL7_FILES} should not contain
@@ -253,8 +253,8 @@ public class TestStatusDatabase extends BaseTest {
 
         runHl7FileStatusTest(
             FileStatusHl7Query.tableQuery(date, ingestWorkflowIds),
-            hl70Staged,
             hl71Failed,
+            hl70Staged,
             hl70Success
         );
         runHl7FileStatusTest(
@@ -278,7 +278,7 @@ public class TestStatusDatabase extends BaseTest {
     /**
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 2019-01-06, the log file contains an HL7 message with no content.
-     * The {@value #TABLE_FILE_STATUSES} table should have two "parsed" rows for the log file
+     * The {@value #TABLE_FILE_STATUSES} table should have multiple "parsed" rows for the log file
      * corresponding to that date because of retries. The {@value #VIEW_RECENT_LOG_FILE_STATUSES} view
      * should have a single "failed" row for the log file.
      * The {@value #TABLE_FILE_STATUSES} table contains a failure for the HL7 file repeated twice,
@@ -426,7 +426,7 @@ public class TestStatusDatabase extends BaseTest {
     /**
      * Tests the state of the ingest database after attempting to ingest a non-existent log file.
      * For the date 2015-01-01, we pass a log path that does not exist.
-     * The {@value #TABLE_FILE_STATUSES} table is expected to have 2 "failed" log rows
+     * The {@value #TABLE_FILE_STATUSES} table is expected to have multiple "failed" log rows
      * for that day from retries.
      * The {@value #VIEW_RECENT_LOG_FILE_STATUSES} view limits to a single row.
      */
@@ -493,9 +493,6 @@ public class TestStatusDatabase extends BaseTest {
                 try {
                     for (FileStatus fileStatus : expectedHl7Files) {
                         assertThat(resultSet.next()).as("condition that there are additional rows in table").isTrue();
-                        assertThat(resultSet.getString(STATUS)).isEqualTo(fileStatus.status);
-                        assertThat(resultSet.getString(TYPE)).isEqualTo(fileStatus.type);
-                        assertThat(resultSet.getString(ERROR_MESSAGE)).isEqualTo(fileStatus.errorMessage);
 
                         final String actualPath = resultSet.getString(FILE_PATH);
                         if (fileStatus.filePath == null) {
@@ -506,6 +503,9 @@ public class TestStatusDatabase extends BaseTest {
                             assertThat(actualPath).startsWith("s3://");
                             assertThat(actualPath).endsWith(fileStatus.filePath);
                         }
+                        assertThat(resultSet.getString(STATUS)).isEqualTo(fileStatus.status);
+                        assertThat(resultSet.getString(TYPE)).isEqualTo(fileStatus.type);
+                        assertThat(resultSet.getString(ERROR_MESSAGE)).isEqualTo(fileStatus.errorMessage);
                     }
                     assertThat(resultSet.next()).as("condition that there are additional rows in table").isFalse();
                 } catch (SQLException e) {
