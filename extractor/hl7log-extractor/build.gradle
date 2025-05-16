@@ -26,7 +26,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework:spring-aspects'
 	implementation 'org.springframework.retry:spring-retry'
-//	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
     implementation "io.temporal:temporal-sdk:${temporalVersion}"
     implementation "io.temporal:temporal-spring-boot-starter:${temporalVersion}"
