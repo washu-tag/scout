@@ -265,8 +265,8 @@ public class TestStatusDatabase extends BaseTest {
 
         runHl7FilesTest(
             new Hl7FileTableQuery(date),
-            hl71,
-            hl70
+            hl70,
+            hl71
         );
         runRecentHl7FilesTest(
             new RecentHl7FilesViewQuery(date, ingestWorkflowIds),

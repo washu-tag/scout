@@ -8,6 +8,9 @@ envFrom:
 env:
   - name: TZ
     value: 'US/Central'
+service:
+  type: ClusterIP
+  port: 8080
 volumes:
   - name: data
     hostPath:
