@@ -253,8 +253,8 @@ public class TestStatusDatabase extends BaseTest {
 
         runHl7FileStatusTest(
             FileStatusHl7Query.tableQuery(date, ingestWorkflowIds),
-            hl71Failed,
             hl70Staged,
+            hl71Failed,
             hl70Success
         );
         runHl7FileStatusTest(
