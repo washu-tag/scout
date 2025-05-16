@@ -5,14 +5,14 @@ SELECT
     status,
     COUNT(*) as files
 FROM recent_hl7_files f
-GROUP BY date, status;
+GROUP BY date, status
+WITH DATA;
 
 -- View for dashboard: error messages
 CREATE MATERIALIZED VIEW error_messages AS
-SELECT h.date,
-       fs.*
+SELECT h.date, fs.*
 FROM hl7_files h
-         JOIN (
+JOIN (
     SELECT DISTINCT ON (file_path)
         file_path,
         type,
@@ -24,8 +24,8 @@ FROM hl7_files h
     FROM file_statuses
     WHERE status = 'failed'
     ORDER BY file_path, processed_at DESC
-) AS fs
-    ON fs.file_path = h.hl7_file_path;
+) fs ON fs.file_path = h.hl7_file_path
+WITH DATA;
 
 -- Add a timestamp column to track when the view was last refreshed
 CREATE TABLE view_refresh_log (
