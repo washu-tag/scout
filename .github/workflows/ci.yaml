@@ -212,11 +212,11 @@ jobs:
           rm -rf /tmp/tmate /tmp/tmate.tar.xz
           tmate -V
         if: failure()
-          - name: Setup tmate session
-            uses: mxschmitt/action-tmate@v3
-            with:
-              install-dependencies: false # Mirror download error from `apt-get install -y openssh-client`
-            if: failure()
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          install-dependencies: false # Mirror download error from `apt-get install -y openssh-client`
+        if: failure()
   publish:
     if: github.ref_name == 'main'
     runs-on: ubuntu-latest
