@@ -9,7 +9,7 @@ public record FileStatus(
     String status,
     String errorMessage,
     String workflowId,
-    String activityId,
+    String activityId
 ) {
     public static FileStatus parsed(String filePath, String workflowId, String activityId) {
         return new FileStatus(filePath, FileStatusType.LOG.getType(), FileStatusStatus.PARSED.getStatus(), null, workflowId, activityId);
