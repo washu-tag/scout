@@ -2,16 +2,23 @@
 # literally just an alias for the builtin TimeoutError.
 # But if we try to catch the builtin TimeoutError, it doesn't work.
 from concurrent.futures._base import TimeoutError
+from collections import defaultdict
 from pathlib import Path
 
 from delta.tables import DeltaTable
 from py4j.protocol import Py4JError
 from pyspark.sql import Column, SparkSession
 from pyspark.sql import functions as F
+from s3fs import S3FileSystem
 from temporalio import activity
 from temporalio.exceptions import ApplicationError
 
 from hl7scout.db import write_errors, write_successes
+
+import os
+import shutil
+import tempfile
+import zipfile
 
 DATE_FORMAT = "yyyyMMdd"
 DT_FORMAT = "yyyyMMddHHmmss"
@@ -48,6 +55,30 @@ def parse_timestamp_col(col: Column | str) -> Column:
     )
 
 
+def parse_s3_zip_paths(hl7_file_paths: list[str]) -> dict[str, list[str]]:
+    """Parse S3 zip paths into a dictionary mapping zip files to their contents."""
+    zip_map = defaultdict(list)
+    for path in hl7_file_paths:
+        zip_path, hl7_inside_zip = path.split(".zip/")
+        zip_map[f"{zip_path}.zip"].append(hl7_inside_zip)
+    return zip_map
+
+
+def download_and_extract_zips(zip_map, local_dir):
+    """Download and extract zip files from S3 to a local directory."""
+    fs = S3FileSystem()
+    extracted_files = []
+    for s3_zip_path, hl7_files in zip_map.items():
+        local_zip = os.path.join(local_dir, os.path.basename(s3_zip_path))
+        fs.download(s3_zip_path, local_zip)
+        with zipfile.ZipFile(local_zip, "r") as z:
+            for hl7_file in hl7_files:
+                out_path = os.path.join(local_dir, hl7_file)
+                z.extract(hl7_file, local_dir)
+                extracted_files.append((out_path, f"{s3_zip_path}/{hl7_file}"))
+    return extracted_files
+
+
 def import_hl7_files_to_deltalake(
     hl7_manifest_file_path: str,
     modality_map_csv_path: str,
@@ -56,6 +87,7 @@ def import_hl7_files_to_deltalake(
 ) -> int:
     """Extract data from HL7 messages and write to Delta Lake."""
     spark = None
+    temp_dir = None
     try:
         activity.logger.info("Creating Spark session")
         spark = (
@@ -69,23 +101,43 @@ def import_hl7_files_to_deltalake(
         hl7_manifest_file_path = hl7_manifest_file_path.replace("s3://", "s3a://")
         file_path_file_df = spark.read.text(hl7_manifest_file_path)
 
-        # I wish I could just have spark read these directly without collecting first but I can't figure out how
-        hl7_file_paths_from_spark = [
+        zipped_hl7_file_paths_from_spark = [
             row.value.replace("s3://", "s3a://") for row in file_path_file_df.collect()
         ]
-        if not hl7_file_paths_from_spark:
+        if not zipped_hl7_file_paths_from_spark:
             raise ApplicationError("No HL7 files found in HL7 file path files")
 
         activity.heartbeat()
-        activity.logger.info("Reading %d HL7 messages", len(hl7_file_paths_from_spark))
-        df = (
-            spark.read.format("hl7")
-            .load(hl7_file_paths_from_spark)
-            .withColumn(
-                "source_file",
-                F.regexp_replace(F.input_file_name(), "^s3a://", "s3://"),
-            )
+        activity.logger.info("Downloading and extracting HL7 files")
+
+        temp_dir = tempfile.mkdtemp()
+        zip_map = parse_s3_zip_paths(zipped_hl7_file_paths_from_spark)
+        temp_to_s3 = download_and_extract_zips(zip_map, temp_dir)
+        temp_hl7_files = [temp_path for temp_path, _ in temp_to_s3]
+
+        activity.heartbeat()
+        activity.logger.info("Reading %d HL7 messages", len(temp_hl7_files))
+
+        # Create a DataFrame with the temp file paths and their corresponding S3 paths
+        temp_to_s3_df = spark.createDataFrame(temp_to_s3, ["temp_path", "source_file"])
+        temp_to_s3_df = temp_to_s3_df.withColumn(
+            "source_file",
+            F.regexp_replace(F.col("source_file"), "^s3a://", "s3://"),
         )
+
+        # Spark appends "file://" to the path, so we need to add it here for the join to work
+        temp_to_s3_df = temp_to_s3_df.withColumn(
+            "temp_path",
+            F.concat(F.lit("file://"), F.col("temp_path")),
+        )
+
+        # Read the temp HL7 files
+        df = spark.read.format("hl7").load(temp_hl7_files)
+
+        # Join with the temp to s3 mapping df to get the S3 paths
+        df = df.withColumn("temp_path", F.input_file_name())
+        df = df.join(temp_to_s3_df, on="temp_path", how="left")
+        df = df.drop("temp_path")
 
         # Filter out rows from unparsable HL7 files
         message_control_id = segment_field("MSH", 10)
@@ -314,3 +366,11 @@ def import_hl7_files_to_deltalake(
                 spark.stop()
             except:
                 pass
+
+        if temp_dir is not None:
+            # CLean up temp dir after Spark is finished processing
+            activity.logger.info("Cleaning up temp dir %s", temp_dir)
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception as e:
+                activity.logger.error("Error cleaning up temp dir %s", e)
