@@ -30,6 +30,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,8 +103,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             logger.error("WorkflowId {} ActivityId {} - Could not read log file {}",
                 activityInfo.getWorkflowId(), activityInfo.getActivityId(), input.logPath(), e);
             ingestDbService.insertFileStatus(
-                FileStatus.failed(input.logPath(), FileStatusType.LOG, String.format("%s: %s", e.getClass().getSimpleName(), e.getMessage()), workflowId,
-                    activityId));
+                FileStatus.failed(input.logPath(), FileStatusType.LOG, formatExceptionForMessage(e), workflowId, activityId));
             throw ApplicationFailure.newFailureWithCause("Could not read log file " + input.logPath(), "type", e);
         }
 
@@ -326,7 +326,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String workflowId = activityInfo.getWorkflowId();
         String activityId = activityInfo.getActivityId();
 
-        List<FileStatus> results = new ArrayList<>(splitHl7LogEntries.size());
+        List<FileStatus> results = new ArrayList<>(Collections.nCopies(splitHl7LogEntries.size(), null));
         Path logFilePath = Paths.get(logFile);
         String logFileName = logFilePath.getFileName().toString();
         String logFileNameWOExtension = logFileName.substring(0, logFileName.lastIndexOf('.'));
@@ -375,7 +375,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                         FileStatus.failed(
                             createPlaceholderHl7FilePath(logFile, messageNumber),
                             FileStatusType.HL7,
-                            "Unable to extract timestamp for message: " + e.getMessage(),
+                            "Unable to extract timestamp for message: " + formatExceptionForMessage(e),
                             workflowId,
                             activityId
                         ));
@@ -402,7 +402,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                         FileStatus.failed(
                             createPlaceholderHl7FilePath(logFile, messageNumber),
                             FileStatusType.HL7,
-                            "Unable to add HL7 to zip: " + e.getMessage(),
+                            "Unable to add HL7 to zip: " + formatExceptionForMessage(e),
                             workflowId,
                             activityId
                         ));
@@ -432,7 +432,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             for (Hl7LogEntry hl7LogEntry : splitHl7LogEntries) {
                 int messageNumber = hl7LogEntry.messageNumber();
                 results.add(messageNumber, FileStatus.failed(createPlaceholderHl7FilePath(logFile, messageNumber), FileStatusType.HL7,
-                    "Failed to create or upload zip file: " + e.getMessage(), workflowId, activityId));
+                    "Failed to create or upload zip file: " + formatExceptionForMessage(e), workflowId, activityId));
             }
         }
 
@@ -465,6 +465,10 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private byte[] convertListToByteArray(List<String> hl7FilePaths) {
         String content = String.join(System.lineSeparator(), hl7FilePaths);
         return content.getBytes(StandardCharsets.UTF_8);
+    }
+
+    private String formatExceptionForMessage(Exception e) {
+        return String.format("%s: %s", e.getClass().getSimpleName(), e.getMessage());
     }
 
     private record Hl7LogEntry(int messageNumber, String headerLine, List<String> hl7Content) {
