@@ -74,11 +74,14 @@ extraScrapeConfigs: |
   - job_name: postgres
     metrics_path: /metrics
     kubernetes_sd_configs:
-      - role: service
+      - role: endpoints
     relabel_configs:
       - source_labels: [__meta_kubernetes_service_name]
         action: keep
         regex: postgresql-cluster-metrics
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: metrics
       - source_labels: [__meta_kubernetes_namespace]
         target_label: namespace
       - source_labels: [__meta_kubernetes_pod_name]
