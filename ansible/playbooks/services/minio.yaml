@@ -60,7 +60,7 @@
       spec:
         headers:
           customRequestHeaders:
-            x-minio-extract: true
+            x-minio-extract: 'true'
 
 - name: Configure Storage for MinIO
   include_tasks: tasks/storage_setup.yaml
