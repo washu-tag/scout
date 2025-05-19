@@ -25,6 +25,7 @@ minio_env_variables:
 minio_path_prefix: minio
 minio_trailing_slash_middleware: minio-add-trailing-slash
 minio_strip_prefix_middleware: minio-strip-prefix
+minio_zip_header_middleware: minio-zip-header
 minio_ingress_config:
   console:
     enabled: true
@@ -35,7 +36,8 @@ minio_ingress_config:
     annotations:
       traefik.ingress.kubernetes.io/router.middlewares: >
         kube-system-{{ minio_trailing_slash_middleware }}@kubernetescrd,
-        kube-system-{{ minio_strip_prefix_middleware }}@kubernetescrd
+        kube-system-{{ minio_strip_prefix_middleware }}@kubernetescrd,
+        kube-system-{{ minio_zip_header_middleware }}@kubernetescrd
 
 # Bucket definitions
 minio_buckets:

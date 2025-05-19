@@ -48,6 +48,20 @@
           prefixes:
             - "/{{ minio_path_prefix | default('minio') }}"
 
+- name: Create Traefik Middleware to inject Minio zip header
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: "{{ minio_zip_header_middleware | default('minio-zip-header') }}"
+        namespace: kube-system
+      spec:
+        headers:
+          customRequestHeaders:
+            x-minio-extract: true
+
 - name: Configure Storage for MinIO
   include_tasks: tasks/storage_setup.yaml
   vars:
