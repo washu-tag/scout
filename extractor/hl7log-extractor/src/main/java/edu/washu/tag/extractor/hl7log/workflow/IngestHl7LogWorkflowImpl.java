@@ -102,7 +102,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                     .setCancellationType(ActivityCancellationType.WAIT_CANCELLATION_COMPLETED)
                     .setRetryOptions(RetryOptions.newBuilder()
                         .setMaximumInterval(Duration.ofSeconds(30))
-                        .setMaximumAttempts(5)
+                        .setMaximumAttempts(2)
                         .build())
                     .build());
 

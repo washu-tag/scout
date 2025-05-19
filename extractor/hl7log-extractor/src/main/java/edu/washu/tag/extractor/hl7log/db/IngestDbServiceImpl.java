@@ -10,7 +10,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
@@ -132,11 +131,7 @@ public class IngestDbServiceImpl implements IngestDbService {
             .toList();
         // Create Hl7File records from the filtered file statuses, assigning the message number based on the index in the list
         List<Hl7File> hl7Files = IntStream.range(0, hl7FileStatuses.size())
-            .mapToObj(i -> {
-                FileStatus fileStatus = hl7FileStatuses.get(i);
-                return fileStatus == null ? null : new Hl7File(hl7FileStatuses.get(i).filePath(), logPath, i, date);
-            })
-            .filter(Objects::nonNull)
+            .mapToObj(i -> new Hl7File(hl7FileStatuses.get(i).filePath(), logPath, i, date))
             .toList();
         batchInsertHl7Files(hl7Files);
     }

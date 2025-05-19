@@ -1,6 +1,6 @@
 spring:
   application:
-    name: hl7log-extractor
+    name: log-extractor
   temporal:
     connection:
       target: 'temporal-frontend.temporal:7233'
@@ -20,26 +20,10 @@ spring:
     #    username: postgres
     #    password: postgres
     driver-class-name: org.postgresql.Driver
-    hikari:
-      pool-name: ingest-pool
-      maximum-pool-size: 50 # must be < postgres max_connections (default 100)
-      minimum-idle: 10
-      connection-timeout: 300000
-      leak-detection-threshold: 240000 # log stack-trace if a connection is held >4m
 s3:
   endpoint: 'http://minio.minio:9000'
   region: us-east-1
   max-connections: 50
-management:
-  endpoints:
-    web:
-      exposure:
-        include:
-          - prometheus # Access by /actuator/prometheus
-  metrics:
-    tags:
-      namespace: extractor
-      application: ${spring.application.name}
 scout:
   # Placeholders for default workflow arguments that can be configured from outside and overridden in the workflow
   workflowArgDefaults:
@@ -48,14 +32,14 @@ scout:
       scratchSpaceRootPath: ''
       hl7OutputPath: ''
       # Timeout (in minutes) for the entire log split and upload activity
-      splitAndUploadTimeout: 120
+      splitAndUploadTimeout: 480
       # Heartbeat timeout (in minutes) within the split and upload activity
-      splitAndUploadHeartbeatTimeout: 10
+      splitAndUploadHeartbeatTimeout: 30
       # This is to limit I/O contention during the split and upload operation (java worker) and to try to hit a sweet spot of efficiency
       # during the delta lake insert (python worker). It's been tested on 1.3-1.4MB log files, as well as 15-45MB log files.
       splitAndUploadConcurrency: 150
     ingestHl7ToDeltaLake:
       # Timeout (in minutes) for transform and upload to delta lake activity
-      deltaIngestTimeout: 480
+      deltaIngestTimeout: 60
       modalityMapPath: ''
       reportTableName: ''
