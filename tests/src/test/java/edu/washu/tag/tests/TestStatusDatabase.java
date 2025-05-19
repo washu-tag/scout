@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,8 @@ public class TestStatusDatabase extends BaseTest {
     public static final String TYPE = "type";
     public static final String ERROR_MESSAGE = "error_message";
 
+    public static final int SPLIT_AND_UPLOAD_RETRIES = 5;
+
     /**
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 1995-04-02, there should be 2 HL7 messages represented by the log file.
@@ -62,8 +65,8 @@ public class TestStatusDatabase extends BaseTest {
         runLogStatusTest(FileStatusLogQuery.tableQuery(date, parentWorkflowId), logRow);
         runLogStatusTest(FileStatusLogQuery.viewQuery(date, parentWorkflowId), logRow);
 
-        final Hl7FilesRow h0 = new Hl7FilesRow("1995/04/02/07/199504020707509258.hl7", 0, date);
-        final Hl7FilesRow h1 = new Hl7FilesRow("1995/04/02/09/199504020930172230.hl7", 1, date);
+        final Hl7FilesRow h0 = new Hl7FilesRow("1995/04/02/07/199504020707509258_0.hl7", 0, date);
+        final Hl7FilesRow h1 = new Hl7FilesRow("1995/04/02/09/199504020930172230_1.hl7", 1, date);
         final FileStatus h0Staged = FileStatus.staged(h0.hl7FilePath);
         final FileStatus h0Success = FileStatus.success(h0.hl7FilePath);
         final FileStatus h1Staged = FileStatus.staged(h1.hl7FilePath);
@@ -103,8 +106,8 @@ public class TestStatusDatabase extends BaseTest {
     /**
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 2024-01-02, the entire content of the log file is unusable by Scout.
-     * The {@value #TABLE_FILE_STATUSES} table is expected to have four rows for that day—
-     * one "{@value #PARSED}" row and one "{@value #FAILED}" row for each of the two retries—while the
+     * The {@value #TABLE_FILE_STATUSES} table is expected to have multiple rows for that day—
+     * one "{@value #PARSED}" row and one "{@value #FAILED}" row for each of the retries—while the
      * {@value #VIEW_RECENT_LOG_FILE_STATUSES} view will show only a single "{@value #FAILED}" row.
      * The {@value #TABLE_HL7_FILES} and {@value #VIEW_RECENT_HL7_FILES} should not contain
      * any rows for that day.
@@ -118,10 +121,10 @@ public class TestStatusDatabase extends BaseTest {
         final FileStatus logRow1 = FileStatus.failedLog("Log did not contain any HL7 messages");
         runLogStatusTest(
             FileStatusLogQuery.tableQuery(date, workflows),
-            logRow0,
-            logRow1,
-            logRow0,
-            logRow1
+            IntStream.range(0, SPLIT_AND_UPLOAD_RETRIES)
+                .flatMap(i -> IntStream.of(0, 1))
+                .mapToObj(i -> i == 0 ? logRow0 : logRow1)
+                .toArray(FileStatus[]::new)
         );
         runLogStatusTest(
             FileStatusLogQuery.viewQuery(date, workflows),
@@ -168,9 +171,9 @@ public class TestStatusDatabase extends BaseTest {
             ingestWorkflow.getIngestToDeltaLakeWorkflows().stream()
         ).toList();
 
-        final Hl7FilesRow hl70 = new Hl7FilesRow("2023/01/13/12/202301131207178754.hl7", 0, date);
-        final Hl7FilesRow hl71 = new Hl7FilesRow("2023/01/13/18/202301131807178754.hl7", 1, date);
-        final Hl7FilesRow hl72 = new Hl7FilesRow("2023/01/13/20/202301132017309482.hl7", 2, date);
+        final Hl7FilesRow hl70 = new Hl7FilesRow("2023/01/13/12/202301131207178754_0.hl7", 0, date);
+        final Hl7FilesRow hl71 = new Hl7FilesRow("2023/01/13/18/202301131807178754_1.hl7", 1, date);
+        final Hl7FilesRow hl72 = new Hl7FilesRow("2023/01/13/20/202301132017309482_2.hl7", 2, date);
         final FileStatus hl70Staged = FileStatus.staged(hl70.hl7FilePath);
         final FileStatus hl71Staged = FileStatus.staged(hl71.hl7FilePath);
         final FileStatus hl72Staged = FileStatus.staged(hl72.hl7FilePath);
@@ -241,7 +244,7 @@ public class TestStatusDatabase extends BaseTest {
             logRow
         );
 
-        final Hl7FilesRow hl70 = new Hl7FilesRow("2007/10/21/15/200710211522316785.hl7", 0, date);
+        final Hl7FilesRow hl70 = new Hl7FilesRow("2007/10/21/15/200710211522316785_0.hl7", 0, date);
         final Hl7FilesRow hl71 = new Hl7FilesRow(null, 1, date);
         final FileStatus hl70Staged = FileStatus.staged(hl70.hl7FilePath);
         final FileStatus hl70Success = FileStatus.success(hl70.hl7FilePath);
@@ -275,7 +278,7 @@ public class TestStatusDatabase extends BaseTest {
     /**
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 2019-01-06, the log file contains an HL7 message with no content.
-     * The {@value #TABLE_FILE_STATUSES} table should have two "parsed" rows for the log file
+     * The {@value #TABLE_FILE_STATUSES} table should have multiple "parsed" rows for the log file
      * corresponding to that date because of retries. The {@value #VIEW_RECENT_LOG_FILE_STATUSES} view
      * should have a single "failed" row for the log file.
      * The {@value #TABLE_FILE_STATUSES} table contains a failure for the HL7 file repeated twice,
@@ -291,8 +294,8 @@ public class TestStatusDatabase extends BaseTest {
         final FileStatus logRow = FileStatus.parsedLog();
         runLogStatusTest(
             FileStatusLogQuery.tableQuery(date, workflows),
-            logRow,
-            logRow
+            Collections.nCopies(SPLIT_AND_UPLOAD_RETRIES, logRow)
+                .toArray(new FileStatus[0])
         );
         runLogStatusTest(
             FileStatusLogQuery.viewQuery(date, workflows),
@@ -302,8 +305,8 @@ public class TestStatusDatabase extends BaseTest {
         final FileStatus hl7Error = FileStatus.failedHl7(null, "HL7 message content is empty");
         runHl7FileStatusTest(
             FileStatusHl7Query.tableQuery(date, workflows),
-            hl7Error,
-            hl7Error
+            Collections.nCopies(SPLIT_AND_UPLOAD_RETRIES, hl7Error)
+                .toArray(new FileStatus[0])
         );
         runHl7FileStatusTest(
             FileStatusHl7Query.viewQuery(date, workflows),
@@ -342,7 +345,7 @@ public class TestStatusDatabase extends BaseTest {
             ingestWorkflow.getIngestToDeltaLakeWorkflows().stream()
         ).toList();
 
-        final String filePath = "2016/08/29/12/201608291211093942.hl7";
+        final String filePath = "2016/08/29/12/201608291211093942_0.hl7";
         final Hl7FilesRow hl7File = new Hl7FilesRow(filePath, 0, date);
         final FileStatus hl7Staged = FileStatus.staged(filePath);
         final FileStatus hl7Error = FileStatus.failedHl7(filePath, "File is not parsable as HL7");
@@ -382,8 +385,8 @@ public class TestStatusDatabase extends BaseTest {
         runLogStatusTest(FileStatusLogQuery.tableQuery(date, parentWorkflowId), logRow);
         runLogStatusTest(FileStatusLogQuery.viewQuery(date, parentWorkflowId), logRow);
 
-        final Hl7FilesRow h0 = new Hl7FilesRow("1999/11/30/02/199911300242267124.hl7", 0, date);
-        final Hl7FilesRow h1 = new Hl7FilesRow("1999/11/30/23/199911302311298376.hl7", 1, date);
+        final Hl7FilesRow h0 = new Hl7FilesRow("1999/11/30/02/199911300242267124_0.hl7", 0, date);
+        final Hl7FilesRow h1 = new Hl7FilesRow("1999/11/30/23/199911302311298376_1.hl7", 1, date);
         final FileStatus h0Staged = FileStatus.staged(h0.hl7FilePath);
         final FileStatus h0Success = FileStatus.success(h0.hl7FilePath);
         final FileStatus h1Staged = FileStatus.staged(h1.hl7FilePath);
@@ -423,7 +426,7 @@ public class TestStatusDatabase extends BaseTest {
     /**
      * Tests the state of the ingest database after attempting to ingest a non-existent log file.
      * For the date 2015-01-01, we pass a log path that does not exist.
-     * The {@value #TABLE_FILE_STATUSES} table is expected to have 2 "failed" log rows
+     * The {@value #TABLE_FILE_STATUSES} table is expected to have multiple "failed" log rows
      * for that day from retries.
      * The {@value #VIEW_RECENT_LOG_FILE_STATUSES} view limits to a single row.
      */
@@ -441,8 +444,8 @@ public class TestStatusDatabase extends BaseTest {
 
         runLogStatusTest(
             FileStatusLogQuery.tableQuery(date, workflows),
-            logRow,
-            logRow
+            Collections.nCopies(SPLIT_AND_UPLOAD_RETRIES, logRow)
+                .toArray(new FileStatus[0])
         );
 
         runLogStatusTest(
@@ -490,9 +493,6 @@ public class TestStatusDatabase extends BaseTest {
                 try {
                     for (FileStatus fileStatus : expectedHl7Files) {
                         assertThat(resultSet.next()).as("condition that there are additional rows in table").isTrue();
-                        assertThat(resultSet.getString(STATUS)).isEqualTo(fileStatus.status);
-                        assertThat(resultSet.getString(TYPE)).isEqualTo(fileStatus.type);
-                        assertThat(resultSet.getString(ERROR_MESSAGE)).isEqualTo(fileStatus.errorMessage);
 
                         final String actualPath = resultSet.getString(FILE_PATH);
                         if (fileStatus.filePath == null) {
@@ -503,6 +503,9 @@ public class TestStatusDatabase extends BaseTest {
                             assertThat(actualPath).startsWith("s3://");
                             assertThat(actualPath).endsWith(fileStatus.filePath);
                         }
+                        assertThat(resultSet.getString(STATUS)).isEqualTo(fileStatus.status);
+                        assertThat(resultSet.getString(TYPE)).isEqualTo(fileStatus.type);
+                        assertThat(resultSet.getString(ERROR_MESSAGE)).isEqualTo(fileStatus.errorMessage);
                     }
                     assertThat(resultSet.next()).as("condition that there are additional rows in table").isFalse();
                 } catch (SQLException e) {
