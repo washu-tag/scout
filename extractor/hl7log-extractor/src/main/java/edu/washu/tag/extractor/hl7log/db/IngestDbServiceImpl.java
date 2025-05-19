@@ -132,11 +132,7 @@ public class IngestDbServiceImpl implements IngestDbService {
             .toList();
         // Create Hl7File records from the filtered file statuses, assigning the message number based on the index in the list
         List<Hl7File> hl7Files = IntStream.range(0, hl7FileStatuses.size())
-            .mapToObj(i -> {
-                FileStatus fileStatus = hl7FileStatuses.get(i);
-                return fileStatus == null ? null : new Hl7File(hl7FileStatuses.get(i).filePath(), logPath, i, date);
-            })
-            .filter(Objects::nonNull)
+            .mapToObj(i -> new Hl7File(hl7FileStatuses.get(i).filePath(), logPath, i, date))
             .toList();
         batchInsertHl7Files(hl7Files);
     }
