@@ -28,50 +28,40 @@ extraScrapeConfigs: |
   - job_name: 'grafana'
     metrics_path: /grafana/metrics
     static_configs:
-      - targets: ['grafana.{{ grafana_namespace }}']
+      - targets: ['grafana.{{ grafana_namespace }}.svc.cluster.local']
 
   - job_name: 'loki'
     metrics_path: /metrics
     static_configs:
-      - targets: ['loki.{{ loki_namespace }}:3100']
+      - targets: ['loki.{{ loki_namespace }}.svc.cluster.local:3100']
 
   - job_name: minio-cluster
     metrics_path: /minio/v2/metrics/cluster
     scheme: http
     static_configs:
-      - targets: ['minio.{{ minio_tenant_namespace }}']
+      - targets: ['minio.{{ minio_tenant_namespace }}.svc.cluster.local']
 
   - job_name: minio-bucket
     metrics_path: /minio/v2/metrics/bucket
     scheme: http
     static_configs:
-      - targets: ['minio.{{ minio_tenant_namespace }}']
+      - targets: ['minio.{{ minio_tenant_namespace }}.svc.cluster.local']
 
   - job_name: minio-node
     metrics_path: /minio/v2/metrics/node
     scheme: http
     static_configs:
-      - targets: ['minio.{{ minio_tenant_namespace }}']
+      - targets: ['minio.{{ minio_tenant_namespace }}.svc.cluster.local']
 
   - job_name: minio-resource
     metrics_path: /minio/v2/metrics/resource
     scheme: http
     static_configs:
-      - targets: ['minio.{{ minio_tenant_namespace }}']
+      - targets: ['minio.{{ minio_tenant_namespace }}.svc.cluster.local']
 
   - job_name: jupyterhub
     metrics_path: /jupyter/hub/metrics
     bearer_token_file: /etc/secrets/jupyterhub/metrics-api-token
     scheme: http
     static_configs:
-      - targets: ['proxy-public.jupyter']
-
-  - job_name: hl7log-extractor
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ['hl7log-extractor.{{ extractor_namespace }}:8080']
-
-  - job_name: postgres
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['postgresql-cluster-metrics.{{ postgres_cluster_namespace }}:9187']
+      - targets: ['proxy-public.jupyter.svc.cluster.local']

@@ -30,16 +30,6 @@ s3:
   endpoint: 'http://minio.minio:9000'
   region: us-east-1
   max-connections: 50
-management:
-  endpoints:
-    web:
-      exposure:
-        include:
-          - prometheus # Access by /actuator/prometheus
-  metrics:
-    tags:
-      namespace: extractor
-      application: ${spring.application.name}
 scout:
   # Placeholders for default workflow arguments that can be configured from outside and overridden in the workflow
   workflowArgDefaults:
