@@ -14,4 +14,5 @@ public interface IngestDbService {
     void batchInsertFileStatuses(List<FileStatus> fileStatuses);
     @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 5000, multiplier = 2))
     void batchInsertNewHl7FileStatuses(List<FileStatus> fileStatuses, String logPath, LocalDate date);
+    void callProcedure(String procedureName, Object... args);
 }
