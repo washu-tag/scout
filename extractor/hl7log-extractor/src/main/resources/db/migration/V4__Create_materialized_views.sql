@@ -1,3 +1,16 @@
+-- View for hl7 files with file information
+CREATE MATERIALIZED VIEW recent_hl7_files AS
+SELECT f.*, h.log_file_path, h.message_number, h.date
+FROM recent_hl7_file_statuses f
+JOIN hl7_files h ON f.file_path = h.hl7_file_path
+WITH DATA;
+
+-- Add a unique index to the materialized view
+CREATE UNIQUE INDEX idx_recent_hl7_files_file_path ON recent_hl7_files(file_path);
+CREATE INDEX idx_recent_hl7_files_date ON recent_hl7_files(date);
+CREATE INDEX idx_recent_hl7_files_status ON recent_hl7_files(status);
+CREATE INDEX idx_recent_hl7_files_workflow_id ON recent_hl7_files(workflow_id);
+
 -- View for dashboard: hl7 file counts by date and status
 CREATE MATERIALIZED VIEW hl7_file_counts AS
 SELECT
@@ -8,9 +21,8 @@ FROM recent_hl7_files f
 GROUP BY date, status
 WITH DATA;
 
--- Add a unique index to the materialized view (so we can refresh it concurrently)
-CREATE UNIQUE INDEX idx_hl7_file_counts_date_status
-    ON hl7_file_counts(date, status);
+-- Add a unique index to the materialized view
+CREATE UNIQUE INDEX idx_hl7_file_counts_date_status ON hl7_file_counts(date, status);
 
 -- View for dashboard: error messages
 CREATE MATERIALIZED VIEW error_messages AS
@@ -32,8 +44,7 @@ JOIN (
 WITH DATA;
 
 -- Add a unique index to the error messages materialized view
-CREATE UNIQUE INDEX idx_error_messages_file_path
-    ON error_messages(file_path);
+CREATE UNIQUE INDEX idx_error_messages_file_path ON error_messages(file_path);
 
 -- Create a table to log the refresh status of materialized views
 CREATE TABLE view_refresh_log (
@@ -65,6 +76,9 @@ CREATE OR REPLACE PROCEDURE refresh_materialized_views()
     LANGUAGE plpgsql
 AS $$
 BEGIN
+    -- Refresh and log the recent HL7 files view
+    CALL refresh_and_log('recent_hl7_files');
+
     -- Refresh and log the status counts view
     CALL refresh_and_log('hl7_file_counts');
 
