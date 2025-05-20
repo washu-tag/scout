@@ -37,6 +37,12 @@ minio_ingress_config:
       traefik.ingress.kubernetes.io/router.middlewares: >
         kube-system-{{ minio_trailing_slash_middleware }}@kubernetescrd,
         kube-system-{{ minio_strip_prefix_middleware }}@kubernetescrd,
+  api:
+    enabled: true
+    ingressClassName: traefik
+    host: '{{ server_hostname }}'
+    annotations:
+      traefik.ingress.kubernetes.io/router.middlewares: >
         kube-system-{{ minio_zip_header_middleware }}@kubernetescrd
 
 # Bucket definitions
