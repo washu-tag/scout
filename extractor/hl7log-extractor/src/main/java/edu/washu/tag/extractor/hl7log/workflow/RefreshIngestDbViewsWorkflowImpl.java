@@ -17,7 +17,7 @@ public class RefreshIngestDbViewsWorkflowImpl implements RefreshIngestDbViewsWor
     private final RefreshIngestDbViewsActivity refreshIngestDbViewsActivity =
         Workflow.newActivityStub(RefreshIngestDbViewsActivity.class,
             ActivityOptions.newBuilder()
-                .setStartToCloseTimeout(Duration.ofMinutes(5))
+                .setStartToCloseTimeout(Duration.ofMinutes(10))
                 .setRetryOptions(RetryOptions.newBuilder()
                     .setMaximumInterval(Duration.ofSeconds(1))
                     .setMaximumAttempts(3)
