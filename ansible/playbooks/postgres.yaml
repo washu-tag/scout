@@ -6,13 +6,6 @@
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
-    - name: Create grafana namespace for dashboard
-      kubernetes.core.k8s:
-        name: '{{ grafana_namespace }}'
-        api_version: v1
-        kind: Namespace
-        state: present
-
     - name: Add Postgres Helm repository
       kubernetes.core.helm_repository:
         name: cnpg
@@ -30,11 +23,6 @@
         wait: true
         wait_timeout: 5m
         atomic: true
-        values:
-          monitoring:
-            grafanaDashboard:
-              create: true
-              namespace: '{{ grafana_namespace }}'
 
     - name: Create namespace
       kubernetes.core.k8s:
