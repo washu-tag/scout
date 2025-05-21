@@ -743,7 +743,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", pod=~\"$instances\"}[5m])) / \nsum(kube_pod_container_resource_requests{job=\"kubernetes-service-endpoints\", namespace=\"$namespace\", resource=\"cpu\", pod=~\"$instances\"})",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", pod=~\"$instances\"}[5m])) / \nsum(kube_pod_container_resource_requests{namespace=\"$namespace\", resource=\"cpu\", pod=~\"$instances\"})",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 2,
@@ -828,7 +828,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(container_memory_working_set_bytes{job=\"kubelet\", metrics_path=\"/metrics/cadvisor\", namespace=\"$namespace\",container!=\"\", image!=\"\", pod=~\"$instances\"}) / sum(max by(pod) (kube_pod_container_resource_requests{job=\"kubernetes-service-endpoints\", namespace=\"$namespace\", resource=\"memory\", pod=~\"$instances\"}))",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"\", image!=\"\", pod=~\"$instances\"}) / sum(max by(pod) (kube_pod_container_resource_requests{namespace=\"$namespace\", resource=\"memory\", pod=~\"$instances\"}))",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 2,
@@ -1312,7 +1312,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", pod=~\"$instances\"}[5m])) / sum(kube_pod_container_resource_requests{job=\"kubernetes-service-endpoints\", namespace=\"$namespace\", resource=\"cpu\", pod=~\"$instances\"})",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", pod=~\"$instances\"}[5m])) / sum(kube_pod_container_resource_requests{namespace=\"$namespace\", resource=\"cpu\", pod=~\"$instances\"})",
           "hide": false,
           "legendFormat": "CPU",
           "range": true,
@@ -1324,7 +1324,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "(sum(container_memory_working_set_bytes{job=\"kubelet\", metrics_path=\"/metrics/cadvisor\", namespace=\"$namespace\",container!=\"\", image!=\"\", pod=~\"$instances\"}) / sum(max by(pod) (kube_pod_container_resource_requests{job=\"kubernetes-service-endpoints\", namespace=\"$namespace\", resource=\"memory\", pod=~\"$instances\"})))",
+          "expr": "(sum(container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"\", image!=\"\", pod=~\"$instances\"}) / sum(max by(pod) (kube_pod_container_resource_requests{namespace=\"$namespace\", resource=\"memory\", pod=~\"$instances\"})))",
           "hide": false,
           "instant": false,
           "legendFormat": "Memory",
