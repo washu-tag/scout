@@ -26,6 +26,7 @@
           spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog
           spark.hadoop.fs.s3a.path.style.access true
           spark.hadoop.fs.s3a.aws.credentials.provider org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
+          spark.hadoop.fs.s3a.s3.client.factory.impl edu.washu.tag.spark.CustomS3ClientFactory
           spark.hadoop.hive.metastore.uris {{ hive_metastore_endpoint }}
           spark.sql.warehouse.dir {{ delta_lake_path }}
           spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
