@@ -4916,7 +4916,7 @@
           "refId": "B"
         }
       ],
-      "title": "Transactions [5m]",
+      "title": "Transactions [5m] (By Pod)",
       "type": "timeseries"
     },
     {
@@ -5014,7 +5014,7 @@
           "refId": "A"
         }
       ],
-      "title": "Longest Transaction",
+      "title": "Longest Transaction (By Pod)",
       "type": "timeseries"
     },
     {
@@ -5126,7 +5126,7 @@
           "refId": "B"
         }
       ],
-      "title": "Transactions [5m]",
+      "title": "Transactions [5m] (By User and DB)",
       "type": "timeseries"
     },
     {
@@ -5240,7 +5240,7 @@
           "refId": "B"
         }
       ],
-      "title": "Longest Transaction",
+      "title": "Longest Transaction (By User and DB)",
       "type": "timeseries"
     },
     {
