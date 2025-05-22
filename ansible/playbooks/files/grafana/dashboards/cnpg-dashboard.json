@@ -24,7 +24,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": 6,
   "links": [
     {
       "asDropdown": false,
@@ -5126,7 +5125,7 @@
           "refId": "B"
         }
       ],
-      "title": "Transactions [5m] (By User and DB)",
+      "title": "Transactions [5m] (By DB)",
       "type": "timeseries"
     },
     {
@@ -5219,25 +5218,11 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "max by (usename) (cnpg_backends_max_tx_duration_seconds{namespace=~\"$namespace\",pod=~\"$instances\"})",
+          "expr": "max by (usename, datname) (cnpg_backends_max_tx_duration_seconds{namespace=~\"$namespace\",pod=~\"$instances\"})",
           "interval": "",
-          "legendFormat": "{{usename}} (user)",
+          "legendFormat": "{{usename}} - {{datname}}",
           "range": true,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "max by (datname) (cnpg_backends_max_tx_duration_seconds{namespace=~\"$namespace\",pod=~\"$instances\"})",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{datname}} (db)",
-          "range": true,
-          "refId": "B"
         }
       ],
       "title": "Longest Transaction (By User and DB)",
