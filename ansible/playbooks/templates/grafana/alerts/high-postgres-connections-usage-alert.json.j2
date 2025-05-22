@@ -1,0 +1,90 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "1m-evaluations",
+      "folder": "Scout",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "high_postgres_connections_usage_alert_01",
+          "title": "High Postgres Connections Usage",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus_datasource_01",
+              "model": {
+                "editorMode": "code",
+                "expr": "100 * sum by (pod) (cnpg_backends_total) / sum by (pod) (cnpg_pg_settings_setting{name=\"max_connections\"})",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "__auto",
+                "maxDataPoints": 43200,
+                "range": false,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        90
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": []
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "avg"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "B",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "KeepLast",
+          "execErrState": "KeepLast",
+          "for": "10m",
+          "annotations": {
+            "description": "{% raw %}High Postgres connections usage for pod {{ $labels.pod }}{% endraw %}",
+            "summary": "{% raw %}Pod {{ $labels.pod }} has connection usage above 90% of max_connections. Current usage is {{ printf \"%.1f\" $values.A.Value }}%{% endraw %}"
+          },
+          "labels": {},
+          "isPaused": false,
+          "notification_settings": {
+            "receiver": "{{ grafana_alert_contact_point }}"
+          }
+        }
+      ]
+    }
+  ]
+}
