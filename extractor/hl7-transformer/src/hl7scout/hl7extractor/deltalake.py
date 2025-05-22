@@ -111,19 +111,18 @@ def import_hl7_files_to_deltalake(
             "source_file",
             # MSH is stored in its own "message" column
             F.split("message", "\\|").alias("msh"),
-            # Other segments are stored in objects in the "segments" column
-            # We need to find the ones we want using their "id" field
-            # Most of them we use the first item in the list
+            # Other segments are stored in objects in the "segments" column.
+            # We need to find the ones we want using their "id" field;
+            # for most of them we use the first item in the list.
             *[
-                F.filter("segments", F.expr(f"x -> x.id = '{segment}'"))
-                .getItem(0)
-                .getField("fields")
-                .alias(segment.lower())
+                F.expr(f"filter(segments, x -> x.id = '{segment}')[0].fields").alias(
+                    segment.lower()
+                )
                 for segment in ("PID", "ORC", "OBR", "DG1", "ZDS")
             ],
-            # OBX is a special case, we need to explode it into separate rows
-            # but for now we'll just keep it as a list
-            F.filter("segments", F.expr("x -> x.id = 'OBX'")).alias("obx_lines"),
+            # OBX is a special case; we need to keep it as a list for now so
+            # later we can explode it into separate rows
+            F.expr("filter(segments, x -> x.id = 'OBX')").alias("obx_lines"),
         ).select(
             "source_file",
             "obx_lines",
