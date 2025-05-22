@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.lang3.StringUtils;
@@ -432,7 +433,20 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             }
         }
 
-        return results;
+       return IntStream.range(0, results.size())
+            .mapToObj(i -> {
+                FileStatus status = results.get(i);
+                return status != null
+                    ? status
+                    : FileStatus.failed(
+                        createPlaceholderHl7FilePath(logFile, i),
+                        FileStatusType.HL7,
+                        // This scenario really shouldn't happen, but if somehow it does, I wanted a clear message for traceability
+                        "Unexpected error: no HL7 content for message number " + i,
+                        workflowId,
+                        activityId);
+            })
+            .toList();
     }
 
     private String createPlaceholderHl7FilePath(String logFile, int messageNumber) {

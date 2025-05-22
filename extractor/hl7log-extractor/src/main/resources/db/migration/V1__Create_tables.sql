@@ -9,7 +9,7 @@ CREATE TABLE file_statuses (
    processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE hl7_files (
-   hl7_file_path TEXT,
+   hl7_file_path TEXT PRIMARY KEY,
    log_file_path TEXT,
    message_number INT,
    date DATE,

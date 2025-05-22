@@ -253,8 +253,8 @@ public class TestStatusDatabase extends BaseTest {
 
         runHl7FileStatusTest(
             FileStatusHl7Query.tableQuery(date, ingestWorkflowIds),
-            hl70Staged,
             hl71Failed,
+            hl70Staged,
             hl70Success
         );
         runHl7FileStatusTest(
@@ -560,8 +560,19 @@ public class TestStatusDatabase extends BaseTest {
             sql,
             (resultSet) -> {
                 try {
-                    for (RecentHl7FileRow h : expectedHl7Files) {
+                    for (int i = 0; i < expectedHl7Files.length; i++) {
                         assertThat(resultSet.next()).as("condition that there are additional rows in table").isTrue();
+
+                        // Find the expected object corresponding to this row by ...
+                        RecentHl7FileRow h = null;
+                        for (RecentHl7FileRow hl7FileRow : expectedHl7Files) {
+                            if (resultSet.getInt(MESSAGE_NUMBER) == hl7FileRow.hl7FilesRow.messageNumber) {
+                                h = hl7FileRow;
+                                break;
+                            }
+                        }
+                        assertThat(h).as("we can find a matching row").isNotNull();
+
                         assertThat(resultSet.getString(STATUS)).isEqualTo(h.fileStatus.status);
                         assertThat(resultSet.getString(TYPE)).isEqualTo(h.fileStatus.type);
                         assertThat(resultSet.getString(ERROR_MESSAGE)).isEqualTo(h.fileStatus.errorMessage);
@@ -624,21 +635,7 @@ public class TestStatusDatabase extends BaseTest {
     record RecentHl7FileRow(
         Hl7FilesRow hl7FilesRow,
         FileStatus fileStatus
-    ) {
-        static RecentHl7FileRow staged(String filePath, int messageNumber, String date) {
-            return new RecentHl7FileRow(
-                new Hl7FilesRow(filePath, messageNumber, date),
-                FileStatus.staged(filePath)
-            );
-        }
-
-        static RecentHl7FileRow success(String filePath, int messageNumber, String date) {
-            return new RecentHl7FileRow(
-                new Hl7FilesRow(filePath, messageNumber, date),
-                FileStatus.success(filePath)
-            );
-        }
-    }
+    ) {}
 
     private static abstract class SqlQuery {
         protected final String tableOrView;
@@ -706,7 +703,7 @@ public class TestStatusDatabase extends BaseTest {
         @Override
         String build() {
             return String.format(
-                "SELECT tv.* FROM %s tv JOIN hl7_files h on h.hl7_file_path = tv.file_path WHERE tv.%s AND h.%s LIKE '%%/%s.log' ORDER BY tv.processed_at ASC",
+                "SELECT tv.* FROM %s tv JOIN hl7_files h on h.hl7_file_path = tv.file_path WHERE tv.%s AND h.%s LIKE '%%/%s.log' ORDER BY tv.processed_at, tv.file_path ASC",
                 tableOrView,
                 buildWorkflowQueryRestriction(),
                 filterColumn,
