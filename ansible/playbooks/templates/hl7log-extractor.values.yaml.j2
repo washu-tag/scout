@@ -8,9 +8,6 @@ envFrom:
 env:
   - name: TZ
     value: 'US/Central'
-service:
-  type: ClusterIP
-  port: 8080
 volumes:
   - name: data
     hostPath:
@@ -22,10 +19,6 @@ volumeMounts:
     mountPropagation: HostToContainer
 config:
   application:
-    management:
-      metrics:
-        tags:
-          namespace: '{{ extractor_namespace }}'
     s3:
       endpoint: '{{ s3_endpoint }}'
       region: '{{ s3_region }}'
