@@ -53,7 +53,7 @@
       },
       "id": 676,
       "options": {
-        "alertInstanceLabelFilter": "{namespace=~\"$namespace\",pod=~\"$instances\"}",
+        "alertInstanceLabelFilter": "{pod=~\"$instances\"}",
         "alertName": "",
         "dashboardAlerts": false,
         "folder": "",
