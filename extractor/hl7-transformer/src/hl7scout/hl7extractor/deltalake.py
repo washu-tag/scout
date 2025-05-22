@@ -126,6 +126,7 @@ def import_hl7_files_to_deltalake(
         ).select(
             "source_file",
             "obx_lines",
+            # Extract all the fields where we only want the first component
             *[
                 F.split(F.col(segment).getItem(field - 1), "\\^")
                 .getItem(0)
@@ -139,6 +140,7 @@ def import_hl7_files_to_deltalake(
                 )
                 for field in fields
             ],
+            # Extract all the fields where we want multiple components
             *[
                 F.split(F.col(segment).getItem(field - 1), "\\^")
                 .getItem(component - 1)
@@ -150,6 +152,9 @@ def import_hl7_files_to_deltalake(
                 )
                 for component in components
             ],
+            # PID-2 is a special case.
+            # We keep it as-is for now so we can explode it later.
+            F.col("pid").getItem(2).alias("pid-2"),
         )
 
         # Filter out rows from unparsable HL7 files
@@ -224,16 +229,24 @@ def import_hl7_files_to_deltalake(
 
         activity.heartbeat()
         activity.logger.info("Extracting patient id columns")
-        exploded_patient_id_df = df.select(
-            "source_file",
-            F.split(F.explode(F.split(F.col("pid").getItem(2), "~")), "\\^").alias(
-                "patient_ids"
-            ),
-        ).select(
-            "source_file",
-            F.col("patient_ids").getItem(0).alias("id_number"),
-            F.col("patient_ids").getItem(3).alias("assigning_authority"),
-            F.col("patient_ids").getItem(4).alias("identifier_type_code"),
+        exploded_patient_id_df = (
+            df.select(
+                "source_file",
+                # Get the patient id segment and explode into separate rows
+                F.explode(F.split(F.col("pid-2"), "~")).alias("pid-2"),
+            )
+            .select(
+                "source_file",
+                # Split the patient id fields from the exploded pid
+                F.split(F.col("pid-2"), "\\^").alias("patient_ids"),
+            )
+            .select(
+                "source_file",
+                # Get the patient id fields we want
+                F.col("patient_ids").getItem(0).alias("id_number"),
+                F.col("patient_ids").getItem(3).alias("assigning_authority"),
+                F.col("patient_ids").getItem(4).alias("identifier_type_code"),
+            )
         )
 
         activity.heartbeat()
