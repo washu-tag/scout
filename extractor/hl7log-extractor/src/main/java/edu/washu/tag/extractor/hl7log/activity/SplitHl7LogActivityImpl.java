@@ -12,6 +12,8 @@ import edu.washu.tag.extractor.hl7log.model.Hl7ManifestFileOutput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogInput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogOutput;
 import edu.washu.tag.extractor.hl7log.util.FileHandler;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityExecutionContext;
 import io.temporal.activity.ActivityInfo;
@@ -36,7 +38,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.lang3.StringUtils;
@@ -49,6 +53,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     private static final Logger logger = Workflow.getLogger(SplitHl7LogActivityImpl.class);
     // Constants
+    private static final String EXTRACTOR_HL7_COUNTER = "scout.extractor.hl7.report.count";
     private static final String HL7_PATHS_FILENAME = "hl7-paths.txt";
     private static final int HEADER_LENGTH = 24;
     private static final int MIN_TIMESTAMP_LENGTH = 14;
@@ -69,10 +74,16 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
     private final FileHandler fileHandler;
     private final IngestDbService ingestDbService;
+    private final MeterRegistry meterRegistry;
 
-    public SplitHl7LogActivityImpl(FileHandler fileHandler, IngestDbService ingestDbService) {
+    public SplitHl7LogActivityImpl(FileHandler fileHandler, IngestDbService ingestDbService, MeterRegistry meterRegistry) {
         this.fileHandler = fileHandler;
         this.ingestDbService = ingestDbService;
+        this.meterRegistry = meterRegistry;
+
+        // https://prometheus.io/docs/practices/instrumentation/#avoid-missing-metrics
+        Stream.of(FileStatusStatus.values())
+            .forEach(status -> meterRegistry.counter(EXTRACTOR_HL7_COUNTER, Tags.of("status", status.getStatus())).increment(0));
     }
 
     private static LocalDate dateFromLogFilePath(String filePath) {
@@ -121,6 +132,16 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         // Insert the HL7 file paths into the database
         ctx.heartbeat("Processed " + fileStatuses.size() + " messages");
         ingestDbService.batchInsertNewHl7FileStatuses(fileStatuses, input.logPath(), dateFromLogFilePath(input.logPath()));
+
+        // Increment counter
+        fileStatuses.stream()
+            .filter(fileStatus -> FileStatusType.HL7.getType().equals(fileStatus.type()))
+            .collect(Collectors.groupingBy(
+                FileStatus::status,
+                Collectors.counting()))
+            .forEach((status, count) ->
+                meterRegistry.counter(EXTRACTOR_HL7_COUNTER, Tags.of("status", status))
+                    .increment(count));
 
         // If all HL7 files failed, fail the activity
         List<String> hl7Paths = fileStatuses.stream()

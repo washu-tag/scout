@@ -8,8 +8,8 @@
       "interval": "1d",
       "rules": [
         {
-          "uid": "no_hl7_from_scheduled_ingest_alert_01",
-          "title": "No HL7 from scheduled ingest",
+          "uid": "no_hl7_processed_01",
+          "title": "No HL7 processed",
           "condition": "C",
           "data": [
             {
@@ -18,37 +18,16 @@
                 "from": 86400,
                 "to": 0
               },
-              "datasourceUid": "postgres_ingest_db_datasource_01",
+              "datasourceUid": "prometheus_datasource_01",
               "model": {
-                "datasource": {
-                  "type": "grafana-postgresql-datasource",
-                  "uid": "postgres_ingest_db_datasource_01"
-                },
                 "editorMode": "code",
-                "format": "table",
+                "expr": "sum(increase(scout_extractor_hl7_report_count_total[24h]))",
                 "instant": true,
-                "intervalMs": 86400000,
+                "intervalMs": 1000,
+                "legendFormat": "__auto",
                 "maxDataPoints": 43200,
-                "rawQuery": true,
-                "rawSql": "SELECT\n  COUNT(*) AS value,\n  to_char(current_date - 2, ''YYYY-MM-DD'') AS day,\n  ''{{ server_hostname }}'' AS cluster\nFROM recent_hl7_files h\nJOIN recent_log_files l ON l.file_path = h.log_file_path\nWHERE l.date = current_date - 2;",
-                "refId": "A",
-                "sql": {
-                  "columns": [
-                    {
-                      "parameters": [],
-                      "type": "function"
-                    }
-                  ],
-                  "groupBy": [
-                    {
-                      "property": {
-                        "type": "string"
-                      },
-                      "type": "groupBy"
-                    }
-                  ],
-                  "limit": 50
-                }
+                "range": false,
+                "refId": "A"
               }
             },
             {
@@ -62,14 +41,18 @@
                 "conditions": [
                   {
                     "evaluator": {
-                      "params": [0],
+                      "params": [
+                        0
+                      ],
                       "type": "eq"
                     },
                     "operator": {
                       "type": "and"
                     },
                     "query": {
-                      "params": ["C"]
+                      "params": [
+                        "C"
+                      ]
                     },
                     "reducer": {
                       "params": [],
@@ -91,14 +74,14 @@
             }
           ],
           "dashboardUid": "hl7_ingest_dashboard_01",
-          "panelId": 3,
-          "noDataState": "Alerting",
+          "panelId": 1,
+          "noDataState": "NoData",
           "execErrState": "Error",
           "annotations": {
             "__dashboardUid__": "hl7_ingest_dashboard_01",
-            "__panelId__": "3",
-            "description": "Tests whether any HL7 reports were ingested from the HL7 listener log file dated 2 days ago (because we ingest yesterday''s logs today, and we cannot control when this alert runs, so it could beat the ingest)",
-            "summary": "{% raw %}Scheduled ingest of HL7 log from {{ $labels.day }} on {{ $labels.cluster }} extracted 0 reports. This may mean ingest failed to run, no log was found, or the log didn''t contain any HL7.{% endraw %}"
+            "__panelId__": "1",
+            "description": "No HL7 reports extracted in the last 24 hours.",
+            "summary": "No HL7 reports extracted in the last 24 hours."
           },
           "labels": {},
           "isPaused": false,
@@ -110,4 +93,3 @@
     }
   ]
 }
-
