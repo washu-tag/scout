@@ -1,0 +1,91 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "1h-interval",
+      "folder": "Scout",
+      "interval": "1h",
+      "rules": [
+        {
+          "uid": "temporal_workflow_failure_01",
+          "title": "Temporal Workflow Failure",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 10800,
+                "to": 0
+              },
+              "datasourceUid": "prometheus_datasource_01",
+              "model": {
+                "editorMode": "code",
+                "expr": "sum(increase(temporal_workflow_failed_total[1h])) by (workflow_type)",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "__auto",
+                "maxDataPoints": 43200,
+                "range": false,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        0
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": [
+                        "C"
+                      ]
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "annotations": {
+            "description": "Temporal workflow failed",
+            "summary": "{% raw %}Temporal workflow {{ $labels.workflow_type }} failed{% endraw %}"
+          },
+          "labels": {},
+          "isPaused": false,
+          "notification_settings": {
+            "receiver": "{{ grafana_alert_contact_point }}"
+          }
+        }
+      ]
+    }
+  ]
+}
