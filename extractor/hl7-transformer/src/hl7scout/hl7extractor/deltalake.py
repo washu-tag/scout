@@ -7,7 +7,7 @@ from pathlib import Path
 
 from delta.tables import DeltaTable
 from py4j.protocol import Py4JError
-from pyspark.sql import Column, SparkSession
+from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from s3fs import S3FileSystem
 from temporalio import activity
@@ -19,40 +19,6 @@ import os
 import shutil
 import tempfile
 import zipfile
-
-DATE_FORMAT = "yyyyMMdd"
-DT_FORMAT = "yyyyMMddHHmmss"
-
-EMPTY_FILTER = " and ".join(
-    f"{field} is not null and {field} != ''"
-    for field in ("id_number", "assigning_authority", "identifier_type_code")
-)
-
-
-def segment_field(
-    segment: str,
-    field: int,
-    component: int = 1,
-    segment_column: Column | str = "segments",
-) -> Column:
-    if segment == "MSH":
-        segment_val = F.split("message", "\\|")
-    else:
-        segment_val = (
-            F.filter(segment_column, lambda s: s["id"] == segment)
-            .getItem(0)
-            .getField("fields")
-        )
-    return F.split(segment_val.getField(field - 1), "\\^").getItem(component - 1)
-
-
-def parse_timestamp_col(col: Column | str) -> Column:
-    """Convert a timestamp column to a datetime column.
-    Some of our timestamps are missing seconds, so we need to add them."""
-    return F.to_timestamp(
-        F.when(F.length(col) == 12, F.concat(col, F.lit("00"))).otherwise(col),
-        DT_FORMAT,
-    )
 
 
 def parse_s3_zip_paths(hl7_file_paths: list[str]) -> dict[str, list[str]]:
@@ -139,14 +105,59 @@ def import_hl7_files_to_deltalake(
         df = df.join(temp_to_s3_df, on="temp_path", how="left")
         df = df.drop("temp_path")
 
+        activity.heartbeat()
+        # Extract the HL7 segments from the smolder objects
+        df = df.select(
+            "source_file",
+            # MSH is stored in its own "message" column
+            F.split("message", "\\|").alias("msh"),
+            # Other segments are stored in objects in the "segments" column
+            # We need to find the ones we want using their "id" field
+            # Most of them we use the first item in the list
+            *[
+                F.filter("segments", F.expr(f"x -> x.id = '{segment}'"))
+                .getItem(0)
+                .getField("fields")
+                .alias(segment.lower())
+                for segment in ("PID", "ORC", "OBR", "DG1", "ZDS")
+            ],
+            # OBX is a special case, we need to explode it into separate rows
+            # but for now we'll just keep it as a list
+            F.filter("segments", F.expr("x -> x.id = 'OBX'")).alias("obx_lines"),
+        ).select(
+            "source_file",
+            "obx_lines",
+            *[
+                F.split(F.col(segment).getItem(field - 1), "\\^")
+                .getItem(0)
+                .alias(f"{segment}-{field}")
+                for segment, fields in (
+                    ("msh", (4, 7, 10, 12)),
+                    ("pid", (7, 8, 10, 22)),
+                    ("orc", (2, 3)),
+                    ("obr", (2, 3, 6, 7, 8, 22, 24)),
+                    ("zds", (1,)),
+                )
+                for field in fields
+            ],
+            *[
+                F.split(F.col(segment).getItem(field - 1), "\\^")
+                .getItem(component - 1)
+                .alias(f"{segment}-{field}-{component}")
+                for segment, field, components in (
+                    ("pid", 11, (5, 6)),
+                    ("obr", 4, (1, 2, 3)),
+                    ("dg1", 3, (1, 2, 3)),
+                )
+                for component in components
+            ],
+        )
+
         # Filter out rows from unparsable HL7 files
-        message_control_id = segment_field("MSH", 10)
-        error_paths = [
-            row.source_file
-            for row in df.filter(message_control_id.isNull())
-            .select("source_file")
-            .collect()
-        ]
+        null_message_ids = (
+            df.filter(F.col("msh-10").isNull()).select("source_file").collect()
+        )
+        error_paths = [row.source_file for row in null_message_ids]
         if error_paths:
             # Write error paths to db
             write_errors(
@@ -157,7 +168,7 @@ def import_hl7_files_to_deltalake(
             )
 
             # Remove empty / unparsable rows from df
-            df = df.filter(message_control_id.isNotNull())
+            df = df.filter(F.col("msh-10").isNotNull())
 
         if df.isEmpty():
             raise ApplicationError("No data extracted from HL7 messages")
@@ -180,27 +191,28 @@ def import_hl7_files_to_deltalake(
 
         activity.heartbeat()
         activity.logger.info("Creating report df")
+        # We need to explode the OBX segments into separate rows,
+        # then get the report text from the OBX-5 field and status from OBX-11
         report_df = (
             df.select(
                 "source_file",
                 # Get all OBX segments and explode into separate rows, keeping the index as "pos" column
-                F.posexplode(F.filter("segments", lambda s: s["id"] == "OBX")),
+                F.posexplode(F.col("obx_lines")),
             )
+            .withColumn("obx", F.col("col").getField("fields"))
             .select(
                 "source_file",
                 # "pos" holds the index of the OBX segment
                 "pos",
-                # "col" holds the OBX segment data
+                # "obx" holds the OBX segment data
                 F.when(
                     # TX data type has a ~ delimiter, replace with newline
-                    F.col("col").getField("fields").getItem(1) == "TX",
-                    F.regexp_replace(
-                        F.col("col").getField("fields").getItem(4), "~", "\n"
-                    ),
+                    F.col("obx").getItem(1) == "TX",
+                    F.regexp_replace(F.col("obx").getItem(4), "~", "\n"),
                 )
                 # Other data types are a single line as the value
-                .otherwise(F.col("col").getField("fields").getItem(4)).alias("obx-5"),
-                F.col("col").getField("fields").getItem(10).alias("obx-11"),
+                .otherwise(F.col("obx").getItem(4)).alias("obx-5"),
+                F.col("obx").getItem(10).alias("obx-11"),
             )
             .groupby("source_file")
             .agg(
@@ -215,26 +227,29 @@ def import_hl7_files_to_deltalake(
         activity.logger.info("Extracting patient id columns")
         exploded_patient_id_df = df.select(
             "source_file",
-            F.explode(
-                F.split(
-                    F.filter("segments", lambda s: s["id"] == "PID")
-                    .getItem(0)
-                    .getField("fields")
-                    .getItem(2),
-                    "~",
-                )
-            ).alias("pid"),
+            F.split(F.explode(F.split(F.col("pid").getItem(2), "~")), "\\^").alias(
+                "patient_ids"
+            ),
         ).select(
             "source_file",
-            F.split("pid", "\\^").getItem(0).alias("id_number"),
-            F.split("pid", "\\^").getItem(3).alias("assigning_authority"),
-            F.split("pid", "\\^").getItem(4).alias("identifier_type_code"),
+            F.col("patient_ids").getItem(0).alias("id_number"),
+            F.col("patient_ids").getItem(3).alias("assigning_authority"),
+            F.col("patient_ids").getItem(4).alias("identifier_type_code"),
         )
 
         activity.heartbeat()
         patient_id_df = (
             # Filter out patient ids with missing fields
-            exploded_patient_id_df.filter(EMPTY_FILTER)
+            exploded_patient_id_df.filter(
+                " and ".join(
+                    f"{field} is not null and {field} != ''"
+                    for field in (
+                        "id_number",
+                        "assigning_authority",
+                        "identifier_type_code",
+                    )
+                )
+            )
             .select(
                 "source_file",
                 "id_number",
@@ -265,38 +280,48 @@ def import_hl7_files_to_deltalake(
         activity.logger.info("Joining data into report df")
         df = (
             df.select(
-                segment_field("MSH", 10).alias("message_control_id"),
-                segment_field("MSH", 4).alias("sending_facility"),
-                segment_field("MSH", 12).alias("version_id"),
-                parse_timestamp_col(segment_field("MSH", 7)).alias("message_dt"),
+                # Assign human-readable names
+                F.col("msh-10").alias("message_control_id"),
+                F.col("msh-4").alias("sending_facility"),
+                F.col("msh-12").alias("version_id"),
+                F.col("pid-8").alias("sex"),
+                F.col("pid-10").alias("race"),
+                F.col("pid-11-5").alias("zip_or_postal_code"),
+                F.col("pid-11-6").alias("country"),
+                F.col("pid-22").alias("ethnic_group"),
+                F.col("orc-2").alias("orc_2_placer_order_number"),
+                F.col("obr-2").alias("obr_2_placer_order_number"),
+                F.col("orc-3").alias("orc_3_filler_order_number"),
+                F.col("obr-3").alias("obr_3_filler_order_number"),
+                F.col("obr-4-1").alias("service_identifier"),
+                F.col("obr-4-2").alias("service_name"),
+                F.col("obr-4-3").alias("service_coding_system"),
+                F.col("obr-24").alias("diagnostic_service_id"),
+                F.col("dg1-3-1").alias("diagnosis_code"),
+                F.col("dg1-3-2").alias("diagnosis_code_text"),
+                F.col("dg1-3-3").alias("diagnosis_code_coding_scheme"),
+                F.col("zds-1").alias("study_instance_uid"),
+                # Create date and time objects
                 F.to_date(
-                    F.substring(segment_field("PID", 7), 1, 8), DATE_FORMAT
+                    F.substring(F.col("pid-7"), 1, 8),
+                    "yyyyMMdd",
                 ).alias("birth_date"),
-                segment_field("PID", 8).alias("sex"),
-                segment_field("PID", 10).alias("race"),
-                segment_field("PID", 11, 5).alias("zip_or_postal_code"),
-                segment_field("PID", 11, 6).alias("country"),
-                segment_field("PID", 22).alias("ethnic_group"),
-                segment_field("ORC", 2).alias("orc_2_placer_order_number"),
-                segment_field("OBR", 2).alias("obr_2_placer_order_number"),
-                segment_field("ORC", 3).alias("orc_3_filler_order_number"),
-                segment_field("OBR", 3).alias("obr_3_filler_order_number"),
-                segment_field("OBR", 4, 1).alias("service_identifier"),
-                segment_field("OBR", 4, 2).alias("service_name"),
-                segment_field("OBR", 4, 3).alias("service_coding_system"),
-                parse_timestamp_col(segment_field("OBR", 6)).alias("requested_dt"),
-                parse_timestamp_col(segment_field("OBR", 7)).alias("observation_dt"),
-                parse_timestamp_col(segment_field("OBR", 8)).alias(
-                    "observation_end_dt"
-                ),
-                parse_timestamp_col(segment_field("OBR", 22)).alias(
-                    "results_report_status_change_dt"
-                ),
-                segment_field("OBR", 24).alias("diagnostic_service_id"),
-                segment_field("DG1", 3, 1).alias("diagnosis_code"),
-                segment_field("DG1", 3, 2).alias("diagnosis_code_text"),
-                segment_field("DG1", 3, 3).alias("diagnosis_code_coding_system"),
-                segment_field("ZDS", 1).alias("study_instance_uid"),
+                *[
+                    F.to_timestamp(
+                        F.when(
+                            F.length(timestamp_col) == 12,
+                            F.concat(timestamp_col, F.lit("00")),
+                        ).otherwise(timestamp_col),
+                        "yyyyMMddHHmmss",
+                    ).alias(alias)
+                    for timestamp_col, alias in (
+                        ("msh-7", "message_dt"),
+                        ("obr-6", "requested_dt"),
+                        ("obr-7", "observation_dt"),
+                        ("obr-8", "observation_end_dt"),
+                        ("obr-22", "results_report_status_change_dt"),
+                    )
+                ],
                 "source_file",
             )
             .join(report_df, "source_file", "left")
