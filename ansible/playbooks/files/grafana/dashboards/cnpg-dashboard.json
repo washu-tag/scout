@@ -4896,9 +4896,9 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(cnpg_pg_stat_database_xact_commit{namespace=~\"$namespace\",pod=~\"$instances\"}[5m])) by (pod)",
+          "expr": "sum(rate(cnpg_pg_stat_database_xact_commit{namespace=~\"$namespace\",pod=~\"$instances\"}[5m])) by (pod, datname)",
           "interval": "",
-          "legendFormat": "committed ({{pod}})",
+          "legendFormat": "committed ({{pod}} - {{datname}})",
           "range": true,
           "refId": "A"
         },
@@ -4907,15 +4907,17 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(cnpg_pg_stat_database_xact_rollback{namespace=~\"$namespace\",pod=~\"$instances\"}[5m])) by (pod)",
+          "expr": "sum(rate(cnpg_pg_stat_database_xact_rollback{namespace=~\"$namespace\",pod=~\"$instances\"}[5m])) by (pod, datname)",
           "hide": false,
           "interval": "",
-          "legendFormat": "rolled back ({{pod}})",
+          "legendFormat": "rolled back ({{pod}} - {{datname}})",
+          "range": true,
           "refId": "B"
         }
       ],
-      "title": "Transactions [5m] (By Pod)",
+      "title": "Transactions [5m] (By Pod - DB)",
       "type": "timeseries"
     },
     {
@@ -5006,226 +5008,16 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "exemplar": true,
-          "expr": "max by (pod) (cnpg_backends_max_tx_duration_seconds{namespace=~\"$namespace\",pod=~\"$instances\"})",
-          "interval": "",
-          "legendFormat": "{{pod}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Longest Transaction (By Pod)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 37
-      },
-      "id": 795,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.6.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(cnpg_pg_stat_database_xact_commit{namespace=~\"$namespace\",pod=~\"$instances\"}[5m])) by (datname)",
+          "expr": "max by (pod, usename, datname) (cnpg_backends_max_tx_duration_seconds{namespace=~\"$namespace\",pod=~\"$instances\"})",
           "interval": "",
-          "legendFormat": "committed ({{datname}})",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(rate(cnpg_pg_stat_database_xact_rollback{namespace=~\"$namespace\",pod=~\"$instances\"}[5m])) by (datname)",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "rolled back ({{datname}})",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "Transactions [5m] (By DB)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 37
-      },
-      "id": 796,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.6.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "max by (usename, datname) (cnpg_backends_max_tx_duration_seconds{namespace=~\"$namespace\",pod=~\"$instances\"})",
-          "interval": "",
-          "legendFormat": "{{usename}} - {{datname}}",
+          "legendFormat": "{{pod}} - {{usename}} - {{datname}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Longest Transaction (By User and DB)",
+      "title": "Longest Transaction (By Pod - User - DB)",
       "type": "timeseries"
     },
     {
@@ -5292,7 +5084,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 45
+        "y": 37
       },
       "id": 55,
       "options": {
@@ -5391,7 +5183,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 45
+        "y": 37
       },
       "id": 54,
       "options": {
@@ -5430,7 +5222,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 53
+        "y": 45
       },
       "id": 35,
       "panels": [
@@ -6144,7 +5936,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 54
+        "y": 46
       },
       "id": 37,
       "panels": [
@@ -6561,7 +6353,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 47
       },
       "id": 18,
       "panels": [
@@ -6967,7 +6759,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 56
+        "y": 48
       },
       "id": 231,
       "panels": [
@@ -7158,7 +6950,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 57
+        "y": 49
       },
       "id": 239,
       "panels": [
@@ -7268,7 +7060,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 58
+        "y": 50
       },
       "id": 293,
       "panels": [
@@ -7510,7 +7302,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 51
       },
       "id": 794,
       "panels": [
@@ -7666,7 +7458,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 60
+        "y": 52
       },
       "id": 696,
       "panels": [
