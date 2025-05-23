@@ -84,12 +84,10 @@ def import_hl7_files_to_deltalake(
             raise ApplicationError("No HL7 files found in HL7 file path files")
 
         activity.heartbeat()
-        activity.logger.info(
-            "Downloading and extracting %d files", len(zipped_hl7_file_paths_from_spark)
-        )
 
         temp_dir = tempfile.mkdtemp()
         zip_map = parse_s3_zip_paths(zipped_hl7_file_paths_from_spark)
+        activity.logger.info("Downloading and extracting %d zip files", len(zip_map))
         temp_to_s3 = download_and_extract_zips(zip_map, temp_dir)
         temp_hl7_files = [temp_path for temp_path, _ in temp_to_s3]
 
