@@ -21,7 +21,7 @@
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "sum(increase(temporal_workflow_failed_total[1h])) by (workflow_type)",
+                "expr": "sum by (namespace) (rate(workflow_failed{operation=\"CompletionStats\", job=\"kubernetes-pods\"}[1h]))",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
@@ -77,7 +77,7 @@
           "execErrState": "Error",
           "annotations": {
             "description": "Temporal workflow failed",
-            "summary": "{% raw %}Temporal workflow {{ $labels.workflow_type }} failed{% endraw %}"
+            "summary": "{% raw %}At least one Temporal workflow failed since last check (Temporal namespace: {{ $labels.namespace }}){% endraw %}"
           },
           "labels": {},
           "isPaused": false,
