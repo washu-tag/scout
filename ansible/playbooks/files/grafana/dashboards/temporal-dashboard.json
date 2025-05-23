@@ -123,7 +123,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -227,7 +227,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -327,7 +327,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -427,7 +427,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -1423,7 +1423,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -1914,7 +1914,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -2012,7 +2012,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -2112,7 +2112,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -2211,7 +2211,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -2365,7 +2365,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -2502,7 +2502,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -2513,9 +2513,9 @@
             "type": "prometheus",
             "uid": "prometheus_datasource_01"
           },
-          "expr": "sum by (temporal_namespace) (rate(workflow_success{ operation=\"CompletionStats\"}[5m]))",
+          "expr": "sum by (namespace) (rate(workflow_success{ operation=\"CompletionStats\"}[5m]))",
           "interval": "",
-          "legendFormat": "{{ temporal_namespace }} ",
+          "legendFormat": "{{ namespace }}",
           "refId": "A"
         }
       ],
@@ -2599,7 +2599,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -2610,9 +2610,9 @@
             "type": "prometheus",
             "uid": "prometheus_datasource_01"
           },
-          "expr": "sum by (temporal_namespace) (rate(workflow_failed{ operation=\"CompletionStats\"}[5m]))",
+          "expr": "sum by (namespace) (rate(workflow_failed{ operation=\"CompletionStats\"}[5m]))",
           "interval": "",
-          "legendFormat": "{{ temporal_namespace }} ",
+          "legendFormat": "{{ namespace }} ",
           "refId": "A"
         }
       ],
@@ -2696,7 +2696,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -2707,9 +2707,9 @@
             "type": "prometheus",
             "uid": "prometheus_datasource_01"
           },
-          "expr": "sum by (temporal_namespace) (rate(workflow_timeout{ operation=\"CompletionStats\"}[5m]))",
+          "expr": "sum by (namespace) (rate(workflow_timeout{ operation=\"CompletionStats\"}[5m]))",
           "interval": "",
-          "legendFormat": "{{ temporal_namespace }} ",
+          "legendFormat": "{{ namespace }} ",
           "refId": "A"
         }
       ],
@@ -2793,7 +2793,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -2804,9 +2804,9 @@
             "type": "prometheus",
             "uid": "prometheus_datasource_01"
           },
-          "expr": "sum by (temporal_namespace) (rate(workflow_terminate{ operation=\"CompletionStats\"}[5m]))",
+          "expr": "sum by (namespace) (rate(workflow_terminate{ operation=\"CompletionStats\"}[5m]))",
           "interval": "",
-          "legendFormat": "{{ temporal_namespace }} ",
+          "legendFormat": "{{ namespace }} ",
           "refId": "A"
         }
       ],
@@ -2890,7 +2890,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -2901,9 +2901,9 @@
             "type": "prometheus",
             "uid": "prometheus_datasource_01"
           },
-          "expr": "sum by (temporal_namespace) (rate(workflow_cancel{ operation=\"CompletionStats\"}[5m]))",
+          "expr": "sum by (namespace) (rate(workflow_cancel{ operation=\"CompletionStats\"}[5m]))",
           "interval": "",
-          "legendFormat": "{{ temporal_namespace }} ",
+          "legendFormat": "{{ namespace }} ",
           "refId": "A"
         }
       ],
@@ -3000,7 +3000,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -3107,7 +3107,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -3204,7 +3204,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -3335,7 +3335,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -3433,7 +3433,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -3532,7 +3532,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -3626,7 +3626,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -3747,7 +3747,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -3855,7 +3855,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -3953,7 +3953,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -4052,7 +4052,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -4165,7 +4165,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -4272,7 +4272,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -4369,7 +4369,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -4467,7 +4467,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },

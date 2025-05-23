@@ -66,6 +66,11 @@ extraScrapeConfigs: |
     static_configs:
       - targets: ['proxy-public.jupyter']
 
+  - job_name: hl7log-extractor
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['hl7log-extractor.{{ extractor_namespace }}:8080']
+
   - job_name: postgres
     metrics_path: /metrics
     kubernetes_sd_configs:
