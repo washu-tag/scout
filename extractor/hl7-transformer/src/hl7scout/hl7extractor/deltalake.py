@@ -109,54 +109,58 @@ def import_hl7_files_to_deltalake(
 
         activity.heartbeat()
         # Extract the HL7 segments from the smolder objects
-        df = df.select(
-            "source_file",
-            # MSH is stored in its own "message" column
-            F.split("message", "\\|").alias("msh"),
-            # Other segments are stored in objects in the "segments" column.
-            # We need to find the ones we want using their "id" field;
-            # for most of them we use the first item in the list.
-            *[
-                F.expr(f"filter(segments, x -> x.id = '{segment}')[0].fields").alias(
-                    segment.lower()
-                )
-                for segment in ("PID", "ORC", "OBR", "DG1", "ZDS")
-            ],
-            # OBX is a special case; we need to keep it as a list for now so
-            # later we can explode it into separate rows
-            F.expr("filter(segments, x -> x.id = 'OBX')").alias("obx_lines"),
-        ).select(
-            "source_file",
-            "obx_lines",
-            # Extract all the fields where we only want the first component
-            *[
-                F.split(F.col(segment).getItem(field - 1), "\\^")
-                .getItem(0)
-                .alias(f"{segment}-{field}")
-                for segment, fields in (
-                    ("msh", (4, 7, 10, 12)),
-                    ("pid", (7, 8, 10, 22)),
-                    ("orc", (2, 3)),
-                    ("obr", (2, 3, 6, 7, 8, 22, 24)),
-                    ("zds", (1,)),
-                )
-                for field in fields
-            ],
-            # Extract all the fields where we want multiple components
-            *[
-                F.split(F.col(segment).getItem(field - 1), "\\^")
-                .getItem(component - 1)
-                .alias(f"{segment}-{field}-{component}")
-                for segment, field, components in (
-                    ("pid", 11, (5, 6)),
-                    ("obr", 4, (1, 2, 3)),
-                    ("dg1", 3, (1, 2, 3)),
-                )
-                for component in components
-            ],
-            # PID-2 is a special case.
-            # We keep it as-is for now so we can explode it later.
-            F.col("pid").getItem(2).alias("pid-2"),
+        df = (
+            df.select(
+                "source_file",
+                # MSH is stored in its own "message" column
+                F.split("message", "\\|").alias("msh"),
+                # Other segments are stored in objects in the "segments" column.
+                # We need to find the ones we want using their "id" field;
+                # for most of them we use the first item in the list.
+                *[
+                    F.expr(
+                        f"filter(segments, x -> x.id = '{segment}')[0].fields"
+                    ).alias(segment.lower())
+                    for segment in ("PID", "ORC", "OBR", "DG1", "ZDS")
+                ],
+                # OBX is a special case; we need to keep it as a list for now so
+                # later we can explode it into separate rows
+                F.expr("filter(segments, x -> x.id = 'OBX')").alias("obx_lines"),
+            )
+            .select(
+                "source_file",
+                "obx_lines",
+                # Extract all the fields where we only want the first component
+                *[
+                    F.split(F.col(segment).getItem(field - 1), "\\^")
+                    .getItem(0)
+                    .alias(f"{segment}-{field}")
+                    for segment, fields in (
+                        ("msh", (4, 7, 10, 12)),
+                        ("pid", (7, 8, 10, 22)),
+                        ("orc", (2, 3)),
+                        ("obr", (2, 3, 6, 7, 8, 22, 24)),
+                        ("zds", (1,)),
+                    )
+                    for field in fields
+                ],
+                # Extract all the fields where we want multiple components
+                *[
+                    F.split(F.col(segment).getItem(field - 1), "\\^")
+                    .getItem(component - 1)
+                    .alias(f"{segment}-{field}-{component}")
+                    for segment, field, components in (
+                        ("pid", 11, (5, 6)),
+                        ("obr", 4, (1, 2, 3)),
+                        ("dg1", 3, (1, 2, 3)),
+                    )
+                    for component in components
+                ],
+                # PID-2 is a special case.
+                # We keep it as-is for now so we can explode it later.
+                F.col("pid").getItem(2).alias("pid-2"),
+            )
+            .cache()
         )
 
         # Filter out rows from unparsable HL7 files
@@ -249,7 +253,7 @@ def import_hl7_files_to_deltalake(
                 F.col("patient_ids").getItem(3).alias("assigning_authority"),
                 F.col("patient_ids").getItem(4).alias("identifier_type_code"),
             )
-        )
+        ).cache()
 
         activity.heartbeat()
         activity.logger.info("Creating patient id df")
