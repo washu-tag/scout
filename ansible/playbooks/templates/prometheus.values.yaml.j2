@@ -70,3 +70,19 @@ extraScrapeConfigs: |
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ['hl7log-extractor.{{ extractor_namespace }}:8080']
+
+  - job_name: postgres
+    metrics_path: /metrics
+    kubernetes_sd_configs:
+      - role: endpoints
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: postgresql-cluster-metrics
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: metrics
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
