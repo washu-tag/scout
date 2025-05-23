@@ -63,6 +63,11 @@ def import_hl7_files_to_deltalake(
             .config("spark.sql.adaptive.coalescePartitions.enabled", "true")
             # Smaller partitions
             .config("spark.sql.adaptive.advisoryPartitionSizeInBytes", "64MB")
+            # Serialization settings for large tasks
+            .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+            .config("spark.kryoserializer.buffer.max", "256m")
+            # Increase max RPC message size
+            .config("spark.rpc.message.maxSize", "1024")
             .enableHiveSupport()
             .getOrCreate()
         )
