@@ -74,7 +74,9 @@ def import_hl7_files_to_deltalake(
             raise ApplicationError("No HL7 files found in HL7 file path files")
 
         activity.heartbeat()
-        activity.logger.info("Downloading and extracting HL7 files")
+        activity.logger.info(
+            "Downloading and extracting %d files", len(zipped_hl7_file_paths_from_spark)
+        )
 
         temp_dir = tempfile.mkdtemp()
         zip_map = parse_s3_zip_paths(zipped_hl7_file_paths_from_spark)
@@ -250,6 +252,7 @@ def import_hl7_files_to_deltalake(
         )
 
         activity.heartbeat()
+        activity.logger.info("Creating patient id df")
         patient_id_df = (
             # Filter out patient ids with missing fields
             exploded_patient_id_df.filter(
@@ -280,6 +283,7 @@ def import_hl7_files_to_deltalake(
 
         # Note that we do not filter out any patient ids here, so they are all available in the JSON
         activity.heartbeat()
+        activity.logger.info("Creating patient id JSON column")
         patient_id_json_df = exploded_patient_id_df.groupBy("source_file").agg(
             F.to_json(
                 F.collect_list(
@@ -289,7 +293,7 @@ def import_hl7_files_to_deltalake(
         )
 
         activity.heartbeat()
-        activity.logger.info("Joining data into report df")
+        activity.logger.info("Building final report DataFrame")
         df = (
             df.select(
                 # Assign human-readable names
@@ -376,7 +380,7 @@ def import_hl7_files_to_deltalake(
             success_paths, activity.info().workflow_id, activity.info().activity_id
         )
 
-        activity.logger.info("Finished")
+        activity.logger.info("Finished writing to delta lake")
         return num_hl7
     except (Py4JError, ConnectionError) as e:
         activity.logger.error(
@@ -393,12 +397,14 @@ def import_hl7_files_to_deltalake(
         raise
     except TimeoutError:
         activity.logger.info("Temporal activity has been cancelled")
+        return 0
     except Exception as e:
         activity.logger.exception("Error ingesting HL7 files to Delta Lake", exc_info=e)
         raise
     finally:
         if spark is not None:
             activity.logger.info("Stopping spark")
+            activity.heartbeat()
             try:
                 spark.stop()
             except:
@@ -407,7 +413,10 @@ def import_hl7_files_to_deltalake(
         if temp_dir is not None:
             # CLean up temp dir after Spark is finished processing
             activity.logger.info("Cleaning up temp dir %s", temp_dir)
+            activity.heartbeat()
             try:
                 shutil.rmtree(temp_dir)
             except Exception as e:
                 activity.logger.error("Error cleaning up temp dir %s", e)
+
+        activity.logger.info("All done")
