@@ -70,8 +70,3 @@ extraScrapeConfigs: |
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ['hl7log-extractor.{{ extractor_namespace }}:8080']
-
-  - job_name: postgres
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['postgresql-cluster-metrics.{{ postgres_cluster_namespace }}:9187']
