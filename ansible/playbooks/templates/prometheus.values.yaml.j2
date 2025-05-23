@@ -28,40 +28,56 @@ extraScrapeConfigs: |
   - job_name: 'grafana'
     metrics_path: /grafana/metrics
     static_configs:
-      - targets: ['grafana.{{ grafana_namespace }}.svc.cluster.local']
+      - targets: ['grafana.{{ grafana_namespace }}']
 
   - job_name: 'loki'
     metrics_path: /metrics
     static_configs:
-      - targets: ['loki.{{ loki_namespace }}.svc.cluster.local:3100']
+      - targets: ['loki.{{ loki_namespace }}:3100']
 
   - job_name: minio-cluster
     metrics_path: /minio/v2/metrics/cluster
     scheme: http
     static_configs:
-      - targets: ['minio.{{ minio_tenant_namespace }}.svc.cluster.local']
+      - targets: ['minio.{{ minio_tenant_namespace }}']
 
   - job_name: minio-bucket
     metrics_path: /minio/v2/metrics/bucket
     scheme: http
     static_configs:
-      - targets: ['minio.{{ minio_tenant_namespace }}.svc.cluster.local']
+      - targets: ['minio.{{ minio_tenant_namespace }}']
 
   - job_name: minio-node
     metrics_path: /minio/v2/metrics/node
     scheme: http
     static_configs:
-      - targets: ['minio.{{ minio_tenant_namespace }}.svc.cluster.local']
+      - targets: ['minio.{{ minio_tenant_namespace }}']
 
   - job_name: minio-resource
     metrics_path: /minio/v2/metrics/resource
     scheme: http
     static_configs:
-      - targets: ['minio.{{ minio_tenant_namespace }}.svc.cluster.local']
+      - targets: ['minio.{{ minio_tenant_namespace }}']
 
   - job_name: jupyterhub
     metrics_path: /jupyter/hub/metrics
     bearer_token_file: /etc/secrets/jupyterhub/metrics-api-token
     scheme: http
     static_configs:
-      - targets: ['proxy-public.jupyter.svc.cluster.local']
+      - targets: ['proxy-public.jupyter']
+
+  - job_name: postgres
+    metrics_path: /metrics
+    kubernetes_sd_configs:
+      - role: endpoints
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: postgresql-cluster-metrics
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: metrics
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
