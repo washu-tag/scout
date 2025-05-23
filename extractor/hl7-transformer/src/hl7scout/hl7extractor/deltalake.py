@@ -58,6 +58,11 @@ def import_hl7_files_to_deltalake(
         activity.logger.info("Creating Spark session")
         spark = (
             SparkSession.builder.appName("IngestHL7ToDeltaLake")
+            # Adaptive query execution to reduce resource pressure
+            .config("spark.sql.adaptive.enabled", "true")
+            .config("spark.sql.adaptive.coalescePartitions.enabled", "true")
+            # Smaller partitions
+            .config("spark.sql.adaptive.advisoryPartitionSizeInBytes", "64MB")
             .enableHiveSupport()
             .getOrCreate()
         )
