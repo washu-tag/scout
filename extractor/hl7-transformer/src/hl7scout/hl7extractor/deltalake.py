@@ -58,12 +58,6 @@ def import_hl7_files_to_deltalake(
         activity.logger.info("Creating Spark session")
         spark = (
             SparkSession.builder.appName("IngestHL7ToDeltaLake")
-            # Recommended setting in
-            # https://spark.apache.org/docs/latest/sql-performance-tuning.html#coalescing-post-shuffle-partitions
-            .config("spark.sql.adaptive.coalescePartitions.parallelismFirst", "false")
-            # Serialization settings for large tasks. Recommended in
-            # https://spark.apache.org/docs/latest/tuning.html#data-serialization
-            .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
             .enableHiveSupport()
             .getOrCreate()
         )
