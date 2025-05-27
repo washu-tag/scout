@@ -412,7 +412,7 @@ def import_hl7_files_to_deltalake(
             try:
                 spark.stop()
             except:
-                pass
+                activity.logger.error("Error stopping spark", exc_info=e)
 
         if temp_dir is not None:
             # CLean up temp dir after Spark is finished processing
@@ -421,7 +421,7 @@ def import_hl7_files_to_deltalake(
             try:
                 shutil.rmtree(temp_dir)
             except Exception as e:
-                activity.logger.error("Error cleaning up temp dir %s", e)
+                activity.logger.error("Error cleaning up temp dir %s", exc_info=e)
 
     activity.heartbeat()
     write_successes(success_paths, workflow_id, activity_id)
