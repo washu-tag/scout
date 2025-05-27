@@ -1,6 +1,7 @@
 # I don't know why we have to import this specific exception type, since it is
 # literally just an alias for the builtin TimeoutError.
 # But if we try to catch the builtin TimeoutError, it doesn't work.
+import logging
 from concurrent.futures._base import TimeoutError
 from collections import defaultdict
 from pathlib import Path
@@ -52,8 +53,12 @@ def import_hl7_files_to_deltalake(
     health_file: Path,
 ) -> int:
     """Extract data from HL7 messages and write to Delta Lake."""
+    activity_info = activity.info()
+    workflow_id = activity_info.workflow_id
+    activity_id = activity_info.activity_id
     spark = None
     temp_dir = None
+    success_paths = []
     try:
         activity.logger.info("Creating Spark session")
         spark = (
@@ -171,8 +176,8 @@ def import_hl7_files_to_deltalake(
             write_errors(
                 error_paths,
                 "File is not parsable as HL7",
-                activity.info().workflow_id,
-                activity.info().activity_id,
+                workflow_id,
+                activity_id,
             )
 
             # Remove empty / unparsable rows from df
@@ -181,9 +186,9 @@ def import_hl7_files_to_deltalake(
         if df.isEmpty():
             raise ApplicationError("No data extracted from HL7 messages")
 
-        num_hl7 = df.count()
         activity.heartbeat()
-        activity.logger.info("Extracted data from %d HL7 messages", num_hl7)
+        if activity.logger.isEnabledFor(logging.INFO):
+            activity.logger.info("Extracted data from %d HL7 messages", df.count())
 
         # Read modality map
         modality_map_csv_path = modality_map_csv_path.replace("s3://", "s3a://")
@@ -376,14 +381,11 @@ def import_hl7_files_to_deltalake(
             .execute()
         )
 
+        activity.logger.info("Finished writing to delta lake")
+
         activity.heartbeat()
         success_paths = [row.source_file for row in df.select("source_file").collect()]
-        write_successes(
-            success_paths, activity.info().workflow_id, activity.info().activity_id
-        )
 
-        activity.logger.info("Finished writing to delta lake")
-        return num_hl7
     except (Py4JError, ConnectionError) as e:
         activity.logger.error(
             "Spark error ingesting HL7 files to Delta Lake. Marking pod unhealthy."
@@ -421,4 +423,8 @@ def import_hl7_files_to_deltalake(
             except Exception as e:
                 activity.logger.error("Error cleaning up temp dir %s", e)
 
-        activity.logger.info("All done")
+    activity.heartbeat()
+    write_successes(success_paths, workflow_id, activity_id)
+
+    activity.logger.info("All done")
+    return len(success_paths)
