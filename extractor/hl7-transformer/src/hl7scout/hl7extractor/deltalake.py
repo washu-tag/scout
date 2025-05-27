@@ -407,6 +407,13 @@ def import_hl7_files_to_deltalake(
         raise
     finally:
         if spark is not None:
+            activity.logger.info("Clearing spark cache")
+            activity.heartbeat()
+            try:
+                spark.catalog.clearCache()
+            except Exception as e:
+                activity.logger.error("Error clearing spark cache", exc_info=e)
+
             activity.logger.info("Stopping spark")
             activity.heartbeat()
             try:
