@@ -10,7 +10,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
@@ -85,7 +84,6 @@ public class IngestDbServiceImpl implements IngestDbService {
         if (fileStatuses == null || fileStatuses.isEmpty()) {
             return;
         }
-
         if (logger.isDebugEnabled()) {
             logger.debug("WorkflowId {} ActivityId {} - Inserting {} file status records into database",
                 fileStatuses.getFirst().workflowId(), fileStatuses.getFirst().activityId(), fileStatuses.size());

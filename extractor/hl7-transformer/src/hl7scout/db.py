@@ -14,9 +14,8 @@ FILE_STATUSES_COLS = (
     "workflow_id",
     "activity_id",
 )
-FILE_STATUSES_INSERT_SQL = f"""
-INSERT INTO file_statuses ({", ".join(FILE_STATUSES_COLS)})
-VALUES ({", ".join(["%s"]*len(FILE_STATUSES_COLS))})
+FILE_STATUSES_COPY_SQL = f"""
+COPY file_statuses ({", ".join(FILE_STATUSES_COLS)}) FROM STDIN (FORMAT BINARY)
 """
 
 
@@ -54,22 +53,19 @@ def write_status_to_db(
     workflow_id: str,
     activity_id: str,
 ) -> None:
-    """Write an error message to the database for a list of HL7 files."""
+    """Write status to the database using bulk COPY for maximum performance."""
     activity.logger.info(
         "Writing '%s' status to database for %d HL7 files", status, len(hl7_files)
     )
 
-    insert_rows = [
-        (
-            hl7_file,
-            "HL7",
-            status,
-            error_message,
-            workflow_id,
-            activity_id,
-        )
-        for hl7_file in hl7_files
-    ]
     with psycopg.connect(**get_db_connection_args()) as conn, conn.cursor() as cursor:
-        cursor.executemany(FILE_STATUSES_INSERT_SQL, insert_rows)
-        conn.commit()
+        with cursor.copy(FILE_STATUSES_COPY_SQL) as copy:
+            for hl7_file in hl7_files:
+                copy.write_row([
+                    hl7_file,
+                    "HL7",
+                    status,
+                    error_message,
+                    workflow_id,
+                    activity_id,
+                ])
