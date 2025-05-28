@@ -332,9 +332,9 @@ def import_hl7_files_to_deltalake(
                 *[
                     F.to_timestamp(
                         F.when(
-                            F.length(timestamp_col) == 12,
-                            F.concat(timestamp_col, F.lit("00")),
-                        ).otherwise(timestamp_col),
+                            F.length(F.col(timestamp_col)) == 12,
+                            F.concat(F.col(timestamp_col), F.lit("00")),
+                        ).otherwise(F.col(timestamp_col)),
                         "yyyyMMddHHmmss",
                     ).alias(alias)
                     for timestamp_col, alias in (
