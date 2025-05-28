@@ -53,7 +53,7 @@ def write_status_to_db(
     workflow_id: str,
     activity_id: str,
 ) -> None:
-    """Write status to the database using bulk COPY for maximum performance."""
+    """Write status to the database for a list of HL7 files (use COPY for improved performance)."""
     activity.logger.info(
         "Writing '%s' status to database for %d HL7 files", status, len(hl7_files)
     )
