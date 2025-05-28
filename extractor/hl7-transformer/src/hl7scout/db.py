@@ -61,11 +61,13 @@ def write_status_to_db(
     with psycopg.connect(**get_db_connection_args()) as conn, conn.cursor() as cursor:
         with cursor.copy(FILE_STATUSES_COPY_SQL) as copy:
             for hl7_file in hl7_files:
-                copy.write_row([
-                    hl7_file,
-                    "HL7",
-                    status,
-                    error_message,
-                    workflow_id,
-                    activity_id,
-                ])
+                copy.write_row(
+                    [
+                        hl7_file,
+                        "HL7",
+                        status,
+                        error_message,
+                        workflow_id,
+                        activity_id,
+                    ]
+                )
