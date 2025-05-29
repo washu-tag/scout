@@ -278,6 +278,20 @@
       },
       "sql": "SELECT * FROM syntheticdata WHERE message_control_id IN ('2.25.155851373268730741395170003437433181776', '2.25.143467293620292044279751197905759993120')",
       "id": "report_text"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".GroupedAggregationResult",
+        "primaryColumnName": "dummy",
+        "secondaryColumns": ["null_message_dt_count"],
+        "result": {
+          "dummy": {
+            "null_message_dt_count": 0
+          }
+        }
+      },
+      "sql": "SELECT 'dummy', COUNT(*) as null_message_dt_count FROM syntheticdata WHERE message_dt IS NULL",
+      "id": "null_message_dt"
     }
   ]
 }
