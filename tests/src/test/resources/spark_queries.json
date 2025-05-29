@@ -188,7 +188,7 @@
           }
         }
       },
-      "sql": null,
+      "sql": "SELECT * FROM syntheticdata WHERE message_control_id='2.25.102803968063529570743623449055112845697'",
       "id": "extended_metadata"
     },
     {
@@ -300,7 +300,7 @@
         "expectedNumResults": 0,
         "additionalValidation": null
       },
-      "sql": "SELECT COUNT(*) FROM syntheticdata WHERE message_dt IS NULL",
+      "sql": "SELECT * FROM syntheticdata WHERE message_dt IS NULL",
       "id": "null_message_dt"
     },
     {
