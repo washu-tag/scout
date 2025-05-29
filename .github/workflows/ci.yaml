@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - main
-      - 'ci/**'
+      - 'ci-**'
 
 env:
   JAVA_DIST: 'zulu'
