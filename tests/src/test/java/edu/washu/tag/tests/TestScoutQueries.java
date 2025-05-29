@@ -6,7 +6,6 @@ import edu.washu.tag.BaseTest;
 import edu.washu.tag.TestQuery;
 import edu.washu.tag.TestQuerySuite;
 import edu.washu.tag.util.FileIOUtils;
-import io.delta.sql.DeltaSparkSessionExtension;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,15 +40,17 @@ public class TestScoutQueries extends BaseTest {
 
     @Test(dataProvider = "known_queries")
     public void testQueryById(String queryId) {
-        final TestQuery<?> query = exportedQueries
-            .getTestQueries()
-            .stream()
-            .filter(testQuery -> testQuery.getId().equals(queryId))
-            .findFirst()
-            .orElseThrow(RuntimeException::new);
+        runTest(queryId);
+    }
 
-        logger.info("Performing query with spark: {}", query.getSql());
-        query.getExpectedQueryResult().validateResult(spark.sql(query.getSql()));
+    @Test
+    public void testRepeatIngest() {
+        temporalClient.launchIngest(
+            config.getTemporalConfig().getIngestJobInput(),
+            true
+        );
+        runTest("all"); // make sure no rows in the whole dataset have been duplicated
+        runTest("extended_metadata"); // ...and let's make sure the metadata still looks good
     }
 
     private static TestQuerySuite<?> readQueries() {
@@ -61,6 +62,21 @@ public class TestScoutQueries extends BaseTest {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static TestQuery<?> getQueryById(String id) {
+        return exportedQueries
+            .getTestQueries()
+            .stream()
+            .filter(testQuery -> testQuery.getId().equals(id))
+            .findFirst()
+            .orElseThrow(RuntimeException::new);
+    }
+
+    private void runTest(String id) {
+        final TestQuery<?> query = getQueryById(id);
+        logger.info("Performing query with spark: {}", query.getSql());
+        query.getExpectedQueryResult().validateResult(spark.sql(query.getSql()));
     }
 
 }

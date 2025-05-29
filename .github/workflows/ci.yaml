@@ -4,7 +4,9 @@ on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'ci/**'
 
 env:
   JAVA_DIST: 'zulu'
