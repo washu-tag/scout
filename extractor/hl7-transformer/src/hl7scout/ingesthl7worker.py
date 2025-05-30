@@ -14,7 +14,7 @@ from hl7scout.activities.ingesthl7 import (
     TASK_QUEUE_NAME,
     IngestHl7FilesActivity,
 )
-from hl7scout.healthapi import start_spark_health_check_server, SPARK_HEALTH_TEMP_FILE
+from hl7scout.healthapi import start_health_check_server, HEALTH_TEMP_FILE
 
 log = logging.getLogger("workflow_worker")
 
@@ -26,28 +26,39 @@ async def run_worker(
     default_modality_map_path: str,
     health_file: Path,
 ) -> None:
-    client = await Client.connect(temporal_address, namespace=namespace)
-    ingest_hl7_files_activity = IngestHl7FilesActivity(
-        default_report_delta_table_name,
-        default_modality_map_path,
-        health_file,
-    )
-    with concurrent.futures.ThreadPoolExecutor(1) as pool:
-        worker = Worker(
-            client,
-            task_queue=TASK_QUEUE_NAME,
-            activities=[ingest_hl7_files_activity.ingest_hl7_files_to_delta_lake],
-            activity_executor=pool,
-            max_cached_workflows=1,
-            max_concurrent_workflow_tasks=2,
-            max_concurrent_workflow_task_polls=2,
-            max_concurrent_activities=1,
-            max_concurrent_activity_task_polls=1,
+    try:
+        client = await Client.connect(temporal_address, namespace=namespace)
+        ingest_hl7_files_activity = IngestHl7FilesActivity(
+            default_report_delta_table_name,
+            default_modality_map_path,
+            health_file,
         )
+        with concurrent.futures.ThreadPoolExecutor(1) as pool:
+            worker = Worker(
+                client,
+                task_queue=TASK_QUEUE_NAME,
+                activities=[ingest_hl7_files_activity.ingest_hl7_files_to_delta_lake],
+                activity_executor=pool,
+                max_cached_workflows=1,
+                max_concurrent_workflow_tasks=2,
+                max_concurrent_workflow_task_polls=2,
+                max_concurrent_activities=1,
+                max_concurrent_activity_task_polls=1,
+            )
 
-        log.info("Starting worker. Waiting for activities...")
-        await worker.run()
-        log.info("Worker stopped")
+            log.info("Starting worker. Waiting for activities...")
+            await worker.run()
+            log.info("Worker stopped")
+    except Exception as e:
+        try:
+            message = str(e)
+        except:
+            message = "Unknown error"
+
+        # Write the error message to the health file
+        with health_file.open("a") as f:
+            f.write(message + "\n")
+        raise
 
 
 class SigTermException(Exception):
@@ -94,13 +105,13 @@ async def main(argv=None):
 
     # Start the health check server and the temporal worker
     coros = [
-        start_spark_health_check_server(),
+        start_health_check_server(),
         run_worker(
             temporal_address,
             temporal_namespace,
             default_report_delta_table_name,
             default_modality_map_path,
-            SPARK_HEALTH_TEMP_FILE,
+            HEALTH_TEMP_FILE,
         ),
     ]
 
