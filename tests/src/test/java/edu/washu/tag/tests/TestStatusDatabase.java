@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
+@Test(groups = BaseTest.RELAUNCH_PRECURSOR)
 public class TestStatusDatabase extends BaseTest {
 
     private static final Logger logger = LoggerFactory.getLogger(TestStatusDatabase.class);

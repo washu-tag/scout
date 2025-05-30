@@ -11,6 +11,7 @@ public class BaseTest {
     protected static IngestJobDetails ingestWorkflow;
     protected final TestConfig config;
     protected final TemporalClient temporalClient;
+    public static final String RELAUNCH_PRECURSOR = "relaunch_precursor";
 
     public BaseTest() {
         config = TestConfig.instance;

@@ -20,7 +20,7 @@ public class TestScoutQueries extends BaseTest {
     private static final Logger logger = LoggerFactory.getLogger(TestScoutQueries.class);
 
     @BeforeClass
-    public void initSparkSession() {
+    private void initSparkSession() {
         spark = SparkSession.builder()
             .appName("TestClient")
             .master("local")
@@ -30,7 +30,7 @@ public class TestScoutQueries extends BaseTest {
     }
 
     @DataProvider(name = "known_queries")
-    public Object[][] knownQueries() {
+    private Object[][] knownQueries() {
         return exportedQueries
             .getTestQueries()
             .stream()
@@ -43,7 +43,7 @@ public class TestScoutQueries extends BaseTest {
         runTest(queryId);
     }
 
-    @Test
+    @Test(dependsOnGroups = BaseTest.RELAUNCH_PRECURSOR, alwaysRun = true)
     public void testRepeatIngest() {
         temporalClient.launchIngest(
             config.getTemporalConfig().getIngestJobInput(),
