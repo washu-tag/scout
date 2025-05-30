@@ -42,7 +42,7 @@
                   {
                     "evaluator": {
                       "params": [
-                        90
+                        7200
                       ],
                       "type": "gt"
                     },
@@ -73,7 +73,7 @@
           ],
           "noDataState": "KeepLast",
           "execErrState": "KeepLast",
-          "for": "10m",
+          "for": "1m",
           "annotations": {
             "description": "{% raw %}High Postgres transaction times for user {{ $labels.usename }} and database {{ $labels.datname }}{% endraw %}",
             "summary": "{% raw %}High Postgres transaction times for user {{ $labels.usename }} and database {{ $labels.datname }}. Longest transaction time currently {{ printf \"%.2f\" $values.A.Value }} seconds.{% endraw %}"

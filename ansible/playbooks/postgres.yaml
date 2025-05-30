@@ -81,9 +81,12 @@
             storage:
               storageClass: postgres-storage
               size: 100Mi
+            resources: '{{ postgres_resources }}'
             enableSuperuserAccess: true
             superuserSecret:
               name: superuser-secret
+            postgresql:
+              parameters: '{{ postgres_parameters }}'
             bootstrap:
               initdb:
                 database: '{{ ingest_postgres_table_name }}'
