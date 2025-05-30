@@ -177,6 +177,7 @@
             "service_coding_system": "UNKDEV",
             "diagnostic_service_id": "NM",
             "study_instance_uid": "2.25.136209846447404962078056783820660603567",
+            "birth_date": "1976-04-21",
             "message_dt": "2019-08-25T08:26:40+00:00",
             "requested_dt": "2019-08-22T13:21:10+00:00",
             "results_report_status_change_dt": "2019-08-25T08:26:40+00:00",
@@ -184,7 +185,25 @@
             "modality": "NM",
             "year": "2019"
           }
-        }
+        },
+        "columnTypes": [
+          {
+            "type": ".LocalDateType",
+            "columnName": "birth_date"
+          },
+          {
+            "type": ".InstantType",
+            "columnName": "message_dt"
+          },
+          {
+            "type": ".InstantType",
+            "columnName": "requested_dt"
+          },
+          {
+            "type": ".InstantType",
+            "columnName": "results_report_status_change_dt"
+          }
+        ]
       },
       "sql": "SELECT * FROM syntheticdata WHERE message_control_id='2.25.102803968063529570743623449055112845697'",
       "id": "extended_metadata"
@@ -278,7 +297,8 @@
             "abc_mr": "ABC450997",
             "epic_mrn": null
           }
-        }
+        },
+        "columnTypes": []
       },
       "sql": "SELECT * FROM syntheticdata WHERE abc_mr IN ('ABC450993', 'ABC450994', 'ABC450995', 'ABC450996', 'ABC450997')",
       "id": "patient_id"
@@ -312,7 +332,8 @@
           "2.25.143467293620292044279751197905759993120": {
             "report_text": "EXAMINATION: Single-view X-ray\n\nIMPRESSION: \nThe single-view X-ray findings are within normal limits, showing no\nsignificant changes or abnormalities compared to prior studies. The\nsingle-view X-ray performed on 2015-11-29 presents normal alignment\nand ossification of the bony structures assessed. There are no\nevident signs of osteopenia, fratures, or degenerative changes. The\nsoft tissues are unremarkable, with visualized joints appearing\nwell-maintained. No pathology that requires further investigation is\nnoted, indicating a stable radiographic appearance without any acute\nconcerns.\nDictated by: Joseph Barajas Interpreter, M.D."
           }
-        }
+        },
+        "columnTypes": []
       },
       "sql": "SELECT * FROM syntheticdata WHERE message_control_id IN ('2.25.155851373268730741395170003437433181776', '2.25.143467293620292044279751197905759993120')",
       "id": "report_text"
