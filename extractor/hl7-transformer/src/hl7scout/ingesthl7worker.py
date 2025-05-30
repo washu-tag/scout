@@ -39,8 +39,8 @@ async def run_worker(
             activities=[ingest_hl7_files_activity.ingest_hl7_files_to_delta_lake],
             activity_executor=pool,
             max_cached_workflows=1,
-            max_concurrent_workflow_tasks=1,
-            max_concurrent_workflow_task_polls=1,
+            max_concurrent_workflow_tasks=2,
+            max_concurrent_workflow_task_polls=2,
             max_concurrent_activities=1,
             max_concurrent_activity_task_polls=1,
         )
