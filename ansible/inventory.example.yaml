@@ -129,7 +129,7 @@ k3s_cluster:
     hl7log_extractor_concurrency: 150
     hl7_transformer_timeout: 120
 
-    # Resources
+    # Resources, must be in GB (use decimal values to go smaller)
     hl7_transformer_spark_memory: 8g
     jupyter_spark_memory: 8g
     temporal_cassandra_init_heap: 2G

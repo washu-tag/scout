@@ -42,3 +42,11 @@ livenessProbe:
 spark:
   executor:
     memory: '{{ hl7_transformer_spark_memory }}'
+resources:
+  requests:
+    cpu: 8
+    memory: "{{ hl7_transformer_spark_memory | regex_replace('[gG][bB]*', '') | int }}Gi"
+  limits:
+    cpu: 16
+    memory: "{{ ((hl7_transformer_spark_memory | regex_replace('[gG][bB]*', '') | int) * 1.25) | round | int }}Gi"
+
