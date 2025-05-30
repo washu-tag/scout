@@ -1,7 +1,7 @@
 -- View for hl7 files with file information
 CREATE MATERIALIZED VIEW recent_hl7_files AS
 SELECT f.*, h.log_file_path, h.message_number, h.date
-FROM recent_hl7_file_statuses f
+FROM current_file_statuses f
 JOIN hl7_files h ON f.file_path = h.hl7_file_path
 WITH DATA;
 
@@ -26,21 +26,10 @@ CREATE UNIQUE INDEX idx_hl7_file_counts_date_status ON hl7_file_counts(date, sta
 
 -- View for dashboard: error messages
 CREATE MATERIALIZED VIEW error_messages AS
-SELECT h.date, fs.*
-FROM hl7_files h
-JOIN (
-    SELECT DISTINCT ON (file_path)
-        file_path,
-        type,
-        error_message,
-        status,
-        processed_at,
-        workflow_id,
-        activity_id
-    FROM file_statuses
-    WHERE status = 'failed'
-    ORDER BY file_path, processed_at DESC
-) fs ON fs.file_path = h.hl7_file_path
+SELECT date, file_path, type, error_message, status,
+       processed_at, workflow_id, activity_id
+FROM recent_hl7_files
+WHERE status = 'failed'
 WITH DATA;
 
 -- Add a unique index to the error messages materialized view

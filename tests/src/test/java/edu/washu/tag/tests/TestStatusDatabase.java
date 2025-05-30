@@ -21,8 +21,6 @@ public class TestStatusDatabase extends BaseTest {
 
     private static final Logger logger = LoggerFactory.getLogger(TestStatusDatabase.class);
     private static final String TABLE_FILE_STATUSES = "file_statuses";
-    private static final String VIEW_RECENT_LOG_FILE_STATUSES = "recent_log_file_statuses";
-    private static final String VIEW_RECENT_HL7_FILE_STATUSES = "recent_hl7_file_statuses";
     private static final String TABLE_HL7_FILES = "hl7_files";
     private static final String VIEW_RECENT_HL7_FILES = "recent_hl7_files";
 
@@ -47,7 +45,7 @@ public class TestStatusDatabase extends BaseTest {
     /**
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 1995-04-02, there should be 2 HL7 messages represented by the log file.
-     * The {@value #TABLE_FILE_STATUSES} table and {@value #VIEW_RECENT_LOG_FILE_STATUSES} view should have
+     * The {@value #TABLE_FILE_STATUSES} table should have
      * a single successful row with a `file_path` corresponding to that date.
      * The {@value #TABLE_HL7_FILES} table should contain one "staged" row and one "success" row per file.
      * The {@value #VIEW_RECENT_HL7_FILES} view should contain only the two "success" rows, one per file.
@@ -63,7 +61,6 @@ public class TestStatusDatabase extends BaseTest {
 
         final FileStatus logRow = FileStatus.parsedLog();
         runLogStatusTest(FileStatusLogQuery.tableQuery(date, parentWorkflowId), logRow);
-        runLogStatusTest(FileStatusLogQuery.viewQuery(date, parentWorkflowId), logRow);
 
         final Hl7FilesRow h0 = new Hl7FilesRow("1995/04/02/07/199504020707509258_0.hl7", 0, date);
         final Hl7FilesRow h1 = new Hl7FilesRow("1995/04/02/09/199504020930172230_1.hl7", 1, date);
@@ -85,11 +82,6 @@ public class TestStatusDatabase extends BaseTest {
             h0Success,
             h1Success
         );
-        runHl7FileStatusTest(
-            FileStatusHl7Query.viewQuery(date, ingestWorkflowIds),
-            h0Success,
-            h1Success
-        );
 
         runHl7FilesTest(
             new Hl7FileTableQuery(date),
@@ -106,9 +98,8 @@ public class TestStatusDatabase extends BaseTest {
     /**
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 2024-01-02, the entire content of the log file is unusable by Scout.
-     * The {@value #TABLE_FILE_STATUSES} table is expected to have multiple rows for that day—
-     * one "{@value #PARSED}" row and one "{@value #FAILED}" row for each of the retries—while the
-     * {@value #VIEW_RECENT_LOG_FILE_STATUSES} view will show only a single "{@value #FAILED}" row.
+     * The {@value #TABLE_FILE_STATUSES} table is expected to have multiple rows for that day:
+     * one "{@value #PARSED}" row and one "{@value #FAILED}" row for each of the retries.
      * The {@value #TABLE_HL7_FILES} and {@value #VIEW_RECENT_HL7_FILES} should not contain
      * any rows for that day.
      */
@@ -126,14 +117,9 @@ public class TestStatusDatabase extends BaseTest {
                 .mapToObj(i -> i == 0 ? logRow0 : logRow1)
                 .toArray(FileStatus[]::new)
         );
-        runLogStatusTest(
-            FileStatusLogQuery.viewQuery(date, workflows),
-            logRow1
-        );
 
         runHl7FilesTest(new Hl7FileTableQuery(date));
         runHl7FileStatusTest(FileStatusHl7Query.tableQuery(date, workflows));
-        runHl7FileStatusTest(FileStatusHl7Query.viewQuery(date, workflows));
 
         runRecentHl7FilesTest(new RecentHl7FilesViewQuery(date, workflows));
     }
@@ -142,7 +128,7 @@ public class TestStatusDatabase extends BaseTest {
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 2023-01-13, the log file contains an unusable HL7 message
      * followed by 2 usable ones.
-     * The {@value #TABLE_FILE_STATUSES} table and {@value #VIEW_RECENT_LOG_FILE_STATUSES} view should have a single
+     * The {@value #TABLE_FILE_STATUSES} table should have a single
      * successful row for that log file.
      * The {@value #TABLE_FILE_STATUSES} table contains
      *  1. a "staged" row for all three HL7 messages (with the first workflow id),
@@ -159,10 +145,6 @@ public class TestStatusDatabase extends BaseTest {
         final FileStatus logRow = FileStatus.parsedLog();
         runLogStatusTest(
             FileStatusLogQuery.tableQuery(date, parentWorkflowId),
-            logRow
-        );
-        runLogStatusTest(
-            FileStatusLogQuery.viewQuery(date, parentWorkflowId),
             logRow
         );
 
@@ -191,13 +173,6 @@ public class TestStatusDatabase extends BaseTest {
             hl71Success,
             hl72Success
         );
-        // Only three most recent statuses
-        runHl7FileStatusTest(
-            FileStatusHl7Query.viewQuery(date, ingestWorkflowIds),
-            hl70Failed,
-            hl71Success,
-            hl72Success
-        );
         // Three files
         runHl7FilesTest(
             new Hl7FileTableQuery(date),
@@ -217,7 +192,7 @@ public class TestStatusDatabase extends BaseTest {
     /**
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 2007-10-21, the log file contains an HL7 message with repeated content.
-     * The {@value #TABLE_FILE_STATUSES} table and {@value #VIEW_RECENT_LOG_FILE_STATUSES} view should have a single
+     * The {@value #TABLE_FILE_STATUSES} table should have a single
      * successful row for the log file corresponding to that date.
      * The {@value #TABLE_FILE_STATUSES} table contains one "staged" row and one "success" row for the
      * first HL7 message, and one "failed" row for the repeated message.
@@ -239,10 +214,6 @@ public class TestStatusDatabase extends BaseTest {
             FileStatusLogQuery.tableQuery(date, parentWorkflowId),
             logRow
         );
-        runLogStatusTest(
-            FileStatusLogQuery.viewQuery(date, parentWorkflowId),
-            logRow
-        );
 
         final Hl7FilesRow hl70 = new Hl7FilesRow("2007/10/21/15/200710211522316785_0.hl7", 0, date);
         final Hl7FilesRow hl71 = new Hl7FilesRow(null, 1, date);
@@ -255,11 +226,6 @@ public class TestStatusDatabase extends BaseTest {
             FileStatusHl7Query.tableQuery(date, ingestWorkflowIds),
             hl71Failed,
             hl70Staged,
-            hl70Success
-        );
-        runHl7FileStatusTest(
-            FileStatusHl7Query.viewQuery(date, ingestWorkflowIds),
-            hl71Failed,
             hl70Success
         );
 
@@ -279,11 +245,8 @@ public class TestStatusDatabase extends BaseTest {
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 2019-01-06, the log file contains an HL7 message with no content.
      * The {@value #TABLE_FILE_STATUSES} table should have multiple "parsed" rows for the log file
-     * corresponding to that date because of retries. The {@value #VIEW_RECENT_LOG_FILE_STATUSES} view
-     * should have a single "failed" row for the log file.
-     * The {@value #TABLE_FILE_STATUSES} table contains a failure for the HL7 file repeated twice,
-     * while the {@value #VIEW_RECENT_HL7_FILE_STATUSES} and {@value #VIEW_RECENT_HL7_FILES} views
-     * have only one failure row.
+     * corresponding to that date because of retries.
+     * The {@value #TABLE_FILE_STATUSES} table contains a failure for the HL7 file repeated twice.
      * The {@value #TABLE_HL7_FILES} table contains a row for the HL7 file.
      */
     @Test
@@ -297,10 +260,6 @@ public class TestStatusDatabase extends BaseTest {
             Collections.nCopies(SPLIT_AND_UPLOAD_RETRIES, logRow)
                 .toArray(new FileStatus[0])
         );
-        runLogStatusTest(
-            FileStatusLogQuery.viewQuery(date, workflows),
-            logRow
-        );
 
         final FileStatus hl7Error = FileStatus.failedHl7(null, "HL7 message content is empty");
         runHl7FileStatusTest(
@@ -308,21 +267,15 @@ public class TestStatusDatabase extends BaseTest {
             Collections.nCopies(SPLIT_AND_UPLOAD_RETRIES, hl7Error)
                 .toArray(new FileStatus[0])
         );
-        runHl7FileStatusTest(
-            FileStatusHl7Query.viewQuery(date, workflows),
-            hl7Error
-        );
     }
 
     /**
      * Tests the state of the ingest database after the test data has been processed by Scout.
      * In particular, for the date 2016-08-29, the log file contains an HL7 message with garbage content.
      * The {@value #TABLE_FILE_STATUSES} table should have one "parsed" row for the log file
-     * because it ingests properly to "staging" with no retries. The {@value #VIEW_RECENT_LOG_FILE_STATUSES} view
-     * should have a single "failed" row for the log file.
-     * The {@value #TABLE_FILE_STATUSES} table contains a "staged" message for the HL7 file, then a
-     * single failure, while the {@value #VIEW_RECENT_HL7_FILE_STATUSES} and {@value #VIEW_RECENT_HL7_FILES} views
-     * have only one failure row.
+     * because it ingests properly to "staging" with no retries.
+     * The {@value #TABLE_FILE_STATUSES} table contains a "staged" message for the HL7 file then a
+     * single failure.
      * The {@value #TABLE_HL7_FILES} table contains a row for the HL7 file.
      */
     @Test
@@ -333,10 +286,6 @@ public class TestStatusDatabase extends BaseTest {
         final FileStatus logRow = FileStatus.parsedLog();
         runLogStatusTest(
             FileStatusLogQuery.tableQuery(date, parentWorkflowId),
-            logRow
-        );
-        runLogStatusTest(
-            FileStatusLogQuery.viewQuery(date, parentWorkflowId),
             logRow
         );
 
@@ -352,10 +301,6 @@ public class TestStatusDatabase extends BaseTest {
         runHl7FileStatusTest(
             FileStatusHl7Query.tableQuery(date, ingestWorkflowIds),
             hl7Staged,
-            hl7Error
-        );
-        runHl7FileStatusTest(
-            FileStatusHl7Query.viewQuery(date, ingestWorkflowIds),
             hl7Error
         );
         runHl7FilesTest(
@@ -383,7 +328,6 @@ public class TestStatusDatabase extends BaseTest {
 
         final FileStatus logRow = FileStatus.parsedLog();
         runLogStatusTest(FileStatusLogQuery.tableQuery(date, parentWorkflowId), logRow);
-        runLogStatusTest(FileStatusLogQuery.viewQuery(date, parentWorkflowId), logRow);
 
         final Hl7FilesRow h0 = new Hl7FilesRow("1999/11/30/02/199911300242267124_0.hl7", 0, date);
         final Hl7FilesRow h1 = new Hl7FilesRow("1999/11/30/23/199911302311298376_1.hl7", 1, date);
@@ -405,11 +349,6 @@ public class TestStatusDatabase extends BaseTest {
             h0Success,
             h1Success
         );
-        runHl7FileStatusTest(
-            FileStatusHl7Query.viewQuery(date, ingestWorkflowIds),
-            h0Success,
-            h1Success
-        );
 
         runHl7FilesTest(
             new Hl7FileTableQuery(date),
@@ -428,7 +367,6 @@ public class TestStatusDatabase extends BaseTest {
      * For the date 2015-01-01, we pass a log path that does not exist.
      * The {@value #TABLE_FILE_STATUSES} table is expected to have multiple "failed" log rows
      * for that day from retries.
-     * The {@value #VIEW_RECENT_LOG_FILE_STATUSES} view limits to a single row.
      */
     @Test
     public void testIngestImproperLogPath() {
@@ -448,10 +386,6 @@ public class TestStatusDatabase extends BaseTest {
                 .toArray(new FileStatus[0])
         );
 
-        runLogStatusTest(
-            FileStatusLogQuery.viewQuery(date, workflows),
-            logRow
-        );
     }
 
     private void runDbTest(SqlQuery query, Consumer<ResultSet> resultValidator) {
@@ -672,9 +606,6 @@ public class TestStatusDatabase extends BaseTest {
         static FileStatusLogQuery tableQuery(String logDate, List<String> filteredWorkflowIds) {
             return new FileStatusLogQuery(TABLE_FILE_STATUSES, logDate, filteredWorkflowIds);
         }
-        static FileStatusLogQuery viewQuery(String logDate, List<String> filteredWorkflowIds) {
-            return new FileStatusLogQuery(VIEW_RECENT_LOG_FILE_STATUSES, logDate, filteredWorkflowIds);
-        }
 
         @Override
         String build() {
@@ -695,9 +626,6 @@ public class TestStatusDatabase extends BaseTest {
 
         static FileStatusHl7Query tableQuery(String logDate, List<String> filteredWorkflowIds) {
             return new FileStatusHl7Query(TABLE_FILE_STATUSES, logDate, filteredWorkflowIds);
-        }
-        static FileStatusHl7Query viewQuery(String logDate, List<String> filteredWorkflowIds) {
-            return new FileStatusHl7Query(VIEW_RECENT_HL7_FILE_STATUSES, logDate, filteredWorkflowIds);
         }
 
         @Override
