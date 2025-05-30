@@ -1,7 +1,7 @@
 -- View for hl7 files with file information
 CREATE MATERIALIZED VIEW recent_hl7_files AS
 SELECT f.*, h.log_file_path, h.message_number, h.date
-FROM recent_hl7_file_statuses f
+FROM current_file_statuses f
 JOIN hl7_files h ON f.file_path = h.hl7_file_path
 WITH DATA;
 
