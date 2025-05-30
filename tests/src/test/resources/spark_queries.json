@@ -166,6 +166,58 @@
         "uniqueIdColumnName": "message_control_id",
         "rowAssertions": {
           "2.25.102803968063529570743623449055112845697": {
+            "service_identifier": "H8452",
+            "sending_facility": "ABCHOSP",
+            "sex": "M",
+            "zip_or_postal_code": "61111",
+            "country": "USA",
+            "orc_3_filler_order_number": "7795082770",
+            "obr_3_filler_order_number": "7795082770",
+            "service_name": "78452 MPI SPECT Multiple",
+            "service_coding_system": "UNKDEV",
+            "diagnostic_service_id": "NM",
+            "study_instance_uid": "2.25.136209846447404962078056783820660603567",
+            "birth_date": "1976-04-21",
+            "message_dt": "2019-08-25T08:26:40+00:00",
+            "requested_dt": "2019-08-22T13:21:10+00:00",
+            "results_report_status_change_dt": "2019-08-25T08:26:40+00:00",
+            "report_status": "Wet Read",
+            "modality": "NM",
+            "year": "2019"
+          }
+        },
+        "columnTypes": [
+          {
+            "type": ".LocalDateType",
+            "columnName": "birth_date"
+          },
+          {
+            "type": ".InstantType",
+            "columnName": "message_dt"
+          },
+          {
+            "type": ".InstantType",
+            "columnName": "requested_dt"
+          },
+          {
+            "type": ".InstantType",
+            "columnName": "results_report_status_change_dt"
+          },
+          {
+            "type": ".IntegerType",
+            "columnName": "year"
+          }
+        ]
+      },
+      "sql": "SELECT * FROM syntheticdata WHERE message_control_id='2.25.102803968063529570743623449055112845697'",
+      "id": "extended_metadata"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".ExactRowsResult",
+        "uniqueIdColumnName": "message_control_id",
+        "rowAssertions": {
+          "2.25.102803968063529570743623449055112845697": {
             "abc_mr": "ABC450993",
             "epic_mrn": null
           },
@@ -249,7 +301,8 @@
             "abc_mr": "ABC450997",
             "epic_mrn": null
           }
-        }
+        },
+        "columnTypes": []
       },
       "sql": "SELECT * FROM syntheticdata WHERE abc_mr IN ('ABC450993', 'ABC450994', 'ABC450995', 'ABC450996', 'ABC450997')",
       "id": "patient_id"
@@ -265,6 +318,15 @@
     },
     {
       "expectedQueryResult": {
+        "type": ".ExactNumberObjectsResult",
+        "expectedNumResults": 0,
+        "additionalValidation": null
+      },
+      "sql": "SELECT * FROM syntheticdata WHERE message_dt IS NULL",
+      "id": "null_message_dt"
+    },
+    {
+      "expectedQueryResult": {
         "type": ".ExactRowsResult",
         "uniqueIdColumnName": "message_control_id",
         "rowAssertions": {
@@ -274,24 +336,11 @@
           "2.25.143467293620292044279751197905759993120": {
             "report_text": "EXAMINATION: Single-view X-ray\n\nIMPRESSION: \nThe single-view X-ray findings are within normal limits, showing no\nsignificant changes or abnormalities compared to prior studies. The\nsingle-view X-ray performed on 2015-11-29 presents normal alignment\nand ossification of the bony structures assessed. There are no\nevident signs of osteopenia, fratures, or degenerative changes. The\nsoft tissues are unremarkable, with visualized joints appearing\nwell-maintained. No pathology that requires further investigation is\nnoted, indicating a stable radiographic appearance without any acute\nconcerns.\nDictated by: Joseph Barajas Interpreter, M.D."
           }
-        }
+        },
+        "columnTypes": []
       },
       "sql": "SELECT * FROM syntheticdata WHERE message_control_id IN ('2.25.155851373268730741395170003437433181776', '2.25.143467293620292044279751197905759993120')",
       "id": "report_text"
-    },
-    {
-      "expectedQueryResult": {
-        "type": ".GroupedAggregationResult",
-        "primaryColumnName": "dummy",
-        "secondaryColumns": ["null_message_dt_count"],
-        "result": {
-          "dummy": {
-            "null_message_dt_count": 0
-          }
-        }
-      },
-      "sql": "SELECT 'dummy', COUNT(*) as null_message_dt_count FROM syntheticdata WHERE message_dt IS NULL",
-      "id": "null_message_dt"
     }
   ]
 }
