@@ -202,6 +202,10 @@
           {
             "type": ".InstantType",
             "columnName": "results_report_status_change_dt"
+          },
+          {
+            "type": ".IntegerType",
+            "columnName": "year"
           }
         ]
       },
