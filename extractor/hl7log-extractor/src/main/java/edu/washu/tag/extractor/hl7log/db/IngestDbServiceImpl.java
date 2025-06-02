@@ -6,7 +6,6 @@ import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.workflow.Workflow;
 import jakarta.annotation.PostConstruct;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -134,10 +133,5 @@ public class IngestDbServiceImpl implements IngestDbService {
             .mapToObj(i -> new Hl7File(hl7FileStatuses.get(i).filePath(), logPath, i, date))
             .toList();
         batchInsertHl7Files(hl7Files);
-    }
-
-    @Override
-    public Connection getConnection() throws SQLException {
-        return jdbcTemplate.getDataSource() != null ? jdbcTemplate.getDataSource().getConnection() : null;
     }
 }

@@ -3,9 +3,7 @@ package edu.washu.tag.extractor.hl7log.activity;
 import static edu.washu.tag.extractor.hl7log.util.Constants.REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS;
 import static edu.washu.tag.extractor.hl7log.util.Constants.REFRESH_VIEWS_PROCEDURE_NAME;
 import static edu.washu.tag.extractor.hl7log.util.Constants.REFRESH_VIEWS_QUEUE;
-import static edu.washu.tag.extractor.hl7log.util.Constants.REFRESH_VIEWS_TIMEOUT_MINUTES;
 
-import edu.washu.tag.extractor.hl7log.db.IngestDbService;
 import edu.washu.tag.extractor.hl7log.model.RefreshIngestDbViewsInput;
 import edu.washu.tag.extractor.hl7log.model.RefreshIngestDbViewsOutput;
 import io.temporal.activity.Activity;
@@ -21,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -29,10 +28,10 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
     private static final Logger logger = Workflow.getLogger(RefreshIngestDbViewsActivityImpl.class);
     private static final int STATEMENT_TIMEOUT_SECONDS = REFRESH_VIEWS_TIMEOUT_MINUTES * 60; // Convert minutes to seconds
 
-    private final IngestDbService ingestDbService;
+    private final JdbcTemplate jdbcTemplate;
 
-    public RefreshIngestDbViewsActivityImpl(IngestDbService ingestDbService) {
-        this.ingestDbService = ingestDbService;
+    public RefreshIngestDbViewsActivityImpl(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
@@ -51,10 +50,8 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
         // Run the database operation in a separate thread
         CompletableFuture<Void> dbFuture = CompletableFuture.runAsync(() -> {
             logger.info("WorkflowId {} ActivityId {} - Starting database operation to refresh views", workflowId, activityId);
-            Connection conn = null;
             Statement stmt = null;
-            try {
-                conn = ingestDbService.getConnection();
+            try (Connection conn = jdbcTemplate.getDataSource().getConnection()) {
                 stmt = conn.createStatement();
                 statementRef.set(stmt);
 
@@ -74,7 +71,6 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
                 }
             } finally {
                 closeQuietly(stmt);
-                closeQuietly(conn);
             }
         });
 
