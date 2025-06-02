@@ -41,7 +41,8 @@
             className: traefik
             annotations:
               traefik.ingress.kubernetes.io/router.middlewares: >
-                kube-system-explorer-strip-prefix@kubernetescrd
+                kube-system-explorer-strip-prefix@kubernetescrd,
+                {{ oauth2_proxy_namespace }}-oauth2-proxy@kubernetescrd
             hosts:
               - host: '{{ server_hostname }}'
                 paths:
