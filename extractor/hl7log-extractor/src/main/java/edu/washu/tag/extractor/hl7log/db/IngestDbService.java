@@ -1,5 +1,7 @@
 package edu.washu.tag.extractor.hl7log.db;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.retry.annotation.Backoff;
@@ -14,5 +16,5 @@ public interface IngestDbService {
     void batchInsertFileStatuses(List<FileStatus> fileStatuses);
     @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 5000, multiplier = 2))
     void batchInsertNewHl7FileStatuses(List<FileStatus> fileStatuses, String logPath, LocalDate date);
-    void callProcedure(String procedureName, Object... args);
+    Connection getConnection() throws SQLException;
 }
