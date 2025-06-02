@@ -19,6 +19,14 @@ k3s_cluster:
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
 
+    # Namespaces that can be changed
+    hive_namespace: hive
+    postgres_cluster_namespace: cloudnative-pg
+    prometheus_namespace: prometheus
+    grafana_namespace: grafana
+    extractor_namespace: extractor
+    temporal_namespace: temporal
+
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
     s3_username: minio
     s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -51,6 +59,7 @@ k3s_cluster:
     jupyter_allowed_users: [] # empty list means all users can log in
     jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     jupyter_prepuller_continuous: false
+    jupyter_spark_memory: 8g # Pod resource request hard-coded to max 16G in jupyter.values.yaml
 
     # Postgres config
     postgres_user: scout
@@ -89,12 +98,6 @@ k3s_cluster:
     # Superset config
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
-    # Namespaces that can be changed
-    hive_namespace: hive
-    postgres_cluster_namespace: cloudnative-pg
-    prometheus_namespace: prometheus
-    grafana_namespace: grafana
-
     # Local paths
     base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
     scout_repo_dir: /scout/data/scout
@@ -123,17 +126,38 @@ k3s_cluster:
     report_delta_table_name: reports
     ingest_postgres_table_name: ingest
 
-    # Extractor performance tuning
+    # Extractor config
     hl7log_extractor_timeout: 120
     hl7log_extractor_heartbeat_timeout: 30
     hl7log_extractor_concurrency: 150
+    hl7log_extractor_resources:
+      requests:
+        cpu: 4
+        memory: 32Gi
+      limits:
+        cpu: 8
+        memory: 64Gi
     hl7_transformer_timeout: 120
-
-    # Resources, must be in GB (use decimal values to go smaller)
     hl7_transformer_spark_memory: 8g
-    jupyter_spark_memory: 8g
+    hl7_transformer_resources:
+      requests:
+        cpu: 8
+        memory: "{{ hl7_transformer_spark_memory | regex_replace('[gG][ibB]*', '') | int }}Gi"
+      limits:
+        cpu: 16
+        memory: "{{ ((hl7_transformer_spark_memory | regex_replace('[gG][ibB]*', '') | int) * 1.25) | round | int }}Gi"
+
+    # Orchestrator config
     temporal_cassandra_init_heap: 2G
     temporal_cassandra_max_heap: 8G
+    temporal_cassandra_resources:
+      requests:
+        cpu: 2
+        memory: "{{ temporal_cassandra_max_heap | regex_replace('[gG][ibB]*', '') | int }}Gi"
+        storage: 300Gi
+      limits:
+        cpu: 4
+        memory: "{{ ((temporal_cassandra_max_heap | regex_replace('[gG][ibB]*', '') | int) * 1.25) | round | int }}Gi"
 
     # BEGIN - DO NOT CHANGE
     # You probably don't want to change these unless you know these items will be
@@ -141,11 +165,9 @@ k3s_cluster:
     helm_plugins_dir: /root/.local/share/helm/plugins
     kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 
-    # Do not change the values below, they are hard-coded various places
-    extractor_namespace: extractor
+    # Do not change the values below, they are hard-coded in the loki helm chart
     minio_tenant_namespace: minio-scout
     loki_namespace: loki
-    temporal_namespace: temporal
 
     # computed values, used across playbooks
     s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'

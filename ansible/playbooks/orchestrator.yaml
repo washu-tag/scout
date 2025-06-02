@@ -73,9 +73,7 @@
                 storageClassName: cassandra-storage
                 accessModes:
                   - ReadWriteOnce
-                resources:
-                  requests:
-                    storage: 300Gi
+                resources: '{{ temporal_cassandra_resources }}'
             racks:
               - name: r1
             config:

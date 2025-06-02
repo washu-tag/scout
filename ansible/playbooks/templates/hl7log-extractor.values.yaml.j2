@@ -32,13 +32,7 @@ readinessProbe:
     port: 8080
   initialDelaySeconds: 15
   periodSeconds: 10
-resources:
-  limits:
-    cpu: 8
-    memory: 64Gi
-  requests:
-    cpu: 4
-    memory: 32Gi
+resources: '{{ hl7log_extractor_resources }}'
 config:
   application:
     management:
