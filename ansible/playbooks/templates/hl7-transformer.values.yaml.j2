@@ -42,6 +42,7 @@ livenessProbe:
 spark:
   executor:
     memory: '{{ hl7_transformer_spark_memory }}'
-resources: '{{ hl7_transformer_resources }}'
+resources:
+  {{ hl7_transformer_resources | to_yaml }}
 
 

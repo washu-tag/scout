@@ -32,7 +32,8 @@ readinessProbe:
     port: 8080
   initialDelaySeconds: 15
   periodSeconds: 10
-resources: '{{ hl7log_extractor_resources }}'
+resources:
+  {{ hl7log_extractor_resources | to_yaml }}
 config:
   application:
     management:
