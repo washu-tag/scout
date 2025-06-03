@@ -109,6 +109,7 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
             }
 
             // Cancel the database operation
+            cancelled.set(true);
             Statement stmt = statementRef.get();
             if (stmt != null) {
                 try {
@@ -119,7 +120,6 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
                 }
             }
 
-            cancelled.set(true);
             dbFuture.cancel(true);
             throw e;
         }
