@@ -24,7 +24,6 @@ public class RefreshIngestDbViewsWorkflowImpl implements RefreshIngestDbViewsWor
                 .setHeartbeatTimeout(Duration.ofSeconds(REFRESH_VIEWS_HEARTBEAT_TIMEOUT_SECONDS))
                 .setCancellationType(ActivityCancellationType.WAIT_CANCELLATION_COMPLETED)
                 .setRetryOptions(RetryOptions.newBuilder()
-                    .setMaximumInterval(Duration.ofMinutes(1))
                     // Give the activity a chance to heartbeat and figure out it has timed out before retrying
                     // When an activity times out it gets notified only during a heartbeat, and delivery
                     // of the cancellation can be delayed up to 80% of the heartbeat timeout.
