@@ -103,32 +103,37 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
                 throw new RuntimeException(errorRef.get());
             }
 
+        } catch (ActivityCanceledException e) {
+            logger.info("WorkflowId {} ActivityId {} - Activity was cancelled", workflowId, activityId);
+            cancelDbOperation(cancelled, statementRef, dbFuture, workflowId, activityId);
+            throw e;
+        } catch (ActivityNotExistsException e) {
+            logger.info("WorkflowId {} ActivityId {} - Activity timed out", workflowId, activityId);
+            cancelDbOperation(cancelled, statementRef, dbFuture, workflowId, activityId);
+            throw e;
         } catch (Exception e) {
-            if (e instanceof ActivityCanceledException) {
-                logger.info("WorkflowId {} ActivityId {} - Activity was cancelled, cancelling operation", workflowId, activityId);
-            } else if (e instanceof ActivityNotExistsException) {
-                logger.info("WorkflowId {} ActivityId {} - Activity timed out, cancelling operation", workflowId, activityId);
-            } else {
-                logger.error("WorkflowId {} ActivityId {} - Unexpected error, cancelling operation", workflowId, activityId, e);
-            }
-
-            // Cancel the database operation
-            cancelled.set(true);
-            Statement stmt = statementRef.get();
-            if (stmt != null) {
-                try {
-                    stmt.cancel();
-                    logger.info("WorkflowId {} ActivityId {} - Sent explicit cancellation to database", workflowId, activityId);
-                } catch (SQLException ex) {
-                    logger.warn("WorkflowId {} ActivityId {} - Failed to cancel database operation", workflowId, activityId, ex);
-                }
-            }
-
-            dbFuture.cancel(true);
+            logger.error("WorkflowId {} ActivityId {} - Unexpected error", workflowId, activityId, e);
+            cancelDbOperation(cancelled, statementRef, dbFuture, workflowId, activityId);
             throw e;
         }
 
         logger.info("WorkflowId {} ActivityId {} - Successfully refreshed ingest views", workflowId, activityId);
         return new RefreshIngestDbViewsOutput();
+    }
+
+    private static void cancelDbOperation(AtomicBoolean cancelled, AtomicReference<Statement> statementRef, CompletableFuture<Void> dbFuture, String workflowId, String activityId) {
+        cancelled.set(true);
+        Statement stmt = statementRef.get();
+        if (stmt != null) {
+            logger.info("WorkflowId {} ActivityId {} - Cancelling database operation", workflowId, activityId);
+            try {
+                stmt.cancel();
+                logger.info("WorkflowId {} ActivityId {} - Done cancelling database operation", workflowId, activityId);
+            } catch (SQLException e) {
+                logger.warn("WorkflowId {} ActivityId {} - Failed to cancel database operation", workflowId, activityId, e);
+            }
+        }
+
+        dbFuture.cancel(true);
     }
 }
