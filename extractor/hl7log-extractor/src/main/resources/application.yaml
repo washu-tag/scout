@@ -37,6 +37,11 @@ management:
       exposure:
         include:
           - prometheus # Access by /actuator/prometheus
+          - health
+  endpoint:
+    health:
+      probes:
+        enabled: true
   metrics:
     tags:
       namespace: extractor
