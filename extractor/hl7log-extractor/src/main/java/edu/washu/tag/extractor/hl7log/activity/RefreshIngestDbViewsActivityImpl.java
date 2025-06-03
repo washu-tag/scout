@@ -26,7 +26,6 @@ import org.springframework.stereotype.Component;
 @ActivityImpl(taskQueues = REFRESH_VIEWS_QUEUE)
 public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsActivity {
     private static final Logger logger = Workflow.getLogger(RefreshIngestDbViewsActivityImpl.class);
-    private static final int STATEMENT_TIMEOUT_SECONDS = REFRESH_VIEWS_TIMEOUT_MINUTES * 60; // Convert minutes to seconds
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -54,10 +53,6 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
             try (Connection conn = jdbcTemplate.getDataSource().getConnection()) {
                 stmt = conn.createStatement();
                 statementRef.set(stmt);
-
-                // Set an explicit timeout for the statement = activity timeout
-                // If the activity times out the database operation will automatically be cancelled
-                stmt.setQueryTimeout(STATEMENT_TIMEOUT_SECONDS);
 
                 // Execute the stored procedure
                 stmt.execute("CALL " + REFRESH_VIEWS_PROCEDURE_NAME + "()");

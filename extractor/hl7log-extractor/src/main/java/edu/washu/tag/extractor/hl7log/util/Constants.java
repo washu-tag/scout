@@ -17,5 +17,5 @@ public class Constants {
     public static final DateTimeFormatter YYYYMMDD_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
     public static final String REFRESH_VIEWS_PROCEDURE_NAME = "refresh_materialized_views";
     public static final int REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS = 5;
-    public static final int REFRESH_VIEWS_TIMEOUT_MINUTES = 12 * 60; // 12 hours in minutes
+    public static final int REFRESH_VIEWS_TIMEOUT_HOURS = 12;
 }

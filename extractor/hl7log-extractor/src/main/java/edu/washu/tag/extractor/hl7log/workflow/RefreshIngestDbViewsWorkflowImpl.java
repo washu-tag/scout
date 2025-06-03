@@ -2,7 +2,7 @@ package edu.washu.tag.extractor.hl7log.workflow;
 
 import static edu.washu.tag.extractor.hl7log.util.Constants.REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS;
 import static edu.washu.tag.extractor.hl7log.util.Constants.REFRESH_VIEWS_QUEUE;
-import static edu.washu.tag.extractor.hl7log.util.Constants.REFRESH_VIEWS_TIMEOUT_MINUTES;
+import static edu.washu.tag.extractor.hl7log.util.Constants.REFRESH_VIEWS_TIMEOUT_HOURS;
 
 import edu.washu.tag.extractor.hl7log.activity.RefreshIngestDbViewsActivity;
 import edu.washu.tag.extractor.hl7log.model.RefreshIngestDbViewsInput;
@@ -20,7 +20,7 @@ public class RefreshIngestDbViewsWorkflowImpl implements RefreshIngestDbViewsWor
     private final RefreshIngestDbViewsActivity refreshIngestDbViewsActivity =
         Workflow.newActivityStub(RefreshIngestDbViewsActivity.class,
             ActivityOptions.newBuilder()
-                .setStartToCloseTimeout(Duration.ofMinutes(REFRESH_VIEWS_TIMEOUT_MINUTES))
+                .setStartToCloseTimeout(Duration.ofHours(REFRESH_VIEWS_TIMEOUT_HOURS))
                 .setHeartbeatTimeout(Duration.ofSeconds(REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS * 2))
                 .setCancellationType(ActivityCancellationType.WAIT_CANCELLATION_COMPLETED)
                 .setRetryOptions(RetryOptions.newBuilder()
