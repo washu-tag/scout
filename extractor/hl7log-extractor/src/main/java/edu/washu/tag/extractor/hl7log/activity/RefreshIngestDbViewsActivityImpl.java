@@ -71,6 +71,7 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
                         stmt.close();
                     } catch (Exception ignored) {}
                 }
+                statementRef.set(null);
             }
         });
 
