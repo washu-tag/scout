@@ -16,15 +16,21 @@ import java.time.Duration;
 
 @WorkflowImpl(taskQueues = REFRESH_VIEWS_QUEUE)
 public class RefreshIngestDbViewsWorkflowImpl implements RefreshIngestDbViewsWorkflow {
+    private final static int REFRESH_VIEWS_HEARTBEAT_TIMEOUT_SECONDS = REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS * 2;
 
     private final RefreshIngestDbViewsActivity refreshIngestDbViewsActivity =
         Workflow.newActivityStub(RefreshIngestDbViewsActivity.class,
             ActivityOptions.newBuilder()
-                .setStartToCloseTimeout(Duration.ofHours(REFRESH_VIEWS_TIMEOUT_HOURS))
-                .setHeartbeatTimeout(Duration.ofSeconds(REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS * 2))
+                .setHeartbeatTimeout(Duration.ofSeconds(REFRESH_VIEWS_HEARTBEAT_TIMEOUT_SECONDS))
                 .setCancellationType(ActivityCancellationType.WAIT_CANCELLATION_COMPLETED)
                 .setRetryOptions(RetryOptions.newBuilder()
                     .setMaximumInterval(Duration.ofMinutes(1))
+                    // Give the activity a chance to heartbeat and figure out it has timed out before retrying
+                    // When an activity times out it gets notified only during a heartbeat, and delivery
+                    // of the cancellation can be delayed up to 80% of the heartbeat timeout.
+                    // See https://community.temporal.io/t/problems-cancelling-a-running-activity-from-parent-workflow/2169
+                    // To compensate for this, do not start retrying until the full heartbeat timeout has elapsed.
+                    .setInitialInterval(Duration.ofSeconds(REFRESH_VIEWS_HEARTBEAT_TIMEOUT_SECONDS))
                     .setMaximumAttempts(2)
                     .build())
                 .build());

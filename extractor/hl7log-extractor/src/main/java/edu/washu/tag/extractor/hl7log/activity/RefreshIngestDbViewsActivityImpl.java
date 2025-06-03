@@ -10,6 +10,7 @@ import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityExecutionContext;
 import io.temporal.activity.ActivityInfo;
 import io.temporal.client.ActivityCanceledException;
+import io.temporal.client.ActivityNotExistsException;
 import io.temporal.spring.boot.ActivityImpl;
 import io.temporal.workflow.Workflow;
 import java.sql.Connection;
@@ -94,8 +95,14 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
                     : new RuntimeException(error);
             }
 
-        } catch (ActivityCanceledException e) {
-            logger.info("WorkflowId {} ActivityId {} - Activity cancelled, interrupting database operation", workflowId, activityId);
+        } catch (Exception e) {
+            if (e instanceof ActivityCanceledException) {
+                logger.info("WorkflowId {} ActivityId {} - Activity was cancelled, cancelling operation", workflowId, activityId);
+            } else if (e instanceof ActivityNotExistsException) {
+                logger.info("WorkflowId {} ActivityId {} - Activity timed out, cancelling operation", workflowId, activityId);
+            } else {
+                logger.error("WorkflowId {} ActivityId {} - Unexpected error, cancelling operation", workflowId, activityId, e);
+            }
 
             // Cancel the database operation
             Statement stmt = statementRef.get();
