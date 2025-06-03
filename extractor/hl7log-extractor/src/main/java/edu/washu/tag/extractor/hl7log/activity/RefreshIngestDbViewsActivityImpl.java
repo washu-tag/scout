@@ -45,7 +45,7 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
         // Initialize state for tracking completion, cancellation, and errors
         AtomicBoolean cancelled = new AtomicBoolean(false);
         AtomicReference<Statement> statementRef = new AtomicReference<>();
-        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+        AtomicReference<Exception> errorRef = new AtomicReference<>();
 
         // Run the database operation in a separate thread
         CompletableFuture<Void> dbFuture = CompletableFuture.runAsync(() -> {
@@ -93,10 +93,7 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
 
             // Check if there was an error
             if (errorRef.get() != null) {
-                Throwable error = errorRef.get();
-                throw RuntimeException.class.isAssignableFrom(error.getClass())
-                    ? (RuntimeException) error
-                    : new RuntimeException(error);
+                throw new RuntimeException(errorRef.get());
             }
 
         } catch (Exception e) {
