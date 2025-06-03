@@ -97,7 +97,7 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
         } catch (ActivityCanceledException e) {
             logger.info("WorkflowId {} ActivityId {} - Activity cancelled, interrupting database operation", workflowId, activityId);
 
-            // Cancel the database operation via Statement.cancel()
+            // Cancel the database operation
             Statement stmt = statementRef.get();
             if (stmt != null) {
                 try {
