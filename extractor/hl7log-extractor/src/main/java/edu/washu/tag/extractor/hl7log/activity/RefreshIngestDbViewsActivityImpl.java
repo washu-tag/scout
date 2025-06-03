@@ -17,6 +17,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
@@ -83,10 +85,14 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
 
                 // Sleep until next heartbeat
                 try {
-                    Thread.sleep(REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS * 1000);
+                    dbFuture.get(REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException("Heartbeat interrupted", e);
+                } catch (TimeoutException ignored) {
+                    // Expected timeout, continue to next heartbeat
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             }
 
