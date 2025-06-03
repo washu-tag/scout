@@ -52,13 +52,12 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
         // Run the database operation in a separate thread
         CompletableFuture<Void> dbFuture = CompletableFuture.runAsync(() -> {
             logger.info("WorkflowId {} ActivityId {} - Starting database operation to refresh views", workflowId, activityId);
-            Statement stmt = null;
-            try (Connection conn = jdbcTemplate.getDataSource().getConnection()) {
-                stmt = conn.createStatement();
-                statementRef.set(stmt);
+            try (Connection conn = jdbcTemplate.getDataSource().getConnection();
+                Statement statement = conn.createStatement()) {
+                statementRef.set(statement);
 
                 // Execute the stored procedure
-                stmt.execute("CALL " + REFRESH_VIEWS_PROCEDURE_NAME + "()");
+                statement.execute("CALL " + REFRESH_VIEWS_PROCEDURE_NAME + "()");
 
                 logger.info("WorkflowId {} ActivityId {} - Successfully executed refresh views procedure", workflowId, activityId);
             } catch (Exception e) {
@@ -68,11 +67,7 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
                     logger.error("WorkflowId {} ActivityId {} - Error refreshing views", workflowId, activityId, e);
                 }
             } finally {
-                if (stmt != null) {
-                    try {
-                        stmt.close();
-                    } catch (Exception ignored) {}
-                }
+                // Statement is already closed, so we don't want to attempt to cancel it in the other thread
                 statementRef.set(null);
             }
         });
