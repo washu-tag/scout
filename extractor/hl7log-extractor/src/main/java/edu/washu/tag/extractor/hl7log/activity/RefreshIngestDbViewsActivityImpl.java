@@ -66,7 +66,11 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
                     logger.error("WorkflowId {} ActivityId {} - Error refreshing views", workflowId, activityId, e);
                 }
             } finally {
-                closeQuietly(stmt);
+                if (stmt != null) {
+                    try {
+                        stmt.close();
+                    } catch (Exception ignored) {}
+                }
             }
         });
 
@@ -122,15 +126,5 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
 
         logger.info("WorkflowId {} ActivityId {} - Successfully refreshed ingest views", workflowId, activityId);
         return new RefreshIngestDbViewsOutput();
-    }
-
-    private void closeQuietly(AutoCloseable closeable) {
-        if (closeable != null) {
-            try {
-                closeable.close();
-            } catch (Exception ignored) {
-                // Ignore close exceptions
-            }
-        }
     }
 }
