@@ -21,6 +21,7 @@ public class DefaultArgs {
     public void setLogsRootPath(String logsRootPath) {
         DefaultArgs.logsRootPath = logsRootPath;
     }
+
     public static String getLogsRootPath(String input) {
         return getValueOrDefault(input, logsRootPath);
     }
@@ -29,6 +30,7 @@ public class DefaultArgs {
     public void setScratchSpaceRootPath(String scratchSpaceRootPath) {
         DefaultArgs.scratchSpaceRootPath = scratchSpaceRootPath;
     }
+
     public static String getScratchSpaceRootPath(String input) {
         return getValueOrDefault(input, scratchSpaceRootPath);
     }
@@ -37,6 +39,7 @@ public class DefaultArgs {
     public void setHl7OutputPath(String hl7OutputPath) {
         DefaultArgs.hl7OutputPath = hl7OutputPath;
     }
+
     public static String getHl7OutputPath(String input) {
         return getValueOrDefault(input, hl7OutputPath);
     }
@@ -45,6 +48,7 @@ public class DefaultArgs {
     public void setSplitAndUploadTimeout(Integer splitAndUploadTimeout) {
         DefaultArgs.splitAndUploadTimeout = splitAndUploadTimeout;
     }
+
     public static Integer getSplitAndUploadTimeout(Integer input) {
         return getValueOrDefault(input, splitAndUploadTimeout);
     }
@@ -53,6 +57,7 @@ public class DefaultArgs {
     public void setSplitAndUploadHeartbeatTimeout(Integer splitAndUploadHeartbeatTimeout) {
         DefaultArgs.splitAndUploadHeartbeatTimeout = splitAndUploadHeartbeatTimeout;
     }
+
     public static Integer getSplitAndUploadHeartbeatTimeout(Integer input) {
         return getValueOrDefault(input, splitAndUploadHeartbeatTimeout);
     }
@@ -61,6 +66,7 @@ public class DefaultArgs {
     public void setSplitAndUploadConcurrency(Integer splitAndUploadConcurrency) {
         DefaultArgs.splitAndUploadConcurrency = splitAndUploadConcurrency;
     }
+
     public static Integer getSplitAndUploadConcurrency(Integer input) {
         return getValueOrDefault(input, splitAndUploadConcurrency);
     }
@@ -69,6 +75,7 @@ public class DefaultArgs {
     public void setModalityMapPath(String modalityMapPath) {
         DefaultArgs.modalityMapPath = modalityMapPath;
     }
+
     public static String getModalityMapPath(String input) {
         return getValueOrDefault(input, modalityMapPath);
     }
@@ -77,6 +84,7 @@ public class DefaultArgs {
     public void setReportTableName(String reportTableName) {
         DefaultArgs.reportTableName = reportTableName;
     }
+
     public static String getReportTableName(String input) {
         return getValueOrDefault(input, reportTableName);
     }
@@ -85,6 +93,7 @@ public class DefaultArgs {
     public void setDeltaIngestTimeout(Integer deltaIngestTimeout) {
         DefaultArgs.deltaIngestTimeout = deltaIngestTimeout;
     }
+
     public static Integer getDeltaIngestTimeout(Integer input) {
         return getValueOrDefault(input, deltaIngestTimeout);
     }
@@ -92,6 +101,7 @@ public class DefaultArgs {
     private static String getValueOrDefault(String value, String defaultValue) {
         return (value == null || value.isEmpty()) ? defaultValue : value;
     }
+
     private static Integer getValueOrDefault(Integer value, Integer defaultValue) {
         return (value == null || value == -1) ? defaultValue : value;
     }
