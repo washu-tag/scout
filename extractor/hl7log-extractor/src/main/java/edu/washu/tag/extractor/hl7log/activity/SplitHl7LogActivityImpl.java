@@ -347,7 +347,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         List<FileStatus> results = new ArrayList<>(Collections.nCopies(splitHl7LogEntries.size(), null));
         Path logFilePath = Paths.get(logFile);
         String logFileName = logFilePath.getFileName().toString();
-        String logFileNameWOExtension = logFileName.substring(0, logFileName.lastIndexOf('.'));
+        String logFileNameNoExtension = logFileName.substring(0, logFileName.lastIndexOf('.'));
 
         Map<Integer, String> zippedHl7Files = new HashMap<>();
 
@@ -435,7 +435,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
             // Upload the zip file to S3
             ctx.heartbeat("Upload zip to S3");
-            String relativePath = getBucketTimestampPath(logFileNameWOExtension).resolve(logFileNameWOExtension + ".zip").toString();
+            String relativePath = getBucketTimestampPath(logFileNameNoExtension).resolve(logFileNameNoExtension + ".zip").toString();
             String uploadedPath = fileHandler.putWithRetry(byteArrayOutputStream.toByteArray(), relativePath, destination);
 
             // Add successful HL7 files to results
