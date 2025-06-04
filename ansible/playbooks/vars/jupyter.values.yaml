@@ -89,10 +89,16 @@ singleuser:
       - name: spark-defaults
         configMap:
           name: spark-defaults
+      - name: data
+        hostPath:
+          path: '/scout/data/data_generator_output'
     extraVolumeMounts:
       - name: spark-defaults
         mountPath: /usr/local/spark/conf/spark-defaults.conf
         subPath: spark-defaults.conf
+      - name: data
+        mountPath: /data
+        readOnly: true
   networkPolicy:
     egress:
       - to:
