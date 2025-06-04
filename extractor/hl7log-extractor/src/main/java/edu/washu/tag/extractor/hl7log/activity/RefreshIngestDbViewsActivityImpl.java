@@ -116,7 +116,13 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
         return new RefreshIngestDbViewsOutput();
     }
 
-    private static void cancelDbOperation(AtomicBoolean cancelled, AtomicReference<Statement> statementRef, CompletableFuture<Void> dbFuture, String workflowId, String activityId) {
+    private static void cancelDbOperation(
+        AtomicBoolean cancelled,
+        AtomicReference<Statement> statementRef,
+        CompletableFuture<Void> dbFuture,
+        String workflowId,
+        String activityId
+    ) {
         cancelled.set(true);
         Statement stmt = statementRef.get();
         if (stmt != null) {
