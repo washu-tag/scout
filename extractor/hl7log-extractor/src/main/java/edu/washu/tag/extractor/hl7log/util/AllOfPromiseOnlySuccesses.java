@@ -78,42 +78,52 @@ public class AllOfPromiseOnlySuccesses<T> implements Promise<List<T>> {
 
     }
 
+    @Override
     public boolean isCompleted() {
         return this.impl.isCompleted();
     }
 
+    @Override
     public List<T> get() {
         return this.impl.get();
     }
 
-    public List<T> cancellableGet() {
-        return this.impl.cancellableGet();
-    }
-
-    public List<T> cancellableGet(long timeout, TimeUnit unit) throws TimeoutException {
-        return this.impl.cancellableGet(timeout, unit);
-    }
-
+    @Override
     public List<T> get(long timeout, TimeUnit unit) throws TimeoutException {
         return this.impl.get(timeout, unit);
     }
 
+    @Override
+    public List<T> cancellableGet() {
+        return this.impl.cancellableGet();
+    }
+
+    @Override
+    public List<T> cancellableGet(long timeout, TimeUnit unit) throws TimeoutException {
+        return this.impl.cancellableGet(timeout, unit);
+    }
+
+    @Override
     public RuntimeException getFailure() {
         return this.impl.getFailure();
     }
 
+    @Override
     public <U> Promise<U> thenApply(Functions.Func1<? super List<T>, ? extends U> fn) {
         return this.impl.thenApply(fn);
     }
 
+    @Override
     public <U> Promise<U> handle(Functions.Func2<? super List<T>, RuntimeException, ? extends U> fn) {
         return this.impl.handle(fn);
     }
 
+    @Override
     public <U> Promise<U> thenCompose(Functions.Func1<? super List<T>, ? extends Promise<U>> fn) {
         return this.impl.thenCompose(fn);
     }
 
+    @Override
     public Promise<List<T>> exceptionally(Functions.Func1<Throwable, ? extends List<T>> fn) {
         return this.impl.exceptionally(fn);
     }
