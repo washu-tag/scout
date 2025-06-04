@@ -73,8 +73,8 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
         if (input.hl7ManifestFilePath() == null || input.hl7ManifestFilePath().isEmpty()) {
             // Find HL7 files and build manifest
             logger.info("WorkflowId {} - Finding HL7 files using root path: {}", workflowInfo.getWorkflowId(), input.hl7RootPath());
-            if ((input.hl7RootPath() == null || input.hl7RootPath().isEmpty()) ||
-                (input.scratchSpaceRootPath() == null || input.scratchSpaceRootPath().isEmpty())) {
+            if ((input.hl7RootPath() == null || input.hl7RootPath().isEmpty())
+                || (input.scratchSpaceRootPath() == null || input.scratchSpaceRootPath().isEmpty())) {
                 throw new IllegalArgumentException("hl7RootPath and scratchSpaceRootPath must be provided if hl7ManifestFilePath is not provided");
             }
             String scratchDir = input.scratchSpaceRootPath() + (input.scratchSpaceRootPath().endsWith("/") ? "" : "/") + workflowInfo.getWorkflowId();
