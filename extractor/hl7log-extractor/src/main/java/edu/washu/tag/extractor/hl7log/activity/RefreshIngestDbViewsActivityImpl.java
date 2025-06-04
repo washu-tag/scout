@@ -25,6 +25,10 @@ import org.slf4j.Logger;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+/**
+ * Activity for refreshing ingest database views.
+ * This activity executes a stored procedure to refresh the views in the database.
+ */
 @Component
 @ActivityImpl(taskQueues = REFRESH_VIEWS_QUEUE)
 public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsActivity {
@@ -32,10 +36,21 @@ public class RefreshIngestDbViewsActivityImpl implements RefreshIngestDbViewsAct
 
     private final JdbcTemplate jdbcTemplate;
 
+    /**
+     * Constructor for the activity implementation.
+     *
+     * @param jdbcTemplate The JdbcTemplate to use for database operations.
+     */
     public RefreshIngestDbViewsActivityImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Refreshes the ingest database views by executing a stored procedure.
+     *
+     * @param input The input containing parameters for the refresh operation.
+     * @return The output indicating the result of the refresh operation.
+     */
     @Override
     public RefreshIngestDbViewsOutput refreshIngestDbViews(RefreshIngestDbViewsInput input) {
         final ActivityExecutionContext ctx = Activity.getExecutionContext();
