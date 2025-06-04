@@ -454,7 +454,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             }
         }
 
-       return IntStream.range(0, results.size())
+        return IntStream.range(0, results.size())
             .mapToObj(i -> {
                 FileStatus status = results.get(i);
                 return status != null
