@@ -20,14 +20,18 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * IngestHl7LogWorkflowInputParser is responsible for parsing and validating the input for the HL7 log ingestion workflow.
+ * It handles both scheduled and non-scheduled runs, resolving paths and ensuring all required inputs are provided.
+ */
 public class IngestHl7LogWorkflowInputParser {
 
     private static final Logger logger = LoggerFactory.getLogger(IngestHl7LogWorkflowInputParser.class);
 
     /**
      * Parse and validate input.
-     * <p>
-     * Ways this workflow can be invoked:
+     *
+     * <p>Ways this workflow can be invoked:
      * 1. In a scheduled run, we ignore the other args and use the scheduled time to find "yesterday's" logs.
      *    These logs must be found under the logsRootPath (either provided in the args or the default), and they
      *    must have a date in the file name in the format YYYYMMDD.

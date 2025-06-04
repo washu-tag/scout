@@ -37,6 +37,12 @@ public class AllOfPromiseOnlySuccesses<T> implements Promise<List<T>> {
 
     }
 
+    /**
+     * Creates a new AllOfPromiseOnlySuccesses that will complete when all promises are completed.
+     * If all promises are already completed, it will complete immediately.
+     *
+     * @param promises Iterable of promises to wait for
+     */
     public AllOfPromiseOnlySuccesses(Iterable<Promise<T>> promises) {
         results = new ArrayList<>();
         for (Promise<T> f : promises) {
