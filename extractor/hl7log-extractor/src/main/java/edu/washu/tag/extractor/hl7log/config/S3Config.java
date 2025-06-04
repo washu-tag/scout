@@ -1,5 +1,7 @@
 package edu.washu.tag.extractor.hl7log.config;
 
+import java.net.URI;
+import java.time.Duration;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -9,9 +11,6 @@ import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
-
-import java.net.URI;
-import java.time.Duration;
 
 @Configuration
 public class S3Config {
