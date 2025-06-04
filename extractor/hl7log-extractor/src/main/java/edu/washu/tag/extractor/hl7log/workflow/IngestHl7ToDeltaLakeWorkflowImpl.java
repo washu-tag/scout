@@ -29,6 +29,9 @@ import io.temporal.workflow.WorkflowInfo;
 import java.time.Duration;
 import org.slf4j.Logger;
 
+/**
+ * Workflow for ingesting HL7 files into Delta Lake.
+ */
 @WorkflowImpl(taskQueues = INGEST_DELTA_LAKE_QUEUE)
 public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWorkflow {
     private static final Logger logger = Workflow.getLogger(IngestHl7ToDeltaLakeWorkflowImpl.class);
