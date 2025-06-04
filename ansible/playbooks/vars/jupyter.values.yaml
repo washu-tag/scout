@@ -30,6 +30,8 @@ hub:
       allowed_users: '{{ (jupyter_allowed_users | default([])) }}'
     JupyterHub:
       authenticator_class: '{{ jupyter_auth_class | default("dummy") }}'
+    Spawner:
+      http_timeout: 120
 
 ingress:
   enabled: true
