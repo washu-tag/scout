@@ -464,7 +464,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             for (Integer messageNumber : zippedHl7Files.keySet()) {
                 String outputPath = uploadedPath + "/" + zippedHl7Files.get(messageNumber);
                 results.set(messageNumber,
-                    FileStatus.staged(outputPath, FileStatusType.HL7, workflowId, activityId)
+                    FileStatus.staged(outputPath, workflowId, activityId)
                 );
             }
         } catch (Exception e) {

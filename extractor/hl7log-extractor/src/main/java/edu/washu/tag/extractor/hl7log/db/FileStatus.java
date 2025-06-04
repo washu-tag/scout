@@ -15,8 +15,8 @@ public record FileStatus(
         return new FileStatus(filePath, FileStatusType.LOG.getType(), FileStatusStatus.PARSED.getStatus(), null, workflowId, activityId);
     }
 
-    public static FileStatus staged(String filePath, FileStatusType type, String workflowId, String activityId) {
-        return new FileStatus(filePath, type.getType(), FileStatusStatus.STAGED.getStatus(), null, workflowId, activityId);
+    public static FileStatus staged(String filePath, String workflowId, String activityId) {
+        return new FileStatus(filePath, FileStatusType.HL7.getType(), FileStatusStatus.STAGED.getStatus(), null, workflowId, activityId);
     }
 
     public static FileStatus failed(String filePath, FileStatusType type, String errorMessage, String workflowId, String activityId) {
