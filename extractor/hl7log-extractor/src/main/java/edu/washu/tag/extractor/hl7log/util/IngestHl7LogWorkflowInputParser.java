@@ -78,7 +78,14 @@ public class IngestHl7LogWorkflowInputParser {
                 workflowInfo.getWorkflowId(), date, scheduledTimeUtc, scheduledTimeLocal, localTz
             );
             return new IngestHl7LogWorkflowParsedInput(
-                List.of(logsRootPath), date, scratchSpaceRootPath, logsRootPath, hl7OutputPath, splitAndUploadTimeout, splitAndUploadHeartbeatTimeout, splitAndUploadConcurrency
+                List.of(logsRootPath),
+                date,
+                scratchSpaceRootPath,
+                logsRootPath,
+                hl7OutputPath,
+                splitAndUploadTimeout,
+                splitAndUploadHeartbeatTimeout,
+                splitAndUploadConcurrency
             );
         } else if (isScheduledRun) {
             // We are in a scheduled run without a root path. This is an error.
@@ -117,7 +124,14 @@ public class IngestHl7LogWorkflowInputParser {
         );
 
         return new IngestHl7LogWorkflowParsedInput(
-            logPaths, input.date(), scratchSpaceRootPath, logsRootPath, hl7OutputPath, splitAndUploadTimeout, splitAndUploadHeartbeatTimeout, splitAndUploadConcurrency
+            logPaths,
+            input.date(),
+            scratchSpaceRootPath,
+            logsRootPath,
+            hl7OutputPath,
+            splitAndUploadTimeout,
+            splitAndUploadHeartbeatTimeout,
+            splitAndUploadConcurrency
         );
     }
 
