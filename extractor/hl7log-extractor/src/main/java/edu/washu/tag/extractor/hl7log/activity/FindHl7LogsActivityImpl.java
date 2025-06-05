@@ -29,6 +29,9 @@ import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
+/**
+ * Activity for finding HL7 log files.
+ */
 @Component
 @ActivityImpl(taskQueues = PARENT_QUEUE)
 public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
@@ -37,11 +40,21 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
 
     private final FileHandler fileHandler;
 
+    /**
+     * Constructor for FindHl7LogsActivityImpl.
+     *
+     * @param fileHandler The file handler to manage file operations.
+     */
     public FindHl7LogsActivityImpl(FileHandler fileHandler) {
         this.fileHandler = fileHandler;
     }
 
-
+    /**
+     * Finds HL7 log files based on the specified input parameters.
+     *
+     * @param input The input containing paths and filtering criteria.
+     * @return The output containing the list of found log files.
+     */
     @Override
     public FindHl7LogFileOutput findHl7LogFiles(FindHl7LogFileInput input) {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
@@ -194,7 +207,7 @@ public class FindHl7LogsActivityImpl implements FindHl7LogsActivity {
     }
 
     /**
-     * Write the full list of log files into a manifest file
+     * Write the full list of log files into a manifest file.
      *
      * @param logFiles                  Full list of log files to process
      * @param manifestFilePath          Path to the manifest file

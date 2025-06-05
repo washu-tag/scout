@@ -16,16 +16,27 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service methods to insert file statuses and HL7 files with retry capabilities.
+ */
 @Service
 public class IngestDbServiceImpl implements IngestDbService {
     private static final Logger logger = Workflow.getLogger(IngestDbServiceImpl.class);
 
     private final JdbcTemplate jdbcTemplate;
 
+    /**
+     * Constructor for IngestDbServiceImpl.
+     *
+     * @param jdbcTemplate The JdbcTemplate to interact with the database.
+     */
     public IngestDbServiceImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Post-initialization method to log database connection parameters.
+     */
     @PostConstruct
     public void postInitLogging() {
         try {

@@ -20,6 +20,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
+/**
+ * File handling operations interface.
+ * Provides methods for uploading files, reading files, and listing directories with retry capabilities.
+ */
 @Component
 public class FileHandlerImpl implements FileHandler {
 
@@ -28,6 +32,11 @@ public class FileHandlerImpl implements FileHandler {
     private static final String S3 = "s3";
     private final S3Client s3Client;
 
+    /**
+     * Constructor for FileHandlerImpl.
+     *
+     * @param s3Client The S3 client to use for file operations.
+     */
     public FileHandlerImpl(S3Client s3Client) {
         this.s3Client = s3Client;
     }

@@ -1,5 +1,7 @@
 package edu.washu.tag.extractor.hl7log.config;
 
+import java.net.URI;
+import java.time.Duration;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -10,9 +12,10 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
 
-import java.net.URI;
-import java.time.Duration;
-
+/**
+ * Configuration class for setting up the S3 client with custom endpoint.
+ * Uses Apache HTTP client for better performance and connection management.
+ */
 @Configuration
 public class S3Config {
 
@@ -25,6 +28,11 @@ public class S3Config {
     @Value("${s3.max-connections}")
     private Integer maxConnections;
 
+    /**
+     * Creates an S3 client bean.
+     *
+     * @return Configured S3Client instance.
+     */
     @Bean
     public S3Client s3Client() {
         return S3Client.builder()

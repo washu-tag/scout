@@ -13,7 +13,17 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Utility class for database operations related to HL7 log extraction.
+ * Provides methods to generate SQL insert statements and extract values from records.
+ */
 public class DbUtils {
+    /**
+     * Enum representing the status of a file, used for "status" column in ingest database.
+     * * {@link FileStatusStatus#PARSED} is used for {@link FileStatusType#LOG} files
+     * * {@link FileStatusStatus#STAGED} is used for {@link FileStatusType#HL7} files
+     * * {@link FileStatusStatus#FAILED} is used for Log and/or HL7 files that failed for any reason
+     */
     public enum FileStatusStatus {
         PARSED("parsed"),
         STAGED("staged"),
@@ -31,6 +41,11 @@ public class DbUtils {
         }
     }
 
+    /**
+     * Enum representing the type of file, used for "type" column in ingest database.
+     * * {@link FileStatusType#HL7} is used for HL7 files
+     * * {@link FileStatusType#LOG} is used for Log files
+     */
     public enum FileStatusType {
         HL7("HL7"),
         LOG("Log");
@@ -50,7 +65,8 @@ public class DbUtils {
     private static final Pattern CAMEL_CASE_REGEX = Pattern.compile("([a-z0-9])([A-Z])");
 
     /**
-     * Get the cached SQL insert statement for a record class
+     * Get the cached SQL insert statement for a record class.
+     *
      * @param recordClass The record class
      * @return The SQL insert statement
      */
@@ -59,7 +75,8 @@ public class DbUtils {
     }
 
     /**
-     * Generate the SQL insert statement for a record class
+     * Generate the SQL insert statement for a record class.
+     *
      * @param recordClass The record class
      * @return The SQL insert statement
      */
@@ -105,7 +122,8 @@ public class DbUtils {
     }
 
     /**
-     * Extract values from a record
+     * Extract values from a record.
+     *
      * @param record The record
      * @return Array of values
      */

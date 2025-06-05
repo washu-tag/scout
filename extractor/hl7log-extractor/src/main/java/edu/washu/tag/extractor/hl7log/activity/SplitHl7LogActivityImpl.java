@@ -47,6 +47,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
+/**
+ * Activity for splitting and transforming HL7 log files.
+ */
 @Component
 @ActivityImpl(taskQueues = CHILD_QUEUE)
 public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
@@ -76,6 +79,13 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private final IngestDbService ingestDbService;
     private final MeterRegistry meterRegistry;
 
+    /**
+     * Constructor for SplitHl7LogActivityImpl.
+     *
+     * @param fileHandler    The file handler for reading and writing files.
+     * @param ingestDbService The service for interacting with the ingest database.
+     * @param meterRegistry  The meter registry for Prometheus metrics.
+     */
     public SplitHl7LogActivityImpl(FileHandler fileHandler, IngestDbService ingestDbService, MeterRegistry meterRegistry) {
         this.fileHandler = fileHandler;
         this.ingestDbService = ingestDbService;
@@ -95,6 +105,12 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         return null;
     }
 
+    /**
+     * Splits and transforms an HL7 log file into individual HL7 messages.
+     *
+     * @param input The input containing the log file path and other parameters.
+     * @return The output containing the result of the split and transform operation.
+     */
     @Override
     public SplitAndTransformHl7LogOutput splitAndTransformHl7Log(SplitAndTransformHl7LogInput input) {
         ActivityExecutionContext ctx = Activity.getExecutionContext();
@@ -175,6 +191,12 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         return new SplitAndTransformHl7LogOutput(uploadedList, hl7Paths.size());
     }
 
+    /**
+     * Writes a manifest file containing paths to HL7 files.
+     *
+     * @param input The input containing the list of HL7 file paths and other parameters.
+     * @return The output containing the path to the generated manifest file.
+     */
     @Override
     public Hl7ManifestFileOutput writeHl7ManifestFile(Hl7ManifestFileInput input) {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
@@ -227,7 +249,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     }
 
     /**
-     * Extracts a timestamp from the line immediately preceding the SB tag
+     * Extracts a timestamp from the line immediately preceding the SB tag.
      *
      * @param headerLine Line containing timestamp
      * @return The extracted timestamp
@@ -273,7 +295,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     }
 
     /**
-     * Splits and transforms an HL7 log file into multiple HL7 formatted files
+     * Splits and transforms an HL7 log file into multiple HL7 formatted files.
      *
      * @param logFile     The HL7 log file to process
      * @param destination The URI destination
@@ -330,7 +352,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     }
 
     /**
-     * Validate HL7 message has content, write to file, upload to S3, and return status object
+     * Validate HL7 message has content, write to file, upload to S3, and return status object.
      *
      * @param logFile            Source HL7 log file
      * @param splitHl7LogEntries Split HL7 log entries
@@ -347,7 +369,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         List<FileStatus> results = new ArrayList<>(Collections.nCopies(splitHl7LogEntries.size(), null));
         Path logFilePath = Paths.get(logFile);
         String logFileName = logFilePath.getFileName().toString();
-        String logFileNameWOExtension = logFileName.substring(0, logFileName.lastIndexOf('.'));
+        String logFileNameNoExtension = logFileName.substring(0, logFileName.lastIndexOf('.'));
 
         Map<Integer, String> zippedHl7Files = new HashMap<>();
 
@@ -435,14 +457,14 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
             // Upload the zip file to S3
             ctx.heartbeat("Upload zip to S3");
-            String relativePath = getBucketTimestampPath(logFileNameWOExtension).resolve(logFileNameWOExtension + ".zip").toString();
+            String relativePath = getBucketTimestampPath(logFileNameNoExtension).resolve(logFileNameNoExtension + ".zip").toString();
             String uploadedPath = fileHandler.putWithRetry(byteArrayOutputStream.toByteArray(), relativePath, destination);
 
             // Add successful HL7 files to results
             for (Integer messageNumber : zippedHl7Files.keySet()) {
                 String outputPath = uploadedPath + "/" + zippedHl7Files.get(messageNumber);
                 results.set(messageNumber,
-                    FileStatus.staged(outputPath, FileStatusType.HL7, workflowId, activityId)
+                    FileStatus.staged(outputPath, workflowId, activityId)
                 );
             }
         } catch (Exception e) {
@@ -454,7 +476,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             }
         }
 
-       return IntStream.range(0, results.size())
+        return IntStream.range(0, results.size())
             .mapToObj(i -> {
                 FileStatus status = results.get(i);
                 return status != null

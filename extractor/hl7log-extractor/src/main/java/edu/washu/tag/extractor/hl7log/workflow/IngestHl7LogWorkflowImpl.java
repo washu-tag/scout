@@ -35,6 +35,9 @@ import java.time.Duration;
 import java.util.List;
 import org.slf4j.Logger;
 
+/**
+ * Workflow for ingesting HL7 log files.
+ */
 @WorkflowImpl(taskQueues = PARENT_QUEUE)
 public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
 

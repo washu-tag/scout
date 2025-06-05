@@ -4,6 +4,9 @@ import io.temporal.common.SearchAttributeKey;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * Constants used across the HL7 log extractor application such as queue names, activity names, and date formats.
+ */
 public class Constants {
     public static final String PARENT_QUEUE = "ingest-hl7-log";
     public static final String CHILD_QUEUE = "split-transform-hl7-log";

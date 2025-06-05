@@ -14,9 +14,12 @@ import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.Workflow;
 import java.time.Duration;
 
+/**
+ * Workflow for refreshing the database views used by the ingest dashboard after data has been ingested.
+ */
 @WorkflowImpl(taskQueues = REFRESH_VIEWS_QUEUE)
 public class RefreshIngestDbViewsWorkflowImpl implements RefreshIngestDbViewsWorkflow {
-    private final static int REFRESH_VIEWS_HEARTBEAT_TIMEOUT_SECONDS = REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS * 2;
+    private static final int REFRESH_VIEWS_HEARTBEAT_TIMEOUT_SECONDS = REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS * 2;
 
     private final RefreshIngestDbViewsActivity refreshIngestDbViewsActivity =
         Workflow.newActivityStub(RefreshIngestDbViewsActivity.class,

@@ -22,6 +22,9 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
+/**
+ * Activity to find HL7 files and write their paths to a manifest file.
+ */
 @Component
 @ActivityImpl(taskQueues = BUILD_MANIFEST_QUEUE)
 public class FindHl7FilesImpl implements FindHl7Files {
@@ -30,11 +33,23 @@ public class FindHl7FilesImpl implements FindHl7Files {
     private final FileHandler fileHandler;
     private final IngestDbService ingestDbService;
 
+    /**
+     * Constructor for FindHl7FilesImpl.
+     *
+     * @param fileHandler The file handler to interact with the file system.
+     * @param ingestDbService The service to interact with the ingest database.
+     */
     public FindHl7FilesImpl(FileHandler fileHandler, IngestDbService ingestDbService) {
         this.fileHandler = fileHandler;
         this.ingestDbService = ingestDbService;
     }
 
+    /**
+     * Finds HL7 files in the specified root path and writes their paths to a manifest file.
+     *
+     * @param input The input containing the root path and other parameters.
+     * @return The output containing the path to the generated manifest file.
+     */
     @Override
     public FindHl7FilesOutput findHl7FilesAndWriteManifest(FindHl7FilesInput input) {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
@@ -59,6 +74,12 @@ public class FindHl7FilesImpl implements FindHl7Files {
         }
     }
 
+    /**
+     * Writes error statuses for HL7 files to the database based on a manifest file.
+     *
+     * @param input The input containing the manifest file path and error details.
+     * @return The output indicating the result of the database operation.
+     */
     @Override
     public WriteHl7FilesErrorStatusToDbOutput writeHl7FilesErrorStatusToDb(WriteHl7FilesErrorStatusToDbInput input) {
         ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
