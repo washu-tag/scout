@@ -20,7 +20,7 @@
 
     <property name="charset" value="UTF-8"/>
 
-    <property name="severity" value="${org.checkstyle.google.severity}" default="warning"/>
+    <property name="severity" value="${org.checkstyle.google.severity}" default="error"/>
 
     <property name="fileExtensions" value="java, properties, xml"/>
     <!-- Excludes all 'module-info.java' files              -->
@@ -378,7 +378,7 @@
             <property name="tokens" value="METHOD_DEF, CTOR_DEF, ANNOTATION_FIELD_DEF, COMPACT_CTOR_DEF"/>
         </module>
         <module name="MissingJavadocMethod">
-            <property name="severity" value="info"/>
+            <property name="severity" value="warning"/>
             <property name="scope" value="protected"/>
             <property name="allowMissingPropertyJavadoc" value="true"/>
             <property name="allowedAnnotations" value="Override, Test"/>
@@ -394,7 +394,7 @@
                                  [not(./MODIFIERS/LITERAL_PUBLIC)]]"/>
         </module>
         <module name="MissingJavadocType">
-            <property name="severity" value="info"/>
+            <property name="severity" value="warning"/>
             <property name="scope" value="protected"/>
             <property name="tokens"
                       value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF,
