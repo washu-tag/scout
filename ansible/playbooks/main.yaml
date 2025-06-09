@@ -11,9 +11,6 @@
 - name: Install Helm
   import_playbook: helm.yaml
 
-- name: Install OAuth2 Proxy
-  import_playbook: oauth2_proxy.yaml
-
 - name: Install Postgres
   import_playbook: postgres.yaml
 

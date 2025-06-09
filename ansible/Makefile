@@ -47,9 +47,6 @@ config-traefik: install-k3s
 install-helm:
 	$(ANSIBLE_CMD) playbooks/helm.yaml
 
-install-oauth2-proxy:
-	$(ANSIBLE_CMD) playbooks/oauth2-proxy.yaml
-
 install-postgres:
 	$(ANSIBLE_CMD) playbooks/postgres.yaml
 
