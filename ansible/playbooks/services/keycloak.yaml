@@ -1,0 +1,167 @@
+- name: Download Keycloak CRD - Keycloak
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.5/kubernetes/keycloaks.k8s.keycloak.org-v1.yml
+    dest: /tmp/keycloaks.k8s.keycloak.org-v1.yml
+    mode: '0644'
+
+- name: Download Keycloak CRD - KeycloakRealmImport
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.5/kubernetes/keycloakrealmimports.k8s.keycloak.org-v1.yml
+    dest: /tmp/keycloakrealmimports.k8s.keycloak.org-v1.yml
+    mode: '0644'
+
+- name: Apply Keycloak CRD - Keycloak
+  kubernetes.core.k8s:
+    state: present
+    src: /tmp/keycloaks.k8s.keycloak.org-v1.yml
+
+- name: Apply Keycloak CRD - KeycloakRealmImport
+  kubernetes.core.k8s:
+    state: present
+    src: /tmp/keycloakrealmimports.k8s.keycloak.org-v1.yml
+
+- name: Create Keycloak namespace
+  kubernetes.core.k8s:
+    name: '{{ keycloak_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Create Keycloak DB secret
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: keycloak-db-secret
+      type: Opaque
+      stringData:
+        username: '{{ keycloak_postgres_user }}'
+        password: '{{ keycloak_postgres_password }}'
+
+- name: Create Keycloak Admin secret
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: keycloak-admin-secret
+      type: Opaque
+      stringData:
+        username: '{{ keycloak_bootstrap_admin_user }}'
+        password: '{{ keycloak_bootstrap_admin_password }}'
+        # username: temp-admin
+        # password: 0f7306a74f9645c395d757e347dcf4a2 # TODO: Use a more secure password or vault it
+
+- name: Create Keycloak CR
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: k8s.keycloak.org/v2alpha1 # TODO: Alpha? Look for stable version
+      kind: Keycloak
+      metadata:
+        name: keycloak
+      spec:
+        instances: 1
+        bootstrapAdmin:
+          user:
+            secret: keycloak-admin-secret
+        db:
+          vendor: postgres
+          usernameSecret:
+            name: keycloak-db-secret
+            key: username
+          passwordSecret:
+            name: keycloak-db-secret
+            key: password
+          host: 'postgresql-cluster-rw.{{ postgres_cluster_namespace }}'
+          database: keycloak
+          port: 5432
+          databaseName: keycloak
+        http:
+          httpEnabled: true
+        hostname:
+          hostname: '{{ server_hostname }}'
+        ingress:
+          enabled: false
+        proxy:
+          headers: xforwarded
+        additionalOptions:
+          - name: http-relative-path
+            value: /auth
+
+# The operator wants to use a subdomain and does not appear to support a path-based ingress
+- name: Create Keycloak Ingress
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: keycloak-ingress
+        namespace: '{{ keycloak_namespace }}'
+      spec:
+        ingressClassName: traefik
+        rules:
+          - host: '{{ server_hostname }}'
+            http:
+              paths:
+                - backend:
+                    service:
+                      name: keycloak-service
+                      port:
+                        name: http
+                  path: /auth
+                  pathType: Prefix
+
+- name: Wait for Keycloak to be ready
+  shell: >-
+    kubectl wait --for=condition=Ready --timeout=5m keycloak/keycloak -n {{ keycloak_namespace }}
+  register: keycloak_ready
+  changed_when: false
+  until: keycloak_ready is succeeded
+
+- name: Create Keycloak Config as a Secret
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: keycloak-config
+      data:
+        scout-realm.json: "{{ lookup('template', 'templates/keycloak/scout-realm.json.j2') | b64encode }}"
+
+# https://github.com/adorsys/keycloak-config-cli/issues/1287
+- name: Download Keycloak Config CLI Helm chart
+  ansible.builtin.get_url:
+    url: https://adorsys.github.io/keycloak-config-cli/helm-charts/keycloak-config-cli-6.4.1-SNAPSHOT.tgz
+    dest: /tmp/keycloak-config-cli-6.4.1-SNAPSHOT.tgz
+    mode: '0644'
+
+- name: Run Keycloak Config CLI to Configure Keycloak
+  kubernetes.core.helm:
+    name: keycloak-config-cli
+    release_namespace: '{{ keycloak_namespace }}'
+    create_namespace: true
+    chart_ref: /tmp/keycloak-config-cli-6.4.1-SNAPSHOT.tgz
+    state: present
+    wait: true
+    wait_timeout: 5m
+    atomic: true
+    values:
+      image:
+        repository: 'docker.io/adorsys/keycloak-config-cli'
+        tag: '6.4.0-26'
+      existingConfigSecret: 'keycloak-config'
+      env:
+        KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/auth'
+        KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
+      existingSecret: keycloak-admin-secret

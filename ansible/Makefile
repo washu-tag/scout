@@ -50,6 +50,9 @@ install-helm:
 install-postgres:
 	$(ANSIBLE_CMD) playbooks/postgres.yaml
 
+install-auth:
+	$(ANSIBLE_CMD) playbooks/auth.yaml
+
 install-lake:
 	$(ANSIBLE_CMD) playbooks/lake.yaml
 

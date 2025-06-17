@@ -1,0 +1,28 @@
+hub:
+  config:
+    Authenticator:
+      auto_login: true
+    JupyterHub:
+      authenticator_class: 'oauthenticator.generic.GenericOAuthenticator'
+    GenericOAuthenticator:
+      login_service: 'Keycloak'
+      client_id: 'jupyterhub-client' # TODO: should be a secret
+      client_secret: 'jupyterhub-secret' # TODO: should be a secret
+      oauth_callback_url: 'https://{{ server_hostname }}/jupyter/hub/oauth_callback'
+      authorize_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/auth'
+      token_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/token'
+      userdata_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/userinfo'
+      logout_redirect_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/logout?redirect_uri=https://{{ server_hostname }}/jupyter/hub/logout'
+      userdata_params:
+        state: 'state'
+      username_claim: 'preferred_username'
+      scope:
+        - openid
+        - microprofile-jwt
+      enable_auth_state: true
+      auth_state_groups_key: 'oauth_user.groups'
+      manage_groups: true
+      allowed_groups:
+        - 'jupyterhub-user'
+      admin_groups:
+        - 'jupyterhub-admin'

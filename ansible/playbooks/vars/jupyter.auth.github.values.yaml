@@ -2,6 +2,8 @@ hub:
   config:
     Authenticator:
       auto_login: true
+    JupyterHub:
+      authenticator_class: 'github'
     GitHubOAuthenticator:
       client_id: '{{ github_client_id }}'
       client_secret: '{{ github_client_secret }}'

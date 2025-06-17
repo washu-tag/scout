@@ -1,0 +1,230 @@
+{
+    "enabled": true,
+    "realm": "scout",
+    "displayName": "Scout",
+    "roles": {
+      "realm": [
+        {
+          "name": "scout-admin",
+          "description": "Scout Admin Role",
+          "composite": false,
+          "clientRole": false,
+          "attributes": {}
+        },
+        {
+          "name": "scout-user",
+          "description": "Scout User Role",
+          "composite": false,
+          "clientRole": false,
+          "attributes": {}
+        }
+      ],
+      "client": {
+        "jupyterhub-client": [
+          {
+            "name": "jupyterhub-admin",
+            "description": "Scout Admin Role for JupyterHub Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "jupyterhub-user",
+            "description": "Scout User Role for JupyterHub Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ]
+      }
+    },
+    "groups": [
+      {
+        "name": "scout-admins",
+        "realmRoles": [
+          "scout-admin"
+        ],
+        "clientRoles": {
+          "jupyterhub-client": [
+            "jupyterhub-admin"
+          ]
+        }
+      },
+      {
+        "name": "scout-users",
+        "realmRoles": [
+          "scout-user"
+        ],
+        "clientRoles": {
+          "jupyterhub-client": [
+            "jupyterhub-user"
+          ]
+        }
+      },
+      {
+        "name": "scout-pending-approval"
+      },
+      {
+        "name": "scout-disallowed"
+      }
+    ],
+    "clients": [
+      {
+        "clientId": "jupyterhub-client",
+        "name": "jupyterhub-client",
+        "description": "JupyterHub Client",
+        "enabled": true,
+        "clientAuthenticatorType": "client-secret",
+        "secret": "jupyterhub-secret",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ]
+      }
+    ],
+    "identityProviders": [
+        {
+          "alias": "github",
+          "providerId": "github",
+          "displayName": "GitHub",
+          "enabled": true,
+          "config": {
+            "clientId": "{{ keycloak_gh_client_id }}",
+            "clientSecret": "{{ keycloak_gh_client_secret }}",
+          }
+        }
+    ],
+    "identityProviderMappers": [
+      {
+        "name": "scout-pending-approval-idp-mapper",
+        "identityProviderAlias": "github",
+        "identityProviderMapper": "oidc-hardcoded-group-idp-mapper",
+        "config": {
+          "syncMode": "INHERIT",
+          "group": "/scout-pending-approval"
+        }
+      }
+    ],
+    "authenticationFlows": [
+      {
+        "alias": "browser",
+        "description": "Browser based authentication",
+        "providerId": "basic-flow",
+        "topLevel": true,
+        "builtIn": true,
+        "authenticationExecutions": [
+          {
+            "authenticator": "auth-cookie",
+            "authenticatorFlow": false,
+            "requirement": "ALTERNATIVE",
+            "priority": 10,
+            "autheticatorFlow": false,
+            "userSetupAllowed": false
+          },
+          {
+            "authenticator": "auth-spnego",
+            "authenticatorFlow": false,
+            "requirement": "DISABLED",
+            "priority": 20,
+            "autheticatorFlow": false,
+            "userSetupAllowed": false
+          },
+          {
+            "authenticatorConfig": "github",
+            "authenticator": "identity-provider-redirector",
+            "authenticatorFlow": false,
+            "requirement": "ALTERNATIVE",
+            "priority": 25,
+            "autheticatorFlow": false,
+            "userSetupAllowed": false
+          },
+          {
+            "authenticatorFlow": true,
+            "requirement": "ALTERNATIVE",
+            "priority": 26,
+            "autheticatorFlow": true,
+            "flowAlias": "Organization",
+            "userSetupAllowed": false
+          },
+          {
+            "authenticatorFlow": true,
+            "requirement": "ALTERNATIVE",
+            "priority": 30,
+            "autheticatorFlow": true,
+            "flowAlias": "forms",
+            "userSetupAllowed": false
+          }
+        ]
+      }
+    ],
+    "authenticatorConfig": [
+      {
+        "alias": "github",
+        "config": {
+          "defaultProvider": "github"
+        }
+      }
+    ],
+    "clientScopes": [
+      {
+        "name": "microprofile-jwt",
+        "description": "Microprofile - JWT built-in scope",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "true",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "client roles",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "introspection.token.claim": "true",
+              "multivalued": "true",
+              "userinfo.token.claim": "true",
+              "user.attribute": "foo",
+              "lightweight.claim": "false",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "claim.name": "groups",
+              "jsonType.label": "String"
+            }
+          },
+          {
+            "name": "upn",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-attribute-mapper",
+            "consentRequired": false,
+            "config": {
+              "introspection.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "user.attribute": "username",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "claim.name": "upn",
+              "jsonType.label": "String"
+            }
+          },
+          {
+            "name": "groups",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-realm-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "introspection.token.claim": "true",
+              "multivalued": "true",
+              "user.attribute": "foo",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "claim.name": "groups",
+              "jsonType.label": "String"
+            }
+          }
+        ]
+      }
+    ]
+  }

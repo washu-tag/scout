@@ -97,9 +97,11 @@
                   # Create users for hive and superset databases
                   - CREATE USER {{ hive_postgres_user }} WITH PASSWORD '{{ hive_postgres_password }}';
                   - CREATE USER {{ superset_postgres_user }} WITH PASSWORD '{{ superset_postgres_password }}';
+                  - CREATE USER {{ keycloak_postgres_user }} WITH PASSWORD '{{ keycloak_postgres_password }}';
                   # Create databases
                   - CREATE DATABASE hive OWNER {{ hive_postgres_user }};
                   - CREATE DATABASE superset OWNER {{ superset_postgres_user }};
+                  - CREATE DATABASE keycloak WITH ENCODING 'UTF8' OWNER {{ keycloak_postgres_user }};
 
     - name: Expose metrics service for Prometheus
       kubernetes.core.k8s:

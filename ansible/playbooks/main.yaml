@@ -1,18 +1,21 @@
 ---
-- name: Clone Scout repository
-  import_playbook: scout.yaml
+# - name: Clone Scout repository
+#   import_playbook: scout.yaml
 
-- name: Install K3s
-  import_playbook: k3s.yaml
+# - name: Install K3s
+#   import_playbook: k3s.yaml
 
 - name: Configure traefik
   import_playbook: traefik.yaml
 
-- name: Install Helm
-  import_playbook: helm.yaml
+# - name: Install Helm
+#   import_playbook: helm.yaml
 
 - name: Install Postgres
   import_playbook: postgres.yaml
+
+- name: Install Auth
+  import_playbook: auth.yaml
 
 - name: Install Lake
   import_playbook: lake.yaml
