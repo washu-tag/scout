@@ -56,7 +56,7 @@ prePuller:
 singleuser:
   image:
     name: ghcr.io/washu-tag/pyspark-notebook
-    tag: 1.0.0
+    tag: 1.1.0
     pullPolicy: Never
   cmd: null
   lifecycleHooks:
