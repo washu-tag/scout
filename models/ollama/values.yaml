@@ -1,0 +1,19 @@
+ollama:
+  models:
+    pull:
+      - llama3.2:3b
+ingress:
+  enabled: true
+  ingressClassName: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: ollama-ollama-stripprefix@kubernetescrd
+  hosts:
+    - host: big-03.minmi-algol.ts.net
+      paths:
+        - path: /ollama
+          pathType: Prefix
+persistentVolume:
+  enabled: true
+  size: 100G
+  storageClass: 'ollama-storage'
+  volumeName: 'ollama-pv'
