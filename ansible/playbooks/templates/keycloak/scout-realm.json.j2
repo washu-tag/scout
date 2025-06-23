@@ -70,10 +70,24 @@
     ],
     "clients": [
       {
-        "clientId": "jupyterhub-client",
+        "name": "oauth2-proxy-client",
+        "description": "OAuth2 Proxy Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_oauth2_proxy_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_oauth2_proxy_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ]
+      },
+      {
         "name": "jupyterhub-client",
         "description": "JupyterHub Client",
         "enabled": true,
+        "clientId": "jupyterhub-client",
         "clientAuthenticatorType": "client-secret",
         "secret": "jupyterhub-secret",
         "redirectUris": [
@@ -90,6 +104,7 @@
           "providerId": "github",
           "displayName": "GitHub",
           "enabled": true,
+          "trustEmail": true,
           "config": {
             "clientId": "{{ keycloak_gh_client_id }}",
             "clientSecret": "{{ keycloak_gh_client_secret }}",

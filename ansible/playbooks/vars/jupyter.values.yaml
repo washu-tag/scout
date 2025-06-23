@@ -28,14 +28,16 @@ hub:
   config:
     Authenticator:
       allowed_users: '{{ (jupyter_allowed_users | default([])) }}'
-    JupyterHub:
-      authenticator_class: '{{ jupyter_auth_class | default("dummy") }}'
     Spawner:
       http_timeout: 120
 
 ingress:
   enabled: true
   ingressClassName: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: >
+      kube-system-oauth2-proxy-error@kubernetescrd,
+      kube-system-oauth2-proxy-auth@kubernetescrd
   hosts:
     - '{{ server_hostname }}'
   extraPaths:

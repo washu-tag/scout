@@ -19,6 +19,10 @@ k3s_cluster:
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
 
+    # Oauth2 Proxy config
+    oauth2_proxy_namespace: kube-system
+    oauth2_proxy_cookie_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
     # Keycloak Config
     keycloak_namespace: auth
     keycloak_bootstrap_admin_user: admin # One time only user/pass to bootstrap Keycloak
@@ -27,6 +31,8 @@ k3s_cluster:
     keycloak_postgres_password: keycloak123
     keycloak_gh_client_id: 'your-github-client' # TODO: Handle other auth providers
     keycloak_gh_client_secret: 'your-github-secret'
+    keycloak_oauth2_proxy_client_id: 'oauth2-proxy'
+    keycloak_oauth2_proxy_client_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # TODO keycloak client id and secret for each scout service
 
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)

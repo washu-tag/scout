@@ -12,7 +12,7 @@ hub:
       authorize_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/auth'
       token_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/token'
       userdata_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/userinfo'
-      logout_redirect_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/logout?redirect_uri=https://{{ server_hostname }}/jupyter/hub/logout'
+      logout_redirect_url: 'https://{{ server_hostname }}/oauth2/sign_out'
       userdata_params:
         state: 'state'
       username_claim: 'preferred_username'

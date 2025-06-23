@@ -1,0 +1,80 @@
+- name: Add OAuth2 Proxy Helm repository
+  kubernetes.core.helm_repository:
+    name: oauth2-proxy
+    repo_url: https://oauth2-proxy.github.io/manifests
+
+- name: Create OAuth2 Proxy namespace
+  kubernetes.core.k8s:
+    name: '{{ oauth2_proxy_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Install OAuth2 Proxy with helm
+  kubernetes.core.helm:
+    name: oauth2-proxy
+    chart_ref: oauth2-proxy/oauth2-proxy
+    chart_version: ~7.12.0
+    release_namespace: '{{ oauth2_proxy_namespace }}'
+    release_state: present
+    wait: true
+    wait_timeout: 5m
+    atomic: true
+    values:
+      config:
+        clientID: '{{ keycloak_oauth2_proxy_client_id }}'
+        clientSecret: '{{ keycloak_oauth2_proxy_client_secret }}'
+        cookieSecret: '{{ oauth2_proxy_cookie_secret }}'
+        configFile: |
+          provider = "keycloak-oidc"
+          redirect_url = "https://{{ server_hostname }}/oauth2/callback"
+          oidc_issuer_url = "https://{{ server_hostname }}/auth/realms/scout"
+          allowed_roles = "scout-user"
+          skip_provider_button = false
+          email_domains=  ['*']
+          reverse_proxy = true
+          real_client_ip_header =  "X-Forwarded-For"
+          upstreams = [ "https://{{ server_hostname }}" ]
+      ingress:
+        enabled: true
+        className: traefik
+        path: /oauth2
+        hosts:
+          - '{{ server_hostname }}'
+
+- name: Install OAuth2 Proxy Auth Middleware
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: oauth2-proxy-auth
+        namespace: '{{ oauth2_proxy_namespace }}'
+      spec:
+        forwardAuth:
+          address: 'https://{{ server_hostname }}/oauth2/auth'
+          trustForwardHeader: true
+          authResponseHeaders:
+            - X-Auth-Request-Access-Token
+
+- name: Install OAuth2 Proxy Error Middleware
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: oauth2-proxy-error
+        namespace: '{{ oauth2_proxy_namespace }}'
+      spec:
+        errors:
+          status:
+            - '401-403'
+          # # Not in our traefik version yet, but useful for future reference
+          # statusRewrites:
+          #   - "401-403": 302
+          service:
+            name: oauth2-proxy
+            port: 80
+          query: '/oauth2/sign_in?rd={url}'
