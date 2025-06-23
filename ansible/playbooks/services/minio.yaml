@@ -119,6 +119,11 @@
             volumesPerServer: 1
             size: '{{ minio_storage_size }}'
             storageClassName: "{{ minio_storage_class | default('minio-storage') }}"
+            tolerations:
+              # Ensure MinIO pods can run on control plane nodes
+              - key: 'node-role.kubernetes.io/control-plane'
+                operator: Exists
+                effect: PreferNoSchedule
         metrics:
           enabled: true
           port: 9000
