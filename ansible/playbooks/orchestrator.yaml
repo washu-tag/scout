@@ -1,21 +1,24 @@
 ---
+- name: Create storage directories for Temporal
+  hosts: k3s_cluster
+  gather_facts: false
+  vars_files:
+    - vars/orchestrator_storage.yaml
+  tasks:
+    - name: Create storage directories
+      include_tasks: tasks/storage_dir_create.yaml
+
 - name: Install Temporal and workers
   hosts: server
   gather_facts: false
   environment:
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
+  vars_files:
+    - vars/orchestrator_storage.yaml
   tasks:
-    - name: Setup storage
+    - name: Set up storage
       include_tasks: tasks/storage_setup.yaml
-      vars:
-        storage_definitions:
-          - name: cassandra
-            size: '300Gi'
-            path: '{{ temporal_cassandra_dir }}'
-          - name: elasticsearch
-            size: '100Gi'
-            path: '{{ temporal_elasticsearch_dir }}'
 
     - name: Add cert-manager Helm repository
       kubernetes.core.helm_repository:

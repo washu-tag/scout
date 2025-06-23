@@ -1,21 +1,24 @@
 ---
+- name: Create storage directories for Jupyter
+  hosts: k3s_cluster
+  gather_facts: false
+  vars_files:
+    - vars/jupyter_storage.yaml
+  tasks:
+    - name: Create storage directories
+      include_tasks: tasks/storage_dir_create.yaml
+
 - name: Install JupyterHub
   hosts: server
   gather_facts: false
   environment:
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
+  vars_files:
+    - vars/jupyter_storage.yaml
   tasks:
-    - name: Setup storage
+    - name: Set up storage
       include_tasks: tasks/storage_setup.yaml
-      vars:
-        storage_definitions:
-          - name: jupyter-hub
-            size: '15Gi'
-            path: '{{ jupyter_dir }}/hub'
-          - name: jupyter-singleuser
-            size: '250Gi'
-            path: '{{ jupyter_dir }}/singleuser'
 
     - name: Create Jupyter namespace
       kubernetes.core.k8s:

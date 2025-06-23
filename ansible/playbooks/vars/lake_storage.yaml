@@ -1,0 +1,7 @@
+minio_storage_size: 750Gi
+minio_storage_class: minio-storage
+
+storage_definitions:
+  - name: minio
+    size: '{{ minio_storage_size }}'
+    path: '{{ minio_dir }}'

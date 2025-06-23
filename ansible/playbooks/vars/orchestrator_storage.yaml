@@ -1,0 +1,7 @@
+storage_definitions:
+  - name: cassandra
+    size: '300Gi'
+    path: '{{ temporal_cassandra_dir }}'
+  - name: elasticsearch
+    size: '100Gi'
+    path: '{{ temporal_elasticsearch_dir }}'

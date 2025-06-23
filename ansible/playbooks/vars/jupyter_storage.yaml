@@ -1,0 +1,7 @@
+storage_definitions:
+  - name: jupyter-hub
+    size: '15Gi'
+    path: '{{ jupyter_dir }}/hub'
+  - name: jupyter-singleuser
+    size: '250Gi'
+    path: '{{ jupyter_dir }}/singleuser'

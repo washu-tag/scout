@@ -1,14 +1,3 @@
-- name: Setup storage
-  include_tasks: tasks/storage_setup.yaml
-  vars:
-    storage_definitions:
-      - name: loki
-        size: '200Gi'
-        path: '{{ loki_dir }}'
-      - name: grafana
-        size: '50Gi'
-        path: '{{ grafana_dir }}'
-
 - name: Add Grafana Helm repository
   kubernetes.core.helm_repository:
     name: grafana

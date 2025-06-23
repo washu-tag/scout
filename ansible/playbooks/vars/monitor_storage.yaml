@@ -1,0 +1,4 @@
+storage_definitions:
+  - name: prometheus
+    size: '200Gi'
+    path: '{{ prometheus_dir }}'
