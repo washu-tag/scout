@@ -28,6 +28,10 @@ hub:
   config:
     Authenticator:
       allowed_users: '{{ (jupyter_allowed_users | default([])) }}'
+    JupyterHub:
+      authenticator_class: '{{ jupyter_auth_class | default("dummy") }}'
+    Spawner:
+      http_timeout: 120
 
 ingress:
   enabled: true
@@ -52,7 +56,7 @@ prePuller:
 singleuser:
   image:
     name: ghcr.io/washu-tag/pyspark-notebook
-    tag: 1.0.0
+    tag: 1.1.0
     pullPolicy: Never
   cmd: null
   lifecycleHooks:

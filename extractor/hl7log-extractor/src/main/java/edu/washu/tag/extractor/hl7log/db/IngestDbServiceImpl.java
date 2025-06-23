@@ -16,16 +16,27 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service methods to insert file statuses and HL7 files with retry capabilities.
+ */
 @Service
 public class IngestDbServiceImpl implements IngestDbService {
     private static final Logger logger = Workflow.getLogger(IngestDbServiceImpl.class);
 
     private final JdbcTemplate jdbcTemplate;
 
+    /**
+     * Constructor for IngestDbServiceImpl.
+     *
+     * @param jdbcTemplate The JdbcTemplate to interact with the database.
+     */
     public IngestDbServiceImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Post-initialization method to log database connection parameters.
+     */
     @PostConstruct
     public void postInitLogging() {
         try {
@@ -133,33 +144,5 @@ public class IngestDbServiceImpl implements IngestDbService {
             .mapToObj(i -> new Hl7File(hl7FileStatuses.get(i).filePath(), logPath, i, date))
             .toList();
         batchInsertHl7Files(hl7Files);
-    }
-
-    @Override
-    public void callProcedure(String procedureName, Object... args) {
-        // Construct the SQL call string
-        StringBuilder callString = new StringBuilder("CALL " + procedureName + "(");
-
-        // Add placeholders for parameters
-        if (args.length > 0) {
-            callString.append(
-                String.join(
-                    ", ",
-                    IntStream.range(0, args.length)
-                        .mapToObj(i -> "?")
-                        .toList()
-                )
-            );
-        }
-        callString.append(")");
-
-        if (logger.isDebugEnabled()) {
-            ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
-            logger.debug("WorkflowId {} ActivityId {} - Calling database procedure: {}",
-                activityInfo.getWorkflowId(), activityInfo.getActivityId(), procedureName);
-        }
-
-        // Execute the procedure call
-        jdbcTemplate.update(callString.toString(), args);
     }
 }

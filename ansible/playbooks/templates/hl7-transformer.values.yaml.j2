@@ -33,6 +33,12 @@ volumeMounts:
     subPath: spark-defaults.conf
 ports:
   - containerPort: 8000
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: 8000
+  initialDelaySeconds: 15
+  periodSeconds: 10
 livenessProbe:
   httpGet:
     path: /healthz

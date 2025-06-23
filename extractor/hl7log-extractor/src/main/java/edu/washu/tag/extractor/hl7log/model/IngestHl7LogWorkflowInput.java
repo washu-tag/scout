@@ -9,12 +9,12 @@ package edu.washu.tag.extractor.hl7log.model;
  *                 If logsRootPath is provided and this is not, every .log file under logsRootPath will be used.
  * @param scratchSpaceRootPath Root path to use for temporary files. Will be created if it does not exist.
  * @param hl7OutputPath Path to write HL7 files.
- * @param splitAndUploadTimeout The timeout for the split and upload job
- * @param splitAndUploadHeartbeatTimeout The timeout for the split and upload job heartbeat
- * @param splitAndUploadConcurrency The concurrency for the split and upload job (how many logs should we process concurrently?)
+ * @param splitAndUploadTimeout The timeout for the split and upload job in minutes.
+ * @param splitAndUploadHeartbeatTimeout The heartbeat timeout for the split and upload job in minutes.
+ * @param splitAndUploadConcurrency How many logs we should process before continuing as new.
  * @param modalityMapPath Path to read modality map file, which is the source of the modality column in Delta Lake table.
- * @param reportTableName Name of the Delta Lake table to write to.
- * @param deltaIngestTimeout The timeout for the delta lake ingest job
+ * @param reportTableName Name of the report table to be created in Delta Lake.
+ * @param deltaIngestTimeout The timeout for the delta lake ingest job in minutes.
  * @param continued Do not set this on initial workflow run. Parameters needed to resume when workflow is Continued As New.
  */
 public record IngestHl7LogWorkflowInput(

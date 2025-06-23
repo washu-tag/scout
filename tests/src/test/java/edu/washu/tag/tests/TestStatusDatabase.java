@@ -460,9 +460,9 @@ public class TestStatusDatabase extends BaseTest {
 
                         // Find the expected hl7 file object corresponding to this row by message number
                         Hl7FilesRow hl7FileRow = null;
-                        for (Hl7FilesRow _hl7FileRow : expectedHl7Files) {
-                            if (resultSet.getInt(MESSAGE_NUMBER) == _hl7FileRow.messageNumber) {
-                                hl7FileRow = _hl7FileRow;
+                        for (Hl7FilesRow row : expectedHl7Files) {
+                            if (resultSet.getInt(MESSAGE_NUMBER) == row.messageNumber) {
+                                hl7FileRow = row;
                                 break;
                             }
                         }
@@ -572,7 +572,7 @@ public class TestStatusDatabase extends BaseTest {
         FileStatus fileStatus
     ) {}
 
-    private static abstract class SqlQuery {
+    private abstract static class SqlQuery {
         protected final String tableOrView;
         protected final String filterColumn;
         protected final String logDate;
@@ -632,7 +632,10 @@ public class TestStatusDatabase extends BaseTest {
         @Override
         String build() {
             return String.format(
-                "SELECT tv.* FROM %s tv JOIN hl7_files h on h.hl7_file_path = tv.file_path WHERE tv.%s AND h.%s LIKE '%%/%s.log' ORDER BY tv.processed_at, tv.file_path ASC",
+                "SELECT tv.* FROM %s tv "
+                    + "JOIN hl7_files h on h.hl7_file_path = tv.file_path "
+                    + "WHERE tv.%s AND h.%s LIKE '%%/%s.log' "
+                    + "ORDER BY tv.processed_at, tv.file_path ASC",
                 tableOrView,
                 buildWorkflowQueryRestriction(),
                 filterColumn,

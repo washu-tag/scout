@@ -4,6 +4,9 @@ import io.temporal.common.SearchAttributeKey;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * Constants used across the HL7 log extractor application such as queue names, activity names, and date formats.
+ */
 public class Constants {
     public static final String PARENT_QUEUE = "ingest-hl7-log";
     public static final String CHILD_QUEUE = "split-transform-hl7-log";
@@ -16,4 +19,6 @@ public class Constants {
         SearchAttributeKey.forOffsetDateTime(Constants.TEMPORAL_SCHEDULED_START_TIME);
     public static final DateTimeFormatter YYYYMMDD_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
     public static final String REFRESH_VIEWS_PROCEDURE_NAME = "refresh_materialized_views";
+    public static final int REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS = 5;
+    public static final int REFRESH_VIEWS_TIMEOUT_HOURS = 3;
 }
