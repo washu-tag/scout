@@ -35,6 +35,29 @@
             "clientRole": true,
             "attributes": {}
           }
+        ],
+        "{{ keycloak_grafana_client_id }}": [
+          {
+            "name": "grafana-admin",
+            "description": "Scout Admin Role for Grafana Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "grafana-editor",
+            "description": "Scout Editor Role for Grafana Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "grafana-viewer",
+            "description": "Scout Viewer Role for Grafana Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
         ]
       }
     },
@@ -47,6 +70,9 @@
         "clientRoles": {
           "jupyterhub-client": [
             "jupyterhub-admin"
+          ],
+          "{{ keycloak_grafana_client_id }}": [
+            "grafana-admin"
           ]
         }
       },
@@ -90,6 +116,20 @@
         "clientId": "jupyterhub-client",
         "clientAuthenticatorType": "client-secret",
         "secret": "jupyterhub-secret",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ]
+      },
+      {
+        "name": "grafana-client",
+        "description": "Grafana Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_grafana_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_grafana_client_secret }}",
         "redirectUris": [
           "*"
         ],

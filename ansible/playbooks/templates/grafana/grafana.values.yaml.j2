@@ -1,10 +1,24 @@
 grafana.ini:
   auth:
     disable_login_form: true
-  auth.anonymous:
+  auth.generic_oauth:
     enabled: true
-    org_name: Main Org.
-    org_role: Admin
+    name: Keycloak-OAuth
+    allow_sign_up: true
+    auto_login: true
+    client_id: "{{ keycloak_grafana_client_id }}"
+    client_secret: $__file{/etc/secrets/keycloak-grafana/client-secret}
+    scopes: openid microprofile-jwt
+    email_attribute_path: email
+    login_attribute_path: preferred_username
+    name_attribute_path: name
+    auth_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/auth'
+    token_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/token'
+    api_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/userinfo'
+    role_attribute_path: contains(groups[*], 'grafana-admin') && 'Admin' || 'None'
+    role_attribute_strict: true
+    allow_assign_grafana_admin: true
+    signout_redirect_url: 'https://{{ server_hostname }}/oauth2/sign_out'
   server:
     root_url: 'https://{{ server_hostname }}/grafana'
     serve_from_sub_path: true
@@ -23,8 +37,14 @@ grafana.ini:
     skip_verify: "{{ grafana_smtp_skip_verify | default(false) }}"
 {% endif %}
 
-{% if grafana_alert_contact_point == 'email' %}
 extraSecretMounts:
+  - name: keycloak-grafana-client-secret
+    mountPath: /etc/secrets/keycloak-grafana
+    secretName: keycloak-grafana-client-secret
+    readOnly: true
+    optional: false
+    subPath: ""
+{% if grafana_alert_contact_point == 'email' %}
   - name: smtp-grafana
     mountPath: /etc/secrets/smtp-grafana
     secretName: smtp-grafana
@@ -36,6 +56,10 @@ extraSecretMounts:
 ingress:
   enabled: true
   ingressClassName: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: >
+      kube-system-oauth2-proxy-error@kubernetescrd,
+      kube-system-oauth2-proxy-auth@kubernetescrd
   path: /grafana
   hosts:
     - '{{ server_hostname }}'

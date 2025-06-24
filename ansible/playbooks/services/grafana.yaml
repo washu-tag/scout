@@ -175,6 +175,21 @@
         password: '{{ grafana_smtp_password }}'
   when: grafana_alert_contact_point == 'email'
 
+- name: Create OAuth2 Client Secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: keycloak-grafana-client-secret
+        namespace: '{{ grafana_namespace }}'
+        labels:
+          grafana_alert: '1'
+      type: Opaque
+      stringData:
+        client-secret: '{{ keycloak_grafana_client_secret }}'
+
 - name: Create postgres datasource secret
   kubernetes.core.k8s:
     state: present
