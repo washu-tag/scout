@@ -5,7 +5,7 @@
       apiVersion: storage.k8s.io/v1
       kind: StorageClass
       metadata:
-        name: '{{ item.name }}-storage'
+        name: '{{ item.storage_class_name }}'
       provisioner: kubernetes.io/no-provisioner
       volumeBindingMode: WaitForFirstConsumer
   loop: '{{ storage_definitions }}'
@@ -17,7 +17,7 @@
       apiVersion: v1
       kind: PersistentVolume
       metadata:
-        name: '{{ item.name }}-pv'
+        name: '{{ item.pv_name }}'
       spec:
         capacity:
           storage: '{{ item.size }}'
@@ -25,7 +25,7 @@
         accessModes:
           - ReadWriteOnce
         persistentVolumeReclaimPolicy: Retain
-        storageClassName: '{{ item.name }}-storage'
+        storageClassName: '{{ item.storage_class_name }}'
         hostPath:
           path: '{{ item.path }}'
   loop: '{{ storage_definitions }}'

@@ -1,4 +1,9 @@
+prometheus_name: prometheus
+prometheus_storage_class: '{{ prometheus_name }}-storage'
+
 storage_definitions:
-  - name: prometheus
+  - name: '{{ prometheus_name }}'
     size: "{{ prometheus_storage_size | default('100Gi') }}"
     path: '{{ prometheus_dir }}'
+    pv_name: '{{ prometheus_name }}-pv'
+    storage_class_name: '{{ prometheus_storage_class }}'

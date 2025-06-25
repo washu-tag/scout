@@ -73,12 +73,12 @@
             size: 1
             storageConfig:
               cassandraDataVolumeClaimSpec:
-                storageClassName: cassandra-storage
+                storageClassName: '{{ cassandra_storage_class }}'
                 accessModes:
                   - ReadWriteOnce
                 resources:
                   requests:
-                    storage: 300Gi
+                    storage: "{{ cassandra_storage_size | default('100Gi') }}"
             racks:
               - name: r1
             config:
@@ -141,10 +141,10 @@
             volumeClaimTemplate:
               accessModes:
                 - ReadWriteOnce
-              storageClassName: elasticsearch-storage
+              storageClassName: '{{ elasticsearch_storage_class }}'
               resources:
                 requests:
-                  storage: 100Gi
+                  storage: '{{ elasticsearch_storage_size | default("100Gi") }}'
 
           web:
             additionalEnv:
