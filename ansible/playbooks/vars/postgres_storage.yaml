@@ -1,4 +1,4 @@
 storage_definitions:
   - name: postgres
-    size: 100Mi
+    size: "{{ postgres_storage_size | default('100Gi') }}"
     path: '{{ postgres_dir }}'

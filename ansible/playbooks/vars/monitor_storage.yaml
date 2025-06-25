@@ -1,4 +1,4 @@
 storage_definitions:
   - name: prometheus
-    size: '200Gi'
+    size: "{{ prometheus_storage_size | default('100Gi') }}"
     path: '{{ prometheus_dir }}'

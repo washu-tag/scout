@@ -109,7 +109,7 @@
           - servers: '{{ minio_server_count | default(1) }}'
             name: pool-0
             volumesPerServer: 1
-            size: '{{ minio_storage_size }}'
+            size: "{{ minio_storage_size | default('100Gi') }}"
             storageClassName: "{{ minio_storage_class | default('minio-storage') }}"
             tolerations:
               # Ensure MinIO pods can run on control plane nodes

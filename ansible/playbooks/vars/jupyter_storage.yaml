@@ -1,7 +1,7 @@
 storage_definitions:
   - name: jupyter-hub
-    size: '15Gi'
+    size: "{{ jupyter_hub_storage_size | default('15Gi') }}"
     path: '{{ jupyter_dir }}/hub'
   - name: jupyter-singleuser
-    size: '250Gi'
+    size: "{{ jupyter_singleuser_storage_size | default('250Gi') }}"
     path: '{{ jupyter_dir }}/singleuser'

@@ -28,6 +28,10 @@ k3s_cluster:
     s3_loki_writer: loki-writer
     s3_loki_writer_secret: lokiwriter123
 
+    # Jupyter config
+    jupyter_hub_storage_size: 10Gi
+    jupyter_singleuser_storage_size: 10Gi
+
     # Postgres config
     postgres_user: scout
     postgres_password: scout123
@@ -38,6 +42,7 @@ k3s_cluster:
     superset_postgres_password: superset123
     postgres_resources: {} # No resource requests/limits
     postgres_parameters: {} # Use PG defaults
+    postgres_storage_size: 10Gi
 
     # Namespaces that can be changed
     hive_namespace: hive
