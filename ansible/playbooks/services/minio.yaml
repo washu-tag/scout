@@ -116,6 +116,15 @@
               - key: 'node-role.kubernetes.io/control-plane'
                 operator: Exists
                 effect: PreferNoSchedule
+            topologySpreadConstraints:
+              # Ensure MinIO pods are spread across nodes
+              - maxSkew: 1
+                topologyKey: kubernetes.io/hostname
+                whenUnsatisfiable: DoNotSchedule
+                nodeTaintsPolicy: Honor
+                labelSelector:
+                  matchLabels:
+                    v1.min.io/tenant: scout
         metrics:
           enabled: true
           port: 9000
