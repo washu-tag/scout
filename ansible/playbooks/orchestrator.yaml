@@ -88,10 +88,10 @@
       register: cassandra_ready
       changed_when: false
 
-    - name: Add Temporal Helm repository
-      kubernetes.core.helm_repository:
-        name: temporal
-        repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
+    # - name: Add Temporal Helm repository
+    #   kubernetes.core.helm_repository:
+    #     name: temporal
+    #     repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
 
     - name: Install/Upgrade Temporal Helm chart
       register: temporal_helm_result
@@ -129,6 +129,14 @@
                       default:
                         consistency: 'local_quorum'
                         serialConsistency: 'local_serial'
+              # authorization:
+              #   jwtKeyProvider:
+              #     keySourceURIs:
+              #       - https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/certs
+              #     refreshInterval: 1m
+              #   permissionsClaimName: groups
+              #   authorizer: default
+              #   claimMapper: default
           cassandra:
             enabled: false
           elasticsearch:
@@ -147,9 +155,25 @@
             additionalEnv:
               - name: TEMPORAL_UI_PUBLIC_PATH
                 value: /temporal
+              - name: TEMPORAL_AUTH_ENABLED
+                value: 'true'
+              - name: TEMPORAL_AUTH_PROVIDER_URL
+                value: 'https://{{ server_hostname }}/auth/realms/scout'
+              - name: TEMPORAL_AUTH_CLIENT_ID
+                value: '{{ keycloak_temporal_client_id }}'
+              - name: TEMPORAL_AUTH_CLIENT_SECRET
+                value: '{{ keycloak_temporal_client_secret }}'
+              - name: TEMPORAL_AUTH_CALLBACK_URL
+                value: 'https://{{ server_hostname }}/temporal/auth/sso/callback'
+              - name: TEMPORAL_AUTH_SCOPES
+                value: openid microprofile-jwt
             ingress:
               enabled: true
               ingressClassName: traefik
+              annotations:
+                traefik.ingress.kubernetes.io/router.middlewares: >
+                  kube-system-oauth2-proxy-error@kubernetescrd,
+                  kube-system-oauth2-proxy-auth@kubernetescrd
               hosts:
                 - '{{ server_hostname }}/temporal'
 

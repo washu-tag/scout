@@ -35,6 +35,8 @@ k3s_cluster:
     keycloak_oauth2_proxy_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_grafana_client_id: 'grafana'
     keycloak_grafana_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    keycloak_temporal_client_id: 'temporal'
+    keycloak_temporal_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # TODO keycloak client id and secret for each scout service
 
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)

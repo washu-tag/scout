@@ -58,6 +58,22 @@
             "clientRole": true,
             "attributes": {}
           }
+        ],
+        "{{ keycloak_temporal_client_id }}": [
+          {
+            "name": "temporal-system:admin",
+            "description": "Scout Admin Role for Temporal System",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "default:admin",
+            "description": "Scout Admin Role for Temporal Default Namespace",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
         ]
       }
     },
@@ -73,6 +89,10 @@
           ],
           "{{ keycloak_grafana_client_id }}": [
             "grafana-admin"
+          ],
+          "{{ keycloak_temporal_client_id }}": [
+            "temporal-system:admin",
+            "default:admin"
           ]
         }
       },
@@ -130,6 +150,20 @@
         "clientId": "{{ keycloak_grafana_client_id }}",
         "clientAuthenticatorType": "client-secret",
         "secret": "{{ keycloak_grafana_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ]
+      },
+      {
+        "name": "temporal-client",
+        "description": "Temporal Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_temporal_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_temporal_client_secret }}",
         "redirectUris": [
           "*"
         ],
