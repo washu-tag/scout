@@ -1,0 +1,7 @@
+---
+- name: Create storage directory
+  ansible.builtin.file:
+    path: '{{ item.path }}'
+    state: directory
+    mode: '0777'
+  loop: '{{ storage_definitions }}'

@@ -1,11 +1,3 @@
-- name: Setup storage
-  include_tasks: tasks/storage_setup.yaml
-  vars:
-    storage_definitions:
-      - name: prometheus
-        size: '200Gi'
-        path: '{{ prometheus_dir }}'
-
 - name: Add Prometheus Helm repository
   kubernetes.core.helm_repository:
     name: prometheus-community

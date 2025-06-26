@@ -18,6 +18,7 @@ k3s_cluster:
     kubeconfig_group: root
 
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
+    minio_storage_size: 5Gi
     s3_username: minio
     s3_password: minio123
     s3_region: us-east-1
@@ -27,6 +28,13 @@ k3s_cluster:
     s3_lake_writer_secret: lakewriter123
     s3_loki_writer: loki-writer
     s3_loki_writer_secret: lokiwriter123
+
+    # Monitor config
+    prometheus_storage_size: 1Gi
+
+    # Jupyter config
+    jupyter_hub_storage_size: 1Gi
+    jupyter_singleuser_storage_size: 1Gi
 
     # Postgres config
     postgres_user: scout
@@ -38,6 +46,11 @@ k3s_cluster:
     superset_postgres_password: superset123
     postgres_resources: {} # No resource requests/limits
     postgres_parameters: {} # Use PG defaults
+    postgres_storage_size: 5Gi
+
+    # Orchestrator config
+    cassandra_storage_size: 1Gi
+    elasticsearch_storage_size: 1Gi
 
     # Namespaces that can be changed
     hive_namespace: hive

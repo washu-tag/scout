@@ -3,8 +3,6 @@
 minio_tenant_name: scout
 
 # Storage configuration
-minio_storage_size: 750Gi
-minio_storage_class: minio-storage
 minio_server_count: 1
 
 # MinIO versions

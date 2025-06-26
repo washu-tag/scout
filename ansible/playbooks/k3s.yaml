@@ -94,6 +94,14 @@
       retries: 30
       delay: 5
 
+    - name: Apply taint to control plane node
+      kubernetes.core.k8s_taint:
+        name: '{{ inventory_hostname }}'
+        state: present
+        taints:
+          - key: node-role.kubernetes.io/control-plane
+            effect: PreferNoSchedule
+
 ################################################################################
 - hosts: agents
   name: Install k3s on agent nodes

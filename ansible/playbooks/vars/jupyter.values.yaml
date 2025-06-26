@@ -24,7 +24,7 @@ hub:
       services: [prometheus]
   db:
     pvc:
-      storageClassName: jupyter-hub-storage
+      storageClassName: '{{ jupyter_hub_storage_class }}'
   config:
     Authenticator:
       allowed_users: '{{ (jupyter_allowed_users | default([])) }}'
@@ -84,7 +84,7 @@ singleuser:
   storage:
     type: static
     static:
-      pvcName: jupyter-singleuser-pvc
+      pvcName: '{{ jupyter_singleuser_pvc }}'
       subPath: '{username}'
     capacity: 10Gi
     extraVolumes:
