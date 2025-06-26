@@ -108,7 +108,7 @@
         pools:
           - servers: '{{ minio_server_count | default(1) }}'
             name: pool-0
-            volumesPerServer: 1
+            volumesPerServer: 2
             size: "{{ minio_storage_size | default('100Gi') }}"
             storageClassName: "{{ minio_storage_class | default('minio-storage') }}"
             tolerations:
