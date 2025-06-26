@@ -2,8 +2,13 @@ minio_name: minio
 minio_storage_class: minio-storage
 
 storage_definitions:
-  - name: '{{ minio_name }}'
+  - name: '{{ minio_name }}0'
     size: "{{ minio_storage_size | default('100Gi') }}"
-    path: '{{ minio_dir }}'
-    pv_name: '{{ minio_name }}-pv'
+    path: '{{ minio_dir }}0'
+    pv_name: '{{ minio_name }}-pv0'
+    storage_class_name: '{{ minio_storage_class }}'
+  - name: '{{ minio_name }}1'
+    size: "{{ minio_storage_size | default('100Gi') }}"
+    path: '{{ minio_dir }}1'
+    pv_name: '{{ minio_name }}-pv1'
     storage_class_name: '{{ minio_storage_class }}'
