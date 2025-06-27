@@ -19,6 +19,7 @@ k3s_cluster:
 
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
     minio_storage_size: 5Gi
+    minio_server_count: 1
     s3_username: minio
     s3_password: minio123
     s3_region: us-east-1
