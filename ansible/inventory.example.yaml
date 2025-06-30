@@ -38,6 +38,8 @@ k3s_cluster:
 
     # Monitor config
     prometheus_storage_size: 100Gi
+    loki_storage_size: 100Gi
+    grafana_storage_size: 50Gi
     grafana_alert_contact_point: slack # email or slack
     grafana_smtp_host: '' # Include the port in the value
     grafana_smtp_user: $(echo $SMTP_USER | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -108,6 +110,7 @@ k3s_cluster:
     postgres_cluster_namespace: cloudnative-pg
     prometheus_namespace: prometheus
     grafana_namespace: grafana
+    loki_namespace: loki
 
     # Local paths
     base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
@@ -158,7 +161,6 @@ k3s_cluster:
     # Do not change the values below, they are hard-coded various places
     extractor_namespace: extractor
     minio_tenant_namespace: minio-scout
-    loki_namespace: loki
     temporal_namespace: temporal
 
     # computed values, used across playbooks

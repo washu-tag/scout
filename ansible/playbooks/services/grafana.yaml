@@ -31,8 +31,7 @@
     release_namespace: '{{ loki_namespace }}'
     update_repo_cache: true
     chart_version: ~6.29.0
-    values_files:
-      - '{{ scout_repo_dir }}/helm/loki/loki-values.yaml'
+    values: "{{ lookup('template', 'templates/loki.values.yaml.j2') | from_yaml }}"
     state: present
 
 - name: Install Promtail using Helm
@@ -42,8 +41,12 @@
     release_namespace: '{{ loki_namespace }}'
     update_repo_cache: true
     chart_version: ~6.16.6
-    values_files:
-      - '{{ scout_repo_dir }}/helm/loki/promtail-values.yaml'
+    values:
+      promtail:
+        enabled: true
+        config:
+          clients:
+            - url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local:3100/loki/api/v1/push'
     state: present
 
 - name: Create Grafana namespace
