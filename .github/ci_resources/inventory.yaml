@@ -31,6 +31,8 @@ k3s_cluster:
 
     # Monitor config
     prometheus_storage_size: 1Gi
+    loki_storage_size: 1Gi
+    grafana_storage_size: 1Gi
 
     # Jupyter config
     jupyter_hub_storage_size: 1Gi

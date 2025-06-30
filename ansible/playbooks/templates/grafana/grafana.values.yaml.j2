@@ -76,7 +76,7 @@ sidecar:
 
 persistence:
   enabled: true
-  storageClassName: grafana-storage
+  storageClassName: '{{ grafana_storage_class }}'
 
 livenessProbe:
   initialDelaySeconds: 180

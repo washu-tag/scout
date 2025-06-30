@@ -38,6 +38,8 @@ k3s_cluster:
 
     # Monitor config
     prometheus_storage_size: 100Gi
+    loki_storage_size: 100Gi
+    grafana_storage_size: 50Gi
     grafana_alert_contact_point: slack # email or slack
     grafana_smtp_host: '' # Include the port in the value
     grafana_smtp_user: $(echo $SMTP_USER | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
