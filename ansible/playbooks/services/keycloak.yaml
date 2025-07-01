@@ -93,7 +93,7 @@
           headers: xforwarded
         additionalOptions:
           - name: http-relative-path
-            value: /auth
+            value: /kc
 
 # The operator wants to use a subdomain and does not appear to support a path-based ingress
 - name: Create Keycloak Ingress
@@ -117,7 +117,7 @@
                       name: keycloak-service
                       port:
                         name: http
-                  path: /auth
+                  path: /kc
                   pathType: Prefix
 
 - name: Wait for Keycloak to be ready
@@ -162,6 +162,6 @@
         tag: '6.4.0-26'
       existingConfigSecret: 'keycloak-config'
       env:
-        KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/auth'
+        KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/kc'
         KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
       existingSecret: keycloak-admin-secret

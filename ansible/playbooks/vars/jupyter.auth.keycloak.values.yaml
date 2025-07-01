@@ -9,9 +9,9 @@ hub:
       client_id: 'jupyterhub-client' # TODO: should be a secret
       client_secret: 'jupyterhub-secret' # TODO: should be a secret
       oauth_callback_url: 'https://{{ server_hostname }}/jupyter/hub/oauth_callback'
-      authorize_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/auth'
-      token_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/token'
-      userdata_url: 'https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/userinfo'
+      authorize_url: 'https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/auth'
+      token_url: 'https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/token'
+      userdata_url: 'https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/userinfo'
       logout_redirect_url: 'https://{{ server_hostname }}/oauth2/sign_out'
       userdata_params:
         state: 'state'
