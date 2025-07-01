@@ -1,0 +1,53 @@
+---
+- name: Create storage directories for Orthanc
+  hosts: k3s_cluster
+  gather_facts: false
+  vars_files:
+    - vars/orthanc_storage.yaml
+  tasks:
+    - name: Create storage directories
+      include_tasks: tasks/storage_dir_create.yaml
+
+- name: Install Orthanc
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  vars_files:
+    - vars/orthanc_storage.yaml
+  tasks:
+    - name: Set up storage
+      include_tasks: tasks/storage_setup.yaml
+
+    - name: Create Orthanc namespace
+      kubernetes.core.k8s:
+        name: '{{ orthanc_namespace }}'
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Install Orthanc using Helm
+      kubernetes.core.helm:
+        name: orthanc
+        release_namespace: '{{ orthanc_namespace }}'
+        create_namespace: false
+        chart_ref: '{{ scout_repo_dir }}/helm/orthanc'
+        state: present
+        wait: true
+        wait_timeout: 5m
+        atomic: true
+        values_files:
+          - '{{ scout_repo_dir }}/helm/orthanc/values.yaml'
+        values:
+          ingress:
+            enabled: true
+            className: traefik
+            annotations:
+              traefik.ingress.kubernetes.io/router.middlewares: >
+                kube-system-explorer-strip-prefix@kubernetescrd
+            hosts:
+              - host: '{{ server_hostname }}'
+                paths:
+                  - path: /orthanc
+                    pathType: Prefix
