@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Scout is a radiology report exploration platform built on Kubernetes that processes and analyzes HL7 medical imaging reports. The platform uses a microservices architecture with the following key components:
 
 - **Launchpad**: React frontend (landing page and service navigation)
+- **Authentication**: Keycloak (IdP) + OAuth2 Proxy (authentication middleware)
 - **Extractor**: Data ingestion services (Java + Python)
 - **Orchestrator**: Temporal workflow management
 - **Lake**: Data storage (MinIO + Delta Lake + Hive Metastore)
@@ -46,6 +47,7 @@ cd ansible/
 make all                        # Deploy full Scout platform
 make deps                       # Install Ansible dependencies
 make install-k3s               # Install Kubernetes cluster
+make install-auth              # Deploy Keycloak and OAuth2 Proxy
 make install-launchpad         # Deploy launchpad service
 make install-extractor         # Deploy extractor services
 make install-analytics         # Deploy analytics stack
@@ -76,6 +78,7 @@ pre-commit install
 
 ### Key Technologies
 - **Frontend**: React 19, Vite, TailwindCSS
+- **Authentication**: Keycloak (OIDC/OAuth2), OAuth2 Proxy, Traefik (reverse proxy)
 - **Backend**: Java 21 (Spring Boot), Python 3.8+ (FastAPI, PySpark)
 - **Orchestration**: Temporal workflows, Kubernetes (Helm charts)
 - **Storage**: PostgreSQL (metadata), MinIO (S3-compatible), Delta Lake (analytics)
@@ -104,7 +107,15 @@ pre-commit install
 - **Integration**: Full platform testing in Kubernetes environment
 - **Python**: Built-in health check endpoints
 
+### Authentication Architecture
+- **Keycloak**: Acts as OIDC Identity Provider with configurable identity providers (GitHub, WashU Key)
+- **OAuth2 Proxy**: Authentication middleware that handles OIDC flows and injects user headers
+- **Traefik**: Reverse proxy with authentication middleware for protected routes
+- **Role-based Access**: Scout users/admins with service-specific roles (Grafana, JupyterHub, Temporal)
+- **Identity Providers**: GitHub (development), WashU Key (production) configured in Keycloak realm
+
 ### Configuration
 - Environment-specific values in `ansible/vars/` and Helm `values.yaml` files
 - Ansible inventory files for deployment targets
+- Keycloak realm configuration with identity providers and client definitions
 - Docker images versioned and published to GitHub Container Registry

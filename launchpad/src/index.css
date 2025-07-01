@@ -1,1 +1,18 @@
 @import 'tailwindcss';
+
+@theme {
+  --default-transition-duration: 150ms;
+}
+
+@variant dark (.dark &);
+
+/* Ensure dark mode works by adding a test rule */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+.dark {
+  color-scheme: dark;
+}
