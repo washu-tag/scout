@@ -1,0 +1,23 @@
+prometheus_name: prometheus
+prometheus_storage_class: '{{ prometheus_name }}-storage'
+loki_name: loki
+loki_storage_class: '{{ loki_name }}-storage'
+grafana_name: grafana
+grafana_storage_class: '{{ grafana_name }}-storage'
+
+storage_definitions:
+  - name: '{{ prometheus_name }}'
+    size: "{{ prometheus_storage_size | default('100Gi') }}"
+    path: '{{ prometheus_dir }}'
+    pv_name: '{{ prometheus_name }}-pv'
+    storage_class_name: '{{ prometheus_storage_class }}'
+  - name: '{{ loki_name }}'
+    size: "{{ loki_storage_size | default('200Gi')}}"
+    path: '{{ loki_dir }}'
+    pv_name: '{{ loki_name }}-pv'
+    storage_class_name: '{{ loki_storage_class }}'
+  - name: '{{ grafana_name }}'
+    size: "{{ grafana_storage_size | default('50Gi') }}"
+    path: '{{ grafana_dir }}'
+    pv_name: '{{ grafana_name }}-pv'
+    storage_class_name: '{{ grafana_storage_class }}'

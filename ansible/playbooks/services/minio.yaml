@@ -48,14 +48,6 @@
           prefixes:
             - "/{{ minio_path_prefix | default('minio') }}"
 
-- name: Configure Storage for MinIO
-  include_tasks: tasks/storage_setup.yaml
-  vars:
-    storage_definitions:
-      - name: minio
-        size: '{{ minio_storage_size }}'
-        path: '{{ minio_dir }}'
-
 - name: Create tenant namespace
   kubernetes.core.k8s:
     name: '{{ minio_tenant_namespace }}'
@@ -117,8 +109,13 @@
           - servers: '{{ minio_server_count | default(1) }}'
             name: pool-0
             volumesPerServer: 1
-            size: '{{ minio_storage_size }}'
+            size: "{{ minio_storage_size | default('100Gi') }}"
             storageClassName: "{{ minio_storage_class | default('minio-storage') }}"
+            tolerations:
+              # Ensure MinIO pods can run on control plane nodes
+              - key: 'node-role.kubernetes.io/control-plane'
+                operator: Exists
+                effect: PreferNoSchedule
         metrics:
           enabled: true
           port: 9000
