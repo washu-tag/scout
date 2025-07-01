@@ -42,10 +42,10 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: dicom
-              containerPort: 4242
+              containerPort: {{ .Values.service.dicom }}
               protocol: TCP
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: {{ .Values.service.http }}
               protocol: TCP
           {{- with .Values.livenessProbe }}
           livenessProbe:

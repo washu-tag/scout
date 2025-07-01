@@ -27,7 +27,8 @@ service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   type: ClusterIP
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
-  port: 8042
+  http: 8042
+  dicom: 4242
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
@@ -55,10 +56,16 @@ livenessProbe:
   httpGet:
     path: /
     port: 8042
+    httpHeaders:
+      - name: Authorization
+        value: Basic b3J0aGFuYzpvcnRoYW5j
 readinessProbe:
   httpGet:
     path: /
     port: 8042
+    httpHeaders:
+      - name: Authorization
+        value: Basic b3J0aGFuYzpvcnRoYW5j
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
