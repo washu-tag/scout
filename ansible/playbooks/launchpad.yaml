@@ -1,5 +1,5 @@
 ---
-- name: Install explorer
+- name: Install launchpad
   hosts: server
   gather_facts: false
   environment:
@@ -14,34 +14,34 @@
           apiVersion: traefik.io/v1alpha1
           kind: Middleware
           metadata:
-            name: explorer-strip-prefix
+            name: launchpad-strip-prefix
             namespace: kube-system
           spec:
             stripPrefix:
               prefixes:
                 - /launchpad
 
-    - name: Install explorer using Helm
+    - name: Install launchpad using Helm
       kubernetes.core.helm:
-        name: explorer
-        release_namespace: explorer
+        name: launchpad
+        release_namespace: launchpad
         create_namespace: true
-        chart_ref: '{{ scout_repo_dir }}/helm/explorer'
+        chart_ref: '{{ scout_repo_dir }}/helm/launchpad'
         state: present
         wait: true
         wait_timeout: 5m
         atomic: true
         values_files:
-          - '{{ scout_repo_dir }}/helm/explorer/values.yaml'
+          - '{{ scout_repo_dir }}/helm/launchpad/values.yaml'
         values:
           image:
-            repository: '{{ explorer_image | default(omit) }}'
+            repository: '{{ launchpad_image | default(omit) }}'
           ingress:
             enabled: true
             className: traefik
             annotations:
               traefik.ingress.kubernetes.io/router.middlewares: >
-                kube-system-explorer-strip-prefix@kubernetescrd
+                kube-system-launchpad-strip-prefix@kubernetescrd
             hosts:
               - host: '{{ server_hostname }}'
                 paths:

@@ -10,7 +10,7 @@ k3s_cluster:
   vars:
     hl7log_extractor_image: docker.io/local/washu-tag/hl7log-extractor
     hl7_transformer_image: docker.io/local/washu-tag/hl7-transformer
-    explorer_image: docker.io/local/washu-tag/explorer
+    launchpad_image: docker.io/local/washu-tag/launchpad
 
     # K3s config
     k3s_version: v1.32.3+k3s1 # Leave blank for latest stable
