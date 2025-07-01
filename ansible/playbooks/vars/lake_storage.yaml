@@ -1,14 +1,13 @@
 minio_name: minio
 minio_storage_class: minio-storage
 
-storage_definitions:
-  - name: '{{ minio_name }}0'
-    size: "{{ minio_storage_size | default('100Gi') }}"
-    path: '{{ minio_dir }}0'
-    pv_name: '{{ minio_name }}-pv0'
-    storage_class_name: '{{ minio_storage_class }}'
-  - name: '{{ minio_name }}1'
-    size: "{{ minio_storage_size | default('100Gi') }}"
-    path: '{{ minio_dir }}1'
-    pv_name: '{{ minio_name }}-pv1'
-    storage_class_name: '{{ minio_storage_class }}'
+storage_definitions: >-
+  [{% for i in range(0, minio_volumes_per_server * minio_server_count) -%}
+    {
+      "name": "{{ minio_name }}{{ i }}",
+      "size": "{{ minio_storage_size | default('100Gi') }}",
+      "path": "{{ minio_dir }}{{ i }}",
+      "pv_name": "{{ minio_name }}-pv{{ i }}",
+      "storage_class_name": "{{ minio_storage_class }}"
+    }{% if not loop.last %},{% endif %}
+  {%- endfor %}]
