@@ -186,6 +186,20 @@
         "webOrigins": [
           "*"
         ] 
+      },
+      {
+        "name": "minio-scout-client",
+        "description": "Minio Scout Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_minio_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_minio_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ]
       }
     ],
     "identityProviders": [
