@@ -41,11 +41,11 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
+            - name: dicom
+              containerPort: 4242
+              protocol: TCP
             - name: http
               containerPort: {{ .Values.service.port }}
-              protocol: TCP
-            - name: https
-              containerPort: 8042
               protocol: TCP
           {{- with .Values.livenessProbe }}
           livenessProbe:
