@@ -18,7 +18,9 @@ RUN pip install --no-cache-dir \
     psycopg2-binary \
     pyhive \
     trino \
-    pillow
+    pillow \
+    flask-oidc \
+    Flask-OpenID
 
 # Switch to user that runs Superset
 USER superset

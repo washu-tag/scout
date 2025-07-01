@@ -33,6 +33,8 @@ k3s_cluster:
     keycloak_gh_client_secret: 'your-github-secret'
     keycloak_oauth2_proxy_client_id: 'oauth2-proxy'
     keycloak_oauth2_proxy_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    keycloak_superset_client_id: 'superset'
+    keycloak_superset_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_grafana_client_id: 'grafana'
     keycloak_grafana_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_temporal_client_id: 'temporal'

@@ -172,6 +172,20 @@
         "webOrigins": [
           "*"
         ]
+      },
+      {
+        "name": "superset-client",
+        "description": "Superset Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_superset_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_superset_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ] 
       }
     ],
     "identityProviders": [
