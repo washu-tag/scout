@@ -27,7 +27,7 @@ service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   type: ClusterIP
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
-  port: 5775
+  port: 4242
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
@@ -54,11 +54,11 @@ resources:
 livenessProbe:
   httpGet:
     path: /
-    port: 5775
+    port: 4242
 readinessProbe:
   httpGet:
     path: /
-    port: 5775
+    port: 4242
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
