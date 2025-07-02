@@ -58,14 +58,14 @@ livenessProbe:
     port: 8042
     httpHeaders:
       - name: Authorization
-        value: Basic {{ "orthanc:orthanc" | b64enc }}
+        value: Basic b3J0aGFuYzpvcnRoYW5j
 readinessProbe:
   httpGet:
     path: /
     port: 8042
     httpHeaders:
       - name: Authorization
-        value: "Basic {{ "orthanc:orthanc" | b64enc }}
+        value: Basic b3J0aGFuYzpvcnRoYW5j
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
@@ -94,6 +94,16 @@ tolerations: []
 
 affinity: {}
 
-orthancConf: {}
-
-orthancAuth: ''
+orthancConf:
+  {
+    "Name" : "TAG Exploration Orthanc",
+    "UnknownSopClassAccepted" : true,
+    "DicomModalitiesInDatabase" : true,
+    "OrthancPeersInDatabase" : true,
+    "CaseSensitivePN" : false,
+    "IngestTranscodingOfUncompressed" : false,
+    "IngestTranscodingOfCompressed" : false,
+    "DicomWeb": {
+      "Enable": true
+    }
+  }
