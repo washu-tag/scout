@@ -1,9 +1,10 @@
-README.md
-build
-dist
+Dockerfile
+.dockerignore
 node_modules
-LICENSE
-package-lock.json
+npm-debug.log
+README.md
+.next
 .git
-.DS_Store
-.env
+.gitignore
+.env.local
+.env*.local
