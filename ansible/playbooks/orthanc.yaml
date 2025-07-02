@@ -16,6 +16,7 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   vars_files:
     - vars/orthanc_storage.yaml
+    - vars/orthanc.yaml
   tasks:
     - name: Set up storage
       include_tasks: tasks/storage_setup.yaml
