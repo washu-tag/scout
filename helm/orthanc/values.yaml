@@ -58,14 +58,14 @@ livenessProbe:
     port: 8042
     httpHeaders:
       - name: Authorization
-        value: Basic {{ "orthanc:orthanc" | b64enc }}
+        value: "Basic {{ 'orthanc:orthanc' | b64enc }}"
 readinessProbe:
   httpGet:
     path: /
     port: 8042
     httpHeaders:
       - name: Authorization
-        value: Basic {{ "orthanc:orthanc" | b64enc }}
+        value: "Basic {{ 'orthanc:orthanc' | b64enc }}"
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
