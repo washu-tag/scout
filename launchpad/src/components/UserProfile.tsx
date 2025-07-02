@@ -72,9 +72,9 @@ export default function UserProfile() {
         </button>
       ) : (
         <button
-          onClick={() => signIn('github')}
+          onClick={() => signIn('keycloak')}
           className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200"
-          title="Sign in with GitHub"
+          title="Sign in"
         >
           <FaUser className="text-xl" />
         </button>

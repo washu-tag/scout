@@ -57,30 +57,6 @@
         # username: temp-admin
         # password: 0f7306a74f9645c395d757e347dcf4a2 # TODO: Use a more secure password or vault it
 
-# The operator wants to use a subdomain and does not appear to support a path-based ingress
-- name: Create Keycloak Ingress
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: networking.k8s.io/v1
-      kind: Ingress
-      metadata:
-        name: keycloak-ingress
-        namespace: kube-system
-      spec:
-        ingressClassName: traefik
-        rules:
-          - host: '{{ server_hostname }}'
-            http:
-              paths:
-                - backend:
-                    service:
-                      name: keycloak-service
-                      port:
-                        name: http
-                  path: /auth
-                  pathType: Prefix
-
 - name: Create Keycloak CR
   kubernetes.core.k8s:
     state: present
@@ -106,31 +82,50 @@
           host: 'postgresql-cluster-rw.{{ postgres_cluster_namespace }}'
           database: keycloak
           port: 5432
+          databaseName: keycloak
         http:
           httpEnabled: true
         hostname:
           hostname: '{{ server_hostname }}'
         ingress:
-          enabled: true
-          ingressClassName: traefik
-          host: '{{ server_hostname }}'
-          path: '/auth'
-          pathType: Prefix
-          annotations:
-            traefik.ingress.kubernetes.io/router.middlewares: >
-              kube-system-keycloak-ingress@kubernetescrd,
+          enabled: false
         proxy:
           headers: xforwarded
         additionalOptions:
           - name: http-relative-path
             value: /auth
 
-#- name: Wait for Keycloak to be ready
-#  shell: >-
-#    kubectl wait --for=condition=Ready --timeout=5m keycloak/keycloak -n {{ keycloak_namespace }}
-#  register: keycloak_ready
-#  changed_when: false
-#  until: keycloak_ready is succeeded
+# The operator wants to use a subdomain and does not appear to support a path-based ingress
+- name: Create Keycloak Ingress
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: keycloak-ingress
+        namespace: '{{ keycloak_namespace }}'
+      spec:
+        ingressClassName: traefik
+        rules:
+          - host: '{{ server_hostname }}'
+            http:
+              paths:
+                - backend:
+                    service:
+                      name: keycloak-service
+                      port:
+                        name: http
+                  path: /auth
+                  pathType: Prefix
+
+- name: Wait for Keycloak to be ready
+  shell: >-
+    kubectl wait --for=condition=Ready --timeout=5m keycloak/keycloak -n {{ keycloak_namespace }}
+  register: keycloak_ready
+  changed_when: false
+  until: keycloak_ready is succeeded
 
 - name: Create Keycloak Config as a Secret
   kubernetes.core.k8s:

@@ -44,6 +44,28 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
+          env:
+            {{- if .Values.auth.keycloak.enabled }}
+            - name: KEYCLOAK_CLIENT_ID
+              value: {{ .Values.auth.keycloak.clientId | quote }}
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "launchpad.fullname" . }}-keycloak-secret
+                  key: client-secret
+            - name: KEYCLOAK_ISSUER
+              value: {{ .Values.auth.keycloak.issuer | quote }}
+            - name: NEXTAUTH_URL
+              value: {{ .Values.auth.nextAuthUrl | quote }}
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "launchpad.fullname" . }}-nextauth-secret
+                  key: secret
+            {{- end }}
+            {{- with .Values.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- with .Values.volumeMounts }}

@@ -24,7 +24,7 @@
     - name: Install launchpad using Helm
       kubernetes.core.helm:
         name: launchpad
-        release_namespace: launchpad
+        release_namespace: '{{ launchpad_namespace }}'
         create_namespace: true
         chart_ref: '{{ scout_repo_dir }}/helm/launchpad'
         state: present
@@ -36,6 +36,14 @@
         values:
           image:
             repository: '{{ launchpad_image | default(omit) }}'
+          auth:
+            keycloak:
+              enabled: true
+              clientId: '{{ keycloak_launchpad_client_id }}'
+              clientSecret: '{{ keycloak_launchpad_client_secret }}'
+              issuer: 'https://{{ server_hostname }}/auth/realms/scout'
+            nextAuthUrl: 'https://{{ server_hostname }}//launchpad/api/auth'
+            nextAuthSecret: '{{ launchpad_nextauth_secret }}'
           ingress:
             enabled: true
             className: traefik

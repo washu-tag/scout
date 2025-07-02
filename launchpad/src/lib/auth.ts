@@ -1,29 +1,33 @@
 import { getServerSession } from 'next-auth/next';
 import { NextAuthOptions } from 'next-auth';
-import GitHubProvider from 'next-auth/providers/github';
+import KeycloakProvider from 'next-auth/providers/keycloak';
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    GitHubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    KeycloakProvider({
+      clientId: process.env.KEYCLOAK_CLIENT_ID!,
+      clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
+      issuer: process.env.KEYCLOAK_ISSUER!,
     }),
   ],
   callbacks: {
     async jwt({ token, account, profile }) {
       if (account) {
         token.accessToken = account.access_token;
+        token.refreshToken = account.refresh_token;
       }
-      if (profile && 'login' in profile) {
-        token.username = profile.login as string;
+      if (profile) {
+        token.username = profile.preferred_username as string;
+        token.groups = profile.groups as string[];
       }
       return token;
     },
     async session({ session, token }) {
       session.accessToken = token.accessToken as string;
       session.user.username = token.username as string;
-      // Add admin role to session (server-side only)
-      session.user.isAdmin = isAdminUser(token.username as string);
+      session.user.groups = token.groups as string[];
+      // Add admin role to session based on Keycloak groups
+      session.user.isAdmin = isAdminUser(token.groups as string[]);
       return session;
     },
   },
@@ -33,8 +37,8 @@ export async function getSession() {
   return await getServerSession(authOptions);
 }
 
-export function isAdminUser(username?: string): boolean {
-  if (!username) return false;
-  const adminUsers = process.env.ADMIN_USERS?.split(',').map((u) => u.trim()) || [];
-  return adminUsers.includes(username);
+export function isAdminUser(groups?: string[]): boolean {
+  if (!groups || groups.length === 0) return false;
+  // Check if user is in scout-admins group
+  return groups.includes('scout-admins');
 }

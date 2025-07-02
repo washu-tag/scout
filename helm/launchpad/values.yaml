@@ -109,3 +109,16 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# Authentication configuration
+auth:
+  keycloak:
+    enabled: true
+    clientId: 'launchpad-client'
+    clientSecret: 'changeme'
+    issuer: 'https://keycloak.example.com/auth/realms/scout'
+  nextAuthUrl: 'https://launchpad.example.com'
+  nextAuthSecret: 'changeme'
+
+# Additional environment variables
+env: []

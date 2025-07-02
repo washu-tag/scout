@@ -42,7 +42,12 @@ k3s_cluster:
     keycloak_grafana_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_temporal_client_id: 'temporal'
     keycloak_temporal_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    # TODO keycloak client id and secret for each scout service
+    keycloak_launchpad_client_id: 'launchpad-client'
+    keycloak_launchpad_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    # Launchpad config
+    launchpad_namespace: launchpad
+    launchpad_nextauth_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
     minio_storage_size: 750Gi
@@ -57,6 +62,9 @@ k3s_cluster:
     s3_loki_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Monitor config
+    prometheus_namespace: prometheus
+    grafana_namespace: grafana
+    loki_namespace: loki
     prometheus_storage_size: 100Gi
     loki_storage_size: 100Gi
     grafana_storage_size: 50Gi
@@ -84,6 +92,7 @@ k3s_cluster:
     jupyter_singleuser_storage_size: 250Gi
 
     # Postgres config
+    postgres_cluster_namespace: postgres
     postgres_user: scout
     postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     hive_postgres_user: hive
@@ -118,19 +127,13 @@ k3s_cluster:
       max_parallel_workers: '4'
       max_parallel_maintenance_workers: '2'
 
-    # Superset config
+    # Analytics config
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    hive_namespace: hive
 
     # Orchestrator config
     cassandra_storage_size: 300Gi
     elasticsearch_storage_size: 100Gi
-
-    # Namespaces that can be changed
-    hive_namespace: hive
-    postgres_cluster_namespace: cloudnative-pg
-    prometheus_namespace: prometheus
-    grafana_namespace: grafana
-    loki_namespace: loki
 
     # Local paths
     base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
