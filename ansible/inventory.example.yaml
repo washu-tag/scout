@@ -39,7 +39,7 @@ k3s_cluster:
     keycloak_grafana_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_temporal_client_id: 'temporal'
     keycloak_temporal_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    keycloak_minio_client_id: 'minio-scout'
+    keycloak_minio_client_id: 'minio'
     keycloak_minio_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
