@@ -41,6 +41,19 @@
               prefixes:
                 - '/orthanc'
 
+    - name: Create Orthanc conf secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: orthanc-secret
+            namespace: '{{ orthanc_namespace }}'
+          type: Opaque
+          stringData:
+            CONF: "{{ lookup('template', 'templates/orthanc/orthanc-conf.json.j2') | from_json }}"
+
     - name: Install Orthanc using Helm
       kubernetes.core.helm:
         name: orthanc
@@ -51,17 +64,4 @@
         wait: true
         wait_timeout: 2m
         atomic: true
-        values_files:
-          - '{{ scout_repo_dir }}/helm/orthanc/values.yaml'
-        values:
-          ingress:
-            enabled: true
-            className: traefik
-            annotations:
-              traefik.ingress.kubernetes.io/router.middlewares: >
-                kube-system-orthanc-strip-prefix@kubernetescrd
-            hosts:
-              - host: '{{ server_hostname }}'
-                paths:
-                  - path: /orthanc
-                    pathType: Prefix
+        values: "{{ lookup('template', 'templates/orthanc/values.yaml.j2') | from_yaml }}"

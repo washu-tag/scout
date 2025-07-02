@@ -42,7 +42,10 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: ORTHANC_JSON
-              value: {{ .Values.orthancConf | toJson | quote }}
+              valueFrom:
+                secretKeyRef:
+                  key: CONF
+                  name: orthanc-secret
           ports:
             - name: dicom
               containerPort: {{ .Values.service.dicom }}
