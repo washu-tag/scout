@@ -15,6 +15,11 @@ declare module 'next-auth' {
     isAdmin?: boolean;
     groups?: string[];
   }
+
+  interface Profile {
+    preferred_username?: string;
+    groups?: string[];
+  }
 }
 
 declare module 'next-auth/jwt' {
