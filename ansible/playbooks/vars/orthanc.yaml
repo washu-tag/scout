@@ -1,4 +1,4 @@
-orthancConf:
+orthanc_conf:
   {
     "Name": "TAG Exploration Orthanc",
     “RegisteredUsers”: {
