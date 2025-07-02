@@ -1,8 +1,8 @@
 orthanc_conf:
   {
     "Name": "TAG Exploration Orthanc",
-    “RegisteredUsers”: {
-      "orthanc": "{{ orthanc_password }}"
+    "RegisteredUsers": {
+      "orthanc": '{{ orthanc_password | quote }}'
     },
     "UnknownSopClassAccepted": true,
     "DicomModalitiesInDatabase": true,
