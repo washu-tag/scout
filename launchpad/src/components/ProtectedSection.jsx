@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from 'react-oidc-context';
+import { useAuth } from '../auth/GitHubAuthContext.jsx';
 import { hasAdminRole } from '../auth/authConfig';
 
 export default function ProtectedSection({ children, requireAdmin = false, fallback = null }) {

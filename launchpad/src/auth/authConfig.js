@@ -1,28 +1,26 @@
-// OIDC Configuration for Keycloak integration
-export const authConfig = {
-  authority: `${window.location.origin}/auth/realms/scout`,
-  client_id: 'launchpad',
-  redirect_uri: `${window.location.origin}`,
-  post_logout_redirect_uri: `${window.location.origin}`,
-  response_type: 'code',
-  scope: 'openid profile email',
-  automaticSilentRenew: true,
-  includeIdTokenInSilentRenew: true,
-  loadUserInfo: true,
-  onSigninCallback: () => {
-    // Remove the query string after successful authentication
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
+// GitHub OAuth Configuration
+export const githubConfig = {
+  clientId: import.meta.env.VITE_GITHUB_CLIENT_ID || 'your-github-client-id',
+  clientSecret: import.meta.env.VITE_GITHUB_CLIENT_SECRET, // Should be handled by backend in production
+  adminUsers: [
+    // Add GitHub usernames of admin users
+    'your-github-username',
+    // Add more admin usernames as needed
+  ],
 };
 
 // Helper function to check if user has admin role
 export const hasAdminRole = (user) => {
-  if (!user?.profile?.groups) return false;
-  return user.profile.groups.includes('scout-admin');
+  if (!user?.login) return false;
+  return githubConfig.adminUsers.includes(user.login);
 };
 
 // Helper function to check if user has specific role
 export const hasRole = (user, role) => {
-  if (!user?.profile?.groups) return false;
-  return user.profile.groups.includes(role);
+  // For GitHub, we can extend this to check organization membership, teams, etc.
+  if (role === 'admin') {
+    return hasAdminRole(user);
+  }
+  // Add more role logic as needed
+  return false;
 };
