@@ -1,0 +1,80 @@
+replicaCount: 1
+
+image:
+  repository: jodogne/orthanc-plugins
+  pullPolicy: IfNotPresent
+  tag: latest
+
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ''
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  http: 8042
+  dicom: 4242
+
+ingress:
+  enabled: false
+  className: traefik
+  annotations: {}
+  hosts: []
+  tls: []
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: >
+      kube-system-orthanc-strip-prefix@kubernetescrd
+  hosts:
+    - host: '{{ server_hostname }}'
+      paths:
+        - path: /orthanc
+          pathType: Prefix
+
+resources: {}
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: 8042
+    httpHeaders:
+      - name: Authorization
+        value: "Basic {{ (orthanc_username ~ ':' ~ orthanc_password) | b64encode }}"
+readinessProbe:
+  httpGet:
+    path: /
+    port: 8042
+    httpHeaders:
+      - name: Authorization
+        value: "Basic {{ (orthanc_username ~ ':' ~ orthanc_password) | b64encode }}"
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+volumes: []
+
+volumeMounts: []
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
