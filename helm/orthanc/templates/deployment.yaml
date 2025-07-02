@@ -40,6 +40,9 @@ spec:
           {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: ORTHANC_JSON
+              value: "{{ .Values.orthancConf | toJson }}"
           ports:
             - name: dicom
               containerPort: {{ .Values.service.dicom }}
