@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "cd .. && pre-commit run eslint --files launchpad/src/**/*.{ts,tsx}"
+    "lint": "cd .. && pre-commit run eslint --all-files"
   },
   "dependencies": {
     "next": "15.3.4",
