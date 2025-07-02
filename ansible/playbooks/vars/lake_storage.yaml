@@ -1,0 +1,9 @@
+minio_name: minio
+minio_storage_class: minio-storage
+
+storage_definitions:
+  - name: '{{ minio_name }}'
+    size: "{{ minio_storage_size | default('100Gi') }}"
+    path: '{{ minio_dir }}'
+    pv_name: '{{ minio_name }}-pv'
+    storage_class_name: '{{ minio_storage_class }}'

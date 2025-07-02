@@ -26,8 +26,8 @@ loki:
       ruler: loki-ruler
       admin: loki-admin
     s3:
-      endpoint: minio.minio-scout.svc.cluster.local
-      region: us-east-1
+      endpoint: 'minio.{{ minio_tenant_namespace }}.svc.cluster.local'
+      region: '{{ s3_region }}'
       insecure: true
       s3ForcePathStyle: true
 
@@ -40,7 +40,7 @@ singleBinary:
   replicas: 1
   persistence:
     enabled: true
-    storageClass: loki-storage
+    storageClass: '{{ loki_storage_class }}'
   extraEnv:
     - name: AWS_ACCESS_KEY_ID
       valueFrom:

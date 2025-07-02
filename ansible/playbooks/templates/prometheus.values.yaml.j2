@@ -16,7 +16,7 @@ server:
     servicePort: 9090
   persistentVolume:
     enabled: true
-    storageClass: prometheus-storage
+    storageClass: {{ prometheus_storage_class }}
   retention: 15d
   extraSecretMounts:
     - name: jupyterhub-metrics-api-token

@@ -1,18 +1,23 @@
 ---
+server:
+  hosts:
+    FQDN-leader.edu:
+      ansible_connection: local
+      ansible_python_interpreter: /usr/bin/python3
+      k3s_control_node: true
+      external_url: alt.fqdn.edu # omit to use FQDN-leader.edu
+workers:
+  hosts:
+    FQDN-worker-1.edu:
+      ansible_connection: local
+      ansible_python_interpreter: /usr/bin/python3
+agents:
+  children:
+    workers:
 k3s_cluster:
   children:
     server:
-      hosts:
-        FQDN-leader.edu:
-          ansible_connection: local
-          ansible_python_interpreter: /usr/bin/python3
-          k3s_control_node: true
-          external_url: alt.fqdn.edu # omit to use FQDN-leader.edu
     agents:
-      hosts:
-        FQDN-worker-1.edu:
-          ansible_connection: local
-          ansible_python_interpreter: /usr/bin/python3
   vars:
     # K3s config
     k3s_version: v1.32.3+k3s1 # Leave blank for latest stable
@@ -43,6 +48,7 @@ k3s_cluster:
     keycloak_minio_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
+    minio_storage_size: 750Gi
     s3_username: minio
     s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     s3_region: us-east-1
@@ -53,7 +59,10 @@ k3s_cluster:
     s3_loki_writer: loki-writer
     s3_loki_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
-    # Grafana config
+    # Monitor config
+    prometheus_storage_size: 100Gi
+    loki_storage_size: 100Gi
+    grafana_storage_size: 50Gi
     grafana_alert_contact_point: slack # email or slack
     grafana_smtp_host: '' # Include the port in the value
     grafana_smtp_user: $(echo $SMTP_USER | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -74,6 +83,8 @@ k3s_cluster:
     jupyter_allowed_users: [] # empty list means all users can log in
     jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     jupyter_prepuller_continuous: false
+    jupyter_hub_storage_size: 15Gi
+    jupyter_singleuser_storage_size: 250Gi
 
     # Postgres config
     postgres_user: scout
@@ -90,6 +101,7 @@ k3s_cluster:
       limits:
         cpu: 6
         memory: 96Gi
+    postgres_storage_size: 100Gi
     postgres_parameters: # Strings only, no numbers allowed.
       max_connections: '100'
       shared_buffers: '16GB'
@@ -112,11 +124,16 @@ k3s_cluster:
     # Superset config
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
+    # Orchestrator config
+    cassandra_storage_size: 300Gi
+    elasticsearch_storage_size: 100Gi
+
     # Namespaces that can be changed
     hive_namespace: hive
     postgres_cluster_namespace: cloudnative-pg
     prometheus_namespace: prometheus
     grafana_namespace: grafana
+    loki_namespace: loki
 
     # Local paths
     base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
@@ -167,7 +184,6 @@ k3s_cluster:
     # Do not change the values below, they are hard-coded various places
     extractor_namespace: extractor
     minio_tenant_namespace: minio-scout
-    loki_namespace: loki
     temporal_namespace: temporal
 
     # computed values, used across playbooks
