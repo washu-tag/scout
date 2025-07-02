@@ -65,3 +65,5 @@
                 paths:
                   - path: /orthanc
                     pathType: Prefix
+          orthancPassword: '{{ orthanc_password }}'
+          orthancConf: '{{ orthanc_conf }}'

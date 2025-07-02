@@ -1,0 +1,16 @@
+orthancConf:
+  {
+    "Name": "TAG Exploration Orthanc",
+    “RegisteredUsers”: {
+      "orthanc": "{{ orthanc_password }}"
+    },
+    "UnknownSopClassAccepted": true,
+    "DicomModalitiesInDatabase": true,
+    "OrthancPeersInDatabase": true,
+    "CaseSensitivePN": false,
+    "IngestTranscodingOfUncompressed": false,
+    "IngestTranscodingOfCompressed": false,
+    "DicomWeb": {
+      "Enable": true
+    }
+  }
