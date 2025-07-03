@@ -62,6 +62,10 @@ spec:
                 secretKeyRef:
                   name: {{ include "launchpad.fullname" . }}-nextauth-secret
                   key: secret
+            {{- if .Values.auth.oauth2ProxySignOutUrl }}
+            - name: NEXT_PUBLIC_OAUTH2_PROXY_SIGN_OUT_URL
+              value: {{ .Values.auth.oauth2ProxySignOutUrl | quote }}
+            {{- end }}
             {{- end }}
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}

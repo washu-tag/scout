@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSession, signIn } from 'next-auth/react';
 import { FaPython } from 'react-icons/fa';
 import { SiMinio, SiTemporal, SiGrafana, SiReadthedocs } from 'react-icons/si';
 import { BiLineChart } from 'react-icons/bi';
@@ -9,10 +10,18 @@ import AdminSection from '@/components/AdminSection';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-login: redirect to sign in if not authenticated
+  useEffect(() => {
+    if (status !== 'loading' && !session) {
+      signIn('keycloak');
+    }
+  }, [status, session]);
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6 md:p-8 transition-colors duration-500">

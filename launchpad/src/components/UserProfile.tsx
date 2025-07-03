@@ -64,7 +64,14 @@ export default function UserProfile() {
         </div>
       ) : session ? (
         <button
-          onClick={() => signOut()}
+          onClick={() => {
+            // Use OAuth2 proxy sign out URL if available, otherwise use NextAuth signOut
+            if (process.env.NEXT_PUBLIC_OAUTH2_PROXY_SIGN_OUT_URL) {
+              window.location.href = process.env.NEXT_PUBLIC_OAUTH2_PROXY_SIGN_OUT_URL;
+            } else {
+              signOut();
+            }
+          }}
           className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200"
           title={`Signed in as ${session.user?.name || session.user?.email} - Click to sign out`}
         >

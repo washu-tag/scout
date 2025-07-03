@@ -7,20 +7,6 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
-    - name: Create Traefik Middleware to strip /launchpad prefix for internal traffic
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: traefik.io/v1alpha1
-          kind: Middleware
-          metadata:
-            name: launchpad-strip-prefix
-            namespace: kube-system
-          spec:
-            stripPrefix:
-              prefixes:
-                - /launchpad
-
     - name: Install launchpad using Helm
       kubernetes.core.helm:
         name: launchpad
@@ -41,15 +27,17 @@
               enabled: true
               clientId: '{{ keycloak_launchpad_client_id }}'
               clientSecret: '{{ keycloak_launchpad_client_secret }}'
-              issuer: 'https://{{ server_hostname }}/auth/realms/scout'
+              issuer: 'https://{{ server_hostname }}/kc/realms/scout'
             nextAuthUrl: 'https://{{ server_hostname }}//launchpad/api/auth'
             nextAuthSecret: '{{ launchpad_nextauth_secret }}'
+            oauth2ProxySignOutUrl: 'https://{{ server_hostname }}/oauth2/sign_out'
           ingress:
             enabled: true
             className: traefik
             annotations:
               traefik.ingress.kubernetes.io/router.middlewares: >
-                kube-system-launchpad-strip-prefix@kubernetescrd
+                kube-system-oauth2-proxy-error@kubernetescrd,
+                kube-system-oauth2-proxy-auth@kubernetescrd
             hosts:
               - host: '{{ server_hostname }}'
                 paths:

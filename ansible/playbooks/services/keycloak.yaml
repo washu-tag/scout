@@ -10,6 +10,12 @@
     dest: /tmp/keycloakrealmimports.k8s.keycloak.org-v1.yml
     mode: '0644'
 
+- name: Download Keycloak Operator manifest
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.5/kubernetes/kubernetes.yml
+    dest: /tmp/keycloak-operator.yml
+    mode: '0644'
+
 - name: Apply Keycloak CRD - Keycloak
   kubernetes.core.k8s:
     state: present
@@ -20,12 +26,31 @@
     state: present
     src: /tmp/keycloakrealmimports.k8s.keycloak.org-v1.yml
 
-- name: Create Keycloak namespace
+- name: Create Keycloak CR namespace
   kubernetes.core.k8s:
     name: '{{ keycloak_namespace }}'
     api_version: v1
     kind: Namespace
     state: present
+
+- name: Apply Keycloak Operator
+  kubernetes.core.k8s:
+    state: present
+    src: /tmp/keycloak-operator.yml
+    namespace: '{{ keycloak_namespace }}'
+
+- name: Wait for Keycloak Operator to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: keycloak-operator
+    namespace: '{{ keycloak_namespace }}'
+    wait: true
+    wait_condition:
+      type: Progressing
+      status: "True"
+      reason: NewReplicaSetAvailable
+    wait_timeout: 300
 
 - name: Create Keycloak DB secret
   kubernetes.core.k8s:
@@ -82,7 +107,6 @@
           host: 'postgresql-cluster-rw.{{ postgres_cluster_namespace }}'
           database: keycloak
           port: 5432
-          databaseName: keycloak
         http:
           httpEnabled: true
         hostname:
@@ -93,7 +117,7 @@
           headers: xforwarded
         additionalOptions:
           - name: http-relative-path
-            value: /auth
+            value: /kc
 
 # The operator wants to use a subdomain and does not appear to support a path-based ingress
 - name: Create Keycloak Ingress
@@ -117,7 +141,7 @@
                       name: keycloak-service
                       port:
                         name: http
-                  path: /auth
+                  path: /kc
                   pathType: Prefix
 
 - name: Wait for Keycloak to be ready
@@ -162,6 +186,6 @@
         tag: '6.4.0-26'
       existingConfigSecret: 'keycloak-config'
       env:
-        KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/auth'
+        KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/kc'
         KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
       existingSecret: keycloak-admin-secret

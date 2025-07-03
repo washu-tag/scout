@@ -81,7 +81,7 @@
     },
     "groups": [
       {
-        "name": "scout-admins",
+        "name": "scout-admin",
         "realmRoles": [
           "scout-admin"
         ],
@@ -118,7 +118,7 @@
     ],
     "clients": [
       {
-        "name": "oauth2-proxy-client",
+        "name": "{{ keycloak_oauth2_proxy_client_id }}",
         "description": "OAuth2 Proxy Client",
         "enabled": true,
         "clientId": "{{ keycloak_oauth2_proxy_client_id }}",
@@ -146,7 +146,7 @@
         ]
       },
       {
-        "name": "grafana-client",
+        "name": "{{ keycloak_grafana_client_id }}",
         "description": "Grafana Client",
         "enabled": true,
         "clientId": "{{ keycloak_grafana_client_id }}",
@@ -160,7 +160,7 @@
         ]
       },
       {
-        "name": "temporal-client",
+        "name": "{{ keycloak_temporal_client_id }}",
         "description": "Temporal Client",
         "enabled": true,
         "clientId": "{{ keycloak_temporal_client_id }}",
@@ -174,7 +174,7 @@
         ]
       },
       {
-        "name": "launchpad-client",
+        "name": "{{ keycloak_launchpad_client_id }}",
         "description": "Launchpad Client",
         "enabled": true,
         "clientId": "{{ keycloak_launchpad_client_id }}",

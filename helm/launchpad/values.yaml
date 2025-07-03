@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/washu-tag/launchpad
-  tag: 1.0.0
+  tag: 1.1.0
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -77,11 +77,11 @@ resources:
 
 livenessProbe:
   httpGet:
-    path: /
+    path: /launchpad
     port: 3000
 readinessProbe:
   httpGet:
-    path: /
+    path: /launchpad
     port: 3000
 
 autoscaling:
@@ -119,6 +119,7 @@ auth:
     issuer: 'https://keycloak.example.com/auth/realms/scout'
   nextAuthUrl: 'https://launchpad.example.com'
   nextAuthSecret: 'changeme'
+  oauth2ProxySignOutUrl: 'https://launchpad.example.com/oauth2/sign_out'
 
 # Additional environment variables
 env: []
