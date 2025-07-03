@@ -5,7 +5,7 @@ import { useSession, signIn } from 'next-auth/react';
 import { FaPython } from 'react-icons/fa';
 import { SiMinio, SiTemporal, SiGrafana, SiReadthedocs } from 'react-icons/si';
 import { BiLineChart } from 'react-icons/bi';
-import UserProfile from '@/components/UserProfile';
+import TopBar from '@/components/TopBar';
 import AdminSection from '@/components/AdminSection';
 
 export default function Home() {
@@ -27,7 +27,7 @@ export default function Home() {
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6 md:p-8 transition-colors duration-500">
       {/* Header with Logo and Icons */}
       <div className="flex justify-end items-center">
-        <UserProfile />
+        <TopBar />
       </div>
       <div
         className={`max-w-6xl mx-auto transition-all duration-1000 ${mounted ? 'opacity-100' : 'opacity-0'}`}
