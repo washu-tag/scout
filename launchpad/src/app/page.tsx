@@ -42,12 +42,10 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors duration-500">
       {/* Header */}
-      <div className="w-full px-6 md:px-8 py-6 md:py-8">
-        <div className="max-w-7xl mx-auto flex justify-end">
-          <TopBar />
-        </div>
+      <div className="pt-2 pr-2 mx-auto flex justify-end">
+        <TopBar />
       </div>
-      
+
       <div
         className={`max-w-7xl mx-auto px-6 md:px-8 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
