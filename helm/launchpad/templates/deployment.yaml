@@ -63,7 +63,7 @@ spec:
                   name: {{ include "launchpad.fullname" . }}-nextauth-secret
                   key: secret
             {{- if .Values.auth.oauth2ProxySignOutUrl }}
-            - name: NEXT_PUBLIC_OAUTH2_PROXY_SIGN_OUT_URL
+            - name: OAUTH2_PROXY_SIGN_OUT_URL
               value: {{ .Values.auth.oauth2ProxySignOutUrl | quote }}
             {{- end }}
             {{- end }}

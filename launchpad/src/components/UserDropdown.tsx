@@ -33,11 +33,15 @@ export default function UserDropdown() {
         title="User menu"
       >
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-          {session.user?.name?.charAt(0).toUpperCase() || session.user?.email?.charAt(0).toUpperCase() || 'U'}
+          {session.user?.name?.charAt(0).toUpperCase() ||
+            session.user?.email?.charAt(0).toUpperCase() ||
+            'U'}
         </div>
-        <FaChevronDown className={`text-xs transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+        <FaChevronDown
+          className={`text-xs transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+        />
       </button>
-      
+
       {/* Dropdown Menu */}
       {isDropdownOpen && (
         <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
@@ -49,17 +53,28 @@ export default function UserDropdown() {
               {session.user?.email || 'No email'}
             </p>
           </div>
-          
+
           <button
             onClick={async () => {
               setIsDropdownOpen(false);
               // First sign out from NextAuth
               await signOut({ redirect: false });
-              // Then redirect to OAuth2 proxy sign out URL
-              if (process.env.NEXT_PUBLIC_OAUTH2_PROXY_SIGN_OUT_URL) {
-                window.location.href = process.env.NEXT_PUBLIC_OAUTH2_PROXY_SIGN_OUT_URL;
-              } else {
-                // Fallback to home page using router
+
+              // Get the OAuth2 sign out URL from the API
+              try {
+                const response = await fetch('/launchpad/api/auth/signout', {
+                  method: 'POST',
+                });
+                const data = await response.json();
+
+                if (data.redirectUrl) {
+                  window.location.href = data.redirectUrl;
+                } else {
+                  // Fallback to home page using router
+                  router.push('/');
+                }
+              } catch {
+                // If API call fails, fallback to home page
                 router.push('/');
               }
             }}

@@ -17,8 +17,8 @@ export const metadata: Metadata = {
   title: 'Scout - Radiology Report Explorer',
   description: 'A radiology report exploration tool by the Translational AI Group at WashU',
   icons: {
-    icon: '/scout.png',
-    apple: '/scout.png',
+    icon: '/launchpad/scout.png',
+    apple: '/launchpad/scout.png',
   },
 };
 
