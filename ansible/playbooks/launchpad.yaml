@@ -28,7 +28,7 @@
               clientId: '{{ keycloak_launchpad_client_id }}'
               clientSecret: '{{ keycloak_launchpad_client_secret }}'
               issuer: 'https://{{ server_hostname }}/kc/realms/scout'
-            nextAuthUrl: 'https://{{ server_hostname }}//launchpad/api/auth'
+            nextAuthUrl: 'https://{{ server_hostname }}/launchpad/api/auth'
             nextAuthSecret: '{{ launchpad_nextauth_secret }}'
             oauth2ProxySignOutUrl: 'https://{{ server_hostname }}/oauth2/sign_out'
           ingress:
