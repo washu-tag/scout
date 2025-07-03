@@ -6,8 +6,8 @@ hub:
       authenticator_class: 'oauthenticator.generic.GenericOAuthenticator'
     GenericOAuthenticator:
       login_service: 'Keycloak'
-      client_id: 'jupyterhub-client' # TODO: should be a secret
-      client_secret: 'jupyterhub-secret' # TODO: should be a secret
+      client_id: '{{ keycloak_jupyterhub_client_id }}'
+      client_secret: '{{ keycloak_jupyterhub_client_secret }}'
       oauth_callback_url: 'https://{{ server_hostname }}/jupyter/hub/oauth_callback'
       authorize_url: 'https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/auth'
       token_url: 'https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/token'

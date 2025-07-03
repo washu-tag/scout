@@ -22,7 +22,7 @@
         }
       ],
       "client": {
-        "jupyterhub-client": [
+        "{{ keycloak_jupyterhub_client_id }}": [
           {
             "name": "jupyterhub-admin",
             "description": "Scout Admin Role for JupyterHub Client",
@@ -91,7 +91,7 @@
           "scout-admin"
         ],
         "clientRoles": {
-          "jupyterhub-client": [
+          "{{ keycloak_jupyterhub_client_id }}": [
             "jupyterhub-admin"
           ],
           "{{ keycloak_grafana_client_id }}": [
@@ -109,7 +109,7 @@
           "scout-user"
         ],
         "clientRoles": {
-          "jupyterhub-client": [
+          "{{ keycloak_jupyterhub_client_id }}": [
             "jupyterhub-user"
           ]
         }
@@ -152,12 +152,12 @@
         ]
       },
       {
-        "name": "jupyterhub-client",
+        "name": "{{ keycloak_jupyterhub_client_id }}",
         "description": "JupyterHub Client",
         "enabled": true,
-        "clientId": "jupyterhub-client",
+        "clientId": "{{ keycloak_jupyterhub_client_id }}",
         "clientAuthenticatorType": "client-secret",
-        "secret": "jupyterhub-secret",
+        "secret": "{{ keycloak_jupyterhub_client_secret }}",
         "redirectUris": [
           "*"
         ],
