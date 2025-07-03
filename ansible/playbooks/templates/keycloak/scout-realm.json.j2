@@ -82,6 +82,11 @@
     "groups": [
       {
         "name": "scout-admins",
+        "attributes": {
+          "policy": [
+            "consoleAdmin"
+          ]
+        },
         "realmRoles": [
           "scout-admin"
         ],
@@ -199,6 +204,22 @@
         ],
         "webOrigins": [
           "*"
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "minio-authorization",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access",
         ]
       }
     ],
@@ -287,6 +308,35 @@
       }
     ],
     "clientScopes": [
+      {
+        "name": "minio-authorization",
+        "description": "Minio Authorization Scope",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "true",
+          "display.on.consent.screen": "true",
+        },
+        "protocolMappers": [
+          {
+            "name": "minio-policy-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-attribute-mapper",
+            "consentRequired": false,
+            "config": {
+              "aggregate.attrs": "true",
+              "introspection.token.claim": "true",
+              "multivalued": "true",
+              "userinfo.token.claim": "true",
+              "user.attribute": "policy",
+              "id.token.claim": "true",
+              "lightweight.claim": "false",
+              "access.token.claim": "true",
+              "claim.name": "policy",
+              "jsonType.label": "String"
+            }
+          }
+        ]
+      },
       {
         "name": "microprofile-jwt",
         "description": "Microprofile - JWT built-in scope",
