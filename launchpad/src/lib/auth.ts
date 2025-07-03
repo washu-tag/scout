@@ -34,7 +34,6 @@ export const authOptions: NextAuthOptions = {
 };
 
 export function isAdminUser(groups?: string[]): boolean {
-  return true;
   if (!groups || groups.length === 0) return false;
   // Check if user is in scout-admin group
   return groups.includes('scout-admin');
