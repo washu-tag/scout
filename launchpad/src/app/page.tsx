@@ -7,22 +7,61 @@ import { SiMinio, SiTemporal, SiGrafana, SiReadthedocs } from 'react-icons/si';
 import { BiLineChart } from 'react-icons/bi';
 import TopBar from '@/components/TopBar';
 import AdminSection from '@/components/AdminSection';
+import Link from 'next/link';
+import Image from 'next/image';
 
-// Reusable card styles for DRY code
-const cardStyles = {
-  base: "group relative overflow-hidden bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-200 dark:border-gray-800 no-underline",
-  content: "relative p-8 md:p-10",
-  flex: "flex items-center gap-6",
-  icon: "flex-shrink-0 w-24 h-24 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300",
-  title: "text-3xl font-semibold text-gray-900 dark:text-white mb-3",
-  description: "text-lg text-gray-600 dark:text-gray-400 leading-relaxed"
+// Modern card system with emphasis and visual hierarchy
+interface ToolCardProps {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  color: 'blue' | 'amber' | 'indigo';
+  external?: boolean;
+}
+
+const ToolCard = ({ href, icon, title, description, color, external = false }: ToolCardProps) => {
+  const colorClasses = {
+    blue: 'border-blue-200 hover:border-blue-400 bg-blue-50 hover:bg-blue-100',
+    amber: 'border-amber-200 hover:border-amber-400 bg-amber-50 hover:bg-amber-100',
+    indigo: 'border-indigo-200 hover:border-indigo-400 bg-indigo-50 hover:bg-indigo-100'
+  };
+
+  const iconColorClasses = {
+    blue: 'bg-blue-500',
+    amber: 'bg-amber-500',
+    indigo: 'bg-indigo-500'
+  };
+
+  return (
+    <a
+      href={href}
+      {...(external && { target: "_blank", rel: "noopener noreferrer" })}
+      className={`group relative p-6 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl no-underline ${colorClasses[color]} dark:bg-gray-800 dark:border-gray-700 dark:hover:border-gray-600 dark:hover:bg-gray-750`}
+    >
+      <div className="flex items-start gap-6">
+        <div className={`p-4 rounded-2xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 text-white ${iconColorClasses[color]}`}>
+          {icon}
+        </div>
+        <div className="flex-1">
+          <div className="flex items-start justify-between mb-2">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white group-hover:text-gray-800 dark:group-hover:text-gray-100">
+              {title}
+            </h3>
+            {external && (
+              <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            )}
+          </div>
+          <p className="text-gray-600 dark:text-gray-300 group-hover:text-gray-700 dark:group-hover:text-gray-200">
+            {description}
+          </p>
+        </div>
+      </div>
+    </a>
+  );
 };
-
-const getColorClasses = (color: 'blue' | 'amber' | 'indigo') => ({
-  gradient: `absolute inset-0 bg-gradient-to-br from-${color}-500/10 to-transparent dark:from-${color}-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300`,
-  iconBg: `bg-${color}-100 dark:bg-${color}-900/50`,
-  iconText: `text-6xl text-${color}-600 dark:text-${color}-400`
-});
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -40,105 +79,64 @@ export default function Home() {
   }, [status, session]);
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors duration-500">
+    <div className="min-h-screen w-full bg-white dark:bg-gray-900 transition-colors duration-500">
       {/* Header */}
-      <div className="pt-2 pr-2 mx-auto flex justify-end">
-        <TopBar />
+      <div className="w-full px-8 py-6 border-b border-gray-100 dark:border-gray-800">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <Link href={"/"} className="flex items-center gap-3">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Scout</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 pt-2">Radiology Report Explorer</p>
+            </div>
+          </Link>
+          <TopBar />
+        </div>
       </div>
 
       <div
-        className={`max-w-7xl mx-auto px-6 md:px-8 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+        className={`max-w-5xl mx-auto px-8 py-12 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
-        {/* Hero Section */}
-        <div className="flex flex-col items-center justify-center py-12 md:py-20 text-center">
-          <div className="space-y-6">
-            <h1 className="text-6xl md:text-8xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
-              Welcome to Scout
-            </h1>
-            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              A radiology report exploration platform
-            </p>
-          </div>
+
+        {/* Main Tools Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          <ToolCard
+            href="/jupyter"
+            icon={<FaPython className="text-4xl" />}
+            title="Notebooks"
+            description="Interactive data analysis and exploration with JupyterHub"
+            color="blue"
+          />
+          
+          <ToolCard
+            href="/"
+            icon={<BiLineChart className="text-4xl" />}
+            title="Analytics"
+            description="Visualize data and create dashboards with Apache Superset"
+            color="amber"
+          />
         </div>
 
-        {/* Main Tools Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-16">
-          <a href="/jupyter" className={cardStyles.base}>
-            <div className={getColorClasses('blue').gradient} />
-            <div className={cardStyles.content}>
-              <div className={cardStyles.flex}>
-                <div className={`${cardStyles.icon} ${getColorClasses('blue').iconBg}`}>
-                  <FaPython className={getColorClasses('blue').iconText} />
-                </div>
-                <div className="flex-1">
-                  <h2 className={cardStyles.title}>Notebooks</h2>
-                  <p className={cardStyles.description}>
-                    Interactive data analysis and exploration with JupyterHub
-                  </p>
-                </div>
-              </div>
-            </div>
-          </a>
-
-          <a href="/" className={cardStyles.base}>
-            <div className={getColorClasses('amber').gradient} />
-            <div className={cardStyles.content}>
-              <div className={cardStyles.flex}>
-                <div className={`${cardStyles.icon} ${getColorClasses('amber').iconBg}`}>
-                  <BiLineChart className={getColorClasses('amber').iconText} />
-                </div>
-                <div className="flex-1">
-                  <h2 className={cardStyles.title}>Analytics</h2>
-                  <p className={cardStyles.description}>
-                    Visualize data and create dashboards with Apache Superset
-                  </p>
-                </div>
-              </div>
-            </div>
-          </a>
-        </div>
-
-        {/* Documentation Section */}
-        <div className="mb-16">
-          <a
+        {/* Documentation */}
+        <div className="grid mb-12">
+          <ToolCard
             href="https://washu-scout.readthedocs.io/en/latest/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative overflow-hidden bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-800 no-underline block"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 dark:from-indigo-400/5 dark:to-purple-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="relative p-6 md:p-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-5">
-                  <div className="w-16 h-16 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <SiReadthedocs className="text-3xl text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      Documentation
-                    </h2>
-                    <p className="text-lg text-gray-600 dark:text-gray-400">
-                      Learn how to use Scout effectively
-                    </p>
-                  </div>
-                </div>
-                <svg className="w-6 h-6 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </div>
-            </div>
-          </a>
+            icon={<SiReadthedocs className="text-3xl" />}
+            title="Documentation"
+            description="Learn how to use Scout effectively"
+            color="indigo"
+            external={true}
+          />
         </div>
 
         {/* Admin Tools Section - Only visible to admins */}
         <AdminSection requireAdmin={true}>
-          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 mb-16">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mb-12">
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wide flex items-center">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
               Admin Tools
-            </h2>
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <a
                 href="/minio/"
@@ -182,9 +180,9 @@ export default function Home() {
           </div>
         </AdminSection>
 
-        {/* Footer */}
-        <footer className="text-center py-8 mt-16 border-t border-gray-200 dark:border-gray-800">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+        {/* Compact Footer */}
+        <footer className="text-center py-6 mt-8 border-t border-gray-100 dark:border-gray-800">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             © {new Date().getFullYear()} Translational AI Group, Washington University in St. Louis
           </p>
         </footer>

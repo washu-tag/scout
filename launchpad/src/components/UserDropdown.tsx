@@ -32,7 +32,7 @@ export default function UserDropdown() {
         className="flex items-center gap-2 p-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 transition-colors duration-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
         title="User menu"
       >
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 font-semibold text-sm">
           {session.user?.name?.charAt(0).toUpperCase() ||
             session.user?.email?.charAt(0).toUpperCase() ||
             'U'}
