@@ -167,7 +167,7 @@
               - name: TEMPORAL_AUTH_CLIENT_SECRET
                 value: '{{ keycloak_temporal_client_secret }}'
               - name: TEMPORAL_AUTH_CALLBACK_URL
-                value: 'https://{{ server_hostname }}/temporal/kc/sso/callback'
+                value: 'https://{{ server_hostname }}/temporal/auth/sso/callback'
               - name: TEMPORAL_AUTH_SCOPES
                 value: openid microprofile-jwt
             ingress:
