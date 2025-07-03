@@ -1,4 +1,3 @@
-import { getServerSession } from 'next-auth/next';
 import { NextAuthOptions } from 'next-auth';
 import KeycloakProvider from 'next-auth/providers/keycloak';
 
@@ -8,7 +7,7 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.KEYCLOAK_CLIENT_ID!,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
       issuer: process.env.KEYCLOAK_ISSUER!,
-      authorization: { params: { scope: "openid email profile microprofile-jwt" } },
+      authorization: { params: { scope: 'openid email profile microprofile-jwt' } },
     }),
   ],
   callbacks: {

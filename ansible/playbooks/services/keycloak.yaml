@@ -48,7 +48,7 @@
     wait: true
     wait_condition:
       type: Progressing
-      status: "True"
+      status: 'True'
       reason: NewReplicaSetAvailable
     wait_timeout: 300
 

@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { FaUser, FaSignOutAlt, FaGithub, FaMoon, FaSun } from 'react-icons/fa';
 
 export default function UserProfile() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [isDark, setIsDark] = useState(false);
 
   // Initialize theme from localStorage or system preference
@@ -64,12 +66,15 @@ export default function UserProfile() {
         </div>
       ) : session ? (
         <button
-          onClick={() => {
-            // Use OAuth2 proxy sign out URL if available, otherwise use NextAuth signOut
+          onClick={async () => {
+            // First sign out from NextAuth
+            await signOut({ redirect: false });
+            // Then redirect to OAuth2 proxy sign out URL
             if (process.env.NEXT_PUBLIC_OAUTH2_PROXY_SIGN_OUT_URL) {
               window.location.href = process.env.NEXT_PUBLIC_OAUTH2_PROXY_SIGN_OUT_URL;
             } else {
-              signOut();
+              // Fallback to home page using router
+              router.push('/');
             }
           }}
           className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200"
