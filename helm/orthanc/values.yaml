@@ -51,21 +51,6 @@ resources:
   #   cpu: 100m
   #   memory: 128Mi
 
-# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
-livenessProbe:
-  httpGet:
-    path: /
-    port: 8042
-    httpHeaders:
-      - name: Authorization
-        value: Basic b3J0aGFuYzpvcnRoYW5j
-readinessProbe:
-  httpGet:
-    path: /
-    port: 8042
-    httpHeaders:
-      - name: Authorization
-        value: Basic b3J0aGFuYzpvcnRoYW5j
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
