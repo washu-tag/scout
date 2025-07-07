@@ -51,14 +51,14 @@ resources: {}
 livenessProbe:
   httpGet:
     path: /
-    port: 18042
+    port: 8042
     httpHeaders:
       - name: Authorization
         value: "Basic {{ (orthanc_username ~ ':' ~ orthanc_password) | b64encode }}"
 readinessProbe:
   httpGet:
     path: /
-    port: 18042
+    port: 8042
     httpHeaders:
       - name: Authorization
         value: "Basic {{ (orthanc_username ~ ':' ~ orthanc_password) | b64encode }}"
