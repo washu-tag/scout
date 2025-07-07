@@ -2,12 +2,17 @@ minio_name: minio
 minio_storage_class: minio-storage
 
 storage_definitions: >-
-  [{% for i in range(0, minio_volumes_per_server * minio_server_count) -%}
-    {
-      "name": "{{ minio_name }}{{ i }}",
-      "size": "{{ minio_storage_size | default('100Gi') }}",
-      "path": "{{ minio_dir }}{{ i }}",
-      "pv_name": "{{ minio_name }}-pv{{ i }}",
-      "storage_class_name": "{{ minio_storage_class }}"
-    }{% if not loop.last %},{% endif %}
+  [{% set ns = namespace(last_node=false) -%}
+  {% for node_url in groups["minio_hosts"] -%}
+    {% if loop.last %}{% set ns.last_node = true %}{% endif %}
+    {% for i in range(0, minio_volumes_per_server) -%}
+      {
+        "name": "{{ minio_name }}-{{ node_url }}-{{ i }}",
+        "size": "{{ minio_storage_size | default('100Gi') }}",
+        "path": "{{ minio_dir }}{{ i }}",
+        "pv_name": "{{ minio_name }}-pv-{{ node_url }}-{{ i }}",
+        "storage_class_name": "{{ minio_storage_class }}",
+        "node_url": "{{ node_url }}"
+      }{% if not (loop.last and ns.last_node) %},{% endif %}
+    {%- endfor %}
   {%- endfor %}]
