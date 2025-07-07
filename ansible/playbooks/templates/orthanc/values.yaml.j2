@@ -71,7 +71,10 @@ autoscaling:
 
 volumes: []
 
-volumeMounts: []
+volumeMounts:
+  - mountPath: "/etc/orthanc"
+    name: orthanc-json
+    readOnly: true
 
 nodeSelector: {}
 
