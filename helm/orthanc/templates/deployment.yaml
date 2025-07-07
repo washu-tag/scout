@@ -61,16 +61,10 @@ spec:
           {{- end }}
           {{- with .Values.volumeMounts }}
           volumeMounts:
-            - mountPath: "/etc/orthanc"
-              name: orthanc-json
-              readOnly: true
             {{- toYaml . | nindent 12 }}
           {{- end }}
       {{- with .Values.volumes }}
       volumes:
-        - name: orthanc-json
-          secret:
-            secretName: orthanc-secret
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.nodeSelector }}
