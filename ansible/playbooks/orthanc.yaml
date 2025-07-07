@@ -52,7 +52,7 @@
             namespace: '{{ orthanc_namespace }}'
           type: Opaque
           stringData:
-            CONF: "{{ lookup('template', 'templates/orthanc/orthanc-conf.json.j2') | b64enc }}"
+            CONF: "{{ lookup('template', 'templates/orthanc/orthanc-conf.json.j2') | b64encode }}"
 
     - name: Install Orthanc using Helm
       kubernetes.core.helm:
