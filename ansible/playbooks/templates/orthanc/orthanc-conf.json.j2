@@ -12,6 +12,8 @@
     "Plugins" : [
         "/usr/share/orthanc/plugins", "/usr/local/share/orthanc/plugins"
     ],
+    "StorageDirectory" : "/var/lib/orthanc/db",
+    "IndexDirectory" : "/var/lib/orthanc/db",
     "RegisteredUsers": {
         "{{ orthanc_username | quote }}" : "{{ orthanc_password | quote }}"
     }
