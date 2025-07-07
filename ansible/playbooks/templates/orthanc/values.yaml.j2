@@ -73,11 +73,18 @@ volumes:
   - name: orthanc-json
     secret:
       secretName: orthanc-secret
+  - name: data
+    hostPath:
+      path: '{{ orthanc_dir }}'
 
 volumeMounts:
-  - mountPath: "/etc/orthanc"
+  - mountPath: /etc/orthanc
     name: orthanc-json
     readOnly: true
+  - name: data
+    mountPath: /var/lib/orthanc/db
+    readOnly: false
+    mountPropagation: HostToContainer
 
 nodeSelector: {}
 
