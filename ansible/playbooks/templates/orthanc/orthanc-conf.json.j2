@@ -9,6 +9,9 @@
     "DicomWeb": {
         "Enable": true
     },
+    "Plugins" : [
+        "/usr/share/orthanc/plugins", "/usr/local/share/orthanc/plugins"
+    ],
     "RegisteredUsers": {
         "{{ orthanc_username | quote }}" : "{{ orthanc_password | quote }}"
     }
