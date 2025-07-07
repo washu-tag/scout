@@ -93,17 +93,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-orthancConf:
-  {
-    "Name" : "TAG Exploration Orthanc",
-    "UnknownSopClassAccepted" : true,
-    "DicomModalitiesInDatabase" : true,
-    "OrthancPeersInDatabase" : true,
-    "CaseSensitivePN" : false,
-    "IngestTranscodingOfUncompressed" : false,
-    "IngestTranscodingOfCompressed" : false,
-    "DicomWeb": {
-      "Enable": true
-    }
-  }
