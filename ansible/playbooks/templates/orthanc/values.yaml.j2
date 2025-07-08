@@ -48,23 +48,20 @@ ingress:
 
 resources: {}
 
-env:
-  AAA: BBB
-
 livenessProbe:
   httpGet:
     path: /
     port: 8042
     httpHeaders:
       - name: Authorization
-        value: $AAA
+        value: "Basic {{ (orthanc_username ~ ':' ~ orthanc_password) | b64encode }}"
 readinessProbe:
   httpGet:
     path: /
     port: 8042
     httpHeaders:
       - name: Authorization
-        value: "$AAA"
+        value: "Basic {{ (orthanc_username ~ ':' ~ orthanc_password) | b64encode }}"
 
 autoscaling:
   enabled: false
