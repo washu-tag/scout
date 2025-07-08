@@ -49,19 +49,11 @@ ingress:
 resources: {}
 
 livenessProbe:
-  httpGet:
-    path: /
-    port: 8042
-    httpHeaders:
-      - name: Authorization
-        value: "Basic {{ (orthanc_username ~ ':' ~ orthanc_password) | b64encode }}"
+  tcpSocket:
+    port: 4242
 readinessProbe:
-  httpGet:
-    path: /
-    port: 8042
-    httpHeaders:
-      - name: Authorization
-        value: "Basic {{ (orthanc_username ~ ':' ~ orthanc_password) | b64encode }}"
+  tcpSocket:
+    port: 4242
 
 autoscaling:
   enabled: false
