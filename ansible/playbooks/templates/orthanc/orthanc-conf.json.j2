@@ -16,7 +16,6 @@
     "IndexDirectory" : "/var/lib/orthanc/db",
     "RemoteAccessAllowed" : true,
     "RestApiWriteToFileSystemEnabled": true,
-    "PublicRoot" : "/orthanc/",
     "RegisteredUsers": {
         "{{ orthanc_username | default('orthanc') | quote }}" : "{{ orthanc_password | default('orthanc') | quote }}"
     }
