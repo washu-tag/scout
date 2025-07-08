@@ -19,7 +19,7 @@ ollama:
     annotations:
       traefik.ingress.kubernetes.io/router.middlewares: open-webui-open-webui-stripprefix@kubernetescrd
     hosts:
-      - host: big-03.minmi-algol.ts.net
+      - host: tagdev-control-03.minmi-algol.ts.net
         paths:
           - path: /ollama
             pathType: Prefix
@@ -35,7 +35,7 @@ pipelines:
 ingress:
   enabled: true
   class: traefik
-  host: big-03.minmi-algol.ts.net
+  host: tagdev-control-03.minmi-algol.ts.net
 
 persistence:
   enabled: true
@@ -110,7 +110,7 @@ extraResources:
           - /open-webui
 
 # -- Configure database URL, needed to work with Postgres (example: `postgresql://<user>:<password>@<service>:<port>/<database>`), leave empty to use the default sqlite database
-databaseUrl: 'postgresql://scout:scout123@postgresql-cluster-r.postgres:5432/openwebui'
+databaseUrl: 'postgresql://scout:scout123@postgresql-cluster-r.cloudnative-pg:5432/openwebui'
 
 enableOpenaiApi: false
 
