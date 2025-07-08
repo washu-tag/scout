@@ -48,6 +48,15 @@ ingress:
 
 resources: {}
 
+
+livenessProbe:
+  exec:
+    command:
+      - bash
+      - -c
+      - 'curl --fail http://localhost:8042/peers -u "$USER":"$PASSWORD"'
+  initialDelaySeconds: 5
+  periodSeconds: 5
 #livenessProbe:
 #  httpGet:
 #    path: /
