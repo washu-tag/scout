@@ -1,9 +1,9 @@
 replicaCount: 1
 
 image:
-  repository: jodogne/orthanc-plugins
+  repository: '{{ orthanc_image }}'
   pullPolicy: IfNotPresent
-  tag: latest
+  tag: '{{ orthanc_version }}'
 
 imagePullSecrets: []
 nameOverride: ''
@@ -39,11 +39,11 @@ ingress:
   className: traefik
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: >
-      kube-system-orthanc-strip-prefix@kubernetescrd
+      kube-system-{{ orthanc_strip_middleware }}@kubernetescrd
   hosts:
     - host: '{{ server_hostname }}'
       paths:
-        - path: /orthanc
+        - path: '/{{ orthanc_path_prefix }}'
           pathType: Prefix
 
 resources: {}

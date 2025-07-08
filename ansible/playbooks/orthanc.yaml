@@ -16,6 +16,7 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   vars_files:
     - vars/orthanc_storage.yaml
+    - vars/orthanc.yaml
   tasks:
     - name: Set up storage
       include_tasks: tasks/storage_setup.yaml
@@ -34,12 +35,12 @@
           apiVersion: traefik.io/v1alpha1
           kind: Middleware
           metadata:
-            name: 'orthanc-strip-prefix'
+            name: '{{ orthanc_strip_middleware }}'
             namespace: kube-system
           spec:
             stripPrefix:
               prefixes:
-                - '/orthanc'
+                - '/{{ orthanc_path_prefix }}'
 
     - name: Create Orthanc conf secret
       kubernetes.core.k8s:

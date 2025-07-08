@@ -1,0 +1,8 @@
+orthanc_namespace: orthanc
+orthanc_dir: /scout/data/orthanc
+orthanc_image: jodogne/orthanc-plugins
+orthanc_version: latest
+orthanc_username: orthanc
+orthanc_password: orthanc
+orthanc_strip_middleware: orthanc-strip-prefix
+orthanc_path_prefix: orthanc
