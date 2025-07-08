@@ -1,6 +1,5 @@
 orthanc_name: orthanc
 orthanc_storage_class: '{{ orthanc_name }}-storage'
-orthanc_dir: '{{ orthanc_dir }}'
 
 storage_definitions:
   - name: '{{ orthanc_name }}'
