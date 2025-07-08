@@ -15,8 +15,8 @@
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   vars_files:
-    - vars/orthanc_storage.yaml
     - vars/orthanc.yaml
+    - vars/orthanc_storage.yaml
   tasks:
     - name: Set up storage
       include_tasks: tasks/storage_setup.yaml
