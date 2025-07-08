@@ -50,7 +50,7 @@ resources: {}
 
 livenessProbe:
   httpGet:
-    path: "Basic {{ (orthanc_username ~ ':' ~ orthanc_password) | b64encode }}"
+    path: /
     port: 8042
     httpHeaders:
       - name: Authorization
