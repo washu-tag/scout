@@ -15,7 +15,6 @@
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   vars_files:
-    - vars/orthanc.yaml
     - vars/orthanc_storage.yaml
   tasks:
     - name: Set up storage
@@ -35,12 +34,12 @@
           apiVersion: traefik.io/v1alpha1
           kind: Middleware
           metadata:
-            name: '{{ orthanc_strip_middleware }}'
+            name: orthanc-strip-prefix
             namespace: kube-system
           spec:
             stripPrefix:
               prefixes:
-                - '/{{ orthanc_path_prefix }}'
+                - /orthanc
 
     - name: Create Orthanc conf secret
       kubernetes.core.k8s:
