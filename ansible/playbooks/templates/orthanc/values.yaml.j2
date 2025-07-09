@@ -32,8 +32,8 @@ ingress:
   className: traefik
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: >
-      kube-system-orthanc-strip-prefix@kubernetescrd,
-      kube-system-orthanc-add-trailing-slash@kubernetescrd
+      kube-system-orthanc-add-trailing-slash@kubernetescrd,
+      kube-system-orthanc-strip-prefix@kubernetescrd
   hosts:
     - host: '{{ server_hostname }}'
       paths:
