@@ -100,7 +100,7 @@
         state: present
         taints:
           - key: node-role.kubernetes.io/control-plane
-            effect: NoSchedule
+            effect: '{{ control_plane_taint_effect | default("PreferNoSchedule") }}'
 
 ################################################################################
 - hosts: gpu_workers
