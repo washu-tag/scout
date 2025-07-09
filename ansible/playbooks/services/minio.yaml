@@ -115,7 +115,7 @@
               # Ensure MinIO pods can run on control plane nodes
               - key: 'node-role.kubernetes.io/control-plane'
                 operator: Exists
-                effect: NoSchedule
+                effect: '{{ control_plane_taint_effect | default("PreferNoSchedule") }}'
             affinity:
               podAntiAffinity:
                 requiredDuringSchedulingIgnoredDuringExecution:
