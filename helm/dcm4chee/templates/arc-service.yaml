@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    {{- include "dcm4chee.labels" . | nindent 4 }}
+    dcm4chee-component: arc
+  name: arc
+spec:
+  ports:
+    - name: "8080"
+      port: 8080
+      targetPort: 8080
+    - name: "8443"
+      port: 8443
+      targetPort: 8443
+    - name: "9990"
+      port: 9990
+      targetPort: 9990
+    - name: "9993"
+      port: 9993
+      targetPort: 9993
+    - name: "11112"
+      port: 11112
+      targetPort: 11112
+    - name: "2762"
+      port: 2762
+      targetPort: 2762
+    - name: "2575"
+      port: 2575
+      targetPort: 2575
+    - name: "12575"
+      port: 12575
+      targetPort: 12575
+  selector:
+    dcm4chee-component: arc
