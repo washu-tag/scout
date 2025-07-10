@@ -33,6 +33,6 @@ storage_definitions:
     storage_class_name: '{{ dcm4chee_openldap_storage_class }}'
   - name: '{{ dcm4chee_slapd_name }}'
     size: "{{ dcm4chee_slapd_storage_size | default('10Gi') }}"
-    path: '{{ dcm4chee_dir }}/slapd.d'
+    path: '{{ dcm4chee_dir }}/slapd'
     pv_name: '{{ dcm4chee_slapd_name }}-pv'
     storage_class_name: '{{ dcm4chee_slapd_storage_class }}'
