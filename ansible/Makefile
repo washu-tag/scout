@@ -73,3 +73,6 @@ install-explorer:
 
 install-orthanc:
 	$(ANSIBLE_CMD) playbooks/orthanc.yaml
+
+install-dcm4chee:
+	$(ANSIBLE_CMD) playbooks/dcm4chee.yaml
