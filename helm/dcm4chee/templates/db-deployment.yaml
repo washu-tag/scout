@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  labels:
+    {{ -include "dcm4chee.labels" . | nindent 4 }}
+    dcm4chee-component: db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      dcm4chee-component: db
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dcm4chee.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        dcm4chee-component: db
+    spec:
+      initContainers:
+        - name: create-tz
+          image: alpine
+          command: ["echo", "Europe/Vienna", ">", "/etc/timezone"]
+          volumeMounts:
+            - name: tz
+              mountPath: /etc
+      containers:
+        - env:
+            - name: POSTGRES_DB
+              value: pacsdb
+            - name: POSTGRES_PASSWORD
+              value: pacs
+            - name: POSTGRES_USER
+              value: pacs
+          image: dcm4che/postgres-dcm4chee:17.4-34
+          name: db
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          volumeMounts:
+            - name: tz
+              mountPath: /etc
+            - name: data
+              mountPath: /var/lib/postgresql/data
+              readOnly: false
+              mountPropagation: HostToContainer
+      volumes:
+        - name: tz
+          emptyDir: {}
+        - name: data
+          hostPath:
+            path: "{{ .Values.paths.db }}"

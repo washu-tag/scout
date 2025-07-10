@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arc
+  labels:
+    {{ -include "dcm4chee.labels" . | nindent 4 }}
+    dcm4chee-component: arc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      dcm4chee-component: arc
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dcm4chee.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        dcm4chee-component: arc
+    spec:
+      initContainers:
+        - name: create-tz
+          image: alpine
+          command: ["echo", "Europe/Vienna", ">", "/etc/timezone"]
+          volumeMounts:
+            - name: tz
+              mountPath: /etc
+      containers:
+        - env:
+            - name: POSTGRES_DB
+              value: pacsdb
+            - name: POSTGRES_PASSWORD
+              value: pacs
+            - name: POSTGRES_USER
+              value: pacs
+            - name: WILDFLY_CHOWN
+              value: /storage
+            - name: WILDFLY_WAIT_FOR
+              value: ldap:389 db:5432
+          image: dcm4che/dcm4chee-arc-psql:5.34.0
+          name: arc
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 8443
+              protocol: TCP
+            - containerPort: 9990
+              protocol: TCP
+            - containerPort: 9993
+              protocol: TCP
+            - containerPort: 11112
+              protocol: TCP
+            - containerPort: 2762
+              protocol: TCP
+            - containerPort: 2575
+              protocol: TCP
+            - containerPort: 12575
+              protocol: TCP
+          volumeMounts:
+            - name: tz
+              mountPath: /etc
+            - name: wildfly
+              mountPath: /opt/wildfly/standalone
+              readOnly: false
+              mountPropagation: HostToContainer
+            - name: storage
+              mountPath: /storage
+              readOnly: false
+              mountPropagation: HostToContainer
+      volumes:
+        - name: tz
+          emptyDir: {}
+        - name: wildfly
+          hostPath:
+            path: "{{ .Values.paths.wildfly }}"
+        - name: storage
+          hostPath:
+            path: "{{ .Values.paths.storage }}"

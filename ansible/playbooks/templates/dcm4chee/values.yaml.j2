@@ -1,0 +1,47 @@
+replicaCount: 1
+
+imagePullSecrets: []
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: >
+      kube-system-dcm4chee-add-trailing-slash@kubernetescrd,
+      kube-system-dcm4chee-strip-prefix@kubernetescrd
+  hosts:
+    - host: '{{ server_hostname }}'
+      paths:
+        - path: /dcm4chee
+          pathType: Prefix
+
+resources: {}
+
+# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+paths:
+  wildfly: '{{ dcm4chee_dir }}/wildfly'
+  storage: '{{ dcm4chee_dir }}/storage'
+  db: '{{ dcm4chee_dir }}/storage'
+  openldap: '{{ dcm4chee_dir }}/openldap'
+  slapd: '{{ dcm4chee_dir }}/slapd.d'

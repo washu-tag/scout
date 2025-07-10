@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ldap
+  labels:
+    {{ -include "dcm4chee.labels" . | nindent 4 }}
+    dcm4chee-component: ldap
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      dcm4chee-component: ldap
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dcm4chee.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        dcm4chee-component: ldap
+    spec:
+      containers:
+        - env:
+            - name: STORAGE_DIR
+              value: /storage/fs1
+          image: dcm4che/slapd-dcm4chee:2.6.8-34.0
+          name: ldap
+          ports:
+            - containerPort: 389
+              protocol: TCP
+          volumeMounts:
+            - name: openldap-data
+              mountPath: /var/lib/openldap/openldap-data
+              readOnly: false
+              mountPropagation: HostToContainer
+            - name: slapd
+              mountPath: /etc/openldap/slapd.d
+              readOnly: false
+              mountPropagation: HostToContainer
+      volumes:
+        - name: openldap-data
+          hostPath:
+            path: "{{ .Values.paths.openldap }}"
+        - name: slapd
+          hostPath:
+            path: "{{ .Values.paths.slapd }}"

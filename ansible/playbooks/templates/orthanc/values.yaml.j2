@@ -42,12 +42,12 @@ ingress:
 
 resources: {}
 
-#livenessProbe:
-#  tcpSocket:
-#    port: 4242
-#readinessProbe:
-#  tcpSocket:
-#    port: 4242
+livenessProbe:
+  tcpSocket:
+    port: 4242
+readinessProbe:
+  tcpSocket:
+    port: 4242
 
 autoscaling:
   enabled: false
