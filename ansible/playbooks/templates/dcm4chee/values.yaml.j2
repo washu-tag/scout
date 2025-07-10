@@ -40,8 +40,8 @@ autoscaling:
   # targetMemoryUtilizationPercentage: 80
 
 paths:
-  wildfly: /scout/data/dcm4chee/wildfly
-  storage: /scout/data/dcm4chee/storage
-  db: /scout/data/dcm4chee/db
-  openldap: /scout/data/dcm4chee/openldap
-  slapd: /scout/data/dcm4chee/slapd.d
+  wildfly: '{{ dcm4chee_dir }}/wildfly'
+  storage: '{{ dcm4chee_dir }}/storage'
+  db: '{{ dcm4chee_dir }}/db'
+  openldap: '{{ dcm4chee_dir }}/openldap'
+  slapd: '{{ dcm4chee_dir }}/slapd.d'
