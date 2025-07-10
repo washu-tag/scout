@@ -91,17 +91,17 @@
       register: cassandra_ready
       changed_when: false
 
-    # - name: Add Temporal Helm repository
-    #   kubernetes.core.helm_repository:
-    #     name: temporal
-    #     repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
+    - name: Add Temporal Helm repository
+      kubernetes.core.helm_repository:
+        name: temporal
+        repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
 
     - name: Install/Upgrade Temporal Helm chart
       register: temporal_helm_result
       kubernetes.core.helm:
         name: temporal
         chart_ref: temporal/temporal
-        chart_version: ~0.62.0
+        chart_version: ~0.64.0
         release_namespace: '{{ temporal_namespace }}'
         create_namespace: true
         release_state: present
@@ -116,6 +116,8 @@
             enabled: false
           server:
             replicaCount: 1
+            internalFrontend:
+              enabled: true
             config:
               namespaces:
                 create: true
@@ -132,14 +134,14 @@
                       default:
                         consistency: 'local_quorum'
                         serialConsistency: 'local_serial'
-              # authorization:
-              #   jwtKeyProvider:
-              #     keySourceURIs:
-              #       - https://{{ server_hostname }}/auth/realms/scout/protocol/openid-connect/certs
-              #     refreshInterval: 1m
-              #   permissionsClaimName: groups
-              #   authorizer: default
-              #   claimMapper: default
+                authorization:
+                  jwtKeyProvider:
+                    keySourceURIs:
+                      - https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/certs
+                    refreshInterval: 1m
+                  permissionsClaimName: groups
+                  authorizer: default
+                  claimMapper: default
           cassandra:
             enabled: false
           elasticsearch:
@@ -161,7 +163,7 @@
               - name: TEMPORAL_AUTH_ENABLED
                 value: 'true'
               - name: TEMPORAL_AUTH_PROVIDER_URL
-                value: 'https://{{ server_hostname }}/auth/realms/scout'
+                value: 'https://{{ server_hostname }}/kc/realms/scout'
               - name: TEMPORAL_AUTH_CLIENT_ID
                 value: '{{ keycloak_temporal_client_id }}'
               - name: TEMPORAL_AUTH_CLIENT_SECRET
