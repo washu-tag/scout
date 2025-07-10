@@ -134,14 +134,14 @@
                       default:
                         consistency: 'local_quorum'
                         serialConsistency: 'local_serial'
-                authorization:
-                  jwtKeyProvider:
-                    keySourceURIs:
-                      - https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/certs
-                    refreshInterval: 1m
-                  permissionsClaimName: groups
-                  authorizer: default
-                  claimMapper: default
+              authorization:
+                jwtKeyProvider:
+                  keySourceURIs:
+                    - https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/certs
+                  refreshInterval: 1m
+                permissionsClaimName: groups
+                authorizer: default
+                claimMapper: default
           cassandra:
             enabled: false
           elasticsearch:
