@@ -21,16 +21,16 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      initContainers:
-        - name: create-tz
-          image: alpine
-          command:
-            - sh
-            - -c
-            - 'echo "Europe/Vienna" > /etc/timezone'
-          volumeMounts:
-            - name: tz
-              mountPath: /etc
+      #initContainers:
+      #  - name: create-tz
+      #    image: alpine
+      #    command:
+      #      - sh
+      #      - -c
+      #      - 'echo "Europe/Vienna" > /etc/timezone'
+      #    volumeMounts:
+      #      - name: tz
+      #        mountPath: /etc
       containers:
         - env:
             - name: POSTGRES_DB
@@ -45,15 +45,15 @@ spec:
             - containerPort: 5432
               protocol: TCP
           volumeMounts:
-            - name: tz
-              mountPath: /etc
+            #- name: tz
+            #  mountPath: /etc
             - name: data
               mountPath: /var/lib/postgresql/data
               readOnly: false
               mountPropagation: HostToContainer
       volumes:
-        - name: tz
-          emptyDir: {}
+        #- name: tz
+        #  emptyDir: {}
         - name: data
           hostPath:
             path: "{{ .Values.paths.db }}"
