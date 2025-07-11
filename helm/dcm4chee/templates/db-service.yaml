@@ -2,8 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    {{- include "dcm4chee.labels" . | nindent 4 }}
-    dcm4chee-component: db
+    {{- include "dcm4chee.db.labels" . | nindent 4 }}
   name: db
 spec:
   ports:
