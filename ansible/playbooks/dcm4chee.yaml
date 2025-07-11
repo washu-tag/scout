@@ -64,6 +64,6 @@
         chart_ref: '{{ scout_repo_dir }}/helm/dcm4chee'
         state: present
         wait: true
-        wait_timeout: 2m
+        wait_timeout: 5m
         atomic: true
         values: "{{ lookup('template', 'templates/dcm4chee/values.yaml.j2') | from_yaml }}"
