@@ -55,6 +55,11 @@ dcm4chee-component: ldap
 dcm4chee-component: db
 {{- end }}
 
+{{- define "dcm4chee.arc.labels" -}}
+{{ include "dcm4chee.labels" . }}
+dcm4chee-component: arc
+{{- end }}
+
 {{/*
 Selector labels
 */}}

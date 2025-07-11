@@ -3,8 +3,7 @@ kind: Deployment
 metadata:
   name: arc
   labels:
-    {{ -include "dcm4chee.labels" . | nindent 4 }}
-    dcm4chee-component: arc
+    {{- include "dcm4chee.arc.labels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:
@@ -17,11 +16,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "dcm4chee.labels" . | nindent 8 }}
+        {{- include "dcm4chee.arc.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-        dcm4chee-component: arc
     spec:
       initContainers:
         - name: create-tz
