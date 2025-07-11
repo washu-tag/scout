@@ -31,6 +31,7 @@ spec:
       #    volumeMounts:
       #      - name: tz
       #        mountPath: /etc
+      subdomain: db
       containers:
         - env:
             - name: POSTGRES_DB
