@@ -24,7 +24,7 @@ spec:
       initContainers:
         - name: create-tz
           image: alpine
-          command: ["echo", "Europe/Vienna", ">", "/etc/timezone"]
+          command: ['echo Europe/Vienna > /etc/timezone']
           volumeMounts:
             - name: tz
               mountPath: /etc
