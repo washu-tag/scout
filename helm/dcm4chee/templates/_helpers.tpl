@@ -42,6 +42,11 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
+{{- define "dcm4chee.ldap.labels" -}}
+{{ include "dcm4chee.labels" . }}
+dcm4chee-component: ldap
+{{- end }}
+
 {{/*
 Selector labels
 */}}
@@ -60,3 +65,4 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
