@@ -37,7 +37,7 @@ spec:
               service:
                 name: {{ include "dcm4chee.fullname" $ }}
                 port:
-                  number: {{ $.Values.service.port }}
+                  number: {{ $.Values.service.http }}
           {{- end }}
     {{- end }}
 {{- end }}
