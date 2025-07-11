@@ -2,6 +2,12 @@ replicaCount: 1
 
 imagePullSecrets: []
 
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ''
+
 service:
   type: ClusterIP
   port: 80
