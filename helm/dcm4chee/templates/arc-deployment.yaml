@@ -40,7 +40,7 @@ spec:
             - name: POSTGRES_USER
               value: pacs
             - name: WILDFLY_CHOWN
-              value: /storage
+              value: /opt/wildfly/standalone /storage
             - name: WILDFLY_WAIT_FOR
               value: ldap:389 db:5432
             - name: POSTGRES_HOST
