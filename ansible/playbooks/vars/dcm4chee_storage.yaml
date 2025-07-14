@@ -9,6 +9,10 @@ dcm4chee_openldap_name: dcm4chee-openldap
 dcm4chee_openldap_storage_class: '{{ dcm4chee_openldap_name }}-storage'
 dcm4chee_slapd_name: dcm4chee-slapd
 dcm4chee_slapd_storage_class: '{{ dcm4chee_slapd_name }}-storage'
+dcm4chee_mariadb_name: dcm4chee-mariadb
+dcm4chee_mariadb_storage_class: '{{ dcm4chee_mariadb_name }}-storage'
+dcm4chee_keycloak_name: dcm4chee-keycloak
+dcm4chee_keycloak_storage_class: '{{ dcm4chee_keycloak_name }}-storage'
 
 storage_definitions:
   - name: '{{ dcm4chee_wildfly_name }}'
