@@ -296,6 +296,20 @@
           "organization",
           "offline_access",
         ]
+      },
+      {
+        "name": "{{ keycloak_launchpad_client_id }}",
+        "description": "Launchpad Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_launchpad_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_launchpad_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ]
       }
     ],
     "identityProviders": [

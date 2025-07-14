@@ -101,7 +101,7 @@
       kubernetes.core.helm:
         name: temporal
         chart_ref: temporal/temporal
-        chart_version: ~0.62.0
+        chart_version: ~0.64.0
         release_namespace: '{{ temporal_namespace }}'
         create_namespace: true
         release_state: present

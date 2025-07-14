@@ -67,7 +67,7 @@ jobs:
         with:
           subproject: helm/jupyter/notebook
           image-name: pyspark-notebook
-  build-and-upload-explorer:
+  build-and-upload-launchpad:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -75,11 +75,11 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4.2.1
-      - name: 'Build/Cache Image - explorer'
+      - name: 'Build/Cache Image - launchpad'
         uses: ./.github/actions/docker-build-cache
         with:
-          subproject: explorer
-          image-name: explorer
+          subproject: launchpad
+          image-name: launchpad
   build-and-upload-superset:
     runs-on: ubuntu-latest
     permissions:
@@ -113,7 +113,7 @@ jobs:
       - build-and-upload-hl7log-extractor
       - build-and-upload-hl7-transformer
       - build-and-upload-pyspark-notebook
-      - build-and-upload-explorer
+      - build-and-upload-launchpad
       - build-and-upload-superset
       - unit-test
     permissions:
@@ -226,10 +226,10 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: pyspark-notebook
-      - name: 'Push Image - explorer'
+      - name: 'Push Image - launchpad'
         uses: ./.github/actions/docker-push
         with:
-          image-name: explorer
+          image-name: launchpad
       - name: 'Push Image - superset'
         uses: ./.github/actions/docker-push
         with:

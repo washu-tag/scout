@@ -1,0 +1,45 @@
+---
+- name: Install launchpad
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+
+  tasks:
+    - name: Install launchpad using Helm
+      kubernetes.core.helm:
+        name: launchpad
+        release_namespace: '{{ launchpad_namespace }}'
+        create_namespace: true
+        chart_ref: '{{ scout_repo_dir }}/helm/launchpad'
+        state: present
+        wait: true
+        wait_timeout: 5m
+        atomic: true
+        values_files:
+          - '{{ scout_repo_dir }}/helm/launchpad/values.yaml'
+        values:
+          image:
+            repository: '{{ launchpad_image | default(omit) }}'
+          auth:
+            keycloak:
+              enabled: true
+              clientId: '{{ keycloak_launchpad_client_id }}'
+              clientSecret: '{{ keycloak_launchpad_client_secret }}'
+              issuer: 'https://{{ server_hostname }}/kc/realms/scout'
+            nextAuthUrl: 'https://{{ server_hostname }}/launchpad/api/auth'
+            nextAuthSecret: '{{ launchpad_nextauth_secret }}'
+            oauth2ProxySignOutUrl: 'https://{{ server_hostname }}/oauth2/sign_out'
+          ingress:
+            enabled: true
+            className: traefik
+            annotations:
+              traefik.ingress.kubernetes.io/router.middlewares: >
+                kube-system-oauth2-proxy-error@kubernetescrd,
+                kube-system-oauth2-proxy-auth@kubernetescrd
+            hosts:
+              - host: '{{ server_hostname }}'
+                paths:
+                  - path: /launchpad
+                    pathType: Prefix
