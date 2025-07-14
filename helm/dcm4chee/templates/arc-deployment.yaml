@@ -45,6 +45,8 @@ spec:
               value: ldap:389 db:5432
             - name: POSTGRES_HOST
               value: db
+            - name: WILDFLY_ADMIN_OIDC
+              value: 'false'
           image: dcm4che/dcm4chee-arc-psql:5.34.0
           name: arc
           ports:
