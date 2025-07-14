@@ -17,9 +17,9 @@ ingress:
   enabled: true
   className: traefik
   annotations:
-    #traefik.ingress.kubernetes.io/router.middlewares: >
+    traefik.ingress.kubernetes.io/router.middlewares: >
     #  kube-system-dcm4chee-add-trailing-slash@kubernetescrd,
-    #  kube-system-dcm4chee-strip-prefix@kubernetescrd
+    kube-system-dcm4chee-strip-prefix@kubernetescrd
   hosts:
     - host: '{{ server_hostname }}'
       paths:
