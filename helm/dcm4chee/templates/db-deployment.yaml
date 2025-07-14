@@ -40,6 +40,8 @@ spec:
               value: pacs
             - name: POSTGRES_USER
               value: pacs
+            - name: TZ
+              value: Europe/Paris
           image: dcm4che/postgres-dcm4chee:17.4-34
           name: db
           ports:
