@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+  labels:
+    {{- include "dcm4chee.mariadb.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      dcm4chee-component: mariadb
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dcm4chee.mariadb.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      subdomain: mariadb
+      containers:
+        - env:
+            - name: MYSQL_DATABASE
+              value: keycloak
+            - name: MYSQL_USER
+              value: keycloak
+            - name: MYSQL_PASSWORD
+              value: keycloak
+            - name: MYSQL_ROOT_PASSWORD
+              value: secret
+          image: mariadb:10.7.3
+          name: mariadb
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+              readOnly: false
+              mountPropagation: HostToContainer
+      volumes:
+        - name: data
+          hostPath:
+            path: "{{ .Values.paths.mariadb }}"

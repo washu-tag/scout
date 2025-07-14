@@ -28,8 +28,6 @@ spec:
               value: /storage/fs1
             - name: TZ
               value: Europe/Paris
-            - name: KEYCLOAK_HOST
-              value: 'localhost'
           image: dcm4che/slapd-dcm4chee:2.6.8-34.0
           name: ldap
           ports:

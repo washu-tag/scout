@@ -36,3 +36,13 @@ storage_definitions:
     path: '{{ dcm4chee_dir }}/slapd.d'
     pv_name: '{{ dcm4chee_slapd_name }}-pv'
     storage_class_name: '{{ dcm4chee_slapd_storage_class }}'
+  - name: '{{ dcm4chee_mariadb_name }}'
+    size: "{{ dcm4chee_mariadb_storage_size | default('10Gi') }}"
+    path: '{{ dcm4chee_dir }}/mariadb'
+    pv_name: '{{ dcm4chee_mariadb_name }}-pv'
+    storage_class_name: '{{ dcm4chee_mariadb_storage_class }}'
+  - name: '{{ dcm4chee_keycloak_name }}'
+    size: "{{ dcm4chee_keycloak_storage_size | default('10Gi') }}"
+    path: '{{ dcm4chee_dir }}/keycloak'
+    pv_name: '{{ dcm4chee_keycloak_name }}-pv'
+    storage_class_name: '{{ dcm4chee_keycloak_storage_class }}'
