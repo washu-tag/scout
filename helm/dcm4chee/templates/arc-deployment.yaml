@@ -51,7 +51,7 @@ spec:
               value: 'http://localhost'
             - name: TZ
               value: Europe/Paris
-          image: dcm4che/dcm4chee-arc-psql:5.31.0
+          image: dcm4che/dcm4chee-arc-psql:5.34.0
           name: arc
           ports:
             - containerPort: 8080
