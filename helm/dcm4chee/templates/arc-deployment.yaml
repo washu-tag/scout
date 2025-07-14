@@ -21,6 +21,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      subdomain: arc
       #initContainers:
       #  - name: create-tz
       #    image: alpine
