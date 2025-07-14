@@ -48,7 +48,7 @@ spec:
               value: db
             - name: TZ
               value: Europe/Paris
-          image: dcm4che/dcm4chee-arc-psql:5.34.0
+          image: dcm4che/dcm4chee-arc-psql:5.33.1
           name: arc
           ports:
             - containerPort: 8080
