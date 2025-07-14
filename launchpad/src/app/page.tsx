@@ -8,7 +8,6 @@ import { BiLineChart } from 'react-icons/bi';
 import TopBar from '@/components/TopBar';
 import AdminSection from '@/components/AdminSection';
 import Link from 'next/link';
-import Image from 'next/image';
 
 // Modern card system with emphasis and visual hierarchy
 interface ToolCardProps {
@@ -24,23 +23,25 @@ const ToolCard = ({ href, icon, title, description, color, external = false }: T
   const colorClasses = {
     blue: 'border-blue-200 hover:border-blue-400 bg-blue-50 hover:bg-blue-100',
     amber: 'border-amber-200 hover:border-amber-400 bg-amber-50 hover:bg-amber-100',
-    indigo: 'border-indigo-200 hover:border-indigo-400 bg-indigo-50 hover:bg-indigo-100'
+    indigo: 'border-indigo-200 hover:border-indigo-400 bg-indigo-50 hover:bg-indigo-100',
   };
 
   const iconColorClasses = {
     blue: 'bg-blue-500',
     amber: 'bg-amber-500',
-    indigo: 'bg-indigo-500'
+    indigo: 'bg-indigo-500',
   };
 
   return (
     <a
       href={href}
-      {...(external && { target: "_blank", rel: "noopener noreferrer" })}
+      {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
       className={`group relative p-6 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl no-underline ${colorClasses[color]} dark:bg-gray-800 dark:border-gray-700 dark:hover:border-gray-600 dark:hover:bg-gray-750`}
     >
       <div className="flex items-start gap-6">
-        <div className={`p-4 rounded-2xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 text-white ${iconColorClasses[color]}`}>
+        <div
+          className={`p-4 rounded-2xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 text-white ${iconColorClasses[color]}`}
+        >
           {icon}
         </div>
         <div className="flex-1">
@@ -49,8 +50,18 @@ const ToolCard = ({ href, icon, title, description, color, external = false }: T
               {title}
             </h3>
             {external && (
-              <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              <svg
+                className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
               </svg>
             )}
           </div>
@@ -83,10 +94,12 @@ export default function Home() {
       {/* Header */}
       <div className="w-full px-8 py-6 border-b border-gray-100 dark:border-gray-800">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href={"/"} className="flex items-center gap-3">
+          <Link href={'/'} className="flex items-center gap-3">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Scout</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 pt-2">Radiology Report Explorer</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 pt-2">
+                Radiology Report Explorer
+              </p>
             </div>
           </Link>
           <TopBar />
@@ -96,7 +109,6 @@ export default function Home() {
       <div
         className={`max-w-5xl mx-auto px-8 py-12 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
-
         {/* Main Tools Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           <ToolCard
@@ -106,7 +118,7 @@ export default function Home() {
             description="Interactive data analysis and exploration with JupyterHub"
             color="blue"
           />
-          
+
           <ToolCard
             href="/"
             icon={<BiLineChart className="text-4xl" />}
@@ -133,7 +145,12 @@ export default function Home() {
           <div className="mb-12">
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wide flex items-center">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
               </svg>
               Admin Tools
             </h3>
@@ -152,7 +169,7 @@ export default function Home() {
               </a>
 
               <a
-                href="/temporal"
+                href="/temporal/auth/sso?returnUrl=/temporal"
                 className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800 hover:shadow-md transition-all duration-300 no-underline"
               >
                 <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
