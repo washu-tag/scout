@@ -23,7 +23,7 @@ storage_definitions:
     storage_class_name: '{{ dcm4chee_storage_storage_class }}'
   - name: '{{ dcm4chee_db_name }}'
     size: "{{ dcm4chee_db_storage_size | default('10Gi') }}"
-    path: '{{ dcm4chee_dir }}/db'
+    path: '{{ dcm4chee_dir }}/dbdir'
     pv_name: '{{ dcm4chee_db_name }}-pv'
     storage_class_name: '{{ dcm4chee_db_storage_class }}'
   - name: '{{ dcm4chee_openldap_name }}'
