@@ -48,7 +48,7 @@ spec:
             - name: WILDFLY_ADMIN_OIDC
               value: 'false'
             - name: AUTH_SERVER_URL
-              value: 'http://localhost
+              value: 'http://localhost'
             - name: TZ
               value: Europe/Paris
           image: dcm4che/dcm4chee-arc-psql:5.34.0
