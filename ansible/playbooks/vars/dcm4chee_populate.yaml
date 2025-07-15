@@ -1,2 +1,5 @@
 namespace: '{{ dcm4chee_namespace }}'
 data_dir: '{{ dcm4chee_populate }}'
+called_aet: DCM4CHEE
+dicom_host: 'arc.{{ dcm4chee_namespace }}'
+dicom_port: 11112

@@ -24,7 +24,13 @@
             containers:
               - name: dcmtk
                 image: vanessa/dicom
-                command: ['sleep', '120s']
+                command:
+                  - storescu
+                  - -aec
+                  - "{{ called_aet }}"
+                  - "{{ dicom_host }}"
+                  - "{{ dicom_port }}"
+                  - /data/*
                 volumeMounts:
                   - name: data
                     mountPath: /data
