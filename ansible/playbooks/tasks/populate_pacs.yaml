@@ -21,7 +21,7 @@
             containers:
               - name: dcmtk
                 image: vanessa/dicom
-                command: ['sleep 60s']
+                command: ['sleep', '60s']
                 volumeMounts:
                   - name: data
                     mountPath: /data
