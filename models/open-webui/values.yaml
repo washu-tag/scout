@@ -17,11 +17,11 @@ ollama:
     enabled: true
     ingressClassName: traefik
     annotations:
-      traefik.ingress.kubernetes.io/router.middlewares: open-webui-open-webui-stripprefix@kubernetescrd
+      traefik.ingress.kubernetes.io/router.middlewares: open-webui-ollama-stripprefix@kubernetescrd
     hosts:
       - host: big-03.minmi-algol.ts.net
         paths:
-          - path: /ollama
+          - path: /ollama-service
             pathType: Prefix
   persistentVolume:
     enabled: true
@@ -101,13 +101,12 @@ extraResources:
   - apiVersion: traefik.io/v1alpha1
     kind: Middleware
     metadata:
-      name: open-webui-stripprefix
+      name: ollama-stripprefix
       namespace: open-webui
     spec:
       stripPrefix:
         prefixes:
-          - /ollama
-          - /open-webui
+          - /ollama-service
 
 # -- Configure database URL, needed to work with Postgres (example: `postgresql://<user>:<password>@<service>:<port>/<database>`), leave empty to use the default sqlite database
 databaseUrl: 'postgresql://scout:scout123@postgresql-cluster-r.postgres:5432/openwebui'
