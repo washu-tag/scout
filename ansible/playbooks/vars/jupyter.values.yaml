@@ -109,3 +109,9 @@ singleuser:
                 kubernetes.io/metadata.name: '{{ hive_namespace }}'
         ports:
           - port: 9083
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ ollama_namespace | default("ollama")}}'
+        ports:
+          - port: 11434
