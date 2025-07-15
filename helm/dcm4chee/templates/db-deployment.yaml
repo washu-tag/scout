@@ -21,20 +21,18 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      #initContainers:
-      #  - name: create-tz
-      #    image: alpine
-      #    command:
-      #      - sh
-      #      - -c
-      #      - 'echo "Europe/Vienna" > /etc/timezone'
-      #    volumeMounts:
-      #      - name: tz
-      #        mountPath: /etc
+      initContainers:
+        - name: take-data-dir-ownership
+          image: alpine
+          command:
+            - chmod
+            - -R
+            - '777'
+            - /var/lib/postgresql/data
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
       subdomain: db
-      securityContext:
-        runAsUser: 0
-        runAsGroup: 0
       containers:
         - env:
             - name: POSTGRES_DB
