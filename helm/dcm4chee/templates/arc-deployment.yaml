@@ -48,6 +48,8 @@ spec:
               value: db
             - name: TZ
               value: Europe/Paris
+            - name: HTTP_PROXY_ADDRESS_FORWARDING
+              value: 'true'
           image: dcm4che/dcm4chee-arc-psql:5.34.0
           name: arc
           ports:
