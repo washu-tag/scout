@@ -56,6 +56,21 @@
               prefixes:
                 - /dcm4chee
 
+    - name: Create DB secrets
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: dcm4chee-db-secret
+            namespace: '{{ dcm4chee_namespace }}'
+          type: Opaque
+          stringData:
+            POSTGRES_DB: "{{ dcm4chee_db | default('pacsdb') }}"
+            POSTGRES_USER: "{{ dcm4chee_db_user | default('pacs') }}"
+            POSTGRES_PASSWORD: "{{ dcm4chee_db_password | default('pacs') }}"
+
     - name: Install Dcm4chee using Helm
       kubernetes.core.helm:
         name: dcm4chee

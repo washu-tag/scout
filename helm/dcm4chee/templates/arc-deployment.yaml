@@ -21,32 +21,17 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      initContainers:
-      #  - name: create-tz
-      #    image: alpine
-      #    command:
-      #      - sh
-      #      - -c
-      #      - 'echo "Europe/Vienna" > /etc/timezone'
-      #    volumeMounts:
-      #      - name: tz
-      #        mountPath: /etc
       containers:
         - env:
-            - name: POSTGRES_DB
-              value: pacsdb
-            - name: POSTGRES_PASSWORD
-              value: pacs
-            - name: POSTGRES_USER
-              value: pacs
             - name: WILDFLY_CHOWN
               value: /opt/wildfly/standalone /storage
             - name: WILDFLY_WAIT_FOR
               value: ldap:389 db:5432
-            - name: POSTGRES_HOST
-              value: db
             - name: TZ
-              value: Europe/Paris
+              value: "{{ .Values.timezone }}"
+          envFrom:
+            - secretRef:
+                name: dcm4chee-db-secret
           image: dcm4che/dcm4chee-arc-psql:5.34.0
           name: arc
           livenessProbe:
@@ -74,8 +59,6 @@ spec:
             - containerPort: 12575
               protocol: TCP
           volumeMounts:
-          #  - name: tz
-          #    mountPath: /etc
             - name: wildfly
               mountPath: /opt/wildfly/standalone
               readOnly: false
@@ -85,8 +68,6 @@ spec:
               readOnly: false
               mountPropagation: HostToContainer
       volumes:
-        #- name: tz
-        #  emptyDir: {}
         - name: wildfly
           hostPath:
             path: "{{ .Values.paths.wildfly }}"

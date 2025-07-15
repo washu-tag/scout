@@ -26,7 +26,7 @@ spec:
             - name: STORAGE_DIR
               value: /storage/fs1
             - name: TZ
-              value: Europe/Paris
+              value: "{{ .Values.timezone }}"
           image: dcm4che/slapd-dcm4chee:2.6.8-34.0
           name: ldap
           ports:
