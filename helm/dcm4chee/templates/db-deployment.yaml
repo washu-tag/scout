@@ -32,6 +32,9 @@ spec:
       #      - name: tz
       #        mountPath: /etc
       subdomain: db
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
       containers:
         - env:
             - name: POSTGRES_DB
