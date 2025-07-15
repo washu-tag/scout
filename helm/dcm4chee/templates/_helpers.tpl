@@ -60,16 +60,6 @@ dcm4chee-component: db
 dcm4chee-component: arc
 {{- end }}
 
-{{- define "dcm4chee.mariadb.labels" -}}
-{{ include "dcm4chee.labels" . }}
-dcm4chee-component: mariadb
-{{- end }}
-
-{{- define "dcm4chee.keycloak.labels" -}}
-{{ include "dcm4chee.labels" . }}
-dcm4chee-component: keycloak
-{{- end }}
-
 {{/*
 Selector labels
 */}}

@@ -21,13 +21,13 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      subdomain: arc
       initContainers:
-        - name: create-tz
-          image: alpine
-          command:
-            - sleep
-            - 60s
+      #  - name: create-tz
+      #    image: alpine
+      #    command:
+      #      - sh
+      #      - -c
+      #      - 'echo "Europe/Vienna" > /etc/timezone'
       #    volumeMounts:
       #      - name: tz
       #        mountPath: /etc
@@ -47,8 +47,6 @@ spec:
               value: db
             - name: TZ
               value: Europe/Paris
-            - name: HTTP_PROXY_ADDRESS_FORWARDING
-              value: 'true'
           image: dcm4che/dcm4chee-arc-psql:5.34.0
           name: arc
           ports:

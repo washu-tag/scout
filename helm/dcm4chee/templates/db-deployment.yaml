@@ -32,7 +32,6 @@ spec:
       #    volumeMounts:
       #      - name: data
       #        mountPath: /var/lib/postgresql
-      subdomain: db
       containers:
         - env:
             - name: POSTGRES_DB
