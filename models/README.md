@@ -109,7 +109,7 @@ kubectl create ns mcp
 
 I then deployed the [`mcp-trino`](https://github.com/tuannvm/mcp-trino) service into that namespace, configuring it to point to our trino service, and to expose its own service.
 ```
-kubectl run -n mcp mcp-trino --env TRINO_HOST=trino.trino --env TRINO_PORT=8080 --env TRINO_SCHEME=http --image=ghcr.io/tuannvm/mcp-trino:latest --port=9097 --expose
+kubectl run -n mcp mcp-trino --env TRINO_HOST=trino.trino --env TRINO_PORT=8080 --env TRINO_SCHEME=http --env MCP_HOST=mcp-trino.mcp --image=ghcr.io/tuannvm/mcp-trino:latest --port=9097 --expose
 ```
 
 Lastly I deployed Open WebUI's MCP proxy tool [`mcpo`](https://github.com/open-webui/mcpo) and configured it to point to the `mcp-trino` service and expose its own service.

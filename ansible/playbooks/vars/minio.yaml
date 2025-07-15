@@ -2,9 +2,6 @@
 # Namespace configuration
 minio_tenant_name: scout
 
-# Storage configuration
-minio_server_count: 1
-
 # MinIO versions
 minio_version: ~7.1.0
 minio_client_image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
