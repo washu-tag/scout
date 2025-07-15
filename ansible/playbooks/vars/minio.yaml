@@ -33,7 +33,9 @@ minio_ingress_config:
     annotations:
       traefik.ingress.kubernetes.io/router.middlewares: >
         kube-system-{{ minio_trailing_slash_middleware }}@kubernetescrd,
-        kube-system-{{ minio_strip_prefix_middleware }}@kubernetescrd
+        kube-system-{{ minio_strip_prefix_middleware }}@kubernetescrd,
+        kube-system-oauth2-proxy-error@kubernetescrd,
+        kube-system-oauth2-proxy-auth@kubernetescrd
 
 # Bucket definitions
 minio_buckets:

@@ -156,7 +156,7 @@ export default function Home() {
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <a
-                href="/minio/"
+                href="/minio/login"
                 className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-800 hover:shadow-md transition-all duration-300 no-underline"
               >
                 <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
