@@ -179,23 +179,14 @@
                       # We already have this user in flask DB. If sync_at_login is True we`ll calculate new roles for gim
                       if user:
                           info = oidc.user_getinfo(['preferred_username', 'given_name', 'family_name', 'email', 'groups', 'role_keys'])
-                          logging.info("User info: %s", info)
-                          logging.info("User groups: %s", oidc.user_getfield('groups', []))
-                          logging.info("User role_keys: %s", oidc.user_getfield('role_keys', []))
                           userRoles = sm._oid_calculate_user_roles(info)
-                          logging.info("Calculated new roles for user='%s' as: %s", info.get('preferred_username'), userRoles)
-                          logging.info("USER='%s'", user)
                           user.roles = userRoles
                           sm.update_user(user)
 
-                          # info2 = sm.get_oauth_user_info('keycloak', None)
-                          # logging.info("User info from OIDC: %s", info2)
                       # # this user is new for flask DB. We will calculate his roles and add him to DB. Than login as usual
                       if user is None:
                           info = oidc.user_getinfo(['preferred_username', 'given_name', 'family_name', 'email', 'groups'])
-                          logging.info("User info: %s", info)
-                          logging.info("User groups: %s", oidc.user_getfield('groups', []))
-                          logging.info("User role_keys: %s", oidc.user_getfield('role_keys', []))
+
                           userRoles = sm._oid_calculate_user_roles(info)
                           logging.info("Calculated  roles for new user='%s' as: %s", info.get('preferred_username'), userRoles)
                           # ZR
@@ -254,7 +245,7 @@
           AUTH_USER_REGISTRATION = True
 
           # The default user self registration role
-          AUTH_USER_REGISTRATION_ROLE = 'Alpha'
+          AUTH_USER_REGISTRATION_ROLE = 'Admin'
 
           AUTH_ROLES_SYNC_AT_LOGIN = True
 
