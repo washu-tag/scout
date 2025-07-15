@@ -11,9 +11,15 @@ workers:
     FQDN-worker-1.edu:
       ansible_connection: local
       ansible_python_interpreter: /usr/bin/python3
+gpu_workers:
+  hosts:
+    FQDN-gpu-1.edu:
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/python3
 agents:
   children:
     workers:
+    gpu_workers:
 k3s_cluster:
   children:
     server:
