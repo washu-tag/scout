@@ -54,6 +54,7 @@ spec:
               port: 11112
           readinessProbe:
             tcpSocket:
+              initialDelaySeconds: 10
               port: 11112
           ports:
             - containerPort: 8080
