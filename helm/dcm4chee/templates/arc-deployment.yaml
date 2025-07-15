@@ -34,9 +34,6 @@ spec:
                 name: dcm4chee-db-secret
           image: dcm4che/dcm4chee-arc-psql:5.34.0
           name: arc
-          livenessProbe:
-            tcpSocket:
-              port: 11112
           readinessProbe:
             tcpSocket:
               initialDelaySeconds: 10
