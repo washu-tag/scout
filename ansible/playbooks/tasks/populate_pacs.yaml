@@ -5,7 +5,7 @@
       apiVersion: batch/v1
       kind: Job
       metadata:
-        name: bootstrap-minio-iam
+        name: pacs-populate
         namespace: '{{ namespace }}'
         labels:
           app: pacs-populate
@@ -21,7 +21,7 @@
             containers:
               - name: dcmtk
                 image: vanessa/dicom
-                command: ['echoscu']
+                command: ['ls /data']
                 volumeMounts:
                   - name: data
                     mountPath: /data
