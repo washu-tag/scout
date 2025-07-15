@@ -21,17 +21,17 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      initContainers:
-        - name: take-data-dir-ownership
-          image: alpine
-          command:
-            - chmod
-            - -R
-            - '777'
-            - /var/lib/postgresql/data
-          volumeMounts:
-            - name: data
-              mountPath: /var/lib/postgresql/data
+      #initContainers:
+      #  - name: take-data-dir-ownership
+      #    image: alpine
+      #    command:
+      #      - chmod
+      #      - -R
+      #      - '777'
+      #      - /var/lib/postgresql/data
+      #    volumeMounts:
+      #      - name: data
+      #        mountPath: /var/lib/postgresql
       subdomain: db
       containers:
         - env:
@@ -52,7 +52,7 @@ spec:
             #- name: tz
             #  mountPath: /etc
             - name: data
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql
               readOnly: false
               mountPropagation: HostToContainer
       volumes:
