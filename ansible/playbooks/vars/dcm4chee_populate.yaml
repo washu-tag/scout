@@ -1,0 +1,2 @@
+namespace: '{{ dcm4chee_namespace }}'
+data_dir: '{{ dcm4chee_populate }}'
