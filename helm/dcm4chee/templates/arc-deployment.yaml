@@ -51,10 +51,10 @@ spec:
           name: arc
           livenessProbe:
             tcpSocket:
-              port: 4242
+              port: 11112
           readinessProbe:
             tcpSocket:
-              port: 4242
+              port: 11112
           ports:
             - containerPort: 8080
               protocol: TCP
