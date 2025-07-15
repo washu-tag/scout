@@ -22,13 +22,12 @@ spec:
         {{- end }}
     spec:
       subdomain: arc
-      #initContainers:
-      #  - name: create-tz
-      #    image: alpine
-      #    command:
-      #      - sh
-      #      - -c
-      #      - 'echo "Europe/Vienna" > /etc/timezone'
+      initContainers:
+        - name: create-tz
+          image: alpine
+          command:
+            - sleep
+            - 60s
       #    volumeMounts:
       #      - name: tz
       #        mountPath: /etc
