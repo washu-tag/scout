@@ -29,6 +29,10 @@
 - name: Install Jupyter
   import_playbook: jupyter.yaml
 
+- name: Install GPU Operator and Services
+  import_playbook: gpu.yaml
+  when: groups.get('gpu_workers', []) | length > 0
+
 - name: Install Monitor
   import_playbook: monitor.yaml
 

@@ -118,6 +118,7 @@ k3s_cluster:
     grafana_namespace: grafana
     loki_namespace: loki
     ollama_namespace: ollama
+    gpu_operator_namespace: gpu-operator
 
     # Local paths
     base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data

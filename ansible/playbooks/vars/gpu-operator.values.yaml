@@ -1,0 +1,6 @@
+toolkit:
+  env:
+    - name: CONTAINERD_CONFIG
+      value: /var/lib/rancher/k3s/agent/etc/containerd/config.toml
+    - name: CONTAINERD_SOCKET
+      value: /run/k3s/containerd/containerd.sock
