@@ -44,3 +44,4 @@ paths:
   slapd: '{{ dcm4chee_dir }}/slapd.d'
 
 timezone: '{{ timezone | default("America/Chicago") }}'
+publicDicomPort: '{{ dcm4chee_dicom_port | default(31112) }}'
