@@ -84,9 +84,9 @@
 - name: Populate Orthanc
   hosts: server
   gather_facts: false
-  when: orthanc_populate
   vars_files:
     - vars/orthanc_populate.yaml
   tasks:
     - name: Populate PACS
       include_tasks: tasks/populate_pacs.yaml
+      when: orthanc_populate is defined
