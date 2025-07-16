@@ -64,11 +64,11 @@
           loop_control:
             label: '{{ item.path | basename }}'
           no_log: true
-
-    - name: Remove temporary directory
-      ansible.builtin.file:
-        path: '{{ temp_dir.path }}'
-        state: absent
+      always:
+        - name: Remove temporary directory
+          ansible.builtin.file:
+            path: '{{ temp_dir.path }}'
+            state: absent
 
   tasks:
     - name: Add Postgres Helm repository
