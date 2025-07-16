@@ -1,0 +1,5 @@
+namespace: '{{ orthanc_namespace }}'
+data_dir: '{{ orthanc_populate }}'
+called_aet: ORTHANC
+dicom_host: 'orthanc.{{ dcm4chee_namespace }}'
+dicom_port: '4242'

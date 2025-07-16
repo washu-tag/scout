@@ -6,7 +6,7 @@ metadata:
   name: arc
 spec:
   ports:
-    - name: "8080"
+    - name: http
       port: 8080
       targetPort: 8080
     - name: "8443"
@@ -18,7 +18,7 @@ spec:
     - name: "9993"
       port: 9993
       targetPort: 9993
-    - name: "11112"
+    - name: dicom
       port: 11112
       targetPort: 11112
     - name: "2762"
