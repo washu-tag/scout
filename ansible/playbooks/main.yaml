@@ -5,6 +5,10 @@
 - name: Install K3s
   import_playbook: k3s.yaml
 
+- name: Install GPU Operator
+  import_playbook: gpu.yaml
+  when: groups.get('gpu_workers', []) | length > 0
+
 - name: Configure traefik
   import_playbook: traefik.yaml
 

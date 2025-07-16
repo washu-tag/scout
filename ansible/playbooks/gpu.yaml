@@ -1,0 +1,28 @@
+---
+- name: Install gpu-operator
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+
+  tasks:
+    - name: Add NVIDIA GPU Operator repository
+      kubernetes.core.helm_repository:
+        name: gpu-operator
+        repo_url: https://nvidia.github.io/gpu-operator
+
+    - name: Install NVIDIA GPU Operator
+      kubernetes.core.helm:
+        name: gpu-operator
+        chart_ref: gpu-operator/gpu-operator
+        chart_version: ^24.9.2
+        release_namespace: '{{ gpu_operator_namespace | default("gpu-operator") }}'
+        create_namespace: true
+        release_state: present
+        update_repo_cache: true
+        wait: true
+        wait_timeout: 5m
+        atomic: true
+        values_files:
+          - vars/gpu-operator.values.yaml
