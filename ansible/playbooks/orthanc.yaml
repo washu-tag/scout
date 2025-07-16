@@ -84,6 +84,7 @@
 - name: Populate Orthanc
   hosts: server
   gather_facts: false
+  when: orthanc_populate
   vars_files:
     - vars/orthanc_populate.yaml
   tasks:
