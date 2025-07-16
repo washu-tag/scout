@@ -1,0 +1,4 @@
+---
+base_init_sql:
+  - "CREATE USER {{ hive_postgres_user }} WITH PASSWORD '{{ hive_postgres_password }}';"
+  - 'CREATE DATABASE hive OWNER {{ hive_postgres_user }};'
