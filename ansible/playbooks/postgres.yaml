@@ -16,6 +16,60 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   vars_files:
     - vars/postgres_storage.yaml
+  pre_tasks:
+    - name: Find all SQL initialization files
+      ansible.builtin.find:
+        paths: '{{ playbook_dir }}/templates/postgres_init'
+        patterns: '*_init_sql.yaml'
+      register: sql_init_files
+
+    - name: Create secure temporary directory
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: postgres_sql_init
+      register: temp_dir
+
+    - name: Initialize empty SQL statements list
+      ansible.builtin.set_fact:
+        postgres_init_sql: []
+
+    - name: Process SQL init files dynamically
+      block:
+        - name: Template SQL file to temporary location
+          ansible.builtin.template:
+            src: '{{ item.path }}'
+            dest: '{{ temp_dir.path }}/{{ item.path | basename }}'
+          loop: '{{ sql_init_files.files }}'
+          loop_control:
+            label: '{{ item.path | basename }}'
+          no_log: true
+
+        - name: Include templated SQL files
+          ansible.builtin.include_vars:
+            file: '{{ temp_dir.path }}/{{ item.path | basename }}'
+          loop: '{{ sql_init_files.files }}'
+          loop_control:
+            label: '{{ item.path | basename }}'
+          no_log: true
+
+        - name: Add SQL statements to combined list
+          ansible.builtin.set_fact:
+            postgres_init_sql: '{{ postgres_init_sql + vars[module_init_sql] }}'
+          when: module_enabled not in vars or vars[module_enabled] | bool
+          vars:
+            module_name: "{{ item.path | basename | regex_replace('_init_sql\\.yaml$', '') }}"
+            module_enabled: "{{ module_name + '_enabled' }}"
+            module_init_sql: "{{ module_name + '_init_sql' }}"
+          loop: '{{ sql_init_files.files }}'
+          loop_control:
+            label: '{{ item.path | basename }}'
+          no_log: true
+      always:
+        - name: Remove temporary directory
+          ansible.builtin.file:
+            path: '{{ temp_dir.path }}'
+            state: absent
+
   tasks:
     - name: Add Postgres Helm repository
       kubernetes.core.helm_repository:
@@ -99,13 +153,7 @@
                 owner: '{{ postgres_user }}'
                 secret:
                   name: postgres-user
-                postInitSQL:
-                  # Create users for hive and superset databases
-                  - CREATE USER {{ hive_postgres_user }} WITH PASSWORD '{{ hive_postgres_password }}';
-                  - CREATE USER {{ superset_postgres_user }} WITH PASSWORD '{{ superset_postgres_password }}';
-                  # Create databases
-                  - CREATE DATABASE hive OWNER {{ hive_postgres_user }};
-                  - CREATE DATABASE superset OWNER {{ superset_postgres_user }};
+                postInitSQL: '{{ postgres_init_sql }}'
 
     - name: Expose metrics service for Prometheus
       kubernetes.core.k8s:
