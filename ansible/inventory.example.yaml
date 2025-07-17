@@ -112,6 +112,15 @@ k3s_cluster:
     cassandra_storage_size: 300Gi
     elasticsearch_storage_size: 100Gi
 
+    # Ollama config - Will only run if there are GPU nodes in the gpu_workers group
+    ollama_enabled: true
+    ollama_storage_size: 100Gi
+    ollama_path_prefix: ollama-service # Do not use "ollama" if you are using Open WebUI
+    ollama_chart_version: ~1.22.0
+    ollama_pull_models:
+      - llama3.2:3b
+      - llama4:scout
+
     # Namespaces that can be changed
     hive_namespace: hive
     postgres_cluster_namespace: cloudnative-pg

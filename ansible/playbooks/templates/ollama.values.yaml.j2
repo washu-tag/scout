@@ -1,0 +1,18 @@
+ollama:
+  models:
+    pull: {{ ollama_pull_models | default([]) }}
+ingress:
+  enabled: true
+  ingressClassName: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: {{ ollama_namespace | default('ollama') }}-ollama-stripprefix@kubernetescrd
+  hosts:
+    - host: {{ server_hostname }}
+      paths:
+        - path: /{{ ollama_path_prefix | default('ollama') }}
+          pathType: Prefix
+persistentVolume:
+  enabled: true
+  size: {{ ollama_storage_size | default('100Gi') }}
+  storageClass: {{ ollama_storage_class }}
+  volumeName: {{ ollama_pv_name }}

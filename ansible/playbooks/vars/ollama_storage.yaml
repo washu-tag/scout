@@ -1,0 +1,10 @@
+ollama_name: ollama
+ollama_storage_class: '{{ ollama_name }}-storage'
+ollama_pv_name: '{{ ollama_name }}-pv'
+
+storage_definitions:
+  - name: '{{ ollama_name }}'
+    size: "{{ ollama_storage_size | default('100Gi') }}"
+    path: '{{ ollama_dir }}'
+    pv_name: '{{ ollama_pv_name }}'
+    storage_class_name: '{{ ollama_storage_class }}'
