@@ -27,6 +27,9 @@
               - name: dcmtk
                 image: vanessa/dicom
                 command:
+                  - sleep
+                  - 600s
+                  - '&&'
                   - storescu
                   - -aec
                   - "{{ called_aet }}"
