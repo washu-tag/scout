@@ -91,3 +91,4 @@
   tasks:
     - name: Populate PACS
       include_tasks: tasks/populate_pacs.yaml
+      when: dcm4chee_populate is defined
