@@ -30,7 +30,8 @@
                   - "{{ called_aet }}"
                   - "{{ dicom_host }}"
                   - "{{ dicom_port }}"
-                  - /data/*
+                  - +sd
+                  - /data/
                 volumeMounts:
                   - name: data
                     mountPath: /data
