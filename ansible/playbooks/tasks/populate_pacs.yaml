@@ -9,9 +9,6 @@
         namespace: '{{ namespace }}'
         labels:
           app: pacs-populate
-        # Add a unique value to force job recreation on every invocation
-        annotations:
-          rand-str: "{{ 9999999999 | random | to_uuid }}"
       spec:
         ttlSecondsAfterFinished: 600
         backoffLimit: 3
