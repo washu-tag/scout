@@ -5,7 +5,7 @@
       apiVersion: batch/v1
       kind: Job
       metadata:
-        name: '{{ .Release.Name }}-pacs-populate'
+        name: 'pacs-populate-{{ 9999999999 | random | to_uuid }}'
         namespace: '{{ namespace }}'
         labels:
           app: pacs-populate
