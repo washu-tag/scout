@@ -36,7 +36,7 @@ spec:
           name: arc
           startupProbe:
             failureThreshold: 20
-            periodSeconds: 5
+            periodSeconds: 10
             tcpSocket:
               initialDelaySeconds: 30
               port: 11112
