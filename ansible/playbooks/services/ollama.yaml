@@ -1,0 +1,55 @@
+- name: Create storage directories for Ollama
+  hosts: gpu_workers
+  gather_facts: false
+  vars_files:
+    - vars/ollama_storage.yaml
+  tasks:
+    - name: Create storage directories
+      include_tasks: tasks/storage_dir_create.yaml
+
+- name: Install Ollama
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  vars_files:
+    - vars/ollama_storage.yaml
+  tasks:
+    - name: Add Ollama Helm repository
+      kubernetes.core.helm_repository:
+        name: ollama
+        repo_url: https://ollama.github.io/helm-charts
+
+    - name: Create Ollama namespace
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ ollama_namespace | default('ollama') }}"
+        state: present
+
+    - name: Create Traefik middleware for Ollama
+      kubernetes.core.k8s:
+        apiVersion: traefik.io/v1alpha1
+        kind: Middleware
+        metadata:
+          name: ollama-stripprefix
+          namespace: "{{ ollama_namespace | default('ollama') }}"
+        spec:
+          stripPrefix:
+            prefixes:
+              - "/{{ ollama_path_prefix | default('ollama') }}"
+
+    - name: Install/Upgrade Ollama
+      kubernetes.core.helm:
+        name: ollama
+        chart_ref: ollama/ollama
+        chart_version: "{{ ollama_chart_version | default('~1.22.0') }}"
+        release_namespace: "{{ ollama_namespace | default('ollama') }}"
+        create_namespace: false
+        release_state: present
+        update_repo_cache: true
+        wait: true
+        wait_timeout: 5m
+        atomic: true
+        values: "{{ lookup('template', 'templates/ollama.values.yaml.j2') | from_yaml }}"
