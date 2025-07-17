@@ -18,8 +18,8 @@
   tasks:
     - name: Add Ollama Helm repository
       kubernetes.core.helm_repository:
-        name: ollama
-        repo_url: https://ollama.github.io/helm-charts
+        name: otwld
+        repo_url: https://helm.otwld.com/
 
     - name: Create Ollama namespace
       kubernetes.core.k8s:
@@ -43,7 +43,7 @@
     - name: Install/Upgrade Ollama
       kubernetes.core.helm:
         name: ollama
-        chart_ref: ollama/ollama
+        chart_ref: otwld/ollama
         chart_version: "{{ ollama_chart_version | default('~1.22.0') }}"
         release_namespace: "{{ ollama_namespace | default('ollama') }}"
         create_namespace: false
