@@ -5,7 +5,7 @@
     - ../vars/ollama_storage.yaml
   tasks:
     - name: Create storage directories
-      include_tasks: tasks/storage_dir_create.yaml
+      include_tasks: ../tasks/storage_dir_create.yaml
 
 - name: Install Ollama
   hosts: server
@@ -27,6 +27,9 @@
         kind: Namespace
         name: "{{ ollama_namespace | default('ollama') }}"
         state: present
+
+    - name: Set up storage
+      include_tasks: ../tasks/storage_setup.yaml
 
     - name: Create Traefik middleware for Ollama
       kubernetes.core.k8s:
