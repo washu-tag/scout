@@ -12,6 +12,8 @@
         # Add a unique value to force job recreation on every invocation
         annotations:
           rand-str: "{{ 9999999999 | random | to_uuid }}"
+          "helm.sh/hook": post-install,post-upgrade
+          "helm.sh/hook-delete-policy": before-hook-creation
       spec:
         ttlSecondsAfterFinished: 600
         backoffLimit: 3
