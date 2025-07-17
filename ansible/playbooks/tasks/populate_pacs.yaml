@@ -22,8 +22,14 @@
               - name: dcmtk
                 image: vanessa/dicom
                 command:
-                  - sleep
-                  - 300s
+                  - storescu
+                  - -aec
+                  - "{{ called_aet }}"
+                  - "{{ dicom_host }}"
+                  - "{{ dicom_port }}"
+                  - '+sd'
+                  - '+r'
+                  - '/data'
                 volumeMounts:
                   - name: data
                     mountPath: /data
