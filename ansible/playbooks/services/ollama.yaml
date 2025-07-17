@@ -2,7 +2,7 @@
   hosts: gpu_workers
   gather_facts: false
   vars_files:
-    - vars/ollama_storage.yaml
+    - ../vars/ollama_storage.yaml
   tasks:
     - name: Create storage directories
       include_tasks: tasks/storage_dir_create.yaml
@@ -14,7 +14,7 @@
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   vars_files:
-    - vars/ollama_storage.yaml
+    - ../vars/ollama_storage.yaml
   tasks:
     - name: Add Ollama Helm repository
       kubernetes.core.helm_repository:

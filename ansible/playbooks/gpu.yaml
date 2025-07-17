@@ -27,6 +27,6 @@
         values_files:
           - vars/gpu-operator.values.yaml
 
-    - name: Install Ollama
-      include_tasks: services/ollama.yaml
-      when: ollama_enabled | default(false)
+- name: Install Ollama
+  import_playbook: services/ollama.yaml
+  when: ollama_enabled | default(false)
