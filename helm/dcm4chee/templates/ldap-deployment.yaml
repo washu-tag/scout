@@ -27,7 +27,7 @@ spec:
               value: /storage/fs1
             - name: TZ
               value: "{{ .Values.timezone }}"
-          image: dcm4che/slapd-dcm4chee:2.6.8-34.0
+          image: "dcm4che/slapd-dcm4chee:{{ .Values.versions.ldap }}"
           name: ldap
           ports:
             - containerPort: 389
