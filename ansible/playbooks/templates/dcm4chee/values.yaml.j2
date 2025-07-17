@@ -39,5 +39,10 @@ paths:
   openldap: '{{ dcm4chee_dir }}/ldap'
   slapd: '{{ dcm4chee_dir }}/slapd.d'
 
+versions:
+  arc: '{{ dcm4chee_arc_version | default("5.34.0") }}'
+  db: '{{ dcm4chee_db_version | default("17.4-34") }}'
+  ldap: '{{ dcm4chee_ldap_version | default("2.6.8-34.0") }}'
+
 timezone: '{{ timezone | default("America/Chicago") }}'
 publicDicomPort: '{{ dcm4chee_dicom_port | default(31112) }}'

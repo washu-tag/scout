@@ -28,7 +28,7 @@ spec:
           envFrom:
             - secretRef:
                 name: dcm4chee-db-secret
-          image: dcm4che/postgres-dcm4chee:17.4-34
+          image: "dcm4che/postgres-dcm4chee:{{ .Values.versions.db }}"
           name: db
           ports:
             - containerPort: 5432
