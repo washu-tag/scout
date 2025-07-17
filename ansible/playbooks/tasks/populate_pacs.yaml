@@ -27,14 +27,6 @@
                 command:
                   - sleep
                   - 600s
-                  - '&&'
-                  - storescu
-                  - -aec
-                  - "{{ called_aet }}"
-                  - "{{ dicom_host }}"
-                  - "{{ dicom_port }}"
-                  - +sd
-                  - /data/*
                 volumeMounts:
                   - name: data
                     mountPath: /data
