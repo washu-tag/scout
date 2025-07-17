@@ -16,10 +16,7 @@ service:
 ingress:
   enabled: true
   className: traefik
-  hosts:
-    - host: '{{ server_hostname }}'
-      paths:
-        - path: /
+  host: '{{ server_hostname }}'
 
 resources: {}
 
