@@ -31,7 +31,7 @@
                   - "{{ dicom_host }}"
                   - "{{ dicom_port }}"
                   - +sd
-                  - /data/
+                  - /data/*
                 volumeMounts:
                   - name: data
                     mountPath: /data
