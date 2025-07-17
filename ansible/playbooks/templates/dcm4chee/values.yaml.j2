@@ -18,6 +18,8 @@ ingress:
   className: traefik
   hosts:
     - host: '{{ server_hostname }}'
+      paths:
+        - path: /
 
 resources: {}
 
