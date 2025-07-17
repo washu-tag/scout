@@ -20,15 +20,11 @@
             restartPolicy: Never
             containers:
               - name: dcmtk
-                image: vanessa/dicom
+                image: dcm4che/dcm4che-tools:5.33.1
                 command:
                   - storescu
-                  - -aec
-                  - "{{ called_aet }}"
-                  - "{{ dicom_host }}"
-                  - "{{ dicom_port }}"
-                  - '+sd'
-                  - '+r'
+                  - -c
+                  - "{{ called_aet }}@{{ dicom_host }}:{{ dicom_port }}"
                   - '/data'
                 volumeMounts:
                   - name: data
