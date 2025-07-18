@@ -5,6 +5,8 @@ ollama:
       enabled: true
       type: 'nvidia'
       number: 1
+nodeSelector:
+    nvidia.com/gpu.present: 'true'
 ingress:
   enabled: true
   ingressClassName: traefik
