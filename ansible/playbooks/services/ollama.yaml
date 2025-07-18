@@ -53,6 +53,6 @@
         release_state: present
         update_repo_cache: true
         wait: true
-        wait_timeout: 5m
+        wait_timeout: 15m
         atomic: true
         values: "{{ lookup('template', '../templates/ollama.values.yaml.j2') | from_yaml }}"
