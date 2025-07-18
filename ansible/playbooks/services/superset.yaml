@@ -85,11 +85,11 @@
       configOverrides:
         branding: |
           APP_NAME = "Scout Analytics"
-          APP_ICON = "https://{{ server_hostname }}/launchpad/scout.png"
+          APP_ICON = "https://{{ server_hostname }}/launchpad/favicon.ico"
           APP_ICON_WIDTH = 200
           LOGO_TARGET_PATH = "https://{{ server_hostname }}/launchpad"
           LOGO_TOOLTIP = "Scout Launchpad"
-          FAVICONS = [{"href": "https://{{ server_hostname }}/launchpad/scout.png"}]
+          FAVICONS = [{"href": "https://{{ server_hostname }}/launchpad/favicon.ico"}]
         custom_routing: |
           from flask import redirect, url_for
           from flask_appbuilder import expose, IndexView
