@@ -48,7 +48,7 @@ config:
         password: '{{ postgres_password }}'
       temporal:
         connection:
-          target: 'temporal-frontend.{{ temporal_namespace }}:7233'
+          target: 'temporal-internal-frontend.{{ temporal_namespace }}:7236'
     scout:
       workflowArgDefaults:
         ingestHl7Log:

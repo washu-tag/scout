@@ -9,7 +9,7 @@ envFrom:
       name: postgres-secret
 env:
   - name: TEMPORAL_ADDRESS
-    value: 'temporal-frontend.{{ temporal_namespace }}:7233'
+    value: 'temporal-internal-frontend.{{ temporal_namespace }}:7236'
   - name: TEMPORAL_NAMESPACE
     value: default
   - name: REPORT_DELTA_TABLE_NAME
