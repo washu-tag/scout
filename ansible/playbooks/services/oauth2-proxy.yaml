@@ -3,19 +3,36 @@
     name: oauth2-proxy
     repo_url: https://oauth2-proxy.github.io/manifests
 
-- name: Create OAuth2 Proxy namespace
-  kubernetes.core.k8s:
-    name: '{{ oauth2_proxy_namespace }}'
-    api_version: v1
-    kind: Namespace
-    state: present
+- name: Create ConfigMap with OAuth2 Proxy html templates
+  block:
+    - name: Find all html files in oauth2-proxy templates directory
+      find:
+        paths: 'files/oauth2-proxy'
+        patterns: '*.html'
+      register: oauth2_proxy_templates
+
+    - name: Create ConfigMap for OAuth2 Proxy templates
+      kubernetes.core.k8s:
+        state: present
+        definition: |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: oauth2-proxy-templates
+            namespace: kube-system
+          data:
+            '{{ item.path | basename }}': |-
+              {{ lookup("file", item.path) | indent(4) }}
+      loop: '{{ oauth2_proxy_templates.files }}'
+      loop_control:
+        label: '{{ item.path | basename }}'
 
 - name: Install OAuth2 Proxy with helm
   kubernetes.core.helm:
     name: oauth2-proxy
     chart_ref: oauth2-proxy/oauth2-proxy
     chart_version: ~7.12.0
-    release_namespace: '{{ oauth2_proxy_namespace }}'
+    release_namespace: kube-system
     release_state: present
     wait: true
     wait_timeout: 5m
@@ -35,12 +52,20 @@
           reverse_proxy = true
           real_client_ip_header =  "X-Forwarded-For"
           upstreams = [ "https://{{ server_hostname }}" ]
+          custom_templates_dir = "/etc/oauth2-proxy/templates"
       ingress:
         enabled: true
         className: traefik
         path: /oauth2
         hosts:
           - '{{ server_hostname }}'
+      extraVolumes:
+        - name: oauth2-proxy-templates
+          configMap:
+            name: oauth2-proxy-templates
+      extraVolumeMounts:
+        - name: oauth2-proxy-templates
+          mountPath: /etc/oauth2-proxy/templates
 
 - name: Install OAuth2 Proxy Auth Middleware
   kubernetes.core.k8s:
