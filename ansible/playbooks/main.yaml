@@ -35,5 +35,5 @@
 - name: Install Monitor
   import_playbook: monitor.yaml
 
-- name: Install Explorer
-  import_playbook: explorer.yaml
+- name: Install Launchpad
+  import_playbook: launchpad.yaml
