@@ -44,5 +44,5 @@ versions:
   db: '{{ dcm4chee_db_version | default("17.4-34") }}'
   ldap: '{{ dcm4chee_ldap_version | default("2.6.8-34.0") }}'
 
-timezone: '{{ timezone | default("America/Chicago") }}'
+timezone: '{{ dcm4chee_timezone | default("America/Chicago") }}'
 publicDicomPort: '{{ dcm4chee_dicom_port | default(31112) }}'

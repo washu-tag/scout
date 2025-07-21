@@ -1,4 +1,4 @@
-namespace: '{{ orthanc_namespace }}'
+target_namespace: '{{ orthanc_namespace }}'
 data_dir: '{{ orthanc_populate }}'
 called_aet: ORTHANC
 dicom_host: 'orthanc.{{ orthanc_namespace }}'

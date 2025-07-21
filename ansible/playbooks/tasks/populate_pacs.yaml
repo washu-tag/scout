@@ -6,7 +6,7 @@
       kind: Job
       metadata:
         name: 'pacs-populate-{{ 9999999999 | random | to_uuid }}'
-        namespace: '{{ namespace }}'
+        namespace: '{{ target_namespace }}'
         labels:
           app: pacs-populate
       spec:
