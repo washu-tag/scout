@@ -30,7 +30,7 @@
     }
 
     .error-card img {
-      max-width: 250px;
+      max-width: 200px;
       margin-bottom: 1.5rem;
     }
 
@@ -114,9 +114,6 @@
 
 <body>
   <div class="error-card">
-    <img src="/launchpad/icon.png" alt="Scout Logo" />
-    
-
     {{ if eq .StatusCode 403 }}
       <h1>Access Pending</h1>
       <p>

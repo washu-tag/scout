@@ -74,16 +74,16 @@
 
 <body>
   <div class="login-card">
-    <img src="/launchpad/icon.png" alt="Scout Logo" />
+
+    <div class="block logo-box">
+      {{.LogoData}}
+    </div>
+
     <h2>Welcome to Scout</h2>
     <p>
       If this is your first time logging in, your access request will be sent to an administrator for approval.
-      You’ll receive an email once your account is approved.
+      You'll receive an email once your account is approved.
     </p>
-
-    {{ if .SignInMessage }}
-      <p class="has-text-grey">{{.SignInMessage}}</p>
-    {{ end }}
 
     <form method="GET" action="{{.ProxyPrefix}}/start">
       <input type="hidden" name="rd" value="{{.Redirect}}" />

@@ -27,6 +27,19 @@
       loop_control:
         label: '{{ item.path | basename }}'
 
+- name: Create Secret with Logo for OAuth2 Proxy
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: oauth2-proxy-logo
+        namespace: kube-system
+      type: Opaque
+      data:
+        logo.png: '{{ lookup("file", "files/oauth2-proxy/scout.jpg") | b64encode }}'
+
 - name: Install OAuth2 Proxy with helm
   kubernetes.core.helm:
     name: oauth2-proxy
@@ -35,7 +48,7 @@
     release_namespace: kube-system
     release_state: present
     wait: true
-    wait_timeout: 5m
+    wait_timeout: 3m
     atomic: true
     values:
       config:
@@ -53,6 +66,7 @@
           real_client_ip_header =  "X-Forwarded-For"
           upstreams = [ "https://{{ server_hostname }}" ]
           custom_templates_dir = "/etc/oauth2-proxy/templates"
+          custom_sign_in_logo = "/var/www/static/logo/logo.png"
       ingress:
         enabled: true
         className: traefik
@@ -63,9 +77,14 @@
         - name: oauth2-proxy-templates
           configMap:
             name: oauth2-proxy-templates
+        - name: oauth2-proxy-logo
+          secret:
+            secretName: oauth2-proxy-logo
       extraVolumeMounts:
         - name: oauth2-proxy-templates
           mountPath: /etc/oauth2-proxy/templates
+        - name: oauth2-proxy-logo
+          mountPath: /var/www/static/logo
 
 - name: Install OAuth2 Proxy Auth Middleware
   kubernetes.core.k8s:
