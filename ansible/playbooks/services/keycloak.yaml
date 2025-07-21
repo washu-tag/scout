@@ -1,30 +1,13 @@
-- name: Download Keycloak CRD - Keycloak
-  ansible.builtin.get_url:
-    url: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.5/kubernetes/keycloaks.k8s.keycloak.org-v1.yml
-    dest: /tmp/keycloaks.k8s.keycloak.org-v1.yml
-    mode: '0644'
-
-- name: Download Keycloak CRD - KeycloakRealmImport
-  ansible.builtin.get_url:
-    url: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.5/kubernetes/keycloakrealmimports.k8s.keycloak.org-v1.yml
-    dest: /tmp/keycloakrealmimports.k8s.keycloak.org-v1.yml
-    mode: '0644'
-
-- name: Download Keycloak Operator manifest
-  ansible.builtin.get_url:
-    url: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.5/kubernetes/kubernetes.yml
-    dest: /tmp/keycloak-operator.yml
-    mode: '0644'
-
-- name: Apply Keycloak CRD - Keycloak
+---
+- name: Apply Keycloak CRD
   kubernetes.core.k8s:
     state: present
-    src: /tmp/keycloaks.k8s.keycloak.org-v1.yml
+    src: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.5/kubernetes/keycloaks.k8s.keycloak.org-v1.yml
 
-- name: Apply Keycloak CRD - KeycloakRealmImport
+- name: Apply Keycloak KeycloakRealmImport CRD
   kubernetes.core.k8s:
     state: present
-    src: /tmp/keycloakrealmimports.k8s.keycloak.org-v1.yml
+    src: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.5/kubernetes/keycloakrealmimports.k8s.keycloak.org-v1.yml
 
 - name: Create Keycloak CR namespace
   kubernetes.core.k8s:
@@ -36,7 +19,7 @@
 - name: Apply Keycloak Operator
   kubernetes.core.k8s:
     state: present
-    src: /tmp/keycloak-operator.yml
+    src: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.5/kubernetes/kubernetes.yml
     namespace: '{{ keycloak_namespace }}'
 
 - name: Wait for Keycloak Operator to be ready
@@ -118,6 +101,12 @@
         additionalOptions:
           - name: http-relative-path
             value: /kc
+          - name: metrics-enabled
+            value: 'true'
+          - name: event-metrics-user-enabled
+            value: 'true'
+          - name: event-metrics-user-tags
+            value: 'realm,idp,clientId'
 
 # The operator wants to use a subdomain and does not appear to support a path-based ingress
 - name: Create Keycloak Ingress

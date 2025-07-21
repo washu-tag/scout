@@ -86,3 +86,13 @@ extraScrapeConfigs: |
         target_label: namespace
       - source_labels: [__meta_kubernetes_pod_name]
         target_label: pod
+
+  - job_name: keycloak
+    metrics_path: /kc/metrics
+    static_configs:
+      - targets: ['keycloak-service.{{ keycloak_namespace }}:9000']
+
+  - job_name: oauth2-proxy
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['oauth2-proxy.kube-system:44180']
