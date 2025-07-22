@@ -151,6 +151,7 @@
         name: keycloak-config
       data:
         scout-realm.json: "{{ lookup('template', 'templates/keycloak/scout-realm.json.j2') | b64encode }}"
+        master-realm.json: "{{ lookup('template', 'templates/keycloak/master-realm.json.j2') | b64encode }}"
 
 # https://github.com/adorsys/keycloak-config-cli/issues/1287
 - name: Download Keycloak Config CLI Helm chart

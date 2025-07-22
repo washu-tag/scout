@@ -1,0 +1,42 @@
+{
+  "enabled": true,
+  "realm": "master",
+  "displayName": "Keycloak",
+  "eventsEnabled": true,
+  "adminEventsEnabled": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "default-roles-master",
+        "description": "role_default-roles",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "offline_access",
+            "uma_authorization"
+          ],
+          "client": {
+            "account": [
+            "view-profile",
+            "manage-account"
+            ]
+          }
+        },
+        "clientRole": false,
+      }
+    ]
+  },
+  "identityProviders": [
+    {
+      "alias": "github",
+      "providerId": "github",
+      "displayName": "GitHub",
+      "enabled": true,
+      "trustEmail": true,
+      "config": {
+        "clientId": "{{ keycloak_gh_admin_client_id }}",
+        "clientSecret": "{{ keycloak_gh_admin_client_secret }}",
+      }
+    }
+  ]
+}
