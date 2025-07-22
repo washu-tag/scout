@@ -38,7 +38,7 @@
             namespace: kube-system
           spec:
             redirectRegex:
-              regex: "(.*/orthanc$)"
+              regex: '(.*/orthanc$)'
               replacement: ${1}/
               permanent: true
 

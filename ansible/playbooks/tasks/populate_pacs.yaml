@@ -5,7 +5,7 @@
       apiVersion: batch/v1
       kind: Job
       metadata:
-        name: 'pacs-populate-{{ 9999999999 | random | to_uuid }}'
+        generateName: 'pacs-populate-'
         namespace: '{{ target_namespace }}'
         labels:
           app: pacs-populate
@@ -24,7 +24,7 @@
                 command:
                   - storescu
                   - -c
-                  - "{{ called_aet }}@{{ dicom_host }}:{{ dicom_port }}"
+                  - '{{ called_aet }}@{{ dicom_host }}:{{ dicom_port }}'
                   - '/data'
                 volumeMounts:
                   - name: data
@@ -33,4 +33,4 @@
             volumes:
               - name: data
                 hostPath:
-                  path: "{{ data_dir }}"
+                  path: '{{ data_dir }}'
