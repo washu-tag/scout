@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { FaPython } from 'react-icons/fa';
-import { SiMinio, SiTemporal, SiGrafana, SiReadthedocs } from 'react-icons/si';
+import { SiMinio, SiTemporal, SiGrafana, SiReadthedocs, SiKeycloak } from 'react-icons/si';
 import { BiLineChart } from 'react-icons/bi';
 import TopBar from '@/components/TopBar';
 import AdminSection from '@/components/AdminSection';
@@ -154,7 +154,7 @@ export default function Home() {
               </svg>
               Admin Tools
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <a
                 href="/minio/login"
                 className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-800 hover:shadow-md transition-all duration-300 no-underline"
@@ -191,6 +191,19 @@ export default function Home() {
                 <div>
                   <span className="font-medium text-gray-900 dark:text-white">Monitor</span>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Metrics & logs</p>
+                </div>
+              </a>
+
+              <a
+                href="/kc/admin/scout/console"
+                className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-800 hover:shadow-md transition-all duration-300 no-underline"
+              >
+                <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <SiKeycloak className="text-xl text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <span className="font-medium text-gray-900 dark:text-white">User Management</span>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Users & permissions</p>
                 </div>
               </a>
             </div>
