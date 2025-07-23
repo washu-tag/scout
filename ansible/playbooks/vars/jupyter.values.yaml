@@ -59,6 +59,16 @@ singleuser:
     tag: 1.1.0
     pullPolicy: Never
   cmd: null
+  extraEnv:
+    OLLAMA_HOST: "http://ollama.{{ ollama_namespace | default('ollama') }}:11434"
+    AZURE_OPENAI_ENDPOINT: 'https://jflav-mcz3j0cd-eastus2.cognitiveservices.azure.com/'
+    AZURE_OPENAI_API_KEY: '{{ azure_openai_api_key }}'
+    OPENAI_API_VERSION: '2025-01-01-preview'
+    TRINO_HOST: 'trino.trino'
+    TRINO_PORT: '8080'
+    TRINO_CATALOG: 'delta'
+    TRINO_SCHEMA: 'default'
+    TRINO_USE_HTTPS: 'false'
   lifecycleHooks:
     postStart:
       exec:
@@ -115,3 +125,9 @@ singleuser:
                 kubernetes.io/metadata.name: '{{ ollama_namespace | default("ollama")}}'
         ports:
           - port: 11434
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: trino
+        ports:
+          - port: 8080
