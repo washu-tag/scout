@@ -129,6 +129,7 @@ k3s_cluster:
     # Parameters for optional PACS instances, only intended for use in development
     orthanc_namespace: orthanc
     dcm4chee_namespace: dcm4chee
+    orthanc_dicom_port: 4242
     orthanc_dir: /scout/data/orthanc
     dcm4chee_dir: /scout/data/dcm4chee
 

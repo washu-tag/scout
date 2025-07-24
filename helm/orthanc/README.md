@@ -6,9 +6,9 @@ and is configured with Ansible as an optional part of a standard Scout installat
 The following variables are required to be set:
 `orthanc_namespace`: Kubernetes namespace for all Orthanc resources.
 `orthanc_dir`: Base directory on the local file system to use for all volume mounts for Orthanc pods.
+`orthanc_dicom_port`: Port on which DIMSE services will be exposed.
 
 The following variables all have default values if not provided in your inventory file:
-`orthanc_dicom_port`: Port on which DIMSE services will be exposed outside the cluster. Defaults to `30042`.
 `orthanc_image`: Docker image for Orthanc to deploy. Defaults to `jodogne/orthanc-plugins`.
 `orthanc_version`: Version for Docker image defined in `orthanc_image`. Defaults to `latest`.
 `orthanc_storage_size`: Size of the PV available for Orthanc. Defaults to `100Gi`.

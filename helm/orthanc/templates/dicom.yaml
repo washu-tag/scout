@@ -8,7 +8,7 @@ spec:
   type: LoadBalancer
   allocateLoadBalancerNodePorts: false
   ports:
-    - port: {{ .Values.publicDicomPort }}
-      targetPort: {{ .Values.publicDicomPort }}
+    - port: {{ .Values.dicomPort }}
+      targetPort: {{ .Values.dicomPort }}
   selector:
     {{- include "orthanc.selectorLabels" . | nindent 4 }}

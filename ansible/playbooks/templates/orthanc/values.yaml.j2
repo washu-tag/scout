@@ -25,7 +25,7 @@ securityContext: {}
 service:
   type: ClusterIP
   http: 8042
-  dicom: 4242
+  dicom: '{{ orthanc_dicom_port }}'
 
 ingress:
   enabled: true
@@ -44,10 +44,10 @@ resources: {}
 
 livenessProbe:
   tcpSocket:
-    port: 4242
+    port: '{{ orthanc_dicom_port }}'
 readinessProbe:
   tcpSocket:
-    port: 4242
+    port: '{{ orthanc_dicom_port }}'
 
 autoscaling:
   enabled: false
@@ -78,4 +78,4 @@ tolerations: []
 
 affinity: {}
 
-publicDicomPort: '{{ orthanc_dicom_port | default(4242) }}'
+dicomPort: '{{ orthanc_dicom_port }}'
