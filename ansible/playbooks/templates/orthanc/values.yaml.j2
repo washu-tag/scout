@@ -44,10 +44,10 @@ resources: {}
 
 livenessProbe:
   tcpSocket:
-    port: {{ orthanc_dicom_port }}
+    port: service.dicom
 readinessProbe:
   tcpSocket:
-    port: {{ orthanc_dicom_port }}
+    port: service.dicom
 
 autoscaling:
   enabled: false
@@ -77,5 +77,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-dicomPort: {{ orthanc_dicom_port }}
