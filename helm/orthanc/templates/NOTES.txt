@@ -1,0 +1,1 @@
+Orthanc is now available at {{ (first .Values.ingress.hosts).host }}/orthanc. Additionally, DIMSE for the PACS should be accessible on port {{ .Values.dicomPort }}.

@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  labels:
+    {{- include "dcm4chee.db.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      dcm4chee-component: db
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dcm4chee.db.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+        - env:
+            - name: TZ
+              value: "{{ .Values.timezone }}"
+          envFrom:
+            - secretRef:
+                name: dcm4chee-db-secret
+          image: "dcm4che/postgres-dcm4chee:{{ .Values.versions.db }}"
+          name: db
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql
+              readOnly: false
+              mountPropagation: HostToContainer
+      volumes:
+        - name: data
+          hostPath:
+            path: "{{ .Values.paths.db }}"
