@@ -19,7 +19,7 @@
           spec:
             restartPolicy: Never
             containers:
-              - generateName: dcm4che
+              - name: dcm4che
                 image: dcm4che/dcm4che-tools:5.33.1
                 command:
                   - storescu
