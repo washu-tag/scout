@@ -16,7 +16,7 @@
       kubernetes.core.helm:
         name: gpu-operator
         chart_ref: gpu-operator/gpu-operator
-        chart_version: ^24.9.2
+        chart_version: ~24.9.2
         release_namespace: '{{ gpu_operator_namespace | default("gpu-operator") }}'
         create_namespace: true
         release_state: present
