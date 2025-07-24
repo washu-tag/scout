@@ -12,7 +12,7 @@ spec:
       protocol: TCP
       name: http
     - port: {{ .Values.service.dicom }}
-      targetPort: dicom
+      targetPort: {{ .Values.publicDicomPort }}
       protocol: TCP
       name: dicom
   selector:

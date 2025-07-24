@@ -8,7 +8,7 @@ spec:
   type: LoadBalancer
   allocateLoadBalancerNodePorts: false
   ports:
-    - port: {{ .Values.publicDicomPort }}
-      targetPort: dicom
+    - port: 11112
+      targetPort: 11112
   selector:
     {{- include "dcm4chee.selectorLabels" . | nindent 4 }}
