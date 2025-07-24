@@ -5,10 +5,10 @@ metadata:
   labels:
     {{- include "dcm4chee.arc.labels" . | nindent 4 }}
 spec:
-  type: NodePort
+  type: LoadBalancer
+  allocateLoadBalancerNodePorts: false
   ports:
     - port: {{ .Values.service.dicom }}
       targetPort: {{ .Values.service.dicom }}
-      nodePort: {{ .Values.service.dicom }}
   selector:
     {{- include "dcm4chee.selectorLabels" . | nindent 4 }}
