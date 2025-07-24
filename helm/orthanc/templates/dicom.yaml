@@ -5,10 +5,9 @@ metadata:
   labels:
     {{- include "orthanc.labels" . | nindent 4 }}
 spec:
-  type: NodePort
+  type: LoadBalancer
   ports:
     - port: {{ .Values.service.dicom }}
       targetPort: {{ .Values.service.dicom }}
-      nodePort: {{ .Values.publicDicomPort }}
   selector:
     {{- include "orthanc.selectorLabels" . | nindent 4 }}

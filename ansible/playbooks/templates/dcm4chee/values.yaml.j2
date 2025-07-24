@@ -39,6 +39,16 @@ paths:
   openldap: '{{ dcm4chee_dir }}/ldap'
   slapd: '{{ dcm4chee_dir }}/slapd.d'
 
+arcVolumeMounts:
+  - name: wildfly
+    mountPath: /opt/wildfly/standalone
+    readOnly: false
+    mountPropagation: HostToContainer
+  - name: storage
+    mountPath: /storage
+    readOnly: false
+    mountPropagation: HostToContainer
+
 versions:
   arc: '{{ dcm4chee_arc_version | default("5.34.0") }}'
   db: '{{ dcm4chee_db_version | default("17.4-34") }}'

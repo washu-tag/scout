@@ -35,10 +35,10 @@ spec:
           image: "dcm4che/dcm4chee-arc-psql:{{ .Values.versions.arc }}"
           name: arc
           startupProbe:
-            failureThreshold: 20
+            failureThreshold: 18
             periodSeconds: 10
+            initialDelaySeconds: 30
             tcpSocket:
-              initialDelaySeconds: 30
               port: 11112
           ports:
             - containerPort: 8080
@@ -57,15 +57,10 @@ spec:
               protocol: TCP
             - containerPort: 12575
               protocol: TCP
+          {{- with .Values.arcVolumeMounts }}
           volumeMounts:
-            - name: wildfly
-              mountPath: /opt/wildfly/standalone
-              readOnly: false
-              mountPropagation: HostToContainer
-            - name: storage
-              mountPath: /storage
-              readOnly: false
-              mountPropagation: HostToContainer
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
       volumes:
         - name: wildfly
           hostPath:

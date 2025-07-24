@@ -9,25 +9,25 @@ spec:
     - name: http
       port: 8080
       targetPort: 8080
-    - name: "8443"
+    - name: https
       port: 8443
       targetPort: 8443
-    - name: "9990"
+    - name: wildfly-admin-http
       port: 9990
       targetPort: 9990
-    - name: "9993"
+    - name: wildfly-admin-https
       port: 9993
       targetPort: 9993
     - name: dicom
       port: 11112
       targetPort: 11112
-    - name: "2762"
+    - name: dicom-tls
       port: 2762
       targetPort: 2762
-    - name: "2575"
+    - name: hl7
       port: 2575
       targetPort: 2575
-    - name: "12575"
+    - name: hl7-tls
       port: 12575
       targetPort: 12575
   selector:
