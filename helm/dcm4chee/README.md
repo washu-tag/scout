@@ -1,8 +1,26 @@
 # DCM4CHEE PACS
 
 This chart defines the deployment of the minimum services of [dcm4chee-arc-light](https://github.com/dcm4che/dcm4chee-arc-light/wiki/Run-minimum-set-of-archive-services-on-a-single-host)
-and is configured with Ansible as an optional part of a standard Scout installation. As of right now, the deployment only works when deployed at the root of the server, so it is not
-compatible with running superset at the same time.
+and is configured with Ansible as an optional part of a standard Scout installation.
+
+## Known limitations
+
+As of right now, the deployment only works when deployed at the root of the server, so it is not
+compatible with running superset at the same time. Additionally, there may be some sort of persistent and intermittent connectivity
+issue in attempting to communicate with the PACS over DIMSE. For example, in attempting to perform a C-ECHO twice, it may work once and then fail the next time like this:
+```shell
+$ echoscu -aec DCM4CHEE myurl 11112 -v
+I: Requesting Association
+I: Association Accepted (Max Send PDV: 16366)
+I: Sending Echo Request (MsgID 1)
+I: Received Echo Response (Success)
+I: Releasing Association
+$ echoscu -aec DCM4CHEE myurl 11112 -v
+I: Requesting Association
+F: Association Request Failed: 0006:031c TCP Initialization Error: Connection refused
+```
+
+## Configuration
 
 The following variables are required to be set:
 `dcm4chee_namespace`: Kubernetes namespace for all DCM4CHEE resources.
