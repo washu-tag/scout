@@ -26,7 +26,7 @@ spec:
             - name: STORAGE_DIR
               value: /storage/fs1
             - name: DICOM_PORT
-              value: {{ .Values.service.dicom }}
+              value: '{{ .Values.service.dicom }}'
             - name: TZ
               value: "{{ .Values.timezone }}"
           image: "dcm4che/slapd-dcm4chee:{{ .Values.versions.ldap }}"
