@@ -103,6 +103,21 @@
             effect: PreferNoSchedule
 
 ################################################################################
+- hosts: gpu_workers
+  name: Configure k3s runtime on GPU worker nodes
+  tasks:
+    - name: Create storage directory
+      ansible.builtin.file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: '0755'
+
+    - name: Write k3s service configuration for GPU runtime
+      ansible.builtin.copy:
+        dest: /etc/rancher/k3s/config.yaml
+        content: |
+          default-runtime: nvidia
+
 - hosts: agents
   name: Install k3s on agent nodes
   vars:
