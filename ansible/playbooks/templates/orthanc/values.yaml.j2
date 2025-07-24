@@ -44,10 +44,10 @@ resources: {}
 
 livenessProbe:
   tcpSocket:
-    port: service.dicom
+    port: {{ orthanc_dicom_port }}
 readinessProbe:
   tcpSocket:
-    port: service.dicom
+    port: {{ orthanc_dicom_port }}
 
 autoscaling:
   enabled: false
