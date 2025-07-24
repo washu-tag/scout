@@ -8,6 +8,6 @@ spec:
   type: LoadBalancer
   ports:
     - port: {{ .Values.service.dicom }}
-      targetPort: {{ .Values.service.dicom }}
+      targetPort: {{ .Values.publicDicomPort }}
   selector:
     {{- include "dcm4chee.selectorLabels" . | nindent 4 }}
