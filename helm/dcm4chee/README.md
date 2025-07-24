@@ -7,9 +7,9 @@ compatible with running superset at the same time.
 The following variables are required to be set:
 `dcm4chee_namespace`: Kubernetes namespace for all DCM4CHEE resources.
 `dcm4chee_dir`: Base directory on the local file system to use for all volume mounts for DCM4CHEE pods.
+`dcm4chee_dicom_port`: Port on which DIMSE services will be exposed.
 
 The following variables all have default values if not provided in your inventory file:
-`dcm4chee_dicom_port`: Port on which DIMSE services will be exposed outside the cluster. Defaults to `31112`.
 `dcm4chee_timezone`: Timezone string to be included in DCM4CHEE containers. Defaults to `America/Chicago`.
 `dcm4chee_arc_version`: Version of the [archive image](https://github.com/dcm4che-dockerfiles/dcm4chee-arc-psql) to deploy.
 `dcm4chee_db_version`: Version of the [db image](https://github.com/dcm4che-dockerfiles/postgres-dcm4chee) to deploy.

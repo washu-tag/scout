@@ -19,8 +19,8 @@ spec:
       port: 9993
       targetPort: 9993
     - name: dicom
-      port: 11112
-      targetPort: 11112
+      port: {{ .Values.service.dicom }}
+      targetPort: {{ .Values.service.dicom }}
     - name: dicom-tls
       port: 2762
       targetPort: 2762

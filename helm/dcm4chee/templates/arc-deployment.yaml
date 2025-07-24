@@ -39,7 +39,7 @@ spec:
             periodSeconds: 10
             initialDelaySeconds: 30
             tcpSocket:
-              port: 11112
+              port: {{ .Values.service.dicom }}
           ports:
             - containerPort: 8080
               protocol: TCP
@@ -49,7 +49,7 @@ spec:
               protocol: TCP
             - containerPort: 9993
               protocol: TCP
-            - containerPort: 11112
+            - containerPort: {{ .Values.service.dicom }}
               protocol: TCP
             - containerPort: 2762
               protocol: TCP
