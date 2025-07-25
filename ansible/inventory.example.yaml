@@ -39,7 +39,18 @@ k3s_cluster:
     keycloak_bootstrap_admin_password: admin
     keycloak_postgres_user: keycloak
     keycloak_postgres_password: keycloak123
-    keycloak_gh_client_id: 'your-github-client'
+    keycloak_smtp_host: 'mailhog-service.mailhog'
+    keycloak_smtp_port: '1025'
+    keycloak_smtp_from: 'example@example.com'
+    keycloak_smtp_from_display_name: 'Scout'
+    keycloak_smtp_reply_to: ''
+    keycloak_smtp_reply_to_display_name: ''
+    keycloak_smtp_envelope_from: ''
+    keycloak_smtp_auth: ''
+    keycloak_smtp_ssl: 'false'
+    keycloak_smtp_starttls: 'false'
+    keycloak_smtp_debug: 'false'
+    keycloak_gh_client_id: 'your-github-client' # TODO: Handle other auth providers
     keycloak_gh_client_secret: 'your-github-secret'
     keycloak_microsoft_client_id: 'your-microsoft-client'
     keycloak_microsoft_client_secret: 'your-microsoft-secret'

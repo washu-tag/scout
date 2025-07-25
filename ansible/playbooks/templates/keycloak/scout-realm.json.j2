@@ -4,6 +4,24 @@
     "displayName": "Scout",
     "eventsEnabled": true,
     "adminEventsEnabled": true,
+    "adminEventsDetailsEnabled": true,
+    "emailTheme": "scout",
+    "eventsListeners": [
+      "user-approval-email",
+    ],
+    "smtpServer": {
+      "debug": "{{ keycloak_smtp_debug }}",
+      "replyToDisplayName": "{{ keycloak_smtp_reply_to_display_name }}",
+      "starttls": "{{ keycloak_smtp_starttls }}",
+      "auth": "{{ keycloak_smtp_auth }}",
+      "port": "{{ keycloak_smtp_port }}",
+      "host": "{{ keycloak_smtp_host }}",
+      "replyTo": "{{ keycloak_smtp_reply_to }}",
+      "from": "{{ keycloak_smtp_from }}",
+      "fromDisplayName": "{{ keycloak_smtp_from_display_name }}",
+      "envelopeFrom": "{{ keycloak_smtp_envelope_from }}",
+      "ssl": "{{ keycloak_smtp_ssl }}"
+    },
     "roles": {
       "realm": [
         {
