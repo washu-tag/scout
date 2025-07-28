@@ -17,6 +17,45 @@ k3s_cluster:
     k3s_token: K3S_TOKEN
     kubeconfig_group: root
 
+    # Oauth2 Proxy config
+    oauth2_proxy_cookie_secret: 'b3e6f20e80abfd3a77b4c4db18919876'
+
+    # Keycloak Config
+    keycloak_namespace: auth
+    keycloak_bootstrap_admin_user: admin
+    keycloak_bootstrap_admin_password: admin
+    keycloak_postgres_user: keycloak
+    keycloak_postgres_password: keycloak123
+    keycloak_smtp_host: ''
+    keycloak_smtp_port: ''
+    keycloak_smtp_from: ''
+    keycloak_smtp_from_display_name: ''
+    keycloak_smtp_reply_to: ''
+    keycloak_smtp_reply_to_display_name: ''
+    keycloak_smtp_envelope_from: ''
+    keycloak_smtp_auth: ''
+    keycloak_smtp_ssl: 'false'
+    keycloak_smtp_starttls: 'false'
+    keycloak_smtp_debug: 'false'
+    keycloak_gh_client_id: 'kc-gh-1234567890'
+    keycloak_gh_client_secret: 'b3e6f20e80abfd3a77b4c4db18919876'
+    keycloak_gh_admin_client_id: 'kc-gh-admin-1234567890'
+    keycloak_gh_admin_client_secret: 'b3e6f20e80abfd3a77b4c4db18919876'
+    keycloak_oauth2_proxy_client_id: 'oauth2-proxy'
+    keycloak_oauth2_proxy_client_secret: 'b3e6f20e80abfd3a77b4c4db18919876'
+    keycloak_superset_client_id: 'superset'
+    keycloak_superset_client_secret: 'b3e6f20e80abfd3a77b4c4db18919876'
+    keycloak_jupyterhub_client_id: 'jupyterhub'
+    keycloak_jupyterhub_client_secret: 'b3e6f20e80abfd3a77b4c4db18919876'
+    keycloak_grafana_client_id: 'grafana'
+    keycloak_grafana_client_secret: 'b3e6f20e80abfd3a77b4c4db18919876'
+    keycloak_temporal_client_id: 'temporal'
+    keycloak_temporal_client_secret: 'b3e6f20e80abfd3a77b4c4db18919876'
+    keycloak_minio_client_id: 'minio'
+    keycloak_minio_client_secret: 'b3e6f20e80abfd3a77b4c4db18919876'
+    keycloak_launchpad_client_id: 'launchpad'
+    keycloak_launchpad_client_secret: 'b3e6f20e80abfd3a77b4c4db18919876'
+
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
     minio_storage_size: 5Gi
     s3_username: minio
@@ -28,8 +67,6 @@ k3s_cluster:
     s3_lake_writer_secret: lakewriter123
     s3_loki_writer: loki-writer
     s3_loki_writer_secret: lokiwriter123
-    keycloak_minio_client_id: minio
-    keycloak_minio_client_secret: '12345678901234567890123456789012'
 
     # Monitor config
     prometheus_storage_size: 1Gi
@@ -48,8 +85,6 @@ k3s_cluster:
     hive_postgres_password: hive123
     superset_postgres_user: superset
     superset_postgres_password: superset123
-    keycloak_postgres_user: keycloak
-    keycloak_postgres_password: keycloak123
     postgres_resources: {} # No resource requests/limits
     postgres_parameters: {} # Use PG defaults
     postgres_storage_size: 5Gi

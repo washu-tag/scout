@@ -129,6 +129,7 @@ jobs:
       - build-and-upload-pyspark-notebook
       - build-and-upload-launchpad
       - build-and-upload-superset
+      - build-and-upload-keycloak
       - unit-test
     permissions:
       contents: read
@@ -165,6 +166,10 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/postgres.yaml
+      - name: 'Install auth'
+        shell: bash
+        run: |
+          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/auth.yaml
       - name: 'Install lake'
         shell: bash
         run: |
