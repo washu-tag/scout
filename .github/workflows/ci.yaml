@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - 'ci-**'
+      - 'auth-keycloak-event-listener'
 
 env:
   JAVA_DIST: 'zulu'
@@ -93,6 +94,19 @@ jobs:
         with:
           subproject: helm/superset
           image-name: superset
+  build-and-upload-keycloak:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4.2.1
+      - name: 'Build/Cache Image - keycloak'
+        uses: ./.github/actions/docker-build-cache
+        with:
+          subproject: keycloak
+          image-name: keycloak
   unit-test:
     runs-on: ubuntu-latest
     permissions:
@@ -234,3 +248,7 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: superset
+      - name: 'Push Image - keycloak'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: keycloak

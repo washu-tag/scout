@@ -76,6 +76,7 @@
         name: keycloak
       spec:
         instances: 1
+        image: ghcr.io/washu-tag/keycloak:1.1.0
         bootstrapAdmin:
           user:
             secret: keycloak-admin-secret
