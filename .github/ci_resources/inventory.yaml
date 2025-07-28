@@ -46,6 +46,8 @@ k3s_cluster:
     hive_postgres_password: hive123
     superset_postgres_user: superset
     superset_postgres_password: superset123
+    keycloak_postgres_user: keycloak
+    keycloak_postgres_password: keycloak123
     postgres_resources: {} # No resource requests/limits
     postgres_parameters: {} # Use PG defaults
     postgres_storage_size: 5Gi
