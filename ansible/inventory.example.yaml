@@ -11,9 +11,15 @@ workers:
     FQDN-worker-1.edu:
       ansible_connection: local
       ansible_python_interpreter: /usr/bin/python3
+gpu_workers:
+  hosts:
+    FQDN-gpu-1.edu:
+      ansible_connection: local
+      ansible_python_interpreter: /usr/bin/python3
 agents:
   children:
     workers:
+    gpu_workers:
 k3s_cluster:
   children:
     server:
@@ -142,6 +148,10 @@ k3s_cluster:
     cassandra_storage_size: 300Gi
     elasticsearch_storage_size: 100Gi
 
+    # Namespaces that can be changed
+    ollama_namespace: ollama
+    gpu_operator_namespace: gpu-operator
+
     # Local paths
     base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
     scout_repo_dir: /scout/data/scout
@@ -154,6 +164,13 @@ k3s_cluster:
     grafana_dir: /scout/monitoring/grafana
     jupyter_dir: /scout/data/jupyter
     extractor_data_dir: /ceph/input/data
+
+    # Parameters for optional PACS instances, only intended for use in development
+    orthanc_namespace: orthanc
+    dcm4chee_namespace: dcm4chee
+    orthanc_dicom_port: 4242
+    orthanc_dir: /scout/data/orthanc
+    dcm4chee_dir: /scout/data/dcm4chee
 
     # Within the container mounted paths
     hl7logs_root_dir: /data

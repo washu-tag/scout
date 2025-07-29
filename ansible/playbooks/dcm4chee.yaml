@@ -1,0 +1,65 @@
+---
+- name: Create storage directories for Dcm4chee
+  hosts: k3s_cluster
+  gather_facts: false
+  vars_files:
+    - vars/dcm4chee_storage.yaml
+  tasks:
+    - name: Create storage directories
+      include_tasks: tasks/storage_dir_create.yaml
+
+- name: Install Dcm4chee
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  vars_files:
+    - vars/dcm4chee_storage.yaml
+  tasks:
+    - name: Set up storage
+      include_tasks: tasks/storage_setup.yaml
+
+    - name: Create Dcm4chee namespace
+      kubernetes.core.k8s:
+        name: '{{ dcm4chee_namespace }}'
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Create DB secrets
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: dcm4chee-db-secret
+            namespace: '{{ dcm4chee_namespace }}'
+          type: Opaque
+          stringData:
+            POSTGRES_DB: "{{ dcm4chee_db | default('pacsdb') }}"
+            POSTGRES_USER: "{{ dcm4chee_db_user | default('pacs') }}"
+            POSTGRES_PASSWORD: "{{ dcm4chee_db_password | default('pacs') }}"
+
+    - name: Install Dcm4chee using Helm
+      kubernetes.core.helm:
+        name: dcm4chee
+        release_namespace: '{{ dcm4chee_namespace }}'
+        create_namespace: false
+        chart_ref: '{{ scout_repo_dir }}/helm/dcm4chee'
+        state: present
+        wait: true
+        wait_timeout: 10m
+        atomic: true
+        values: "{{ lookup('template', 'templates/dcm4chee/values.yaml.j2') | from_yaml }}"
+
+- name: Populate Dcm4chee
+  hosts: server
+  gather_facts: false
+  vars_files:
+    - vars/dcm4chee_populate.yaml
+  tasks:
+    - name: Populate PACS
+      include_tasks: tasks/populate_pacs.yaml
+      when: dcm4chee_populate is defined

@@ -2,3 +2,4 @@ delta-spark
 jupyterlab-git
 jupyter-ai
 langchain-openai
+langchain-ollama

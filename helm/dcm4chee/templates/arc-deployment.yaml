@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arc
+  labels:
+    {{- include "dcm4chee.arc.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      dcm4chee-component: arc
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dcm4chee.arc.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+        - env:
+            - name: WILDFLY_CHOWN
+              value: /opt/wildfly/standalone /storage
+            - name: WILDFLY_WAIT_FOR
+              value: ldap:389 db:5432
+            - name: TZ
+              value: "{{ .Values.timezone }}"
+          envFrom:
+            - secretRef:
+                name: dcm4chee-db-secret
+          image: "dcm4che/dcm4chee-arc-psql:{{ .Values.versions.arc }}"
+          name: arc
+          startupProbe:
+            failureThreshold: 18
+            periodSeconds: 10
+            initialDelaySeconds: 30
+            tcpSocket:
+              port: {{ .Values.service.dicom }}
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 8443
+              protocol: TCP
+            - containerPort: 9990
+              protocol: TCP
+            - containerPort: 9993
+              protocol: TCP
+            - containerPort: {{ .Values.service.dicom }}
+              protocol: TCP
+            - containerPort: 2762
+              protocol: TCP
+            - containerPort: 2575
+              protocol: TCP
+            - containerPort: 12575
+              protocol: TCP
+          {{- with .Values.arcVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: wildfly
+          hostPath:
+            path: "{{ .Values.paths.wildfly }}"
+        - name: storage
+          hostPath:
+            path: "{{ .Values.paths.storage }}"

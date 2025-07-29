@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dcm4chee-expose-dicom
+  labels:
+    {{- include "dcm4chee.arc.labels" . | nindent 4 }}
+spec:
+  type: LoadBalancer
+  allocateLoadBalancerNodePorts: false
+  ports:
+    - port: {{ .Values.service.dicom }}
+      targetPort: {{ .Values.service.dicom }}
+  selector:
+    {{- include "dcm4chee.selectorLabels" . | nindent 4 }}

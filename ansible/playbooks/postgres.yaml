@@ -16,6 +16,28 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   vars_files:
     - vars/postgres_storage.yaml
+  pre_tasks:
+    - name: Find all SQL initialization files
+      ansible.builtin.find:
+        paths: '{{ playbook_dir }}/templates/postgres_init'
+        patterns: '*_init_sql.yaml'
+      register: sql_init_files
+
+    - name: Initialize empty SQL statements list
+      ansible.builtin.set_fact:
+        postgres_init_sql: []
+
+    - name: Add SQL statements to combined list
+      ansible.builtin.set_fact:
+        postgres_init_sql: '{{ postgres_init_sql + lookup("template", item.path) | from_yaml }}'
+      when: module_enabled not in vars or vars[module_enabled] | bool
+      vars:
+        module_name: "{{ item.path | basename | regex_replace('_init_sql\\.yaml$', '') }}"
+        module_enabled: "{{ module_name + '_enabled' }}"
+      loop: '{{ sql_init_files.files }}'
+      loop_control:
+        label: '{{ item.path | basename }}'
+
   tasks:
     - name: Add Postgres Helm repository
       kubernetes.core.helm_repository:
@@ -99,15 +121,7 @@
                 owner: '{{ postgres_user }}'
                 secret:
                   name: postgres-user
-                postInitSQL:
-                  # Create users for hive and superset databases
-                  - CREATE USER {{ hive_postgres_user }} WITH PASSWORD '{{ hive_postgres_password }}';
-                  - CREATE USER {{ superset_postgres_user }} WITH PASSWORD '{{ superset_postgres_password }}';
-                  - CREATE USER {{ keycloak_postgres_user }} WITH PASSWORD '{{ keycloak_postgres_password }}';
-                  # Create databases
-                  - CREATE DATABASE hive OWNER {{ hive_postgres_user }};
-                  - CREATE DATABASE superset OWNER {{ superset_postgres_user }};
-                  - CREATE DATABASE keycloak WITH ENCODING 'UTF8' OWNER {{ keycloak_postgres_user }};
+                postInitSQL: '{{ postgres_init_sql }}'
 
     - name: Expose metrics service for Prometheus
       kubernetes.core.k8s:

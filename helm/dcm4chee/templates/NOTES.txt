@@ -1,0 +1,1 @@
+The DCM4CHEE archive is now available at {{ (first .Values.ingress.hosts).host }}/dcm4chee-arc/ui2. Additionally, DIMSE for the PACS should be accessible on port {{ .Values.service.dicom }}. Please review the known limitations in the README.md for this chart carefully.

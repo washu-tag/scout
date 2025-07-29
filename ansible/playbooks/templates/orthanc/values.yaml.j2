@@ -1,0 +1,79 @@
+replicaCount: 1
+
+image:
+  repository: "{{ orthanc_image | default('jodogne/orthanc-plugins') }}"
+  pullPolicy: IfNotPresent
+  tag: "{{ orthanc_version | default('latest') }}"
+
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ''
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  http: 8042
+  dicom: {{ orthanc_dicom_port }}
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: >
+      kube-system-orthanc-add-trailing-slash@kubernetescrd,
+      kube-system-orthanc-strip-prefix@kubernetescrd
+  hosts:
+    - host: '{{ server_hostname }}'
+      paths:
+        - path: /orthanc
+          pathType: Prefix
+
+resources: {}
+
+livenessProbe:
+  tcpSocket:
+    port: {{ orthanc_dicom_port }}
+readinessProbe:
+  tcpSocket:
+    port: {{ orthanc_dicom_port }}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+volumes:
+  - name: orthanc-json
+    secret:
+      secretName: orthanc-secret
+  - name: data
+    hostPath:
+      path: '{{ orthanc_dir }}'
+
+volumeMounts:
+  - mountPath: /etc/orthanc
+    name: orthanc-json
+    readOnly: true
+  - name: data
+    mountPath: /var/lib/orthanc/db
+    readOnly: false
+    mountPropagation: HostToContainer
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
