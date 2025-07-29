@@ -17,6 +17,29 @@
     src: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.2.5/kubernetes/kubernetes.yml
     namespace: '{{ keycloak_namespace }}'
 
+# Wait 60 seconds before continuing to dump logs
+- name: Wait 60 seconds before Keycloak readiness check
+  ansible.builtin.wait_for:
+    timeout: 60
+
+- name: Dump Keycloak Operator pods
+  shell: >-
+    kubectl get pods -n {{ keycloak_namespace }} -o wide
+  register: keycloak_operator_pods_dump
+  changed_when: false
+
+- name: Dump Keycloak Operator events
+  shell: >-
+    kubectl get events -n {{ keycloak_namespace }} --sort-by=.metadata.creationTimestamp
+  register: keycloak_operator_events_dump
+  changed_when: false
+
+- name: Describe Keycloak Operator pods
+  shell: >-
+    kubectl describe pod -n {{ keycloak_namespace }}
+  register: keycloak_operator_pods_desc
+  changed_when: false
+
 - name: Wait for Keycloak Operator to be ready
   kubernetes.core.k8s_info:
     api_version: apps/v1
@@ -134,13 +157,6 @@
   ansible.builtin.wait_for:
     timeout: 60
 
-- name: Wait for Keycloak to be ready
-  shell: >-
-    kubectl wait --for=condition=Ready --timeout=5m keycloak/keycloak -n {{ keycloak_namespace }}
-  register: keycloak_ready
-  changed_when: false
-  until: keycloak_ready is succeeded
-
 # Diagnostic: Dump Keycloak pods
 - name: Dump Keycloak pods
   shell: >-
@@ -155,12 +171,19 @@
   register: keycloak_events_dump
   changed_when: false
 
-# Diagnostic: Dump Keycloak logs (all pods)
-- name: Dump Keycloak pod logs
+# Diagnostic: Describe Keycloak pods
+- name: Describe Keycloak pods
   shell: >-
-    for pod in $(kubectl get pods -n {{ keycloak_namespace }} -l app=keycloak -o jsonpath='{.items[*].metadata.name}'); do echo "Logs for $pod:"; kubectl logs -n {{ keycloak_namespace }} $pod; done
-  register: keycloak_logs_dump
+    kubectl describe pod -n {{ keycloak_namespace }}
+  register: keycloak_pods_desc
   changed_when: false
+
+- name: Wait for Keycloak to be ready
+  shell: >-
+    kubectl wait --for=condition=Ready --timeout=5m keycloak/keycloak -n {{ keycloak_namespace }}
+  register: keycloak_ready
+  changed_when: false
+  until: keycloak_ready is succeeded
 
 - name: Create Keycloak Config as a Secret
   kubernetes.core.k8s:
