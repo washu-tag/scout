@@ -129,12 +129,38 @@
                   path: /kc
                   pathType: Prefix
 
+# Wait 60 seconds before continuing to allow resources to settle
+- name: Wait 60 seconds before Keycloak readiness check
+  ansible.builtin.wait_for:
+    timeout: 60
+
 - name: Wait for Keycloak to be ready
   shell: >-
     kubectl wait --for=condition=Ready --timeout=5m keycloak/keycloak -n {{ keycloak_namespace }}
   register: keycloak_ready
   changed_when: false
   until: keycloak_ready is succeeded
+
+# Diagnostic: Dump Keycloak pods
+- name: Dump Keycloak pods
+  shell: >-
+    kubectl get pods -n {{ keycloak_namespace }} -o wide
+  register: keycloak_pods_dump
+  changed_when: false
+
+# Diagnostic: Dump Keycloak events
+- name: Dump Keycloak events
+  shell: >-
+    kubectl get events -n {{ keycloak_namespace }} --sort-by=.metadata.creationTimestamp
+  register: keycloak_events_dump
+  changed_when: false
+
+# Diagnostic: Dump Keycloak logs (all pods)
+- name: Dump Keycloak pod logs
+  shell: >-
+    for pod in $(kubectl get pods -n {{ keycloak_namespace }} -l app=keycloak -o jsonpath='{.items[*].metadata.name}'); do echo "Logs for $pod:"; kubectl logs -n {{ keycloak_namespace }} $pod; done
+  register: keycloak_logs_dump
+  changed_when: false
 
 - name: Create Keycloak Config as a Secret
   kubernetes.core.k8s:

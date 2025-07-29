@@ -166,6 +166,10 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/postgres.yaml
+      - name: 'Install traefik'
+        shell: bash
+        run: |
+          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/traefik.yaml
       - name: 'Install auth'
         shell: bash
         run: |
