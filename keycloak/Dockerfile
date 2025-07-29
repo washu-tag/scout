@@ -21,5 +21,5 @@ COPY --from=extension-builder /app/event-listener/build/libs/*.jar /opt/keycloak
 RUN /opt/keycloak/bin/kc.sh build
 
 
-FROM quay.io/keycloak/keycloak:latest
+FROM quay.io/keycloak/keycloak:26.3.2
 COPY --from=kc-builder /opt/keycloak/ /opt/keycloak/
