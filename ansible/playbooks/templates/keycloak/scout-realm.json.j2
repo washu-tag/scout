@@ -81,7 +81,7 @@
     },
     "groups": [
       {
-        "name": "scout-admins",
+        "name": "scout-admin",
         "attributes": {
           "policy": [
             "consoleAdmin"
@@ -107,7 +107,7 @@
         }
       },
       {
-        "name": "scout-users",
+        "name": "scout-user",
         "realmRoles": [
           "scout-user"
         ],
@@ -116,12 +116,6 @@
             "jupyterhub-user"
           ]
         }
-      },
-      {
-        "name": "scout-pending-approval"
-      },
-      {
-        "name": "scout-disallowed"
       }
     ],
     "clients": [
@@ -327,17 +321,6 @@
             "clientSecret": "{{ keycloak_gh_client_secret }}",
           }
         }
-    ],
-    "identityProviderMappers": [
-      {
-        "name": "scout-pending-approval-idp-mapper",
-        "identityProviderAlias": "github",
-        "identityProviderMapper": "oidc-hardcoded-group-idp-mapper",
-        "config": {
-          "syncMode": "INHERIT",
-          "group": "/scout-pending-approval"
-        }
-      }
     ],
     "authenticationFlows": [
       {
