@@ -40,6 +40,12 @@
   register: keycloak_operator_pods_desc
   changed_when: false
 
+- name: Dump Keycloak Operator logs
+  shell: >-
+    kubectl logs -n {{ keycloak_namespace }} svc/keycloak-operator
+  register: keycloak_operator_logs_dump
+  changed_when: false
+
 - name: Wait for Keycloak Operator to be ready
   kubernetes.core.k8s_info:
     api_version: apps/v1
