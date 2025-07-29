@@ -310,6 +310,7 @@
       }
     ],
     "identityProviders": [
+        {% if keycloak_gh_client_id is defined and keycloak_gh_client_id %}
         {
           "alias": "github",
           "providerId": "github",
@@ -320,7 +321,22 @@
             "clientId": "{{ keycloak_gh_client_id }}",
             "clientSecret": "{{ keycloak_gh_client_secret }}",
           }
-        }
+        },
+        {% endif %}
+        {% if keycloak_microsoft_client_id is defined and keycloak_microsoft_client_id %}
+        {
+          "alias": "microsoft",
+          "providerId": "microsoft",
+          "displayName": "Microsoft",
+          "enabled": true,
+          "trustEmail": true,
+          "config": {
+            "clientId": "{{ keycloak_microsoft_client_id }}",
+            "clientSecret": "{{ keycloak_microsoft_client_secret }}",
+            "tenantId": "{{ keycloak_microsoft_tenant_id }}",
+          }
+        },
+        {% endif %}
     ],
     "authenticationFlows": [
       {
@@ -347,7 +363,7 @@
             "userSetupAllowed": false
           },
           {
-            "authenticatorConfig": "github",
+            "authenticatorConfig": "default-provider",
             "authenticator": "identity-provider-redirector",
             "authenticatorFlow": false,
             "requirement": "ALTERNATIVE",
@@ -376,9 +392,9 @@
     ],
     "authenticatorConfig": [
       {
-        "alias": "github",
+        "alias": "default-provider",
         "config": {
-          "defaultProvider": "github"
+          "defaultProvider": "{{ keycloak_default_provider }}"
         }
       }
     ],

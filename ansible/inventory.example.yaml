@@ -35,12 +35,16 @@ k3s_cluster:
 
     # Keycloak Config
     keycloak_namespace: auth
-    keycloak_bootstrap_admin_user: admin # One time only user/pass to bootstrap Keycloak
-    keycloak_bootstrap_admin_password: admin # TODO will need a service account for keycloak-config-cli
+    keycloak_bootstrap_admin_user: admin
+    keycloak_bootstrap_admin_password: admin
     keycloak_postgres_user: keycloak
     keycloak_postgres_password: keycloak123
-    keycloak_gh_client_id: 'your-github-client' # TODO: Handle other auth providers
+    keycloak_gh_client_id: 'your-github-client'
     keycloak_gh_client_secret: 'your-github-secret'
+    keycloak_microsoft_client_id: 'your-microsoft-client'
+    keycloak_microsoft_client_secret: 'your-microsoft-secret'
+    keycloak_microsoft_tenant_id: 'your-microsoft-tenant-id'
+    keycloak_default_provider: github
     keycloak_oauth2_proxy_client_id: 'oauth2-proxy'
     keycloak_oauth2_proxy_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_superset_client_id: 'superset'
