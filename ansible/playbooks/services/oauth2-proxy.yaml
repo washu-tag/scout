@@ -86,6 +86,28 @@
         - name: oauth2-proxy-logo
           mountPath: /var/www/static/logo
 
+- name: Wait 60 seconds before checking OAuth2 Proxy
+  ansible.builtin.wait_for:
+    seconds: 60
+
+- name: Dump the OAuth2 Proxy pod info
+  shell: >-
+    kubectl get pods -n kube-system -l app=oauth2-proxy -o wide
+  register: oauth2_proxy_pod_dump
+  changed_when: false
+
+- name: Describe the OAuth2 Proxy pod
+  shell: >-
+    kubectl describe pod -n kube-system -l app=oauth2-proxy
+  register: oauth2_proxy_pod_desc
+  changed_when: false
+
+- name: Dump OAuth2 Proxy logs
+  shell: >-
+    kubectl logs -n kube-system -l app=oauth2-proxy --tail=100
+  register: oauth2_proxy_logs
+  changed_when: false
+
 - name: Install OAuth2 Proxy Auth Middleware
   kubernetes.core.k8s:
     state: present
