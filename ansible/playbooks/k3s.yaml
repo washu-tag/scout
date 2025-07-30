@@ -16,10 +16,15 @@
         dest: /root/bin/get.k3s.io.sh
         mode: '0755'
 
-    - name: Add python kubernetes library from system package
-      package:
-        name: python3-kubernetes
+    - name: Install pip
+      ansible.builtin.package:
+        name: python3-pip
         state: present
+
+    - name: Add python kubernetes library from pip
+      ansible.builtin.pip:
+        name: kubernetes==26.1.0
+        executable: pip3
 
 ################################################################################
 - hosts: server
