@@ -182,7 +182,7 @@
             labels:
               app: prospective-indexing
           spec:
-            backoffLimit: 3
+            backoffLimit: 10
             template:
               metadata:
                 labels:
