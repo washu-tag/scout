@@ -37,6 +37,7 @@ k3s_cluster:
     keycloak_smtp_ssl: 'false'
     keycloak_smtp_starttls: 'false'
     keycloak_smtp_debug: 'false'
+    keycloak_default_provider: 'github'
     keycloak_gh_client_id: 'kc-gh-1234567890'
     keycloak_gh_client_secret: 'b3e6f20e80abfd3a77b4c4db18919876'
     keycloak_gh_admin_client_id: 'kc-gh-admin-1234567890'
