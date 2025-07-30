@@ -182,7 +182,7 @@
             labels:
               app: prospective-indexing
           spec:
-            backoffLimit: 10
+            backoffLimit: 5
             template:
               metadata:
                 labels:
@@ -192,6 +192,9 @@
                 containers:
                   - name: prospective-indexing-setup
                     image: temporalio/admin-tools
+                    env:
+                      - name: TEMPORAL_CLI_ADDRESS
+                        value: 'temporal-frontend.{{ temporal_namespace }}:7233'
                     command:
                       - temporal
                       - schedule
