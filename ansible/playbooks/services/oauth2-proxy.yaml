@@ -47,7 +47,7 @@
     chart_version: ~7.12.0
     release_namespace: kube-system
     release_state: present
-    wait: true
+    wait: false
     wait_timeout: 3m
     atomic: true
     values:
