@@ -163,7 +163,7 @@
               - name: TEMPORAL_AUTH_ENABLED
                 value: 'true'
               - name: TEMPORAL_AUTH_PROVIDER_URL
-                value: 'https://{{ server_hostname }}/kc/realms/scout'
+                value: 'http://keycloak-service.auth:8080/kc/realms/scout'
               - name: TEMPORAL_AUTH_CLIENT_ID
                 value: '{{ keycloak_temporal_client_id }}'
               - name: TEMPORAL_AUTH_CLIENT_SECRET
