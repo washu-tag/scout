@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'checkstyle'
 }
 
 group = 'edu.washu.tag'
@@ -11,6 +12,7 @@ repositories {
 
 def kcVersion = "26.3.1"
 def jbossLoggingVersion = "3.6.1.Final"
+def checkstyleVersion = "10.21.2"
 
 dependencies {
     implementation("org.keycloak:keycloak-core:${kcVersion}")
@@ -26,4 +28,9 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+checkstyle {
+	toolVersion checkstyleVersion
+	configFile = file('../../linting_java_checkstyle.xml')
 }

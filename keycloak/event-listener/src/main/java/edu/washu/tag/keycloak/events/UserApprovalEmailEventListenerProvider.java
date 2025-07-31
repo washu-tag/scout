@@ -1,7 +1,8 @@
 package edu.washu.tag.keycloak.events;
 
-import java.util.Map;
+import static org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction;
 
+import java.util.Map;
 import org.jboss.logging.Logger;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.EmailSenderProvider;
@@ -20,17 +21,28 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.ThemeManager;
 import org.keycloak.models.UserModel;
-import static org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction;
 import org.keycloak.theme.Theme;
 import org.keycloak.theme.freemarker.FreeMarkerProvider;
 
+/**
+ * Event listener provider to listen for user registration events to send a
+ * welcome email to the user and an approval email to admins. It also listens
+ * for group membership events to send enabled/disabled emails to users when
+ * they are added or removed from the "scout-user" group.
+ */
 public class UserApprovalEmailEventListenerProvider implements EventListenerProvider {
+
     private static final Logger log = Logger.getLogger(UserApprovalEmailEventListenerProvider.class);
     private final KeycloakSession session;
     private final EventListenerTransaction tx = new EventListenerTransaction(this::sendEmail, this::sendEmail);
     private final KeycloakSessionFactory sessionFactory;
     private static final String SCOUT_USER_GROUP = "scout-user";
 
+    /**
+     * Constructor for UserApprovalEmailEventListenerProvider.
+     *
+     * @param session The current Keycloak session
+     */
     public UserApprovalEmailEventListenerProvider(KeycloakSession session) {
         this.session = session;
         this.session.getTransactionManager().enlistAfterCompletion(tx);
@@ -38,7 +50,8 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     }
 
     /**
-     * Registraion events are user events. Send welcome email to users and approval email to admins.
+     * Registraion events are user events. Send welcome email to users and
+     * approval email to admins.
      */
     @Override
     public void onEvent(Event event) {
@@ -50,8 +63,8 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     }
 
     /**
-     * Group membership events are admin events. Check if the user is in the scout-user group and send 
-     * endabled / disabled emails to the user.
+     * Group membership events are admin events. Check if the user is in the
+     * scout-user group and send endabled / disabled emails to the user.
      */
     @Override
     public void onEvent(AdminEvent event, boolean includeRepresentation) {
@@ -60,6 +73,10 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
         if (isScoutUserGroupMembershipEvent(event)) {
             tx.addAdminEvent(event, includeRepresentation);
         }
+    }
+
+    @Override
+    public void close() {
     }
 
     private boolean isUserRegistrationEvent(Event event) {
@@ -87,12 +104,44 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
             context.setHttpRequest(session.getContext().getHttpRequest());
             UserModel user = sess.users().getUserById(realm, event.getUserId());
 
-            if (!isUserValid(user, event, realm)) return;
+            if (!isUserValid(user, event, realm)) {
+                return;
+            }
             Map<String, Object> bodyAttributes = new java.util.HashMap<>();
             bodyAttributes.put("username", user.getUsername());
 
             sendUserPendingApprovalEmail(sess, realm, user, bodyAttributes);
             sendAdminApprovalEmail(session, realm, bodyAttributes, user);
+        });
+    }
+
+    /**
+     * Send group membership event emails.
+     */
+    private void sendEmail(AdminEvent event, boolean includeRepresentation) {
+        HttpRequest request = session.getContext().getHttpRequest();
+        runJobInTransaction(sessionFactory, (KeycloakSession sess) -> {
+            KeycloakContext context = sess.getContext();
+            RealmModel realm = sess.realms().getRealm(event.getRealmId());
+            context.setRealm(realm);
+            context.setHttpRequest(request);
+            // Not a user event so we need to get the username from the event details
+            Map<String, String> details = event.getDetails();
+            String username = details.get("username");
+            if (username == null) {
+                log.warnf("Username not found in event details: %s. Unable to check scout-user group membership.", event.getDetails());
+                return;
+            }
+            UserModel user = sess.users().getUserByUsername(realm, username);
+            if (user == null) {
+                log.warnf("User %s not found in realm %s. Unable to check scout-user group membership.", username, realm.getName());
+                return;
+            }
+            if (event.getOperationType() == OperationType.CREATE) {
+                sendUserEnabledEmail(sess, realm, user);
+            } else if (event.getOperationType() == OperationType.DELETE) {
+                sendUserDisabledEmail(sess, realm, user);
+            }
         });
     }
 
@@ -146,36 +195,6 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
         }
     }
 
-    /**
-     * Send group membership event emails.
-     */
-    private void sendEmail(AdminEvent event, boolean includeRepresentation) {
-        HttpRequest request = session.getContext().getHttpRequest();
-        runJobInTransaction(sessionFactory, (KeycloakSession sess) -> {
-            KeycloakContext context = sess.getContext();
-            RealmModel realm = sess.realms().getRealm(event.getRealmId());
-            context.setRealm(realm);
-            context.setHttpRequest(request);
-            // Not a user event so we need to get the username from the event details
-            Map<String, String> details = event.getDetails();
-            String username = details.get("username");
-            if (username == null) {
-                log.warnf("Username not found in event details: %s. Unable to check scout-user group membership.", event.getDetails());
-                return;
-            }
-            UserModel user = sess.users().getUserByUsername(realm, username);
-            if (user == null) {
-                log.warnf("User %s not found in realm %s. Unable to check scout-user group membership.", username, realm.getName());
-                return;
-            }
-            if (event.getOperationType() == OperationType.CREATE) {
-                sendUserEnabledEmail(sess, realm, user);
-            } else if (event.getOperationType() == OperationType.DELETE) {
-                sendUserDisabledEmail(sess, realm, user);
-            }
-        });
-    }
-
     private void sendUserEnabledEmail(KeycloakSession session, RealmModel realm, UserModel user) {
         try {
             EmailTemplateProvider emailTemplateProvider = session.getProvider(EmailTemplateProvider.class);
@@ -202,10 +221,6 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
         } catch (EmailException e) {
             log.errorf("Failed to send user disabled email for user: %s, email: %s", user.getUsername(), user.getEmail(), e);
         }
-    }
-
-    @Override
-    public void close() {
     }
 
 }
