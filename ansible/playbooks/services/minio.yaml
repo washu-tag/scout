@@ -259,6 +259,40 @@
                     - key: config.env
                       path: config.env
 
+- name: Wait 60 seconds before minio readiness check
+  ansible.builtin.wait_for:
+    timeout: 60
+
+- name: Dump MinIO tenant status
+  shell: >
+    kubectl get tenant {{ minio_tenant_name }} -n {{ minio_tenant_namespace }} -o yaml
+  register: minio_tenant_status
+  changed_when: false
+
+- name: Describe MinIO tenant pods
+  shell: >
+    kubectl describe pod -l v1.min.io/tenant={{ minio_tenant_name }} -n {{ minio_tenant_namespace }}
+  register: minio_pod_desc
+  changed_when: false
+
+- name: Dump MinIO bootstrap job status
+  shell: >
+    kubectl get job bootstrap-minio-iam -n {{ minio_tenant_namespace }} -o yaml
+  register: minio_bootstrap_job_status
+  changed_when: false
+
+- name: Describe MinIO bootstrap job
+  shell: >
+    kubectl describe job bootstrap-minio-iam -n {{ minio_tenant_namespace }}
+  register: minio_bootstrap_job_desc
+  changed_when: false
+
+- name: Dump MinIO bootstrap job logs
+  shell: >
+    kubectl logs job/bootstrap-minio-iam -n {{ minio_tenant_namespace }}
+  register: minio_bootstrap_job_logs
+  changed_when: false
+
 - name: Wait for bootstrap job to complete
   kubernetes.core.k8s_info:
     api_version: batch/v1
