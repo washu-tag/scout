@@ -93,6 +93,19 @@ jobs:
         with:
           subproject: helm/superset
           image-name: superset
+  build-and-upload-keycloak:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4.2.1
+      - name: 'Build/Cache Image - keycloak'
+        uses: ./.github/actions/docker-build-cache
+        with:
+          subproject: keycloak
+          image-name: keycloak
   unit-test:
     runs-on: ubuntu-latest
     permissions:
@@ -115,6 +128,7 @@ jobs:
       - build-and-upload-pyspark-notebook
       - build-and-upload-launchpad
       - build-and-upload-superset
+      - build-and-upload-keycloak
       - unit-test
     permissions:
       contents: read
@@ -234,3 +248,7 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: superset
+      - name: 'Push Image - keycloak'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: keycloak
