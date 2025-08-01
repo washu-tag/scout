@@ -22,7 +22,7 @@ server:
             default:
               consistency: 'local_quorum'
               serialConsistency: 'local_serial'
-    {% if temporal_auth_enabled | default(true) %}
+{% if temporal_auth_enabled | default(true) %}
     authorization:
       jwtKeyProvider:
         keySourceURIs:
@@ -31,7 +31,7 @@ server:
       permissionsClaimName: groups
       authorizer: default
       claimMapper: default
-    {% endif %}
+{% endif %}
 cassandra:
   enabled: false
 elasticsearch:
@@ -67,9 +67,11 @@ web:
   ingress:
     enabled: true
     ingressClassName: traefik
+{% if temporal_auth_enabled | default(true) %}
     annotations:
       traefik.ingress.kubernetes.io/router.middlewares: >
         kube-system-oauth2-proxy-error@kubernetescrd,
         kube-system-oauth2-proxy-auth@kubernetescrd
+{% endif %}
     hosts:
       - '{{ server_hostname }}/temporal'
