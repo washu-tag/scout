@@ -50,7 +50,7 @@ k3s_cluster:
     keycloak_smtp_ssl: 'false'
     keycloak_smtp_starttls: 'false'
     keycloak_smtp_debug: 'false'
-    keycloak_gh_client_id: 'your-github-client' # TODO: Handle other auth providers
+    keycloak_gh_client_id: 'your-github-client'
     keycloak_gh_client_secret: 'your-github-secret'
     keycloak_microsoft_client_id: 'your-microsoft-client'
     keycloak_microsoft_client_secret: 'your-microsoft-secret'

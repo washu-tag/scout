@@ -68,7 +68,7 @@ k3s_cluster:
     s3_lake_writer_secret: lakewriter123
     s3_loki_writer: loki-writer
     s3_loki_writer_secret: lokiwriter123
-    minio_use_oidc: false # Skip OIDC config for testing
+    minio_use_oidc: false
 
     # Monitor config
     prometheus_storage_size: 1Gi
