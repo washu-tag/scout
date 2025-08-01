@@ -22,7 +22,7 @@ server:
             default:
               consistency: 'local_quorum'
               serialConsistency: 'local_serial'
-{% if temporal_auth_enabled | default(true) %}
+{% if temporal_oidc_enabled | default(true) %}
     authorization:
       jwtKeyProvider:
         keySourceURIs:
@@ -50,7 +50,7 @@ web:
   additionalEnv:
     - name: TEMPORAL_UI_PUBLIC_PATH
       value: /temporal
-{% if temporal_auth_enabled | default(true) %}
+{% if temporal_oidc_enabled | default(true) %}
     - name: TEMPORAL_AUTH_ENABLED
       value: 'true'
     - name: TEMPORAL_AUTH_PROVIDER_URL
@@ -67,7 +67,7 @@ web:
   ingress:
     enabled: true
     ingressClassName: traefik
-{% if temporal_auth_enabled | default(true) %}
+{% if temporal_oidc_enabled | default(true) %}
     annotations:
       traefik.ingress.kubernetes.io/router.middlewares: >
         kube-system-oauth2-proxy-error@kubernetescrd,

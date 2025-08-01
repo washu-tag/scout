@@ -71,7 +71,7 @@
           export MINIO_ROOT_PASSWORD={{ s3_password }}
           export MINIO_REGION_NAME={{ s3_region }}
           export MINIO_REGION={{ s3_region }}
-          {% if minio_use_oidc | default(true) %}
+          {% if minio_oidc_enabled | default(true) %}
           export MINIO_IDENTITY_OPENID_CONFIG_URL_PRIMARY_IAM="https://{{ server_hostname }}/kc/realms/scout/.well-known/openid-configuration"
           export MINIO_IDENTITY_OPENID_CLIENT_ID_PRIMARY_IAM="{{ keycloak_minio_client_id }}"
           export MINIO_IDENTITY_OPENID_CLIENT_SECRET_PRIMARY_IAM="{{ keycloak_minio_client_secret }}"
