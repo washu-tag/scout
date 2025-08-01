@@ -22,35 +22,6 @@
     src: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.3.2/kubernetes/kubernetes.yml
     namespace: '{{ keycloak_namespace }}'
 
-# Wait 60 seconds before continuing to dump logs
-- name: Wait 60 seconds before Keycloak readiness check
-  ansible.builtin.wait_for:
-    timeout: 60
-
-- name: Dump Keycloak Operator pods
-  shell: >-
-    kubectl get pods -n {{ keycloak_namespace }} -o wide
-  register: keycloak_operator_pods_dump
-  changed_when: false
-
-- name: Dump Keycloak Operator events
-  shell: >-
-    kubectl get events -n {{ keycloak_namespace }} --sort-by=.metadata.creationTimestamp
-  register: keycloak_operator_events_dump
-  changed_when: false
-
-- name: Describe Keycloak Operator pods
-  shell: >-
-    kubectl describe pod -n {{ keycloak_namespace }}
-  register: keycloak_operator_pods_desc
-  changed_when: false
-
-- name: Dump Keycloak Operator logs
-  shell: >-
-    kubectl logs -n {{ keycloak_namespace }} svc/keycloak-operator
-  register: keycloak_operator_logs_dump
-  changed_when: false
-
 - name: Wait for Keycloak Operator to be ready
   kubernetes.core.k8s_info:
     api_version: apps/v1
@@ -91,8 +62,6 @@
       stringData:
         username: '{{ keycloak_bootstrap_admin_user }}'
         password: '{{ keycloak_bootstrap_admin_password }}'
-        # username: temp-admin
-        # password: 0f7306a74f9645c395d757e347dcf4a2 # TODO: Use a more secure password or vault it
 
 - name: Create Keycloak CR
   kubernetes.core.k8s:
@@ -162,32 +131,6 @@
                         name: http
                   path: /kc
                   pathType: Prefix
-
-# Wait 60 seconds before continuing to allow resources to settle
-- name: Wait 60 seconds before Keycloak readiness check
-  ansible.builtin.wait_for:
-    timeout: 60
-
-# Diagnostic: Dump Keycloak pods
-- name: Dump Keycloak pods
-  shell: >-
-    kubectl get pods -n {{ keycloak_namespace }} -o wide
-  register: keycloak_pods_dump
-  changed_when: false
-
-# Diagnostic: Dump Keycloak events
-- name: Dump Keycloak events
-  shell: >-
-    kubectl get events -n {{ keycloak_namespace }} --sort-by=.metadata.creationTimestamp
-  register: keycloak_events_dump
-  changed_when: false
-
-# Diagnostic: Describe Keycloak pods
-- name: Describe Keycloak pods
-  shell: >-
-    kubectl describe pod -n {{ keycloak_namespace }}
-  register: keycloak_pods_desc
-  changed_when: false
 
 - name: Wait for Keycloak to be ready
   shell: >-
