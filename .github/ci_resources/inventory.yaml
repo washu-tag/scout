@@ -94,6 +94,7 @@ k3s_cluster:
     # Orchestrator config
     cassandra_storage_size: 1Gi
     elasticsearch_storage_size: 1Gi
+    temporal_auth_enabled: false
 
     # Namespaces that can be changed
     hive_namespace: hive
