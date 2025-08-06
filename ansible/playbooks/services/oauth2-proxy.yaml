@@ -60,6 +60,7 @@
           redirect_url = "https://{{ server_hostname }}/oauth2/callback"
           oidc_issuer_url = "https://{{ server_hostname }}/kc/realms/scout"
           allowed_roles = "scout-user"
+          cookie_expire = "{{ oauth2_proxy_cookie_expire | default('8h') }}"
           skip_provider_button = false
           email_domains=  ['*']
           reverse_proxy = true
