@@ -5,6 +5,8 @@ ollama:
   enabled: true
   # -- If enabling embedded Ollama, update fullnameOverride to your desired Ollama name value, or else it will use the default ollama.name value from the Ollama chart
   fullnameOverride: ollama
+  image:
+    tag: 'latest'
   ollama:
     gpu:
       enabled: true
