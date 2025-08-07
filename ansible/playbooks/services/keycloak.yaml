@@ -106,6 +106,8 @@
             value: 'true'
           - name: event-metrics-user-tags
             value: 'realm,idp,clientId'
+          - name: spi-events-listener-jboss-logging-success-level
+            value: info
 
 # The operator wants to use a subdomain and does not appear to support a path-based ingress
 - name: Create Keycloak Ingress
