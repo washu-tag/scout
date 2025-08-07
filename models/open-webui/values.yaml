@@ -6,10 +6,10 @@ ollama:
   # -- If enabling embedded Ollama, update fullnameOverride to your desired Ollama name value, or else it will use the default ollama.name value from the Ollama chart
   fullnameOverride: ollama
   ollama:
-    # gpu:
-    #   enabled: true
-    #   type: 'nvidia'
-    #   number: 1
+    gpu:
+      enabled: true
+      type: 'nvidia'
+      number: 1
     models:
       pull:
         - llama3.2:3b
