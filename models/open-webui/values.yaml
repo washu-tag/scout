@@ -21,7 +21,7 @@ ollama:
     annotations:
       traefik.ingress.kubernetes.io/router.middlewares: ollama-ollama-stripprefix@kubernetescrd
     hosts:
-      - host: big-03.minmi-algol.ts.net
+      - host: tagdev-control-03.minmi-algol.ts.net
         paths:
           - path: /ollama-service
             pathType: Prefix
@@ -37,7 +37,7 @@ pipelines:
 ingress:
   enabled: true
   class: traefik
-  host: big-03.minmi-algol.ts.net
+  host: tagdev-control-03.minmi-algol.ts.net
 
 persistence:
   enabled: true
