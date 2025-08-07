@@ -106,9 +106,9 @@
           existingSecret: true
         env: '{{ minio_env_variables }}'
         pools:
-          - servers: '{{ minio_server_count | default(1) }}'
+          - servers: '{{ groups["minio_hosts"] | length | default(1) }}'
             name: pool-0
-            volumesPerServer: 1
+            volumesPerServer: '{{ minio_volumes_per_server | default(1) }}'
             size: "{{ minio_storage_size | default('100Gi') }}"
             storageClassName: "{{ minio_storage_class | default('minio-storage') }}"
             tolerations:
@@ -116,6 +116,13 @@
               - key: 'node-role.kubernetes.io/control-plane'
                 operator: Exists
                 effect: PreferNoSchedule
+            affinity:
+              podAntiAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  - labelSelector:
+                      matchLabels:
+                        v1.min.io/tenant: scout
+                    topologyKey: kubernetes.io/hostname
         metrics:
           enabled: true
           port: 9000

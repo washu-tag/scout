@@ -1,4 +1,5 @@
 ---
+# The server group contains the control plane nodes for the k3s cluster.
 server:
   hosts:
     FQDN-leader.edu:
@@ -6,6 +7,7 @@ server:
       ansible_python_interpreter: /usr/bin/python3
       k3s_control_node: true
       external_url: alt.fqdn.edu # omit to use FQDN-leader.edu
+# The workers group contains the worker nodes for the k3s cluster.
 workers:
   hosts:
     FQDN-worker-1.edu:
@@ -16,10 +18,20 @@ gpu_workers:
     FQDN-gpu-1.edu:
       ansible_connection: local
       ansible_python_interpreter: /usr/bin/python3
+# The agents group contains nodes that run only the k3s agent.
+# In this example it only includes the workers and gpu_workers groups.
 agents:
   children:
     workers:
     gpu_workers:
+# Include in this group any nodes on which MinIO should run.
+# Note that if this group contains more than one node, the value of
+#  `minio_volumes_per_server` must be greater than 1 or minio will fail to start.
+minio_hosts:
+  children:
+    server:
+    workers:
+# This group contains all nodes in the k3s cluster.
 k3s_cluster:
   children:
     server:
@@ -32,6 +44,7 @@ k3s_cluster:
 
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
     minio_storage_size: 750Gi
+    minio_volumes_per_server: 2
     s3_username: minio
     s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     s3_region: us-east-1
