@@ -84,8 +84,8 @@ helm -n superset uninstall superset
 ```
 
 Lastly, you may need to customize the `models/open-webui/values.yaml` file.
-- `ollama.ingress.hosts[0].host` is set to `big-03.minmi-algol.ts.net`
-- `ingress.host` is set to `big-03.minmi-algol.ts.net`
+- `ollama.ingress.hosts[0].host` is set to `tagdev-control-03.minmi-algol.ts.net`
+- `ingress.host` is set to `tagdev-control-03.minmi-algol.ts.net`
 - `extraResources[1].spec.hostPath.path` is the local path for Open WebUI data; I set it to `/scout/persistence/open-webui`
 - `extraResources[4].spec.hostPath.path` is the local path for Ollama data; I set it to `/scout/persistence/ollama`
 - `databaseUrl` is a connection string for Postgres, with username and password embedded. Customize it to your values.
