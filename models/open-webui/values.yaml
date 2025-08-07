@@ -109,7 +109,7 @@ extraResources:
           - /ollama-service
 
 # -- Configure database URL, needed to work with Postgres (example: `postgresql://<user>:<password>@<service>:<port>/<database>`), leave empty to use the default sqlite database
-databaseUrl: 'postgresql://scout:scout123@postgresql-cluster-r.postgres:5432/openwebui'
+databaseUrl: 'postgresql://scout:scout123@postgresql-cluster-r.cloudnative-pg:5432/openwebui'
 
 enableOpenaiApi: false
 

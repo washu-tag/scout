@@ -50,7 +50,7 @@ helm repo add open-webui https://helm.openwebui.com/
 Open WebUI wants to use a PostgreSQL database. We will create a new database for it to use in our PostgreSQL.
 First run a pod that can access the database.
 ```
-kubectl -n postgres run psql --rm -it --image=ghcr.io/cloudnative-pg/postgresql:17.4 -- psql -h postgresql-cluster-rw.postgres -p 5432 -U postgres ingest
+kubectl -n cloudnative-pg run psql --rm -it --image=ghcr.io/cloudnative-pg/postgresql:17.4 -- psql -h postgresql-cluster-rw.cloudnative-pg -p 5432 -U postgres ingest
 ```
 Enter the password when the pod starts. Note we are using the superuser `postgres`.
 
