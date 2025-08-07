@@ -39,7 +39,7 @@ In this step we will deploy Open WebUI using its helm chart, which also deploys 
 
 Create a namespace
 ```
-kubectl create ns open-webui
+kubectl create ns ollama
 ```
 
 Add the open-webui helm repo
@@ -92,7 +92,7 @@ Lastly, you may need to customize the `models/open-webui/values.yaml` file.
 
 Now we can deploy Open WebUI + Ollama + a Redis instance for managing websockets using the helm chart.
 ```
-helm install open-webui open-webui/open-webui --namespace open-webui --values models/open-webui/values.yaml
+helm install open-webui open-webui/open-webui --namespace ollama --values models/open-webui/values.yaml
 ```
 
 Open WebUI should be available at the root of your domain.

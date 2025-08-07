@@ -4,7 +4,7 @@ ollama:
   # -- Automatically install Ollama Helm chart from https://otwld.github.io/ollama-helm/. Use [Helm Values](https://github.com/otwld/ollama-helm/#helm-values) to configure
   enabled: true
   # -- If enabling embedded Ollama, update fullnameOverride to your desired Ollama name value, or else it will use the default ollama.name value from the Ollama chart
-  fullnameOverride: open-webui-ollama
+  fullnameOverride: ollama
   ollama:
     # gpu:
     #   enabled: true
@@ -17,7 +17,7 @@ ollama:
     enabled: true
     ingressClassName: traefik
     annotations:
-      traefik.ingress.kubernetes.io/router.middlewares: open-webui-ollama-stripprefix@kubernetescrd
+      traefik.ingress.kubernetes.io/router.middlewares: ollama-ollama-stripprefix@kubernetescrd
     hosts:
       - host: big-03.minmi-algol.ts.net
         paths:
@@ -68,7 +68,7 @@ extraResources:
     kind: PersistentVolumeClaim
     metadata:
       name: open-webui-pvc
-      namespace: open-webui
+      namespace: ollama
     spec:
       accessModes:
         - ReadWriteOnce
@@ -102,7 +102,7 @@ extraResources:
     kind: Middleware
     metadata:
       name: ollama-stripprefix
-      namespace: open-webui
+      namespace: ollama
     spec:
       stripPrefix:
         prefixes:
