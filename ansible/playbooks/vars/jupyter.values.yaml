@@ -63,7 +63,7 @@ singleuser:
     OLLAMA_URL: "http://ollama.{{ ollama_namespace | default('ollama') }}:11434"
     AZURE_OPENAI_ENDPOINT: '{{ azure_openai_endpoint | default("https://scout-openai.openai.azure.com/") }}'
     AZURE_OPENAI_API_KEY: '{{ azure_openai_api_key | default("") }}'
-    AZURE_OPENAI_API_VERSION: '{{ azure_openai_api_version | default("2023-05-15") }}'
+    OPENAI_API_VERSION: '{{ openai_api_version | default("2023-05-15") }}'
     AZURE_OPENAI_DEPLOYMENT: '{{ azure_openai_deployment | default("gpt-35-turbo") }}'
     TRINO_HOST: 'trino.trino'
     TRINO_PORT: '8080'
