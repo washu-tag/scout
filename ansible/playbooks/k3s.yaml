@@ -118,6 +118,27 @@
         content: |
           default-runtime: nvidia
 
+    - name: Add NVIDIA container toolkit repository
+      get_url:
+        url: https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+        dest: /etc/yum.repos.d/nvidia-container-toolkit.repo
+        mode: '0644'
+
+    - name: Install NVIDIA container toolkit packages
+      package:
+        name:
+          - nvidia-container-toolkit
+          - nvidia-container-toolkit-base
+          - libnvidia-container-tools
+          - libnvidia-container1
+        state: present
+
+    - name: Verify NVIDIA container toolkit installation
+      command: nvidia-ctk --version
+      register: nvidia_ctk_version
+      changed_when: false
+
+################################################################################
 - hosts: agents
   name: Install k3s on agent nodes
   vars:
