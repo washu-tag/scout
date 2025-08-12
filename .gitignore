@@ -9,3 +9,4 @@ docs/build
 .terraform
 .terraform.lock.hcl
 build/
+.aider*
