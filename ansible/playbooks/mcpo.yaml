@@ -1,0 +1,164 @@
+---
+- name: Deploy MCP Trino and MCPO with Traefik Ingress
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  vars:
+    mcp_namespace: mcp
+    trino_host: trino.trino
+    trino_port: 8080
+    trino_scheme: http
+    mcp_trino_image: ghcr.io/tuannvm/mcp-trino:1.5.0
+    mcpo_image: ghcr.io/open-webui/mcpo:main
+    ingress_path: /mcpo-trino
+
+  tasks:
+    - name: Create namespace
+      kubernetes.core.k8s:
+        name: "{{ mcp_namespace }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Deploy mcp-trino pod
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: mcp-trino
+            namespace: "{{ mcp_namespace }}"
+          spec:
+            containers:
+              - name: mcp-trino
+                image: "{{ mcp_trino_image }}"
+                ports:
+                  - containerPort: 8080
+                env:
+                  - name: TRINO_HOST
+                    value: "{{ trino_host }}"
+                  - name: TRINO_PORT
+                    value: "{{ trino_port | string }}"
+                  - name: TRINO_SCHEME
+                    value: "{{ trino_scheme }}"
+
+    - name: Create mcp-trino service
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: mcp-trino
+            namespace: "{{ mcp_namespace }}"
+          spec:
+            selector:
+              app: mcp-trino
+            ports:
+              - port: 8080
+                targetPort: 8080
+                name: http
+
+    - name: Deploy mcpo-trino pod
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: mcpo-trino
+            namespace: "{{ mcp_namespace }}"
+            labels:
+              app: mcpo-trino
+          spec:
+            containers:
+              - name: mcpo-trino
+                image: "{{ mcpo_image }}"
+                ports:
+                  - containerPort: 8000
+                args:
+                  - "--host"
+                  - "0.0.0.0"
+                  - "--port"
+                  - "8000"
+                  - "--server-type"
+                  - "streamable-http"
+                  - "--"
+                  - "http://mcp-trino.{{ mcp_namespace }}:8080/mcp"
+
+    - name: Create mcpo-trino service
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: mcpo-trino
+            namespace: "{{ mcp_namespace }}"
+          spec:
+            selector:
+              app: mcpo-trino
+            ports:
+              - port: 8000
+                targetPort: 8000
+                name: http
+
+    - name: Create StripPrefix middleware for path routing
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: traefik.io/v1alpha1
+          kind: Middleware
+          metadata:
+            name: 'mcpo-strip-prefix'
+            namespace: kube-system
+          spec:
+            stripPrefix:
+              prefixes:
+                - "{{ ingress_path }}"
+
+    - name: Create Ingress for mcpo-trino
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: mcpo-trino-ingress
+            namespace: "{{ mcp_namespace }}"
+            annotations:
+              traefik.ingress.kubernetes.io/router.middlewares: |
+                kube-system-mcpo-strip-prefix@kubernetescrd
+          spec:
+            ingressClassName: traefik
+            rules:
+              - host: '{{ server_hostname }}'
+                http:
+                  paths:
+                    - backend:
+                        service:
+                          name: mcpo-trino
+                          port:
+                            number: 8000
+                      path: '{{ ingress_path }}'
+                      pathType: Prefix
+
+    - name: Wait for pods to be ready
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: "{{ mcp_namespace }}"
+        name: "{{ item }}"
+        wait: true
+        wait_condition:
+          type: Ready
+          status: "True"
+        wait_timeout: 300
+      loop:
+        - mcp-trino
+        - mcpo-trino
+
+    - name: Display deployment status
+      debug:
+        msg: |
+          Deployment completed successfully!
+          
+          To test the deployment:
+          curl https://{{ server_hostname }}{{ ingress_path }}/openapi.json

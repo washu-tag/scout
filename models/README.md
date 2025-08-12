@@ -7,35 +7,8 @@ For now this contains directions to deploy a prototype infrastructure:
 - Open WebUI, a web interface to chat with LLMs on Ollama
 - An MCP service to enable an LLM to query our data
 
-## Deploy Ollama (optional)
-This step is to deploy Ollama on its own. It is not necessary if you also deploy Open WebUI, because it is configured to deploy Ollama as well.
-
-Create a namespace for ollama
-```
-kubectl create ns ollama
-```
-
-We must create a volume to store the model data on a spacious part of our disk. For me, that is `/scout/persistence/ollama`.
-Use the file `models/ollama/pv.yaml` in this repo; change the path on the last line to your desired path.
-Then create it with 
-```
-kubectl apply -f models/ollama/pv.yaml
-```
-
-We will serve Ollama at a subpath, but it wasn't designed to do that.
-We need to create a traefik `Middleware` to strip the subpath.
-```
-kubectl apply models/ollama/middleware.yaml
-```
-
-Now we can deploy Ollama with helm.
-You'll need to edit the values file to change the `ingress.hosts[0].host` to your host instead of `big-03.minmi-algol.ts.net`.
-```
-helm install ollama otwld/ollama --namespace ollama --values models/ollama/values.yaml
-```
-
 ## Deploy Open WebUI + Ollama
-In this step we will deploy Open WebUI using its helm chart, which also deploys Ollama using its helm chart.
+In this step, we will deploy Open WebUI using its helm chart, which also deploys Ollama using its helm chart.
 
 Create a namespace
 ```
@@ -50,7 +23,7 @@ helm repo add open-webui https://helm.openwebui.com/
 Open WebUI wants to use a PostgreSQL database. We will create a new database for it to use in our PostgreSQL.
 First run a pod that can access the database.
 ```
-kubectl -n cloudnative-pg run psql --rm -it --image=ghcr.io/cloudnative-pg/postgresql:17.4 -- psql -h postgresql-cluster-rw.cloudnative-pg -p 5432 -U postgres ingest
+kubectl -n cloudnative-pg exec -it pod/postgresql-cluster-1 -- psql --dbname=ingest
 ```
 Enter the password when the pod starts. Note we are using the superuser `postgres`.
 
@@ -101,22 +74,37 @@ Open WebUI should be available at the root of your domain.
 This sets up an MCP server that can help an LLM query our report data in Delta Lake via our Trino service.
 In addition, because Open WebUI doesn't speak MCP directly, we have to deploy a proxy service to convert the MCP into OpenAPI for Open WebUI to use.
 
-I first created an `mcp` namespace.
-
 ```
-kubectl create ns mcp
+ansible-playbook -v -i inventory.yaml  --diff --vault-password-file vault/pwd.sh -l tagdev-control-03.nrg.wustl.edu playbooks/mcpo.yaml
 ```
 
-I then deployed the [`mcp-trino`](https://github.com/tuannvm/mcp-trino) service into that namespace, configuring it to point to our trino service, and to expose its own service.
+Now we can go into Open WebUI's admin settings > Tools and add the proxy service as a tool, at URL `https://tagdev-control-03.nrg.wustl.edu/mcpo-trino`.
+
+Reload the page and there should be a new `Trino MCP Server` tool available from the "wrench icon" menu on the chat.
+
+## Deploy Ollama Standalone (If you don't want Open WebUI)
+This step is to deploy Ollama on its own. It is not necessary if you also deploy Open WebUI, because it is configured to deploy Ollama as well.
+
+Create a namespace for ollama
 ```
-kubectl run -n mcp mcp-trino --env TRINO_HOST=trino.trino --env TRINO_PORT=8080 --env TRINO_SCHEME=http --image=ghcr.io/tuannvm/mcp-trino:latest --port=9097 --expose
+kubectl create ns ollama
 ```
 
-Lastly I deployed Open WebUI's MCP proxy tool [`mcpo`](https://github.com/open-webui/mcpo) and configured it to point to the `mcp-trino` service and expose its own service.
+We must create a volume to store the model data on a spacious part of our disk. For me, that is `/scout/persistence/ollama`.
+Use the file `models/ollama/pv.yaml` in this repo; change the path on the last line to your desired path.
+Then create it with
 ```
-kubectl run -n mcp mcpo-trino --image=ghcr.io/open-webui/mcpo:main --port=8000 --expose -- --port 8000 --server-type sse -- http://mcp-trino.mcp:9097/sse
+kubectl apply -f models/ollama/pv.yaml
 ```
 
-Now we can go into Open WebUI's admin settings > Tools and add the proxy service as a tool, at URL `http://mcpo-trino.mcp:8000/openapi.json`.
+We will serve Ollama at a subpath, but it wasn't designed to do that.
+We need to create a traefik `Middleware` to strip the subpath.
+```
+kubectl apply models/ollama/middleware.yaml
+```
 
-Reload the page and there should be a new `MCP Trino` tool available in the + menu on the chat.
+Now we can deploy Ollama with helm.
+You'll need to edit the values file to change the `ingress.hosts[0].host` to your host instead of `big-03.minmi-algol.ts.net`.
+```
+helm install ollama otwld/ollama --namespace ollama --values models/ollama/values.yaml
+```
