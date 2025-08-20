@@ -3,3 +3,4 @@ jupyterlab-git
 jupyter-ai
 langchain-openai
 langchain-ollama
+langextract
