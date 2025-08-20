@@ -107,12 +107,6 @@ k3s_cluster:
     # Superset config
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
-    # Ollama config
-    ollama_pull_models:
-      - llama3.2:3b
-      - llama4:scout
-      - llama3.1:70b
-
     # Orchestrator config
     cassandra_storage_size: 300Gi
     elasticsearch_storage_size: 100Gi
