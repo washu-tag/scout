@@ -1,7 +1,6 @@
 ollama:
   models:
-    pull:
-      - llama3.2:3b
+    pull: {{ ollama_pull_models | default([]) }}
 ingress:
   enabled: true
   ingressClassName: traefik
