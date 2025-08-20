@@ -2,6 +2,7 @@ ollama:
   models:
     pull:
       - llama3.2:3b
+      - llama3.1:70b
 ingress:
   enabled: true
   ingressClassName: traefik
