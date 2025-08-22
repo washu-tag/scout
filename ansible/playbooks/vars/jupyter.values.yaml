@@ -81,11 +81,7 @@ singleuser:
   memory:
     limit: 16G
     guarantee: 2G
-  extraResource:
-    guarantees:
-      nvidia.com/gpu: '1'
-    limits:
-      nvidia.com/gpu: '1'
+  extraResource: '{{ jupyter_singleuser_extraResource | default({}) }}'
   storage:
     type: static
     static:
