@@ -1,0 +1,3 @@
+---
+- "CREATE USER IF NOT EXISTS {{ open_webui_postgres_user }} WITH PASSWORD '{{ open_webui_postgres_password }}';"
+- 'CREATE DATABASE IF NOT EXISTS {{ open_webui_database }} OWNER {{ open_webui_postgres_user }};'

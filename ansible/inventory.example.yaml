@@ -77,6 +77,7 @@ k3s_cluster:
     superset_postgres_user: superset
     superset_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    postgres_cluster_name: postgresql-cluster
     postgres_resources:
       requests:
         cpu: 4
@@ -105,7 +106,21 @@ k3s_cluster:
       max_parallel_maintenance_workers: '2'
 
     # Superset config
+    superset_enabled: false # You cannot enable both superset and openwebui
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    # Open WebUI and Ollama config
+    open_webui_enabled: true # You cannot enable both superset and openwebui
+    open_webui_namespace: ollama
+    open_webui_postgres_user: openwebui
+    open_webui_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    open_webui_database: openwebui
+    open_webui_dir: '/scout/persistence/openwebui'
+    ollama_dir: '/scout/persistence/ollama'
+    ollama_models:
+      - llama3.2:3b
+      - llama3.1:70b
+      - gpt-oss:120b
 
     # Orchestrator config
     cassandra_storage_size: 300Gi
@@ -117,7 +132,6 @@ k3s_cluster:
     prometheus_namespace: prometheus
     grafana_namespace: grafana
     loki_namespace: loki
-    ollama_namespace: ollama
     gpu_operator_namespace: gpu-operator
 
     # Local paths

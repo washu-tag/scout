@@ -102,7 +102,7 @@
           apiVersion: postgresql.cnpg.io/v1
           kind: Cluster
           metadata:
-            name: postgresql-cluster
+            name: '{{ postgres_cluster_name }}'
             namespace: '{{ postgres_cluster_namespace }}'
           spec:
             instances: 1
@@ -130,17 +130,17 @@
           apiVersion: v1
           kind: Service
           metadata:
-            name: postgresql-cluster-metrics
+            name: '{{ postgres_cluster_name }}-metrics'
             namespace: '{{ postgres_cluster_namespace }}'
           spec:
             selector:
-              cnpg.io/cluster: postgresql-cluster
+              cnpg.io/cluster: '{{ postgres_cluster_name }}'
             ports:
               - name: metrics
                 port: 9187
                 targetPort: metrics
 
     - name: Wait for Postgres to be ready
-      command: 'kubectl -n {{ postgres_cluster_namespace }} wait --for=condition=Ready --timeout=300s cluster/postgresql-cluster'
+      command: 'kubectl -n {{ postgres_cluster_namespace }} wait --for=condition=Ready --timeout=300s cluster/{{ postgres_cluster_name }}'
       register: postgres_ready
       changed_when: false

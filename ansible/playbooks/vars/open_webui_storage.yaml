@@ -1,0 +1,17 @@
+ollama_name: ollama
+ollama_storage_class: '{{jupyter_hub_name}}-storage'
+open_webui_name: open-webui
+open_webui_storage_class: '{{open_webui_name}}-storage'
+open_webui_pvc: '{{ open_webui_name }}-pvc'
+
+storage_definitions:
+  - name: '{{ ollama_name }}'
+    size: "{{ ollama_storage_size | default('200Gi') }}"
+    path: '{{ ollama_dir }}'
+    pv_name: '{{ ollama_name }}-pv'
+    storage_class_name: '{{ ollama_storage_class }}'
+  - name: '{{ open_webui_name }}'
+    size: "{{ open_webui_storage_size | default('100Gi') }}"
+    path: '{{ open_webui_dir }}'
+    pv_name: '{{ open_webui_name }}-pv'
+    storage_class_name: '{{ open_webui_storage_class }}'

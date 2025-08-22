@@ -1,0 +1,48 @@
+nameOverride: ''
+namespaceOverride: ''
+ollama:
+  # -- Automatically install Ollama Helm chart from https://otwld.github.io/ollama-helm/. Use [Helm Values](https://github.com/otwld/ollama-helm/#helm-values) to configure
+  enabled: true
+  # -- If enabling embedded Ollama, update fullnameOverride to your desired Ollama name value, or else it will use the default ollama.name value from the Ollama chart
+  fullnameOverride: ollama
+  ollama:
+    gpu:
+      enabled: true
+      type: 'nvidia'
+      number: 1
+    models:
+      pull: {{ ollama_models }}
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      traefik.ingress.kubernetes.io/router.middlewares: kube-system-{{ ollama_strip_prefix_middleware }}@kubernetescrd
+    hosts:
+      - host: {{ server_hostname }}
+        paths:
+          - path: {{ ollama_path }}
+            pathType: Prefix
+  persistentVolume:
+    enabled: true
+    storageClass: {{ ollama_storage_class }}
+
+pipelines:
+  enabled: false
+
+ingress:
+  enabled: true
+  class: traefik
+  host: {{ server_hostname }}
+
+persistence:
+  enabled: true
+  storageClass: {{ open_webui_storage_class }}
+
+# -- Configure database URL, needed to work with Postgres (example: `postgresql://<user>:<password>@<service>:<port>/<database>`), leave empty to use the default sqlite database
+databaseUrl: 'postgresql://{{ open_webui_postgres_user }}:{{ open_webui_postgres_password }}@postgresql-cluster-r.{{ postgres_cluster_namespace }}:5432/{{ open_webui_database }}'
+
+enableOpenaiApi: false
+
+websocket:
+  # -- Enables websocket support in Open WebUI with env `ENABLE_WEBSOCKET_SUPPORT`
+  enabled: true

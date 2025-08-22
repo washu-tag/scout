@@ -1,0 +1,94 @@
+---
+- name: Create storage directories for Open WebUI and Ollama
+  hosts: k3s_cluster
+  gather_facts: false
+  vars_files:
+    - vars/open_webui_storage.yaml
+  tasks:
+    - name: Create storage directories
+      include_tasks: tasks/storage_dir_create.yaml
+
+- name: Install Open WebUI
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  vars_files:
+    - vars/open_webui_storage.yaml
+  vars:
+    helm_repo_name: open-webui
+    helm_repo_url: https://helm.openwebui.com/
+    helm_chart_name: open-webui
+    helm_release_name: open-webui
+    ollama_strip_prefix_middleware: ollama-strip-prefix
+    ollama_path: /ollama-service
+
+  tasks:
+    - name: Create Open WebUI namespace
+      kubernetes.core.k8s:
+        name: "{{ open_webui_namespace }}"
+        kind: Namespace
+        state: present
+
+    - name: Add Open WebUI Helm repository
+      kubernetes.core.helm_repository:
+        name: "{{ helm_repo_name }}"
+        repo_url: "{{ helm_repo_url }}"
+
+    - name: Setup PostgreSQL database and user
+      block:
+        - name: Add SQL statements to variable
+          ansible.builtin.set_fact:
+            postgres_init_sql: '{{ lookup("template", "templates/open-webui/init_sql.yaml.j2") | from_yaml | join("\n") }}'
+
+        - name: Execute SQL initialization
+          kubernetes.core.k8s_exec:
+            namespace: "{{ postgres_cluster_namespace }}"
+            pod: "{{ postgres_cluster_name }}-1"
+            command: |
+              psql --dbname=postgres -c "{{ postgres_init_sql }}"
+          register: sql_result
+          failed_when:
+            - sql_result.rc != 0
+
+    - name: Create Traefik Middleware to strip prefix
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: traefik.io/v1alpha1
+          kind: Middleware
+          metadata:
+            name: "{{ ollama_strip_prefix_middleware }}"
+            namespace: kube-system
+          spec:
+            stripPrefix:
+              prefixes:
+                - {{ ollama_path }}
+
+    - name: Deploy Open WebUI using Helm
+      kubernetes.core.helm:
+        name: "{{ helm_release_name }}"
+        chart_ref: "{{ helm_repo_name }}/{{ helm_chart_name }}"
+        release_namespace: "{{ open_webui_namespace }}"
+        update_repo_cache: true
+        chart_version: ~7.3.0
+        values: "{{ lookup('template', 'templates/open-webui/values.yaml.j2') | from_yaml }}"
+        state: present
+        wait: true
+        wait_timeout: 15m
+
+    - name: Verify deployment
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: "{{ open_webui_namespace }}"
+        label_selectors:
+          - "app.kubernetes.io/instance={{ helm_release_name }}"
+      register: deployment_status
+
+    - name: Display deployment status
+      debug:
+        msg: "Open WebUI deployment status: {{ item.status.conditions[-1].type }} - {{ item.status.conditions[-1].status }}"
+      loop: "{{ deployment_status.resources }}"
+      when: deployment_status.resources | length > 0
