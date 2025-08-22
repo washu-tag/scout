@@ -81,7 +81,7 @@ singleuser:
   memory:
     limit: 16G
     guarantee: 2G
-  extraResource: '{{ jupyter_singleuser_extraResource | default({}) }}'
+  extraResource: '{{ jupyter_singleuser_extra_resource | default({}) }}'
   storage:
     type: static
     static:
