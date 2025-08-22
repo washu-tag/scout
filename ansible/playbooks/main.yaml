@@ -20,6 +20,10 @@
 - name: Install Analytics
   import_playbook: analytics.yaml
 
+- name: Install Open WebUI
+  import_playbook: open-webui.yaml
+  when: open_webui_enabled | bool
+
 - name: Install Orchestrator
   import_playbook: orchestrator.yaml
 

@@ -11,3 +11,4 @@
 
     - name: Install Superset
       include_tasks: services/superset.yaml
+      when: superset_enabled | bool
