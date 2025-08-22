@@ -93,6 +93,11 @@ k3s_cluster:
     jupyter_prepuller_continuous: false
     jupyter_hub_storage_size: 15Gi
     jupyter_singleuser_storage_size: 250Gi
+    jupyter_singleuser_extra_resource:
+      guarantees:
+        nvidia.com/gpu: '1'
+      limits:
+        nvidia.com/gpu: '1'
 
     # Postgres config
     postgres_user: scout
