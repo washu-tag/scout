@@ -39,7 +39,7 @@ persistence:
   storageClass: {{ open_webui_storage_class }}
 
 # -- Configure database URL, needed to work with Postgres (example: `postgresql://<user>:<password>@<service>:<port>/<database>`), leave empty to use the default sqlite database
-databaseUrl: 'postgresql://{{ open_webui_postgres_user }}:{{ open_webui_postgres_password }}@postgresql-cluster-r.{{ postgres_cluster_namespace }}:5432/{{ open_webui_database }}'
+databaseUrl: 'postgresql://{{ open_webui_postgres_user }}:{{ open_webui_postgres_password }}@postgresql-cluster-rw.{{ postgres_cluster_namespace }}:5432/{{ open_webui_database }}'
 
 enableOpenaiApi: false
 

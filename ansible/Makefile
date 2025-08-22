@@ -76,3 +76,7 @@ install-orthanc:
 
 install-dcm4chee:
 	$(ANSIBLE_CMD) playbooks/dcm4chee.yaml
+
+install-openwebui:
+    $(ANSIBLE_CMD) playbooks/open-webui.yaml
+

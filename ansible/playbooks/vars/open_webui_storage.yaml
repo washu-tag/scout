@@ -1,7 +1,7 @@
 ollama_name: ollama
-ollama_storage_class: '{{jupyter_hub_name}}-storage'
+ollama_storage_class: '{{ ollama_name }}-storage'
 open_webui_name: open-webui
-open_webui_storage_class: '{{open_webui_name}}-storage'
+open_webui_storage_class: '{{ open_webui_name }}-storage'
 open_webui_pvc: '{{ open_webui_name }}-pvc'
 
 storage_definitions:
