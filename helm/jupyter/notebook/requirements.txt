@@ -4,3 +4,5 @@ jupyter-ai
 langchain-openai
 langchain-ollama
 langextract
+transformers
+torch
