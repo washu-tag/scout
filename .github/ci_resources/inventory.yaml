@@ -42,6 +42,7 @@ k3s_cluster:
     postgres_user: scout
     postgres_password: scout123
     postgres_superuser_password: scout123
+    postgres_cluster_name: postgresql-cluster
     hive_postgres_user: hive
     hive_postgres_password: hive123
     superset_postgres_user: superset
