@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - 'ci-**'
+      - 'demo**'
 
 env:
   JAVA_DIST: 'zulu'
@@ -234,3 +235,25 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: superset
+  publish-demo:
+    if: startsWith(github.ref_name, 'demo')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    needs: [deploy-and-test]
+    steps:
+      - name: Checkout GitHub Action
+        uses: actions/checkout@v4.2.1
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3.3.0
+        with:
+          registry: ${{ ENV.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: 'Push Image - pyspark-notebook'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: pyspark-notebook
