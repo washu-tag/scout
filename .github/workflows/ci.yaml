@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - 'ci-**'
+      - 'demo**'
 
 env:
   JAVA_DIST: 'zulu'
@@ -235,7 +236,7 @@ jobs:
         with:
           image-name: superset
   publish-demo:
-    if: github.ref_name == 'demo'
+    if: startsWith(github.ref_name, 'demo')
     runs-on: ubuntu-latest
     permissions:
       contents: read
