@@ -6,3 +6,8 @@ langchain-ollama
 langextract
 transformers
 torch
+seaborn
+pandas
+numpy
+matplotlib
+requests
