@@ -55,8 +55,8 @@ prePuller:
 
 singleuser:
   image:
-    name: ghcr.io/washu-tag/pyspark-notebook
-    tag: 1.1.0
+    name: '{{ jupyter_singleuser_image_name | default("ghcr.io/washu-tag/pyspark-notebook") }}'
+    tag: '{{ jupyter_singleuser_image_tag | default("1.1.0") }}'
     pullPolicy: Never
   cmd: null
   lifecycleHooks:
