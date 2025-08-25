@@ -242,7 +242,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    needs: [ deploy-and-test ]
+    needs: [deploy-and-test]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
