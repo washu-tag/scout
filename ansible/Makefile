@@ -1,6 +1,6 @@
 .PHONY: all deps install-k3s config-traefik install-helm clone-scout install-postgres \
         install-lake install-analytics install-orchestrator install-extractor \
-        install-monitor install-jupyter install-explorer echo
+        install-monitor install-jupyter install-explorer install-openwebui echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -78,5 +78,5 @@ install-dcm4chee:
 	$(ANSIBLE_CMD) playbooks/dcm4chee.yaml
 
 install-openwebui:
-    $(ANSIBLE_CMD) playbooks/open-webui.yaml
+	$(ANSIBLE_CMD) playbooks/open-webui.yaml
 
