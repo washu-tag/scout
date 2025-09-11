@@ -1,0 +1,177 @@
+---
+- name: Create namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ mcp_namespace }}"
+
+- name: Deploy search-and-classify Deployment
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: search-and-classify
+        namespace: "{{ mcp_namespace }}"
+        labels:
+          app: search-and-classify
+      spec:
+        replicas: {{ sc_replicas }}
+        selector:
+          matchLabels:
+            app: search-and-classify
+        template:
+          metadata:
+            labels:
+              app: search-and-classify
+          spec:
+            containers:
+              - name: api
+                image: local/search-and-classify:1.1.0
+                imagePullPolicy: IfNotPresent
+                ports:
+                  - containerPort: {{ sc_container_port }}
+                env:
+                  - name: ENFORCED_MAX_ROWS
+                    value: "{{ enforced_max_rows }}"
+                  - name: TRINO_HOST
+                    value: "{{ trino_host }}"
+                  - name: TRINO_PORT
+                    value: "{{ trino_port }}"
+                  - name: TRINO_USER
+                    value: "{{ trino_user }}"
+                  - name: TRINO_CATALOG
+                    value: "{{ trino_catalog }}"
+                  - name: TRINO_SCHEMA
+                    value: "{{ trino_schema }}"
+                  - name: TRANSFORMERS_CACHE
+                    value: "/app/models"
+                volumeMounts:
+                  - name: model-cache
+                    mountPath: /app/models
+                readinessProbe:
+                  httpGet:
+                    path: /health
+                    port: {{ sc_container_port }}
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+                  timeoutSeconds: 3
+                  failureThreshold: 6
+                livenessProbe:
+                  httpGet:
+                    path: /health
+                    port: {{ sc_container_port }}
+                  initialDelaySeconds: 20
+                  periodSeconds: 20
+                  timeoutSeconds: 3
+                  failureThreshold: 6
+                resources:
+                  requests:
+                    cpu: "{{ sc_requests.cpu }}"
+                    memory: "{{ sc_requests.memory }}"
+                  limits:
+                    cpu: "{{ sc_limits.cpu }}"
+                    memory: "{{ sc_limits.memory }}"
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: false
+                  runAsNonRoot: true
+                  runAsUser: 10001
+            volumes:
+              - name: model-cache
+                emptyDir: {}
+
+- name: Create service for search-and-classify
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: search-and-classify
+        namespace: "{{ mcp_namespace }}"
+        labels:
+          app: search-and-classify
+      spec:
+        selector:
+          app: search-and-classify
+        ports:
+          - name: http
+            port: 8000
+            targetPort: {{ sc_container_port }}
+            protocol: TCP
+
+- name: Create StripPrefix middleware for path routing
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: 'search-classify-strip-prefix'
+        namespace: kube-system
+      spec:
+        stripPrefix:
+          prefixes:
+            - "{{ ingress_path }}"
+
+- name: Create ServersTransport for long-running requests
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: ServersTransport
+      metadata:
+        name: search-classify-timeouts
+        namespace: kube-system
+      spec:
+        maxIdleConnsPerHost: 100
+        forwardingTimeouts:
+          dialTimeout: 600s
+          responseHeaderTimeout: 600s
+          idleConnTimeout: 600s
+
+- name: Create Ingress for search-and-classify
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: search-and-classify-ingress
+        namespace: "{{ mcp_namespace }}"
+        annotations:
+          traefik.ingress.kubernetes.io/router.middlewares: |
+            kube-system-search-classify-strip-prefix@kubernetescrd
+          traefik.ingress.kubernetes.io/service.serverstransport: |
+            kube-system-search-classify-timeouts@kubernetescrd
+      spec:
+        ingressClassName: traefik
+        rules:
+          - host: "{{ server_hostname }}"
+            http:
+              paths:
+                - path: /search-classify
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: search-and-classify
+                      port:
+                        number: 8000
+
+- name: Wait for pods to be Ready
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ mcp_namespace }}"
+    label_selectors:
+      - "app=search-and-classify"
+    wait: true
+    wait_condition:
+      type: Ready
+      status: "True"
+    wait_timeout: 600

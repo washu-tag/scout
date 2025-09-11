@@ -12,3 +12,4 @@ numpy
 matplotlib
 requests
 voila
+trino

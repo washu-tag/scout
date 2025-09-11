@@ -113,6 +113,12 @@ singleuser:
       - to:
           - namespaceSelector:
               matchLabels:
-                kubernetes.io/metadata.name: '{{ ollama_namespace | default("ollama")}}'
+                kubernetes.io/metadata.name: '{{ open_webui_namespace | default("ollama")}}'
         ports:
           - port: 11434
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ trino_namespace | default("trino")}}'
+        ports:
+          - port: 8080

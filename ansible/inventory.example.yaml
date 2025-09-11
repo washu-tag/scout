@@ -110,6 +110,13 @@ k3s_cluster:
       max_parallel_workers: '4'
       max_parallel_maintenance_workers: '2'
 
+    # Trino config
+    trino_namespace: trino
+    trino_worker_xmx_gb: 16
+
+    # "MCP" config
+    mcp_namespace: mcp
+
     # Superset config
     superset_enabled: false # You cannot enable both superset and openwebui
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -123,8 +130,7 @@ k3s_cluster:
     open_webui_dir: '/scout/persistence/openwebui'
     ollama_dir: '/scout/persistence/ollama'
     ollama_models:
-      - llama3.2:3b
-      - llama3.1:70b
+      - gpt-oss:20b
       - gpt-oss:120b
 
     # Orchestrator config

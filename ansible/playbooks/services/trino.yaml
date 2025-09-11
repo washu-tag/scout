@@ -1,36 +1,139 @@
-- name: Add Trino Helm repository
-  kubernetes.core.helm_repository:
-    name: trino
-    repo_url: https://trinodb.github.io/charts
+- name: Install/Upgrade Trino
+  hosts: server
+  gather_facts: false
+  vars:
+    worker_replicas: 1
+    worker_headroom_ratio: 0.25   # portion of Xmx reserved as "heap headroom"
+    worker_overhead_gb: 2         # extra for off-heap/native/k8s cushion
+    worker_max_mem_per_node_ratio: 0.5   # query.maxMemoryPerNode as fraction of Xmx
+  
+    coordinator_xmx_gb: 8
+    coordinator_headroom_ratio: 0.25
+    coordinator_overhead_gb: 2
+    coordinator_max_mem_per_node_ratio: 0.5
+  
+    # Server (cluster) caps; leave null to auto-compute from workers
+    cluster_utilization: 0.9      # fraction of summed per-node memory you allow one query to use
+    server_max_memory_gb: null    # query.maxMemory (cluster user memory)
+    server_max_total_memory_gb: null  # query.max-total-memory (user + revocable)
+  
+    # Spill (recommended ON for wide joins/aggregations)
+    enable_spill: true
+    spill_path: /var/trino-spill
 
-- name: Install/Upgrade Trino Helm chart
-  kubernetes.core.helm:
-    name: trino
-    chart_ref: trino/trino
-    chart_version: ~1.38.0
-    release_namespace: trino
-    create_namespace: true
-    release_state: present
-    update_repo_cache: true
-    wait: true
-    wait_timeout: 5m
-    atomic: true
-    values:
-      catalogs:
-        delta: |
-          connector.name=delta_lake
-          hive.metastore.uri={{ hive_metastore_endpoint }}
-          delta.security=ALLOW_ALL
-          delta.enable-non-concurrent-writes=true
-          fs.native-s3.enabled=true
-          s3.aws-access-key={{ s3_lake_writer }}
-          s3.aws-secret-key={{ s3_lake_writer_secret }}
-          s3.region={{ s3_region }}
-          s3.endpoint={{ s3_endpoint }}
-          s3.path-style-access=true
-      coordinator:
-        annotations:
-          prometheus.io/trino_scrape: 'true'
-      worker:
-        annotations:
-          prometheus.io/trino_scrape: 'true'
+  tasks:
+    - name: Compute derived Trino sizing (workers)
+      set_fact:
+        trino_worker_headroom_gb: >-
+          {{ (trino_worker_xmx_gb * worker_headroom_ratio) | float | round(0, 'ceil') | int }}
+        trino_worker_max_mem_per_node_gb: >-
+          {{ (trino_worker_xmx_gb * worker_max_mem_per_node_ratio) | float | round(0, 'floor') | int }}
+        trino_worker_limit_gi: >-
+          {{ (trino_worker_xmx_gb + (trino_worker_xmx_gb * worker_headroom_ratio) | float | round(0, 'ceil') + worker_overhead_gb) | int }}
+        trino_worker_request_gi: "{{ trino_worker_limit_gi }}"
+
+    - name: Compute derived Trino sizing (coordinator)
+      set_fact:
+        trino_coord_headroom_gb: >-
+          {{ (coordinator_xmx_gb * coordinator_headroom_ratio) | float | round(0, 'ceil') | int }}
+        trino_coord_max_mem_per_node_gb: >-
+          {{ (coordinator_xmx_gb * coordinator_max_mem_per_node_ratio) | float | round(0, 'floor') | int }}
+        trino_coord_limit_gi: >-
+          {{ (coordinator_xmx_gb + (coordinator_xmx_gb * coordinator_headroom_ratio) | float | round(0, 'ceil') + coordinator_overhead_gb) | int }}
+        trino_coord_request_gi: "{{ trino_coord_limit_gi }}"
+
+    - name: Compute cluster-wide caps (can be overridden in inventory)
+      set_fact:
+        trino_server_max_memory_gb: >-
+          {{ (server_max_memory_gb
+              | default((worker_replicas * trino_worker_max_mem_per_node_gb * cluster_utilization)
+              | float | round(0, 'floor'))) | int }}
+        trino_server_max_total_memory_gb: >-
+          {{ (server_max_total_memory_gb | default(trino_server_max_memory_gb * 2)) | int }}
+
+    - name: Sanity checks for sizing relationships
+      assert:
+        that:
+          - trino_worker_max_mem_per_node_gb + trino_worker_headroom_gb < trino_worker_xmx_gb
+          - trino_coord_max_mem_per_node_gb + trino_coord_headroom_gb < coordinator_xmx_gb
+          - trino_server_max_memory_gb > 0
+          - trino_server_max_total_memory_gb >= trino_server_max_memory_gb
+        fail_msg: >
+          Trino sizing constraints violated. Check Xmx, headroom ratios, and per-node query caps.
+
+    - name: Add Trino Helm repository
+      kubernetes.core.helm_repository:
+        name: trino
+        repo_url: https://trinodb.github.io/charts
+
+    - name: Install/Upgrade Trino Helm chart
+      kubernetes.core.helm:
+        name: trino
+        chart_ref: trino/trino
+        chart_version: ~1.40.0
+        release_namespace: '{{ trino_namespace }}'
+        create_namespace: true
+        release_state: present
+        update_repo_cache: true
+        wait: true
+        wait_timeout: 5m
+        atomic: true
+        values:
+          # ---- Cluster-wide settings ----
+          server:
+            config:
+              query:
+                maxMemory: "{{ trino_server_max_memory_gb }}GB"
+            additionalConfigProperties:
+              - "query.max-total-memory={{ trino_server_max_total_memory_gb }}GB"
+              - "spill-enabled={{ 'true' if enable_spill else 'false' }}"
+              - "spiller-spill-path={{ spill_path }}"
+
+          # ---- Coordinator sizing ----
+          coordinator:
+            jvm:
+              maxHeapSize: "{{ coordinator_xmx_gb }}G"
+            config:
+              query:
+                maxMemoryPerNode: "{{ trino_coord_max_mem_per_node_gb }}GB"
+              memory:
+                heapHeadroomPerNode: "{{ trino_coord_headroom_gb }}GB"
+            resources:
+              requests: { memory: "{{ trino_coord_request_gi }}Gi" }
+              limits:   { memory: "{{ trino_coord_limit_gi }}Gi" }
+            annotations:
+              prometheus.io/trino_scrape: "true"
+
+          # ---- Worker sizing ----
+          worker:
+            jvm:
+              maxHeapSize: "{{ trino_worker_xmx_gb }}G"
+            config:
+              query:
+                maxMemoryPerNode: "{{ trino_worker_max_mem_per_node_gb }}GB"
+              memory:
+                heapHeadroomPerNode: "{{ trino_worker_headroom_gb }}GB"
+            resources:
+              requests: { memory: "{{ trino_worker_request_gi }}Gi" }
+              limits:   { memory: "{{ trino_worker_limit_gi }}Gi" }
+            additionalVolumes:
+              - name: spill
+                emptyDir: {}
+            additionalVolumeMounts:
+              - name: spill
+                mountPath: "{{ spill_path }}"
+            annotations:
+              prometheus.io/trino_scrape: "true"
+
+          catalogs:
+            delta: |
+              connector.name=delta_lake
+              hive.metastore.uri={{ hive_metastore_endpoint }}
+              delta.security=ALLOW_ALL
+              delta.enable-non-concurrent-writes=true
+              fs.native-s3.enabled=true
+              s3.aws-access-key={{ s3_lake_writer }}
+              s3.aws-secret-key={{ s3_lake_writer_secret }}
+              s3.region={{ s3_region }}
+              s3.endpoint={{ s3_endpoint }}
+              s3.path-style-access=true

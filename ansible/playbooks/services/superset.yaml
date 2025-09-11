@@ -21,29 +21,29 @@
         namespace: superset
       data:
         metadata.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/metadata.yaml') }}
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/superset/metadata.yaml') }}
         Scout_Data_Lake.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/databases/Scout_Data_Lake.yaml') }}
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/superset/databases/Scout_Data_Lake.yaml') }}
         reports.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/datasets/Scout_Data_Lake/reports.yaml') }}
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/superset/datasets/Scout_Data_Lake/reports.yaml') }}
         Modality_2.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Modality_2.yaml') }}
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/superset/charts/Modality_2.yaml') }}
         Count_1.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Count_1.yaml') }}
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/superset/charts/Count_1.yaml') }}
         Facility_by_date_8.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Facility_by_date_8.yaml') }}
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/superset/charts/Facility_by_date_8.yaml') }}
         Race_4.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Race_4.yaml') }}
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/superset/charts/Race_4.yaml') }}
         Report_5.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Report_5.yaml') }}
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/superset/charts/Report_5.yaml') }}
         Service_Name_6.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Service_Name_6.yaml') }}
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/superset/charts/Service_Name_6.yaml') }}
         Study_Instance_UID_7.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Study_Instance_UID_7.yaml') }}
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/superset/charts/Study_Instance_UID_7.yaml') }}
         Sex_3.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Sex_3.yaml') }}
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/superset/charts/Sex_3.yaml') }}
         Scout_1.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/dashboards/Scout_1.yaml') }}
+          {{ lookup('file', '{{ scout_repo_dir }}/analytics/superset/dashboards/Scout_1.yaml') }}
 
 - name: Install/Upgrade Superset Helm chart
   kubernetes.core.helm:
@@ -104,29 +104,29 @@
             name: dashboard-config
             items:
               - key: metadata.yaml
-                path: analytics/metadata.yaml
+                path: analytics/superset/metadata.yaml
               - key: Scout_Data_Lake.yaml
-                path: analytics/databases/Scout_Data_Lake.yaml
+                path: analytics/superset/databases/Scout_Data_Lake.yaml
               - key: reports.yaml
-                path: analytics/datasets/Scout_Data_Lake/reports.yaml
+                path: analytics/superset/datasets/Scout_Data_Lake/reports.yaml
               - key: Modality_2.yaml
-                path: analytics/charts/Modality_2.yaml
+                path: analytics/superset/charts/Modality_2.yaml
               - key: Count_1.yaml
-                path: analytics/charts/Count_1.yaml
+                path: analytics/superset/charts/Count_1.yaml
               - key: Facility_by_date_8.yaml
-                path: analytics/charts/Facility_by_date_8.yaml
+                path: analytics/superset/charts/Facility_by_date_8.yaml
               - key: Race_4.yaml
-                path: analytics/charts/Race_4.yaml
+                path: analytics/superset/charts/Race_4.yaml
               - key: Report_5.yaml
-                path: analytics/charts/Report_5.yaml
+                path: analytics/superset/charts/Report_5.yaml
               - key: Service_Name_6.yaml
-                path: analytics/charts/Service_Name_6.yaml
+                path: analytics/superset/charts/Service_Name_6.yaml
               - key: Study_Instance_UID_7.yaml
-                path: analytics/charts/Study_Instance_UID_7.yaml
+                path: analytics/superset/charts/Study_Instance_UID_7.yaml
               - key: Sex_3.yaml
-                path: analytics/charts/Sex_3.yaml
+                path: analytics/superset/charts/Sex_3.yaml
               - key: Scout_1.yaml
-                path: analytics/dashboards/Scout_1.yaml
+                path: analytics/superset/dashboards/Scout_1.yaml
 
       extraVolumeMounts:
         - name: dashboard-config
