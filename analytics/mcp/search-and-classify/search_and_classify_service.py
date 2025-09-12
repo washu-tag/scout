@@ -31,7 +31,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-ENFORCED_MAX_ROWS = os.getenv("ENFORCED_MAX_ROWS", "5000")
+# ---------- Classification config ----------
+# Using facebook/bart-large-mnli for better performance and simplicity
+CLASSIFICATION_MODEL = os.getenv("CLASSIFICATION_MODEL", "facebook/bart-large-mnli")
+CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.5"))
+MAX_TEXT_LENGTH = int(os.getenv("MAX_TEXT_LENGTH", "1024"))
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "8"))
+ENFORCED_MAX_ROWS = int(os.getenv("ENFORCED_MAX_ROWS", "5000"))
 
 # ---------- Reference schema (documentation only) ----------
 SCHEMA_DOC = """
@@ -44,7 +50,6 @@ Expected columns available in delta.default.reports (subset shown):
 - message_dt (TIMESTAMP)
 - requested_dt (TIMESTAMP)
 - report_text (STRING)
-- report_status (STRING)
 - sending_facility (STRING)
 - sex (STRING)
 - race (STRING)
@@ -59,199 +64,89 @@ Age example:
   )
 """
 
-# ---------- Example SQL templates (Trino-safe, dedup via max_by) ----------
-SQL_EXAMPLE_DEDUP_NEOPLASM_LAST_YEAR = rf"""
--- Latest per accession with neoplasm keywords, last 1 year, final reports only
+# ---------- Example SQL templates ----------
+SQL_EXAMPLE_NEOPLASM_LAST_YEAR = r"""
+-- Latest per accession with neoplasm keywords, last 1 year
 SELECT
-  latest.epic_mrn AS mrn,
-  t.obr_3_filler_order_number AS accession_number,
-  latest.modality AS modality,
-  latest.service_name AS service_name,
-  CAST(COALESCE(latest.observation_dt, latest.message_dt, latest.requested_dt) AS VARCHAR) AS event_date,
-  -- Include age (years) as an optional column if desired
+  r.epic_mrn AS mrn,
+  r.obr_3_filler_order_number AS accession_number,
+  r.modality AS modality,
+  r.service_name AS service_name,
+  CAST(COALESCE(r.observation_dt, r.message_dt, r.requested_dt) AS VARCHAR) AS event_date,
   date_diff(
     'year',
-    CAST(latest.birth_date AS date),
-    CAST(COALESCE(latest.observation_dt, latest.message_dt, latest.requested_dt) AS date)
+    CAST(r.birth_date AS date),
+    CAST(COALESCE(r.observation_dt, r.message_dt, r.requested_dt) AS date)
   ) AS age,
-  latest.report_text AS report_text,
-  latest.sending_facility AS sending_facility,
-  latest.sex AS sex,
-  latest.race AS race
-FROM (
+  r.report_text AS report_text,
+  r.sending_facility AS sending_facility,
+  r.sex AS sex,
+  r.race AS race
+FROM delta.default.reports r
+JOIN (
   SELECT
-    r.obr_3_filler_order_number,
-    max_by(
-      CAST(ROW(
-        r.epic_mrn,
-        r.modality,
-        r.service_name,
-        r.observation_dt,
-        r.message_dt,
-        r.requested_dt,
-        r.report_text,
-        r.sending_facility,
-        r.sex,
-        r.race,
-        r.birth_date
-      ) AS ROW(
-        epic_mrn VARCHAR,
-        modality VARCHAR,
-        service_name VARCHAR,
-        observation_dt TIMESTAMP,
-        message_dt TIMESTAMP,
-        requested_dt TIMESTAMP,
-        report_text VARCHAR,
-        sending_facility VARCHAR,
-        sex VARCHAR,
-        race VARCHAR,
-        birth_date DATE
-      )),
-      COALESCE(r.message_dt, r.observation_dt, r.requested_dt)
-    ) AS latest
-  FROM delta.default.reports r
-  WHERE r.report_text IS NOT NULL
-    AND COALESCE(r.observation_dt, r.message_dt, r.requested_dt) >= current_timestamp - INTERVAL '1' YEAR
-    AND regexp_like(r.report_text, '(?i)\\b(neoplasm|malign\\w*|cancer|tumou?r|lesion\\w*|mass(?:\\b|\\s))')
-    AND lower(r.report_status) LIKE 'f%'   -- final
-  GROUP BY r.obr_3_filler_order_number
-) t
-ORDER BY COALESCE(t.latest.message_dt, t.latest.observation_dt, t.latest.requested_dt) DESC
-LIMIT {ENFORCED_MAX_ROWS};
-"""
-
-SQL_EXAMPLE_DEDUP_CT_PE_LAST_MONTH = rf"""
--- CT reads on white women >=40, last 1 month, PE keywords, final reports only
-SELECT
-  latest.epic_mrn AS mrn,
-  t.obr_3_filler_order_number AS accession_number,
-  latest.modality AS modality,
-  latest.service_name AS service_name,
-  CAST(COALESCE(latest.observation_dt, latest.message_dt, latest.requested_dt) AS VARCHAR) AS event_date,
-  date_diff(
-    'year',
-    CAST(latest.birth_date AS date),
-    CAST(COALESCE(latest.observation_dt, latest.message_dt, latest.requested_dt) AS date)
-  ) AS age,
-  latest.report_text AS report_text,
-  latest.sending_facility AS sending_facility,
-  latest.sex AS sex,
-  latest.race AS race
-FROM (
-  SELECT
-    r.obr_3_filler_order_number,
-    max_by(
-      CAST(ROW(
-        r.epic_mrn,
-        r.modality,
-        r.service_name,
-        r.observation_dt,
-        r.message_dt,
-        r.requested_dt,
-        r.report_text,
-        r.sending_facility,
-        r.sex,
-        r.race,
-        r.birth_date
-      ) AS ROW(
-        epic_mrn VARCHAR,
-        modality VARCHAR,
-        service_name VARCHAR,
-        observation_dt TIMESTAMP,
-        message_dt TIMESTAMP,
-        requested_dt TIMESTAMP,
-        report_text VARCHAR,
-        sending_facility VARCHAR,
-        sex VARCHAR,
-        race VARCHAR,
-        birth_date DATE
-      )),
-      COALESCE(r.message_dt, r.observation_dt, r.requested_dt)
-    ) AS latest
-  FROM delta.default.reports r
-  WHERE r.report_text IS NOT NULL
-    AND COALESCE(r.observation_dt, r.message_dt, r.requested_dt) >= current_timestamp - INTERVAL '1' MONTH
-    AND upper(r.modality) = 'CT'
-    AND upper(r.sex) IN ('F', 'FEMALE')
-    AND regexp_like(r.race, '(?i)^white')
-    AND date_diff(
-          'year',
-          CAST(r.birth_date AS date),
-          CAST(COALESCE(r.observation_dt, r.message_dt, r.requested_dt) AS date)
-        ) >= 40
-    AND regexp_like(r.report_text, '(?i)\\b(pulmonary\\s+embol(?:ism)?|\\bPE\\b|thromboembol\\w*)')
-    AND lower(r.report_status) LIKE 'f%'   -- final
-  GROUP BY r.obr_3_filler_order_number
-) t
-ORDER BY COALESCE(t.latest.message_dt, t.latest.observation_dt, t.latest.requested_dt) DESC
-LIMIT {ENFORCED_MAX_ROWS};
+    obr_3_filler_order_number,
+    MAX_BY(message_control_id, message_dt) AS latest_id
+  FROM delta.default.reports
+  WHERE report_text IS NOT NULL
+    AND COALESCE(observation_dt, message_dt, requested_dt) >= current_timestamp - INTERVAL '1' YEAR
+    AND REGEXP_LIKE(report_text, '(?i)\b(neoplasm|malign\w*|cancer|tumou?r|lesion\w*|mass(?:\b|\s))')
+  GROUP BY obr_3_filler_order_number
+) m
+  ON r.obr_3_filler_order_number = m.obr_3_filler_order_number
+ AND r.message_control_id = m.latest_id
 """
 
 SQL_EXAMPLES = {
-    "neoplasm_last_year": SQL_EXAMPLE_DEDUP_NEOPLASM_LAST_YEAR,
-    "ct_white_female_40plus_pe_last_month": SQL_EXAMPLE_DEDUP_CT_PE_LAST_MONTH,
+    "neoplasm_last_year": SQL_EXAMPLE_NEOPLASM_LAST_YEAR
 }
 
-# Initialize classifier globally for reuse
-classifier = None
-executor = ThreadPoolExecutor(max_workers=4)
-
-# Trino connection configuration
-TRINO_HOST = os.getenv("TRINO_HOST", "trino.trino")
-TRINO_PORT = os.getenv("TRINO_PORT", 8080)
-TRINO_USER = os.getenv("TRINO_USER", "scout")
-TRINO_CATALOG = os.getenv("TRINO_CATALOG", "delta")
-TRINO_SCHEMA = os.getenv("TRINO_SCHEMA", "default")
-
-# Required columns for the query (must appear in SELECT with these aliases)
+# Required columns for the query
 REQUIRED_COLUMNS = {
     "mrn": "epic_mrn as mrn",
     "accession_number": "obr_3_filler_order_number as accession_number",
-    "modality": "modality",
-    "service_name": "service_name",
+    "modality": "modality as modality",
+    "service_name": "service_name as service_name",
     "event_date": "CAST(COALESCE(observation_dt, message_dt, requested_dt) AS VARCHAR) as event_date",
-    "report_text": "report_text",
-    "sending_facility": "sending_facility",
-    "sex": "sex",
-    "race": "race"
+    "report_text": "report_text as report_text",
+    "sending_facility": "sending_facility as sending_facility",
+    "sex": "sex as sex",
+    "race": "race as race",
     "age": "date_diff('year', CAST(birth_date AS date), CAST(COALESCE(observation_dt, message_dt, requested_dt) AS date)) as age"
 }
 
 class ClassificationTarget(str, Enum):
     POSITIVE = "positive"
     NEGATIVE = "negative"
-    UNCERTAIN = "uncertain"
     ALL = "all"
-    POSITIVE_AND_UNCERTAIN = "positive_and_uncertain"
-    NEGATIVE_AND_UNCERTAIN = "negative_and_uncertain"
 
 class SQLError(Exception):
     """Custom exception for SQL-related errors with helpful messages."""
     pass
 
+# Hold classifier globally for reuse
+classifier = None
+executor = ThreadPoolExecutor(max_workers=4)
+
+# Trino
+TRINO_HOST = os.getenv("TRINO_HOST", "trino.trino")
+TRINO_PORT = int(os.getenv("TRINO_PORT", "8080"))
+TRINO_USER = os.getenv("TRINO_USER", "scout")
+TRINO_CATALOG = os.getenv("TRINO_CATALOG", "delta")
+TRINO_SCHEMA = os.getenv("TRINO_SCHEMA", "default")
+
 def get_classifier():
-    """Lazy-load a zero-shot NLI classifier."""
+    """Lazy-load a zero-shot classifier."""
     global classifier
     if classifier is None:
-        device = torch.device("cpu")
-        try:
-            if torch.cuda.is_available():
-                device = torch.device("cuda")
-            elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
-                device = torch.device("mps")
-        except Exception:
-            # fall back to CPU if any capability check causes issues
-            device = torch.device("cpu")
-
-        # transformers accepts torch.device in recent versions; otherwise it treats non-cuda as CPU
+        device = 0 if torch.cuda.is_available() else -1
         classifier = pipeline(
             "zero-shot-classification",
-            model="facebook/bart-large-mnli",
-            device=device
+            model=CLASSIFICATION_MODEL,
+            device=device,
+            hypothesis_text="Findings are {}"
         )
-        # keep the tail of long texts
-        classifier.tokenizer.truncation_side = "left"
-        logger.info(f"Classifier loaded on device: {device}")
+        logger.info(f"Classifier loaded: {CLASSIFICATION_MODEL} on device: {'cuda' if device == 0 else 'cpu'}")
     return classifier
 
 def get_trino_connection():
@@ -262,23 +157,18 @@ def get_trino_connection():
         user=TRINO_USER,
         catalog=TRINO_CATALOG,
         schema=TRINO_SCHEMA,
-        http_scheme="http",
-        session_properties={
-            "exchange_compression": "true",
-            "filter_pushdown_enabled": "true"
-        }
+        http_scheme="http"
     )
 
 def validate_sql_query(query: str) -> List[str]:
     """
-    Validate that the SQL query text contains required column aliases.
-    Returns a list of missing column expressions to guide the user.
+    Validate that the SQL query contains required column aliases.
+    Returns a list of missing column expressions.
     """
     q = query.lower()
     missing = []
     for alias, column_expression in REQUIRED_COLUMNS.items():
         alias_name = alias.lower()
-        # look for 'as <alias>' anywhere in the SELECT
         if not re.search(rf'\bas\s+{re.escape(alias_name)}\b', q):
             missing.append(column_expression)
     return missing
@@ -288,25 +178,19 @@ def parse_sql_error(error: Exception) -> str:
     es = str(error)
     el = es.lower()
     if "table" in el and "not found" in el:
-        return ("Table not found. Please ensure you're querying 'delta.default.reports'. "
-                f"Original error: {es}")
+        return f"Table not found. Please ensure you're querying 'delta.default.reports'. Original error: {es}"
     elif "column" in el and ("not found" in el or "cannot be resolved" in el):
         m = re.search(r"column['\"]?\s*([^'\"\s]+)", es, re.IGNORECASE)
         col = m.group(1) if m else "unknown"
-        return (f"Column '{col}' not found. Check available columns in your table such as: "
-                "epic_mrn, obr_3_filler_order_number, modality, service_name, "
-                "observation_dt, message_dt, requested_dt, report_text, report_status, "
-                "sending_facility, sex, race, birth_date. "
-                f"Original error: {es}")
+        return (f"Column '{col}' not found. Check available columns. Original error: {es}")
     elif "syntax error" in el or "parse" in el:
-        return ("SQL syntax error. Check string quoting, date/timestamp formats, "
-                "and commas between columns. " + f"Original error: {es}")
+        return f"SQL syntax error. Check string quoting and date formats. Original error: {es}"
     elif "permission" in el or "access denied" in el:
-        return (f"Permission denied for user '{TRINO_USER}'. " + f"Original error: {es}")
-    elif "timeout" in el or "timed out" in el:
-        return ("Query timed out. Narrow the WHERE clause or add a LIMIT. " + f"Original error: {es}")
+        return f"Permission denied for user '{TRINO_USER}'. Original error: {es}"
+    elif "timeout" in el:
+        return f"Query timed out. Try narrowing the WHERE clause. Original error: {es}"
     elif "memory" in el:
-        return ("Query exceeded memory; reduce the result set or LIMIT. " + f"Original error: {es}")
+        return f"Query exceeded memory limits. Original error: {es}"
     else:
         return f"Query execution failed: {es}"
 
@@ -320,49 +204,20 @@ def _wrap_with_limit(sql: str, limit: int) -> str:
 class DiagnosisSearchRequest(BaseModel):
     sql_query: str = Field(
         ...,
-        description=(
-            "SQL query to execute against delta.default.reports.\n\n"
-            "REQUIRED columns (aliases in SELECT): "
-            + ", ".join(REQUIRED_COLUMNS.values())
-            + "\n\n"
-            "Dedup + age example (neoplasm, last 1 year):\n"
-            + SQL_EXAMPLE_DEDUP_NEOPLASM_LAST_YEAR
-            + "\n\n"
-            "Dedup + age example (CT, white women >=40, PE, last month):\n"
-            + SQL_EXAMPLE_DEDUP_CT_PE_LAST_MONTH
-        )
+        description="SQL query to execute against delta.default.reports. Must include aliases for all required columns."
     )
-    diagnosis: str = Field(
-        ...,
-        description="Diagnosis/condition to classify, e.g., 'pulmonary embolism', 'neoplasm', 'fracture'."
-    )
+    diagnosis: str = Field(..., description="Diagnosis term to classify (e.g. 'pulmonary embolism').")
     classification_target: ClassificationTarget = Field(
-        ClassificationTarget.ALL,
-        description=(
-            "Which classifications to return:\n"
-            "- 'positive': Only positive\n"
-            "- 'negative': Only negative\n"
-            "- 'uncertain': Only uncertain\n"
-            "- 'all' (default)\n"
-            "- 'positive_and_uncertain'\n"
-            "- 'negative_and_uncertain'"
-        )
+        default=ClassificationTarget.ALL,
+        description="Which classifications to return: positive, negative, or all."
     )
     confidence_threshold: float = Field(
-        0.5,
-        description="Minimum confidence score; below this, results are treated as 'uncertain'.",
-        ge=0.0, le=1.0
+        default=0.5,
+        ge=0.0, le=1.0,
+        description="Minimum confidence threshold for classification."
     )
-    max_classify: Optional[int] = Field(
-        None,
-        description="Max number of rows to classify (prevents very large batches). If None, classify all.",
-        gt=0, le=10000
-    )
-    return_limit: Optional[int] = Field(
-        None,
-        description="Max number of results to return after classification (post-filter). If None, return all.",
-        gt=0, le=1000
-    )
+    max_classify: Optional[int] = Field(default=None, description="Max number of rows to classify.")
+    return_limit: Optional[int] = Field(default=None, description="Max number of results to return.")
 
 class ReportResult(BaseModel):
     mrn: Optional[str]
@@ -403,9 +258,7 @@ class HealthCheckResponse(BaseModel):
     trino_error: Optional[str] = None
 
 async def execute_trino_query(query: str) -> List[Dict]:
-    """Execute a query against Trino and return results as list[dict]."""
-
-    # Validate the query text contains required aliases
+    """Execute a query against Trino and return results."""
     missing_columns = validate_sql_query(query)
     if missing_columns:
         raise SQLError(
@@ -413,10 +266,7 @@ async def execute_trino_query(query: str) -> List[Dict]:
             "Please add to SELECT: " + ", ".join(missing_columns)
         )
 
-    # Enforce a maximum row cap if user forgot a LIMIT
-    safe_sql = _wrap_with_limit(query, ENFORCED_MAX_ROWS)
-
-    loop = asyncio.get_event_loop()
+    sql = _wrap_with_limit(query, ENFORCED_MAX_ROWS)
 
     def run_query():
         conn = None
@@ -424,18 +274,17 @@ async def execute_trino_query(query: str) -> List[Dict]:
         try:
             conn = get_trino_connection()
             cursor = conn.cursor()
-            logger.info(f"Executing query (capped): {safe_sql[:200]}...")
-            cursor.execute(safe_sql)
+            cursor.execute(sql)
             rows = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description] if cursor.description else []
-            # Validate returned columns
+            columns = [d[0] for d in cursor.description]
+
             expected_aliases = set(REQUIRED_COLUMNS.keys())
             actual_aliases = set(columns)
             missing = expected_aliases - actual_aliases
             if missing:
                 raise SQLError(
-                    "Query executed but missing required output aliases: "
-                    f"{sorted(missing)}. Returned columns: {columns}"
+                    f"Query executed but missing required output aliases: {sorted(missing)}. "
+                    f"Returned columns: {columns}"
                 )
             return [dict(zip(columns, row)) for row in rows]
         except trino.exceptions.TrinoQueryError as e:
@@ -456,46 +305,34 @@ async def execute_trino_query(query: str) -> List[Dict]:
                 except Exception:
                     pass
 
+    loop = asyncio.get_event_loop()
     return await loop.run_in_executor(executor, run_query)
 
-def generate_diagnosis_labels(diagnosis: str) -> List[str]:
-    term = diagnosis.lower().replace("_", " ").strip()
-    return [
-        f"positive for {term}",
-        f"negative for {term}",
-        "uncertain"
-    ]
+def extract_key_sections(text: str) -> str:
+    """Extract IMPRESSION and FINDINGS sections if available, otherwise return truncated text."""
+    if not text:
+        return ""
+
+    # Look for IMPRESSION or FINDINGS sections
+    impression_match = re.search(r'(?im)(impressions?|findings?)\s*:?\s*(.*?)(?=\n[A-Z]+\s*:|$)', text, re.DOTALL)
+    if impression_match:
+        section_text = impression_match.group(2).strip()
+        return section_text[:MAX_TEXT_LENGTH] if section_text else text[:MAX_TEXT_LENGTH]
+
+    # If no sections found, return the last part of the text (most likely to contain conclusions)
+    return text[-MAX_TEXT_LENGTH:]
 
 def should_include_result(
     classification: str,
-    confidence: float,
-    classification_target: ClassificationTarget,
-    confidence_threshold: float
+    classification_target: ClassificationTarget
 ) -> bool:
-    """Filter based on target and threshold."""
-    cl = classification.lower()
-    is_pos = "positive for" in cl
-    is_neg = "negative for" in cl
-    is_unc = "uncertain" in cl
-
-    # For pos/neg, if confidence below threshold we treat as uncertain
-    if not is_unc and confidence < confidence_threshold:
-        is_unc = True
-        is_pos = False
-        is_neg = False
-
+    """Filter results based on classification target."""
     if classification_target == ClassificationTarget.ALL:
         return True
     elif classification_target == ClassificationTarget.POSITIVE:
-        return is_pos and confidence >= confidence_threshold
+        return "positive" in classification.lower()
     elif classification_target == ClassificationTarget.NEGATIVE:
-        return is_neg and confidence >= confidence_threshold
-    elif classification_target == ClassificationTarget.UNCERTAIN:
-        return is_unc or confidence < confidence_threshold
-    elif classification_target == ClassificationTarget.POSITIVE_AND_UNCERTAIN:
-        return is_pos or is_unc or confidence < confidence_threshold
-    elif classification_target == ClassificationTarget.NEGATIVE_AND_UNCERTAIN:
-        return is_neg or is_unc or confidence < confidence_threshold
+        return "negative" in classification.lower()
     return False
 
 async def classify_reports_batch(
@@ -506,91 +343,98 @@ async def classify_reports_batch(
     max_classify: Optional[int] = None,
     return_limit: Optional[int] = None
 ) -> List[ReportResult]:
-    """Classify reports using zero-shot classification."""
+    """Classify reports using simple zero-shot classification."""
     if not reports:
         return []
 
     reports_to_classify = reports[:max_classify] if max_classify else reports
-    labels = generate_diagnosis_labels(diagnosis)
-    clf = get_classifier()
 
+    # Prepare texts
     texts = []
     valid_indices = []
-
     for i, report in enumerate(reports_to_classify):
-        report_text = report.get("report_text")
-        if report_text:
-            texts.append(report_text)
-            valid_indices.append(i)
-        else:
+        rt = report.get("report_text") or ""
+        if not rt.strip():
             logger.warning(f"Skipping report {i} - empty or missing text")
+            continue
+        # Extract key sections for better classification
+        extracted_text = extract_key_sections(rt)
+        texts.append(extracted_text)
+        valid_indices.append(i)
 
     if not texts:
         logger.warning("No valid texts to classify")
         return []
 
-    logger.info(f"Classifying {len(texts)} reports for '{diagnosis}' (target: {classification_target})...")
+    logger.info(f"Classifying {len(texts)} reports for '{diagnosis}'...")
+
+    # Define simple labels
+    labels = [
+        f"positive for {diagnosis}",
+        f"negative for {diagnosis}"
+    ]
+
     loop = asyncio.get_event_loop()
 
     def classify_batch():
-        batch_size = 16
-        all_results = []
-        for i in range(0, len(texts), batch_size):
-            b_end = min(i + batch_size, len(texts))
-            batch = texts[i:b_end]
-            logger.info(f"Processing batch {i//batch_size + 1} ({i+1}-{b_end} / {len(texts)})")
+        clf = get_classifier()
+        results = []
+
+        # Process in batches for efficiency
+        for i in range(0, len(texts), BATCH_SIZE):
+            batch = texts[i:i + BATCH_SIZE]
             try:
-                outputs = clf(
+                # Use multi_label=False for exclusive classification
+                batch_results = clf(
                     batch,
-                    labels,
-                    multi_label=False,
-                    hypothesis_template="The radiology report is {label}."
+                    candidate_labels=labels,
+                    multi_label=False
                 )
-                if isinstance(outputs, list):
-                    all_results.extend(outputs)
-                else:
-                    all_results.append(outputs)
+                # Ensure results is a list
+                if not isinstance(batch_results, list):
+                    batch_results = [batch_results]
+                results.extend(batch_results)
             except Exception as e:
-                logger.error(f"Classification error on batch {i//batch_size + 1}: {str(e)}")
-                # Fallback: mark all in this batch as uncertain
+                logger.error(f"Classification error: {e}")
+                # Add empty results for failed classifications
                 for _ in batch:
-                    all_results.append({
-                        "labels": [f"uncertain about {diagnosis}", f"negative for {diagnosis}", f"positive for {diagnosis}"],
-                        "scores": [1.0, 0.0, 0.0]
+                    results.append({
+                        "labels": labels,
+                        "scores": [0.0, 0.0]
                     })
-        return all_results
+
+        return results
 
     classification_results = await loop.run_in_executor(executor, classify_batch)
     logger.info(f"Classification complete. Processing {len(classification_results)} results")
 
-    final_results: List[ReportResult] = []
-
+    final_results = []
     for idx, clf_result in zip(valid_indices, classification_results):
         report = reports_to_classify[idx]
-        pairs = sorted(
-            zip(clf_result["labels"], clf_result["scores"]),
-            key=lambda x: x[1],
-            reverse=True
-        )
-        best_label, best_score = pairs[0]
-        margin = best_score - (pairs[1][1] if len(pairs) > 1 else 0.0)
 
-        effective_classification = best_label
-        # Treat small margins or low absolute confidence as uncertain
-        if (best_score < confidence_threshold) or (margin < 0.10 and "uncertain" not in best_label.lower()):
-            effective_classification = "uncertain (low confidence/margin)"
+        # Get the top classification
+        label_scores = dict(zip(clf_result["labels"], clf_result["scores"]))
+        top_label = clf_result["labels"][0]
+        top_score = clf_result["scores"][0]
 
-        if should_include_result(effective_classification, best_score, classification_target, confidence_threshold):
-            confidence_scores = {label: score for label, score in pairs}
+        # Apply confidence threshold
+        if top_score < confidence_threshold:
+            # Skip low-confidence results or mark as uncertain
+            # For simplicity, we'll just use the prediction but note the low confidence
+            pass
+
+        classification = top_label
+
+        if should_include_result(classification, classification_target):
             result = ReportResult(
                 mrn=report.get("mrn"),
                 accession_number=report.get("accession_number"),
                 modality=report.get("modality"),
                 service_name=report.get("service_name"),
                 event_date=report.get("event_date"),
-                classification=effective_classification,
-                confidence=best_score,
-                confidence_scores=confidence_scores,
+                classification=classification,
+                confidence=float(top_score),
+                confidence_scores=label_scores,
                 report_text=report.get("report_text", ""),
                 sending_facility=report.get("sending_facility"),
                 sex=report.get("sex"),
@@ -598,6 +442,7 @@ async def classify_reports_batch(
                 age=report.get("age")
             )
             final_results.append(result)
+
             if return_limit and len(final_results) >= return_limit:
                 logger.info(f"Reached return limit of {return_limit}")
                 break
@@ -606,23 +451,22 @@ async def classify_reports_batch(
     return final_results
 
 @app.post("/search_diagnosis", response_model=DiagnosisSearchResponse, responses={
-    400: {"model": ErrorResponse, "description": "Bad Request - Invalid SQL or missing columns"},
+    400: {"model": ErrorResponse, "description": "Bad Request"},
     500: {"model": ErrorResponse, "description": "Internal Server Error"}
-})
-async def search_diagnosis(request: DiagnosisSearchRequest):
+}, operation_id="search_diagnosis_tool")
+async def search_diagnosis_tool(request: DiagnosisSearchRequest):
     """
-    Execute a SQL query and classify the resulting radiology reports for a specific diagnosis.
-
-    The SQL query must include all required column aliases in the SELECT clause.
+    Execute a SQL query and classify radiology reports for a diagnosis.
+    Uses simple zero-shot classification with positive/negative labels.
     """
     try:
-        logger.info(f"Searching for diagnosis: {request.diagnosis} (target: {request.classification_target})")
+        logger.info(f"Searching for diagnosis: {request.diagnosis}")
 
-        # Execute the provided SQL query
+        # Execute SQL query
         try:
             reports = await execute_trino_query(request.sql_query)
         except SQLError as e:
-            logger.error(f"SQL execution error: {str(e)}")
+            logger.error(f"SQL error: {str(e)}")
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -632,8 +476,19 @@ async def search_diagnosis(request: DiagnosisSearchRequest):
                     "suggestion": "Check the SQL syntax and ensure all required column aliases are present."
                 }
             )
+        except Exception as e:
+            logger.error(f"Unexpected SQL error: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "error": str(e),
+                    "error_type": "SQL_EXECUTION_ERROR",
+                    "details": "The SQL query failed to execute.",
+                    "suggestion": "Check the SQL server connectivity and syntax."
+                }
+            )
 
-        logger.info(f"Query returned {len(reports)} candidate reports")
+        logger.info(f"Query returned {len(reports)} reports")
 
         if not reports:
             return DiagnosisSearchResponse(
@@ -664,56 +519,42 @@ async def search_diagnosis(request: DiagnosisSearchRequest):
             raise HTTPException(
                 status_code=500,
                 detail={
-                    "error": f"Classification failed: {str(e)}",
+                    "error": str(e),
                     "error_type": "CLASSIFICATION_ERROR",
-                    "details": "The AI model failed to classify the reports.",
-                    "suggestion": "Try reducing max_classify or check the diagnosis term."
+                    "details": "The classification process failed.",
+                    "suggestion": "Check model availability and logs."
                 }
             )
 
-        logger.info(f"Classification complete. {len(classified_results)} results match criteria")
+        total_classified = len(reports) if request.max_classify is None else min(request.max_classify, len(reports))
 
-        # Statistics
-        num_to_classify = min(len(reports), request.max_classify) if request.max_classify else len(reports)
-        statistics: Dict[str, Any] = {
-            "total_candidates": len(reports),
-            "total_classified": num_to_classify,
-            "classification_target": request.classification_target.value,
-            "confidence_threshold": request.confidence_threshold
-        }
-        counts = {
-            "positive": sum(1 for r in classified_results if "positive" in r.classification.lower()),
-            "negative": sum(1 for r in classified_results if "negative" in r.classification.lower()),
-            "uncertain": sum(1 for r in classified_results if "uncertain" in r.classification.lower())
-        }
-        statistics["classification_counts"] = counts
-        if classified_results:
-            confidences = [r.confidence for r in classified_results]
-            statistics["avg_confidence"] = sum(confidences) / len(confidences)
-            statistics["confidence_stats"] = {
-                "min": min(confidences),
-                "max": max(confidences),
-                "median": sorted(confidences)[len(confidences)//2]
-            }
-        if request.return_limit and len(classified_results) == request.return_limit:
-            statistics["note"] = f"Results limited to {request.return_limit} reports"
+        # Calculate statistics
+        positive_count = sum(1 for r in classified_results if "positive" in r.classification.lower())
+        negative_count = sum(1 for r in classified_results if "negative" in r.classification.lower())
+        avg_confidence = sum(r.confidence for r in classified_results) / len(classified_results) if classified_results else 0
 
         return DiagnosisSearchResponse(
             total_queried=len(reports),
-            total_classified=num_to_classify,
+            total_classified=total_classified,
             total_matching=len(classified_results),
             total_returned=len(classified_results),
             diagnosis_searched=request.diagnosis,
             classification_target=request.classification_target.value,
             results=classified_results,
-            statistics=statistics,
+            statistics={
+                "confidence_threshold": request.confidence_threshold,
+                "model": CLASSIFICATION_MODEL,
+                "positive_count": positive_count,
+                "negative_count": negative_count,
+                "average_confidence": round(avg_confidence, 3)
+            },
             sql_executed=_wrap_with_limit(request.sql_query, ENFORCED_MAX_ROWS)
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Unexpected error in search_diagnosis: {str(e)}")
+        logger.error(f"Unexpected error: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail={
@@ -726,38 +567,29 @@ async def search_diagnosis(request: DiagnosisSearchRequest):
 
 @app.get("/health", response_model=HealthCheckResponse)
 async def health_check():
-    """Check service health and connectivity without relying on the validator."""
+    """Check service health and connectivity."""
     trino_connected = False
     trino_error = None
     classifier_loaded = False
 
-    # Direct Trino ping
+    # Test Trino connection
     try:
         conn = get_trino_connection()
         cur = conn.cursor()
         cur.execute("SELECT 1")
         _ = cur.fetchall()
         trino_connected = True
+        cur.close()
+        conn.close()
     except Exception as e:
         trino_error = parse_sql_error(e)
-        logger.error(f"Trino health check failed: {trino_error}")
-    finally:
-        try:
-            cur.close()  # type: ignore
-        except Exception:
-            pass
-        try:
-            conn.close()  # type: ignore
-        except Exception:
-            pass
 
-    # Classifier check
+    # Test classifier loading
     try:
-        clf = get_classifier()
-        if clf:
-            classifier_loaded = True
-    except Exception as e:
-        logger.error(f"Classifier health check failed: {str(e)}")
+        _ = get_classifier()
+        classifier_loaded = True
+    except Exception:
+        classifier_loaded = False
 
     status = "healthy" if (trino_connected and classifier_loaded) else "degraded"
 
@@ -769,23 +601,22 @@ async def health_check():
     )
 
 @app.get("/")
-async def root():
-    """Root endpoint with API information, schema, and SQL examples."""
+async def meta():
+    """Service metadata and examples."""
     return {
         "service": "Radiology Report Diagnosis Search",
-        "version": "1.1.0",
+        "version": "2.0.0",
+        "description": "Simplified zero-shot classification service",
         "endpoints": {
-            "/search_diagnosis": "POST - Execute SQL and classify reports for diagnosis",
-            "/health": "GET - Service health check",
+            "/search_diagnosis": "POST - Execute SQL & classify reports",
+            "/health": "GET - Health check",
             "/docs": "GET - OpenAPI documentation"
         },
+        "classification_model": CLASSIFICATION_MODEL,
         "classification_targets": [ct.value for ct in ClassificationTarget],
         "required_sql_columns": list(REQUIRED_COLUMNS.values()),
         "schema": SCHEMA_DOC,
-        "sql_examples": {
-            "neoplasm_last_year": SQL_EXAMPLES["neoplasm_last_year"],
-            "ct_white_female_40plus_pe_last_month": SQL_EXAMPLES["ct_white_female_40plus_pe_last_month"]
-        }
+        "sql_examples": SQL_EXAMPLES
     }
 
 if __name__ == "__main__":

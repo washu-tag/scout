@@ -101,32 +101,4 @@
         values: "{{ lookup('template', 'templates/open-webui/values.yaml.j2') | from_yaml }}"
         # TODO: set prompt and "advanced params" function calling = Native, max_tokens=50,000 for GPT-OSS:120b model
         # (currently done manually in UI Admin Panel > Models [select model])
-
-    - name: Install all MCP services
-      tasks:
-        - name: Include each service installer
-          ansible.builtin.include_tasks: "{{ item }}"
-          vars:
-            service: "{{ item | basename | regex_replace('\\.ya?ml$', '') }}"
-            sc_requests:
-              cpu: "250m"
-              memory: "1Gi"
-            sc_limits:
-              cpu: "2"
-              memory: "4Gi"
-            sc_container_port: 8000
-            enforced_max_rows: "5000"
-            trino_scheme: http
-            trino_host: "trino.{{ trino_namespace }}"
-            trino_port: "8080"
-            trino_user: "scout"
-            trino_catalog: "delta"
-            trino_schema: "default"
-          loop: >-
-            {{
-              (query('ansible.builtin.fileglob', 'services/mcp/*.yml')
-               + query('ansible.builtin.fileglob', 'services/mcp/*.yaml'))
-              | sort
-            }}
-          loop_control:
-            label: "{{ item | basename }}"
+        # TODO add tools

@@ -1,158 +1,245 @@
 ---
-- name: Create namespace
-  kubernetes.core.k8s:
-    name: "{{ trino_mcp_namespace }}"
-    api_version: v1
-    kind: Namespace
-    state: present
+- name: Deploy MCP Trino and MCPO with Traefik Ingress
+  hosts: server
+  gather_facts: false
+  environment:
+    HELM_PLUGINS: '{{ helm_plugins_dir }}'
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  vars:
+    trino_host: 'trino.{{ trino_namespace }}'
+    trino_port: 8080
+    trino_scheme: http
+    mcp_trino_image: ghcr.io/tuannvm/mcp-trino:1.5.0
+    mcpo_image: ghcr.io/open-webui/mcpo:main
+    ingress_path: /mcpo-trino
 
-- name: Deploy mcp-trino pod
-  kubernetes.core.k8s:
-    definition:
-      apiVersion: v1
-      kind: Pod
-      metadata:
-        name: mcp-trino
-        namespace: "{{ trino_mcp_namespace }}"
-      spec:
-        containers:
-          - name: mcp-trino
-            image: ghcr.io/tuannvm/mcp-trino:1.5.0
+  tasks:
+    - name: Create namespace
+      kubernetes.core.k8s:
+        name: "{{ mcp_namespace }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Deploy mcp-trino (Deployment)
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: mcp-trino
+            namespace: "{{ mcp_namespace }}"
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: mcp-trino
+            template:
+              metadata:
+                labels:
+                  app: mcp-trino   # <-- must match Service selector
+              spec:
+                containers:
+                  - name: mcp-trino
+                    image: "{{ mcp_trino_image }}"
+                    imagePullPolicy: IfNotPresent
+                    ports:
+                      - containerPort: 8080
+                    env:
+                      - name: TRINO_HOST
+                        value: "{{ trino_host }}"
+                      - name: TRINO_PORT
+                        value: "{{ trino_port | string }}"
+                      - name: TRINO_SCHEME
+                        value: "{{ trino_scheme }}"
+                    readinessProbe:
+                      httpGet:
+                        path: /mcp
+                        port: 8080
+                      initialDelaySeconds: 3
+                      periodSeconds: 5
+                      failureThreshold: 12
+                    livenessProbe:
+                      httpGet:
+                        path: /mcp
+                        port: 8080
+                      initialDelaySeconds: 10
+                      periodSeconds: 10
+                      failureThreshold: 6
+            strategy:
+              type: RollingUpdate
+              rollingUpdate:
+                maxUnavailable: 0
+                maxSurge: 1
+
+    - name: Create mcp-trino service
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: mcp-trino
+            namespace: "{{ mcp_namespace }}"
+          spec:
+            selector:
+              app: mcp-trino
             ports:
-              - containerPort: 8080
-            env:
-              - name: TRINO_HOST
-                value: "{{ trino_host }}"
-              - name: TRINO_PORT
-                value: "{{ trino_port | string }}"
-              - name: TRINO_SCHEME
-                value: "{{ trino_scheme }}"
+              - name: http
+                port: 8080
+                targetPort: 8080
 
-- name: Create mcp-trino service
-  kubernetes.core.k8s:
-    definition:
-      apiVersion: v1
-      kind: Service
-      metadata:
-        name: mcp-trino
-        namespace: "{{ trino_mcp_namespace }}"
-      spec:
-        selector:
-          app: mcp-trino
-        ports:
-          - port: 8080
-            targetPort: 8080
-            name: http
+    - name: Deploy mcpo-trino (Deployment)
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: mcpo-trino
+            namespace: "{{ mcp_namespace }}"
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: mcpo-trino
+            template:
+              metadata:
+                labels:
+                  app: mcpo-trino
+              spec:
+                initContainers:
+                  - name: wait-for-mcp
+                    image: curlimages/curl:8.8.0
+                    command: ["sh","-lc"]
+                    args:
+                      - >
+                        echo "Waiting for mcp-trino service...";
+                        until curl -sf http://mcp-trino.{{ mcp_namespace }}.svc.cluster.local:8080/mcp >/dev/null; do
+                          echo "still waiting..."; sleep 2;
+                        done;
+                        echo "mcp-trino is up"
+                containers:
+                  - name: mcpo-trino
+                    image: "{{ mcpo_image }}"
+                    imagePullPolicy: IfNotPresent
+                    ports:
+                      - containerPort: 8000
+                    args:
+                      - "--host"
+                      - "0.0.0.0"
+                      - "--port"
+                      - "8000"
+                      - "--server-type"
+                      - "streamable-http"
+                      - "--"
+                      - "http://mcp-trino.{{ mcp_namespace }}.svc.cluster.local:8080/mcp"
+                    readinessProbe:
+                      httpGet:
+                        path: /
+                        port: 8000
+                      initialDelaySeconds: 3
+                      periodSeconds: 5
+                      failureThreshold: 12
+                    livenessProbe:
+                      httpGet:
+                        path: /
+                        port: 8000
+                      initialDelaySeconds: 10
+                      periodSeconds: 10
+                      failureThreshold: 6
+            strategy:
+              type: RollingUpdate
+              rollingUpdate:
+                maxUnavailable: 0
+                maxSurge: 1
 
-- name: Deploy mcpo-trino pod
-  kubernetes.core.k8s:
-    definition:
-      apiVersion: v1
-      kind: Pod
-      metadata:
-        name: mcpo-trino
-        namespace: "{{ trino_mcp_namespace }}"
-        labels:
-          app: mcpo-trino
-      spec:
-        containers:
-          - name: mcpo-trino
-            image: ghcr.io/open-webui/mcpo:main
+    - name: Create mcpo-trino service
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: mcpo-trino
+            namespace: "{{ mcp_namespace }}"
+          spec:
+            selector:
+              app: mcpo-trino
             ports:
-              - containerPort: 8000
-            args:
-              - "--host"
-              - "0.0.0.0"
-              - "--port"
-              - "8000"
-              - "--server-type"
-              - "streamable-http"
-              - "--"
-              - "http://mcp-trino.{{ trino_mcp_namespace }}:8080/mcp"
+              - name: http
+                port: 8000
+                targetPort: 8000
 
-- name: Create mcpo-trino service
-  kubernetes.core.k8s:
-    definition:
-      apiVersion: v1
-      kind: Service
-      metadata:
+    - name: Create StripPrefix middleware for path routing
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: traefik.io/v1alpha1
+          kind: Middleware
+          metadata:
+            name: 'mcpo-strip-prefix'
+            namespace: kube-system
+          spec:
+            stripPrefix:
+              prefixes:
+                - "{{ ingress_path }}"
+
+    - name: Create ServersTransport for MCPO (per-upstream timeouts)
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: traefik.io/v1alpha1
+          kind: ServersTransport
+          metadata:
+            name: mcpo-timeouts
+            namespace: kube-system
+          spec:
+            maxIdleConnsPerHost: 100
+            forwardingTimeouts:
+              dialTimeout: 900s
+              responseHeaderTimeout: 900s
+              idleConnTimeout: 900s
+
+    - name: Create Ingress for mcpo-trino
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: mcpo-trino-ingress
+            namespace: "{{ mcp_namespace }}"
+            annotations:
+              traefik.ingress.kubernetes.io/router.middlewares: kube-system-mcpo-strip-prefix@kubernetescrd
+              traefik.ingress.kubernetes.io/service.serverstransport: kube-system-mcpo-timeouts@kubernetescrd
+          spec:
+            ingressClassName: traefik
+            rules:
+              - host: '{{ server_hostname }}'
+                http:
+                  paths:
+                    - path: '{{ ingress_path }}'
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: mcpo-trino
+                          port:
+                            number: 8000
+
+    # ---- Wait for rollouts (Deployments) ----
+    - name: Wait for mcp-trino Deployment to be ready
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: "{{ mcp_namespace }}"
+        name: mcp-trino
+      register: mcp_trino_dep
+      until: mcp_trino_dep.resources | length > 0 and (mcp_trino_dep.resources[0].status.readyReplicas | default(0)) | int >= 1
+      retries: 60
+      delay: 5
+
+    - name: Wait for mcpo-trino Deployment to be ready
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: "{{ mcp_namespace }}"
         name: mcpo-trino
-        namespace: "{{ trino_mcp_namespace }}"
-      spec:
-        selector:
-          app: mcpo-trino
-        ports:
-          - port: 8000
-            targetPort: 8000
-            name: http
-
-- name: Create StripPrefix middleware for path routing
-  kubernetes.core.k8s:
-    definition:
-      apiVersion: traefik.io/v1alpha1
-      kind: Middleware
-      metadata:
-        name: 'mcpo-strip-prefix'
-        namespace: kube-system
-      spec:
-        stripPrefix:
-          prefixes:
-            - "{{ ingress_path }}"
-
-- name: Create ServersTransport for MCPO (per-upstream timeouts)
-  kubernetes.core.k8s:
-  state: present
-  definition:
-    apiVersion: traefik.io/v1alpha1
-    kind: ServersTransport
-    metadata:
-      name: mcpo-timeouts
-      namespace: kube-system
-    spec:
-      maxIdleConnsPerHost: 100
-      forwardingTimeouts:
-        dialTimeout: 900s
-        responseHeaderTimeout: 900s
-        idleConnTimeout: 900s
-
-- name: Create Ingress for mcpo-trino
-  kubernetes.core.k8s:
-    definition:
-      apiVersion: networking.k8s.io/v1
-      kind: Ingress
-      metadata:
-        name: mcpo-trino-ingress
-        namespace: "{{ trino_mcp_namespace }}"
-        annotations:
-          traefik.ingress.kubernetes.io/router.middlewares: |
-            kube-system-mcpo-strip-prefix@kubernetescrd
-          traefik.ingress.kubernetes.io/service.serverstransport: |
-            kube-system-mcpo-timeouts@kubernetescrd
-      spec:
-        ingressClassName: traefik
-        rules:
-          - host: '{{ server_hostname }}'
-            http:
-              paths:
-                - backend:
-                    service:
-                      name: mcpo-trino
-                      port:
-                        number: 8000
-                  path: /mcpo-trino
-                  pathType: Prefix
-
-- name: Wait for pods to be ready
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Pod
-    namespace: "{{ trino_mcp_namespace }}"
-    name: "{{ item }}"
-    wait: true
-    wait_condition:
-      type: Ready
-      status: "True"
-    wait_timeout: 300
-  loop:
-    - mcp-trino
-    - mcpo-trino
+      register: mcpo_trino_dep
+      until: mcpo_trino_dep.resources | length > 0 and (mcpo_trino_dep.resources[0].status.readyReplicas | default(0)) | int >= 1
+      retries: 60
+      delay: 5
