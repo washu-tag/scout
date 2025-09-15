@@ -103,157 +103,74 @@
 
           FAB_INDEX_VIEW = f"{SupersetIndexView.__module__}.{SupersetIndexView.__name__}"
         enable_oauth: |
-          # https://superset.apache.org/docs/configuration/configuring-superset/#keycloak-specific-configuration-using-flask-oidc
-          # https://github.com/apache/superset/discussions/29770
-          from flask_appbuilder.security.manager import AUTH_OID, AUTH_REMOTE_USER, AUTH_DB, AUTH_LDAP, AUTH_OAUTH
+          from flask_appbuilder.security.manager import AUTH_OAUTH
+          from flask_appbuilder.security.views import AuthOAuthView, expose
           from superset.security import SupersetSecurityManager
-          from flask_oidc import OpenIDConnect
-          from flask_appbuilder.security.views import AuthOIDView
-          from flask_login import login_user
-          from flask_jwt_extended import verify_jwt_in_request
-          from urllib.parse import quote
-          from flask_appbuilder.views import ModelView, SimpleFormView, expose
-          from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
-          from flask import (
-              redirect,
-              request,
-              session
-          )
+          from flask import redirect, session
           import logging
-          import sys
-          import os
-          import json
 
-          class OIDCSecurityManager(SupersetSecurityManager):
-
-              def __init__(self, appbuilder):
-                  super(OIDCSecurityManager, self).__init__(appbuilder)
-                  if self.auth_type == AUTH_OID:
-                      self.oid = OpenIDConnect(self.appbuilder.get_app)
-                  self.authoidview = AuthOIDCView
-
-              # custom function for OIDC roles_mapping. Just a copy/past from _oauth_calculate_user_roles
-              def is_item_public(self, permission_name, view_name):
-                  verify_jwt_in_request(optional=True) # Attempt to parse any existing JWT and fail silently
-                  return super().is_item_public(permission_name, view_name)
-              def _oid_calculate_user_roles(self, userinfo) -> List[str]:
-                  user_role_objects = set()
-                  # apply AUTH_ROLES_MAPPING
-                  if len(self.auth_roles_mapping) > 0:
-                      user_role_keys = userinfo.get("groups", [])
-                      user_role_objects.update(self.get_roles_from_keys(user_role_keys))
-
-                  # apply AUTH_USER_REGISTRATION_ROLE
-                  if self.auth_user_registration:
-                      registration_role_name = self.auth_user_registration_role
-
-                      # if AUTH_USER_REGISTRATION_ROLE_JMESPATH is set,
-                      # use it for the registration role
-                      if self.auth_user_registration_role_jmespath:
-                          import jmespath
-
-                          registration_role_name = jmespath.search(
-                              self.auth_user_registration_role_jmespath, userinfo
-                          )
-
-                      # lookup registration role in flask db
-                      fab_role = self.find_role(registration_role_name)
-                      logging.info("fab_role %s",fab_role )
-                      if fab_role:
-                          user_role_objects.add(fab_role)
-                      else:
-                          logging.warning(
-                              "Can't find AUTH_USER_REGISTRATION role: %s", registration_role_name
-                          )
-                  return list(user_role_objects)
-
-
-          class AuthOIDCView(AuthOIDView):
-              @expose('/login/', methods=['GET', 'POST'])
-              def login(self, flag=True):
-                  sm = self.appbuilder.sm
-                  oidc = sm.oid
-                  @self.appbuilder.sm.oid.require_login
-                  def handle_login():
-                      user = sm.auth_user_oid(oidc.user_getfield('email'))
-                      # We already have this user in flask DB. If sync_at_login is True we`ll calculate new roles for gim
-                      if user:
-                          info = oidc.user_getinfo(['preferred_username', 'given_name', 'family_name', 'email', 'groups', 'role_keys'])
-                          userRoles = sm._oid_calculate_user_roles(info)
-                          user.roles = userRoles
-                          sm.update_user(user)
-
-                      # # this user is new for flask DB. We will calculate his roles and add him to DB. Than login as usual
-                      if user is None:
-                          info = oidc.user_getinfo(['preferred_username', 'given_name', 'family_name', 'email', 'groups'])
-
-                          userRoles = sm._oid_calculate_user_roles(info)
-                          logging.info("Calculated  roles for new user='%s' as: %s", info.get('preferred_username'), userRoles)
-                          # ZR
-                          user = sm.add_user(info.get('preferred_username',''), info.get('given_name',''), info.get('family_name',''),
-                                          info.get('email',''), userRoles)
-                      login_user(user, remember=False)
-                      return redirect(self.appbuilder.get_url_for_index)      
-                  return handle_login()
+          class KeycloakOAuthView(AuthOAuthView):
+              """
+              Custom Auth View to handle Keycloak login and logout
+              """
+              @expose("/login/")
+              def login(self, provider="keycloak"):
+                  return super().login(provider=provider)
 
               @expose('/logout/', methods=['GET', 'POST'])
-              # @oidc.require_login
               def logout(self):
-                  oidc = self.appbuilder.sm.oid
-                  oidc.logout()
-                  super(AuthOIDCView, self).logout()
-                  redirect_url = request.url_root.strip('/')
-                  client_id = oidc.client_secrets.get('client_id')
-                  session.clear()
-                  return redirect('https://{{ server_hostname }}/oauth2/sign_out')
+                  super().logout()
+                  return redirect('/oauth2/sign_out')
 
-          # Write the client secrets to a file
-          client_secrets_json = {
-            "keycloak": {
-              "issuer": "https://{{ server_hostname }}/kc/realms/scout",
-              "api_base_url": "https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect",
-              "auth_uri": "https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/auth",
-              "client_id": "{{ keycloak_superset_client_id }}",
-              "client_secret": "{{ keycloak_superset_client_secret }}",
-              "redirect_uris": [
-                "https://{{ server_hostname }}/*"
-              ],
-              "client_kwargs": {
-                "scope": "openid microprofile-jwt",
-              },
-              "userinfo_uri": "https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/userinfo",
-              "token_uri": "https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/token",
-              "token_introspection_uri": "https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/token/introspect",
-              "jwks_uri": "https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/certs",
-              "request_token_url": None,
-            }
-          }
+          class KeycloakSecurity(SupersetSecurityManager):
+              """
+              Create a new SecurityManager with own oauth_user_info to handle the information from Keycloak
+              """
 
-          client_secrets_path = '/app/client_secret.json'
-          os.makedirs(os.path.dirname(client_secrets_path), exist_ok=True)
-          with open(client_secrets_path, 'w') as f:
-              json.dump(client_secrets_json, f)
+              def __init__(self, appbuilder):
+                  super(KeycloakSecurity, self).__init__(appbuilder)
+                  app = self.appbuilder.get_app
+                  app.config.setdefault("AUTH_ROLES_MAPPING", { # TODO: Role mapping not working
+                      "superset_admin": ["Admin"],
+                      "superset_alpha": ["Alpha"],
+                      "superset_gamma": ["Gamma"],
+                  })
+                  app.config.setdefault("AUTH_TYPE", AUTH_OAUTH)
+                  self.authoauthview = KeycloakOAuthView
 
-          AUTH_TYPE = AUTH_OID
-          SECRET_KEY = 'SomethingNotEntirelySecret'
-          OIDC_CLIENT_SECRETS =  '/app/client_secret.json'
-          OIDC_ID_TOKEN_COOKIE_SECURE = False
-          OIDC_INTROSPECTION_AUTH_METHOD = 'client_secret_post'
-          CUSTOM_SECURITY_MANAGER = OIDCSecurityManager
+              def oauth_user_info(self, provider, resp=None):
+                  if provider == "keycloak":
+                      logging.debug("Keycloak response received : {0}".format(resp))
+                      logging.debug("ID Token: %s", resp["id_token"])
+                      me = resp["userinfo"]
+                      return {
+                          "name": me["name"],
+                          "email": me["email"],
+                          "first_name": me["given_name"],
+                          "last_name": me["family_name"],
+                          "id": me["preferred_username"],
+                          "username": me["preferred_username"],
+                          "role_keys": me["groups"]
+                      }
 
-          # Will allow user self registration, allowing to create Flask users from Authorized User
+          CUSTOM_SECURITY_MANAGER = KeycloakSecurity
+          AUTH_TYPE = AUTH_OAUTH
+          OAUTH_PROVIDERS = OPENID_PROVIDERS = [
+              {
+                  "name": "keycloak",
+                  "icon": "fa-key",
+                  "token_key": "access_token",
+                  "remote_app": {
+                      "client_id": "{{ keycloak_superset_client_id }}",
+                      "client_secret": "{{ keycloak_superset_client_secret }}",
+                      "client_kwargs": {"scope": "openid microprofile-jwt"},
+                      "server_metadata_url": "https://{{ server_hostname }}/kc/realms/scout/.well-known/openid-configuration",
+                  }
+              }
+          ]
           AUTH_USER_REGISTRATION = True
-
-          # The default user self registration role
           AUTH_USER_REGISTRATION_ROLE = 'Admin'
-
           AUTH_ROLES_SYNC_AT_LOGIN = True
-
-          AUTH_ROLES_MAPPING = {
-              "superset_admin": ["Admin"],
-              "superset_alpha": ["Alpha"],
-              "superset_gamma": ["Gamma"],
-          }
       extraVolumes:
         - name: dashboard-config
           configMap:
