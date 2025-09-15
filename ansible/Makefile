@@ -76,3 +76,6 @@ install-orthanc:
 
 install-dcm4chee:
 	$(ANSIBLE_CMD) playbooks/dcm4chee.yaml
+
+install-mailhog:
+	$(ANSIBLE_CMD) playbooks/mailhog.yaml
