@@ -26,6 +26,18 @@
           - ReadWriteOnce
         persistentVolumeReclaimPolicy: Retain
         storageClassName: '{{ item.storage_class_name }}'
-        hostPath:
-          path: '{{ item.path }}'
+        local: "{{ item.node_url is defined | ternary({'path': item.path}, omit) }}"
+        nodeAffinity: >-
+          {{ item.node_url is defined | ternary({
+            'required': {
+              'nodeSelectorTerms': [
+                {'matchExpressions': [
+                  {'key': 'kubernetes.io/hostname',
+                   'operator': 'In',
+                   'values': [item.node_url]}
+                ]}
+              ]
+            }
+          }, omit) }}
+        hostPath: "{{ item.node_url is not defined | ternary({'path': item.path}, omit) }}"
   loop: '{{ storage_definitions }}'
