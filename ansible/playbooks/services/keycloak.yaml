@@ -59,16 +59,6 @@
         - db_result.rc != 0
         - '"already exists" not in db_result.stderr'
 
-    - name: Grant schema ownership to user
-      kubernetes.core.k8s_exec:
-        namespace: '{{ postgres_cluster_namespace }}'
-        pod: '{{ postgres_cluster_name }}-1'
-        command: |
-          psql --dbname=keycloak -c "ALTER SCHEMA public OWNER TO {{ keycloak_postgres_user }};"
-      register: schema_privileges_result
-      failed_when:
-        - schema_privileges_result.rc != 0
-
 - name: Create Keycloak DB secret
   kubernetes.core.k8s:
     state: present
