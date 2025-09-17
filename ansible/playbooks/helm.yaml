@@ -19,7 +19,7 @@
         cmd: /root/bin/get-helm-3.sh
         creates: /usr/local/bin/helm
       environment:
-        DESIRED_VERSION: "{{ helm_version | default('') }}"
+        DESIRED_VERSION: '{{ helm_version | default(omit, true) }}'
 
     - name: Install Helm Diff
       kubernetes.core.helm_plugin:
