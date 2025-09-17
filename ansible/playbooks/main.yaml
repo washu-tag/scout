@@ -1,6 +1,6 @@
 ---
-- name: Clone Scout repository
-  import_playbook: scout.yaml
+# - name: Clone Scout repository
+#   import_playbook: scout.yaml
 
 - name: Install K3s
   import_playbook: k3s.yaml
