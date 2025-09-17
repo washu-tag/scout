@@ -3,7 +3,6 @@
 server:
   hosts:
     FQDN-leader.edu:
-      ansible_connection: local
       ansible_python_interpreter: /usr/bin/python3
       k3s_control_node: true
       external_url: alt.fqdn.edu # omit to use FQDN-leader.edu
@@ -11,12 +10,10 @@ server:
 workers:
   hosts:
     FQDN-worker-1.edu:
-      ansible_connection: local
       ansible_python_interpreter: /usr/bin/python3
 gpu_workers:
   hosts:
     FQDN-gpu-1.edu:
-      ansible_connection: local
       ansible_python_interpreter: /usr/bin/python3
 # The agents group contains nodes that run only the k3s agent.
 # In this example it only includes the workers and gpu_workers groups.
@@ -37,6 +34,13 @@ k3s_cluster:
     server:
     agents:
   vars:
+    # SSH connection and privilege escalation
+    ansible_user: '<ssh username>'
+    ansible_become: true
+    ansible_become_method: sudo
+    ansible_become_user: root
+    ansible_become_password: $(echo $ANSIBLE_BECOME_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
     # K3s config
     k3s_version: v1.32.3+k3s1 # Leave blank for latest stable
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
