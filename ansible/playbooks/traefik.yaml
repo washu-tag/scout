@@ -16,6 +16,18 @@
       tags:
         - tailscale
 
+    - name: Read TLS cert from remote
+      become: true
+      slurp:
+        src: '{{ cert_path }}'
+      register: cert_file
+
+    - name: Read TLS key from remote
+      become: true
+      slurp:
+        src: '{{ key_path }}'
+      register: key_file
+
     - name: Create TLS secret
       kubernetes.core.k8s:
         state: present
@@ -26,9 +38,9 @@
             name: tls-secret
             namespace: kube-system
           type: kubernetes.io/tls
-          stringData:
-            tls.crt: "{{ lookup('file', cert_path) }}"
-            tls.key: "{{ lookup('file', key_path) }}"
+          data:
+            tls.crt: '{{ cert_file.content }}'
+            tls.key: '{{ key_file.content }}'
 
     - name: Wait for helm-install-traefik job to complete
       command: kubectl -n kube-system wait --for=condition=complete --timeout=300s job/helm-install-traefik
