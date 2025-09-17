@@ -17,18 +17,21 @@
         - tailscale
 
     - name: Read TLS cert from remote
+      no_log: true
       become: true
       slurp:
         src: '{{ cert_path }}'
       register: cert_file
 
     - name: Read TLS key from remote
+      no_log: true
       become: true
       slurp:
         src: '{{ key_path }}'
       register: key_file
 
     - name: Create TLS secret
+      no_log: true
       kubernetes.core.k8s:
         state: present
         definition:

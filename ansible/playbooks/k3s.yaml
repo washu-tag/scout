@@ -45,7 +45,7 @@
         INSTALL_K3S_EXEC: >-
           --default-local-storage-path={{ base_dir }}
           --write-kubeconfig-mode=0640
-        INSTALL_K3S_VERSION: "{{ k3s_version | default('') }}"
+        INSTALL_K3S_VERSION: '{{ k3s_version | default(omit, true) }}'
         K3S_TOKEN: '{{ k3s_token }}'
         UNINSTALL_K3S_SH: '{{ uninstall_script }}'
 
@@ -149,7 +149,7 @@
         cmd: /root/bin/get.k3s.io.sh
         creates: '{{ uninstall_script }}'
       environment:
-        INSTALL_K3S_VERSION: "{{ k3s_version | default('') }}"
+        INSTALL_K3S_VERSION: '{{ k3s_version | default(omit, true) }}'
         K3S_URL: 'https://{{ groups["server"][0] }}:6443'
         K3S_TOKEN: '{{ k3s_token }}'
         UNINSTALL_K3S_SH: '{{ uninstall_script }}'
