@@ -3,6 +3,8 @@
 server:
   hosts:
     FQDN-leader.edu:
+      ansible_host: '<ssh host or IP if different>'
+      # ansible_port: 22
       ansible_python_interpreter: /usr/bin/python3
       k3s_control_node: true
       external_url: alt.fqdn.edu # omit to use FQDN-leader.edu
@@ -10,10 +12,14 @@ server:
 workers:
   hosts:
     FQDN-worker-1.edu:
+      ansible_host: '<ssh host or IP if different>'
+      # ansible_port: 22
       ansible_python_interpreter: /usr/bin/python3
 gpu_workers:
   hosts:
     FQDN-gpu-1.edu:
+      ansible_host: '<ssh host or IP if different>'
+      # ansible_port: 22
       ansible_python_interpreter: /usr/bin/python3
 # The agents group contains nodes that run only the k3s agent.
 # In this example it only includes the workers and gpu_workers groups.
