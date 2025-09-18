@@ -112,14 +112,16 @@ singleuser:
       args:
         - |
           set -e
-          # Build the service prefix that the single-user server expects.
-          # Hub runs at /jupyter, so the prefix is /jupyter/user/<username>[/<server>]/.
-          SERVICE_PREFIX="/jupyter/user/$HUB_USERNAME"
+          # Build the service prefix /user/<username>[/<server>]/ correctly.
+          SERVICE_PREFIX="/user/$HUB_USERNAME"
           if [ -n "$SERVER_NAME" ]; then
-            SERVICE_PREFIX="$BASE_PREFIX/$SERVER_NAME"
+            SERVICE_PREFIX="$SERVICE_PREFIX/$SERVER_NAME"
           fi
 
-          BASE="http://127.0.0.1:8888$SERVICE_PREFIX"  # trailing slash is OK
+          # IMPORTANT: talk to the Hub's proxy inside the cluster so Hub tokens work.
+          # JupyterHub baseUrl is /jupyter, so prepend it here.
+          HUB_BASE="http://proxy-public.jupyter"
+          BASE="$HUB_BASE/jupyter$SERVICE_PREFIX"
 
           exec jupyter-mcp-server start \
             --transport streamable-http \
@@ -127,6 +129,7 @@ singleuser:
             --port 4040 \
             --document-url "$BASE" \
             --runtime-url  "$BASE" \
+            --document-id "notebook.ipynb" \
             --start-new-runtime true \
             --document-token "$JUPYTER_MCP_SERVICE_TOKEN" \
             --runtime-token  "$JUPYTER_MCP_SERVICE_TOKEN"
@@ -181,3 +184,10 @@ singleuser:
                 kubernetes.io/metadata.name: '{{ trino_namespace | default("trino")}}'
         ports:
           - port: 8080
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: 'jupyter'
+        ports:
+          - port: 8081
+          - port: 80
