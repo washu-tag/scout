@@ -9,7 +9,6 @@
   vars:
     sc_image: local/search-and-classify:1.1.0
     sc_replicas: 1
-    server_hostname: '{{ server_hostname }}' # e.g., demo.example.com
     ingress_path: /search-classify
 
     # Resources
@@ -53,7 +52,7 @@
             labels:
               app: search-and-classify
           spec:
-            replicas: { { sc_replicas } }
+            replicas: '{{ sc_replicas }}'
             selector:
               matchLabels:
                 app: search-and-classify
@@ -69,7 +68,7 @@
                     image: '{{ sc_image }}'
                     imagePullPolicy: IfNotPresent
                     ports:
-                      - containerPort: { { sc_container_port } }
+                      - containerPort: '{{ sc_container_port }}'
                     env:
                       - name: ENFORCED_MAX_ROWS
                         value: '{{ enforced_max_rows }}'
@@ -91,7 +90,7 @@
                     readinessProbe:
                       httpGet:
                         path: /health
-                        port: { { sc_container_port } }
+                        port: '{{ sc_container_port }}'
                       initialDelaySeconds: 10
                       periodSeconds: 10
                       timeoutSeconds: 3
@@ -99,7 +98,7 @@
                     livenessProbe:
                       httpGet:
                         path: /health
-                        port: { { sc_container_port } }
+                        port: '{{ sc_container_port }}'
                       initialDelaySeconds: 20
                       periodSeconds: 20
                       timeoutSeconds: 3
@@ -137,7 +136,7 @@
             ports:
               - name: http
                 port: 8000
-                targetPort: { { sc_container_port } }
+                targetPort: '{{ sc_container_port }}'
                 protocol: TCP
 
     - name: Create StripPrefix middleware for path routing

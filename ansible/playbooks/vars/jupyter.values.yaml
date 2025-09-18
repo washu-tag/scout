@@ -110,19 +110,31 @@ singleuser:
         - containerPort: 4040
       command: ['/bin/sh', '-lc']
       args:
-        - >
-          exec jupyter-mcp-server start
-          --transport streamable-http
-          --provider jupyter
-          --port 4040
-          --document-url http://127.0.0.1:8888
-          --runtime-url  http://127.0.0.1:8888
-          --start-new-runtime true
-          --document-token $JUPYTER_MCP_SERVICE_TOKEN
-          --runtime-token  $JUPYTER_MCP_SERVICE_TOKEN
+        - |
+          set -euo pipefail
+          # Prefer JUPYTERHUB_SERVICE_PREFIX if Hub injects it; otherwise build /user/<escaped-username>[/<servername>]
+          SERVICE_PREFIX="${JUPYTERHUB_SERVICE_PREFIX:-/user/${HUB_USERNAME}${SERVER_NAME:+/${SERVER_NAME}}}"
+          BASE="http://127.0.0.1:8888${SERVICE_PREFIX}"
+          exec jupyter-mcp-server start \
+            --transport streamable-http \
+            --provider jupyter \
+            --port 4040 \
+            --document-url "${BASE}" \
+            --runtime-url  "${BASE}" \
+            --start-new-runtime true \
+            --document-token "$JUPYTER_MCP_SERVICE_TOKEN" \
+            --runtime-token  "$JUPYTER_MCP_SERVICE_TOKEN"
       env:
         - name: JUPYTER_MCP_SERVICE_TOKEN
           value: '{{ jupyter_mcp_api_token }}'
+        - name: HUB_USERNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['hub.jupyter.org/username']
+        - name: SERVER_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['hub.jupyter.org/servername']
 
     - name: mcpo
       image: '{{ mcpo_image }}'

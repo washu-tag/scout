@@ -9,7 +9,7 @@
     trino_host: 'trino.{{ trino_namespace }}'
     trino_port: 8080
     trino_scheme: http
-    mcp_trino_image: ghcr.io/tuannvm/mcp-trino:1.5.0
+    mcp_trino_image: ghcr.io/tuannvm/mcp-trino:2.3.2
     ingress_path: /mcpo-trino
 
   tasks:
@@ -36,7 +36,7 @@
             template:
               metadata:
                 labels:
-                  app: mcp-trino # <-- must match Service selector
+                  app: mcp-trino
               spec:
                 containers:
                   - name: mcp-trino
@@ -51,16 +51,15 @@
                         value: '{{ trino_port | string }}'
                       - name: TRINO_SCHEME
                         value: '{{ trino_scheme }}'
+                    # Use TCP probes to avoid false negatives on /mcp
                     readinessProbe:
-                      httpGet:
-                        path: /mcp
+                      tcpSocket:
                         port: 8080
-                      initialDelaySeconds: 3
+                      initialDelaySeconds: 2
                       periodSeconds: 5
                       failureThreshold: 12
                     livenessProbe:
-                      httpGet:
-                        path: /mcp
+                      tcpSocket:
                         port: 8080
                       initialDelaySeconds: 10
                       periodSeconds: 10
@@ -111,11 +110,11 @@
                     command: ['sh', '-lc']
                     args:
                       - >
-                        echo "Waiting for mcp-trino service...";
-                        until curl -sf http://mcp-trino.{{ mcp_namespace }}.svc.cluster.local:8080/mcp >/dev/null; do
+                        echo "Waiting for mcp-trino:8080 (TCP) ...";
+                        until curl -sS -o /dev/null --max-time 2 http://mcp-trino.{{ mcp_namespace }}.svc.cluster.local:8080/; do
                           echo "still waiting..."; sleep 2;
                         done;
-                        echo "mcp-trino is up"
+                        echo "mcp-trino is reachable"
                 containers:
                   - name: mcpo-trino
                     image: '{{ mcpo_image }}'
@@ -131,16 +130,15 @@
                       - 'streamable-http'
                       - '--'
                       - 'http://mcp-trino.{{ mcp_namespace }}.svc.cluster.local:8080/mcp'
+                    # Use TCP probes here too to avoid coupling to HTTP route behavior
                     readinessProbe:
-                      httpGet:
-                        path: /
+                      tcpSocket:
                         port: 8000
-                      initialDelaySeconds: 3
+                      initialDelaySeconds: 2
                       periodSeconds: 5
                       failureThreshold: 12
                     livenessProbe:
-                      httpGet:
-                        path: /
+                      tcpSocket:
                         port: 8000
                       initialDelaySeconds: 10
                       periodSeconds: 10
