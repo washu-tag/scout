@@ -8,6 +8,25 @@
   tasks:
     - name: Install Trino
       include_tasks: services/trino.yaml
+      vars:
+        worker_replicas: 1
+        worker_headroom_ratio: 0.25   # portion of Xmx reserved as "heap headroom"
+        worker_overhead_gb: 2         # extra for off-heap/native/k8s cushion
+        worker_max_mem_per_node_ratio: 0.5   # query.maxMemoryPerNode as fraction of Xmx
+
+        coordinator_xmx_gb: 8
+        coordinator_headroom_ratio: 0.25
+        coordinator_overhead_gb: 2
+        coordinator_max_mem_per_node_ratio: 0.5
+
+        # Server (cluster) caps; leave null to auto-compute from workers
+        cluster_utilization: 0.9      # fraction of summed per-node memory you allow one query to use
+        server_max_memory_gb: null    # query.maxMemory (cluster user memory)
+        server_max_total_memory_gb: null  # query.max-total-memory (user + revocable)
+
+        # Spill (recommended ON for wide joins/aggregations)
+        enable_spill: true
+        spill_path: /var/trino-spill
 
     - name: Install Superset
       include_tasks: services/superset.yaml
