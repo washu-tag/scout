@@ -65,6 +65,7 @@
       register: dashboard_files
 
     - name: Create ConfigMap for each Grafana dashboard
+      no_log: true
       kubernetes.core.k8s:
         state: present
         definition: |
