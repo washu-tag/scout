@@ -132,6 +132,9 @@
             value: 'realm,idp,clientId'
           - name: spi-events-listener-jboss-logging-success-level
             value: info
+            # Hacky way to get an env variable into the Keycloak pod until the operator supports it natively
+          - name: scout-url
+            value: '{{ server_hostname }}'
 
 # The operator wants to use a subdomain and does not appear to support a path-based ingress
 - name: Create Keycloak Ingress

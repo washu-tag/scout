@@ -3,6 +3,7 @@ package edu.washu.tag.keycloak.events;
 import static org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction;
 
 import java.util.Map;
+import java.util.Optional;
 import org.jboss.logging.Logger;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.EmailSenderProvider;
@@ -110,6 +111,8 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
             Map<String, Object> bodyAttributes = new java.util.HashMap<>();
             bodyAttributes.put("username", user.getUsername());
 
+            getScoutUrl().ifPresent(url -> bodyAttributes.put("scoutUrl", url));
+
             sendUserPendingApprovalEmail(sess, realm, user, bodyAttributes);
             sendAdminApprovalEmail(session, realm, bodyAttributes, user);
         });
@@ -137,10 +140,14 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
                 log.warnf("User %s not found in realm %s. Unable to check scout-user group membership.", username, realm.getName());
                 return;
             }
+
+            Map<String, Object> bodyAttributes = new java.util.HashMap<>();
+            getScoutUrl().ifPresent(url -> bodyAttributes.put("scoutUrl", url));
+
             if (event.getOperationType() == OperationType.CREATE) {
-                sendUserEnabledEmail(sess, realm, user);
+                sendUserEnabledEmail(sess, realm, user, bodyAttributes);
             } else if (event.getOperationType() == OperationType.DELETE) {
-                sendUserDisabledEmail(sess, realm, user);
+                sendUserDisabledEmail(sess, realm, user, bodyAttributes);
             }
         });
     }
@@ -195,13 +202,12 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
         }
     }
 
-    private void sendUserEnabledEmail(KeycloakSession session, RealmModel realm, UserModel user) {
+    private void sendUserEnabledEmail(KeycloakSession session, RealmModel realm, UserModel user, Map<String, Object> bodyAttributes) {
         try {
             EmailTemplateProvider emailTemplateProvider = session.getProvider(EmailTemplateProvider.class);
             emailTemplateProvider.setRealm(realm).setUser(user);
             String subject = "Welcome to Scout";
             String bodyTemplate = "email-user-enabled.ftl";
-            Map<String, Object> bodyAttributes = new java.util.HashMap<>();
             emailTemplateProvider.send(subject, bodyTemplate, bodyAttributes);
             log.infof("Approval email sent to user: %s, email: %s", user.getUsername(), user.getEmail());
         } catch (EmailException e) {
@@ -209,18 +215,32 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
         }
     }
 
-    private void sendUserDisabledEmail(KeycloakSession session, RealmModel realm, UserModel user) {
+    private void sendUserDisabledEmail(KeycloakSession session, RealmModel realm, UserModel user, Map<String, Object> bodyAttributes) {
         try {
             EmailTemplateProvider emailTemplateProvider = session.getProvider(EmailTemplateProvider.class);
             emailTemplateProvider.setRealm(realm).setUser(user);
             String subject = "Scout Account Disabled";
             String bodyTemplate = "email-user-disabled.ftl";
-            Map<String, Object> bodyAttributes = new java.util.HashMap<>();
             emailTemplateProvider.send(subject, bodyTemplate, bodyAttributes);
             log.infof("Disabled email sent to user: %s, email: %s", user.getUsername(), user.getEmail());
         } catch (EmailException e) {
             log.errorf("Failed to send user disabled email for user: %s, email: %s", user.getUsername(), user.getEmail(), e);
         }
+    }
+
+    private Optional<String> getScoutUrl() {
+        String scoutUrl = System.getenv("KC_SCOUT_URL");
+        
+        if (scoutUrl == null || scoutUrl.isEmpty()) {
+            log.error("KC_SCOUT_URL environment variable is not set. Unable to find Scout URL for emails.");
+            return Optional.empty();
+        }
+
+        if (!scoutUrl.startsWith("http://") && !scoutUrl.startsWith("https://")) {
+            scoutUrl = "https://" + scoutUrl;
+        }
+
+        return Optional.of(scoutUrl);
     }
 
 }
