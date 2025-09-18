@@ -10,7 +10,6 @@
     trino_port: 8080
     trino_scheme: http
     mcp_trino_image: ghcr.io/tuannvm/mcp-trino:1.5.0
-    mcpo_image: ghcr.io/open-webui/mcpo:main
     ingress_path: /mcpo-trino
 
   tasks:

@@ -19,4 +19,6 @@ RUN python3 -m pip install --no-cache-dir -r /tmp/requirements.txt && \
     fix-permissions "/home/${NB_USER}" && \
     rm /tmp/requirements.txt
 
+RUN jupyter server extension enable --sys-prefix jupyter_server_proxy
+
 ADD --chown=${NB_UID}:${NB_GID} samples /opt/scout/samples

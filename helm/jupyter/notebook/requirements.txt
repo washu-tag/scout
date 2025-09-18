@@ -13,3 +13,4 @@ matplotlib
 requests
 voila
 trino
+jupyter-server-proxy

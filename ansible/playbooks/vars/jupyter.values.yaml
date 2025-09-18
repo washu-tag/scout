@@ -17,11 +17,18 @@ hub:
       admin: false
       # Secret would be preferred, but not clear how to do that in this chart
       api_token: '{{ jupyter_metrics_api_token }}'
+    mcp:
+      admin: false
+      api_token: '{{ jupyter_mcp_api_token }}'
   loadRoles:
     metrics:
       description: 'Read JupyterHub metrics'
-      scopes: [read:metrics]
-      services: [prometheus]
+      scopes: [ read:metrics ]
+      services: [ prometheus ]
+    mcp:
+      description: 'Allow MCP sidecars to access single-user server APIs'
+      scopes: [ access:servers ]
+      services: [ mcp ]
   db:
     pvc:
       storageClassName: '{{ jupyter_hub_storage_class }}'
@@ -96,6 +103,40 @@ singleuser:
       - name: spark-defaults
         mountPath: /usr/local/spark/conf/spark-defaults.conf
         subPath: spark-defaults.conf
+  extraContainers:
+    - name: jupyter-mcp
+      image: datalayer/jupyter-mcp-server:latest
+      ports:
+        - containerPort: 4040
+      command: [ "/bin/sh","-lc" ]
+      args:
+        - >
+          exec jupyter-mcp-server start
+          --transport streamable-http
+          --provider jupyter
+          --port 4040
+          --document-url http://127.0.0.1:8888
+          --runtime-url  http://127.0.0.1:8888
+          --start-new-runtime true
+          --document-token $JUPYTER_MCP_SERVICE_TOKEN
+          --runtime-token  $JUPYTER_MCP_SERVICE_TOKEN
+      env:
+        - name: JUPYTER_MCP_SERVICE_TOKEN
+          value: '{{ jupyter_mcp_api_token }}'
+
+    - name: mcpo
+      image: "{{ mcpo_image }}"
+      ports:
+        - containerPort: 8000
+      args:
+        - "--host"
+        - "0.0.0.0"
+        - "--port"
+        - "8000"
+        - "--server-type"
+        - "streamable-http"
+        - "--"
+        - "http://127.0.0.1:4040/mcp"
   networkPolicy:
     egress:
       - to:
