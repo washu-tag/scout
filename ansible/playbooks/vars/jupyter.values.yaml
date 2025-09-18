@@ -111,16 +111,22 @@ singleuser:
       command: ['/bin/sh', '-lc']
       args:
         - |
-          set -euo pipefail
-          # Prefer JUPYTERHUB_SERVICE_PREFIX if Hub injects it; otherwise build /user/<escaped-username>[/<servername>]
-          SERVICE_PREFIX="${JUPYTERHUB_SERVICE_PREFIX:-/user/${HUB_USERNAME}${SERVER_NAME:+/${SERVER_NAME}}}"
-          BASE="http://127.0.0.1:8888${SERVICE_PREFIX}"
+          set -e
+          # Build the service prefix that the single-user server expects.
+          # Hub runs at /jupyter, so the prefix is /jupyter/user/<username>[/<server>]/.
+          SERVICE_PREFIX="/jupyter/user/$HUB_USERNAME"
+          if [ -n "$SERVER_NAME" ]; then
+            SERVICE_PREFIX="$BASE_PREFIX/$SERVER_NAME"
+          fi
+
+          BASE="http://127.0.0.1:8888$SERVICE_PREFIX"  # trailing slash is OK
+
           exec jupyter-mcp-server start \
             --transport streamable-http \
             --provider jupyter \
             --port 4040 \
-            --document-url "${BASE}" \
-            --runtime-url  "${BASE}" \
+            --document-url "$BASE" \
+            --runtime-url  "$BASE" \
             --start-new-runtime true \
             --document-token "$JUPYTER_MCP_SERVICE_TOKEN" \
             --runtime-token  "$JUPYTER_MCP_SERVICE_TOKEN"

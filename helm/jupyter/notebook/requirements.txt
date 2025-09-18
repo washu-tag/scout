@@ -14,3 +14,4 @@ requests
 voila
 trino
 jupyter-server-proxy
+jupyter-collaboration
