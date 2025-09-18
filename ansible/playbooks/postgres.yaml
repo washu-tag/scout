@@ -17,28 +17,30 @@
   vars_files:
     - vars/postgres_storage.yaml
   pre_tasks:
-    - name: Find all SQL initialization files
-      delegate_to: localhost
-      run_once: true
-      ansible.builtin.find:
-        paths: '{{ playbook_dir }}/templates/postgres_init'
-        patterns: '*_init_sql.yaml'
-      register: sql_init_files
+    # - name: Find all SQL initialization files
+    #   delegate_to: localhost
+    #   run_once: true
+    #   ansible.builtin.find:
+    #     paths: '{{ playbook_dir }}/templates/postgres_init'
+    #     patterns: '*_init_sql.yaml'
+    #   register: sql_init_files
 
     - name: Initialize empty SQL statements list
       ansible.builtin.set_fact:
         postgres_init_sql: []
 
-    - name: Add SQL statements to combined list
+    - name: Add SQL statements from local templates
       ansible.builtin.set_fact:
-        postgres_init_sql: '{{ postgres_init_sql + lookup("template", item.path) | from_yaml }}'
+        postgres_init_sql: '{{ postgres_init_sql + lookup("template", item) | from_yaml }}'
       when: module_enabled not in vars or vars[module_enabled] | bool
       vars:
-        module_name: "{{ item.path | basename | regex_replace('_init_sql\\.yaml$', '') }}"
+        module_name: "{{ item | basename | regex_replace('_init_sql\\.yaml$', '') }}"
         module_enabled: "{{ module_name + '_enabled' }}"
-      loop: '{{ sql_init_files.files }}'
+      loop: "{{ lookup('fileglob', playbook_dir ~ '/templates/postgres_init/*_init_sql.yaml', wantlist=True) }}"
       loop_control:
-        label: '{{ item.path | basename }}'
+        label: '{{ item | basename }}'
+      delegate_to: localhost
+      run_once: true
 
   tasks:
     - name: Add Postgres Helm repository
