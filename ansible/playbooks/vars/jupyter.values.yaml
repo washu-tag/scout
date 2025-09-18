@@ -23,12 +23,12 @@ hub:
   loadRoles:
     metrics:
       description: 'Read JupyterHub metrics'
-      scopes: [ read:metrics ]
-      services: [ prometheus ]
+      scopes: [read:metrics]
+      services: [prometheus]
     mcp:
       description: 'Allow MCP sidecars to access single-user server APIs'
-      scopes: [ access:servers ]
-      services: [ mcp ]
+      scopes: [access:servers]
+      services: [mcp]
   db:
     pvc:
       storageClassName: '{{ jupyter_hub_storage_class }}'
@@ -108,7 +108,7 @@ singleuser:
       image: datalayer/jupyter-mcp-server:latest
       ports:
         - containerPort: 4040
-      command: [ "/bin/sh","-lc" ]
+      command: ['/bin/sh', '-lc']
       args:
         - >
           exec jupyter-mcp-server start
@@ -125,18 +125,18 @@ singleuser:
           value: '{{ jupyter_mcp_api_token }}'
 
     - name: mcpo
-      image: "{{ mcpo_image }}"
+      image: '{{ mcpo_image }}'
       ports:
         - containerPort: 8000
       args:
-        - "--host"
-        - "0.0.0.0"
-        - "--port"
-        - "8000"
-        - "--server-type"
-        - "streamable-http"
-        - "--"
-        - "http://127.0.0.1:4040/mcp"
+        - '--host'
+        - '0.0.0.0'
+        - '--port'
+        - '8000'
+        - '--server-type'
+        - 'streamable-http'
+        - '--'
+        - 'http://127.0.0.1:4040/mcp'
   networkPolicy:
     egress:
       - to:

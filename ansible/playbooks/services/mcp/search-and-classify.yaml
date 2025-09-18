@@ -9,27 +9,27 @@
   vars:
     sc_image: local/search-and-classify:1.1.0
     sc_replicas: 1
-    server_hostname: '{{ server_hostname }}'     # e.g., demo.example.com
+    server_hostname: '{{ server_hostname }}' # e.g., demo.example.com
     ingress_path: /search-classify
 
     # Resources
     sc_requests:
-      cpu: "250m"
-      memory: "1Gi"
+      cpu: '250m'
+      memory: '1Gi'
     sc_limits:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: '2'
+      memory: '4Gi'
 
     # Service port
     sc_container_port: 8000
 
     # Env vars for the service
-    enforced_max_rows: "5000"
-    trino_host: "trino.{{ trino_namespace }}"
-    trino_port: "8080"
-    trino_user: "scout"
-    trino_catalog: "delta"
-    trino_schema: "default"
+    enforced_max_rows: '5000'
+    trino_host: 'trino.{{ trino_namespace }}'
+    trino_port: '8080'
+    trino_user: 'scout'
+    trino_catalog: 'delta'
+    trino_schema: 'default'
 
   tasks:
     - name: Create namespace
@@ -39,7 +39,7 @@
           apiVersion: v1
           kind: Namespace
           metadata:
-            name: "{{ mcp_namespace }}"
+            name: '{{ mcp_namespace }}'
 
     - name: Deploy search-and-classify Deployment
       kubernetes.core.k8s:
@@ -49,11 +49,11 @@
           kind: Deployment
           metadata:
             name: search-and-classify
-            namespace: "{{ mcp_namespace }}"
+            namespace: '{{ mcp_namespace }}'
             labels:
               app: search-and-classify
           spec:
-            replicas: {{ sc_replicas }}
+            replicas: { { sc_replicas } }
             selector:
               matchLabels:
                 app: search-and-classify
@@ -63,35 +63,35 @@
                   app: search-and-classify
               spec:
                 nodeSelector:
-                  kubernetes.io/hostname: "tagdev-big-04.nrg.wustl.edu"
+                  kubernetes.io/hostname: 'tagdev-big-04.nrg.wustl.edu'
                 containers:
                   - name: api
-                    image: "{{ sc_image }}"
+                    image: '{{ sc_image }}'
                     imagePullPolicy: IfNotPresent
                     ports:
-                      - containerPort: {{ sc_container_port }}
+                      - containerPort: { { sc_container_port } }
                     env:
                       - name: ENFORCED_MAX_ROWS
-                        value: "{{ enforced_max_rows }}"
+                        value: '{{ enforced_max_rows }}'
                       - name: TRINO_HOST
-                        value: "{{ trino_host }}"
+                        value: '{{ trino_host }}'
                       - name: TRINO_PORT
-                        value: "{{ trino_port }}"
+                        value: '{{ trino_port }}'
                       - name: TRINO_USER
-                        value: "{{ trino_user }}"
+                        value: '{{ trino_user }}'
                       - name: TRINO_CATALOG
-                        value: "{{ trino_catalog }}"
+                        value: '{{ trino_catalog }}'
                       - name: TRINO_SCHEMA
-                        value: "{{ trino_schema }}"
+                        value: '{{ trino_schema }}'
                       - name: HF_HOME
-                        value: "/app/models"
+                        value: '/app/models'
                     volumeMounts:
                       - name: model-cache
                         mountPath: /app/models
                     readinessProbe:
                       httpGet:
                         path: /health
-                        port: {{ sc_container_port }}
+                        port: { { sc_container_port } }
                       initialDelaySeconds: 10
                       periodSeconds: 10
                       timeoutSeconds: 3
@@ -99,18 +99,18 @@
                     livenessProbe:
                       httpGet:
                         path: /health
-                        port: {{ sc_container_port }}
+                        port: { { sc_container_port } }
                       initialDelaySeconds: 20
                       periodSeconds: 20
                       timeoutSeconds: 3
                       failureThreshold: 6
                     resources:
                       requests:
-                        cpu: "{{ sc_requests.cpu }}"
-                        memory: "{{ sc_requests.memory }}"
+                        cpu: '{{ sc_requests.cpu }}'
+                        memory: '{{ sc_requests.memory }}'
                       limits:
-                        cpu: "{{ sc_limits.cpu }}"
-                        memory: "{{ sc_limits.memory }}"
+                        cpu: '{{ sc_limits.cpu }}'
+                        memory: '{{ sc_limits.memory }}'
                     securityContext:
                       allowPrivilegeEscalation: false
                       readOnlyRootFilesystem: false
@@ -128,7 +128,7 @@
           kind: Service
           metadata:
             name: search-and-classify
-            namespace: "{{ mcp_namespace }}"
+            namespace: '{{ mcp_namespace }}'
             labels:
               app: search-and-classify
           spec:
@@ -137,7 +137,7 @@
             ports:
               - name: http
                 port: 8000
-                targetPort: {{ sc_container_port }}
+                targetPort: { { sc_container_port } }
                 protocol: TCP
 
     - name: Create StripPrefix middleware for path routing
@@ -152,7 +152,7 @@
           spec:
             stripPrefix:
               prefixes:
-                - "{{ ingress_path }}"
+                - '{{ ingress_path }}'
 
     - name: Create ServersTransport for long-running requests
       kubernetes.core.k8s:
@@ -178,7 +178,7 @@
           kind: Ingress
           metadata:
             name: search-and-classify-ingress
-            namespace: "{{ mcp_namespace }}"
+            namespace: '{{ mcp_namespace }}'
             annotations:
               traefik.ingress.kubernetes.io/router.middlewares: |
                 kube-system-search-classify-strip-prefix@kubernetescrd
@@ -187,10 +187,10 @@
           spec:
             ingressClassName: traefik
             rules:
-              - host: "{{ server_hostname }}"
+              - host: '{{ server_hostname }}'
                 http:
                   paths:
-                    - path: "{{ ingress_path }}"
+                    - path: '{{ ingress_path }}'
                       pathType: Prefix
                       backend:
                         service:
@@ -202,11 +202,11 @@
       kubernetes.core.k8s_info:
         api_version: v1
         kind: Pod
-        namespace: "{{ mcp_namespace }}"
+        namespace: '{{ mcp_namespace }}'
         label_selectors:
-          - "app=search-and-classify"
+          - 'app=search-and-classify'
         wait: true
         wait_condition:
           type: Ready
-          status: "True"
+          status: 'True'
         wait_timeout: 600

@@ -13,7 +13,7 @@
 
 - name: Compute derived Trino sizing (workers) — part 2
   set_fact:
-    trino_worker_request_gi: "{{ trino_worker_limit_gi }}"
+    trino_worker_request_gi: '{{ trino_worker_limit_gi }}'
 
 - name: Compute derived Trino sizing (coordinator) — part 1
   set_fact:
@@ -30,7 +30,7 @@
 
 - name: Compute derived Trino sizing (coordinator) — part 2
   set_fact:
-    trino_coord_request_gi: "{{ trino_coord_limit_gi }}"
+    trino_coord_request_gi: '{{ trino_coord_limit_gi }}'
 
 - name: Compute cluster-wide cap trino_server_max_memory_gb
   set_fact:
@@ -94,47 +94,47 @@
       server:
         config:
           query:
-            maxMemory: "{{ trino_server_max_memory_gb }}GB"
+            maxMemory: '{{ trino_server_max_memory_gb }}GB'
         additionalConfigProperties:
-          - "query.max-total-memory={{ trino_server_max_total_memory_gb }}GB"
+          - 'query.max-total-memory={{ trino_server_max_total_memory_gb }}GB'
           - "spill-enabled={{ 'true' if enable_spill else 'false' }}"
-          - "spiller-spill-path={{ spill_path }}"
+          - 'spiller-spill-path={{ spill_path }}'
 
       # ---- Coordinator sizing ----
       coordinator:
         jvm:
-          maxHeapSize: "{{ coordinator_xmx_gb }}G"
+          maxHeapSize: '{{ coordinator_xmx_gb }}G'
         config:
           query:
-            maxMemoryPerNode: "{{ trino_coord_max_mem_per_node_gb }}GB"
+            maxMemoryPerNode: '{{ trino_coord_max_mem_per_node_gb }}GB'
           memory:
-            heapHeadroomPerNode: "{{ trino_coord_headroom_gb }}GB"
+            heapHeadroomPerNode: '{{ trino_coord_headroom_gb }}GB'
         resources:
-          requests: { memory: "{{ trino_coord_request_gi }}Gi" }
-          limits:   { memory: "{{ trino_coord_limit_gi }}Gi" }
+          requests: { memory: '{{ trino_coord_request_gi }}Gi' }
+          limits: { memory: '{{ trino_coord_limit_gi }}Gi' }
         annotations:
-          prometheus.io/trino_scrape: "true"
+          prometheus.io/trino_scrape: 'true'
 
       # ---- Worker sizing ----
       worker:
         jvm:
-          maxHeapSize: "{{ trino_worker_xmx_gb }}G"
+          maxHeapSize: '{{ trino_worker_xmx_gb }}G'
         config:
           query:
-            maxMemoryPerNode: "{{ trino_worker_max_mem_per_node_gb }}GB"
+            maxMemoryPerNode: '{{ trino_worker_max_mem_per_node_gb }}GB'
           memory:
-            heapHeadroomPerNode: "{{ trino_worker_headroom_gb }}GB"
+            heapHeadroomPerNode: '{{ trino_worker_headroom_gb }}GB'
         resources:
-          requests: { memory: "{{ trino_worker_request_gi }}Gi" }
-          limits:   { memory: "{{ trino_worker_limit_gi }}Gi" }
+          requests: { memory: '{{ trino_worker_request_gi }}Gi' }
+          limits: { memory: '{{ trino_worker_limit_gi }}Gi' }
         additionalVolumes:
           - name: spill
             emptyDir: {}
         additionalVolumeMounts:
           - name: spill
-            mountPath: "{{ spill_path }}"
+            mountPath: '{{ spill_path }}'
         annotations:
-          prometheus.io/trino_scrape: "true"
+          prometheus.io/trino_scrape: 'true'
 
       catalogs:
         delta: |

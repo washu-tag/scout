@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Radiology Report Diagnosis Search",
     description="Execute SQL queries and classify radiology reports with AI-powered diagnosis detection",
-    version="1.1.0"
+    version="1.1.0",
 )
 
 # Enable CORS for Open WebUI
@@ -97,9 +97,7 @@ JOIN (
  AND r.message_control_id = m.latest_id
 """
 
-SQL_EXAMPLES = {
-    "neoplasm_last_year": SQL_EXAMPLE_NEOPLASM_LAST_YEAR
-}
+SQL_EXAMPLES = {"neoplasm_last_year": SQL_EXAMPLE_NEOPLASM_LAST_YEAR}
 
 # Required columns for the query
 REQUIRED_COLUMNS = {
@@ -112,17 +110,21 @@ REQUIRED_COLUMNS = {
     "sending_facility": "sending_facility as sending_facility",
     "sex": "sex as sex",
     "race": "race as race",
-    "age": "date_diff('year', CAST(birth_date AS date), CAST(COALESCE(observation_dt, message_dt, requested_dt) AS date)) as age"
+    "age": "date_diff('year', CAST(birth_date AS date), CAST(COALESCE(observation_dt, message_dt, requested_dt) AS date)) as age",
 }
+
 
 class ClassificationTarget(str, Enum):
     POSITIVE = "positive"
     NEGATIVE = "negative"
     ALL = "all"
 
+
 class SQLError(Exception):
     """Custom exception for SQL-related errors with helpful messages."""
+
     pass
+
 
 # Hold classifier globally for reuse
 classifier = None
@@ -135,6 +137,7 @@ TRINO_USER = os.getenv("TRINO_USER", "scout")
 TRINO_CATALOG = os.getenv("TRINO_CATALOG", "delta")
 TRINO_SCHEMA = os.getenv("TRINO_SCHEMA", "default")
 
+
 def get_classifier():
     """Lazy-load a zero-shot classifier."""
     global classifier
@@ -144,10 +147,13 @@ def get_classifier():
             "zero-shot-classification",
             model=CLASSIFICATION_MODEL,
             device=device,
-            hypothesis_text="Findings are {}"
+            hypothesis_text="Findings are {}",
         )
-        logger.info(f"Classifier loaded: {CLASSIFICATION_MODEL} on device: {'cuda' if device == 0 else 'cpu'}")
+        logger.info(
+            f"Classifier loaded: {CLASSIFICATION_MODEL} on device: {'cuda' if device == 0 else 'cpu'}"
+        )
     return classifier
+
 
 def get_trino_connection():
     """Create a Trino connection."""
@@ -157,8 +163,9 @@ def get_trino_connection():
         user=TRINO_USER,
         catalog=TRINO_CATALOG,
         schema=TRINO_SCHEMA,
-        http_scheme="http"
+        http_scheme="http",
     )
+
 
 def validate_sql_query(query: str) -> List[str]:
     """
@@ -169,9 +176,10 @@ def validate_sql_query(query: str) -> List[str]:
     missing = []
     for alias, column_expression in REQUIRED_COLUMNS.items():
         alias_name = alias.lower()
-        if not re.search(rf'\bas\s+{re.escape(alias_name)}\b', q):
+        if not re.search(rf"\bas\s+{re.escape(alias_name)}\b", q):
             missing.append(column_expression)
     return missing
+
 
 def parse_sql_error(error: Exception) -> str:
     """Parse SQL errors and return helpful messages."""
@@ -182,7 +190,9 @@ def parse_sql_error(error: Exception) -> str:
     elif "column" in el and ("not found" in el or "cannot be resolved" in el):
         m = re.search(r"column['\"]?\s*([^'\"\s]+)", es, re.IGNORECASE)
         col = m.group(1) if m else "unknown"
-        return (f"Column '{col}' not found. Check available columns. Original error: {es}")
+        return (
+            f"Column '{col}' not found. Check available columns. Original error: {es}"
+        )
     elif "syntax error" in el or "parse" in el:
         return f"SQL syntax error. Check string quoting and date formats. Original error: {es}"
     elif "permission" in el or "access denied" in el:
@@ -194,30 +204,40 @@ def parse_sql_error(error: Exception) -> str:
     else:
         return f"Query execution failed: {es}"
 
+
 def _wrap_with_limit(sql: str, limit: int) -> str:
     """If user forgot a LIMIT, wrap the query to enforce a max row cap."""
-    if re.search(r'\blimit\b\s+\d+', sql, re.IGNORECASE):
+    if re.search(r"\blimit\b\s+\d+", sql, re.IGNORECASE):
         return sql
     return f"SELECT * FROM ({sql}) __q__ LIMIT {limit}"
+
 
 # Pydantic models
 class DiagnosisSearchRequest(BaseModel):
     sql_query: str = Field(
         ...,
-        description="SQL query to execute against delta.default.reports. Must include aliases for all required columns."
+        description="SQL query to execute against delta.default.reports. Must include aliases for all required columns.",
     )
-    diagnosis: str = Field(..., description="Diagnosis term to classify (e.g. 'pulmonary embolism').")
+    diagnosis: str = Field(
+        ..., description="Diagnosis term to classify (e.g. 'pulmonary embolism')."
+    )
     classification_target: ClassificationTarget = Field(
         default=ClassificationTarget.ALL,
-        description="Which classifications to return: positive, negative, or all."
+        description="Which classifications to return: positive, negative, or all.",
     )
     confidence_threshold: float = Field(
         default=0.5,
-        ge=0.0, le=1.0,
-        description="Minimum confidence threshold for classification."
+        ge=0.0,
+        le=1.0,
+        description="Minimum confidence threshold for classification.",
     )
-    max_classify: Optional[int] = Field(default=None, description="Max number of rows to classify.")
-    return_limit: Optional[int] = Field(default=None, description="Max number of results to return.")
+    max_classify: Optional[int] = Field(
+        default=None, description="Max number of rows to classify."
+    )
+    return_limit: Optional[int] = Field(
+        default=None, description="Max number of results to return."
+    )
+
 
 class ReportResult(BaseModel):
     mrn: Optional[str]
@@ -234,6 +254,7 @@ class ReportResult(BaseModel):
     race: Optional[str]
     age: Optional[int]
 
+
 class DiagnosisSearchResponse(BaseModel):
     total_queried: int
     total_classified: int
@@ -245,17 +266,20 @@ class DiagnosisSearchResponse(BaseModel):
     statistics: Dict[str, Any]
     sql_executed: str
 
+
 class ErrorResponse(BaseModel):
     error: str
     error_type: str
     details: Optional[str]
     suggestion: Optional[str]
 
+
 class HealthCheckResponse(BaseModel):
     status: str
     trino_connected: bool
     classifier_loaded: bool
     trino_error: Optional[str] = None
+
 
 async def execute_trino_query(query: str) -> List[Dict]:
     """Execute a query against Trino and return results."""
@@ -308,23 +332,28 @@ async def execute_trino_query(query: str) -> List[Dict]:
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(executor, run_query)
 
+
 def extract_key_sections(text: str) -> str:
     """Extract IMPRESSION and FINDINGS sections if available, otherwise return truncated text."""
     if not text:
         return ""
 
     # Look for IMPRESSION or FINDINGS sections
-    impression_match = re.search(r'(?im)(impressions?|findings?)\s*:?\s*(.*?)(?=\n[A-Z]+\s*:|$)', text, re.DOTALL)
+    impression_match = re.search(
+        r"(?im)(impressions?|findings?)\s*:?\s*(.*?)(?=\n[A-Z]+\s*:|$)", text, re.DOTALL
+    )
     if impression_match:
         section_text = impression_match.group(2).strip()
-        return section_text[:MAX_TEXT_LENGTH] if section_text else text[:MAX_TEXT_LENGTH]
+        return (
+            section_text[:MAX_TEXT_LENGTH] if section_text else text[:MAX_TEXT_LENGTH]
+        )
 
     # If no sections found, return the last part of the text (most likely to contain conclusions)
     return text[-MAX_TEXT_LENGTH:]
 
+
 def should_include_result(
-    classification: str,
-    classification_target: ClassificationTarget
+    classification: str, classification_target: ClassificationTarget
 ) -> bool:
     """Filter results based on classification target."""
     if classification_target == ClassificationTarget.ALL:
@@ -335,13 +364,14 @@ def should_include_result(
         return "negative" in classification.lower()
     return False
 
+
 async def classify_reports_batch(
     reports: List[Dict],
     diagnosis: str,
     classification_target: ClassificationTarget,
     confidence_threshold: float,
     max_classify: Optional[int] = None,
-    return_limit: Optional[int] = None
+    return_limit: Optional[int] = None,
 ) -> List[ReportResult]:
     """Classify reports using simple zero-shot classification."""
     if not reports:
@@ -369,10 +399,7 @@ async def classify_reports_batch(
     logger.info(f"Classifying {len(texts)} reports for '{diagnosis}'...")
 
     # Define simple labels
-    labels = [
-        f"positive for {diagnosis}",
-        f"negative for {diagnosis}"
-    ]
+    labels = [f"positive for {diagnosis}", f"negative for {diagnosis}"]
 
     loop = asyncio.get_event_loop()
 
@@ -382,14 +409,10 @@ async def classify_reports_batch(
 
         # Process in batches for efficiency
         for i in range(0, len(texts), BATCH_SIZE):
-            batch = texts[i:i + BATCH_SIZE]
+            batch = texts[i : i + BATCH_SIZE]
             try:
                 # Use multi_label=False for exclusive classification
-                batch_results = clf(
-                    batch,
-                    candidate_labels=labels,
-                    multi_label=False
-                )
+                batch_results = clf(batch, candidate_labels=labels, multi_label=False)
                 # Ensure results is a list
                 if not isinstance(batch_results, list):
                     batch_results = [batch_results]
@@ -398,15 +421,14 @@ async def classify_reports_batch(
                 logger.error(f"Classification error: {e}")
                 # Add empty results for failed classifications
                 for _ in batch:
-                    results.append({
-                        "labels": labels,
-                        "scores": [0.0, 0.0]
-                    })
+                    results.append({"labels": labels, "scores": [0.0, 0.0]})
 
         return results
 
     classification_results = await loop.run_in_executor(executor, classify_batch)
-    logger.info(f"Classification complete. Processing {len(classification_results)} results")
+    logger.info(
+        f"Classification complete. Processing {len(classification_results)} results"
+    )
 
     final_results = []
     for idx, clf_result in zip(valid_indices, classification_results):
@@ -439,7 +461,7 @@ async def classify_reports_batch(
                 sending_facility=report.get("sending_facility"),
                 sex=report.get("sex"),
                 race=report.get("race"),
-                age=report.get("age")
+                age=report.get("age"),
             )
             final_results.append(result)
 
@@ -450,10 +472,16 @@ async def classify_reports_batch(
     logger.info(f"Returning {len(final_results)} results after filtering")
     return final_results
 
-@app.post("/search_diagnosis", response_model=DiagnosisSearchResponse, responses={
-    400: {"model": ErrorResponse, "description": "Bad Request"},
-    500: {"model": ErrorResponse, "description": "Internal Server Error"}
-}, operation_id="search_diagnosis_tool")
+
+@app.post(
+    "/search_diagnosis",
+    response_model=DiagnosisSearchResponse,
+    responses={
+        400: {"model": ErrorResponse, "description": "Bad Request"},
+        500: {"model": ErrorResponse, "description": "Internal Server Error"},
+    },
+    operation_id="search_diagnosis_tool",
+)
 async def search_diagnosis_tool(request: DiagnosisSearchRequest):
     """
     Execute a SQL query and classify radiology reports for a diagnosis.
@@ -473,8 +501,8 @@ async def search_diagnosis_tool(request: DiagnosisSearchRequest):
                     "error": str(e),
                     "error_type": "SQL_ERROR",
                     "details": "The SQL query failed to execute or is missing required columns.",
-                    "suggestion": "Check the SQL syntax and ensure all required column aliases are present."
-                }
+                    "suggestion": "Check the SQL syntax and ensure all required column aliases are present.",
+                },
             )
         except Exception as e:
             logger.error(f"Unexpected SQL error: {str(e)}")
@@ -484,8 +512,8 @@ async def search_diagnosis_tool(request: DiagnosisSearchRequest):
                     "error": str(e),
                     "error_type": "SQL_EXECUTION_ERROR",
                     "details": "The SQL query failed to execute.",
-                    "suggestion": "Check the SQL server connectivity and syntax."
-                }
+                    "suggestion": "Check the SQL server connectivity and syntax.",
+                },
             )
 
         logger.info(f"Query returned {len(reports)} reports")
@@ -500,7 +528,7 @@ async def search_diagnosis_tool(request: DiagnosisSearchRequest):
                 classification_target=request.classification_target.value,
                 results=[],
                 statistics={"message": "No reports found matching the SQL query"},
-                sql_executed=_wrap_with_limit(request.sql_query, ENFORCED_MAX_ROWS)
+                sql_executed=_wrap_with_limit(request.sql_query, ENFORCED_MAX_ROWS),
             )
 
         # Classify reports
@@ -512,7 +540,7 @@ async def search_diagnosis_tool(request: DiagnosisSearchRequest):
                 classification_target=request.classification_target,
                 confidence_threshold=request.confidence_threshold,
                 max_classify=request.max_classify,
-                return_limit=request.return_limit
+                return_limit=request.return_limit,
             )
         except Exception as e:
             logger.error(f"Classification error: {str(e)}")
@@ -522,16 +550,28 @@ async def search_diagnosis_tool(request: DiagnosisSearchRequest):
                     "error": str(e),
                     "error_type": "CLASSIFICATION_ERROR",
                     "details": "The classification process failed.",
-                    "suggestion": "Check model availability and logs."
-                }
+                    "suggestion": "Check model availability and logs.",
+                },
             )
 
-        total_classified = len(reports) if request.max_classify is None else min(request.max_classify, len(reports))
+        total_classified = (
+            len(reports)
+            if request.max_classify is None
+            else min(request.max_classify, len(reports))
+        )
 
         # Calculate statistics
-        positive_count = sum(1 for r in classified_results if "positive" in r.classification.lower())
-        negative_count = sum(1 for r in classified_results if "negative" in r.classification.lower())
-        avg_confidence = sum(r.confidence for r in classified_results) / len(classified_results) if classified_results else 0
+        positive_count = sum(
+            1 for r in classified_results if "positive" in r.classification.lower()
+        )
+        negative_count = sum(
+            1 for r in classified_results if "negative" in r.classification.lower()
+        )
+        avg_confidence = (
+            sum(r.confidence for r in classified_results) / len(classified_results)
+            if classified_results
+            else 0
+        )
 
         return DiagnosisSearchResponse(
             total_queried=len(reports),
@@ -546,9 +586,9 @@ async def search_diagnosis_tool(request: DiagnosisSearchRequest):
                 "model": CLASSIFICATION_MODEL,
                 "positive_count": positive_count,
                 "negative_count": negative_count,
-                "average_confidence": round(avg_confidence, 3)
+                "average_confidence": round(avg_confidence, 3),
             },
-            sql_executed=_wrap_with_limit(request.sql_query, ENFORCED_MAX_ROWS)
+            sql_executed=_wrap_with_limit(request.sql_query, ENFORCED_MAX_ROWS),
         )
 
     except HTTPException:
@@ -561,9 +601,10 @@ async def search_diagnosis_tool(request: DiagnosisSearchRequest):
                 "error": str(e),
                 "error_type": "UNEXPECTED_ERROR",
                 "details": "An unexpected error occurred.",
-                "suggestion": "Please check the logs or contact support."
-            }
+                "suggestion": "Please check the logs or contact support.",
+            },
         )
+
 
 @app.get("/health", response_model=HealthCheckResponse)
 async def health_check():
@@ -597,8 +638,9 @@ async def health_check():
         status=status,
         trino_connected=trino_connected,
         classifier_loaded=classifier_loaded,
-        trino_error=trino_error
+        trino_error=trino_error,
     )
+
 
 @app.get("/")
 async def meta():
@@ -610,15 +652,17 @@ async def meta():
         "endpoints": {
             "/search_diagnosis": "POST - Execute SQL & classify reports",
             "/health": "GET - Health check",
-            "/docs": "GET - OpenAPI documentation"
+            "/docs": "GET - OpenAPI documentation",
         },
         "classification_model": CLASSIFICATION_MODEL,
         "classification_targets": [ct.value for ct in ClassificationTarget],
         "required_sql_columns": list(REQUIRED_COLUMNS.values()),
         "schema": SCHEMA_DOC,
-        "sql_examples": SQL_EXAMPLES
+        "sql_examples": SQL_EXAMPLES,
     }
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

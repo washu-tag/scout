@@ -15,7 +15,7 @@
   tasks:
     - name: Create namespace
       kubernetes.core.k8s:
-        name: "{{ mcp_namespace }}"
+        name: '{{ mcp_namespace }}'
         api_version: v1
         kind: Namespace
         state: present
@@ -27,7 +27,7 @@
           kind: Deployment
           metadata:
             name: mcp-trino
-            namespace: "{{ mcp_namespace }}"
+            namespace: '{{ mcp_namespace }}'
           spec:
             replicas: 1
             selector:
@@ -36,21 +36,21 @@
             template:
               metadata:
                 labels:
-                  app: mcp-trino   # <-- must match Service selector
+                  app: mcp-trino # <-- must match Service selector
               spec:
                 containers:
                   - name: mcp-trino
-                    image: "{{ mcp_trino_image }}"
+                    image: '{{ mcp_trino_image }}'
                     imagePullPolicy: IfNotPresent
                     ports:
                       - containerPort: 8080
                     env:
                       - name: TRINO_HOST
-                        value: "{{ trino_host }}"
+                        value: '{{ trino_host }}'
                       - name: TRINO_PORT
-                        value: "{{ trino_port | string }}"
+                        value: '{{ trino_port | string }}'
                       - name: TRINO_SCHEME
-                        value: "{{ trino_scheme }}"
+                        value: '{{ trino_scheme }}'
                     readinessProbe:
                       httpGet:
                         path: /mcp
@@ -78,7 +78,7 @@
           kind: Service
           metadata:
             name: mcp-trino
-            namespace: "{{ mcp_namespace }}"
+            namespace: '{{ mcp_namespace }}'
           spec:
             selector:
               app: mcp-trino
@@ -94,7 +94,7 @@
           kind: Deployment
           metadata:
             name: mcpo-trino
-            namespace: "{{ mcp_namespace }}"
+            namespace: '{{ mcp_namespace }}'
           spec:
             replicas: 1
             selector:
@@ -108,7 +108,7 @@
                 initContainers:
                   - name: wait-for-mcp
                     image: curlimages/curl:8.8.0
-                    command: ["sh","-lc"]
+                    command: ['sh', '-lc']
                     args:
                       - >
                         echo "Waiting for mcp-trino service...";
@@ -118,19 +118,19 @@
                         echo "mcp-trino is up"
                 containers:
                   - name: mcpo-trino
-                    image: "{{ mcpo_image }}"
+                    image: '{{ mcpo_image }}'
                     imagePullPolicy: IfNotPresent
                     ports:
                       - containerPort: 8000
                     args:
-                      - "--host"
-                      - "0.0.0.0"
-                      - "--port"
-                      - "8000"
-                      - "--server-type"
-                      - "streamable-http"
-                      - "--"
-                      - "http://mcp-trino.{{ mcp_namespace }}.svc.cluster.local:8080/mcp"
+                      - '--host'
+                      - '0.0.0.0'
+                      - '--port'
+                      - '8000'
+                      - '--server-type'
+                      - 'streamable-http'
+                      - '--'
+                      - 'http://mcp-trino.{{ mcp_namespace }}.svc.cluster.local:8080/mcp'
                     readinessProbe:
                       httpGet:
                         path: /
@@ -158,7 +158,7 @@
           kind: Service
           metadata:
             name: mcpo-trino
-            namespace: "{{ mcp_namespace }}"
+            namespace: '{{ mcp_namespace }}'
           spec:
             selector:
               app: mcpo-trino
@@ -178,7 +178,7 @@
           spec:
             stripPrefix:
               prefixes:
-                - "{{ ingress_path }}"
+                - '{{ ingress_path }}'
 
     - name: Create ServersTransport for MCPO (per-upstream timeouts)
       kubernetes.core.k8s:
@@ -202,7 +202,7 @@
           kind: Ingress
           metadata:
             name: mcpo-trino-ingress
-            namespace: "{{ mcp_namespace }}"
+            namespace: '{{ mcp_namespace }}'
             annotations:
               traefik.ingress.kubernetes.io/router.middlewares: kube-system-mcpo-strip-prefix@kubernetescrd
               traefik.ingress.kubernetes.io/service.serverstransport: kube-system-mcpo-timeouts@kubernetescrd
@@ -225,7 +225,7 @@
       kubernetes.core.k8s_info:
         api_version: apps/v1
         kind: Deployment
-        namespace: "{{ mcp_namespace }}"
+        namespace: '{{ mcp_namespace }}'
         name: mcp-trino
       register: mcp_trino_dep
       until: mcp_trino_dep.resources | length > 0 and (mcp_trino_dep.resources[0].status.readyReplicas | default(0)) | int >= 1
@@ -236,7 +236,7 @@
       kubernetes.core.k8s_info:
         api_version: apps/v1
         kind: Deployment
-        namespace: "{{ mcp_namespace }}"
+        namespace: '{{ mcp_namespace }}'
         name: mcpo-trino
       register: mcpo_trino_dep
       until: mcpo_trino_dep.resources | length > 0 and (mcpo_trino_dep.resources[0].status.readyReplicas | default(0)) | int >= 1
