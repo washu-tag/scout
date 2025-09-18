@@ -18,6 +18,8 @@
     - vars/postgres_storage.yaml
   pre_tasks:
     - name: Find all SQL initialization files
+      delegate_to: localhost
+      run_once: true
       ansible.builtin.find:
         paths: '{{ playbook_dir }}/templates/postgres_init'
         patterns: '*_init_sql.yaml'
