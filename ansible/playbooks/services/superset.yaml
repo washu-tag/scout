@@ -61,6 +61,9 @@
       image:
         repository: '{{ superset_image | default("ghcr.io/washu-tag/superset") }}'
         tag: 4.1.2
+      redis:
+        image:
+          repository: bitnamilegacy/redis
       extraSecretEnv:
         SUPERSET_SECRET_KEY: '{{ superset_secret }}'
       ingress:
