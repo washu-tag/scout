@@ -104,6 +104,8 @@ singleuser:
       - name: spark-defaults
         mountPath: /usr/local/spark/conf/spark-defaults.conf
         subPath: spark-defaults.conf
+  extraEnv:
+    JUPYTERHUB_ALLOW_TOKEN_IN_URL: "1"
   extraContainers:
     - name: jupyter-mcp
       image: datalayer/jupyter-mcp-server:latest
@@ -113,8 +115,6 @@ singleuser:
       args:
         - |
           set -euo pipefail
-
-          # Build /user/<username>[/<server>]
           SERVICE_PREFIX="/user/$HUB_USERNAME"
           if [ -n "$SERVER_NAME" ]; then
             SERVICE_PREFIX="$SERVICE_PREFIX/$SERVER_NAME"
@@ -190,5 +190,4 @@ singleuser:
               matchLabels:
                 kubernetes.io/metadata.name: 'jupyter'
         ports:
-          - port: 8081
           - port: 80
