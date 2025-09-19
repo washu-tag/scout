@@ -111,9 +111,7 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
             if (!isUserValid(user, event, realm)) {
                 return;
             }
-            Map<String, Object> bodyAttributes = new java.util.HashMap<>();
-            bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_USERNAME, user.getUsername());
-            getScoutUrl().ifPresent(url -> bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_SCOUT_URL, url));
+            Map<String, Object> bodyAttributes = createBodyAttributes(user);
 
             sendUserPendingApprovalEmail(sess, realm, user, bodyAttributes);
             sendAdminApprovalEmail(session, realm, bodyAttributes, user);
@@ -142,10 +140,7 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
                 log.warnf("User %s not found in realm %s. Unable to check scout-user group membership.", username, realm.getName());
                 return;
             }
-            Map<String, Object> bodyAttributes = new java.util.HashMap<>();
-            bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_USERNAME, user.getUsername());
-            
-            getScoutUrl().ifPresent(url -> bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_SCOUT_URL, url));
+            Map<String, Object> bodyAttributes = createBodyAttributes(user);
 
             if (event.getOperationType() == OperationType.CREATE) {
                 sendUserEnabledEmail(sess, realm, user, bodyAttributes);
@@ -244,6 +239,13 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
         }
 
         return Optional.of(scoutUrl);
+    }
+
+    private Map<String, Object> createBodyAttributes(UserModel user) {
+        Map<String, Object> bodyAttributes = new java.util.HashMap<>();
+        bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_USERNAME, user.getUsername());
+        getScoutUrl().ifPresent(url -> bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_SCOUT_URL, url));
+        return bodyAttributes;
     }
 
 }
