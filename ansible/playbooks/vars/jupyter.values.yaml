@@ -76,6 +76,7 @@ singleuser:
             {% raw %}
             FLAG_FILE=/home/${NB_USER}/.scout_quickstart
             if [ ! -f $FLAG_FILE ]; then
+              touch /home/${NB_USER}/notebook.ipynb
               mkdir -p /home/${NB_USER}/Scout &&
               cp -r /opt/scout/samples/* /home/${NB_USER}/Scout/ &&
               chown -R ${NB_USER}:${NB_GID} /home/${NB_USER}/Scout &&
@@ -111,16 +112,16 @@ singleuser:
       command: ['/bin/sh', '-lc']
       args:
         - |
-          set -e
-          # Build the service prefix /user/<username>[/<server>]/ correctly.
+          set -euo pipefail
+
+          # Build /user/<username>[/<server>]
           SERVICE_PREFIX="/user/$HUB_USERNAME"
           if [ -n "$SERVER_NAME" ]; then
             SERVICE_PREFIX="$SERVICE_PREFIX/$SERVER_NAME"
           fi
 
-          # IMPORTANT: talk to the Hub's proxy inside the cluster so Hub tokens work.
-          # JupyterHub baseUrl is /jupyter, so prepend it here.
-          HUB_BASE="http://proxy-public.jupyter"
+          # Talk to the Hub's public proxy *inside the cluster*,
+          HUB_BASE="http://proxy-public.jupyter.svc.cluster.local"
           BASE="$HUB_BASE/jupyter$SERVICE_PREFIX"
 
           exec jupyter-mcp-server start \
