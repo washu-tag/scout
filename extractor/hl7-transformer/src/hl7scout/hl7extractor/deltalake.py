@@ -22,6 +22,14 @@ import tempfile
 import zipfile
 
 
+suffixes = {
+    "addendum": ["ADT", "ADN"],
+    "findings": ["GDT"],
+    "impression": ["IMP"],
+    "technician_note": ["TCM"],
+}
+
+
 def parse_s3_zip_paths(hl7_file_paths: list[str]) -> dict[str, list[str]]:
     """Parse S3 zip paths into a dictionary mapping zip files to their contents."""
     zip_map = defaultdict(list)
@@ -44,6 +52,18 @@ def download_and_extract_zips(zip_map, local_dir):
                 z.extract(hl7_file, local_dir)
                 extracted_files.append((out_path, f"{s3_zip_path}/{hl7_file}"))
     return extracted_files
+
+
+def extract_observation_id_suffix_content(column, suffix_list):
+    return F.concat_ws(
+        "\n",
+        F.collect_list(
+            F.when(
+                F.split(F.col("obx-3"), "&").getItem(1).isin(suffix_list),
+                F.col("obx-5"),
+            )
+        ),
+    ).alias(f"report_section_{column.lower()}")
 
 
 def import_hl7_files_to_deltalake(
@@ -156,6 +176,8 @@ def import_hl7_files_to_deltalake(
                         ("pid", 11, (5, 6)),
                         ("obr", 4, (1, 2, 3)),
                         ("dg1", 3, (1, 2, 3)),
+                        ("obr", 32, (2, 3)),
+                        ("obr", 33, (2, 3)),
                     )
                     for component in components
                 ],
@@ -225,6 +247,7 @@ def import_hl7_files_to_deltalake(
                 )
                 # Other data types are a single line as the value
                 .otherwise(F.col("obx").getItem(4)).alias("obx-5"),
+                F.col("obx").getItem(2).alias("obx-3"),
                 F.col("obx").getItem(10).alias("obx-11"),
             )
             .groupby("source_file")
@@ -233,6 +256,10 @@ def import_hl7_files_to_deltalake(
                 F.concat_ws("\n", F.collect_list("obx-5")).alias("report_text"),
                 # Assume report statuses are the same, pick first
                 F.first("obx-11").alias("report_status"),
+                *[
+                    extract_observation_id_suffix_content(column, suffix_list)
+                    for column, suffix_list in suffixes.items()
+                ],
             )
         )
 
@@ -320,6 +347,17 @@ def import_hl7_files_to_deltalake(
                 F.col("obr-4-2").alias("service_name"),
                 F.col("obr-4-3").alias("service_coding_system"),
                 F.col("obr-24").alias("diagnostic_service_id"),
+                F.when(
+                    (F.length(F.col("obr-32-2")) > 0)
+                    & (F.length(F.col("obr-32-3")) > 0),
+                    F.concat(F.col("obr-32-3"), F.lit(" "), F.col("obr-32-2")),
+                )
+                .when(
+                    (F.length(F.col("obr-33-2")) > 0)
+                    & (F.length(F.col("obr-33-3")) > 0),
+                    F.concat(F.col("obr-33-3"), F.lit(" "), F.col("obr-33-2")),
+                )
+                .alias("primary_radiologist"),
                 F.col("dg1-3-1").alias("diagnosis_code"),
                 F.col("dg1-3-2").alias("diagnosis_code_text"),
                 F.col("dg1-3-3").alias("diagnosis_code_coding_scheme"),
