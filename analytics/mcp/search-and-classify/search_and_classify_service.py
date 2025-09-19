@@ -531,7 +531,7 @@ async def search_diagnosis_tool(request: DiagnosisSearchRequest):
                 reports=reports,
                 diagnosis=request.diagnosis,
                 classification_target=request.classification_target,
-                confidence_threshold=request.confidence_threshold
+                confidence_threshold=request.confidence_threshold,
             )
         except Exception as e:
             logger.error(f"Classification error: {str(e)}")
