@@ -2,9 +2,10 @@ FROM python:3.11-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    HF_HOME=/app/models
 
-# System deps for wheels that use native bits (usually manylinux wheels suffice, this is light)
+# System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
       gcc curl tini \
     && rm -rf /var/lib/apt/lists/*
@@ -17,6 +18,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
       "transformers>=4.41,<4.46" \
       "torch>=2.3,<2.5"
 
+# Pre-download the model
+RUN python -c "from transformers import pipeline; pipeline('zero-shot-classification', model='facebook/bart-large-mnli')"
+
 # Create non-root user
 RUN useradd -m -u 10001 appuser
 
@@ -25,8 +29,8 @@ WORKDIR /app
 # Copy app
 COPY search_and_classify_service.py /app/search_and_classify_service.py
 
-# Optional: pre-create a cache dir in case you want to mount a PVC for models
-RUN mkdir -p /app/models && chown -R appuser:appuser /app
+# Change ownership of model cache
+RUN chown -R appuser:appuser /app
 
 USER appuser
 

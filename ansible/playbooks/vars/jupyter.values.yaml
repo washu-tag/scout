@@ -77,6 +77,7 @@ singleuser:
             FLAG_FILE=/home/${NB_USER}/.scout_quickstart
             if [ ! -f $FLAG_FILE ]; then
               touch /home/${NB_USER}/notebook.ipynb
+              mkdir -p /home/${NB_USER}/models
               mkdir -p /home/${NB_USER}/Scout &&
               cp -r /opt/scout/samples/* /home/${NB_USER}/Scout/ &&
               chown -R ${NB_USER}:${NB_GID} /home/${NB_USER}/Scout &&
@@ -105,7 +106,8 @@ singleuser:
         mountPath: /usr/local/spark/conf/spark-defaults.conf
         subPath: spark-defaults.conf
   extraEnv:
-    JUPYTERHUB_ALLOW_TOKEN_IN_URL: "1"
+    JUPYTERHUB_ALLOW_TOKEN_IN_URL: '1'
+    HF_HOME: '/home/jovyan/models'
   extraContainers:
     - name: jupyter-mcp
       image: datalayer/jupyter-mcp-server:latest

@@ -32,7 +32,6 @@ app.add_middleware(
 )
 
 # ---------- Classification config ----------
-# Using facebook/bart-large-mnli for better performance and simplicity
 CLASSIFICATION_MODEL = os.getenv("CLASSIFICATION_MODEL", "facebook/bart-large-mnli")
 CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.5"))
 MAX_TEXT_LENGTH = int(os.getenv("MAX_TEXT_LENGTH", "1024"))
@@ -231,12 +230,6 @@ class DiagnosisSearchRequest(BaseModel):
         le=1.0,
         description="Minimum confidence threshold for classification.",
     )
-    max_classify: Optional[int] = Field(
-        default=None, description="Max number of rows to classify."
-    )
-    return_limit: Optional[int] = Field(
-        default=None, description="Max number of results to return."
-    )
 
 
 class ReportResult(BaseModel):
@@ -370,8 +363,8 @@ async def classify_reports_batch(
     diagnosis: str,
     classification_target: ClassificationTarget,
     confidence_threshold: float,
-    max_classify: Optional[int] = None,
-    return_limit: Optional[int] = None,
+    max_classify: Optional[int] = 10,
+    return_limit: Optional[int] = 10,
 ) -> List[ReportResult]:
     """Classify reports using simple zero-shot classification."""
     if not reports:
@@ -538,9 +531,7 @@ async def search_diagnosis_tool(request: DiagnosisSearchRequest):
                 reports=reports,
                 diagnosis=request.diagnosis,
                 classification_target=request.classification_target,
-                confidence_threshold=request.confidence_threshold,
-                max_classify=request.max_classify,
-                return_limit=request.return_limit,
+                confidence_threshold=request.confidence_threshold
             )
         except Exception as e:
             logger.error(f"Classification error: {str(e)}")
@@ -554,11 +545,7 @@ async def search_diagnosis_tool(request: DiagnosisSearchRequest):
                 },
             )
 
-        total_classified = (
-            len(reports)
-            if request.max_classify is None
-            else min(request.max_classify, len(reports))
-        )
+        total_classified = len(reports)
 
         # Calculate statistics
         positive_count = sum(
