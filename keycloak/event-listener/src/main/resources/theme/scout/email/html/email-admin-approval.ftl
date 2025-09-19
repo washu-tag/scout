@@ -1,4 +1,4 @@
 <#import "template.ftl" as layout>
 <@layout.emailLayout>
-${kcSanitize(msg("emailAdminApprovalBodyHtml", username))?no_esc}
+<p>User <strong>${username}</strong> has requested access to Scout. Please <a href="${scoutUrl}">log in to Scout</a> to enable their account.</p>
 </@layout.emailLayout>

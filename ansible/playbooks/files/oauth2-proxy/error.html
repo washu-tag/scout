@@ -98,6 +98,12 @@
       color: #eee;
       text-decoration: underline;
     }
+
+    .scout-link {
+      color: #254470;
+      text-decoration: underline;
+      font-weight: 500;
+    }
   </style>
 
   <script>
@@ -119,8 +125,14 @@
       <p>
         Thank you for your interest in Scout! Your account is currently pending approval. You'll receive an email once your access has been granted.
       </p>
-       <p>
-        In the meantime, you can visit our <a href="https://washu-scout.readthedocs.io/en/latest/" target="_blank">documentation</a> to learn more.
+      <p>
+        In the meantime, you can:
+      </p>
+      <p>
+        <a href="https://washu-scout.readthedocs.io/en/latest/" class="scout-link">Visit our documentation</a>
+      </p>
+      <p>
+        <a href="/" class="scout-link">Return to Scout</a>
       </p>
     {{ else }}
         {{ if or .Message .RequestID }}

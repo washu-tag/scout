@@ -3,6 +3,7 @@ package edu.washu.tag.keycloak.events;
 import static org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction;
 
 import java.util.Map;
+import java.util.Optional;
 import org.jboss.logging.Logger;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.EmailSenderProvider;
@@ -37,7 +38,10 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     private final EventListenerTransaction tx = new EventListenerTransaction(this::sendEmail, this::sendEmail);
     private final KeycloakSessionFactory sessionFactory;
     private static final String SCOUT_USER_GROUP = "scout-user";
-
+    private static final String EMAIL_TEMPLATE_PARAMETER_USERNAME = "username";
+    private static final String EMAIL_TEMPLATE_PARAMETER_SCOUT_URL = "scoutUrl";
+    private static final String ENV_SCOUT_URL = "KC_SCOUT_URL";
+    
     /**
      * Constructor for UserApprovalEmailEventListenerProvider.
      *
@@ -107,8 +111,7 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
             if (!isUserValid(user, event, realm)) {
                 return;
             }
-            Map<String, Object> bodyAttributes = new java.util.HashMap<>();
-            bodyAttributes.put("username", user.getUsername());
+            Map<String, Object> bodyAttributes = createBodyAttributes(user);
 
             sendUserPendingApprovalEmail(sess, realm, user, bodyAttributes);
             sendAdminApprovalEmail(session, realm, bodyAttributes, user);
@@ -137,10 +140,12 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
                 log.warnf("User %s not found in realm %s. Unable to check scout-user group membership.", username, realm.getName());
                 return;
             }
+            Map<String, Object> bodyAttributes = createBodyAttributes(user);
+
             if (event.getOperationType() == OperationType.CREATE) {
-                sendUserEnabledEmail(sess, realm, user);
+                sendUserEnabledEmail(sess, realm, user, bodyAttributes);
             } else if (event.getOperationType() == OperationType.DELETE) {
-                sendUserDisabledEmail(sess, realm, user);
+                sendUserDisabledEmail(sess, realm, user, bodyAttributes);
             }
         });
     }
@@ -195,13 +200,12 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
         }
     }
 
-    private void sendUserEnabledEmail(KeycloakSession session, RealmModel realm, UserModel user) {
+    private void sendUserEnabledEmail(KeycloakSession session, RealmModel realm, UserModel user, Map<String, Object> bodyAttributes) {
         try {
             EmailTemplateProvider emailTemplateProvider = session.getProvider(EmailTemplateProvider.class);
             emailTemplateProvider.setRealm(realm).setUser(user);
             String subject = "Welcome to Scout";
             String bodyTemplate = "email-user-enabled.ftl";
-            Map<String, Object> bodyAttributes = new java.util.HashMap<>();
             emailTemplateProvider.send(subject, bodyTemplate, bodyAttributes);
             log.infof("Approval email sent to user: %s, email: %s", user.getUsername(), user.getEmail());
         } catch (EmailException e) {
@@ -209,18 +213,39 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
         }
     }
 
-    private void sendUserDisabledEmail(KeycloakSession session, RealmModel realm, UserModel user) {
+    private void sendUserDisabledEmail(KeycloakSession session, RealmModel realm, UserModel user, Map<String, Object> bodyAttributes) {
         try {
             EmailTemplateProvider emailTemplateProvider = session.getProvider(EmailTemplateProvider.class);
             emailTemplateProvider.setRealm(realm).setUser(user);
             String subject = "Scout Account Disabled";
             String bodyTemplate = "email-user-disabled.ftl";
-            Map<String, Object> bodyAttributes = new java.util.HashMap<>();
             emailTemplateProvider.send(subject, bodyTemplate, bodyAttributes);
             log.infof("Disabled email sent to user: %s, email: %s", user.getUsername(), user.getEmail());
         } catch (EmailException e) {
             log.errorf("Failed to send user disabled email for user: %s, email: %s", user.getUsername(), user.getEmail(), e);
         }
+    }
+
+    private Optional<String> getScoutUrl() {
+        String scoutUrl = System.getenv(ENV_SCOUT_URL);
+        
+        if (scoutUrl == null || scoutUrl.isEmpty()) {
+            log.errorf("%s environment variable is not set. Unable to find Scout URL for emails.", ENV_SCOUT_URL);
+            return Optional.empty();
+        }
+
+        if (!scoutUrl.startsWith("http://") && !scoutUrl.startsWith("https://")) {
+            scoutUrl = "https://" + scoutUrl;
+        }
+
+        return Optional.of(scoutUrl);
+    }
+
+    private Map<String, Object> createBodyAttributes(UserModel user) {
+        Map<String, Object> bodyAttributes = new java.util.HashMap<>();
+        bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_USERNAME, user.getUsername());
+        getScoutUrl().ifPresent(url -> bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_SCOUT_URL, url));
+        return bodyAttributes;
     }
 
 }
