@@ -12,7 +12,7 @@ repositories {
         url 'https://maven.dcm4che.org/'
     }
     maven {
-        url 'https://raw.github.com/nroduit/mvn-repo/master/' // needed for dcm4che
+        url 'https://raw.githubusercontent.com/nroduit/mvn-repo/master/' // needed for dcm4che
     }
     maven {
         url 'https://nrgxnat.jfrog.io/nrgxnat/libs-release'
