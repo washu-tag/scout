@@ -38,7 +38,10 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     private final EventListenerTransaction tx = new EventListenerTransaction(this::sendEmail, this::sendEmail);
     private final KeycloakSessionFactory sessionFactory;
     private static final String SCOUT_USER_GROUP = "scout-user";
-
+    private static final String EMAIL_TEMPLATE_PARAMETER_USERNAME = "username";
+    private static final String EMAIL_TEMPLATE_PARAMETER_SCOUT_URL = "scoutUrl";
+    private static final String ENV_SCOUT_URL = "KC_SCOUT_URL";
+    
     /**
      * Constructor for UserApprovalEmailEventListenerProvider.
      *
@@ -109,9 +112,8 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
                 return;
             }
             Map<String, Object> bodyAttributes = new java.util.HashMap<>();
-            bodyAttributes.put("username", user.getUsername());
-
-            getScoutUrl().ifPresent(url -> bodyAttributes.put("scoutUrl", url));
+            bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_USERNAME, user.getUsername());
+            getScoutUrl().ifPresent(url -> bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_SCOUT_URL, url));
 
             sendUserPendingApprovalEmail(sess, realm, user, bodyAttributes);
             sendAdminApprovalEmail(session, realm, bodyAttributes, user);
@@ -140,9 +142,10 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
                 log.warnf("User %s not found in realm %s. Unable to check scout-user group membership.", username, realm.getName());
                 return;
             }
-
             Map<String, Object> bodyAttributes = new java.util.HashMap<>();
-            getScoutUrl().ifPresent(url -> bodyAttributes.put("scoutUrl", url));
+            bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_USERNAME, user.getUsername());
+            
+            getScoutUrl().ifPresent(url -> bodyAttributes.put(EMAIL_TEMPLATE_PARAMETER_SCOUT_URL, url));
 
             if (event.getOperationType() == OperationType.CREATE) {
                 sendUserEnabledEmail(sess, realm, user, bodyAttributes);
@@ -229,10 +232,10 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     }
 
     private Optional<String> getScoutUrl() {
-        String scoutUrl = System.getenv("KC_SCOUT_URL");
+        String scoutUrl = System.getenv(ENV_SCOUT_URL);
         
         if (scoutUrl == null || scoutUrl.isEmpty()) {
-            log.error("KC_SCOUT_URL environment variable is not set. Unable to find Scout URL for emails.");
+            log.errorf("%s environment variable is not set. Unable to find Scout URL for emails.", ENV_SCOUT_URL);
             return Optional.empty();
         }
 
