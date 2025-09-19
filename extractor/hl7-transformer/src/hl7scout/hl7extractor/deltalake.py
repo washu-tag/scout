@@ -22,7 +22,12 @@ import tempfile
 import zipfile
 
 
-suffixes = ["ADT", "GDT", "IMP", "TCM"]
+suffixes = {
+    "addendum": ["ADT", "ADN"],
+    "findings": ["GDT"],
+    "impression": ["IMP"],
+    "technician_note": ["TCM"],
+}
 
 
 def parse_s3_zip_paths(hl7_file_paths: list[str]) -> dict[str, list[str]]:
@@ -49,13 +54,16 @@ def download_and_extract_zips(zip_map, local_dir):
     return extracted_files
 
 
-def extract_observation_id_suffix_content(suffix):
+def extract_observation_id_suffix_content(column, suffix_list):
     return F.concat_ws(
         "\n",
         F.collect_list(
-            F.when(F.split(F.col("obx-3"), "&").getItem(1) == suffix, F.col("obx-5"))
+            F.when(
+                F.split(F.col("obx-3"), "&").getItem(1).isin(suffix_list),
+                F.col("obx-5"),
+            )
         ),
-    ).alias(f"report_section_{suffix.lower()}")
+    ).alias(f"report_section_{column.lower()}")
 
 
 def import_hl7_files_to_deltalake(
@@ -248,7 +256,10 @@ def import_hl7_files_to_deltalake(
                 F.concat_ws("\n", F.collect_list("obx-5")).alias("report_text"),
                 # Assume report statuses are the same, pick first
                 F.first("obx-11").alias("report_status"),
-                *[extract_observation_id_suffix_content(suffix) for suffix in suffixes],
+                *[
+                    extract_observation_id_suffix_content(column, suffix_list)
+                    for column, suffix_list in suffixes.items()
+                ],
             )
         )
 
