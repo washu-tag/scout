@@ -61,8 +61,6 @@
                 labels:
                   app: search-and-classify
               spec:
-                nodeSelector:
-                  kubernetes.io/hostname: 'tagdev-big-04.nrg.wustl.edu'
                 containers:
                   - name: api
                     image: '{{ sc_image }}'
@@ -110,6 +108,7 @@
                       limits:
                         cpu: '{{ sc_limits.cpu }}'
                         memory: '{{ sc_limits.memory }}'
+                        nvidia.com/gpu: '1'
                     securityContext:
                       allowPrivilegeEscalation: false
                       readOnlyRootFilesystem: false

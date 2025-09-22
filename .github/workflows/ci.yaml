@@ -15,20 +15,20 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4.2.1
-      - uses: actions/setup-python@v5.2.0
-        with:
-          python-version: '3.12'
-      - uses: actions/setup-java@v4
-        with:
-          distribution: ${{ ENV.JAVA_DIST }}
-          java-version: ${{ ENV.JAVA_VERSION }}
-      - uses: pre-commit/action@v3.0.1
+#  lint:
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: read
+#    steps:
+#      - uses: actions/checkout@v4.2.1
+#      - uses: actions/setup-python@v5.2.0
+#        with:
+#          python-version: '3.12'
+#      - uses: actions/setup-java@v4
+#        with:
+#          distribution: ${{ ENV.JAVA_DIST }}
+#          java-version: ${{ ENV.JAVA_VERSION }}
+#      - uses: pre-commit/action@v3.0.1
 #  build-and-upload-hl7log-extractor:
 #    runs-on: ubuntu-latest
 #    permissions:
@@ -55,19 +55,19 @@ jobs:
 #        with:
 #          subproject: extractor/hl7-transformer
 #          image-name: hl7-transformer
-  build-and-upload-pyspark-notebook:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      attestations: write
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4.2.1
-      - name: 'Build/Cache Image - pyspark-notebook'
-        uses: ./.github/actions/docker-build-cache
-        with:
-          subproject: helm/jupyter/notebook
-          image-name: pyspark-notebook
+#  build-and-upload-pyspark-notebook:
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: read
+#      attestations: write
+#      id-token: write
+#    steps:
+#      - uses: actions/checkout@v4.2.1
+#      - name: 'Build/Cache Image - pyspark-notebook'
+#        uses: ./.github/actions/docker-build-cache
+#        with:
+#          subproject: helm/jupyter/notebook
+#          image-name: pyspark-notebook
 #  build-and-upload-explorer:
 #    runs-on: ubuntu-latest
 #    permissions:
@@ -256,7 +256,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    needs: [build-and-upload-pyspark-notebook, build-and-upload-search-and-classify-mcp]
+    needs: [build-and-upload-search-and-classify-mcp]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
@@ -266,10 +266,6 @@ jobs:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: 'Push Image - pyspark-notebook'
-        uses: ./.github/actions/docker-push
-        with:
-          image-name: pyspark-notebook
       - name: 'Push Image - search-and-classify'
         uses: ./.github/actions/docker-push
         with:
