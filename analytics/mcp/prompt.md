@@ -134,7 +134,7 @@ LIMIT 50;
 ### A1 — **Code‑first diagnosis cohorts (NEW, preferred)**
 
 **Mapping (concept → codes):** Use your medical knowledge to select appropriate code families in the dataset’s scheme.
-*Examples:* If the scheme is ICD‑10‑CM and the concept is pulmonary embolism, select `I26` family (prefix anchored). For SNOMED CT, use the canonical concept code(s) and known descendants; if multiple mutually exclusive families exist, surface them and prefer the more specific family. Avoid obvious non‑active codes when the task requires active disease (e.g., **exclude** “history of”/“screening” families unless requested).
+*Examples:* If the scheme is ICD‑10‑CM and the concept is pulmonary embolism, select `I26` family (prefix anchored). Avoid obvious non‑active codes when the task requires active disease (e.g., **exclude** “history of”/“screening” families unless requested).
 
 **Stage A — cohort COUNT (dedup join pattern; code filters first):**
 
@@ -225,7 +225,7 @@ LIMIT 10
 **Zero‑results / imbalance backoff (in order):**
 
 1. Expand code family (include subcodes/descendants); add alternative families for the same concept.
-2. Allow multiple schemes if present (e.g., include SNOMED + ICD‑10).
+2. Allow multiple schemes if present (e.g., include ICD-9 + ICD‑10).
 3. Use `diagnosis_code_text` contains/regex as an auxiliary filter.
 4. Relax exam/site/time, widen the time window or use `year` partition sweep.
 5. **Only then** consider Path A2 (keywords) or escalate to **Path B**.

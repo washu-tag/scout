@@ -7,7 +7,7 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   vars:
-    sc_image: local/search-and-classify:1.1.0
+    sc_image: ghcr.io/washu-tag/search-and-classify:demo-20250825.3
     sc_replicas: 1
     ingress_path: /search-classify
 

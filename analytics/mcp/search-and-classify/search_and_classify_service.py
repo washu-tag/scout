@@ -363,8 +363,8 @@ async def classify_reports_batch(
     diagnosis: str,
     classification_target: ClassificationTarget,
     confidence_threshold: float,
-    max_classify: Optional[int] = 10,
-    return_limit: Optional[int] = 10,
+    max_classify: Optional[int] = 100,
+    return_limit: Optional[int] = 100,
 ) -> List[ReportResult]:
     """Classify reports using simple zero-shot classification."""
     if not reports:

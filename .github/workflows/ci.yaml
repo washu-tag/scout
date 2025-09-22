@@ -29,32 +29,32 @@ jobs:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
       - uses: pre-commit/action@v3.0.1
-  build-and-upload-hl7log-extractor:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      attestations: write
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4.2.1
-      - name: 'Build/Cache Image - hl7log-extractor'
-        uses: ./.github/actions/docker-build-cache
-        with:
-          subproject: extractor/hl7log-extractor
-          image-name: hl7log-extractor
-  build-and-upload-hl7-transformer:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      attestations: write
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4.2.1
-      - name: 'Build/Cache Image - hl7-transformer'
-        uses: ./.github/actions/docker-build-cache
-        with:
-          subproject: extractor/hl7-transformer
-          image-name: hl7-transformer
+#  build-and-upload-hl7log-extractor:
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: read
+#      attestations: write
+#      id-token: write
+#    steps:
+#      - uses: actions/checkout@v4.2.1
+#      - name: 'Build/Cache Image - hl7log-extractor'
+#        uses: ./.github/actions/docker-build-cache
+#        with:
+#          subproject: extractor/hl7log-extractor
+#          image-name: hl7log-extractor
+#  build-and-upload-hl7-transformer:
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: read
+#      attestations: write
+#      id-token: write
+#    steps:
+#      - uses: actions/checkout@v4.2.1
+#      - name: 'Build/Cache Image - hl7-transformer'
+#        uses: ./.github/actions/docker-build-cache
+#        with:
+#          subproject: extractor/hl7-transformer
+#          image-name: hl7-transformer
   build-and-upload-pyspark-notebook:
     runs-on: ubuntu-latest
     permissions:
@@ -68,7 +68,33 @@ jobs:
         with:
           subproject: helm/jupyter/notebook
           image-name: pyspark-notebook
-  build-and-upload-explorer:
+#  build-and-upload-explorer:
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: read
+#      attestations: write
+#      id-token: write
+#    steps:
+#      - uses: actions/checkout@v4.2.1
+#      - name: 'Build/Cache Image - explorer'
+#        uses: ./.github/actions/docker-build-cache
+#        with:
+#          subproject: explorer
+#          image-name: explorer
+#  build-and-upload-superset:
+#    runs-on: ubuntu-latest
+#    permissions:
+#      contents: read
+#      attestations: write
+#      id-token: write
+#    steps:
+#      - uses: actions/checkout@v4.2.1
+#      - name: 'Build/Cache Image - superset'
+#        uses: ./.github/actions/docker-build-cache
+#        with:
+#          subproject: helm/superset
+#          image-name: superset
+  build-and-upload-search-and-classify-mcp:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -76,24 +102,11 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4.2.1
-      - name: 'Build/Cache Image - explorer'
+      - name: 'Build/Cache Image - search-and-classify'
         uses: ./.github/actions/docker-build-cache
         with:
-          subproject: explorer
-          image-name: explorer
-  build-and-upload-superset:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      attestations: write
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4.2.1
-      - name: 'Build/Cache Image - superset'
-        uses: ./.github/actions/docker-build-cache
-        with:
-          subproject: helm/superset
-          image-name: superset
+          subproject: analytics/mcp/search-and-classify
+          image-name: search-and-classify
   unit-test:
     runs-on: ubuntu-latest
     permissions:
@@ -243,7 +256,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    needs: [build-and-upload-pyspark-notebook]
+    needs: [build-and-upload-pyspark-notebook, build-and-upload-search-and-classify-mcp]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
@@ -257,3 +270,7 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: pyspark-notebook
+      - name: 'Push Image - search-and-classify'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: search-and-classify
