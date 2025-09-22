@@ -422,7 +422,7 @@ async def classify_reports_batch(
                 accession_number=report.get("accession_number"),
                 modality=report.get("modality"),
                 service_name=report.get("service_name"),
-                event_date=report.get("event_date"),
+                event_date=str(report.get("event_date")),
                 classification=classification,
                 confidence=float(top_score),
                 confidence_scores=label_scores,
