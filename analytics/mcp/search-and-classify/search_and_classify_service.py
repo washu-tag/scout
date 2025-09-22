@@ -34,6 +34,7 @@ app.add_middleware(
 # ---------- Classification config ----------
 CLASSIFICATION_MODEL = os.getenv("CLASSIFICATION_MODEL", "facebook/bart-large-mnli")
 CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.5"))
+MAX_CLASSIFY = int(os.getenv("MAX_CLASSIFY", "100"))
 MAX_TEXT_LENGTH = int(os.getenv("MAX_TEXT_LENGTH", "1024"))
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "8"))
 ENFORCED_MAX_ROWS = int(os.getenv("ENFORCED_MAX_ROWS", "5000"))
@@ -362,15 +363,13 @@ async def classify_reports_batch(
     reports: List[Dict],
     diagnosis: str,
     classification_target: ClassificationTarget,
-    confidence_threshold: float,
-    max_classify: Optional[int] = 100,
-    return_limit: Optional[int] = 100,
+    confidence_threshold: float
 ) -> List[ReportResult]:
     """Classify reports using simple zero-shot classification."""
     if not reports:
         return []
 
-    reports_to_classify = reports[:max_classify] if max_classify else reports
+    reports_to_classify = reports[:MAX_CLASSIFY]
 
     # Prepare texts
     texts = []
@@ -457,10 +456,6 @@ async def classify_reports_batch(
                 age=report.get("age"),
             )
             final_results.append(result)
-
-            if return_limit and len(final_results) >= return_limit:
-                logger.info(f"Reached return limit of {return_limit}")
-                break
 
     logger.info(f"Returning {len(final_results)} results after filtering")
     return final_results
