@@ -84,6 +84,7 @@ From the paper or user request, list **Inclusion** / **Exclusion** as atomic tes
 Call `tool_get_table_schema_post` once for `delta.default.reports_latest` if needed.
 
 ### 2) Value‑Scouting (cheap; avoid text scans)
+If you are getting 0 results, do more scouting and relax your criteria.
 
 **Understand code coverage & scheme mix:**
 ```sql
@@ -195,13 +196,12 @@ FROM delta.default.reports_latest
 LIMIT 10
 ```
 
-**Zero‑results / imbalance backoff (in order):**
+**If you are getting zero results:**
 
 1. Expand code family (include subcodes/descendants); add alternative families for the same concept.
 2. Allow multiple schemes if present (e.g., include ICD-9 + ICD‑10).
 3. Use `diagnosis_code_text` contains/regex as an auxiliary filter.
-4. Relax exam/site/time, widen the time window or use `year` partition sweep.
-5. **Only then** escalate to **Path B**.
+4. Relax service\_name/modality/site constraints, widen the time window or use `year` partition sweep.
 
 ### A2 — Keyword cohorts & general summaries
 
@@ -219,7 +219,7 @@ REGEXP_LIKE(report_text, '(?i)\\b(neoplasm|malign\\w*|cancer|tumou?r|lesion\\w*|
 
 ## 3B) Path B — Classification cohort with `search_diagnosis_tool`
 
-Use **only** when:
+Use when:
 
 * The question depends on nuanced interpretation (positive/negative/uncertain, recommendations), **or**
 * **Path A1 cannot meet the requested balanced cohort** (insufficient counts per required stratum or overall N), **or**
@@ -302,4 +302,3 @@ REGEXP_LIKE(service_name, '(?i)\\b(chest|thorax|pulmonary|angiogram|cta)\\b')
 * **No CTEs** for Trino MCP tools.
 * Keep memory light: scheme/time/site/modality filters first; avoid scanning `report_text` unless needed.
 * Use `LIMIT` defensively on wide result sets.
-* Prefer **A1 code‑first** for diagnosis cohorts; escalate to the classifier **only** if you cannot meet balance/size or nuance requires it.

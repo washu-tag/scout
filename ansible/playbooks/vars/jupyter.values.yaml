@@ -152,21 +152,15 @@ singleuser:
       image: '{{ mcpo_image }}'
       ports:
         - containerPort: 8000
-      command: ['/bin/sh', '-lc']
       args:
-        - |
-          echo "Waiting for MCP service to be ready..."
-          until curl -f -s http://127.0.0.1:4040/mcp > /dev/null 2>&1; do
-            echo "MCP service not ready, waiting..."
-            sleep 1
-          done
-          echo "MCP service is ready, starting mcpo..."
-          exec mcpo \
-            --host 0.0.0.0 \
-            --port 8000 \
-            --server-type streamable-http \
-            -- \
-            http://127.0.0.1:4040/mcp
+        - '--host'
+        - '0.0.0.0'
+        - '--port'
+        - '8000'
+        - '--server-type'
+        - 'streamable-http'
+        - '--'
+        - 'http://127.0.0.1:4040/mcp'
   networkPolicy:
     egress:
       - to:
