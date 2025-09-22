@@ -18,9 +18,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
       "transformers>=4.41,<4.46" \
       "torch>=2.3,<2.5"
 
-# Pre-download the model
-RUN python -c "from transformers import pipeline; pipeline('zero-shot-classification', model='facebook/bart-large-mnli')"
-
 # Create non-root user
 RUN useradd -m -u 10001 appuser
 

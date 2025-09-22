@@ -7,9 +7,10 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   vars:
-    sc_image: ghcr.io/washu-tag/search-and-classify:demo-20250825.3
+    sc_image: ghcr.io/washu-tag/search-and-classify:demo-20250825.4
     sc_replicas: 1
     ingress_path: /search-classify
+    model_dir: /scout/data/hf-models
 
     # Resources
     sc_requests:
@@ -116,7 +117,8 @@
                       runAsUser: 10001
                 volumes:
                   - name: model-cache
-                    emptyDir: {}
+                    hostPath:
+                      path: '{{ model_dir }}'
 
     - name: Create service for search-and-classify
       kubernetes.core.k8s:

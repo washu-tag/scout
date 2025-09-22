@@ -103,7 +103,7 @@ SELECT
      r.sending_facility, r.sex, r.race, r.ethnic_group, r.modality,
      r.service_name, r.diagnosis_code_coding_scheme, r.diagnosis_code,
      r.diagnosis_code_text, r.report_text, r.epic_mrn
-  ), r.message_dt)).* AS (
+  ), r.obr_3_filler_order_number)).* AS (
     obr_3_filler_order_number, message_control_id, message_dt, sending_facility,
     sex, race, ethnic_group, modality, service_name,
     diagnosis_code_coding_scheme, diagnosis_code, diagnosis_code_text,

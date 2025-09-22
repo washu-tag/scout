@@ -55,19 +55,19 @@ jobs:
 #        with:
 #          subproject: extractor/hl7-transformer
 #          image-name: hl7-transformer
-#  build-and-upload-pyspark-notebook:
-#    runs-on: ubuntu-latest
-#    permissions:
-#      contents: read
-#      attestations: write
-#      id-token: write
-#    steps:
-#      - uses: actions/checkout@v4.2.1
-#      - name: 'Build/Cache Image - pyspark-notebook'
-#        uses: ./.github/actions/docker-build-cache
-#        with:
-#          subproject: helm/jupyter/notebook
-#          image-name: pyspark-notebook
+  build-and-upload-pyspark-notebook:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4.2.1
+      - name: 'Build/Cache Image - pyspark-notebook'
+        uses: ./.github/actions/docker-build-cache
+        with:
+          subproject: helm/jupyter/notebook
+          image-name: pyspark-notebook
 #  build-and-upload-explorer:
 #    runs-on: ubuntu-latest
 #    permissions:
@@ -256,7 +256,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    needs: [build-and-upload-search-and-classify-mcp]
+    needs: [build-and-upload-pyspark-notebook, build-and-upload-search-and-classify-mcp]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
@@ -266,6 +266,10 @@ jobs:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: 'Push Image - pyspark-notebook'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: pyspark-notebook
       - name: 'Push Image - search-and-classify'
         uses: ./.github/actions/docker-push
         with:
