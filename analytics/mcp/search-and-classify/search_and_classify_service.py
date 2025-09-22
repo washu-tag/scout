@@ -41,27 +41,17 @@ ENFORCED_MAX_ROWS = int(os.getenv("ENFORCED_MAX_ROWS", "5000"))
 
 # ---------- Reference schema (documentation only) ----------
 SCHEMA_DOC = """
-Expected columns available in delta.default.reports (subset shown):
+Expected columns available in delta.default.reports_latest (subset shown):
 - epic_mrn (STRING)
 - obr_3_filler_order_number (STRING)
 - modality (STRING)
 - service_name (STRING)
-- observation_dt (TIMESTAMP)
-- message_dt (TIMESTAMP)
-- requested_dt (TIMESTAMP)
+- event_dt (TIMESTAMP)
 - report_text (STRING)
 - sending_facility (STRING)
 - sex (STRING)
 - race (STRING)
-- birth_date (DATE or TIMESTAMP)
-
-Event time is typically: COALESCE(observation_dt, message_dt, requested_dt).
-Age example:
-  date_diff(
-    'year',
-    CAST(birth_date AS date),
-    CAST(COALESCE(observation_dt, message_dt, requested_dt) AS date)
-  )
+- age (INTEGER)
 """
 
 # ---------- Example SQL templates ----------
@@ -616,8 +606,8 @@ async def meta():
     """Service metadata and examples."""
     return {
         "service": "Radiology Report Diagnosis Search",
-        "version": "2.0.0",
-        "description": "Simplified zero-shot classification service",
+        "version": "1.0.0",
+        "description": "Zero-shot classification service",
         "endpoints": {
             "/search_diagnosis": "POST - Execute SQL & classify reports",
             "/health": "GET - Health check",
