@@ -2,24 +2,28 @@
 - name: Install Helm
   hosts: server
   tasks:
-    - name: Create /root/bin directory
-      ansible.builtin.file:
-        path: /root/bin
-        state: directory
-        mode: '0700'
-
-    - name: Download Helm command line tool
-      ansible.builtin.get_url:
-        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-        dest: /root/bin/get-helm-3.sh
-        mode: '0755'
-
     - name: Install Helm
-      ansible.builtin.command:
-        cmd: /root/bin/get-helm-3.sh
-        creates: /usr/local/bin/helm
-      environment:
-        DESIRED_VERSION: '{{ helm_version | default(omit, true) }}'
+      block:
+        - name: Create /root/bin directory
+          ansible.builtin.file:
+            path: /root/bin
+            state: directory
+            mode: '0700'
+
+        - name: Download Helm command line tool
+          ansible.builtin.get_url:
+            url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+            dest: /root/bin/get-helm-3.sh
+            mode: '0755'
+
+        - name: Install Helm
+          ansible.builtin.command:
+            cmd: /root/bin/get-helm-3.sh
+            creates: /usr/local/bin/helm
+          environment:
+            DESIRED_VERSION: '{{ helm_version | default(omit, true) }}'
+
+      when: install_helm | default('true')
 
     - name: Install Helm Diff
       kubernetes.core.helm_plugin:
