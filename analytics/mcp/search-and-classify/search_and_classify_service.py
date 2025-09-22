@@ -68,33 +68,20 @@ Age example:
 SQL_EXAMPLE_NEOPLASM_LAST_YEAR = r"""
 -- Latest per accession with neoplasm keywords, last 1 year
 SELECT
-  r.epic_mrn AS mrn,
-  r.obr_3_filler_order_number AS accession_number,
-  r.modality AS modality,
-  r.service_name AS service_name,
-  CAST(COALESCE(r.observation_dt, r.message_dt, r.requested_dt) AS VARCHAR) AS event_date,
-  date_diff(
-    'year',
-    CAST(r.birth_date AS date),
-    CAST(COALESCE(r.observation_dt, r.message_dt, r.requested_dt) AS date)
-  ) AS age,
-  r.report_text AS report_text,
-  r.sending_facility AS sending_facility,
-  r.sex AS sex,
-  r.race AS race
-FROM delta.default.reports r
-JOIN (
-  SELECT
-    obr_3_filler_order_number,
-    MAX_BY(message_control_id, message_dt) AS latest_id
-  FROM delta.default.reports
+  epic_mrn AS mrn,
+  obr_3_filler_order_number AS accession_number,
+  modality AS modality,
+  service_name AS service_name,
+  event_dt AS event_date,
+  report_text AS report_text,
+  sending_facility AS sending_facility,
+  sex AS sex,
+  race AS race,
+  age AS age
+FROM delta.default.reports_latest
   WHERE report_text IS NOT NULL
-    AND COALESCE(observation_dt, message_dt, requested_dt) >= current_timestamp - INTERVAL '1' YEAR
+    AND event_dt >= current_timestamp - INTERVAL '1' YEAR
     AND REGEXP_LIKE(report_text, '(?i)\b(neoplasm|malign\w*|cancer|tumou?r|lesion\w*|mass(?:\b|\s))')
-  GROUP BY obr_3_filler_order_number
-) m
-  ON r.obr_3_filler_order_number = m.obr_3_filler_order_number
- AND r.message_control_id = m.latest_id
 """
 
 SQL_EXAMPLES = {"neoplasm_last_year": SQL_EXAMPLE_NEOPLASM_LAST_YEAR}
@@ -105,12 +92,12 @@ REQUIRED_COLUMNS = {
     "accession_number": "obr_3_filler_order_number as accession_number",
     "modality": "modality as modality",
     "service_name": "service_name as service_name",
-    "event_date": "CAST(COALESCE(observation_dt, message_dt, requested_dt) AS VARCHAR) as event_date",
+    "event_date": "event_dt as event_date",
     "report_text": "report_text as report_text",
     "sending_facility": "sending_facility as sending_facility",
     "sex": "sex as sex",
     "race": "race as race",
-    "age": "date_diff('year', CAST(birth_date AS date), CAST(COALESCE(observation_dt, message_dt, requested_dt) AS date)) as age",
+    "age": "age as age",
 }
 
 
@@ -363,7 +350,7 @@ async def classify_reports_batch(
     reports: List[Dict],
     diagnosis: str,
     classification_target: ClassificationTarget,
-    confidence_threshold: float
+    confidence_threshold: float,
 ) -> List[ReportResult]:
     """Classify reports using simple zero-shot classification."""
     if not reports:
