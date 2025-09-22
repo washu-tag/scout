@@ -39,6 +39,7 @@
       kubernetes.core.helm_repository:
         name: cnpg
         repo_url: https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/
+      delegate_to: '{{ k3s_host }}'
 
     - name: Install/Upgrade Postgres Operator
       kubernetes.core.helm:
@@ -52,6 +53,7 @@
         wait: true
         wait_timeout: 5m
         atomic: true
+      delegate_to: '{{ k3s_host }}'
 
     - name: Create namespace
       kubernetes.core.k8s:
@@ -59,6 +61,7 @@
         api_version: v1
         kind: Namespace
         state: present
+      delegate_to: '{{ k3s_host }}'
 
     - name: Set up storage
       include_tasks: tasks/storage_setup.yaml
@@ -76,6 +79,7 @@
           stringData:
             username: '{{ postgres_user }}'
             password: '{{ postgres_password }}'
+      delegate_to: '{{ k3s_host }}'
 
     - name: Create Postgres superuser secret
       kubernetes.core.k8s:
@@ -90,6 +94,7 @@
           stringData:
             username: 'postgres'
             password: '{{ postgres_superuser_password }}'
+      delegate_to: '{{ k3s_host }}'
 
     - name: Create Postgres cluster
       kubernetes.core.k8s:
@@ -118,6 +123,7 @@
                 secret:
                   name: postgres-user
                 postInitSQL: '{{ postgres_init_sql }}'
+      delegate_to: '{{ k3s_host }}'
 
     - name: Expose metrics service for Prometheus
       kubernetes.core.k8s:
@@ -135,8 +141,10 @@
               - name: metrics
                 port: 9187
                 targetPort: metrics
+      delegate_to: '{{ k3s_host }}'
 
     - name: Wait for Postgres to be ready
       command: 'kubectl -n {{ postgres_cluster_namespace }} wait --for=condition=Ready --timeout=300s cluster/postgresql-cluster'
       register: postgres_ready
       changed_when: false
+      delegate_to: '{{ k3s_host }}'

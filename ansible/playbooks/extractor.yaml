@@ -12,6 +12,7 @@
         api_version: v1
         kind: Namespace
         state: present
+      delegate_to: '{{ k3s_host }}'
 
     - name: Create Postgres secret
       kubernetes.core.k8s:
@@ -29,6 +30,7 @@
             DB_NAME: '{{ ingest_postgres_table_name }}'
             DB_USER: '{{ postgres_user }}'
             DB_PASSWORD: '{{ postgres_password }}'
+      delegate_to: '{{ k3s_host }}'
 
     - name: Create S3 secret
       kubernetes.core.k8s:
@@ -43,6 +45,7 @@
           stringData:
             AWS_ACCESS_KEY_ID: '{{ s3_lake_writer }}'
             AWS_SECRET_ACCESS_KEY: '{{ s3_lake_writer_secret }}'
+      delegate_to: '{{ k3s_host }}'
 
     - name: Create S3 configmap
       kubernetes.core.k8s:
@@ -57,6 +60,7 @@
             AWS_ENDPOINT_URL: '{{ s3_endpoint }}'
             AWS_ALLOW_HTTP: 'true'
             AWS_REGION: '{{ s3_region }}'
+      delegate_to: '{{ k3s_host }}'
 
     - name: Deploy HL7Log Extractor
       kubernetes.core.helm:
@@ -68,6 +72,7 @@
         wait_timeout: 5m
         atomic: true
         values: "{{ lookup('template', 'templates/hl7log-extractor.values.yaml.j2') | from_yaml }}"
+      delegate_to: '{{ k3s_host }}'
 
     - name: Setup Spark defaults ConfigMap
       include_tasks: tasks/spark_config_setup.yaml
@@ -88,3 +93,4 @@
         wait_timeout: 5m
         atomic: true
         values: "{{ lookup('template', 'templates/hl7-transformer.values.yaml.j2') | from_yaml }}"
+      delegate_to: '{{ k3s_host }}'

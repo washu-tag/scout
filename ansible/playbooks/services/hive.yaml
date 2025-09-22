@@ -2,6 +2,7 @@
   ansible.builtin.include_vars:
     file: vars/hive.values.yaml
     name: hive_values
+  delegate_to: localhost
 
 - name: Install Hive Metastore Service (HMS) with helm
   kubernetes.core.helm:
@@ -14,8 +15,10 @@
     wait_timeout: 5m
     atomic: true
     values: '{{ hive_values }}'
+  delegate_to: '{{ k3s_host }}'
 
 - name: Wait for Hive to be ready
   command: kubectl -n {{ hive_namespace }} wait --for=condition=Available --timeout=300s deployments/hive-metastore
   register: hive_ready
   changed_when: false
+  delegate_to: '{{ k3s_host }}'
