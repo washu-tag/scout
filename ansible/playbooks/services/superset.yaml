@@ -145,6 +145,15 @@
               """
               @expose("/login/")
               def login(self, provider="keycloak"):
+                  # Hacky workaround to remove stale 'Access is Denied' error messages from session.
+                  # When an unauthenticated user tries to access a protected page, Superset queues an 'Access is Denied' popup message.
+                  # With OAuth, the user is redirected to an external login page, so the error is not shown immediately.
+                  # After successful login, the old error message is displayed, which is confusing since the user now has access.
+                  flashes = session.get('_flashes', [])
+                  logging.debug(f"Flashes before cleanup: {flashes}")
+                  session['_flashes'] = [f for f in flashes if f != ('danger', 'Access is Denied')]
+                  logging.debug(f"Flashes after cleanup: {session.get('_flashes', [])}")
+
                   return super().login(provider=provider)
 
               @expose('/logout/', methods=['GET', 'POST'])
