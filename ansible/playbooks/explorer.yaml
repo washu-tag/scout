@@ -20,7 +20,7 @@
             stripPrefix:
               prefixes:
                 - /launchpad
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost
 
     - name: Install explorer using Helm
       kubernetes.core.helm:
@@ -48,4 +48,4 @@
                 paths:
                   - path: /launchpad
                     pathType: Prefix
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost

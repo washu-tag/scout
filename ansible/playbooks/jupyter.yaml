@@ -26,7 +26,7 @@
         api_version: v1
         kind: Namespace
         state: present
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost
 
     - name: Create PersistentVolumeClaim for Jupyter single-user storage
       kubernetes.core.k8s:
@@ -44,13 +44,13 @@
               requests:
                 storage: 250Gi
             storageClassName: '{{ jupyter_singleuser_storage_class }}'
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost
 
     - name: Add JupyterHub Helm repository
       kubernetes.core.helm_repository:
         name: jupyterhub
         repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost
 
     - name: Setup Spark Defaults ConfigMaps
       include_tasks: tasks/spark_config_setup.yaml
@@ -88,4 +88,4 @@
         wait_timeout: 10m
         atomic: true
         values: '{{ jupyter_values }}'
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost

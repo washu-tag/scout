@@ -15,10 +15,10 @@
     wait_timeout: 5m
     atomic: true
     values: '{{ hive_values }}'
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Wait for Hive to be ready
   command: kubectl -n {{ hive_namespace }} wait --for=condition=Available --timeout=300s deployments/hive-metastore
   register: hive_ready
   changed_when: false
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost

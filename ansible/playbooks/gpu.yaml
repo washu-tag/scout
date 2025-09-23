@@ -11,7 +11,7 @@
       kubernetes.core.helm_repository:
         name: gpu-operator
         repo_url: https://nvidia.github.io/gpu-operator
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost
 
     - name: Install NVIDIA GPU Operator
       kubernetes.core.helm:
@@ -27,4 +27,4 @@
         atomic: true
         values_files:
           - vars/gpu-operator.values.yaml
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost

@@ -2,7 +2,7 @@
   kubernetes.core.helm_repository:
     name: grafana
     repo_url: https://grafana.github.io/helm-charts
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Create Loki namespace
   kubernetes.core.k8s:
@@ -10,7 +10,7 @@
     api_version: v1
     kind: Namespace
     state: present
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Create S3 secret for Loki
   kubernetes.core.k8s:
@@ -25,7 +25,7 @@
       stringData:
         AWS_ACCESS_KEY_ID: '{{ s3_loki_writer }}'
         AWS_SECRET_ACCESS_KEY: '{{ s3_loki_writer_secret }}'
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Install Loki using Helm
   kubernetes.core.helm:
@@ -36,7 +36,7 @@
     chart_version: ~6.29.0
     values: "{{ lookup('template', 'templates/loki.values.yaml.j2') | from_yaml }}"
     state: present
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Install Promtail using Helm
   kubernetes.core.helm:
@@ -52,7 +52,7 @@
           clients:
             - url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local:3100/loki/api/v1/push'
     state: present
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Create Grafana namespace
   kubernetes.core.k8s:
@@ -60,7 +60,7 @@
     api_version: v1
     kind: Namespace
     state: present
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Apply Grafana dashboard configmaps
   block:
@@ -69,7 +69,7 @@
         paths: 'files/grafana/dashboards/'
         patterns: '*.json'
       register: dashboard_files
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost
 
     - name: Create ConfigMap for each Grafana dashboard
       no_log: true
@@ -89,7 +89,7 @@
       loop: '{{ dashboard_files.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost
 
 - name: Apply Grafana alert rules as ConfigMaps
   block:
@@ -117,7 +117,7 @@
       loop: '{{ alert_templates.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost
 
 - name: Create Grafana notification policy as ConfigMap
   kubernetes.core.k8s:
@@ -132,7 +132,7 @@
           grafana_alert: '1'
       data:
         notification-policy.yaml: "{{ lookup('template', 'templates/grafana/notification-policy.yaml.j2') }}"
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Create contact point secrets
   block:
@@ -162,7 +162,7 @@
       when: grafana_alert_contact_point in (item.path | basename)
       loop_control:
         label: '{{ item.path | basename }}'
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost
 
 - name: Create SMTP secret
   kubernetes.core.k8s:
@@ -180,7 +180,7 @@
         user: '{{ grafana_smtp_user }}'
         password: '{{ grafana_smtp_password }}'
   when: grafana_alert_contact_point == 'email'
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Create postgres datasource secret
   kubernetes.core.k8s:
@@ -195,7 +195,7 @@
           grafana_datasource: 'true' # default value for: sidecar.datasources.label
       stringData:
         pg-db.yaml: "{{ lookup('template', 'templates/grafana/datasources/postgres-datasource.yaml.j2') }}"
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Install Grafana using Helm
   kubernetes.core.helm:
@@ -206,4 +206,4 @@
     update_repo_cache: true
     chart_version: ~8.12.1
     values: '{{ lookup("template", "templates/grafana/grafana.values.yaml.j2") | from_yaml }}'
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost

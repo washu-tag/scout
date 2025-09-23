@@ -4,7 +4,7 @@
     api_version: v1
     kind: Namespace
     state: present
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Create Spark ConfigMap
   kubernetes.core.k8s:
@@ -32,4 +32,4 @@
           spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
           spark.executor.memory {{ spark_memory | default("1g") }}
           spark.driver.memory {{ spark_memory | default("1g") }}
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost

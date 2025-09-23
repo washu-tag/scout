@@ -30,4 +30,4 @@
         plugin_path: 'https://github.com/databus23/helm-diff'
         state: present
       become: false
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost

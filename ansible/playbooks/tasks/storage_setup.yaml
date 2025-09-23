@@ -9,7 +9,7 @@
       provisioner: kubernetes.io/no-provisioner
       volumeBindingMode: WaitForFirstConsumer
   loop: '{{ storage_definitions }}'
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Add persistent volumes
   kubernetes.core.k8s:
@@ -42,4 +42,4 @@
           }, omit) }}
         hostPath: "{{ item.node_url is not defined | ternary({'path': item.path}, omit) }}"
   loop: '{{ storage_definitions }}'
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost

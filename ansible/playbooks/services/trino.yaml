@@ -2,7 +2,7 @@
   kubernetes.core.helm_repository:
     name: trino
     repo_url: https://trinodb.github.io/charts
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost
 
 - name: Install/Upgrade Trino Helm chart
   kubernetes.core.helm:
@@ -35,4 +35,4 @@
       worker:
         annotations:
           prometheus.io/trino_scrape: 'true'
-  delegate_to: '{{ k3s_host }}'
+  delegate_to: localhost

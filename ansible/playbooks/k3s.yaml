@@ -100,7 +100,7 @@
       delay: 5
       environment:
         KUBECONFIG: '{{ kubeconfig_yaml }}'
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost
 
     - name: Apply taint to control plane node
       kubernetes.core.k8s_taint:
@@ -110,7 +110,7 @@
           - key: node-role.kubernetes.io/control-plane
             effect: PreferNoSchedule
         kubeconfig: '{{ kubeconfig_yaml }}'
-      delegate_to: '{{ k3s_host }}'
+      delegate_to: localhost
 
 ################################################################################
 - hosts: gpu_workers
