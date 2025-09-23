@@ -3,8 +3,8 @@
 server:
   hosts:
     FQDN-leader.edu:
-      ansible_host: '<ssh host or IP if different>'
-      # ansible_port: 22
+      ansible_connection: local # set if running ansible on this node. if connecting via ssh omit.
+      ansible_host: leader # set if connecting over ssh AND can connect to different host name than FQDN, else omit
       ansible_python_interpreter: /usr/bin/python3
       k3s_control_node: true
       external_url: alt.fqdn.edu # omit to use FQDN-leader.edu
@@ -12,14 +12,14 @@ server:
 workers:
   hosts:
     FQDN-worker-1.edu:
-      ansible_host: '<ssh host or IP if different>'
-      # ansible_port: 22
+      ansible_connection: local # set if running ansible on this node. if connecting via ssh omit.
+      ansible_host: worker-1 # set if connecting over ssh AND can connect to different host name than FQDN, else omit
       ansible_python_interpreter: /usr/bin/python3
 gpu_workers:
   hosts:
     FQDN-gpu-1.edu:
-      ansible_host: '<ssh host or IP if different>'
-      # ansible_port: 22
+      ansible_connection: local # set if running ansible on this node. if connecting via ssh omit.
+      ansible_host: gpu-1 # set if connecting over ssh AND can connect to different host name than FQDN, else omit
       ansible_python_interpreter: /usr/bin/python3
 # The agents group contains nodes that run only the k3s agent.
 # In this example it only includes the workers and gpu_workers groups.
@@ -41,6 +41,8 @@ k3s_cluster:
     agents:
   vars:
     # SSH connection and privilege escalation
+    # There are many other params you could set here to customize your situation.
+    # See https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html#connecting-to-hosts-behavioral-inventory-parameters
     ansible_user: '<ssh username>'
     ansible_become: true
     ansible_become_method: sudo
