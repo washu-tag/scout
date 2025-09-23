@@ -21,7 +21,7 @@
             cmd: /root/bin/get-helm-3.sh
             creates: /usr/local/bin/helm
           environment:
-            DESIRED_VERSION: '{{ helm_version | default(omit, true) }}'
+            DESIRED_VERSION: '{{ helm_version | default("") }}'
 
       when: install_helm | default('true')
 
