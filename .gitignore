@@ -10,3 +10,4 @@ docs/build
 .terraform.lock.hcl
 build/
 .aider*
+.kube/
