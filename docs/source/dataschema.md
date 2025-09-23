@@ -82,9 +82,9 @@ We also allow a nonstandard `ADN` suffix to match what our 2.3 reports seem to u
 2. Maintaining the order of the filtered segments, group the segments by suffix.
 3. For each suffix group, join the segments by newlines and store them in the following columns:
 
-| Observation ID Suffix | Data Lake Column Name       |
-|-----------------------|-----------------------------|
-| `ADT` or `ADN`        | `inferred_addendum_note`    |
-| `GDT`                 | `inferred_findings`         |
-| `IMP`                 | `inferred_impression`       |
-| `TCM`                 | `inferred_technician_notes` |
+| Observation ID Suffix | Data Lake Column Name            |
+|-----------------------|----------------------------------|
+| `ADT` or `ADN`        | `report_section_addendum`        |
+| `GDT`                 | `report_section_findings`        |
+| `IMP`                 | `report_section_impression`      |
+| `TCM`                 | `report_section_technician_note` |
