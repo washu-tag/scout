@@ -109,9 +109,39 @@
           from flask import redirect, session
           import logging
 
+          OAUTH_PROVIDERS = OPENID_PROVIDERS = [
+              {
+                  "name": "keycloak",
+                  "icon": "fa-key",
+                  "token_key": "access_token",
+                  "remote_app": {
+                      "client_id": "{{ keycloak_superset_client_id }}",
+                      "client_secret": "{{ keycloak_superset_client_secret }}",
+                      "client_kwargs": {"scope": "openid microprofile-jwt"},
+                      "api_base_url": "https://{{ server_hostname }}/kc/realms/scout/protocol/",
+                      "access_token_url": "https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/token",
+                      "authorize_url": "https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/auth",
+                      "jwks_uri": "https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/certs",
+                      "request_token_url": None
+                  },
+              }
+          ]
+
+          AUTH_ROLES_MAPPING = {
+              "superset_admin": ["Admin"],
+              "superset_alpha": ["Alpha"],
+              "superset_gamma": ["Gamma"],
+              "superset_sql_lab": ["sql_lab"]
+          }
+
+          AUTH_TYPE = AUTH_OAUTH
+          AUTH_USER_REGISTRATION = True
+          AUTH_USER_REGISTRATION_ROLE = 'Alpha'
+          AUTH_ROLES_SYNC_AT_LOGIN = True
+
           class KeycloakOAuthView(AuthOAuthView):
               """
-              Custom Auth View to handle Keycloak login and logout
+              Custom Auth View to handle Keycloak login and logout redirection
               """
               @expose("/login/")
               def login(self, provider="keycloak"):
@@ -122,55 +152,20 @@
                   super().logout()
                   return redirect('/oauth2/sign_out')
 
-          class KeycloakSecurity(SupersetSecurityManager):
+          class KeycloakSecurityManager(SupersetSecurityManager):
               """
-              Create a new SecurityManager with own oauth_user_info to handle the information from Keycloak
+              Create a new SecurityManager that uses the KeycloakOAuthView and Keycloak role mapping
               """
 
               def __init__(self, appbuilder):
-                  super(KeycloakSecurity, self).__init__(appbuilder)
+                  super(KeycloakSecurityManager, self).__init__(appbuilder)
                   app = self.appbuilder.get_app
-                  app.config.setdefault("AUTH_ROLES_MAPPING", { # TODO: Role mapping not working
-                      "superset_admin": ["Admin"],
-                      "superset_alpha": ["Alpha"],
-                      "superset_gamma": ["Gamma"],
-                  })
+                  app.config.setdefault("AUTH_ROLES_MAPPING", AUTH_ROLES_MAPPING)
                   app.config.setdefault("AUTH_TYPE", AUTH_OAUTH)
                   self.authoauthview = KeycloakOAuthView
 
-              def oauth_user_info(self, provider, resp=None):
-                  if provider == "keycloak":
-                      logging.debug("Keycloak response received : {0}".format(resp))
-                      logging.debug("ID Token: %s", resp["id_token"])
-                      me = resp["userinfo"]
-                      return {
-                          "name": me["name"],
-                          "email": me["email"],
-                          "first_name": me["given_name"],
-                          "last_name": me["family_name"],
-                          "id": me["preferred_username"],
-                          "username": me["preferred_username"],
-                          "role_keys": me["groups"]
-                      }
+          CUSTOM_SECURITY_MANAGER = KeycloakSecurityManager
 
-          CUSTOM_SECURITY_MANAGER = KeycloakSecurity
-          AUTH_TYPE = AUTH_OAUTH
-          OAUTH_PROVIDERS = OPENID_PROVIDERS = [
-              {
-                  "name": "keycloak",
-                  "icon": "fa-key",
-                  "token_key": "access_token",
-                  "remote_app": {
-                      "client_id": "{{ keycloak_superset_client_id }}",
-                      "client_secret": "{{ keycloak_superset_client_secret }}",
-                      "client_kwargs": {"scope": "openid microprofile-jwt"},
-                      "server_metadata_url": "https://{{ server_hostname }}/kc/realms/scout/.well-known/openid-configuration",
-                  }
-              }
-          ]
-          AUTH_USER_REGISTRATION = True
-          AUTH_USER_REGISTRATION_ROLE = 'Admin'
-          AUTH_ROLES_SYNC_AT_LOGIN = True
       extraVolumes:
         - name: dashboard-config
           configMap:
