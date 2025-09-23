@@ -22,6 +22,7 @@
   register: analytics_files
 
 - name: Build ConfigMap data and items list
+  no_log: true
   vars:
     analytics_root: '{{ (scout_repo_dir | realpath) ~ "/analytics" }}'
   ansible.builtin.set_fact:
@@ -45,6 +46,7 @@
   delegate_to: localhost
 
 - name: Create ConfigMap for datasource and dashboard yaml
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
