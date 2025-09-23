@@ -1,3 +1,15 @@
+# Pin Jupyter core apps so Notebook matches Lab 4.4.x
+notebook>=7.4,<7.5
+jupyterlab>=4.4,<4.5
+
+# RTC / collaboration (meta-package; brings in jupyter-server-ydoc)
+jupyter-collaboration>=4.0.2
+datalayer_pycrdt>=0.12.17
+
+# Voila: use 0.5.x so it's compatible with jupyter-server 2.x
+voila>=0.5.8
+
+# --- everything else ---
 delta-spark
 jupyterlab-git
 jupyter-ai
@@ -11,7 +23,5 @@ pandas
 numpy
 matplotlib
 requests
-voila
 trino
 jupyter-server-proxy
-jupyter-collaboration
