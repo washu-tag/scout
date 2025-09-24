@@ -115,10 +115,7 @@
       spec:
         errors:
           status:
-            - '401-403'
-          # # Not in our traefik version yet, but useful for future reference
-          # statusRewrites:
-          #   - "401-403": 302
+            - '401'
           service:
             name: oauth2-proxy
             port: 80
