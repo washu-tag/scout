@@ -4,7 +4,7 @@ server:
   hosts:
     FQDN-leader.edu:
       ansible_connection: local # set if running ansible on this node. if connecting via ssh omit.
-      ansible_host: leader # set if connecting over ssh AND can connect to different host name than FQDN, else omit
+      ansible_host: leader # Host name to use for ssh connection; omit if `ansible_connection: local` OR ssh can connect using FQDN
       ansible_python_interpreter: /usr/bin/python3
       k3s_control_node: true
       external_url: alt.fqdn.edu # omit to use FQDN-leader.edu
@@ -13,13 +13,13 @@ workers:
   hosts:
     FQDN-worker-1.edu:
       ansible_connection: local # set if running ansible on this node. if connecting via ssh omit.
-      ansible_host: worker-1 # set if connecting over ssh AND can connect to different host name than FQDN, else omit
+      ansible_host: worker-1 # Host name to use for ssh connection; omit if `ansible_connection: local` OR ssh can connect using FQDN
       ansible_python_interpreter: /usr/bin/python3
 gpu_workers:
   hosts:
     FQDN-gpu-1.edu:
       ansible_connection: local # set if running ansible on this node. if connecting via ssh omit.
-      ansible_host: gpu-1 # set if connecting over ssh AND can connect to different host name than FQDN, else omit
+      ansible_host: gpu-1 # Host name to use for ssh connection; omit if `ansible_connection: local` OR ssh can connect using FQDN
       ansible_python_interpreter: /usr/bin/python3
 # The agents group contains nodes that run only the k3s agent.
 # In this example it only includes the workers and gpu_workers groups.
