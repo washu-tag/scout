@@ -129,6 +129,7 @@ singleuser:
   extraContainers:
     - name: jupyter-mcp
       image: datalayer/jupyter-mcp-server:latest
+      imagePullPolicy: Never
       ports:
         - containerPort: 4040
       command: ['/bin/sh', '-lc']
@@ -191,6 +192,7 @@ singleuser:
 
     - name: mcpo
       image: '{{ mcpo_image }}'
+      imagePullPolicy: Never
       ports:
         - containerPort: 8000
       command: ['/bin/sh', '-c']
