@@ -57,6 +57,36 @@
             "attributes": {}
           }
         ],
+        "{{ keycloak_superset_client_id }}": [
+          {
+            "name": "superset_admin",
+            "description": "Superset Admin role",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "superset_alpha",
+            "description": "Superset Alpha role",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "superset_gamma",
+            "description": "Superset Gamma role",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "superset_sql_lab",
+            "description": "Superset sql_lab role",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ],
         "{{ keycloak_grafana_client_id }}": [
           {
             "name": "grafana-admin",
@@ -113,6 +143,9 @@
           "{{ keycloak_jupyterhub_client_id }}": [
             "jupyterhub-admin"
           ],
+          "{{ keycloak_superset_client_id }}": [
+            "superset_admin"
+          ],
           "{{ keycloak_grafana_client_id }}": [
             "grafana-admin"
           ],
@@ -133,6 +166,10 @@
         "clientRoles": {
           "{{ keycloak_jupyterhub_client_id }}": [
             "jupyterhub-user"
+          ],
+          "{{ keycloak_superset_client_id }}": [
+            "superset_alpha",
+            "superset_sql_lab",
           ]
         }
       }

@@ -49,7 +49,7 @@
   kubernetes.core.helm:
     name: superset
     chart_ref: superset/superset
-    chart_version: 0.14.2
+    chart_version: 0.15.0
     release_namespace: superset
     create_namespace: true
     release_state: present
@@ -60,7 +60,7 @@
     values:
       image:
         repository: '{{ superset_image | default("ghcr.io/washu-tag/superset") }}'
-        tag: 4.1.2
+        tag: '{{ superset_image_tag | default("5.0.0") }}'
       extraSecretEnv:
         SUPERSET_SECRET_KEY: '{{ superset_secret }}'
       ingress:
@@ -109,52 +109,6 @@
           from flask import redirect, session
           import logging
 
-          class KeycloakOAuthView(AuthOAuthView):
-              """
-              Custom Auth View to handle Keycloak login and logout
-              """
-              @expose("/login/")
-              def login(self, provider="keycloak"):
-                  return super().login(provider=provider)
-
-              @expose('/logout/', methods=['GET', 'POST'])
-              def logout(self):
-                  super().logout()
-                  return redirect('/oauth2/sign_out')
-
-          class KeycloakSecurity(SupersetSecurityManager):
-              """
-              Create a new SecurityManager with own oauth_user_info to handle the information from Keycloak
-              """
-
-              def __init__(self, appbuilder):
-                  super(KeycloakSecurity, self).__init__(appbuilder)
-                  app = self.appbuilder.get_app
-                  app.config.setdefault("AUTH_ROLES_MAPPING", { # TODO: Role mapping not working
-                      "superset_admin": ["Admin"],
-                      "superset_alpha": ["Alpha"],
-                      "superset_gamma": ["Gamma"],
-                  })
-                  app.config.setdefault("AUTH_TYPE", AUTH_OAUTH)
-                  self.authoauthview = KeycloakOAuthView
-
-              def oauth_user_info(self, provider, resp=None):
-                  if provider == "keycloak":
-                      logging.debug("Keycloak response received : {0}".format(resp))
-                      logging.debug("ID Token: %s", resp["id_token"])
-                      me = resp["userinfo"]
-                      return {
-                          "name": me["name"],
-                          "email": me["email"],
-                          "first_name": me["given_name"],
-                          "last_name": me["family_name"],
-                          "id": me["preferred_username"],
-                          "username": me["preferred_username"],
-                          "role_keys": me["groups"]
-                      }
-
-          CUSTOM_SECURITY_MANAGER = KeycloakSecurity
-          AUTH_TYPE = AUTH_OAUTH
           OAUTH_PROVIDERS = OPENID_PROVIDERS = [
               {
                   "name": "keycloak",
@@ -164,13 +118,63 @@
                       "client_id": "{{ keycloak_superset_client_id }}",
                       "client_secret": "{{ keycloak_superset_client_secret }}",
                       "client_kwargs": {"scope": "openid microprofile-jwt"},
-                      "server_metadata_url": "https://{{ server_hostname }}/kc/realms/scout/.well-known/openid-configuration",
-                  }
+                      "api_base_url": "https://{{ server_hostname }}/kc/realms/scout/protocol/",
+                      "access_token_url": "https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/token",
+                      "authorize_url": "https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/auth",
+                      "jwks_uri": "https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/certs",
+                      "request_token_url": None
+                  },
               }
           ]
+
+          AUTH_ROLES_MAPPING = {
+              "superset_admin": ["Admin"],
+              "superset_alpha": ["Alpha"],
+              "superset_gamma": ["Gamma"],
+              "superset_sql_lab": ["sql_lab"]
+          }
+
+          AUTH_TYPE = AUTH_OAUTH
           AUTH_USER_REGISTRATION = True
-          AUTH_USER_REGISTRATION_ROLE = 'Admin'
+          AUTH_USER_REGISTRATION_ROLE = 'Alpha'
           AUTH_ROLES_SYNC_AT_LOGIN = True
+
+          class KeycloakOAuthView(AuthOAuthView):
+              """
+              Custom Auth View to handle Keycloak login and logout redirection
+              """
+              @expose("/login/")
+              def login(self, provider="keycloak"):
+                  # Hacky workaround to remove stale 'Access is Denied' error messages from session.
+                  # When an unauthenticated user tries to access a protected page, Superset queues an 'Access is Denied' popup message.
+                  # With OAuth, the user is redirected to an external login page, so the error is not shown immediately.
+                  # After successful login, the old error message is displayed, which is confusing since the user now has access.
+                  flashes = session.get('_flashes', [])
+                  logging.debug(f"Flashes before cleanup: {flashes}")
+                  session['_flashes'] = [f for f in flashes if f != ('danger', 'Access is Denied')]
+                  logging.debug(f"Flashes after cleanup: {session.get('_flashes', [])}")
+
+                  return super().login(provider=provider)
+
+              @expose('/logout/', methods=['GET', 'POST'])
+              def logout(self):
+                  super().logout()
+                  return redirect('/oauth2/sign_out')
+
+          class KeycloakSecurityManager(SupersetSecurityManager):
+              """
+              Create a new SecurityManager that uses the KeycloakOAuthView and Keycloak role mapping
+              """
+
+              def __init__(self, appbuilder):
+                  super(KeycloakSecurityManager, self).__init__(appbuilder)
+                  app = self.appbuilder.get_app
+                  app.config.setdefault("AUTH_ROLES_MAPPING", AUTH_ROLES_MAPPING)
+                  app.config.setdefault("AUTH_TYPE", AUTH_OAUTH)
+                  self.authoauthview = KeycloakOAuthView
+
+          CUSTOM_SECURITY_MANAGER = KeycloakSecurityManager
+
       extraVolumes:
         - name: dashboard-config
           configMap:
