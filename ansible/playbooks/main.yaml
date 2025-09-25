@@ -1,7 +1,7 @@
 ---
 - name: Clone Scout repository
   import_playbook: scout.yaml
-  when: clone_scout_repo | default('true')
+  when: clone_scout_repo | default(true)
 
 - name: Install K3s
   import_playbook: k3s.yaml
