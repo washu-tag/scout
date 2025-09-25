@@ -33,9 +33,11 @@
     uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
     cert_path: '/root/{{ server_hostname }}.crt'
     key_path: '/root/{{ server_hostname }}.key'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
+    - name: Determine deployment context
+      set_fact:
+        is_local_deployment: '{{ inventory_hostname == ansible_hostname or ansible_connection | default("ssh") == "local" }}'
+
     - name: Create directory for K3s data
       file:
         path: '{{ base_dir }}'
@@ -50,16 +52,19 @@
         INSTALL_K3S_EXEC: >-
           --default-local-storage-path={{ base_dir }}
           --write-kubeconfig-mode=0640
-        INSTALL_K3S_VERSION: "{{ k3s_version | default('') }}"
+        INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
         K3S_TOKEN: '{{ k3s_token }}'
         UNINSTALL_K3S_SH: '{{ uninstall_script }}'
 
     - name: Update kubeconfig group permissions since write-kubeconfig-group isn't working
       file:
-        path: '{{ kubeconfig_yaml }}'
+        path: /etc/rancher/k3s/k3s.yaml
         state: file
         mode: '0640'
         group: '{{ kubeconfig_group }}'
+
+    - name: Set up kubeconfig
+      include_tasks: tasks/set_up_kubeconfig.yaml
 
     - name: Ensure k3s control plane server is started
       ansible.builtin.systemd:
@@ -98,6 +103,9 @@
         - kubectl_get_nodes_result.stdout.find("NotReady") == -1
       retries: 30
       delay: 5
+      environment:
+        KUBECONFIG: '{{ kubeconfig_yaml }}'
+      delegate_to: localhost
 
     - name: Apply taint to control plane node
       kubernetes.core.k8s_taint:
@@ -106,6 +114,8 @@
         taints:
           - key: node-role.kubernetes.io/control-plane
             effect: PreferNoSchedule
+        kubeconfig: '{{ kubeconfig_yaml }}'
+      delegate_to: localhost
 
 ################################################################################
 - hosts: gpu_workers
@@ -154,7 +164,7 @@
         cmd: /root/bin/get.k3s.io.sh
         creates: '{{ uninstall_script }}'
       environment:
-        INSTALL_K3S_VERSION: "{{ k3s_version | default('') }}"
+        INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
         K3S_URL: 'https://{{ groups["server"][0] }}:6443'
         K3S_TOKEN: '{{ k3s_token }}'
         UNINSTALL_K3S_SH: '{{ uninstall_script }}'

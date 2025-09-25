@@ -1,5 +1,5 @@
 ---
-- name: Install launchpad
+- name: Install explorer
   hosts: server
   gather_facts: false
   environment:
@@ -22,37 +22,27 @@
                 - /launchpad
       delegate_to: localhost
 
-    - name: Install launchpad using Helm
+    - name: Install explorer using Helm
       kubernetes.core.helm:
-        name: launchpad
-        release_namespace: '{{ launchpad_namespace }}'
+        name: explorer
+        release_namespace: explorer
         create_namespace: true
-        chart_ref: '{{ scout_repo_dir }}/helm/launchpad'
+        chart_ref: '{{ scout_repo_dir }}/helm/explorer'
         state: present
         wait: true
         wait_timeout: 5m
         atomic: true
         values_files:
-          - '{{ scout_repo_dir }}/helm/launchpad/values.yaml'
+          - '{{ scout_repo_dir }}/helm/explorer/values.yaml'
         values:
           image:
-            repository: '{{ launchpad_image | default(omit) }}'
-          auth:
-            keycloak:
-              enabled: true
-              clientId: '{{ keycloak_launchpad_client_id }}'
-              clientSecret: '{{ keycloak_launchpad_client_secret }}'
-              issuer: 'https://{{ server_hostname }}/kc/realms/scout'
-            nextAuthUrl: 'https://{{ server_hostname }}/launchpad/api/auth'
-            nextAuthSecret: '{{ launchpad_nextauth_secret }}'
-            oauth2ProxySignOutUrl: 'https://{{ server_hostname }}/oauth2/sign_out'
+            repository: '{{ explorer_image | default(omit) }}'
           ingress:
             enabled: true
             className: traefik
             annotations:
               traefik.ingress.kubernetes.io/router.middlewares: >
-                kube-system-oauth2-proxy-error@kubernetescrd,
-                kube-system-oauth2-proxy-auth@kubernetescrd
+                kube-system-explorer-strip-prefix@kubernetescrd
             hosts:
               - host: '{{ server_hostname }}'
                 paths:

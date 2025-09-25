@@ -5,6 +5,7 @@
   kubernetes.core.helm_repository:
     name: minio-operator
     repo_url: https://operator.min.io
+  delegate_to: localhost
 
 - name: Install/Upgrade Minio Operator
   kubernetes.core.helm:
@@ -18,6 +19,7 @@
     wait: true
     wait_timeout: "{{ minio_operator_wait_timeout | default('1m') }}"
     atomic: true
+  delegate_to: localhost
 
 - name: Create Traefik Middleware to add trailing slash
   kubernetes.core.k8s:
@@ -33,6 +35,7 @@
           regex: "(.*/{{ minio_path_prefix | default('minio') }}$)"
           replacement: ${1}/
           permanent: true
+  delegate_to: localhost
 
 - name: Create Traefik Middleware to strip prefix
   kubernetes.core.k8s:
@@ -47,6 +50,7 @@
         stripPrefix:
           prefixes:
             - "/{{ minio_path_prefix | default('minio') }}"
+  delegate_to: localhost
 
 - name: Create tenant namespace
   kubernetes.core.k8s:
@@ -54,6 +58,7 @@
     api_version: v1
     kind: Namespace
     state: present
+  delegate_to: localhost
 
 - name: Set up environment secret
   kubernetes.core.k8s:
@@ -82,6 +87,7 @@
           export MINIO_BROWSER_REDIRECT_URL="https://{{ server_hostname }}/minio/"
           export MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC="on"
           {% endif %}
+  delegate_to: localhost
 
 - name: Create MinIO user credential secrets
   kubernetes.core.k8s:
@@ -97,6 +103,7 @@
         CONSOLE_ACCESS_KEY: '{{ item.access_key }}'
         CONSOLE_SECRET_KEY: '{{ item.secret_key }}'
   loop: '{{ minio_users }}'
+  delegate_to: localhost
 
 - name: Install/Upgrade Minio Tenant
   kubernetes.core.helm:
@@ -117,9 +124,9 @@
           existingSecret: true
         env: '{{ minio_env_variables }}'
         pools:
-          - servers: '{{ minio_server_count | default(1) }}'
+          - servers: '{{ groups["minio_hosts"] | length | default(1) }}'
             name: pool-0
-            volumesPerServer: 1
+            volumesPerServer: '{{ minio_volumes_per_server | default(1) }}'
             size: "{{ minio_storage_size | default('100Gi') }}"
             storageClassName: "{{ minio_storage_class | default('minio-storage') }}"
             tolerations:
@@ -127,6 +134,13 @@
               - key: 'node-role.kubernetes.io/control-plane'
                 operator: Exists
                 effect: PreferNoSchedule
+            affinity:
+              podAntiAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  - labelSelector:
+                      matchLabels:
+                        v1.min.io/tenant: scout
+                    topologyKey: kubernetes.io/hostname
         metrics:
           enabled: true
           port: 9000
@@ -136,6 +150,7 @@
         buckets: '{{ minio_buckets }}'
         users: '{{ minio_credentials }}'
       ingress: '{{ minio_ingress_config }}'
+  delegate_to: localhost
 
 - name: Wait for MinIO StatefulSet to exist
   kubernetes.core.k8s_info:
@@ -148,6 +163,7 @@
   retries: '{{ minio_wait_retries | default(60) }}'
   delay: '{{ minio_wait_delay | default(5) }}'
   changed_when: false
+  delegate_to: localhost
 
 - name: Wait for MinIO StatefulSet to be ready
   kubernetes.core.k8s_info:
@@ -162,6 +178,7 @@
   retries: '{{ minio_wait_retries | default(60) }}'
   delay: '{{ minio_wait_delay | default(5) }}'
   changed_when: false
+  delegate_to: localhost
 
 - name: Create MinIO policy JSON ConfigMaps
   kubernetes.core.k8s:
@@ -185,6 +202,7 @@
             ]
           }
   loop: '{{ minio_policies }}'
+  delegate_to: localhost
 
 - name: Build list of projected ConfigMaps for MinIO policies
   set_fact:
@@ -194,6 +212,7 @@
         [ { 'configMap': { 'name': 'policy-' + item.name } } ]
       }}
   loop: '{{ minio_policies }}'
+  delegate_to: localhost
 
 - name: Bootstrap MinIO IAM (policies + bindings)
   kubernetes.core.k8s:
@@ -260,6 +279,7 @@
                   items:
                     - key: config.env
                       path: config.env
+  delegate_to: localhost
 
 - name: Wait for bootstrap job to complete
   kubernetes.core.k8s_info:
@@ -275,3 +295,4 @@
   retries: '{{ minio_bootstrap_wait_retries | default(30) }}'
   delay: '{{ minio_bootstrap_wait_delay | default(10) }}'
   changed_when: false
+  delegate_to: localhost

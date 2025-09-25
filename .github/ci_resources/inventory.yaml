@@ -1,12 +1,16 @@
 ---
+server:
+  hosts:
+    HOSTNAME:
+      ansible_connection: local
+      ansible_python_interpreter: /usr/bin/python3
+      k3s_control_node: true
+minio_hosts:
+  children:
+    server:
 k3s_cluster:
   children:
     server:
-      hosts:
-        HOSTNAME:
-          ansible_connection: local
-          ansible_python_interpreter: /usr/bin/python3
-          k3s_control_node: true
   vars:
     hl7log_extractor_image: docker.io/local/washu-tag/hl7log-extractor
     hl7_transformer_image: docker.io/local/washu-tag/hl7-transformer
@@ -59,6 +63,7 @@ k3s_cluster:
 
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
     minio_storage_size: 5Gi
+    minio_volumes_per_server: 1
     s3_username: minio
     s3_password: minio123
     s3_region: us-east-1
