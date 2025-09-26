@@ -11,6 +11,9 @@ Notes:
 - **Installed packages:** delta-spark, jupyterlab-git, jupyter-ai, langchain-openai, langchain-ollama, langextract, transformers, torch, seaborn, pandas, numpy, matplotlib, requests, voila, trino
 - **Trino connection information:** HOST=trino.trino  PORT=8080  USER=scout  CATALOG=delta  SCHEMA=default  SCHEME=http
 
+Rules:
+- Never just describe the steps you'd take to the user! Use the Jupyter MCP tool `tool_append_execute_code_cell_post` to answer the user's question! 
+
 ---
 
 ## 1) High‑level workflow
@@ -46,7 +49,7 @@ WHERE event_dt >= current_timestamp - INTERVAL '1' YEAR
 LIMIT 5000
 ```
 
-**B) Chest CT, penumonia, last year**
+**B) Chest CT, pneumonia, last year**
 
 ```sql
 SELECT
@@ -201,10 +204,10 @@ class Classifier:
         self._pipe = pipeline(
             task="zero-shot-classification",
             model=self.cfg.model_name,
-            device=self.device,           # CUDA
+            device=self.device,
             truncation=True,
             framework="pt",
-            torch_dtype=torch.float16,    # memory + speed
+            dtype=torch.float16,
         )
         self._pipe.tokenizer.truncation_side = "left"  # keep tail of long reports
 

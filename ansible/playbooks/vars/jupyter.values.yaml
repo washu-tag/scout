@@ -144,7 +144,6 @@ singleuser:
           HUB_BASE="http://proxy-public.jupyter.svc.cluster.local"
           BASE="$HUB_BASE/jupyter$SERVICE_PREFIX"
           export BASE
-          export AUTH_TOKEN="$JUPYTER_MCP_SERVICE_TOKEN"
 
           echo "[mcp/wait] Jupyter API"
           python -c "$WAIT_FOR_JUPYTER_PY"
@@ -157,7 +156,7 @@ singleuser:
             --document-url "$BASE" \
             --runtime-url  "$BASE" \
             --document-id "$NB_PATH" \
-            --start-new-runtime true \
+            --start-new-runtime false \
             --document-token "$JUPYTER_MCP_SERVICE_TOKEN" \
             --runtime-token  "$JUPYTER_MCP_SERVICE_TOKEN"
       env:
