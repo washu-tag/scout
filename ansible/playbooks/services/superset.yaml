@@ -114,6 +114,12 @@
                   return redirect(url_for("Superset.dashboard", dashboard_id_or_slug="scout"))
 
           FAB_INDEX_VIEW = f"{SupersetIndexView.__module__}.{SupersetIndexView.__name__}"
+        sql_alchemy: |
+          SQLALCHEMY_ENGINE_OPTIONS = {
+              "pool_size": 20,
+              "max_overflow": 30,
+              "pool_timeout": 60,
+          }
       extraVolumes:
         - name: dashboard-config
           configMap:
