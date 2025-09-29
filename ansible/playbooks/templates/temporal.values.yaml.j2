@@ -26,7 +26,7 @@ server:
     authorization:
       jwtKeyProvider:
         keySourceURIs:
-          - https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/certs
+          - http://keycloak-service.{{ keycloak_namespace }}:8080/kc/realms/scout/protocol/openid-connect/certs
         refreshInterval: 1m
       permissionsClaimName: groups
       authorizer: default
