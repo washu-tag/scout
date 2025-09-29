@@ -25,5 +25,3 @@
 
     - name: Install Loki, Promtail, and Grafana
       include_tasks: services/grafana.yaml
-      vars:
-        slack_contact_point_j2: '/helm/grafana/alerts/contact-points/slack-contact-point.json.j2'

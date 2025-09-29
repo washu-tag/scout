@@ -2,6 +2,7 @@
   kubernetes.core.helm_repository:
     name: superset
     repo_url: https://apache.github.io/superset
+  delegate_to: localhost
 
 - name: Create namespace
   kubernetes.core.k8s:
@@ -9,8 +10,43 @@
     api_version: v1
     kind: Namespace
     state: present
+  delegate_to: localhost
+
+- name: Find all analytics YAML files
+  delegate_to: localhost
+  ansible.builtin.find:
+    paths: '{{ scout_repo_dir }}/analytics'
+    recurse: true
+    file_type: file
+    patterns: '*.yaml'
+  register: analytics_files
+
+- name: Build ConfigMap data and items list
+  no_log: true
+  vars:
+    analytics_root: '{{ (scout_repo_dir | realpath) ~ "/analytics" }}'
+  ansible.builtin.set_fact:
+    superset_dashboard_data: >-
+      {{
+        superset_dashboard_data | default({}) |
+        combine({ (item.path | basename): lookup('file', item.path) })
+      }}
+    superset_dashboard_items: >-
+      {{
+        superset_dashboard_items | default([]) + [
+          {
+            'key': (item.path | basename),
+            'path': ((item.path | realpath) | regex_replace('^' ~ analytics_root ~ '/', 'analytics/'))
+          }
+        ]
+      }}
+  loop: '{{ analytics_files.files }}'
+  loop_control:
+    label: '{{ (item.path | realpath) | regex_replace("^" ~ analytics_root ~ "/", "") }}'
+  delegate_to: localhost
 
 - name: Create ConfigMap for datasource and dashboard yaml
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
@@ -19,31 +55,8 @@
       metadata:
         name: dashboard-config
         namespace: superset
-      data:
-        metadata.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/metadata.yaml') }}
-        Scout_Data_Lake.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/databases/Scout_Data_Lake.yaml') }}
-        reports.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/datasets/Scout_Data_Lake/reports.yaml') }}
-        Modality_2.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Modality_2.yaml') }}
-        Count_1.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Count_1.yaml') }}
-        Facility_by_date_8.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Facility_by_date_8.yaml') }}
-        Race_4.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Race_4.yaml') }}
-        Report_5.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Report_5.yaml') }}
-        Service_Name_6.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Service_Name_6.yaml') }}
-        Study_Instance_UID_7.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Study_Instance_UID_7.yaml') }}
-        Sex_3.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/charts/Sex_3.yaml') }}
-        Scout_1.yaml: |
-          {{ lookup('file', '{{ scout_repo_dir }}/analytics/dashboards/Scout_1.yaml') }}
+      data: '{{ superset_dashboard_data | default({}) }}'
+  delegate_to: localhost
 
 - name: Install/Upgrade Superset Helm chart
   kubernetes.core.helm:
@@ -111,31 +124,7 @@
         - name: dashboard-config
           configMap:
             name: dashboard-config
-            items:
-              - key: metadata.yaml
-                path: analytics/metadata.yaml
-              - key: Scout_Data_Lake.yaml
-                path: analytics/databases/Scout_Data_Lake.yaml
-              - key: reports.yaml
-                path: analytics/datasets/Scout_Data_Lake/reports.yaml
-              - key: Modality_2.yaml
-                path: analytics/charts/Modality_2.yaml
-              - key: Count_1.yaml
-                path: analytics/charts/Count_1.yaml
-              - key: Facility_by_date_8.yaml
-                path: analytics/charts/Facility_by_date_8.yaml
-              - key: Race_4.yaml
-                path: analytics/charts/Race_4.yaml
-              - key: Report_5.yaml
-                path: analytics/charts/Report_5.yaml
-              - key: Service_Name_6.yaml
-                path: analytics/charts/Service_Name_6.yaml
-              - key: Study_Instance_UID_7.yaml
-                path: analytics/charts/Study_Instance_UID_7.yaml
-              - key: Sex_3.yaml
-                path: analytics/charts/Sex_3.yaml
-              - key: Scout_1.yaml
-                path: analytics/dashboards/Scout_1.yaml
+            items: '{{ superset_dashboard_items | default([]) }}'
 
       extraVolumeMounts:
         - name: dashboard-config
@@ -184,3 +173,4 @@
             echo "Dashboard imported successfully"
           fi
           {% endraw %}
+  delegate_to: localhost
