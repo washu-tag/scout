@@ -164,6 +164,9 @@ jobs:
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
+      - name: 'Install keycloak'
+        shell: bash
+        run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/auth.yaml --tags keycloak --skip-tags oauth2proxy
       - name: 'Install postgres'
         shell: bash
         run: |
