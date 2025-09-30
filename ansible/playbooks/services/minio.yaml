@@ -281,6 +281,32 @@
                       path: config.env
   delegate_to: localhost
 
+- name: Debug - wait 60s before checking job status
+  ansible.builtin.pause:
+    seconds: 60
+  delegate_to: localhost
+
+- name: Debug - MinIO Bootstrap Job Logs
+  ansible.builtin.shell: |
+    kubectl -n {{ minio_tenant_namespace }} logs job/bootstrap-minio-iam || echo "No bootstrap job found"
+  delegate_to: localhost
+  ignore_errors: true
+
+- name: Debug - MinIO scout-pool-0-0 Pod Logs
+  ansible.builtin.shell: |
+    kubectl -n {{ minio_tenant_namespace }} logs {{ minio_tenant_name }}-pool-0-0 || echo "No {{ minio_tenant_name }}-pool-0-0 pod found"
+  delegate_to: localhost
+  ignore_errors: true
+
+- name: Debug - All MinIO Pod Logs
+  ansible.builtin.shell: |
+    for pod in $(kubectl -n {{ minio_tenant_namespace }} get pods -o jsonpath='{.items[*].metadata.name}'); do
+      echo "==== $pod ===="
+      kubectl -n {{ minio_tenant_namespace }} logs $pod || true
+    done
+  delegate_to: localhost
+  ignore_errors: true
+
 - name: Wait for bootstrap job to complete
   kubernetes.core.k8s_info:
     api_version: batch/v1
