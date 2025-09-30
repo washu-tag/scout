@@ -144,11 +144,12 @@ def import_hl7_files_to_deltalake(
                     F.expr(
                         f"filter(segments, x -> x.id = '{segment}')[0].fields"
                     ).alias(segment.lower())
-                    for segment in ("PID", "ORC", "OBR", "DG1", "ZDS")
+                    for segment in ("PID", "ORC", "OBR", "ZDS")
                 ],
-                # OBX is a special case; we need to keep it as a list for now so
-                # later we can explode it into separate rows
+                # OBX and DG1 are special cases; we need to keep them as lists for now so
+                # later we can explode them into separate rows or iterate over them
                 F.expr("filter(segments, x -> x.id = 'OBX')").alias("obx_lines"),
+                F.expr("filter(segments, x -> x.id = 'DG1')").alias("dg1_lines"),
             )
             .select(
                 "source_file",
@@ -175,7 +176,6 @@ def import_hl7_files_to_deltalake(
                     for segment, field, components in (
                         ("pid", 11, (5, 6)),
                         ("obr", 4, (1, 2, 3)),
-                        ("dg1", 3, (1, 2, 3)),
                         ("obr", 32, (2, 3)),
                         ("obr", 33, (2, 3)),
                     )
@@ -261,6 +261,28 @@ def import_hl7_files_to_deltalake(
                     for column, suffix_list in suffixes.items()
                 ],
             )
+        )
+
+        activity.heartbeat()
+        activity.logger.info("Creating diagnosis df")
+        diagnosis_df = (
+            df.select("source_file", "dg1_lines")
+            .withColumn(
+                "diagnoses",
+                F.transform(
+                    F.col("dg1_lines"),
+                    lambda item: (
+                        lambda components: F.struct(
+                            components[0].alias("diagnosis_code"),
+                            components[1].alias("diagnosis_code_text"),
+                            components[2].alias("diagnosis_code_coding_system"),
+                        )
+                    )(
+                        F.split(item.fields[2], "\\^")
+                    ),  # take DG1-3 and split into components
+                ),
+            )
+            .drop("dg1_lines")
         )
 
         activity.heartbeat()
@@ -358,9 +380,6 @@ def import_hl7_files_to_deltalake(
                     F.concat(F.col("obr-33-3"), F.lit(" "), F.col("obr-33-2")),
                 )
                 .alias("primary_radiologist"),
-                F.col("dg1-3-1").alias("diagnosis_code"),
-                F.col("dg1-3-2").alias("diagnosis_code_text"),
-                F.col("dg1-3-3").alias("diagnosis_code_coding_scheme"),
                 F.col("zds-1").alias("study_instance_uid"),
                 # Create date and time objects
                 F.to_date(
@@ -386,6 +405,7 @@ def import_hl7_files_to_deltalake(
                 "source_file",
             )
             .join(report_df, "source_file", "left")
+            .join(diagnosis_df, "source_file", "left")
             .join(patient_id_df, "source_file", "left")
             .join(patient_id_json_df, "source_file", "left")
             .join(modality_map, "service_identifier", "left")
