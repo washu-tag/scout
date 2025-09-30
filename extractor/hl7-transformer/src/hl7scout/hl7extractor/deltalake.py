@@ -388,8 +388,7 @@ def import_hl7_files_to_deltalake(
                     "yyyyMMdd",
                 ).alias("birth_date"),
                 F.expr("datediff(YEAR, birth_date, requested_dt)").alias("patient_age"),
-                F.when()
-                * [
+                *[
                     F.to_timestamp(
                         F.when(
                             F.length(F.col(timestamp_col)) == 12,
