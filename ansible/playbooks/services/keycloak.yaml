@@ -129,7 +129,7 @@
         http:
           httpEnabled: true
         hostname:
-          hostname: '{{ keycloak_hostname }}'
+          hostname: '{{ server_hostname }}'
         ingress:
           enabled: false
         proxy:
