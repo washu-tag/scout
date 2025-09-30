@@ -154,6 +154,7 @@ def import_hl7_files_to_deltalake(
             .select(
                 "source_file",
                 "obx_lines",
+                "dg1_lines",
                 # Extract all the fields where we only want the first component
                 *[
                     F.split(F.col(segment).getItem(field - 1), "\\^")
