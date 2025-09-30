@@ -80,3 +80,5 @@ install-dcm4chee:
 install-openwebui:
 	$(ANSIBLE_CMD) playbooks/open-webui.yaml
 
+install-mailhog:
+	$(ANSIBLE_CMD) playbooks/mailhog.yaml

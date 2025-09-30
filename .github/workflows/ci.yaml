@@ -131,6 +131,9 @@ jobs:
       - name: 'ansible-galaxy dependencies'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-galaxy install -r collections/requirements.yaml
+      - name: Install Python dependencies for Ansible Kubernetes modules
+        run: |
+          /opt/pipx/venvs/ansible-core/bin/python -m pip install kubernetes
       - name: 'Install k3s'
         shell: bash
         run: |
