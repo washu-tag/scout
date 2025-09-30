@@ -281,9 +281,9 @@
                       path: config.env
   delegate_to: localhost
 
-- name: Debug - wait 60s before checking job status
+- name: Debug - Wait 120s before checking job status
   ansible.builtin.pause:
-    seconds: 60
+    seconds: 120
   delegate_to: localhost
 
 - name: Debug - MinIO Bootstrap Job Logs
