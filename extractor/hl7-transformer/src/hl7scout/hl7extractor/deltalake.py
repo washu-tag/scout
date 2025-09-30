@@ -387,7 +387,6 @@ def import_hl7_files_to_deltalake(
                     F.substring(F.col("pid-7"), 1, 8),
                     "yyyyMMdd",
                 ).alias("birth_date"),
-                F.expr("datediff(YEAR, birth_date, requested_dt)").alias("patient_age"),
                 *[
                     F.to_timestamp(
                         F.when(
@@ -404,6 +403,7 @@ def import_hl7_files_to_deltalake(
                         ("obr-22", "results_report_status_change_dt"),
                     )
                 ],
+                F.expr("datediff(YEAR, birth_date, requested_dt)").alias("patient_age"),
                 "source_file",
             )
             .join(report_df, "source_file", "left")
