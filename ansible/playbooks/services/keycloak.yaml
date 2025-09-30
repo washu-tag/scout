@@ -149,6 +149,21 @@
           - name: scout-url
             value: '{{ server_hostname }}'
 
+- name: Debug - Wait 60s before checking Keycloak status
+  delegate_to: localhost
+  ansible.builtin.pause:
+    seconds: 60
+
+- name: Debug - All Keycloak pod logs
+  delegate_to: localhost
+  ignore_errors: true
+  ansible.builtin.shell: |
+    for pod in $(kubectl get pods -n '{{ keycloak_namespace }}' -o jsonpath='{.items[*].metadata.name}'); do
+      echo "==== $pod ===="
+      kubectl -n {{ keycloak_namespace }} logs $pod || true
+      echo "-----";
+    done
+
 # The operator wants to use a subdomain and does not appear to support a path-based ingress
 - name: Create Keycloak Ingress
   delegate_to: localhost
