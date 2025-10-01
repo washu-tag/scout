@@ -94,7 +94,7 @@
         chart_ref: '{{ helm_repo_name }}/{{ helm_chart_name }}'
         release_namespace: '{{ open_webui_namespace }}'
         update_repo_cache: true
-        chart_version: ~8.6.0
+        chart_version: ~8.8.0
         wait: true
         wait_timeout: 15m
         atomic: true

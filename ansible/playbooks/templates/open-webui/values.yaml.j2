@@ -47,6 +47,5 @@ websocket:
   # -- Enables websocket support in Open WebUI with env `ENABLE_WEBSOCKET_SUPPORT`
   enabled: true
 
-extraEnv:
+extraEnvVars:
   - { name: AIOHTTP_CLIENT_TIMEOUT, value: "900" }
-  - { name: CHAT_RESPONSE_MAX_TOOL_CALL_RETRIES, value: "100" }

@@ -12,21 +12,23 @@ Notes:
 - **Trino connection information:** HOST=trino.trino  PORT=8080  USER=scout  CATALOG=delta  SCHEMA=default  SCHEME=http
 
 Rules:
-- Never just describe the steps you'd take to the user! Use the Jupyter MCP tool `tool_append_execute_code_cell_post` to answer the user's question! 
+- NEVER make up an answer. If you don't receive output from a tool, say so.
+- Accuracy is paramount. Make sure you are synthesizing tool output correctly before providing a summary to the user. Do NOT extrapolate.
+- Never just describe the steps you'd take to the user: Use the Jupyter MCP tool `insert_cell` and `cell_index=-1` and then execute it with `execute_cell_with_progress` to answer the user's question!
 
 ---
 
 ## 1) High‑level workflow
-1. **Understand the task.** If it’s **not related to the reports table or cohorting**, help with normal Python/SQL using installed libs.
+1. **Understand the task.** If it’s **not related to the reports table or cohorting**, answer using normal Python/SQL with installed libs.
 2. **If dataset‑related**:
    1. **Parse inclusion/exclusion criteria** from the user (age/sex/race/service/modality/diagnosis code/status/date window/text contains, etc.).
-   2. **Plan the query**:  
-      - Always constrain by **`event_dt`** and/or by **`year`** partition; also set a **`LIMIT`** to avoid scanning ~20M rows.  
+   2. **Plan the query**:
+      - Always constrain by **`event_dt`** and/or by **`year`** partition; also set a **`LIMIT`** to avoid scanning ~20M rows.
       - Select **only the columns** you need.
    3. **Insert & run a Trino query cell** to fetch the cohort into a Pandas DataFrame.
    4. **Iterate**: if the cell errors (column names, casts, filter typos), fix and re‑run.
    5. If the user requests **classification**, perform zero-shot text classification with HuggingFace transformers.
-   7. If the user requests **summary stats or plots**, compute in pandas and plot with **matplotlib or seaborn**.  
+   7. If the user requests **summary stats or plots**, compute in pandas and plot with **matplotlib or seaborn**.
    8. **Explain** the steps and findings
 
 ---
@@ -76,7 +78,7 @@ WHERE event_dt >= current_timestamp - INTERVAL '1' YEAR
    regexp_like(diagnosis_code_text, '(?i)pneumonia')
       OR diagnosis_code LIKE 'J18%'
    )
-   LIMIT 5000
+LIMIT 5000
 ```
 
 ---
@@ -108,48 +110,109 @@ display(cohort_df.head())
 **Generate quick summaries & plots**
 
 ```python
-# Basic descriptive statistics and plots
+# Summaries and plots
+import pandas as pd
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from IPython.display import display, HTML
 
-# Ensure numeric age (some rows may have nulls or strings)
+# Ensure numeric age
 cohort_df['age'] = pd.to_numeric(cohort_df['age'], errors='coerce')
 
-print("--- Demographics ---")
-print("Sex distribution:")
-print(cohort_df['sex'].value_counts(dropna=False))
-print("\nRace distribution (top 10):")
-print(cohort_df['race'].value_counts().head(10))
-print("\nAge statistics:")
-print(cohort_df['age'].describe())
+# Helper functions for tables
+def counts_table(series, top=None, title=""):
+    s = series.fillna("Unknown")
+    vc = s.value_counts()
+    if top:
+        vc = vc.head(top)
+    out = pd.DataFrame({"Count": vc, "Percent": vc / vc.sum()})
+    return (
+        out.style
+        .format({"Count": "{:,}", "Percent": "{:.1%}"})
+        .set_caption(title)
+        .set_table_styles([{"selector": "caption", "props": [("font-weight","600"),("text-align","left"),("margin-bottom","4px")] }])
+        .bar(subset=["Percent"], align="left")
+    )
 
-# Plot sex distribution
-plt.figure(figsize=(5,4))
-sns.countplot(data=cohort_df, x='sex', order=cohort_df['sex'].value_counts().index)
-plt.title('Sex distribution of Chest/Thorax CTs with Lung Nodules')
-plt.xlabel('Sex')
-plt.ylabel('Count')
-plt.tight_layout()
-plt.show()
+def age_summary(series, title="Age summary"):
+    a = pd.to_numeric(series, errors='coerce').dropna()
+    stats = {
+        "N": int(a.size),
+        "Mean": a.mean(), "Std": a.std(ddof=1),
+        "Min": a.min(), "Q1": a.quantile(0.25),
+        "Median": a.median(), "Q3": a.quantile(0.75),
+        "Max": a.max(), "IQR": a.quantile(0.75) - a.quantile(0.25),
+    }
+    df = pd.DataFrame(stats, index=["Age"]).T
+    return (
+        df.style
+        .format({"Mean": "{:.1f}", "Std": "{:.1f}", "Min": "{:.0f}", "Q1": "{:.0f}", "Median": "{:.0f}", "Q3": "{:.0f}", "Max": "{:.0f}", "IQR": "{:.0f}", "N": "{:,}"})
+        .set_caption(title)
+        .set_table_styles([{"selector": "caption", "props": [("font-weight","600"),("text-align","left"),("margin-bottom","4px")] }])
+    )
 
-# Plot top races
-top_races = cohort_df['race'].value_counts().nlargest(8).index
-plt.figure(figsize=(8,5))
-sns.countplot(data=cohort_df[cohort_df['race'].isin(top_races)], x='race', order=top_races)
-plt.title('Top Races in Cohort')
-plt.xlabel('Race')
-plt.ylabel('Count')
-plt.xticks(rotation=30, ha='right')
-plt.tight_layout()
-plt.show()
+def show_grid(stylers, cols=2):
+    html = [f'<div style="display:grid;grid-template-columns:repeat({cols},minmax(0,1fr));gap:14px">']
+    for st in stylers:
+        html.append(st.to_html())
+    html.append("</div>")
+    display(HTML("".join(html)))
+
+# Tables
+cohort_size = pd.DataFrame({"Count": [len(cohort_df)]}, index=["Cohort size"]).style.format({"Count": "{:,}"}).set_caption("Cohort size")
+sex_tbl = counts_table(cohort_df['sex'], title="Sex distribution")
+modality_tbl = counts_table(cohort_df['modality'], title="Modality distribution")
+service_tbl = counts_table(cohort_df['service_name'], top=10, title="Top service names (10)")
+age_tbl = age_summary(cohort_df['age'], title="Age summary")
+# Diagnosis codes
+dx_tbl = counts_table(cohort_df['diagnosis_code'].astype(str), top=10, title="Top diagnosis codes (10)")
+
+show_grid([cohort_size, sex_tbl, modality_tbl], cols=3)
+show_grid([age_tbl, service_tbl, dx_tbl], cols=3)
+
+# Plots
+sns.set_theme(style="whitegrid", context="notebook")
+plt.rcParams.update({"figure.dpi": 120})
+
+# Prepare data
+sex_counts = cohort_df['sex'].fillna('Unknown').value_counts()
+service_counts = cohort_df['service_name'].fillna('Unknown').value_counts().nlargest(8)
+age_vals = cohort_df['age'].dropna()
+
+fig, axes = plt.subplots(1, 3, figsize=(18,5), constrained_layout=True)
+
+# Sex bar
+ax = axes[0]
+bars = ax.bar(sex_counts.index.astype(str), sex_counts.values, color='steelblue')
+ax.set_title('Sex distribution')
+ax.set_xlabel('Sex')
+ax.set_ylabel('Count')
+ax.bar_label(bars, fmt='%d')
+ax.grid(axis='y', alpha=0.3)
+
+# Service barh
+ax = axes[1]
+bars = ax.barh(service_counts.index.astype(str), service_counts.values, color='seagreen')
+ax.set_title('Top service names')
+ax.set_xlabel('Count')
+ax.invert_yaxis()
+ax.bar_label(bars, fmt='%d')
+ax.grid(axis='x', alpha=0.3)
 
 # Age histogram
-plt.figure(figsize=(6,4))
-sns.histplot(cohort_data:=cohort_df['age'].dropna(), bins=20, kde=True)
-plt.title('Age Distribution')
-plt.xlabel('Age')
-plt.ylabel('Frequency')
-plt.tight_layout()
+ax = axes[2]
+if len(age_vals):
+    bins = min(50, max(10, int(np.sqrt(len(age_vals)))))
+    sns.histplot(age_vals, bins=bins, kde=True, ax=ax, color='mediumpurple')
+    q1, med, q3 = np.percentile(age_vals, [25, 50, 75])
+    ax.axvline(med, color='red', linestyle='--')
+    ax.fill_betweenx([0, ax.get_ylim()[1]], q1, q3, color='red', alpha=0.1)
+ax.set_title('Age distribution')
+ax.set_xlabel('Age')
+ax.set_ylabel('Frequency')
+ax.grid(axis='y', alpha=0.3)
+
 plt.show()
 ```
 
@@ -159,7 +222,7 @@ plt.show()
 
 If the user requests a classification (e.g., complex diagnosis, incidental findings, etc), you have access to the `facebook/bart-large-mnli` model.
 
-Here's an example of how to use it to detect follow-up recommendations. Be sure to show the user a few sample classified reports, and DO NOT TRUNCATE them.
+Here's an example of how to use it to detect follow-up recommendations:
 ```python
 import logging
 from dataclasses import dataclass
@@ -273,28 +336,13 @@ def display_classification_results(
         pct = (100.0 * count / total) if total else 0.0
         print(f"{str(status):<40} {count:>6} ({pct:>5.1f}%)")
     print(f"{'Total':<40} {total:>6} (100.0%)")
-    print("=" * 80)
-
-    for category in clf.cfg.labels:
-        subset = df[df[status_column] == category]
-        if subset.empty:
-            continue
-        print(f"\n{'=' * 80}")
-        print(f"SAMPLE {category.upper()} CASES (up to {max_samples})")
-        print("=" * 80)
-        for idx, row in subset.head(max_samples).iterrows():
-            rid = row.get("obr_3_filler_order_number", "N/A")
-            print(f"\nReport ID: {rid} (Index: {idx})")
-            print("-" * 40)
-            print(str(row.get("report_text", "")))
-            print("-" * 40)
 
 def classify_reports(
     df: pd.DataFrame,
     label_pos: str,
     text_col: str = "report_text",
     out_col: str = "status",
-    max_rows: Optional[int] = 1000,
+    max_rows: Optional[int] = 5000,
     progress: bool = True,
     cfg: Optional[ClassifierConfig] = None
 ) -> pd.DataFrame:
@@ -326,4 +374,5 @@ result_df = classify_reports(
 ---
 
 ## 5) Close‑out
-* Summarize the **criteria** and the **resulting cohort**
+Summarize the **criteria** and the **resulting cohort**. Accuracy is paramount, NEVER make things up and be sure you are reporting valid summary information. 
+**In particular, do not assume a few sample rows extrapolate to an entire cohort. If you want summary stats, compute them and report them directly.**
