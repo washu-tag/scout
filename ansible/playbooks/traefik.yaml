@@ -9,6 +9,17 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
+    - name: Generate self-signed certificate for CI
+      become: true
+      command: >
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048
+        -keyout {{ key_path }}
+        -out {{ cert_path }}
+        -subj "/CN={{ server_hostname }}"
+      args:
+        creates: '{{ cert_path }}'
+      when: lookup('env', 'CI') == 'true'
+
     - name: Generate TLS certificate using Tailscale
       command: 'tailscale cert --cert-file {{ cert_path }} --key-file {{ key_path }} {{ server_hostname }}'
       args:
