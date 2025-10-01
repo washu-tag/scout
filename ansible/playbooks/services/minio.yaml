@@ -1,7 +1,15 @@
 - name: Include MinIO variables
   include_vars: vars/minio.yaml
 
-- name: Add Minio Helm repository
+- name: Create MinIO tenant namespace
+  kubernetes.core.k8s:
+    name: '{{ minio_tenant_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+  delegate_to: localhost
+
+- name: Add MinIO Helm repository
   kubernetes.core.helm_repository:
     name: minio-operator
     repo_url: https://operator.min.io
