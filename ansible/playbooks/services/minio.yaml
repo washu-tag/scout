@@ -7,6 +7,38 @@
     repo_url: https://operator.min.io
   delegate_to: localhost
 
+- name: Read TLS cert from remote
+  no_log: true
+  become: true
+  slurp:
+    src: '{{ cert_path }}'
+  register: cert_file
+  when: lookup('env', 'CI') == 'true'
+
+- name: Read TLS key from remote
+  no_log: true
+  become: true
+  slurp:
+    src: '{{ key_path }}'
+  register: key_file
+  when: lookup('env', 'CI') == 'true'
+
+- name: Create TLS secret with Traefik certificate for MinIO
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: minio-ca-cert
+        namespace: '{{ minio_tenant_namespace }}'
+      type: kubernetes.io/tls
+      data:
+        tls.crt: '{{ cert_file.content }}'
+        tls.key: '{{ key_file.content }}' # MinIO only needs the cert, but k8s TLS secrets require both
+  delegate_to: localhost
+  when: lookup('env', 'CI') == 'true'
+
 - name: Install/Upgrade Minio Operator
   kubernetes.core.helm:
     name: minio-operator
@@ -77,7 +109,7 @@
           export MINIO_REGION_NAME={{ s3_region }}
           export MINIO_REGION={{ s3_region }}
           {% if minio_oidc_enabled | default(true) %}
-          export MINIO_IDENTITY_OPENID_CONFIG_URL_PRIMARY_IAM="{{ keycloak_hostname }}/kc/realms/scout/.well-known/openid-configuration"
+          export MINIO_IDENTITY_OPENID_CONFIG_URL_PRIMARY_IAM="https://{{ server_hostname }}/kc/realms/scout/.well-known/openid-configuration"
           export MINIO_IDENTITY_OPENID_CLIENT_ID_PRIMARY_IAM="{{ keycloak_minio_client_id }}"
           export MINIO_IDENTITY_OPENID_CLIENT_SECRET_PRIMARY_IAM="{{ keycloak_minio_client_secret }}"
           export MINIO_IDENTITY_OPENID_DISPLAY_NAME_PRIMARY_IAM="Keycloak SSO"
@@ -147,6 +179,9 @@
           protocol: http
         certificate:
           requestAutoCert: false
+        externalCaCertSecret: # TODO - not needed when not in CI with self-signed certs, need to handle
+          - name: minio-ca-cert
+            type: kubernetes.io/tls
         buckets: '{{ minio_buckets }}'
         users: '{{ minio_credentials }}'
       ingress: '{{ minio_ingress_config }}'

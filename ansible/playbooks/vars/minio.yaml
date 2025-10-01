@@ -92,3 +92,6 @@ minio_wait_retries: 60
 minio_wait_delay: 5
 minio_bootstrap_wait_retries: 30
 minio_bootstrap_wait_delay: 10
+
+cert_path: '/root/{{ server_hostname }}.crt'
+key_path: '/root/{{ server_hostname }}.key'

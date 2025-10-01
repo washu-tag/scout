@@ -153,7 +153,7 @@ jobs:
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: 'Configure traefik'
         shell: bash
-        run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/traefik.yaml
+        run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --skip-tags tailscale --diff playbooks/traefik.yaml
       - name: 'Push image to k3s - hl7log-extractor'
         uses: ./.github/actions/k3s-image-import
         with:
