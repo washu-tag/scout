@@ -55,8 +55,8 @@ prePuller:
 
 singleuser:
   image:
-    name: ghcr.io/washu-tag/pyspark-notebook
-    tag: 1.1.0
+    name: '{{ jupyter_singleuser_image_name | default("ghcr.io/washu-tag/pyspark-notebook") }}'
+    tag: '{{ jupyter_singleuser_image_tag | default("1.1.0") }}'
     pullPolicy: Never
   cmd: null
   lifecycleHooks:
@@ -81,6 +81,7 @@ singleuser:
   memory:
     limit: 16G
     guarantee: 2G
+  extraResource: '{{ jupyter_singleuser_extra_resource | default({}) }}'
   storage:
     type: static
     static:
