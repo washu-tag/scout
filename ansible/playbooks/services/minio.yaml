@@ -350,6 +350,47 @@
   delegate_to: localhost
   ignore_errors: true
 
+- name: Debug - List all cert directories in MinIO pod
+  ansible.builtin.shell: |
+    kubectl exec -n {{ minio_tenant_namespace }} {{ minio_tenant_name }}-pool-0-0 -c minio -- sh -c "
+      echo '=== /tmp/certs/CAs/ ==='
+      ls -la /tmp/certs/CAs/ 2>/dev/null || echo 'Directory not found'
+      echo ''
+      echo '=== /.minio/certs/CAs/ ==='
+      ls -la /.minio/certs/CAs/ 2>/dev/null || echo 'Directory not found'
+      echo ''
+      echo '=== /root/.minio/certs/CAs/ ==='
+      ls -la /root/.minio/certs/CAs/ 2>/dev/null || echo 'Directory not found'
+      echo ''
+      echo '=== $HOME/.minio/certs/CAs/ ==='
+      ls -la \$HOME/.minio/certs/CAs/ 2>/dev/null || echo 'Directory not found'
+      echo ''
+      echo '=== Find all .crt files ==='
+      find / -name '*.crt' 2>/dev/null | head -20
+      echo ''
+      echo '=== Certificate details from /tmp/certs/CAs/ ==='
+      for cert in /tmp/certs/CAs/*.crt; do
+        if [ -f \"\$cert\" ]; then
+          echo \"Certificate: \$cert\"
+          openssl x509 -in \"\$cert\" -noout -subject -issuer -dates -ext subjectAltName 2>/dev/null || echo 'Failed to parse'
+          echo ''
+        fi
+      done
+      [ ! -f /tmp/certs/CAs/*.crt ] && echo 'No .crt files found'
+    "
+  register: minio_cert_dirs
+  delegate_to: localhost
+  ignore_errors: true
+  when: lookup('env', 'CI') == 'true'
+
+- name: Debug - Display cert directory listing
+  debug:
+    msg: '{{ minio_cert_dirs.stdout_lines }}'
+  when:
+    - lookup('env', 'CI') == 'true'
+    - minio_cert_dirs is succeeded
+  delegate_to: localhost
+
 - name: Wait for bootstrap job to complete
   kubernetes.core.k8s_info:
     api_version: batch/v1
