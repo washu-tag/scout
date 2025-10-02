@@ -391,6 +391,36 @@
     - minio_cert_dirs is succeeded
   delegate_to: localhost
 
+- name: Debug - Check pod volume mounts
+  ansible.builtin.shell: |
+    kubectl get pod {{ minio_tenant_name }}-pool-0-0 -n {{ minio_tenant_namespace }} -o jsonpath='{.spec.volumes}' | jq
+  register: pod_volumes
+  delegate_to: localhost
+  ignore_errors: true
+  when: lookup('env', 'CI') == 'true'
+
+- name: Debug - Display pod volumes
+  debug:
+    msg: '{{ pod_volumes.stdout }}'
+  when:
+    - lookup('env', 'CI') == 'true'
+    - pod_volumes is succeeded
+
+- name: Debug - Check container volume mounts
+  ansible.builtin.shell: |
+    kubectl get pod {{ minio_tenant_name }}-pool-0-0 -n {{ minio_tenant_namespace }} -o jsonpath='{.spec.containers[0].volumeMounts}' | jq
+  register: container_mounts
+  delegate_to: localhost
+  ignore_errors: true
+  when: lookup('env', 'CI') == 'true'
+
+- name: Debug - Display container mounts
+  debug:
+    msg: '{{ container_mounts.stdout }}'
+  when:
+    - lookup('env', 'CI') == 'true'
+    - container_mounts is succeeded
+
 - name: Wait for bootstrap job to complete
   kubernetes.core.k8s_info:
     api_version: batch/v1
