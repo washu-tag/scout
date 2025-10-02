@@ -16,6 +16,7 @@
         -keyout {{ key_path }}
         -out {{ cert_path }}
         -subj "/CN={{ server_hostname }}"
+        -addext "subjectAltName=DNS:{{ server_hostname }}"
       args:
         creates: '{{ cert_path }}'
       when: lookup('env', 'CI') == 'true'
