@@ -288,65 +288,66 @@ def import_hl7_files_to_deltalake(
 
         activity.heartbeat()
         activity.logger.info("Extracting patient id columns")
-        exploded_patient_id_df = (
-            df.select(
-                "source_file",
-                # Get the patient id segment and explode into separate rows
-                F.explode(F.split(F.col("pid-2"), "~")).alias("pid-2"),
+        patient_ids_df = (
+            df.select("source_file", "pid-2")
+            .withColumn(
+                "patient_ids",
+                F.transform(
+                    F.split(F.col("pid-2"), "~"),
+                    lambda components: (
+                        lambda parts: F.struct(
+                            F.coalesce(parts[0], F.lit("")).alias("id_number"),
+                            F.coalesce(parts[3], F.lit("")).alias(
+                                "assigning_authority"
+                            ),
+                            F.coalesce(parts[4], F.lit("")).alias(
+                                "identifier_type_code"
+                            ),
+                            F.coalesce(parts[5], F.lit("")).alias("assigning_facility"),
+                        )
+                    )(F.split(components, "\\^")),
+                ),
             )
-            .select(
-                "source_file",
-                # Split the patient id fields from the exploded pid
-                F.split(F.col("pid-2"), "\\^").alias("patient_ids"),
-            )
-            .select(
-                "source_file",
-                # Get the patient id fields we want
-                F.col("patient_ids").getItem(0).alias("id_number"),
-                F.col("patient_ids").getItem(3).alias("assigning_authority"),
-                F.col("patient_ids").getItem(4).alias("identifier_type_code"),
-            )
-        ).cache()
+            .drop("pid-2")
+            .cache()
+        )
 
         activity.heartbeat()
         activity.logger.info("Creating patient id df")
         patient_id_df = (
-            # Filter out patient ids with missing fields
-            exploded_patient_id_df.filter(
-                " and ".join(
-                    f"{field} is not null and {field} != ''"
-                    for field in (
-                        "id_number",
-                        "assigning_authority",
-                        "identifier_type_code",
-                    )
-                )
+            patient_ids_df.select(
+                "source_file", F.explode("patient_ids").alias("patient_id")
+            )
+            .filter(
+                "patient_id.id_number != '' AND (patient_id.assigning_facility != '' OR (patient_id.assigning_authority != '' AND patient_id.identifier_type_code != ''))"
             )
             .select(
                 "source_file",
-                "id_number",
-                F.concat_ws(
-                    "_",
-                    F.lower("assigning_authority"),
-                    F.lower("identifier_type_code"),
-                ).alias("patient_id_col_name"),
+                F.col("patient_id.id_number").alias("id_number"),
+                F.when(
+                    (F.col("patient_id.assigning_authority") != "")
+                    & (F.col("patient_id.identifier_type_code") != ""),
+                    F.concat_ws(
+                        "_",
+                        F.lower("patient_id.assigning_authority"),
+                        F.lower("patient_id.identifier_type_code"),
+                    ),
+                )
+                .otherwise(
+                    F.concat(
+                        F.lit("legacy_patient_id_"),
+                        F.lower("patient_id.assigning_facility"),
+                    )
+                )
+                .alias("patient_id_col_name"),
             )
             .groupBy("source_file")
-            # Turn the patient_id_col_name values into columns
-            .pivot("patient_id_col_name")
-            # Assume they only have one patient id for each type
-            .agg(F.first("id_number"))
-        )
-
-        # Note that we do not filter out any patient ids here, so they are all available in the JSON
-        activity.heartbeat()
-        activity.logger.info("Creating patient id JSON column")
-        patient_id_json_df = exploded_patient_id_df.groupBy("source_file").agg(
-            F.to_json(
-                F.collect_list(
-                    F.struct("id_number", "assigning_authority", "identifier_type_code")
-                )
-            ).alias("patient_id_json")
+            .pivot(
+                "patient_id_col_name"
+            )  # Turn the patient_id_col_name values into columns
+            .agg(
+                F.first("id_number")
+            )  # Assume they only have one patient id for each type
         )
 
         activity.heartbeat()
@@ -408,8 +409,8 @@ def import_hl7_files_to_deltalake(
             )
             .join(report_df, "source_file", "left")
             .join(diagnosis_df, "source_file", "left")
+            .join(patient_ids_df, "source_file", "left")
             .join(patient_id_df, "source_file", "left")
-            .join(patient_id_json_df, "source_file", "left")
             .join(modality_map, "service_identifier", "left")
             .withColumn("year", F.year("message_dt"))
             .withColumn("updated", F.current_timestamp())
