@@ -96,10 +96,19 @@ jobs:
       - uses: actions/setup-python@v5.2.0
         with:
           python-version: '3.12'
+          cache: 'pip'
       - uses: actions/setup-java@v4
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
+          cache: 'gradle'
+      - name: Cache pre-commit environments
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-
       - uses: pre-commit/action@v3.0.1
   build-and-upload-hl7log-extractor:
     runs-on: ubuntu-latest
@@ -216,6 +225,7 @@ jobs:
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
+          cache: 'gradle'
       - name: 'Unit tests: hl7log-extractor'
         shell: bash
         run: cd extractor/hl7log-extractor && ./gradlew test
