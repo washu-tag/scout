@@ -218,6 +218,11 @@ jobs:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Remove unnecessary files to save space
+        shell: bash
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - name: 'Push Image - hl7log-extractor'
         uses: ./.github/actions/docker-push
         with:
@@ -256,6 +261,11 @@ jobs:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Remove unnecessary files to save space
+        shell: bash
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - name: 'Push Image - pyspark-notebook'
         uses: ./.github/actions/docker-push
         with:
