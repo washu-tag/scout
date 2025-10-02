@@ -1,3 +1,73 @@
+- name: Compute derived Trino sizing (workers) — part 1
+  set_fact:
+    trino_worker_headroom_gb: >-
+      {{ ((trino_worker_xmx_gb * worker_headroom_ratio) | float) | round(0, 'ceil') | int }}
+    trino_worker_max_mem_per_node_gb: >-
+      {{ ((trino_worker_xmx_gb * worker_max_mem_per_node_ratio) | float) | round(0, 'floor') | int }}
+    trino_worker_limit_gi: >-
+      {{ (
+          trino_worker_xmx_gb
+          + (((trino_worker_xmx_gb * worker_headroom_ratio) | float) | round(0, 'ceil'))
+          + worker_overhead_gb
+        ) | int }}
+- name: Compute derived Trino sizing (workers) — part 2
+  set_fact:
+    trino_worker_request_gi: '{{ trino_worker_limit_gi }}'
+
+- name: Compute derived Trino sizing (coordinator) — part 1
+  set_fact:
+    trino_coord_headroom_gb: >-
+      {{ ((coordinator_xmx_gb * coordinator_headroom_ratio) | float) | round(0, 'ceil') | int }}
+    trino_coord_max_mem_per_node_gb: >-
+      {{ ((coordinator_xmx_gb * coordinator_max_mem_per_node_ratio) | float) | round(0, 'floor') | int }}
+    trino_coord_limit_gi: >-
+      {{ (
+          coordinator_xmx_gb
+          + (((coordinator_xmx_gb * coordinator_headroom_ratio) | float) | round(0, 'ceil'))
+          + coordinator_overhead_gb
+        ) | int }}
+- name: Compute derived Trino sizing (coordinator) — part 2
+  set_fact:
+    trino_coord_request_gi: '{{ trino_coord_limit_gi }}'
+
+- name: Compute cluster-wide cap trino_server_max_memory_gb
+  set_fact:
+    trino_server_max_memory_gb: >-
+      {{
+        (
+          server_max_memory_gb
+          | default(
+              (
+                (worker_replicas | int)
+                * (trino_worker_max_mem_per_node_gb | int)
+                * (cluster_utilization | default(1.0, true) | float)
+              )
+              | float
+              | round(0, 'floor')
+            , true)
+        )
+        | int
+      }}
+- name: Compute cluster-wide cap trino_server_max_total_memory_gb
+  set_fact:
+    trino_server_max_total_memory_gb: >-
+      {{
+        (
+          server_max_total_memory_gb
+          | default( (trino_server_max_memory_gb | int) * 2 , true)
+        )
+        | int
+      }}
+- name: Sanity checks for sizing relationships
+  assert:
+    that:
+      - ((trino_worker_max_mem_per_node_gb | int) + (trino_worker_headroom_gb | int)) <= (trino_worker_xmx_gb | int)
+      - ((trino_coord_max_mem_per_node_gb | int) + (trino_coord_headroom_gb | int)) < (coordinator_xmx_gb | int)
+      - (trino_server_max_memory_gb | int) > 0
+      - (trino_server_max_total_memory_gb | int) >= (trino_server_max_memory_gb | int)
+    fail_msg: >
+      Trino sizing constraints violated. Check Xmx, headroom ratios, and per-node query caps.
+
 - name: Add Trino Helm repository
   kubernetes.core.helm_repository:
     name: trino
@@ -7,8 +77,8 @@
   kubernetes.core.helm:
     name: trino
     chart_ref: trino/trino
-    chart_version: ~1.38.0
-    release_namespace: trino
+    chart_version: ~1.40.0
+    release_namespace: '{{ trino_namespace }}'
     create_namespace: true
     release_state: present
     update_repo_cache: true
@@ -16,6 +86,52 @@
     wait_timeout: 5m
     atomic: true
     values:
+      # ---- Cluster-wide settings ----
+      server:
+        config:
+          query:
+            maxMemory: '{{ trino_server_max_memory_gb }}GB'
+        additionalConfigProperties:
+          - 'query.max-total-memory={{ trino_server_max_total_memory_gb }}GB'
+          - "spill-enabled={{ 'true' if enable_spill else 'false' }}"
+          - 'spiller-spill-path={{ spill_path }}'
+
+      # ---- Coordinator sizing ----
+      coordinator:
+        jvm:
+          maxHeapSize: '{{ coordinator_xmx_gb }}G'
+        config:
+          query:
+            maxMemoryPerNode: '{{ trino_coord_max_mem_per_node_gb }}GB'
+          memory:
+            heapHeadroomPerNode: '{{ trino_coord_headroom_gb }}GB'
+        resources:
+          requests: { memory: '{{ trino_coord_request_gi }}Gi' }
+          limits: { memory: '{{ trino_coord_limit_gi }}Gi' }
+        annotations:
+          prometheus.io/trino_scrape: 'true'
+
+      # ---- Worker sizing ----
+      worker:
+        jvm:
+          maxHeapSize: '{{ trino_worker_xmx_gb }}G'
+        config:
+          query:
+            maxMemoryPerNode: '{{ trino_worker_max_mem_per_node_gb }}GB'
+          memory:
+            heapHeadroomPerNode: '{{ trino_worker_headroom_gb }}GB'
+        resources:
+          requests: { memory: '{{ trino_worker_request_gi }}Gi' }
+          limits: { memory: '{{ trino_worker_limit_gi }}Gi' }
+        additionalVolumes:
+          - name: spill
+            emptyDir: {}
+        additionalVolumeMounts:
+          - name: spill
+            mountPath: '{{ spill_path }}'
+        annotations:
+          prometheus.io/trino_scrape: 'true'
+
       catalogs:
         delta: |
           connector.name=delta_lake
@@ -28,9 +144,3 @@
           s3.region={{ s3_region }}
           s3.endpoint={{ s3_endpoint }}
           s3.path-style-access=true
-      coordinator:
-        annotations:
-          prometheus.io/trino_scrape: 'true'
-      worker:
-        annotations:
-          prometheus.io/trino_scrape: 'true'
