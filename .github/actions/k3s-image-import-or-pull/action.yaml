@@ -1,0 +1,62 @@
+name: 'K3s image import or pull'
+description: 'Downloads docker image from artifact if available, otherwise pulls from registry'
+inputs:
+  subproject:
+    description: 'Subdirectory for microservice'
+    required: true
+  image-name:
+    description: 'Name for docker image'
+    required: true
+  registry:
+    description: 'Container registry (default: ghcr.io)'
+    required: false
+    default: 'ghcr.io'
+  registry-namespace:
+    description: 'Registry namespace (default: washu-tag)'
+    required: false
+    default: 'washu-tag'
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Derive version'
+      id: derive-version
+      uses: ./.github/actions/derive-version
+      with:
+        subproject: ${{ inputs.subproject }}
+
+    - name: Download artifact
+      id: download-artifact
+      uses: actions/download-artifact@v4
+      continue-on-error: true
+      with:
+        name: ${{ inputs.image-name }}
+        path: ${{ runner.temp }}
+
+    - name: Import from artifact or pull from registry
+      shell: bash
+      run: |
+        VERSION="${{ steps.derive-version.outputs.version }}"
+        IMAGE_NAME="${{ inputs.image-name }}"
+        REGISTRY="${{ inputs.registry }}"
+        NAMESPACE="${{ inputs.registry-namespace }}"
+        FULL_IMAGE="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
+        TAR_FILE="${{ runner.temp }}/${IMAGE_NAME}.tar"
+
+        if [ -f "${TAR_FILE}" ]; then
+          echo "Importing newly built image from artifact..."
+          sudo k3s ctr -n k8s.io images import \
+            --index-name "docker.io/local/${NAMESPACE}/${IMAGE_NAME}:${VERSION}" \
+            "${TAR_FILE}"
+          echo "Successfully imported ${IMAGE_NAME}:${VERSION} from artifact"
+        else
+          echo "Artifact not found, pulling existing image from registry..."
+          echo "Pulling ${FULL_IMAGE}..."
+          sudo k3s ctr -n k8s.io images pull "${FULL_IMAGE}"
+          echo "Successfully pulled ${FULL_IMAGE}"
+
+          # Tag the pulled image for local use
+          sudo k3s ctr -n k8s.io images tag \
+            "${FULL_IMAGE}" \
+            "docker.io/local/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
+          echo "Tagged as docker.io/local/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
+        fi
