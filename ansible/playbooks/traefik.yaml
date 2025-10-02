@@ -106,3 +106,41 @@
                       scheme: https
                       permanent: true
       delegate_to: localhost
+
+    - name: Get Traefik service ClusterIP
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Service
+        name: traefik
+        namespace: kube-system
+      register: traefik_service
+      delegate_to: localhost
+      when: lookup('env', 'CI') == 'true'
+
+    - name: Create CoreDNS custom hosts for CI
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: coredns-custom
+            namespace: kube-system
+          data:
+            ci-hosts.server: |
+              {{ server_hostname }}:53 {
+                  errors
+                  cache 30
+                  hosts {
+                      {{ traefik_service.resources[0].spec.clusterIP }} {{ server_hostname }}
+                      fallthrough
+                  }
+              }
+      delegate_to: localhost
+      when: lookup('env', 'CI') == 'true'
+
+    - name: Wait for CoreDNS to reload custom config
+      ansible.builtin.pause:
+        seconds: 10
+      delegate_to: localhost
+      when: lookup('env', 'CI') == 'true'

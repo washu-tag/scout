@@ -5,6 +5,7 @@ server:
       ansible_connection: local
       ansible_python_interpreter: /usr/bin/python3
       k3s_control_node: true
+      external_url: host.k3s.internal
 minio_hosts:
   children:
     server:
