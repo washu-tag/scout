@@ -187,9 +187,9 @@
           protocol: http
         certificate:
           requestAutoCert: false
-        externalCaCertSecret: # TODO - not needed when not in CI with self-signed certs, need to handle
-          - name: minio-ca-cert
-            type: kubernetes.io/tls
+          externalCaCertSecret: # TODO - not needed when not in CI with self-signed certs, need to handle
+            - name: minio-ca-cert
+              type: kubernetes.io/tls
         buckets: '{{ minio_buckets }}'
         users: '{{ minio_credentials }}'
       ingress: '{{ minio_ingress_config }}'
