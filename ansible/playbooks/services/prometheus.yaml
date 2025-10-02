@@ -2,7 +2,6 @@
   kubernetes.core.helm_repository:
     name: prometheus-community
     repo_url: https://prometheus-community.github.io/helm-charts
-  delegate_to: localhost
 
 - name: Create namespace
   kubernetes.core.k8s:
@@ -10,7 +9,6 @@
     api_version: v1
     kind: Namespace
     state: present
-  delegate_to: localhost
 
 - name: Create JupyterHub metrics API token secret
   kubernetes.core.k8s:
@@ -24,7 +22,6 @@
       type: Opaque
       stringData:
         metrics-api-token: '{{ jupyter_metrics_api_token }}'
-  delegate_to: localhost
 
 - name: Install Prometheus using Helm
   kubernetes.core.helm:
@@ -36,4 +33,5 @@
     update_repo_cache: true
     chart_version: ~27.11.0
     values: '{{ lookup("template", "templates/prometheus.values.yaml.j2") | from_yaml }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
   delegate_to: localhost

@@ -18,14 +18,12 @@
 
     - name: Read TLS cert from remote
       no_log: true
-      become: true
       slurp:
         src: '{{ cert_path }}'
       register: cert_file
 
     - name: Read TLS key from remote
       no_log: true
-      become: true
       slurp:
         src: '{{ key_path }}'
       register: key_file
@@ -44,19 +42,16 @@
           data:
             tls.crt: '{{ cert_file.content }}'
             tls.key: '{{ key_file.content }}'
-      delegate_to: localhost
 
     - name: Wait for helm-install-traefik job to complete
       command: kubectl -n kube-system wait --for=condition=complete --timeout=300s job/helm-install-traefik
       register: traefik_install
       changed_when: false
-      delegate_to: localhost
 
     - name: Wait for helm-install-traefik-crd job to complete
       command: kubectl -n kube-system wait --for=condition=complete --timeout=300s job/helm-install-traefik-crd
       register: traefik_crd_install
       changed_when: false
-      delegate_to: localhost
 
     - name: Apply Traefik TLSStore configuration
       kubernetes.core.k8s:
@@ -70,7 +65,6 @@
           spec:
             defaultCertificate:
               secretName: tls-secret
-      delegate_to: localhost
 
     - name: Apply Traefik configuration to enforce TLS
       kubernetes.core.k8s:
@@ -93,4 +87,3 @@
                       to: websecure
                       scheme: https
                       permanent: true
-      delegate_to: localhost
