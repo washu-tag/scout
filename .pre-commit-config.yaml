@@ -34,15 +34,17 @@ repos:
       - id: black
   - repo: local
     hooks:
-      - id: checkstyle-tests
-        name: checkstyle
+      - id: checkstyle-hl7log-extractor
+        name: checkstyle (hl7log-extractor)
         language: system
         verbose: true
         pass_filenames: false
-        entry: bash -c 'cd extractor/hl7log-extractor && ./gradlew clean checkstyleMain checkstyleTest'
+        files: \.java$
+        entry: bash -c 'cd extractor/hl7log-extractor && ./gradlew checkstyleMain checkstyleTest'
       - id: checkstyle-tests
-        name: checkstyle
+        name: checkstyle (tests)
         language: system
         verbose: true
         pass_filenames: false
-        entry: bash -c 'cd tests && ./gradlew clean checkstyleMain checkstyleTest'
+        files: \.java$
+        entry: bash -c 'cd tests && ./gradlew checkstyleMain checkstyleTest'
