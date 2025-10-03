@@ -1,0 +1,35 @@
+---
+# Remote dev cluster configuration for Molecule testing
+# Use this when testing against tagdev-control-03 or similar remote clusters
+
+kubeconfig_yaml: ~/.kube/scout/tagdev-control-03/config
+postgres_cluster_namespace: postgres-molecule-test
+# Note: postgres_dir is set dynamically by prepare.yml using tempfile
+
+# Test credentials
+postgres_user: molecule_test_user
+postgres_password: molecule_test_pass_123
+postgres_superuser_password: molecule_super_pass_123
+hive_postgres_user: molecule_hive
+hive_postgres_password: molecule_hive_pass_123
+superset_postgres_user: molecule_superset
+superset_postgres_password: molecule_superset_pass_123
+
+# Test database
+ingest_postgres_table_name: molecule_ingest_test
+
+# Resources appropriate for dev cluster
+postgres_resources:
+  requests:
+    cpu: 1
+    memory: 2Gi
+  limits:
+    cpu: 2
+    memory: 4Gi
+postgres_storage_size: 5Gi
+postgres_parameters:
+  max_connections: '100'
+  shared_buffers: '512MB'
+  effective_cache_size: '1536MB'
+  maintenance_work_mem: '128MB'
+  work_mem: '8MB'

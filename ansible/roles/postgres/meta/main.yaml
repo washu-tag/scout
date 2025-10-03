@@ -1,21 +1,10 @@
 ---
+# Minimal galaxy_info to satisfy Molecule validation
+# Not published to Galaxy - this is just to pass checks
 galaxy_info:
   role_name: postgres
-  author: WashU TAG
-  description: Deploy CloudNativePG PostgreSQL cluster for Scout platform
-  license: MIT
-  min_ansible_version: '2.15'
-  platforms:
-    - name: Ubuntu
-      versions:
-        - focal
-        - jammy
-  galaxy_tags:
-    - kubernetes
-    - postgres
-    - postgresql
-    - cloudnativepg
-    - scout
+  namespace: washu_scout
 
+# Role dependencies
 dependencies:
   - role: scout_common

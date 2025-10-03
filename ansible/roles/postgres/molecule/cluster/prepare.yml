@@ -1,0 +1,58 @@
+---
+# Prepare playbook - validates cluster access and cleans test namespace
+# Ensures we have a clean environment before testing
+
+- name: Prepare
+  hosts: localhost
+  gather_facts: false
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
+
+  tasks:
+    - name: Verify kubeconfig exists
+      ansible.builtin.stat:
+        path: '{{ kubeconfig_yaml }}'
+      register: kubeconfig_stat
+      failed_when: not kubeconfig_stat.stat.exists
+
+    - name: Test cluster connectivity
+      ansible.builtin.command:
+        cmd: kubectl cluster-info
+      changed_when: false
+      register: cluster_info
+
+    - name: Display cluster info
+      ansible.builtin.debug:
+        msg: 'Connected to cluster: {{ cluster_info.stdout_lines[0] }}'
+
+    - name: Check if test namespace already exists
+      ansible.builtin.command:
+        cmd: 'kubectl get namespace {{ postgres_cluster_namespace }}'
+      register: namespace_check
+      changed_when: false
+      failed_when: false
+
+    - name: Delete existing test namespace if present
+      ansible.builtin.command:
+        cmd: 'kubectl delete namespace {{ postgres_cluster_namespace }} --wait=true --timeout=300s'
+      when: namespace_check.rc == 0
+      register: namespace_delete
+      changed_when: namespace_delete.rc == 0
+
+    - name: Wait for namespace deletion to complete
+      ansible.builtin.command:
+        cmd: 'kubectl get namespace {{ postgres_cluster_namespace }}'
+      register: namespace_gone
+      until: namespace_gone.rc != 0
+      retries: 30
+      delay: 2
+      changed_when: false
+      failed_when: false
+      when: namespace_check.rc == 0
+
+    - name: Create test postgres directory
+      ansible.builtin.file:
+        path: '{{ postgres_dir }}'
+        state: directory
+        mode: '0755'
