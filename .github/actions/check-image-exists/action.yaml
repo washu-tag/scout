@@ -1,0 +1,40 @@
+name: 'Check if Docker image exists in registry'
+description: 'Checks if a Docker image with the specified version exists in GitHub Container Registry'
+inputs:
+  subproject:
+    description: 'Subdirectory for microservice'
+    required: true
+  image-name:
+    description: 'Name for docker image'
+    required: true
+outputs:
+  exists:
+    description: 'Whether the image exists (true/false)'
+    value: ${{ steps.check-registry.outputs.exists }}
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Derive version'
+      id: derive-version
+      uses: ./.github/actions/derive-version
+      with:
+        subproject: ${{ inputs.subproject }}
+
+    - name: Check if image exists in registry
+      id: check-registry
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        VERSION="${{ steps.derive-version.outputs.version }}"
+        IMAGE_NAME="${{ inputs.image-name }}"
+
+        # Query GitHub Container Registry API
+        if gh api "/orgs/washu-tag/packages/container/${IMAGE_NAME}/versions" \
+           --jq '.[] | select(.metadata.container.tags[]? == "'"${VERSION}"'")' 2>/dev/null | grep -q .; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "Image ${IMAGE_NAME}:${VERSION} exists in registry"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "Image ${IMAGE_NAME}:${VERSION} does not exist in registry"
+        fi

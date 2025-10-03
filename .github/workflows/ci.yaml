@@ -15,6 +15,34 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
+      hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
+      pyspark-notebook: ${{ steps.filter.outputs.pyspark-notebook }}
+      explorer: ${{ steps.filter.outputs.explorer }}
+      superset: ${{ steps.filter.outputs.superset }}
+    steps:
+      - uses: actions/checkout@v4.2.1
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            hl7log-extractor:
+              - 'extractor/hl7log-extractor/**'
+              - 'linting_java_checkstyle.xml'
+            hl7-transformer:
+              - 'extractor/hl7-transformer/**'
+            pyspark-notebook:
+              - 'helm/jupyter/notebook/**'
+            explorer:
+              - 'explorer/**'
+            superset:
+              - 'helm/superset/**'
   lint:
     runs-on: ubuntu-latest
     permissions:
@@ -24,72 +52,114 @@ jobs:
       - uses: actions/setup-python@v5.2.0
         with:
           python-version: '3.12'
+          cache: 'pip'
       - uses: actions/setup-java@v4
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
+          cache: 'gradle'
       - uses: pre-commit/action@v3.0.1
   build-and-upload-hl7log-extractor:
     runs-on: ubuntu-latest
+    needs: changes
     permissions:
       contents: read
       attestations: write
       id-token: write
     steps:
       - uses: actions/checkout@v4.2.1
+      - name: 'Check if image exists'
+        id: check-image
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: extractor/hl7log-extractor
+          image-name: hl7log-extractor
       - name: 'Build/Cache Image - hl7log-extractor'
+        if: needs.changes.outputs.hl7log-extractor == 'true' || steps.check-image.outputs.exists == 'false'
         uses: ./.github/actions/docker-build-cache
         with:
           subproject: extractor/hl7log-extractor
           image-name: hl7log-extractor
   build-and-upload-hl7-transformer:
     runs-on: ubuntu-latest
+    needs: changes
     permissions:
       contents: read
       attestations: write
       id-token: write
     steps:
       - uses: actions/checkout@v4.2.1
+      - name: 'Check if image exists'
+        id: check-image
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: extractor/hl7-transformer
+          image-name: hl7-transformer
       - name: 'Build/Cache Image - hl7-transformer'
+        if: needs.changes.outputs.hl7-transformer == 'true' || steps.check-image.outputs.exists == 'false'
         uses: ./.github/actions/docker-build-cache
         with:
           subproject: extractor/hl7-transformer
           image-name: hl7-transformer
   build-and-upload-pyspark-notebook:
     runs-on: ubuntu-latest
+    needs: changes
     permissions:
       contents: read
       attestations: write
       id-token: write
     steps:
       - uses: actions/checkout@v4.2.1
+      - name: 'Check if image exists'
+        id: check-image
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: helm/jupyter/notebook
+          image-name: pyspark-notebook
       - name: 'Build/Cache Image - pyspark-notebook'
+        if: needs.changes.outputs.pyspark-notebook == 'true' || steps.check-image.outputs.exists == 'false'
         uses: ./.github/actions/docker-build-cache
         with:
           subproject: helm/jupyter/notebook
           image-name: pyspark-notebook
   build-and-upload-explorer:
     runs-on: ubuntu-latest
+    needs: changes
     permissions:
       contents: read
       attestations: write
       id-token: write
     steps:
       - uses: actions/checkout@v4.2.1
+      - name: 'Check if image exists'
+        id: check-image
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: explorer
+          image-name: explorer
       - name: 'Build/Cache Image - explorer'
+        if: needs.changes.outputs.explorer == 'true' || steps.check-image.outputs.exists == 'false'
         uses: ./.github/actions/docker-build-cache
         with:
           subproject: explorer
           image-name: explorer
   build-and-upload-superset:
     runs-on: ubuntu-latest
+    needs: changes
     permissions:
       contents: read
       attestations: write
       id-token: write
     steps:
       - uses: actions/checkout@v4.2.1
+      - name: 'Check if image exists'
+        id: check-image
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: helm/superset
+          image-name: superset
       - name: 'Build/Cache Image - superset'
+        if: needs.changes.outputs.superset == 'true' || steps.check-image.outputs.exists == 'false'
         uses: ./.github/actions/docker-build-cache
         with:
           subproject: helm/superset
@@ -104,6 +174,7 @@ jobs:
         with:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
+          cache: 'gradle'
       - name: 'Unit tests: hl7log-extractor'
         shell: bash
         run: cd extractor/hl7log-extractor && ./gradlew test
@@ -119,6 +190,7 @@ jobs:
       - unit-test
     permissions:
       contents: read
+      packages: read
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     steps:
@@ -138,13 +210,19 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3.3.0
+        with:
+          registry: ${{ ENV.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: 'Push image to k3s - hl7log-extractor'
-        uses: ./.github/actions/k3s-image-import
+        uses: ./.github/actions/k3s-image-import-or-pull
         with:
           subproject: extractor/hl7log-extractor
           image-name: hl7log-extractor
       - name: 'Push image to k3s - hl7-transformer'
-        uses: ./.github/actions/k3s-image-import
+        uses: ./.github/actions/k3s-image-import-or-pull
         with:
           subproject: extractor/hl7-transformer
           image-name: hl7-transformer
@@ -208,7 +286,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    needs: [deploy-and-test]
+    needs: [changes, deploy-and-test]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
@@ -224,22 +302,27 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - name: 'Push Image - hl7log-extractor'
+        if: needs.changes.outputs.hl7log-extractor == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7log-extractor
       - name: 'Push Image - hl7-transformer'
+        if: needs.changes.outputs.hl7-transformer == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-transformer
       - name: 'Push Image - pyspark-notebook'
+        if: needs.changes.outputs.pyspark-notebook == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: pyspark-notebook
       - name: 'Push Image - explorer'
+        if: needs.changes.outputs.explorer == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: explorer
       - name: 'Push Image - superset'
+        if: needs.changes.outputs.superset == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: superset
@@ -251,7 +334,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    needs: [deploy-and-test]
+    needs: [changes, deploy-and-test]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
@@ -267,6 +350,7 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - name: 'Push Image - pyspark-notebook'
+        if: needs.changes.outputs.pyspark-notebook == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: pyspark-notebook
