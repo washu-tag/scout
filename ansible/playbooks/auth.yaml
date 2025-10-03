@@ -1,17 +1,6 @@
 ---
-- name: Install auth components
-  hosts: server
-  gather_facts: false
-  environment:
-    HELM_PLUGINS: '{{ helm_plugins_dir }}'
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-  tasks:
-    - name: Install Keycloak
-      include_tasks: services/keycloak.yaml
-      tags:
-        - keycloak
+- name: Install Keycloak
+  import_playbook: services/keycloak.yaml
 
-    - name: Install OAuth2 Proxy
-      include_tasks: services/oauth2-proxy.yaml
-      tags:
-        - oauth2-proxy
+- name: Install OAuth2 Proxy
+  import_playbook: services/oauth2-proxy.yaml
