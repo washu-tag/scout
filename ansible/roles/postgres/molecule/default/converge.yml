@@ -16,5 +16,3 @@
           - Variable resolution: Tested in verify.yml
           - Role defaults: Tested in verify.yml
           - Template syntax: Validated during verify.yml
-
-          For full deployment testing, use: molecule test -s cluster

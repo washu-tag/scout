@@ -5,8 +5,7 @@ This guide explains how to use Molecule to test Ansible roles in the Scout proje
 ## Overview
 
 Molecule provides:
-- **Unit testing** - Test role logic without real infrastructure
-- **Integration testing** - Test against real Kubernetes clusters
+- **Unit testing** - Test role logic without real infrastructure (variable resolution, template rendering, task syntax)
 - **Automated workflows** - Create, converge, verify, and destroy test environments
 - **Multiple scenarios** - Different test configurations for different purposes
 
@@ -62,22 +61,16 @@ roles/<role>/
 ├── meta/
 │   └── main.yaml
 └── molecule/
-    ├── default/              # Fast mock/unit tests
-    │   ├── molecule.yml
-    │   ├── converge.yml
-    │   ├── verify.yml
-    │   └── prepare.yml
-    └── cluster/              # Integration tests
+    └── default/              # Unit tests
         ├── molecule.yml
         ├── converge.yml
         ├── verify.yml
-        ├── prepare.yml
-        └── destroy.yml
+        └── prepare.yml
 ```
 
 ## Test Scenarios
 
-### Default Scenario (Mock Tests)
+### Default Scenario (Unit Tests)
 
 Fast tests that don't require real infrastructure. Tests:
 - Variable resolution
@@ -85,7 +78,7 @@ Fast tests that don't require real infrastructure. Tests:
 - Task syntax
 - Role logic
 
-**Note:** The converge step is typically a no-op in mock scenarios since there's no real infrastructure to deploy to. Actual validation happens in the verify step.
+**Note:** The converge step is typically a no-op since there's no real infrastructure to deploy to. Actual validation happens in the verify step.
 
 **Run:**
 ```bash
@@ -96,25 +89,6 @@ uvx molecule test -s default
 ```
 
 **Speed:** Seconds to minutes
-
-### Cluster Scenario (Integration Tests)
-
-Tests against a real Kubernetes cluster. Tests:
-- Actual resource creation
-- Kubernetes API interactions
-- End-to-end deployment
-- Resource cleanup
-
-**Run:**
-```bash
-cd roles/<role>
-export KUBECONFIG=~/.kube/config
-molecule test -s cluster
-# or with uvx
-uvx molecule test -s cluster
-```
-
-**Speed:** Minutes to tens of minutes
 
 ## Common Molecule Commands
 
@@ -157,41 +131,11 @@ molecule login -s <scenario>
 molecule matrix test -s <scenario>
 ```
 
-## Testing Against Different Clusters
-
-The cluster scenario supports testing against different Kubernetes clusters using environment variables.
-
-### Local K3s Cluster
-
-```bash
-export KUBECONFIG=~/.kube/config
-cd roles/<role>
-molecule test -s cluster
-```
-
-### Remote Development Cluster
-
-```bash
-export KUBECONFIG=~/.kube/scout/tagdev-control-03/config
-cd roles/<role>
-molecule test -s cluster
-```
-
-### Custom Configuration
-
-Check if the role has cluster-specific config files in `molecule/cluster-configs/`:
-
-```bash
-ls roles/<role>/molecule/cluster-configs/
-```
-
-If available, you can reference these in documentation or use environment variables to point to them.
-
 ## Writing Tests
 
 ### Converge Playbook (converge.yml)
 
-Applies the role to test hosts. For scenarios without real infrastructure (like default/mock scenarios), this may be a no-op with explanatory output:
+Applies the role to test hosts. For unit test scenarios, this is typically a no-op with explanatory output:
 
 ```yaml
 ---
@@ -203,27 +147,12 @@ Applies the role to test hosts. For scenarios without real infrastructure (like 
       ansible.builtin.debug:
         msg: |
           This scenario tests role logic without K8s deployment.
-          For full deployment testing, use the cluster scenario.
-```
-
-For integration scenarios with real clusters:
-
-```yaml
----
-- name: Converge
-  hosts: localhost
-  gather_facts: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-  tasks:
-    - name: Include <role> role
-      ansible.builtin.include_role:
-        name: <role>
+          Actual validation happens in verify.yml.
 ```
 
 ### Verify Playbook (verify.yml)
 
-Asserts that the role behaved correctly:
+Asserts that the role behaved correctly. For unit tests, this typically validates variable resolution and template rendering:
 
 ```yaml
 ---
@@ -231,18 +160,18 @@ Asserts that the role behaved correctly:
   hosts: localhost
   gather_facts: false
   tasks:
-    - name: Check resource exists
-      ansible.builtin.command:
-        cmd: kubectl get <resource> <name> -n <namespace>
-      register: resource_check
-      changed_when: false
+    - name: Include role to get variables
+      ansible.builtin.include_role:
+        name: <role>
+        tasks_from: main
 
-    - name: Verify resource was created
+    - name: Verify variables are defined correctly
       ansible.builtin.assert:
         that:
-          - resource_check.rc == 0
-        fail_msg: "Resource was not created"
-        success_msg: "✓ Resource exists"
+          - <role>_variable is defined
+          - <role>_variable == "expected_value"
+        fail_msg: "Variable not set correctly"
+        success_msg: "✓ Variables configured correctly"
 ```
 
 ### Prepare Playbook (prepare.yml)
@@ -317,10 +246,8 @@ verifier:
 
 ### Test Speed
 
-- Keep mock/unit tests fast (< 1 minute)
-- Use integration tests sparingly (they're slower)
-- Run mock tests frequently during development
-- Run integration tests before committing
+- Keep unit tests fast (< 1 minute)
+- Run unit tests frequently during development
 
 ### Test Coverage
 
@@ -371,29 +298,6 @@ inventory:
 
 This is especially important when using `uvx` which runs Molecule in an isolated environment.
 
-### "Cluster unreachable"
-Check your KUBECONFIG:
-```bash
-export KUBECONFIG=/path/to/your/kubeconfig
-kubectl cluster-info
-```
-
-### "Namespace already exists"
-Clean up previous test:
-```bash
-molecule destroy -s cluster
-kubectl delete namespace <role>-molecule-test
-```
-
-### Tests hang
-Check for:
-- Network connectivity to cluster
-- kubectl access to cluster
-- Resources stuck in terminating state
-
-```bash
-kubectl get all -n <role>-molecule-test
-```
 
 ### "Role not found" errors
 Ensure roles_path is configured correctly in molecule.yml:
@@ -414,17 +318,13 @@ ansible-galaxy role init <role>
 # 2. Write role tasks
 vim roles/<role>/tasks/main.yaml
 
-# 3. Run fast mock tests frequently
+# 3. Run unit tests frequently
 cd roles/<role>
 molecule converge -s default
 molecule verify -s default
 
-# 4. Test against real cluster when ready
-export KUBECONFIG=~/.kube/config
-molecule test -s cluster
-
-# 5. Clean up
-molecule destroy -s cluster
+# 4. Clean up
+molecule destroy -s default
 ```
 
 ### Testing Changes to Existing Role
@@ -438,12 +338,11 @@ molecule verify -s default
 
 # Full test before committing
 molecule test -s default
-molecule test -s cluster
 
 # If tests fail
-molecule --debug converge -s cluster
+molecule --debug converge -s default
 # ... debug and fix ...
-molecule destroy -s cluster
+molecule destroy -s default
 ```
 
 ## Additional Resources
@@ -454,7 +353,7 @@ molecule destroy -s cluster
 
 ## Example: Testing the Postgres Role
 
-### Default Scenario (Mock Tests)
+### Default Scenario (Unit Tests)
 
 ```bash
 cd roles/postgres
@@ -474,44 +373,9 @@ molecule destroy -s default
 - Storage definitions structure
 - Role parameters configuration
 
-**What it doesn't test:**
-- Actual Kubernetes deployment (use cluster scenario for this)
-- Resource creation
-- Cluster connectivity
-
 **Test artifacts created:**
 - `/tmp/molecule_postgres_kubeconfig.yaml` - Mock kubeconfig
 - `/tmp/molecule_postgres_test/` - Test postgres directory
-
-### Cluster Scenario (Integration Tests)
-
-```bash
-cd roles/postgres
-export KUBECONFIG=~/.kube/config
-
-# Run full test cycle
-molecule test -s cluster
-
-# Or iterative development
-molecule converge -s cluster
-molecule verify -s cluster
-molecule destroy -s cluster
-```
-
-**What it tests:**
-- Actual Kubernetes resource creation
-- Namespace, secrets, storage classes
-- PostgreSQL cluster deployment
-- Metrics service creation
-- Cluster readiness
-
-**Test resources created:**
-- Namespace: `postgres-molecule-test`
-- StorageClass: `postgres-storage`
-- PersistentVolume: `postgres-pv`
-- Secrets: `postgres-user`, `superuser-secret`
-- PostgreSQL cluster resource
-- Test directory: `/tmp/molecule_postgres_cluster_test/`
 
 ## Getting Help
 
