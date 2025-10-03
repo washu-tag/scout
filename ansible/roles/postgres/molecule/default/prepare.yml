@@ -1,0 +1,40 @@
+---
+# Prepare playbook - sets up mock environment for testing
+# Mocks kubernetes.core modules so tests can run without real cluster
+
+- name: Prepare
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Create mock kubeconfig file
+      ansible.builtin.copy:
+        content: |
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - cluster:
+              server: http://localhost:8080
+            name: mock-cluster
+          contexts:
+          - context:
+              cluster: mock-cluster
+              user: mock-user
+            name: mock-context
+          current-context: mock-context
+          users:
+          - name: mock-user
+        dest: '{{ kubeconfig_yaml }}'
+        mode: '0644'
+
+    - name: Create test postgres directory
+      ansible.builtin.file:
+        path: '{{ postgres_dir }}'
+        state: directory
+        mode: '0755'
+
+    - name: Install ansible.utils collection (for mock modules)
+      ansible.builtin.command:
+        cmd: ansible-galaxy collection install ansible.utils
+      changed_when: false
+      failed_when: false

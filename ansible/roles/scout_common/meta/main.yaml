@@ -1,0 +1,9 @@
+---
+# Minimal galaxy_info to satisfy Molecule validation
+# Not published to Galaxy - this is just to pass checks
+galaxy_info:
+  role_name: scout_common
+  namespace: washu_scout
+
+# Role dependencies
+dependencies: []

@@ -1,0 +1,51 @@
+---
+# Default scenario - Fast unit tests without real infrastructure
+# Tests role logic, variable resolution, and template rendering
+
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+
+driver:
+  name: default
+
+platforms:
+  - name: localhost
+    groups:
+      - k3s_cluster
+      - server
+
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      roles_path: ${MOLECULE_PROJECT_DIRECTORY}/..
+      interpreter_python: auto_silent
+  inventory:
+    group_vars:
+      all:
+        # Mock environment - no real cluster needed
+        ansible_connection: local
+        gather_facts: false
+
+        # Use Python from the current environment (uvx virtualenv)
+        ansible_python_interpreter: '{{ ansible_playbook_python }}'
+
+        # Test paths (created by prepare.yml)
+        kubeconfig_yaml: /tmp/molecule_postgres_kubeconfig.yaml
+        postgres_dir: /tmp/molecule_postgres_test
+
+        # Required Scout variables for testing
+        postgres_cluster_namespace: postgres-test
+        postgres_user: testuser
+        postgres_password: testpass123
+        postgres_superuser_password: testsuperpass123
+        hive_postgres_user: hive
+        hive_postgres_password: hivepass123
+        superset_postgres_user: superset
+        superset_postgres_password: supersetpass123
+        ingest_postgres_table_name: ingest_test
+
+verifier:
+  name: ansible

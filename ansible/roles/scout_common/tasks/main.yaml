@@ -1,0 +1,3 @@
+---
+# Main entry point for scout_common role
+# This role provides shared tasks that can be included by other roles

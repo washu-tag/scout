@@ -1,0 +1,17 @@
+---
+# Destroy playbook - cleans up test artifacts
+
+- name: Destroy
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Remove test kubeconfig file
+      ansible.builtin.file:
+        path: '{{ kubeconfig_yaml }}'
+        state: absent
+
+    - name: Remove test postgres directory
+      ansible.builtin.file:
+        path: '{{ postgres_dir }}'
+        state: absent
