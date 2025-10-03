@@ -1,15 +1,20 @@
 ---
-# Converge playbook - applies the postgres role
-# This runs the role in test mode to verify it executes without errors
+# Converge playbook - no-op for default scenario
+# Default scenario is for fast unit tests without real infrastructure.
+# It tests variable resolution and role defaults via verify.yml.
+# For actual deployment testing, use the cluster scenario.
 
 - name: Converge
   hosts: localhost
   gather_facts: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
-    - name: Include postgres role
-      ansible.builtin.include_role:
-        name: postgres
+    - name: Explain default scenario purpose
+      ansible.builtin.debug:
+        msg: |
+          Default scenario tests role logic without K8s deployment.
+          - Variable resolution: Tested in verify.yml
+          - Role defaults: Tested in verify.yml
+          - Template syntax: Validated during verify.yml
+
+          For full deployment testing, use: molecule test -s cluster

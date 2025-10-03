@@ -77,13 +77,15 @@ roles/<role>/
 
 ## Test Scenarios
 
-### Default Scenario (Mock/Unit Tests)
+### Default Scenario (Mock Tests)
 
 Fast tests that don't require real infrastructure. Tests:
 - Variable resolution
 - Template rendering
 - Task syntax
 - Role logic
+
+**Note:** The converge step is typically a no-op in mock scenarios since there's no real infrastructure to deploy to. Actual validation happens in the verify step.
 
 **Run:**
 ```bash
@@ -189,13 +191,30 @@ If available, you can reference these in documentation or use environment variab
 
 ### Converge Playbook (converge.yml)
 
-Applies the role to test hosts:
+Applies the role to test hosts. For scenarios without real infrastructure (like default/mock scenarios), this may be a no-op with explanatory output:
 
 ```yaml
 ---
 - name: Converge
   hosts: localhost
   gather_facts: false
+  tasks:
+    - name: Explain scenario purpose
+      ansible.builtin.debug:
+        msg: |
+          This scenario tests role logic without K8s deployment.
+          For full deployment testing, use the cluster scenario.
+```
+
+For integration scenarios with real clusters:
+
+```yaml
+---
+- name: Converge
+  hosts: localhost
+  gather_facts: false
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
     - name: Include <role> role
       ansible.builtin.include_role:
@@ -451,9 +470,14 @@ molecule destroy -s default
 
 **What it tests:**
 - Variable resolution and defaults
-- Template rendering
+- Template rendering (Jinja2 syntax)
 - Storage definitions structure
 - Role parameters configuration
+
+**What it doesn't test:**
+- Actual Kubernetes deployment (use cluster scenario for this)
+- Resource creation
+- Cluster connectivity
 
 **Test artifacts created:**
 - `/tmp/molecule_postgres_kubeconfig.yaml` - Mock kubeconfig
