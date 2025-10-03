@@ -1,6 +1,6 @@
 ---
-# Dev-friendly defaults for postgres role
-# These are overridden by group_vars/k3s_cluster/postgres.yaml in production
+# Default configuration for postgres role
+# Override in inventory files as needed
 
 # Postgres storage configuration
 postgres_storage_size: 1Gi

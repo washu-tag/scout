@@ -1,6 +1,6 @@
 ---
 # Kubernetes deployment tasks for PostgreSQL cluster
-# These tasks run on the server host (which has access to group_vars/k3s_cluster/)
+# These tasks run on the server host (which has access to k3s_cluster inventory variables)
 
 - name: Initialize empty SQL statements list
   ansible.builtin.set_fact:
