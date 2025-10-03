@@ -52,7 +52,7 @@
             namespace: kube-system
           type: Opaque
           data:
-            logo.png: '{{ lookup("file", "files/oauth2-proxy/scout.jpg") | b64encode }}'
+            logo.png: '{{ lookup("file", "../files/oauth2-proxy/scout.jpg") | b64encode }}'
 
     - name: Install OAuth2 Proxy with helm
       delegate_to: localhost
