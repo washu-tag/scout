@@ -63,6 +63,21 @@ web:
       value: 'https://{{ server_hostname }}/temporal/auth/sso/callback'
     - name: TEMPORAL_AUTH_SCOPES
       value: openid microprofile-jwt
+{% if lookup('env', 'CI') == 'true' %}
+    - name: NODE_EXTRA_CA_CERTS
+      value: /etc/ssl/certs/ca.crt
+{% endif %}
+{% endif %}
+{% if lookup('env', 'CI') == 'true' %}
+  extraVolumes:
+    - name: ca-cert
+      secret:
+        secretName: temporal-ca-cert
+  extraVolumeMounts:
+    - name: ca-cert
+      mountPath: /etc/ssl/certs/ca.crt
+      subPath: tls.crt
+      readOnly: true
 {% endif %}
   ingress:
     enabled: true

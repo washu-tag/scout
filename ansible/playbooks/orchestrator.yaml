@@ -103,6 +103,32 @@
         repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
       delegate_to: localhost
 
+    - name: Create Temporal namespace
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: '{{ temporal_namespace }}'
+      delegate_to: localhost
+
+    - name: Create CA cert secret for Temporal
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: temporal-ca-cert
+            namespace: '{{ temporal_namespace }}'
+          type: kubernetes.io/tls
+          data:
+            tls.crt: '{{ lookup("kubernetes.core.k8s", kind="Secret", namespace="kube-system", resource_name="tls-secret").data["tls.crt"] }}'
+            tls.key: '{{ lookup("kubernetes.core.k8s", kind="Secret", namespace="kube-system", resource_name="tls-secret").data["tls.key"] }}'
+      delegate_to: localhost
+      when: lookup('env', 'CI') == 'true'
+
     - name: Install/Upgrade Temporal Helm chart
       register: temporal_helm_result
       kubernetes.core.helm:
