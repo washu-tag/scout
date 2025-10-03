@@ -2,7 +2,6 @@
   kubernetes.core.helm_repository:
     name: superset
     repo_url: https://apache.github.io/superset
-  delegate_to: localhost
 
 - name: Create namespace
   kubernetes.core.k8s:
@@ -10,40 +9,40 @@
     api_version: v1
     kind: Namespace
     state: present
-  delegate_to: localhost
 
-- name: Find all analytics YAML files
+- name: Build dashboard ConfigMap data
   delegate_to: localhost
-  ansible.builtin.find:
-    paths: '{{ scout_repo_dir }}/analytics'
-    recurse: true
-    file_type: file
-    patterns: '*.yaml'
-  register: analytics_files
+  block:
+    - name: Find all analytics YAML files
+      ansible.builtin.find:
+        paths: '{{ scout_repo_dir }}/analytics'
+        recurse: true
+        file_type: file
+        patterns: '*.yaml'
+      register: analytics_files
 
-- name: Build ConfigMap data and items list
-  no_log: true
-  vars:
-    analytics_root: '{{ (scout_repo_dir | realpath) ~ "/analytics" }}'
-  ansible.builtin.set_fact:
-    superset_dashboard_data: >-
-      {{
-        superset_dashboard_data | default({}) |
-        combine({ (item.path | basename): lookup('file', item.path) })
-      }}
-    superset_dashboard_items: >-
-      {{
-        superset_dashboard_items | default([]) + [
-          {
-            'key': (item.path | basename),
-            'path': ((item.path | realpath) | regex_replace('^' ~ analytics_root ~ '/', 'analytics/'))
-          }
-        ]
-      }}
-  loop: '{{ analytics_files.files }}'
-  loop_control:
-    label: '{{ (item.path | realpath) | regex_replace("^" ~ analytics_root ~ "/", "") }}'
-  delegate_to: localhost
+    - name: Build ConfigMap data and items list
+      no_log: true
+      vars:
+        analytics_root: '{{ (scout_repo_dir | realpath) ~ "/analytics" }}'
+      ansible.builtin.set_fact:
+        superset_dashboard_data: >-
+          {{
+            superset_dashboard_data | default({}) |
+            combine({ (item.path | basename): lookup('file', item.path) })
+          }}
+        superset_dashboard_items: >-
+          {{
+            superset_dashboard_items | default([]) + [
+              {
+                'key': (item.path | basename),
+                'path': ((item.path | realpath) | regex_replace('^' ~ analytics_root ~ '/', 'analytics/'))
+              }
+            ]
+          }}
+      loop: '{{ analytics_files.files }}'
+      loop_control:
+        label: '{{ (item.path | realpath) | regex_replace("^" ~ analytics_root ~ "/", "") }}'
 
 - name: Create ConfigMap for datasource and dashboard yaml
   no_log: true
@@ -56,7 +55,6 @@
         name: dashboard-config
         namespace: superset
       data: '{{ superset_dashboard_data | default({}) }}'
-  delegate_to: localhost
 
 - name: Install/Upgrade Superset Helm chart
   kubernetes.core.helm:
@@ -173,4 +171,3 @@
             echo "Dashboard imported successfully"
           fi
           {% endraw %}
-  delegate_to: localhost

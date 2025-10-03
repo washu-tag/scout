@@ -3,7 +3,6 @@
   hosts: server
   gather_facts: false
   environment:
-    HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
@@ -20,7 +19,6 @@
             stripPrefix:
               prefixes:
                 - /launchpad
-      delegate_to: localhost
 
     - name: Install explorer using Helm
       kubernetes.core.helm:
@@ -48,4 +46,5 @@
                 paths:
                   - path: /launchpad
                     pathType: Prefix
+        kubeconfig: '{{ local_kubeconfig_yaml }}'
       delegate_to: localhost
