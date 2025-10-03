@@ -73,6 +73,59 @@
         atomic: true
         values: "{{ lookup('template', 'templates/hl7log-extractor.values.yaml.j2') | from_yaml }}"
       delegate_to: localhost
+      register: extractor_deploy
+      ignore_errors: true
+
+    - name: Debug - Get extractor pods status
+      ansible.builtin.shell: |
+        kubectl get pods -n {{ extractor_namespace }} -o wide
+      register: extractor_pods
+      delegate_to: localhost
+      ignore_errors: true
+      changed_when: false
+
+    - name: Debug - Display extractor pods
+      debug:
+        msg: '{{ extractor_pods.stdout_lines }}'
+
+    - name: Debug - Get extractor pod logs
+      ansible.builtin.shell: |
+        for pod in $(kubectl get pods -n {{ extractor_namespace }} -o jsonpath='{.items[*].metadata.name}'); do
+          echo "==== Logs for $pod ===="
+          kubectl logs -n {{ extractor_namespace }} $pod --all-containers || true
+          echo ""
+          echo "==== Previous logs (if crashed) ===="
+          kubectl logs -n {{ extractor_namespace }} $pod --all-containers --previous || true
+          echo ""
+          echo "==== Describe $pod ===="
+          kubectl describe pod -n {{ extractor_namespace }} $pod || true
+          echo ""
+        done
+      register: extractor_logs
+      delegate_to: localhost
+      ignore_errors: true
+      changed_when: false
+
+    - name: Debug - Display extractor logs
+      debug:
+        msg: '{{ extractor_logs.stdout_lines }}'
+
+    - name: Debug - Get extractor events
+      ansible.builtin.shell: |
+        kubectl get events -n {{ extractor_namespace }} --sort-by='.lastTimestamp'
+      register: extractor_events
+      delegate_to: localhost
+      ignore_errors: true
+      changed_when: false
+
+    - name: Debug - Display extractor events
+      debug:
+        msg: '{{ extractor_events.stdout_lines }}'
+
+    - name: Fail if extractor deployment failed
+      fail:
+        msg: 'HL7Log Extractor deployment failed - see debug output above'
+      when: extractor_deploy is failed
 
     - name: Setup Spark defaults ConfigMap
       include_tasks: tasks/spark_config_setup.yaml
