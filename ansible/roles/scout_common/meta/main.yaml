@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: scout_common
+  author: WashU TAG
+  description: Common tasks for Scout platform deployment
+  license: MIT
+  min_ansible_version: '2.15'
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  galaxy_tags:
+    - kubernetes
+    - k3s
+    - scout
+
+dependencies: []

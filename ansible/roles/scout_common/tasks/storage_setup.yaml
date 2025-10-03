@@ -1,0 +1,44 @@
+---
+- name: Add storage classes
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: '{{ item.storage_class_name }}'
+      provisioner: kubernetes.io/no-provisioner
+      volumeBindingMode: WaitForFirstConsumer
+  loop: '{{ storage_definitions }}'
+
+- name: Add persistent volumes
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        name: '{{ item.pv_name }}'
+      spec:
+        capacity:
+          storage: '{{ item.size }}'
+        volumeMode: Filesystem
+        accessModes:
+          - ReadWriteOnce
+        persistentVolumeReclaimPolicy: Retain
+        storageClassName: '{{ item.storage_class_name }}'
+        local: "{{ item.node_url is defined | ternary({'path': item.path}, omit) }}"
+        nodeAffinity: >-
+          {{ item.node_url is defined | ternary({
+            'required': {
+              'nodeSelectorTerms': [
+                {'matchExpressions': [
+                  {'key': 'kubernetes.io/hostname',
+                   'operator': 'In',
+                   'values': [item.node_url]}
+                ]}
+              ]
+            }
+          }, omit) }}
+        hostPath: "{{ item.node_url is not defined | ternary({'path': item.path}, omit) }}"
+  loop: '{{ storage_definitions }}'

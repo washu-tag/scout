@@ -1,0 +1,3 @@
+---
+- "CREATE USER {{ superset_postgres_user }} WITH PASSWORD '{{ superset_postgres_password }}';"
+- 'CREATE DATABASE superset OWNER {{ superset_postgres_user }};'

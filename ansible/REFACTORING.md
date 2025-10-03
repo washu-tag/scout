@@ -201,33 +201,40 @@ ansible-playbook -i inventory.cluster03.yaml playbooks/main.yaml
 
 ## Line Count Comparison
 
-### Postgres Component
+### Postgres Component (Phase 2 Refactoring)
 
 | File | Before | After | Reduction |
 |------|--------|-------|-----------|
-| `playbooks/postgres.yaml` | 151 lines | 20 lines | **87%** |
-| `inventory.example.yaml` | 214 lines | 82 lines | **62%** |
+| `playbooks/postgres.yaml` | 142 lines | 17 lines | **88%** |
+| `inventory.example.yaml` | 219 lines | 222 lines | 0% (added comments) |
+| `inventory.cluster03-ssh-roles.yaml` | 288 lines | 291 lines | 0% (added comments) |
 
-**Total for postgres:**
-- Before: 365 lines (playbook + inventory)
-- After: 102 lines (organized, reusable, testable)
-- Plus: ~300 lines of role code (reusable across all environments!)
-- Plus: ~200 lines of Molecule tests
+**New role code (reusable across environments):**
+- `roles/scout_common/`: ~60 lines (reusable by all services)
+- `roles/postgres/`: ~150 lines (postgres-specific logic)
+- Templates: Moved from playbooks to role (same files)
 
-### Overall Structure
+**Total for postgres deployment:**
+- Before: 142 lines in playbook + vars files + task includes
+- After: 17 lines in playbook + ~210 lines in reusable roles
+- **Key benefit**: Role code is reusable across all environments and testable with Molecule
 
-**Before:**
-- 45 playbooks with repetitive patterns
-- All config in inventory files (200+ lines each for production environments)
-- No testing infrastructure
-- ~40 `delegate_to: localhost` per playbook
+### Overall Structure (Phases 1 + 2)
 
-**After:**
-- Organized group_vars (80 lines total)
-- Slim inventory files (~50-100 lines for production, ~80 for example)
-- Reusable roles with tests
-- Zero `delegate_to` needed
-- Molecule test scenarios for each role
+**Phase 1 achievements:**
+- Organized group_vars structure (namespaces, computed values, service configs)
+- Reduced inventory.example.yaml from 214 to 82 lines (62% reduction)
+- Established variable precedence: role defaults → group_vars → inventory
+
+**Phase 2 achievements:**
+- Created scout_common role with shared tasks (used by 7+ playbooks)
+- Created postgres role with full deployment logic
+- Reduced postgres playbook from 142 to 17 lines (88% reduction)
+- Maintained existing delegation patterns
+
+**Still to do:**
+- Update other playbooks to use scout_common role tasks
+- Create additional service-specific roles (lake, orchestrator, extractor, analytics, monitoring, jupyter)
 
 ## Benefits
 
@@ -305,86 +312,81 @@ ansible-playbook -i inventory.cluster03.yaml playbooks/main.yaml
 - Playbook changes
 - Molecule testing setup
 
-### Phase 2: Postgres Role-Based Refactoring (IN PROGRESS)
+### Phase 2: Postgres Role-Based Refactoring (COMPLETE)
 
-**Scope:**
-- Refactor postgres deployment only (not other services)
-- Create `scout_common` role with shared task files
-- Create `postgres` role with postgres-specific logic
-- Update only `inventory.example.yaml` and `inventory.cluster03-ssh-roles.yaml`
-- Keep other inventory files and playbooks unchanged for now
+**What was done:**
+- ✅ Created `scout_common` role with shared task files used across multiple services
+- ✅ Created `postgres` role with postgres-specific deployment logic
+- ✅ Updated `playbooks/postgres.yaml` to use role-based approach (142 lines → 17 lines, 88% reduction!)
+- ✅ Updated `inventory.example.yaml` with comments explaining role defaults
+- ✅ Updated `inventory.cluster03-ssh-roles.yaml` with comments explaining role defaults
+- ✅ Maintained existing delegation patterns (tasks run on `hosts: server`)
 
 **Key Correction from Previous Attempt:**
 - ❌ Previous: `storage_setup.yaml` was refactored into `roles/postgres/tasks/storage_setup.yaml`
-- ✅ Corrected: `storage_setup.yaml` should be in `roles/scout_common/tasks/storage_setup.yaml`
+- ✅ Corrected: `storage_setup.yaml` is in `roles/scout_common/tasks/storage_setup.yaml`
 - **Reason**: `storage_setup.yaml` is used by 7 playbooks (postgres, lake, orchestrator, monitor, jupyter, orthanc, dcm4chee), so it belongs in the common role, not postgres-specific role
 
-**Structure:**
+**Files created:**
+```
+ansible/roles/
+├── scout_common/
+│   ├── defaults/main.yaml
+│   ├── meta/main.yaml
+│   └── tasks/
+│       ├── main.yaml
+│       ├── namespace.yaml
+│       ├── storage_dir.yaml         # From playbooks/tasks/storage_dir_create.yaml
+│       └── storage_setup.yaml       # From playbooks/tasks/storage_setup.yaml ✅
+└── postgres/
+    ├── defaults/main.yaml            # Dev-friendly defaults
+    ├── meta/main.yaml                # Depends on scout_common
+    ├── tasks/
+    │   ├── main.yaml
+    │   ├── storage.yaml              # Node-side directory creation
+    │   └── deploy.yaml               # K8s deployment tasks
+    └── templates/
+        └── postgres_init/            # SQL init templates
+            ├── README.md
+            ├── hive_init_sql.yaml
+            └── superset_init_sql.yaml
+```
 
-1. **scout_common role** - Reusable common tasks:
-   ```
-   ansible/roles/scout_common/
-   ├── defaults/main.yaml        # Minimal or empty defaults
-   ├── meta/main.yaml            # Role metadata
-   └── tasks/
-       ├── main.yaml             # Empty entry point
-       ├── namespace.yaml        # Reusable namespace creation
-       ├── storage_dir.yaml      # From playbooks/tasks/storage_dir_create.yaml
-       └── storage_setup.yaml    # From playbooks/tasks/storage_setup.yaml ✅ CORRECTED
-   ```
+**What still needs to be done:**
+- Update other playbooks that use `playbooks/tasks/storage_dir_create.yaml` and `playbooks/tasks/storage_setup.yaml` to use the scout_common role tasks
+- Eventually remove the old task files from `playbooks/tasks/` once all playbooks are updated
+- Consider removing `playbooks/vars/postgres_storage.yaml` (no longer needed since role handles storage definitions)
+- Test the refactored postgres deployment to ensure it works correctly
 
-2. **postgres role** - Postgres-specific logic:
-   ```
-   ansible/roles/postgres/
-   ├── defaults/main.yaml        # Dev-friendly defaults
-   ├── meta/main.yaml            # Depends on scout_common
-   ├── tasks/
-   │   ├── main.yaml             # Entry point - calls deploy.yaml
-   │   ├── storage.yaml          # Node-side directory creation
-   │   └── deploy.yaml           # K8s deployment tasks
-   └── templates/
-       └── postgres_init/        # From playbooks/templates/postgres_init/
-           ├── README.md
-           ├── hive_init_sql.yaml
-           └── superset_init_sql.yaml
-   ```
+**Updated postgres playbook (17 lines, down from 142):**
+```yaml
+---
+- name: Create storage directories for Postgres
+  hosts: k3s_cluster
+  gather_facts: false
+  tasks:
+    - name: Create storage directories
+      ansible.builtin.include_role:
+        name: postgres
+        tasks_from: storage
 
-3. **Updated postgres playbook** using roles:
-   ```yaml
-   - name: Create storage directories for Postgres
-     hosts: k3s_cluster
-     gather_facts: false
-     tasks:
-       - include_role:
-           name: postgres
-           tasks_from: storage
+- name: Deploy Postgres
+  hosts: server
+  gather_facts: false
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  roles:
+    - postgres
+```
 
-   - name: Deploy Postgres
-     hosts: server              # Has access to group_vars/k3s_cluster/
-     gather_facts: false
-     environment:
-       KUBECONFIG: '{{ kubeconfig_yaml }}'
-     tasks:
-       - include_role:
-           name: postgres
-   ```
-
-**Inventory Changes (LIMITED SCOPE):**
-- Only modify `inventory.example.yaml` and `inventory.cluster03-ssh-roles.yaml`
-- Only move postgres-specific variables that should become role defaults
-- Keep postgres secrets and environment-specific overrides in inventory
-- Keep all non-postgres variables unchanged in k3s_cluster.vars
-
-**Variable Naming Conventions:**
-- Prefix postgres-specific vars: `postgres_*`
-- Use `ns` instead of `namespace` (reserved name)
-- Storage vars: `postgres_dir`, `postgres_storage_size`, `postgres_storage_class`
-
-**Implementation Details:**
-- Maintain existing delegation patterns (most tasks run on `hosts: server` without delegation)
-- Use `KUBECONFIG` environment variable for kubectl/helm operations
-- postgres role depends on `scout_common` in `meta/main.yaml` for shared tasks
-- Move postgres-specific logic from playbook into role tasks
+**Benefits achieved:**
+- **88% reduction** in playbook size (142 → 17 lines)
+- **Reusable components**: scout_common role can be used by other services
+- **Clear separation**: Common tasks in scout_common, postgres logic in postgres role
+- **Dev-friendly defaults**: Role provides working values for local development
+- **Production overrides**: Inventory files only contain secrets and environment-specific tuning
+- **Maintained patterns**: Existing delegation approach unchanged
+- **Service-scoped storage definitions**: Using `postgres_storage_definitions` (not generic `storage_definitions`) prevents conflicts between services
 
 ### Phase 3: Other Services Role-Based Refactoring (TODO - Future)
 
