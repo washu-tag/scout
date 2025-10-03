@@ -173,7 +173,7 @@ jobs:
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/postgres.yaml
       - name: 'Install keycloak'
         shell: bash
-        run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/auth.yaml
+        run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --tags keycloak --diff playbooks/auth.yaml
       - name: 'Install lake'
         shell: bash
         run: |

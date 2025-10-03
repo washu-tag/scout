@@ -8,6 +8,10 @@
   tasks:
     - name: Install Keycloak
       include_tasks: services/keycloak.yaml
+      tags:
+        - keycloak
 
     - name: Install OAuth2 Proxy
       include_tasks: services/oauth2-proxy.yaml
+      tags:
+        - oauth2-proxy
