@@ -118,6 +118,46 @@
         atomic: true
         values: "{{ lookup('template', 'templates/temporal.values.yaml.j2') | from_yaml }}"
       delegate_to: localhost
+      ignore_errors: true
+
+    - name: Debug - Get temporal pods status
+      ansible.builtin.shell: |
+        kubectl get pods -n {{ temporal_namespace }} -o wide
+      register: temporal_pods
+      delegate_to: localhost
+      ignore_errors: true
+      changed_when: false
+
+    - name: Debug - Display temporal pods
+      debug:
+        msg: '{{ temporal_pods.stdout_lines }}'
+
+    - name: Debug - Get temporal pod logs
+      ansible.builtin.shell: |
+        for pod in $(kubectl get pods -n {{ temporal_namespace }} -o jsonpath='{.items[*].metadata.name}'); do
+          echo "==== Logs for $pod ===="
+          kubectl logs -n {{ temporal_namespace }} $pod --all-containers || true
+          echo ""
+          echo "==== Previous logs (if crashed) ===="
+          kubectl logs -n {{ temporal_namespace }} $pod --all-containers --previous || true
+          echo ""
+          echo "==== Describe $pod ===="
+          kubectl describe pod -n {{ temporal_namespace }} $pod || true
+          echo ""
+        done
+      register: temporal_logs
+      delegate_to: localhost
+      ignore_errors: true
+      changed_when: false
+
+    - name: Debug - Display temporal logs
+      debug:
+        msg: '{{ temporal_logs.stdout_lines }}'
+
+    - name: Fail if temporal deployment failed
+      fail:
+        msg: 'Temporal deployment failed - see debug output above'
+      when: temporal_helm_result is failed
 
     - name: Wait for Temporal schema job to complete
       shell: >-
@@ -127,6 +167,7 @@
       register: temporal_schema
       changed_when: false
       delegate_to: localhost
+      when: temporal_helm_result is succeeded
 
     - name: Construct cron schedule
       when: scheduled_ingest_cron is undefined and scheduled_ingest_hour is defined
