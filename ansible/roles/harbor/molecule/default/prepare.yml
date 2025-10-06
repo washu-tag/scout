@@ -1,0 +1,16 @@
+---
+- name: Prepare test environment
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create test kubeconfig
+      ansible.builtin.file:
+        path: /tmp/molecule_harbor_kubeconfig.yaml
+        state: touch
+        mode: '0644'
+
+    - name: Create test harbor directory
+      ansible.builtin.file:
+        path: /tmp/molecule_harbor_test
+        state: directory
+        mode: '0755'

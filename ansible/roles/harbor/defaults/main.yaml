@@ -1,0 +1,25 @@
+---
+# Default configuration for harbor role
+# Override in inventory files as needed
+
+# Harbor helm chart configuration
+harbor_version: '1.14.2' # Harbor helm chart version
+harbor_namespace: harbor
+harbor_storage_size: 100Gi
+harbor_admin_password: 'Harbor12345' # Override in inventory with vault-encrypted value!
+
+# Storage configuration
+harbor_storage_class: '{{ harbor_namespace }}-storage'
+harbor_storage_definitions:
+  - name: '{{ harbor_namespace }}'
+    size: '{{ harbor_storage_size }}'
+    path: '{{ harbor_dir }}'
+    pv_name: '{{ harbor_namespace }}-pv'
+    storage_class_name: '{{ harbor_storage_class }}'
+
+# Proxy cache project names
+harbor_dockerhub_proxy_project: dockerhub-proxy
+harbor_ghcr_proxy_project: ghcr-proxy
+
+# TLS configuration
+harbor_tls_secret_name: harbor-tls

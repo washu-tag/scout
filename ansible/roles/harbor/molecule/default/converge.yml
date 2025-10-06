@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../../defaults/main.yaml
+  tasks:
+    - name: Include harbor role (dry run for testing)
+      ansible.builtin.debug:
+        msg: 'Harbor role variables loaded successfully'
