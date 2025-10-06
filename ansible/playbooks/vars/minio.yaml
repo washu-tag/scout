@@ -10,7 +10,7 @@ minio_client_image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
 minio_env_secret_name: minio-scout-env-configuration
 minio_env_variables:
   - name: MINIO_BROWSER_REDIRECT_URL
-    value: 'https://{{ server_hostname }}/minio/'
+    value: 'https://{{ external_urls.minio }}/'
   - name: MINIO_PROMETHEUS_AUTH_TYPE
     value: public
   - name: MINIO_SCANNER_SPEED
@@ -24,8 +24,8 @@ minio_ingress_config:
   console:
     enabled: true
     ingressClassName: traefik
-    host: '{{ server_hostname }}'
-    path: '/{{ minio_path_prefix }}'
+    host: '{{ external_urls.minio }}'
+    path: '/'
     pathType: Prefix
     annotations:
       traefik.ingress.kubernetes.io/router.middlewares: >

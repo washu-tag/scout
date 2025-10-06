@@ -26,8 +26,6 @@
   name: Install k3s on server node
   vars:
     uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
-    cert_path: '/root/{{ server_hostname }}.crt'
-    key_path: '/root/{{ server_hostname }}.key'
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
