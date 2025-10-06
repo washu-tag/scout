@@ -158,3 +158,66 @@
         K3S_URL: 'https://{{ groups["server"][0] }}:6443'
         K3S_TOKEN: '{{ k3s_token }}'
         UNINSTALL_K3S_SH: '{{ uninstall_script }}'
+
+################################################################################
+- name: Configure registry mirrors for air-gapped deployment
+  hosts: k3s_cluster
+  gather_facts: false
+  tasks:
+    - name: Check if staging node is configured
+      ansible.builtin.set_fact:
+        has_staging_node: "{{ 'staging' in groups and use_staging_node | default(false) | bool }}"
+
+    - name: Create rancher k3s config directory
+      ansible.builtin.file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: '0755'
+      when: has_staging_node
+
+    - name: Load Harbor role variables
+      ansible.builtin.include_vars:
+        file: '{{ playbook_dir}}/../roles/harbor/defaults/main.yaml'
+      when: has_staging_node
+
+    - name: Get Harbor configuration from staging node
+      ansible.builtin.set_fact:
+        staging_hostname: "{{ hostvars[groups['staging'][0]].external_url | default(groups['staging'][0]) }}"
+        staging_harbor_expose_type: "{{ hostvars[groups['staging'][0]].harbor_expose_type | default('ingress') }}"
+        staging_harbor_nodeport: "{{ hostvars[groups['staging'][0]].harbor_nodeport_https | default(30443) }}"
+        # staging_harbor_admin_password: "{{ hostvars[groups['staging'][0]].harbor_admin_password }}"
+      when: has_staging_node
+
+    - name: Compute Harbor URL components
+      ansible.builtin.set_fact:
+        staging_harbor_host: "{{ staging_hostname }}{% if staging_harbor_expose_type == 'nodePort' %}:{{ staging_harbor_nodeport }}{% endif %}"
+        staging_harbor_registry_url: "https://{{ staging_hostname }}{% if staging_harbor_expose_type == 'nodePort' %}:{{ staging_harbor_nodeport }}{% endif %}"
+        staging_harbor_dockerhub_project: "{{ hostvars[groups['staging'][0]].harbor_dockerhub_proxy_project | default(harbor_dockerhub_proxy_project) }}"
+        staging_harbor_ghcr_project: "{{ hostvars[groups['staging'][0]].harbor_ghcr_proxy_project | default(harbor_ghcr_proxy_project) }}"
+      when: has_staging_node
+
+    - name: Configure registry mirrors
+      ansible.builtin.copy:
+        dest: /etc/rancher/k3s/registries.yaml
+        content: |
+          mirrors:
+            docker.io:
+              endpoint:
+                - "{{ staging_harbor_registry_url }}/v2/{{ staging_harbor_dockerhub_project }}"
+            ghcr.io:
+              endpoint:
+                - "{{ staging_harbor_registry_url }}/v2/{{ staging_harbor_ghcr_project }}"
+          configs:
+            "{{ staging_harbor_host }}":
+              tls:
+                insecure_skip_verify: true  # Using self-signed cert
+        mode: '0644'
+      notify: Restart k3s services
+      when: has_staging_node
+
+  handlers:
+    - name: Restart k3s services
+      ansible.builtin.systemd:
+        name: "{{ 'k3s' if inventory_hostname in groups['server'] else 'k3s-agent' }}"
+        state: restarted
+      when: has_staging_node
