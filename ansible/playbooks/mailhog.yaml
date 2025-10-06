@@ -82,7 +82,7 @@
           spec:
             ingressClassName: traefik
             rules:
-              - host: '{{ external_urls.mailhog }}'
+              - host: 'mailhog.{{ server_hostname }}'
                 http:
                   paths:
                     - path: /

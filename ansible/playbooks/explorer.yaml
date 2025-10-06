@@ -42,7 +42,7 @@
               traefik.ingress.kubernetes.io/router.middlewares: >
                 kube-system-explorer-strip-prefix@kubernetescrd
             hosts:
-              - host: '{{ external_urls.launchpad }}'
+              - host: '{{ server_hostname }}'
                 paths:
                   - path: /
                     pathType: Prefix

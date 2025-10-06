@@ -3,7 +3,6 @@ proxy:
     type: ClusterIP
 
 hub:
-  baseUrl: /jupyter
   resources:
     requests:
       cpu: 100m
@@ -29,6 +28,7 @@ hub:
     Authenticator:
       allowed_users: '{{ (jupyter_allowed_users | default([])) }}'
     JupyterHub:
+      subdomain_host: 'jupyter.{{ server_hostname }}'
       authenticator_class: '{{ jupyter_auth_class | default("dummy") }}'
     Spawner:
       http_timeout: 120
@@ -37,7 +37,13 @@ ingress:
   enabled: true
   ingressClassName: traefik
   hosts:
-    - '{{ external_urls.jupyter }}'
+    - 'jupyter.{{ server_hostname }}'
+    - '*.jupyter.{{ server_hostname }}'
+  tls:
+    - hosts:
+        - 'jupyter.{{ server_hostname }}'
+        - '*.jupyter.{{ server_hostname }}'
+      secretName: jupyter-tls
 
 prePuller:
   hook:

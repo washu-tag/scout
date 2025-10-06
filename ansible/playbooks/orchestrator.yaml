@@ -150,7 +150,7 @@
               enabled: true
               ingressClassName: traefik
               hosts:
-                - '{{ external_urls.temporal }}'
+                - 'temporal.{{ server_hostname }}'
 
     - name: Wait for Temporal schema job to complete
       shell: >-

@@ -6,7 +6,7 @@ grafana.ini:
     org_name: Main Org.
     org_role: Admin
   server:
-    root_url: 'https://{{ external_urls.grafana }}'
+    root_url: 'https://grafana.{{ server_hostname }}'
   metrics:
     enabled: true
   dashboards:
@@ -36,7 +36,7 @@ ingress:
   enabled: true
   ingressClassName: traefik
   hosts:
-    - '{{ external_urls.grafana }}'
+    - 'grafana.{{ server_hostname }}'
 
 datasources:
   datasources.yaml:
