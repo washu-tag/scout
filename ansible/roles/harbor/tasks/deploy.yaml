@@ -53,6 +53,38 @@
         tls.crt: '{{ harbor_tls_crt.content }}'
         tls.key: '{{ harbor_tls_key.content }}'
 
+- name: Set Harbor expose configuration for ingress mode
+  ansible.builtin.set_fact:
+    harbor_expose_config:
+      type: '{{ harbor_expose_type }}'
+      tls:
+        enabled: true
+        certSource: secret
+        secret:
+          secretName: '{{ harbor_tls_secret_name }}'
+      ingress:
+        hosts:
+          core: '{{ inventory_hostname }}'
+        className: traefik
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  when: harbor_expose_type == 'ingress'
+
+- name: Set Harbor expose configuration for nodePort mode
+  ansible.builtin.set_fact:
+    harbor_expose_config:
+      type: '{{ harbor_expose_type }}'
+      tls:
+        enabled: true
+        certSource: secret
+        secret:
+          secretName: '{{ harbor_tls_secret_name }}'
+      nodePort:
+        ports:
+          https:
+            nodePort: '{{ harbor_nodeport_https }}'
+  when: harbor_expose_type == 'nodePort'
+
 - name: Install/Upgrade Harbor
   kubernetes.core.helm:
     name: harbor
@@ -66,20 +98,8 @@
     wait_timeout: 15m
     atomic: true
     values:
-      expose:
-        type: ingress
-        tls:
-          enabled: true
-          certSource: secret
-          secret:
-            secretName: '{{ harbor_tls_secret_name }}'
-        ingress:
-          hosts:
-            core: '{{ inventory_hostname }}'
-          className: traefik
-          annotations:
-            traefik.ingress.kubernetes.io/router.entrypoints: websecure
-      externalURL: 'https://{{ inventory_hostname }}'
+      expose: '{{ harbor_expose_config }}'
+      externalURL: '{{ harbor_registry_url }}'
       harborAdminPassword: '{{ harbor_admin_password }}'
       persistence:
         persistentVolumeClaim:
@@ -91,7 +111,7 @@
 
 - name: Wait for Harbor to be ready
   ansible.builtin.uri:
-    url: 'https://{{ inventory_hostname }}/api/v2.0/systeminfo'
+    url: '{{ harbor_registry_url }}/api/v2.0/systeminfo'
     validate_certs: false
     status_code: 200
   register: harbor_health
@@ -101,7 +121,7 @@
 
 - name: Create Docker Hub registry endpoint
   ansible.builtin.uri:
-    url: 'https://{{ inventory_hostname }}/api/v2.0/registries'
+    url: '{{ harbor_registry_url }}/api/v2.0/registries'
     validate_certs: false
     method: POST
     user: admin
@@ -117,7 +137,7 @@
 
 - name: Get Docker Hub registry ID
   ansible.builtin.uri:
-    url: 'https://{{ inventory_hostname }}/api/v2.0/registries'
+    url: '{{ harbor_registry_url }}/api/v2.0/registries'
     validate_certs: false
     user: admin
     password: '{{ harbor_admin_password }}'
@@ -130,7 +150,7 @@
 
 - name: Create Docker Hub proxy cache project
   ansible.builtin.uri:
-    url: 'https://{{ inventory_hostname }}/api/v2.0/projects'
+    url: '{{ harbor_registry_url }}/api/v2.0/projects'
     validate_certs: false
     method: POST
     user: admin
@@ -145,7 +165,7 @@
 
 - name: Create GHCR registry endpoint
   ansible.builtin.uri:
-    url: 'https://{{ inventory_hostname }}/api/v2.0/registries'
+    url: '{{ harbor_registry_url }}/api/v2.0/registries'
     validate_certs: false
     method: POST
     user: admin
@@ -161,7 +181,7 @@
 
 - name: Get GHCR registry ID
   ansible.builtin.uri:
-    url: 'https://{{ inventory_hostname }}/api/v2.0/registries'
+    url: '{{ harbor_registry_url }}/api/v2.0/registries'
     validate_certs: false
     user: admin
     password: '{{ harbor_admin_password }}'
@@ -174,7 +194,7 @@
 
 - name: Create GHCR proxy cache project
   ansible.builtin.uri:
-    url: 'https://{{ inventory_hostname }}/api/v2.0/projects'
+    url: '{{ harbor_registry_url }}/api/v2.0/projects'
     validate_certs: false
     method: POST
     user: admin
@@ -189,4 +209,4 @@
 
 - name: Display Harbor deployment status
   ansible.builtin.debug:
-    msg: 'Harbor deployed successfully at https://{{ inventory_hostname }}'
+    msg: 'Harbor deployed successfully at {{ harbor_registry_url }}'
