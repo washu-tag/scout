@@ -5,7 +5,6 @@
 
 - name: Shared pre-requisites for staging K3s
   hosts: staging
-  when: use_staging_node | default(false) | bool
   vars:
     uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
   tasks:
@@ -29,7 +28,6 @@
 ################################################################################
 - name: Install k3s on staging node
   hosts: staging
-  when: use_staging_node | default(false) | bool
   vars:
     uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
   environment:
