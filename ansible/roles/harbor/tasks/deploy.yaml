@@ -22,10 +22,21 @@
 
 - name: Generate self-signed certificate
   ansible.builtin.shell: |
+    # Build SAN list so cert is valid for multiple DNS names
+    SAN="DNS:{{ inventory_hostname }}"
+    {% if external_url is defined and external_url | length > 0 %}
+    SAN="${SAN},DNS:{{ external_url }}"
+    {% endif %}
+    {% if ansible_host is defined and ansible_host | length > 0 %}
+    SAN="${SAN},DNS:{{ ansible_host }}"
+    {% endif %}
+
+    # Generate certificate with SANs
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
       -keyout /tmp/harbor-tls.key \
       -out /tmp/harbor-tls.crt \
-      -subj "/CN={{ inventory_hostname }}/O=Scout Harbor"
+      -subj "/CN={{ inventory_hostname }}/O=Scout Harbor" \
+      -addext "subjectAltName=${SAN}"
   args:
     creates: /tmp/harbor-tls.crt
 
