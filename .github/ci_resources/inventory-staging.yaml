@@ -14,6 +14,7 @@ staging:
   vars:
     # Staging-specific k3s configuration
     staging_k3s_token: ci-staging-token-12345678
+    kubeconfig_yaml: /tmp/staging-k3s.yaml
 
     # Harbor configuration
     harbor_admin_password: CIHarbor123
