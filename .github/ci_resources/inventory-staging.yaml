@@ -1,0 +1,129 @@
+---
+# CI inventory for staging -> production deployment testing
+# Simulates two distinct nodes:
+#   - staging: Runs k3s + Harbor registry proxy
+#   - production: Runs k3s + Scout services, pulls images through staging Harbor
+
+# Staging node - hosts Harbor registry proxy
+staging:
+  hosts:
+    staging-node:
+      ansible_connection: local
+      ansible_python_interpreter: /usr/bin/python3
+      external_url: staging-node # Used by Harbor for registry URLs
+  vars:
+    # Staging-specific k3s configuration
+    staging_k3s_token: ci-staging-token-12345678
+
+    # Harbor configuration
+    harbor_admin_password: CIHarbor123
+    harbor_storage_size: 5Gi
+    harbor_dir: /var/lib/harbor
+    harbor_namespace: harbor
+    harbor_version: '1.14.2'
+    harbor_expose_type: nodePort # Use nodePort for CI environment
+    harbor_nodeport_https: 30443
+
+# Production node - runs Scout services, uses staging registry
+server:
+  hosts:
+    production-node:
+      ansible_connection: local
+      ansible_python_interpreter: /usr/bin/python3
+      k3s_control_node: true
+
+minio_hosts:
+  children:
+    server:
+
+k3s_cluster:
+  children:
+    server:
+  vars:
+    # Enable staging node functionality
+    use_staging_node: true
+
+    # K3s config
+    k3s_version: v1.32.3+k3s1
+    k3s_token: ci-production-token-87654321
+    kubeconfig_group: root
+
+    # Minimal storage for CI
+    minio_storage_size: 2Gi
+    minio_volumes_per_server: 1
+    postgres_storage_size: 2Gi
+
+    # S3/Minio credentials
+    s3_username: minio
+    s3_password: minio123
+    s3_region: us-east-1
+    s3_lake_reader: lake-reader
+    s3_lake_reader_secret: lakereader123
+    s3_lake_writer: lake-writer
+    s3_lake_writer_secret: lakewriter123
+    s3_loki_writer: loki-writer
+    s3_loki_writer_secret: lokiwriter123
+
+    # Postgres credentials
+    postgres_user: scout
+    postgres_password: scout123
+    postgres_superuser_password: scout123
+    hive_postgres_user: hive
+    hive_postgres_password: hive123
+    superset_postgres_user: superset
+    superset_postgres_password: superset123
+    postgres_resources: {}
+    postgres_parameters: {}
+
+    # Minimal resources for CI
+    cassandra_storage_size: 1Gi
+    elasticsearch_storage_size: 1Gi
+    prometheus_storage_size: 1Gi
+    loki_storage_size: 1Gi
+    grafana_storage_size: 1Gi
+    jupyter_hub_storage_size: 1Gi
+    jupyter_singleuser_storage_size: 1Gi
+
+    # Namespaces
+    hive_namespace: hive
+    postgres_cluster_namespace: cloudnative-pg
+    temporal_namespace: temporal
+    prometheus_namespace: prometheus
+    grafana_namespace: grafana
+    loki_namespace: loki
+    extractor_namespace: extractor
+    minio_tenant_namespace: minio-scout
+
+    # Local paths
+    base_dir: /var/lib
+    scout_repo_dir: WORK_DIR # Will be replaced by CI
+    minio_dir: '{{ base_dir }}/minio'
+    temporal_cassandra_dir: '{{ base_dir }}/cassandra'
+    temporal_elasticsearch_dir: '{{ base_dir }}/elasticsearch'
+    postgres_dir: '{{ base_dir }}/postgres'
+    prometheus_dir: '{{ base_dir }}/prometheus'
+    loki_dir: '{{ base_dir }}/loki'
+    grafana_dir: '{{ base_dir }}/grafana'
+    jupyter_dir: '{{ base_dir }}/jupyter'
+
+    # Object storage paths
+    lake_bucket: ci-lake
+    scratch_bucket: ci-scratch
+    hl7_path: 's3://{{ lake_bucket }}/hl7'
+    scratch_path: 's3://{{ scratch_bucket }}'
+    delta_lake_path: 's3a://{{ lake_bucket }}/delta'
+
+    # Resources
+    hl7_transformer_spark_memory: 1g
+    jupyter_spark_memory: 1g
+    temporal_cassandra_init_heap: 1G
+    temporal_cassandra_max_heap: 1G
+
+    # System paths
+    helm_plugins_dir: /root/.local/share/helm/plugins
+    kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
+
+    # Computed values
+    s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
+    hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
+    server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'

@@ -193,6 +193,170 @@ jobs:
       - name: 'Molecule tests: postgres role'
         shell: bash
         run: cd ansible/roles/postgres && molecule test -s default
+  staging-deploy-and-test:
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - unit-test
+      - molecule-test
+    permissions:
+      contents: read
+    env:
+      STAGING_KUBECONFIG: /tmp/staging-k3s.yaml
+      PRODUCTION_KUBECONFIG: /tmp/production-k3s.yaml
+    steps:
+      - uses: actions/checkout@v4.2.1
+      - name: 'Install k3d'
+        shell: bash
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+      - name: 'Prepare staging inventory'
+        shell: bash
+        run: |
+          sed -e "s:WORK_DIR:$(pwd):" \
+            .github/ci_resources/inventory-staging.yaml > ansible/inventory-staging.yaml
+      - name: 'ansible-galaxy dependencies'
+        shell: bash
+        run: cd ansible && sudo -E /opt/pipx_bin/ansible-galaxy install -r collections/requirements.yaml
+      - name: Install Python dependencies for Ansible Kubernetes modules
+        run: |
+          /opt/pipx/venvs/ansible-core/bin/python -m pip install kubernetes
+      - name: 'Create staging k3s cluster'
+        shell: bash
+        run: |
+          k3d cluster create staging \
+            --api-port 6443 \
+            --port "30443:30443@server:0" \
+            --network staging-net \
+            --kubeconfig-update-default=false \
+            --kubeconfig-switch-context=false \
+            -v /var/lib/harbor:/var/lib/harbor
+          k3d kubeconfig get staging > $STAGING_KUBECONFIG
+      - name: 'Deploy Harbor to staging cluster'
+        shell: bash
+        env:
+          KUBECONFIG: ${{ env.STAGING_KUBECONFIG }}
+          K8S_AUTH_KUBECONFIG: ${{ env.STAGING_KUBECONFIG }}
+        run: |
+          cd ansible
+          sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory-staging.yaml --diff \
+            --limit staging playbooks/helm.yaml
+          sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory-staging.yaml --diff \
+            playbooks/harbor.yaml
+      - name: 'Wait for Harbor to be ready'
+        shell: bash
+        env:
+          KUBECONFIG: ${{ env.STAGING_KUBECONFIG }}
+        run: |
+          echo "Waiting for Harbor pods to be ready..."
+          kubectl wait --for=condition=ready pod -l app=harbor -n harbor --timeout=600s || true
+          kubectl get pods -n harbor
+          kubectl get svc -n harbor
+      - name: 'Get Harbor NodePort IP'
+        shell: bash
+        id: harbor-ip
+        env:
+          KUBECONFIG: ${{ env.STAGING_KUBECONFIG }}
+        run: |
+          HARBOR_IP=$(kubectl get node k3d-staging-server-0 -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}')
+          echo "harbor_endpoint=${HARBOR_IP}:30443" >> $GITHUB_OUTPUT
+          echo "Harbor endpoint: ${HARBOR_IP}:30443"
+      - name: 'Create production k3s cluster'
+        shell: bash
+        run: |
+          k3d cluster create production \
+            --api-port 6444 \
+            --network staging-net \
+            --kubeconfig-update-default=false \
+            --kubeconfig-switch-context=false
+          k3d kubeconfig get production > $PRODUCTION_KUBECONFIG
+      - name: 'Configure production registry mirrors'
+        shell: bash
+        env:
+          HARBOR_ENDPOINT: ${{ steps.harbor-ip.outputs.harbor_endpoint }}
+        run: |
+          cat > /tmp/registries.yaml <<EOF
+          mirrors:
+            docker.io:
+              endpoint:
+                - "https://${HARBOR_ENDPOINT}"
+              rewrite:
+                "^(.*)$": "dockerhub-proxy/\$1"
+            ghcr.io:
+              endpoint:
+                - "https://${HARBOR_ENDPOINT}"
+              rewrite:
+                "^(.*)$": "ghcr-proxy/\$1"
+          configs:
+            "${HARBOR_ENDPOINT}":
+              tls:
+                insecure_skip_verify: true
+          EOF
+          docker cp /tmp/registries.yaml k3d-production-server-0:/etc/rancher/k3s/registries.yaml
+          docker exec k3d-production-server-0 systemctl restart k3s
+          sleep 10
+      - name: 'Deploy minimal Scout services to production'
+        shell: bash
+        env:
+          KUBECONFIG: ${{ env.PRODUCTION_KUBECONFIG }}
+          K8S_AUTH_KUBECONFIG: ${{ env.PRODUCTION_KUBECONFIG }}
+        run: |
+          cd ansible
+          sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory-staging.yaml --diff \
+            --limit server playbooks/helm.yaml
+          sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory-staging.yaml --diff \
+            --limit server playbooks/postgres.yaml
+      - name: 'Verify registry mirrors working'
+        shell: bash
+        env:
+          KUBECONFIG: ${{ env.PRODUCTION_KUBECONFIG }}
+        run: |
+          echo "=== Production k3s registry config ==="
+          docker exec k3d-production-server-0 cat /etc/rancher/k3s/registries.yaml
+          echo ""
+          echo "=== Checking postgres pods pulled through Harbor ==="
+          kubectl get pods -n cloudnative-pg -o wide
+      - name: 'Verify Harbor cache'
+        shell: bash
+        env:
+          KUBECONFIG: ${{ env.STAGING_KUBECONFIG }}
+          HARBOR_ENDPOINT: ${{ steps.harbor-ip.outputs.harbor_endpoint }}
+        run: |
+          echo "=== Harbor projects ==="
+          kubectl exec -n harbor deployment/harbor-core -- \
+            curl -s -k -u admin:CIHarbor123 https://localhost/api/v2.0/projects | jq .
+          echo ""
+          echo "=== Docker Hub proxy repositories ==="
+          kubectl exec -n harbor deployment/harbor-core -- \
+            curl -s -k -u admin:CIHarbor123 https://localhost/api/v2.0/projects/dockerhub-proxy/repositories | jq .
+      - name: 'Staging cluster logs'
+        shell: bash
+        if: always()
+        env:
+          KUBECONFIG: ${{ env.STAGING_KUBECONFIG }}
+        run: |
+          echo "=== Harbor pods ==="
+          kubectl get pods -n harbor
+          echo ""
+          echo "=== Harbor core logs ==="
+          kubectl logs -n harbor deployment/harbor-core --tail=50 || true
+      - name: 'Production cluster logs'
+        shell: bash
+        if: always()
+        env:
+          KUBECONFIG: ${{ env.PRODUCTION_KUBECONFIG }}
+        run: |
+          echo "=== Production pods ==="
+          kubectl get pods -A
+          echo ""
+          echo "=== Postgres operator logs ==="
+          kubectl logs -n cloudnative-pg deployment/cloudnative-pg --tail=50 || true
+      - name: 'Cleanup'
+        shell: bash
+        if: always()
+        run: |
+          k3d cluster delete staging || true
+          k3d cluster delete production || true
   deploy-and-test:
     runs-on: ubuntu-latest
     needs:
