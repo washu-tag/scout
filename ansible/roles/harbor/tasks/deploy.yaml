@@ -13,13 +13,6 @@
   vars:
     ns: '{{ harbor_namespace }}'
 
-- name: Set up storage
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: storage_setup
-  vars:
-    storage_definitions: '{{ harbor_storage_definitions }}'
-
 - name: Generate self-signed certificate
   ansible.builtin.shell: |
     # Build SAN list so cert is valid for multiple DNS names
@@ -122,11 +115,6 @@
       expose: '{{ harbor_expose_config }}'
       externalURL: '{{ harbor_registry_url }}'
       harborAdminPassword: '{{ harbor_admin_password }}'
-      persistence:
-        persistentVolumeClaim:
-          registry:
-            storageClass: '{{ harbor_storage_class }}'
-            size: '{{ harbor_storage_size }}'
       chartmuseum:
         enabled: false # Cannot proxy Helm charts
 
