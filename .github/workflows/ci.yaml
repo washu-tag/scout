@@ -239,15 +239,15 @@ jobs:
             --kubeconfig-switch-context=false \
             -v /var/lib/harbor:/var/lib/harbor
           k3d kubeconfig get staging > $STAGING_KUBECONFIG
-      - name: Install Python dependencies for Ansible Kubernetes modules - staging
-        run: |
-          k3d node exec staging -- python3 -m pip install kubernetes
       - name: 'Deploy Harbor to staging cluster'
         shell: bash
+        env:
+          KUBECONFIG: ${{ env.STAGING_KUBECONFIG }}
+          K8S_AUTH_KUBECONFIG: ${{ env.STAGING_KUBECONFIG }}
         run: |
           cd ansible
           sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory-staging.yaml --diff \
-            playbooks/harbor.yaml
+            --limit staging playbooks/harbor.yaml
       - name: 'Wait for Harbor to be ready'
         shell: bash
         env:
