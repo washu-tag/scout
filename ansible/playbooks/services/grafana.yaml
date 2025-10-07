@@ -2,6 +2,7 @@
   kubernetes.core.helm_repository:
     name: grafana
     repo_url: https://grafana.github.io/helm-charts
+  delegate_to: localhost
 
 - name: Create Loki namespace
   kubernetes.core.k8s:
@@ -50,6 +51,8 @@
           clients:
             - url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local:3100/loki/api/v1/push'
     state: present
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  delegate_to: localhost
 
 - name: Create Grafana namespace
   kubernetes.core.k8s:
