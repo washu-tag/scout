@@ -10,7 +10,7 @@ staging:
   hosts:
     staging-node:
       ansible_connection: local
-      ansible_python_interpreter: /usr/bin/python3
+      ansible_python_interpreter: /opt/pipx/venvs/ansible-core/bin/python
       external_url: HARBOR_ENDPOINT # Will be replaced by CI with actual IP:port
   vars:
     # Staging-specific k3s configuration
@@ -32,7 +32,7 @@ server:
   hosts:
     production-node:
       ansible_connection: local
-      ansible_python_interpreter: /usr/bin/python3
+      ansible_python_interpreter: /opt/pipx/venvs/ansible-core/bin/python
       k3s_control_node: true
 
 minio_hosts:
