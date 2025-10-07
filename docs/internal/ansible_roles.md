@@ -84,10 +84,21 @@ Deploys Harbor container registry as a proxy cache for air-gapped deployments:
 - **deploy.yaml**: Deploys Harbor via Helm chart, configures proxy cache projects
 
 Features:
-- Self-signed TLS certificate generation
+- Self-signed TLS certificate generation with Subject Alternative Names (SANs)
 - Docker Hub and GHCR proxy cache projects
-- API-based configuration of registry endpoints
+- API-based configuration of registry endpoints and proxy projects
+- Two exposure modes:
+  - **ingress** (default): Traefik ingress at domain root for production
+  - **nodePort**: NodePort 30443 for development or shared domains
+- external_url support for Tailscale/cross-network access
+- Automatic Harbor readiness checks
+- Idempotent deployment (handles already-exists scenarios)
 - Molecule tests for role validation
+
+Configuration:
+- `harbor_expose_type`: Set to 'ingress' or 'nodePort'
+- `external_url`: Optional Tailscale hostname or DNS name (overrides inventory_hostname)
+- `harbor_admin_password`: Admin password (vault-encrypted in inventory)
 
 Used by: Staging node deployment when `use_staging_node: true`
 
