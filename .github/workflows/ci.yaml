@@ -466,7 +466,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    needs: [changes, deploy-and-test]
+    needs: [changes, deploy-and-test, staging-deploy-and-test]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
@@ -514,7 +514,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    needs: [changes, deploy-and-test]
+    needs: [changes, deploy-and-test, staging-deploy-and-test]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v4.2.1
