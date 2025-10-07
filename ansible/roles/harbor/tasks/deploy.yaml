@@ -64,6 +64,16 @@
         tls.crt: '{{ harbor_tls_crt.content }}'
         tls.key: '{{ harbor_tls_key.content }}'
 
+- name: Clean up temp cert
+  ansible.builtin.file:
+    name: /tmp/harbor-tls.crt
+    state: absent
+
+- name: Clean up temp key
+  ansible.builtin.file:
+    name: /tmp/harbor-tls.key
+    state: absent
+
 - name: Set Harbor expose configuration for ingress mode
   ansible.builtin.set_fact:
     harbor_expose_config:
