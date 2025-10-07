@@ -64,8 +64,8 @@
             docker.io:
               endpoint:
                 - "{{ staging_harbor_host }}"
-                rewrite:
-                  "^(.*)$": "{{ staging_harbor_dockerhub_project }}/$1"
+              rewrite:
+                "^(.*)$": "{{ staging_harbor_dockerhub_project }}/$1"
             ghcr.io:
               endpoint:
                 - "{{ staging_harbor_host }}"
