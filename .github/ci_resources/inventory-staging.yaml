@@ -1,16 +1,17 @@
 ---
 # CI inventory for staging -> production deployment testing
-# Simulates two distinct nodes:
-#   - staging: Runs k3s + Harbor registry proxy
-#   - production: Runs k3s + Scout services, pulls images through staging Harbor
+# Simulates two distinct nodes on a single GitHub Actions runner:
+#   - staging: k3d cluster running Harbor registry proxy (fast deployment)
+#   - production: Real k3s installation on runner, uses staging Harbor (tests actual playbooks)
 
 # Staging node - hosts Harbor registry proxy
+# Uses k3d for fast Harbor deployment (we don't need to test k3s config on staging)
 staging:
   hosts:
     staging-node:
       ansible_connection: local
       ansible_python_interpreter: /usr/bin/python3
-      external_url: staging-node # Used by Harbor for registry URLs
+      external_url: HARBOR_ENDPOINT # Will be replaced by CI with actual IP:port
   vars:
     # Staging-specific k3s configuration
     staging_k3s_token: ci-staging-token-12345678
@@ -26,6 +27,7 @@ staging:
     harbor_nodeport_https: 30443
 
 # Production node - runs Scout services, uses staging registry
+# Uses REAL k3s installation to test actual k3s.yaml playbook with registry mirrors
 server:
   hosts:
     production-node:
