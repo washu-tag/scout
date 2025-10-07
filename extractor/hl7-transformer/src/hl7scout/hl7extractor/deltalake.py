@@ -66,6 +66,27 @@ def extract_observation_id_suffix_content(column, suffix_list):
     ).alias(f"report_section_{column.lower()}")
 
 
+def split_and_transform_repeated_field(column, component_lambda):
+    return F.transform(
+        F.transform(
+            F.split(F.col(column), "~"),  # split repetition
+            lambda component: F.split(component, "\\^"),  # and then split by component
+        ),
+        lambda parts: component_lambda(parts),
+    )
+
+
+def extract_people_from_obr_field(column):
+    return F.array_distinct(
+        F.filter(
+            split_and_transform_repeated_field(
+                column, lambda parts: F.concat_ws(" ", parts[2], parts[1])
+            ),
+            lambda name: name != "",
+        )
+    )
+
+
 def import_hl7_files_to_deltalake(
     hl7_manifest_file_path: str,
     modality_map_csv_path: str,
@@ -162,7 +183,7 @@ def import_hl7_files_to_deltalake(
                     .alias(f"{segment}-{field}")
                     for segment, fields in (
                         ("msh", (4, 7, 10, 12)),
-                        ("pid", (7, 8, 10, 22)),
+                        ("pid", (2, 7, 8, 10, 22)),
                         ("orc", (2, 3)),
                         ("obr", (2, 3, 6, 7, 8, 22, 24)),
                         ("zds", (1,)),
@@ -177,14 +198,17 @@ def import_hl7_files_to_deltalake(
                     for segment, field, components in (
                         ("pid", 11, (5, 6)),
                         ("obr", 4, (1, 2, 3)),
-                        ("obr", 32, (2, 3)),
-                        ("obr", 33, (2, 3)),
                     )
                     for component in components
                 ],
-                # PID-2 is a special case.
+                # PID-3 is a special case.
                 # We keep it as-is for now so we can explode it later.
-                F.col("pid").getItem(2).alias("pid-2"),
+                F.col("pid").getItem(2).alias("pid-3"),
+                # We need multiple repetitions from OBR-33 and OBR-34.
+                # We could handle OBR-32 above, but it's easier to centralize the logic here.
+                F.col("obr").getItem(31).alias("obr-32"),
+                F.col("obr").getItem(32).alias("obr-33"),
+                F.col("obr").getItem(33).alias("obr-34"),
             )
             .cache()
         )
@@ -271,44 +295,51 @@ def import_hl7_files_to_deltalake(
             .withColumn(
                 "diagnoses",
                 F.transform(
-                    F.col("dg1_lines"),
-                    lambda item: (
-                        lambda components: F.struct(
-                            components[0].alias("diagnosis_code"),
-                            components[1].alias("diagnosis_code_text"),
-                            components[2].alias("diagnosis_code_coding_system"),
-                        )
-                    )(
-                        F.split(item.fields[2], "\\^")
-                    ),  # take DG1-3 and split into components
+                    F.transform(
+                        F.col("dg1_lines"), lambda item: F.split(item.fields[2], "\\^")
+                    ),
+                    lambda parts: F.struct(
+                        parts[0].alias("diagnosis_code"),
+                        parts[1].alias("diagnosis_code_text"),
+                        parts[2].alias("diagnosis_code_coding_system"),
+                    ),
                 ),
             )
             .drop("dg1_lines")
         )
 
         activity.heartbeat()
+        activity.logger.info("Creating physician df")
+        physician_df = (
+            df.select("source_file", "obr-32", "obr-33", "obr-34")
+            .withColumn(
+                "principal_result_interpreter",
+                extract_people_from_obr_field("obr-32").getItem(0),
+            )
+            .withColumn(
+                "assistant_result_interpreter", extract_people_from_obr_field("obr-33")
+            )
+            .withColumn("technician", extract_people_from_obr_field("obr-34"))
+            .drop("obr-32", "obr-33", "obr-34")
+        )
+
+        activity.heartbeat()
         activity.logger.info("Extracting patient id columns")
         patient_ids_df = (
-            df.select("source_file", "pid-2")
+            df.select("source_file", "pid-3")
             .withColumn(
                 "patient_ids",
-                F.transform(
-                    F.split(F.col("pid-2"), "~"),
-                    lambda components: (
-                        lambda parts: F.struct(
-                            F.coalesce(parts[0], F.lit("")).alias("id_number"),
-                            F.coalesce(parts[3], F.lit("")).alias(
-                                "assigning_authority"
-                            ),
-                            F.coalesce(parts[4], F.lit("")).alias(
-                                "identifier_type_code"
-                            ),
-                            F.coalesce(parts[5], F.lit("")).alias("assigning_facility"),
-                        )
-                    )(F.split(components, "\\^")),
+                split_and_transform_repeated_field(
+                    "pid-3",
+                    lambda parts: F.struct(
+                        F.coalesce(parts[0], F.lit("")).alias("id_number"),
+                        F.coalesce(parts[3], F.lit("")).alias("assigning_authority"),
+                        F.coalesce(parts[4], F.lit("")).alias("identifier_type_code"),
+                        F.coalesce(parts[5], F.lit("")).alias("assigning_facility"),
+                    ),
                 ),
             )
-            .drop("pid-2")
+            .drop("pid-3")
             .cache()
         )
 
@@ -358,6 +389,7 @@ def import_hl7_files_to_deltalake(
                 F.col("msh-10").alias("message_control_id"),
                 F.col("msh-4").alias("sending_facility"),
                 F.col("msh-12").alias("version_id"),
+                F.col("pid-2").alias("mpi"),
                 F.col("pid-8").alias("sex"),
                 F.col("pid-10").alias("race"),
                 F.col("pid-11-5").alias("zip_or_postal_code"),
@@ -371,17 +403,6 @@ def import_hl7_files_to_deltalake(
                 F.col("obr-4-2").alias("service_name"),
                 F.col("obr-4-3").alias("service_coding_system"),
                 F.col("obr-24").alias("diagnostic_service_id"),
-                F.when(
-                    (F.length(F.col("obr-32-2")) > 0)
-                    & (F.length(F.col("obr-32-3")) > 0),
-                    F.concat(F.col("obr-32-3"), F.lit(" "), F.col("obr-32-2")),
-                )
-                .when(
-                    (F.length(F.col("obr-33-2")) > 0)
-                    & (F.length(F.col("obr-33-3")) > 0),
-                    F.concat(F.col("obr-33-3"), F.lit(" "), F.col("obr-33-2")),
-                )
-                .alias("primary_radiologist"),
                 F.col("zds-1").alias("study_instance_uid"),
                 # Create date and time objects
                 F.to_date(
@@ -411,6 +432,7 @@ def import_hl7_files_to_deltalake(
             .join(diagnosis_df, "source_file", "left")
             .join(patient_ids_df, "source_file", "left")
             .join(patient_id_df, "source_file", "left")
+            .join(physician_df, "source_file", "left")
             .join(modality_map, "service_identifier", "left")
             .withColumn("year", F.year("message_dt"))
             .withColumn("updated", F.current_timestamp())
