@@ -33,7 +33,6 @@ provisioner:
 
         # Test paths (created by prepare.yml)
         kubeconfig_yaml: /tmp/molecule_harbor_kubeconfig.yaml
-        harbor_dir: /tmp/molecule_harbor_test
 
         # Test configuration
         harbor_namespace: harbor-test

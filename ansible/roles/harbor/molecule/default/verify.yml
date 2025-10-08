@@ -6,26 +6,6 @@
     - ../../defaults/main.yaml
 
   tasks:
-    - name: Verify harbor_storage_definitions is defined
-      ansible.builtin.assert:
-        that:
-          - harbor_storage_definitions is defined
-          - harbor_storage_definitions | length > 0
-        fail_msg: 'harbor_storage_definitions should be defined'
-        success_msg: '✓ harbor_storage_definitions is properly defined'
-
-    - name: Verify storage definition structure
-      ansible.builtin.assert:
-        that:
-          - item.name is defined
-          - item.size is defined
-          - item.path is defined
-          - item.pv_name is defined
-          - item.storage_class_name is defined
-        fail_msg: 'Storage definition missing required fields'
-        success_msg: '✓ Storage definition has all required fields'
-      loop: '{{ harbor_storage_definitions }}'
-
     - name: Verify Harbor configuration variables
       ansible.builtin.assert:
         that:
@@ -43,13 +23,6 @@
           - harbor_version is match('^\d+\.\d+\.\d+$')
         fail_msg: 'Harbor version must be in format X.Y.Z'
         success_msg: '✓ Harbor version format is valid'
-
-    - name: Verify harbor_storage_size format
-      ansible.builtin.assert:
-        that:
-          - harbor_storage_size is match('^\d+[KMGT]i$')
-        fail_msg: 'Storage size must be in Kubernetes format (e.g., 100Gi)'
-        success_msg: '✓ Harbor storage size format is valid'
 
     - name: Verify TLS secret name is defined
       ansible.builtin.assert:
