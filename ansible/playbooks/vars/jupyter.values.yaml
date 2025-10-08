@@ -77,7 +77,7 @@ singleuser:
     jupyter-server-config:
       mountPath: /etc/jupyter/jupyter_server_config.py
       stringData: |
-        # Set CSP headers for JupyterLab (Jupyter Server)
+        # Set CSP headers to enable Voila plugin rendering in JupyterLab iframe
         c.ServerApp.tornado_settings = {
             'headers': {
                 'Content-Security-Policy': "frame-ancestors 'self'"
