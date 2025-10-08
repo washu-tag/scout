@@ -240,8 +240,8 @@ jobs:
           KUBECONFIG: ${{ env.STAGING_KUBECONFIG }}
         run: |
           HARBOR_IP=$(kubectl get node k3d-staging-server-0 -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}')
-          echo "harbor_endpoint=${HARBOR_IP}:30443" >> $GITHUB_OUTPUT
-          echo "Harbor endpoint: ${HARBOR_IP}:30443"
+          echo "harbor_endpoint=${HARBOR_IP}" >> $GITHUB_OUTPUT
+          echo "Harbor endpoint: ${HARBOR_IP}"
       - name: 'Update inventory with Harbor endpoint'
         shell: bash
         env:
