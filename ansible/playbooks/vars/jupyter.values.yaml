@@ -73,6 +73,17 @@ singleuser:
               touch $FLAG_FILE
             fi
             {% endraw %}
+  extraFiles:
+    jupyter-server-config:
+      mountPath: /etc/jupyter/jupyter_server_config.py
+      stringData: |
+        # Set CSP headers for JupyterLab (Jupyter Server)
+        c.ServerApp.tornado_settings = {
+            'headers': {
+                'Content-Security-Policy': "frame-ancestors 'self'"
+            }
+        }
+
   cpu:
     limit: 4
     guarantee: 1
