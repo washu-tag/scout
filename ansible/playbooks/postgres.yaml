@@ -2,140 +2,17 @@
 - name: Create storage directories for Postgres
   hosts: k3s_cluster
   gather_facts: false
-  vars_files:
-    - vars/postgres_storage.yaml
   tasks:
     - name: Create storage directories
-      include_tasks: tasks/storage_dir_create.yaml
+      ansible.builtin.include_role:
+        name: postgres
+        tasks_from: storage
 
-- name: Install Postgres
+- name: Deploy Postgres
   hosts: server
   gather_facts: false
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-  vars_files:
-    - vars/postgres_storage.yaml
-  pre_tasks:
-    - name: Initialize empty SQL statements list
-      ansible.builtin.set_fact:
-        postgres_init_sql: []
-
-    - name: Add SQL statements from local templates
-      ansible.builtin.set_fact:
-        postgres_init_sql: '{{ postgres_init_sql + lookup("template", item) | from_yaml }}'
-      when: module_enabled not in vars or vars[module_enabled] | bool
-      vars:
-        module_name: "{{ item | basename | regex_replace('_init_sql\\.yaml$', '') }}"
-        module_enabled: "{{ module_name + '_enabled' }}"
-      loop: "{{ lookup('fileglob', playbook_dir ~ '/templates/postgres_init/*_init_sql.yaml', wantlist=True) }}"
-      loop_control:
-        label: '{{ item | basename }}'
-      delegate_to: localhost
-      run_once: true
-
-  tasks:
-    - name: Add Postgres Helm repository
-      kubernetes.core.helm_repository:
-        name: cnpg
-        repo_url: https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/
-
-    - name: Install/Upgrade Postgres Operator
-      kubernetes.core.helm:
-        name: cnpg
-        chart_ref: cnpg/cloudnative-pg
-        chart_version: ~0.23.2
-        release_namespace: cnpg-system
-        create_namespace: true
-        release_state: present
-        update_repo_cache: true
-        wait: true
-        wait_timeout: 5m
-        atomic: true
-
-    - name: Create namespace
-      kubernetes.core.k8s:
-        name: '{{ postgres_cluster_namespace }}'
-        api_version: v1
-        kind: Namespace
-        state: present
-
-    - name: Set up storage
-      include_tasks: tasks/storage_setup.yaml
-
-    - name: Create Postgres user secret
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: postgres-user
-            namespace: '{{ postgres_cluster_namespace }}'
-          type: kubernetes.io/basic-auth
-          stringData:
-            username: '{{ postgres_user }}'
-            password: '{{ postgres_password }}'
-
-    - name: Create Postgres superuser secret
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: superuser-secret
-            namespace: '{{ postgres_cluster_namespace }}'
-          type: kubernetes.io/basic-auth
-          stringData:
-            username: 'postgres'
-            password: '{{ postgres_superuser_password }}'
-
-    - name: Create Postgres cluster
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: postgresql.cnpg.io/v1
-          kind: Cluster
-          metadata:
-            name: postgresql-cluster
-            namespace: '{{ postgres_cluster_namespace }}'
-          spec:
-            instances: 1
-            storage:
-              storageClass: '{{ postgres_storage_class }}'
-              size: 100Mi
-            resources: '{{ postgres_resources }}'
-            enableSuperuserAccess: true
-            superuserSecret:
-              name: superuser-secret
-            postgresql:
-              parameters: '{{ postgres_parameters }}'
-            bootstrap:
-              initdb:
-                database: '{{ ingest_postgres_table_name }}'
-                owner: '{{ postgres_user }}'
-                secret:
-                  name: postgres-user
-                postInitSQL: '{{ postgres_init_sql }}'
-
-    - name: Expose metrics service for Prometheus
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: Service
-          metadata:
-            name: postgresql-cluster-metrics
-            namespace: '{{ postgres_cluster_namespace }}'
-          spec:
-            selector:
-              cnpg.io/cluster: postgresql-cluster
-            ports:
-              - name: metrics
-                port: 9187
-                targetPort: metrics
-
-    - name: Wait for Postgres to be ready
-      command: 'kubectl -n {{ postgres_cluster_namespace }} wait --for=condition=Ready --timeout=300s cluster/postgresql-cluster'
-      register: postgres_ready
-      changed_when: false
+    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
+  roles:
+    - postgres
