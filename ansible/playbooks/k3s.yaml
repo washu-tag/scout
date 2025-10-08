@@ -30,7 +30,7 @@
       ansible.builtin.set_fact:
         has_staging_node: "{{ 'staging' in groups and use_staging_node | default(false) | bool }}"
 
-    - name: Skip if no staging node configured
+    - name: Debug log if no staging node configured
       ansible.builtin.debug:
         msg: 'No staging node configured (use_staging_node=false), skipping registry mirror configuration'
       when: not has_staging_node
