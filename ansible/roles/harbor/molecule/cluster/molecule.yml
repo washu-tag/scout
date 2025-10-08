@@ -1,0 +1,63 @@
+---
+# Cluster scenario - Integration tests with existing Kubernetes cluster
+# Tests full Harbor deployment to an existing k8s cluster
+# Requires: kubectl configured with access to a k8s cluster
+
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+
+driver:
+  name: default
+
+platforms:
+  - name: localhost
+    groups:
+      - staging
+
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      roles_path: ${MOLECULE_PROJECT_DIRECTORY}/..
+      interpreter_python: auto_silent
+  inventory:
+    group_vars:
+      all:
+        # Run on local machine (GitHub Actions runner or development machine)
+        ansible_connection: local
+        gather_facts: false
+
+        # Use Python from the current environment (uvx virtualenv)
+        ansible_python_interpreter: '{{ ansible_playbook_python }}'
+
+        # Harbor test configuration - use test namespace
+        # harbor_dir: /tmp/molecule_harbor_cluster_test
+        harbor_namespace: harbor-molecule-test
+        harbor_admin_password: MoleculeTest123
+        harbor_storage_size: 5Gi
+        harbor_expose_type: nodePort
+        harbor_nodeport_https: 30443
+        use_staging_node: true
+
+        # Set external_url for health checks
+        external_url: localhost
+
+verifier:
+  name: ansible
+
+# Skip idempotence test for cluster scenario
+# Helm often reports changes even when configuration hasn't changed
+scenario:
+  test_sequence:
+    - dependency
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - verify
+    - cleanup
+    - destroy
