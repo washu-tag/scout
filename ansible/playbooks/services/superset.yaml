@@ -56,6 +56,20 @@
         namespace: superset
       data: '{{ superset_dashboard_data | default({}) }}'
 
+- name: Create ConfigMap with Scout logo for Superset branding
+  delegate_to: localhost
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: scout-logo
+        namespace: superset
+      binaryData:
+        scout.png: '{{ lookup("file", "../../explorer/public/scout.png") | b64encode }}'
+
 - name: Install/Upgrade Superset Helm chart
   kubernetes.core.helm:
     name: superset
@@ -95,11 +109,11 @@
       configOverrides:
         branding: |
           APP_NAME = "Scout Analytics"
-          APP_ICON = "https://{{ server_hostname }}/scout.png"
+          APP_ICON = "/static/assets/images/scout.png"
           APP_ICON_WIDTH = 200
           LOGO_TARGET_PATH = "https://{{ server_hostname }}"
           LOGO_TOOLTIP = "Scout Launchpad"
-          FAVICONS = [{"href": "https://{{ server_hostname }}/scout.png"}]
+          FAVICONS = [{"href": "/static/assets/images/scout.png"}]
         custom_routing: |
           from flask import redirect, url_for
           from flask_appbuilder import expose, IndexView
@@ -123,10 +137,18 @@
           configMap:
             name: dashboard-config
             items: '{{ superset_dashboard_items | default([]) }}'
+        - name: scout-logo
+          configMap:
+            name: scout-logo
+            defaultMode: 0644
 
       extraVolumeMounts:
         - name: dashboard-config
           mountPath: /app/dashboard-config
+        - name: scout-logo
+          mountPath: /app/superset/static/assets/images/scout.png
+          subPath: scout.png
+          readOnly: true
 
       init:
         initscript: |-
