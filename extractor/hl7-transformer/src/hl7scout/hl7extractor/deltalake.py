@@ -317,7 +317,11 @@ def import_hl7_files_to_deltalake(
                 extract_people_from_obr_field("obr-32").getItem(0),
             )
             .withColumn(
-                "assistant_result_interpreter", extract_people_from_obr_field("obr-33")
+                "assistant_result_interpreter",
+                F.filter(
+                    extract_people_from_obr_field("obr-33"),
+                    lambda name: F.trim(name) != "",
+                ),
             )
             .withColumn("technician", extract_people_from_obr_field("obr-34"))
             .drop("obr-32", "obr-33", "obr-34")
