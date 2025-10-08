@@ -6,13 +6,6 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
-    # - name: Generate TLS certificate using Tailscale
-    #   command: 'tailscale cert --cert-file {{ tls_cert_path }} --key-file {{ tls_key_path }} {{ server_hostname }}'
-    #   args:
-    #     creates: '{{ tls_cert_path }}'
-    #   tags:
-    #     - tailscale
-
     - name: Read TLS cert from remote
       no_log: true
       slurp:
