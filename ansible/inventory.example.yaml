@@ -104,6 +104,8 @@ k3s_cluster:
         nvidia.com/gpu: '1'
 
     # Postgres config
+    # Note: Most postgres configuration is now in roles/postgres/defaults/main.yaml
+    # Only secrets and production-specific overrides are needed here
     postgres_user: scout
     postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     hive_postgres_user: hive
@@ -111,6 +113,8 @@ k3s_cluster:
     superset_postgres_user: superset
     superset_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    # Production resource overrides (defaults in role are for dev)
     postgres_resources:
       requests:
         cpu: 4
@@ -119,7 +123,7 @@ k3s_cluster:
         cpu: 6
         memory: 96Gi
     postgres_storage_size: 100Gi
-    postgres_parameters: # Strings only, no numbers allowed.
+    postgres_parameters: # Production tuning (defaults in role are for dev)
       max_connections: '100'
       shared_buffers: '16GB'
       effective_cache_size: '48GB'

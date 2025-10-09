@@ -22,6 +22,7 @@
           spark.hadoop.fs.s3a.endpoint.region {{ s3_region | default("us-east-1") }}
           spark.databricks.delta.schema.autoMerge.enabled true
           spark.databricks.delta.merge.repartitionBeforeWrite.enabled true
+          spark.databricks.delta.constraints.allowUnenforcedNotNull.enabled true
           spark.sql.extensions io.delta.sql.DeltaSparkSessionExtension
           spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog
           spark.hadoop.fs.s3a.path.style.access true
