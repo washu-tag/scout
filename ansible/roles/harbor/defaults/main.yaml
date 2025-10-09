@@ -37,6 +37,26 @@ harbor_registry_proxies:
     registry_type: quay
     registry_url: https://quay.io
     project_name: quay-proxy
+  - public_registry: cr.k8ssandra.io
+    registry_name: k8ssandra
+    registry_type: docker-registry
+    registry_url: https://cr.k8ssandra.io
+    project_name: k8ssandra-proxy
+  - public_registry: registry.k8s.io
+    registry_name: k8s
+    registry_type: docker-registry
+    registry_url: https://registry.k8s.io
+    project_name: k8s-proxy
+  - public_registry: docker.elastic.co
+    registry_name: elastic
+    registry_type: docker-registry
+    registry_url: https://docker.elastic.co
+    project_name: elastic-proxy
+  - public_registry: nvcr.io
+    registry_name: nvidia
+    registry_type: docker-registry
+    registry_url: https://nvcr.io
+    project_name: nvidia-proxy
 
 # TLS configuration
 harbor_tls_secret_name: harbor-tls
