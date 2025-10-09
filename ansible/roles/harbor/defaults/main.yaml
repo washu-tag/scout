@@ -57,6 +57,11 @@ harbor_registry_proxies:
     registry_type: docker-registry
     registry_url: https://nvcr.io
     project_name: nvidia-proxy
+  - public_registry: apachesuperset.docker.scarf.sh
+    registry_name: apachesuperset
+    registry_type: docker-registry
+    registry_url: https://apachesuperset.docker.scarf.sh
+    project_name: apachesuperset-proxy
 
 # TLS configuration
 harbor_tls_secret_name: harbor-tls
