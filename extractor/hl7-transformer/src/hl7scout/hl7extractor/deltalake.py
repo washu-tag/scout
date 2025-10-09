@@ -72,7 +72,7 @@ def split_and_transform_repeated_field(column, component_lambda):
             F.split(F.col(column), "~"),  # split repetition
             lambda component: F.split(component, "\\^"),  # and then split by component
         ),
-        lambda parts: component_lambda(parts),
+        component_lambda,
     )
 
 

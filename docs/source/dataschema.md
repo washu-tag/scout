@@ -74,7 +74,7 @@ root
 ```
 
 In this example, the first report has two patient IDs, one from an assigning authority of ABC and one from EPIC.
-The second report does not have an assigning authority for the patient ID, but instead has an assigning authority of UN.
+The second report does not have an assigning authority for the patient ID, but instead has an assigning facility of UN.
 
 The assigning authority and identifier type code are used to create separate columns for each patient ID type to
 facilitate easier querying and analysis. For example, the `epic_mrn` column is created from the assigning authority 
