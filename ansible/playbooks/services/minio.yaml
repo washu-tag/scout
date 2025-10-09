@@ -19,35 +19,6 @@
     wait_timeout: "{{ minio_operator_wait_timeout | default('1m') }}"
     atomic: true
 
-- name: Create Traefik Middleware to add trailing slash
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: traefik.io/v1alpha1
-      kind: Middleware
-      metadata:
-        name: "{{ minio_trailing_slash_middleware | default('minio-add-trailing-slash') }}"
-        namespace: kube-system
-      spec:
-        redirectRegex:
-          regex: "(.*/{{ minio_path_prefix | default('minio') }}$)"
-          replacement: ${1}/
-          permanent: true
-
-- name: Create Traefik Middleware to strip prefix
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: traefik.io/v1alpha1
-      kind: Middleware
-      metadata:
-        name: "{{ minio_strip_prefix_middleware | default('minio-strip-prefix') }}"
-        namespace: kube-system
-      spec:
-        stripPrefix:
-          prefixes:
-            - "/{{ minio_path_prefix | default('minio') }}"
-
 - name: Create tenant namespace
   kubernetes.core.k8s:
     name: '{{ minio_tenant_namespace }}'

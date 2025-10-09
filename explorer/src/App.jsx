@@ -10,6 +10,16 @@ export default function App() {
     setMounted(true);
   }, []);
 
+  const getSubdomainUrl = (subdomain) => {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    const url = `${protocol}//${subdomain}.${hostname}`;
+
+    console.debug('[Scout] getSubdomainUrl', { subdomain, hostname, protocol, url });
+
+    return url;
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6 md:p-8">
       <div
@@ -29,7 +39,7 @@ export default function App() {
         {/* Main Tools Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-12">
           <a
-            href="/jupyter"
+            href={getSubdomainUrl('jupyter')}
             className="group flex items-center justify-center p-8 md:p-10 bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-blue-100 no-underline"
           >
             <div className="flex flex-col md:flex-row items-center text-center md:text-left gap-6">
@@ -46,7 +56,7 @@ export default function App() {
           </a>
 
           <a
-            href="/"
+            href={getSubdomainUrl('superset')}
             className="group flex items-center justify-center p-8 md:p-10 bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-yellow-100 no-underline"
           >
             <div className="flex flex-col md:flex-row items-center text-center md:text-left gap-6">
@@ -91,7 +101,7 @@ export default function App() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <a
-              href="/minio/"
+              href={getSubdomainUrl('minio')}
               className="flex items-center gap-3 p-4 rounded-lg bg-gradient-to-br from-red-50 to-white text-red-700 border border-red-100 shadow hover:shadow-md transition-all duration-300 no-underline"
             >
               <SiMinio className="text-2xl" />
@@ -99,7 +109,7 @@ export default function App() {
             </a>
 
             <a
-              href="/temporal"
+              href={getSubdomainUrl('temporal')}
               className="flex items-center gap-3 p-4 rounded-lg bg-gradient-to-br from-emerald-50 to-white text-emerald-700 border border-emerald-100 shadow hover:shadow-md transition-all duration-300 no-underline"
             >
               <SiTemporal className="text-2xl" />
@@ -107,7 +117,7 @@ export default function App() {
             </a>
 
             <a
-              href="/grafana"
+              href={getSubdomainUrl('grafana')}
               className="flex items-center gap-3 p-4 rounded-lg bg-gradient-to-br from-orange-50 to-white text-orange-700 border border-orange-100 shadow hover:shadow-md transition-all duration-300 no-underline"
             >
               <SiGrafana className="text-2xl" />

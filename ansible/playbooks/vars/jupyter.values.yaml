@@ -3,7 +3,6 @@ proxy:
     type: ClusterIP
 
 hub:
-  baseUrl: /jupyter
   resources:
     requests:
       cpu: 100m
@@ -29,6 +28,7 @@ hub:
     Authenticator:
       allowed_users: '{{ (jupyter_allowed_users | default([])) }}'
     JupyterHub:
+      subdomain_host: 'jupyter.{{ server_hostname }}'
       authenticator_class: '{{ jupyter_auth_class | default("dummy") }}'
     Spawner:
       http_timeout: 120
@@ -37,15 +37,13 @@ ingress:
   enabled: true
   ingressClassName: traefik
   hosts:
-    - '{{ server_hostname }}'
-  extraPaths:
-    - path: /jupyter
-      pathType: Prefix
-      backend:
-        service:
-          name: proxy-public
-          port:
-            name: http
+    - 'jupyter.{{ server_hostname }}'
+    - '*.jupyter.{{ server_hostname }}'
+  tls:
+    - hosts:
+        - 'jupyter.{{ server_hostname }}'
+        - '*.jupyter.{{ server_hostname }}'
+      secretName: jupyter-tls
 
 prePuller:
   hook:
@@ -75,6 +73,17 @@ singleuser:
               touch $FLAG_FILE
             fi
             {% endraw %}
+  extraFiles:
+    jupyter-server-config:
+      mountPath: /etc/jupyter/jupyter_server_config.py
+      stringData: |
+        # Set CSP headers to enable Voila plugin rendering in JupyterLab iframe
+        c.ServerApp.tornado_settings = {
+            'headers': {
+                'Content-Security-Policy': "frame-ancestors 'self'"
+            }
+        }
+
   cpu:
     limit: 4
     guarantee: 1

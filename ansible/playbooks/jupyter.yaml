@@ -43,6 +43,20 @@
                 storage: 250Gi
             storageClassName: '{{ jupyter_singleuser_storage_class }}'
 
+    - name: Create TLS secret for Jupyter
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: jupyter-tls
+            namespace: jupyter
+          type: kubernetes.io/tls
+          data:
+            tls.crt: '{{ tls_cert_path | b64encode }}'
+            tls.key: '{{ tls_key_path | b64encode }}'
+
     - name: Add JupyterHub Helm repository
       kubernetes.core.helm_repository:
         name: jupyterhub

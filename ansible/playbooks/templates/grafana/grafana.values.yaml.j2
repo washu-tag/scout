@@ -6,8 +6,7 @@ grafana.ini:
     org_name: Main Org.
     org_role: Admin
   server:
-    root_url: 'https://{{ server_hostname }}/grafana'
-    serve_from_sub_path: true
+    root_url: 'https://grafana.{{ server_hostname }}'
   metrics:
     enabled: true
   dashboards:
@@ -36,9 +35,8 @@ extraSecretMounts:
 ingress:
   enabled: true
   ingressClassName: traefik
-  path: /grafana
   hosts:
-    - '{{ server_hostname }}'
+    - 'grafana.{{ server_hostname }}'
 
 datasources:
   datasources.yaml:

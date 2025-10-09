@@ -54,6 +54,10 @@ k3s_cluster:
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
 
+    # Traefik config
+    tls_cert_path: ''
+    tls_key_path: ''
+
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
     minio_storage_size: 750Gi
     minio_volumes_per_server: 2

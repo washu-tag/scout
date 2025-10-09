@@ -146,14 +146,11 @@
                   storage: '{{ elasticsearch_storage_size | default("100Gi") }}'
 
           web:
-            additionalEnv:
-              - name: TEMPORAL_UI_PUBLIC_PATH
-                value: /temporal
             ingress:
               enabled: true
               ingressClassName: traefik
               hosts:
-                - '{{ server_hostname }}/temporal'
+                - 'temporal.{{ server_hostname }}'
 
     - name: Wait for Temporal schema job to complete
       shell: >-

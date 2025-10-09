@@ -2,30 +2,20 @@
 - name: Configure Traefik
   hosts: server
   gather_facts: false
-  vars:
-    cert_path: '/root/{{ server_hostname }}.crt'
-    key_path: '/root/{{ server_hostname }}.key'
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
-    - name: Generate TLS certificate using Tailscale
-      command: 'tailscale cert --cert-file {{ cert_path }} --key-file {{ key_path }} {{ server_hostname }}'
-      args:
-        creates: '{{ cert_path }}'
-      tags:
-        - tailscale
-
     - name: Read TLS cert from remote
       no_log: true
       slurp:
-        src: '{{ cert_path }}'
+        src: '{{ tls_cert_path }}'
       register: cert_file
 
     - name: Read TLS key from remote
       no_log: true
       slurp:
-        src: '{{ key_path }}'
+        src: '{{ tls_key_path }}'
       register: key_file
 
     - name: Create TLS secret
