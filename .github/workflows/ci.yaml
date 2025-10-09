@@ -226,7 +226,7 @@ jobs:
         shell: bash
         run: |
           k3d cluster create staging \
-            --api-port 6443 \
+            --api-port 6444 \
             --port "30443:30443@server:0" \
             --network staging-net \
             --kubeconfig-update-default=false \
