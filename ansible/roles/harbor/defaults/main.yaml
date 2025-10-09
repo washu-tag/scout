@@ -21,6 +21,7 @@ harbor_registry_url: "https://{{ external_url | default(inventory_hostname) }}{%
 # Proxy cache project names
 harbor_dockerhub_proxy_project: dockerhub-proxy
 harbor_ghcr_proxy_project: ghcr-proxy
+harbor_quay_proxy_project: quay-proxy
 
 # TLS configuration
 harbor_tls_secret_name: harbor-tls

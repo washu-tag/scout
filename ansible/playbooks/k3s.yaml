@@ -55,6 +55,7 @@
             staging_harbor_nodeport: "{{ hostvars[groups['staging'][0]].harbor_nodeport_https | default(harbor_nodeport_https) }}"
             staging_harbor_dockerhub_project: "{{ hostvars[groups['staging'][0]].harbor_dockerhub_proxy_project | default(harbor_dockerhub_proxy_project) }}"
             staging_harbor_ghcr_project: "{{ hostvars[groups['staging'][0]].harbor_ghcr_proxy_project | default(harbor_ghcr_proxy_project) }}"
+            staging_harbor_quay_project: "{{ hostvars[groups['staging'][0]].harbor_quay_proxy_project | default(harbor_quay_proxy_project) }}"
 
         - name: Compute Harbor URL components
           ansible.builtin.set_fact:
@@ -75,6 +76,11 @@
                     - "{{ staging_harbor_host }}"
                   rewrite:
                     "^(.*)$": "{{ staging_harbor_ghcr_project }}/$1"
+                quay.io:
+                  endpoint:
+                    - "{{ staging_harbor_host }}"
+                  rewrite:
+                    "^(.*)$": "{{ staging_harbor_quay_project }}/$1"
               configs:
                 "{{ staging_harbor_host }}":
                   tls:
