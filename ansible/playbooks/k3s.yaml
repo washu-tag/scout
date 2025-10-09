@@ -127,6 +127,7 @@
           --default-local-storage-path={{ base_dir }}
           --write-kubeconfig-mode=0640
           {% if has_staging_node | default(false) %}--disable-default-registry-endpoint{% endif %}
+        INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
         K3S_TOKEN: '{{ k3s_token }}'
         UNINSTALL_K3S_SH: '{{ uninstall_script }}'
       register: k3s_install_result
