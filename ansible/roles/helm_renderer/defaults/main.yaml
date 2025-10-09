@@ -1,0 +1,27 @@
+---
+# Default variables for helm_renderer role
+# These can be overridden by the caller
+
+# Chart rendering behavior flag (inherited from inventory)
+use_staging_node: false
+
+# Helm chart configuration
+# Required variables (caller must provide):
+# - helm_chart_name: Helm release name
+# - helm_chart_ref: Chart reference (repo/chart or local path)
+# - helm_chart_namespace: Target namespace
+
+# Optional variables with defaults
+helm_chart_version: null
+helm_chart_create_namespace: true
+helm_chart_wait: true
+helm_chart_timeout: '5m'
+helm_chart_values: {}
+helm_chart_values_files: []
+
+# For repository charts only (optional)
+helm_repo_name: null
+helm_repo_url: null
+
+# Internal variables (computed during execution)
+helm_render_dir: null

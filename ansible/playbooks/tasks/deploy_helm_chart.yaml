@@ -1,0 +1,60 @@
+---
+# Unified wrapper for Helm chart deployment
+# Handles both air-gapped and non-air-gapped modes
+#
+# This task file provides a consistent interface for deploying Helm charts
+# across all Scout playbooks. It automatically switches between:
+# - Helm-native deployment (non-air-gapped): Uses kubernetes.core.helm module
+# - Local rendering (air-gapped): Uses helm_renderer role to render on localhost
+#
+# The deployment mode is controlled by the use_staging_node inventory variable.
+#
+# Required variables:
+# - helm_chart_name: Helm release name
+# - helm_chart_ref: Chart reference (repo/chart or local path)
+# - helm_chart_namespace: Target namespace
+#
+# Optional variables:
+# - helm_chart_version: Chart version (for repo charts)
+# - helm_chart_create_namespace: Create namespace if missing (default: true)
+# - helm_chart_wait: Wait for resources to be ready (default: true)
+# - helm_chart_timeout: Timeout for wait (default: '5m')
+# - helm_chart_values: Values dict
+# - helm_chart_values_files: List of values files
+# - helm_repo_name: Repository name (for repo charts)
+# - helm_repo_url: Repository URL (for repo charts)
+
+- name: 'Deploy {{ helm_chart_name }} using Helm (non-air-gapped)'
+  when: not (use_staging_node | default(false) | bool)
+  block:
+    - name: 'Add Helm repository for {{ helm_chart_name }}'
+      kubernetes.core.helm_repository:
+        name: '{{ helm_repo_name }}'
+        repo_url: '{{ helm_repo_url }}'
+      when:
+        - helm_repo_name is defined
+        - helm_repo_url is defined
+        - helm_repo_name | length > 0
+        - helm_repo_url | length > 0
+
+    - name: 'Install {{ helm_chart_name }}'
+      kubernetes.core.helm:
+        name: '{{ helm_chart_name }}'
+        chart_ref: '{{ helm_chart_ref }}'
+        chart_version: '{{ helm_chart_version | default(omit) }}'
+        release_namespace: '{{ helm_chart_namespace }}'
+        create_namespace: '{{ helm_chart_create_namespace | default(true) }}'
+        release_state: present
+        update_repo_cache: >-
+          {{ (helm_repo_name is defined and helm_repo_name | length > 0) |
+          ternary(true, false) }}
+        wait: '{{ helm_chart_wait | default(true) }}'
+        wait_timeout: "{{ helm_chart_timeout | default('5m') }}"
+        atomic: true
+        values: '{{ helm_chart_values | default(omit) }}'
+        values_files: '{{ helm_chart_values_files | default(omit) }}'
+
+- name: 'Deploy {{ helm_chart_name }} (air-gapped)'
+  when: use_staging_node | default(false) | bool
+  ansible.builtin.include_role:
+    name: helm_renderer

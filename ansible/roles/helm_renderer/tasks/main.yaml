@@ -1,0 +1,35 @@
+---
+# Main entry point for helm_renderer role
+# Decides between Helm-native deployment or local rendering based on
+# use_staging_node flag
+
+- name: 'Validate required variables'
+  ansible.builtin.assert:
+    that:
+      - helm_chart_name is defined
+      - helm_chart_ref is defined
+      - helm_chart_namespace is defined
+    fail_msg: >-
+      Required variables not defined: helm_chart_name, helm_chart_ref,
+      and helm_chart_namespace are mandatory
+
+- name: 'Deploy chart using Helm (non-air-gapped mode)'
+  kubernetes.core.helm:
+    name: '{{ helm_chart_name }}'
+    chart_ref: '{{ helm_chart_ref }}'
+    chart_version: '{{ helm_chart_version | default(omit) }}'
+    release_namespace: '{{ helm_chart_namespace }}'
+    create_namespace: '{{ helm_chart_create_namespace | default(true) }}'
+    release_state: present
+    update_repo_cache: >-
+      {{ (helm_repo_name is defined) | ternary(true, false) }}
+    wait: '{{ helm_chart_wait | default(true) }}'
+    wait_timeout: "{{ helm_chart_timeout | default('5m') }}"
+    atomic: true
+    values: '{{ helm_chart_values | default(omit) }}'
+    values_files: '{{ helm_chart_values_files | default(omit) }}'
+  when: not (use_staging_node | default(false) | bool)
+
+- name: 'Deploy chart using local rendering (air-gapped mode)'
+  ansible.builtin.include_tasks: render_chart.yaml
+  when: use_staging_node | default(false) | bool

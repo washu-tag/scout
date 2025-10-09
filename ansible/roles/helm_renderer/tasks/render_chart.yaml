@@ -1,0 +1,89 @@
+---
+# Render Helm chart on localhost and apply to remote cluster
+# This task file is included when use_staging_node: true
+
+- name: 'Ensure Helm is installed on localhost'
+  delegate_to: localhost
+  ansible.builtin.command: helm version --short
+  register: helm_version_check
+  failed_when: false
+  changed_when: false
+
+- name: 'Fail if Helm not available on localhost'
+  delegate_to: localhost
+  ansible.builtin.fail:
+    msg: >-
+      Helm must be installed on the Ansible control node (localhost)
+      for air-gapped deployments
+  when: helm_version_check.rc != 0
+
+- name: 'Add Helm repository on localhost'
+  delegate_to: localhost
+  kubernetes.core.helm_repository:
+    name: '{{ helm_repo_name }}'
+    repo_url: '{{ helm_repo_url }}'
+  when:
+    - helm_repo_name is defined
+    - helm_repo_url is defined
+    - helm_repo_name | length > 0
+    - helm_repo_url | length > 0
+
+- name: 'Create temporary directory for rendered manifests'
+  delegate_to: localhost
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: 'helm_{{ helm_chart_name }}_'
+  register: helm_render_dir
+
+- name: 'Write inline values to temporary file (if provided)'
+  delegate_to: localhost
+  ansible.builtin.copy:
+    content: '{{ helm_chart_values | to_nice_yaml }}'
+    dest: '{{ helm_render_dir.path }}/inline-values.yaml'
+    mode: '0644'
+  when:
+    - helm_chart_values is defined
+    - helm_chart_values | length > 0
+  register: inline_values_file
+
+- name: 'Build values files list'
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    all_values_files: >-
+      {{ (helm_chart_values_files | default([])) +
+      ([inline_values_file.dest] if inline_values_file is not skipped
+      else []) }}
+
+- name: 'Build helm template command'
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    helm_template_cmd: >-
+      helm template {{ helm_chart_name }}
+      {{ helm_chart_ref }}
+      {% if helm_chart_version is defined and
+      helm_chart_version | length > 0 %}
+      --version {{ helm_chart_version }}{% endif %}
+      --namespace {{ helm_chart_namespace }}
+      {% if helm_chart_create_namespace | default(false) %}
+      --create-namespace{% endif %}
+      {% for values_file in all_values_files %}
+      --values {{ values_file }} {% endfor %}
+      --output-dir {{ helm_render_dir.path }}
+
+- name: 'Render Helm chart on localhost'
+  delegate_to: localhost
+  ansible.builtin.command:
+    cmd: '{{ helm_template_cmd }}'
+  register: helm_template_result
+  changed_when: true
+
+- name: 'Apply rendered manifests to cluster'
+  ansible.builtin.include_tasks: apply_manifests.yaml
+  vars:
+    manifests_dir: '{{ helm_render_dir.path }}'
+
+- name: 'Clean up temporary directory'
+  delegate_to: localhost
+  ansible.builtin.file:
+    path: '{{ helm_render_dir.path }}'
+    state: absent

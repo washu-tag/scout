@@ -1,0 +1,31 @@
+---
+galaxy_info:
+  author: Scout Platform Team
+  description: Helm chart renderer for air-gapped Kubernetes deployments
+  company: Washington University School of Medicine - TAG
+  license: MIT
+  min_ansible_version: '2.14'
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
+    - name: Debian
+      versions:
+        - all
+    - name: EL
+      versions:
+        - all
+    - name: MacOSX
+      versions:
+        - all
+  galaxy_tags:
+    - kubernetes
+    - helm
+    - air-gapped
+    - deployment
+
+dependencies: []
+
+# Role requires these collections
+collections:
+  - kubernetes.core

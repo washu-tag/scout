@@ -1,0 +1,25 @@
+---
+- name: Converge
+  hosts: localhost
+  gather_facts: false
+  vars:
+    use_staging_node: true
+    kubeconfig_yaml: /tmp/test_kubeconfig
+
+  tasks:
+    - name: Test rendering a simple chart (requires k8s cluster)
+      ansible.builtin.debug:
+        msg: >-
+          Molecule test would render a chart here.
+          Skipped without live cluster.
+      # Uncomment below when testing with a real cluster:
+      # ansible.builtin.include_role:
+      #   name: helm_renderer
+      # vars:
+      #   helm_chart_name: nginx
+      #   helm_chart_ref: oci://registry-1.docker.io/bitnamicharts/nginx
+      #   helm_chart_namespace: test-nginx
+      #   helm_chart_version: "18.2.4"
+      #   helm_chart_values:
+      #     service:
+      #       type: ClusterIP

@@ -1,0 +1,59 @@
+---
+# Apply rendered Kubernetes manifests to cluster
+
+- name: 'Create namespace if needed'
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: '{{ helm_chart_namespace }}'
+    state: present
+  when: helm_chart_create_namespace | default(false)
+
+- name: 'Find all rendered YAML files'
+  delegate_to: localhost
+  ansible.builtin.find:
+    paths: '{{ manifests_dir }}'
+    patterns: '*.yaml'
+    recurse: true
+  register: manifest_files
+
+- name: 'Apply each manifest file to cluster'
+  kubernetes.core.k8s:
+    state: present
+    src: '{{ item.path }}'
+    namespace: '{{ helm_chart_namespace }}'
+  loop: '{{ manifest_files.files }}'
+  loop_control:
+    label: '{{ item.path | basename }}'
+
+- name: 'Wait for deployments to be ready'
+  when:
+    - helm_chart_wait | default(false)
+  block:
+    - name: 'Get all deployments in namespace'
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: '{{ helm_chart_namespace }}'
+      register: deployments_info
+
+    - name: 'Wait for each deployment to be available'
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: '{{ helm_chart_namespace }}'
+      register: deployments_check
+      until: >
+        deployments_check.resources |
+        selectattr('status.conditions', 'defined') |
+        map(attribute='status.conditions') |
+        flatten |
+        selectattr('type', 'equalto', 'Available') |
+        selectattr('status', 'equalto', 'True') |
+        list | length >= (deployments_info.resources | length)
+      retries: >-
+        {{ ((helm_chart_timeout | default('5m') |
+        regex_replace('m', '') | int) * 6) }}
+      delay: 10
+      when:
+        - deployments_info.resources | length > 0

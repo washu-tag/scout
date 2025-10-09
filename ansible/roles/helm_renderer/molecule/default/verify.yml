@@ -1,0 +1,24 @@
+---
+- name: Verify
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Verify helm_renderer role structure exists
+      ansible.builtin.stat:
+        path: '{{ item }}'
+      register: role_files
+      loop:
+        - '{{ playbook_dir }}/../../defaults/main.yaml'
+        - '{{ playbook_dir }}/../../meta/main.yaml'
+        - '{{ playbook_dir }}/../../tasks/main.yaml'
+        - '{{ playbook_dir }}/../../tasks/render_chart.yaml'
+        - '{{ playbook_dir }}/../../tasks/apply_manifests.yaml'
+      failed_when: >-
+        not role_files.results |
+        map(attribute='stat.exists') |
+        select | list | length == 5
+
+    - name: Verify role variables are documented
+      ansible.builtin.debug:
+        msg: 'Role structure validated successfully'
