@@ -19,42 +19,32 @@
     - name: Set up storage
       include_tasks: tasks/storage_setup.yaml
 
-    - name: Add cert-manager Helm repository
-      kubernetes.core.helm_repository:
-        name: jetstack
-        repo_url: https://charts.jetstack.io
-
-    - name: Install cert-manager
-      kubernetes.core.helm:
-        name: cert-manager
-        chart_ref: jetstack/cert-manager
-        release_namespace: cert-manager
-        create_namespace: true
-        release_state: present
-        update_repo_cache: true
-        wait: true
-        wait_timeout: 5m
-        atomic: true
-        values:
+    - name: Deploy cert-manager
+      ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
+      vars:
+        helm_chart_name: cert-manager
+        helm_chart_ref: jetstack/cert-manager
+        helm_chart_namespace: cert-manager
+        helm_repo_name: jetstack
+        helm_repo_url: https://charts.jetstack.io
+        helm_chart_create_namespace: true
+        helm_chart_wait: true
+        helm_chart_timeout: 5m
+        helm_chart_values:
           installCRDs: true
 
-    - name: Add k8ssandra Helm repository
-      kubernetes.core.helm_repository:
-        name: k8ssandra
-        repo_url: https://helm.k8ssandra.io/stable
-
-    - name: Install the cass-operator
-      kubernetes.core.helm:
-        name: cass-operator
-        chart_ref: k8ssandra/cass-operator
-        chart_version: ~0.55.2
-        release_namespace: '{{ temporal_namespace }}'
-        create_namespace: true
-        release_state: present
-        update_repo_cache: true
-        wait: true
-        wait_timeout: 10m
-        atomic: true
+    - name: Deploy cass-operator
+      ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
+      vars:
+        helm_chart_name: cass-operator
+        helm_chart_ref: k8ssandra/cass-operator
+        helm_chart_version: '~0.55.2'
+        helm_chart_namespace: '{{ temporal_namespace }}'
+        helm_repo_name: k8ssandra
+        helm_repo_url: https://helm.k8ssandra.io/stable
+        helm_chart_create_namespace: true
+        helm_chart_wait: true
+        helm_chart_timeout: 10m
 
     - name: Install the Cassandra datacenter
       kubernetes.core.k8s:
@@ -90,25 +80,9 @@
       register: cassandra_ready
       changed_when: false
 
-    - name: Add Temporal Helm repository
-      kubernetes.core.helm_repository:
-        name: temporal
-        repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
-
-    - name: Install/Upgrade Temporal Helm chart
-      register: temporal_helm_result
-      kubernetes.core.helm:
-        name: temporal
-        chart_ref: temporal/temporal
-        chart_version: ~0.62.0
-        release_namespace: '{{ temporal_namespace }}'
-        create_namespace: true
-        release_state: present
-        update_repo_cache: true
-        wait: true
-        wait_timeout: 15m
-        atomic: true
-        values:
+    - name: Set Temporal chart values
+      ansible.builtin.set_fact:
+        temporal_chart_values:
           prometheus:
             enabled: false
           grafana:
@@ -144,7 +118,6 @@
               resources:
                 requests:
                   storage: '{{ elasticsearch_storage_size | default("100Gi") }}'
-
           web:
             ingress:
               enabled: true
@@ -152,10 +125,25 @@
               hosts:
                 - 'temporal.{{ server_hostname }}'
 
+    - name: Deploy Temporal
+      ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
+      vars:
+        helm_chart_name: temporal
+        helm_chart_ref: temporal/temporal
+        helm_chart_version: '~0.62.0'
+        helm_chart_namespace: '{{ temporal_namespace }}'
+        helm_repo_name: temporal
+        helm_repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
+        helm_chart_create_namespace: true
+        helm_chart_wait: true
+        helm_chart_timeout: 15m
+        helm_chart_values: '{{ temporal_chart_values }}'
+
     - name: Wait for Temporal schema job to complete
       shell: >-
-        if kubectl -n {{ temporal_namespace }} get jobs temporal-schema-{{ temporal_helm_result.status.revision }} >/dev/null 2>&1; then
-          kubectl -n {{ temporal_namespace }} wait --for=condition=complete --timeout=300s job/temporal-schema-{{ temporal_helm_result.status.revision }}
+        JOB_NAME=$(kubectl -n {{ temporal_namespace }} get jobs -l app.kubernetes.io/component=schema -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "");
+        if [ -n "$JOB_NAME" ]; then
+          kubectl -n {{ temporal_namespace }} wait --for=condition=complete --timeout=300s job/$JOB_NAME;
         fi
       register: temporal_schema
       changed_when: false

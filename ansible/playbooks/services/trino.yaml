@@ -1,21 +1,17 @@
-- name: Add Trino Helm repository
-  kubernetes.core.helm_repository:
-    name: trino
-    repo_url: https://trinodb.github.io/charts
-
-- name: Install/Upgrade Trino Helm chart
-  kubernetes.core.helm:
-    name: trino
-    chart_ref: trino/trino
-    chart_version: ~1.38.0
-    release_namespace: trino
-    create_namespace: true
-    release_state: present
-    update_repo_cache: true
-    wait: true
-    wait_timeout: 5m
-    atomic: true
-    values:
+---
+- name: Deploy Trino
+  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  vars:
+    helm_chart_name: trino
+    helm_chart_ref: trino/trino
+    helm_chart_version: '~1.38.0'
+    helm_chart_namespace: trino
+    helm_repo_name: trino
+    helm_repo_url: https://trinodb.github.io/charts
+    helm_chart_create_namespace: true
+    helm_chart_wait: true
+    helm_chart_timeout: 5m
+    helm_chart_values:
       catalogs:
         delta: |
           connector.name=delta_lake
