@@ -35,7 +35,7 @@ staging:
     harbor_storage_size: 100Gi
     harbor_dir: /scout/persistence/harbor
     harbor_namespace: harbor
-    harbor_version: '1.14.2' # Harbor helm chart version
+    harbor_version: '~1.14.0'
 
 # The server group contains the control plane nodes for the k3s cluster.
 server:
