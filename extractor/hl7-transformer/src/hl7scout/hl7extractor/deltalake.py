@@ -66,6 +66,27 @@ def extract_observation_id_suffix_content(column, suffix_list):
     ).alias(f"report_section_{column.lower()}")
 
 
+def split_and_transform_repeated_field(column, component_lambda):
+    return F.transform(
+        F.transform(
+            F.split(F.col(column), "~"),  # split repetition
+            lambda component: F.split(component, "\\^"),  # and then split by component
+        ),
+        component_lambda,
+    )
+
+
+def extract_people_from_obr_field(column):
+    return F.array_distinct(
+        F.filter(
+            split_and_transform_repeated_field(
+                column, lambda parts: F.concat_ws(" ", parts[2], parts[1])
+            ),
+            lambda name: name != "",
+        )
+    )
+
+
 def import_hl7_files_to_deltalake(
     hl7_manifest_file_path: str,
     modality_map_csv_path: str,
@@ -144,15 +165,17 @@ def import_hl7_files_to_deltalake(
                     F.expr(
                         f"filter(segments, x -> x.id = '{segment}')[0].fields"
                     ).alias(segment.lower())
-                    for segment in ("PID", "ORC", "OBR", "DG1", "ZDS")
+                    for segment in ("PID", "ORC", "OBR", "ZDS")
                 ],
-                # OBX is a special case; we need to keep it as a list for now so
-                # later we can explode it into separate rows
+                # OBX and DG1 are special cases; we need to keep them as lists for now so
+                # later we can explode them into separate rows or iterate over them
                 F.expr("filter(segments, x -> x.id = 'OBX')").alias("obx_lines"),
+                F.expr("filter(segments, x -> x.id = 'DG1')").alias("dg1_lines"),
             )
             .select(
                 "source_file",
                 "obx_lines",
+                "dg1_lines",
                 # Extract all the fields where we only want the first component
                 *[
                     F.split(F.col(segment).getItem(field - 1), "\\^")
@@ -160,7 +183,7 @@ def import_hl7_files_to_deltalake(
                     .alias(f"{segment}-{field}")
                     for segment, fields in (
                         ("msh", (4, 7, 10, 12)),
-                        ("pid", (7, 8, 10, 22)),
+                        ("pid", (2, 7, 8, 10, 22)),
                         ("orc", (2, 3)),
                         ("obr", (2, 3, 6, 7, 8, 22, 24)),
                         ("zds", (1,)),
@@ -175,15 +198,17 @@ def import_hl7_files_to_deltalake(
                     for segment, field, components in (
                         ("pid", 11, (5, 6)),
                         ("obr", 4, (1, 2, 3)),
-                        ("dg1", 3, (1, 2, 3)),
-                        ("obr", 32, (2, 3)),
-                        ("obr", 33, (2, 3)),
                     )
                     for component in components
                 ],
-                # PID-2 is a special case.
+                # PID-3 is a special case.
                 # We keep it as-is for now so we can explode it later.
-                F.col("pid").getItem(2).alias("pid-2"),
+                F.col("pid").getItem(2).alias("pid-3"),
+                # We need multiple repetitions from OBR-33 and OBR-34.
+                # We could handle OBR-32 above, but it's easier to centralize the logic here.
+                F.col("obr").getItem(31).alias("obr-32"),
+                F.col("obr").getItem(32).alias("obr-33"),
+                F.col("obr").getItem(33).alias("obr-34"),
             )
             .cache()
         )
@@ -264,66 +289,100 @@ def import_hl7_files_to_deltalake(
         )
 
         activity.heartbeat()
+        activity.logger.info("Creating diagnosis df")
+        diagnosis_df = (
+            df.select("source_file", "dg1_lines")
+            .withColumn(
+                "diagnoses",
+                F.transform(
+                    F.transform(
+                        F.col("dg1_lines"), lambda item: F.split(item.fields[2], "\\^")
+                    ),
+                    lambda parts: F.struct(
+                        parts[0].alias("diagnosis_code"),
+                        parts[1].alias("diagnosis_code_text"),
+                        parts[2].alias("diagnosis_code_coding_system"),
+                    ),
+                ),
+            )
+            .drop("dg1_lines")
+        )
+
+        activity.heartbeat()
+        activity.logger.info("Creating physician df")
+        physician_df = (
+            df.select("source_file", "obr-32", "obr-33", "obr-34")
+            .withColumn(
+                "principal_result_interpreter",
+                extract_people_from_obr_field("obr-32").getItem(0),
+            )
+            .withColumn(
+                "assistant_result_interpreter",
+                F.filter(
+                    extract_people_from_obr_field("obr-33"),
+                    lambda name: F.trim(name) != "",
+                ),
+            )
+            .withColumn("technician", extract_people_from_obr_field("obr-34"))
+            .drop("obr-32", "obr-33", "obr-34")
+        )
+
+        activity.heartbeat()
         activity.logger.info("Extracting patient id columns")
-        exploded_patient_id_df = (
-            df.select(
-                "source_file",
-                # Get the patient id segment and explode into separate rows
-                F.explode(F.split(F.col("pid-2"), "~")).alias("pid-2"),
+        patient_ids_df = (
+            df.select("source_file", "pid-3")
+            .withColumn(
+                "patient_ids",
+                split_and_transform_repeated_field(
+                    "pid-3",
+                    lambda parts: F.struct(
+                        F.coalesce(parts[0], F.lit("")).alias("id_number"),
+                        F.coalesce(parts[3], F.lit("")).alias("assigning_authority"),
+                        F.coalesce(parts[4], F.lit("")).alias("identifier_type_code"),
+                        F.coalesce(parts[5], F.lit("")).alias("assigning_facility"),
+                    ),
+                ),
             )
-            .select(
-                "source_file",
-                # Split the patient id fields from the exploded pid
-                F.split(F.col("pid-2"), "\\^").alias("patient_ids"),
-            )
-            .select(
-                "source_file",
-                # Get the patient id fields we want
-                F.col("patient_ids").getItem(0).alias("id_number"),
-                F.col("patient_ids").getItem(3).alias("assigning_authority"),
-                F.col("patient_ids").getItem(4).alias("identifier_type_code"),
-            )
-        ).cache()
+            .drop("pid-3")
+            .cache()
+        )
 
         activity.heartbeat()
         activity.logger.info("Creating patient id df")
         patient_id_df = (
-            # Filter out patient ids with missing fields
-            exploded_patient_id_df.filter(
-                " and ".join(
-                    f"{field} is not null and {field} != ''"
-                    for field in (
-                        "id_number",
-                        "assigning_authority",
-                        "identifier_type_code",
-                    )
-                )
+            patient_ids_df.select(
+                "source_file", F.explode("patient_ids").alias("patient_id")
+            )
+            .filter(
+                "patient_id.id_number != '' AND (patient_id.assigning_facility != '' OR (patient_id.assigning_authority != '' AND patient_id.identifier_type_code != ''))"
             )
             .select(
                 "source_file",
-                "id_number",
-                F.concat_ws(
-                    "_",
-                    F.lower("assigning_authority"),
-                    F.lower("identifier_type_code"),
-                ).alias("patient_id_col_name"),
+                F.col("patient_id.id_number").alias("id_number"),
+                F.when(
+                    (F.col("patient_id.assigning_authority") != "")
+                    & (F.col("patient_id.identifier_type_code") != ""),
+                    F.concat_ws(
+                        "_",
+                        F.lower("patient_id.assigning_authority"),
+                        F.lower("patient_id.identifier_type_code"),
+                    ),
+                )
+                .otherwise(
+                    F.concat(
+                        F.lit("legacy_patient_id_"),
+                        F.lower("patient_id.assigning_facility"),
+                    )
+                )
+                .alias("patient_id_col_name"),
             )
             .groupBy("source_file")
-            # Turn the patient_id_col_name values into columns
-            .pivot("patient_id_col_name")
-            # Assume they only have one patient id for each type
-            .agg(F.first("id_number"))
-        )
-
-        # Note that we do not filter out any patient ids here, so they are all available in the JSON
-        activity.heartbeat()
-        activity.logger.info("Creating patient id JSON column")
-        patient_id_json_df = exploded_patient_id_df.groupBy("source_file").agg(
-            F.to_json(
-                F.collect_list(
-                    F.struct("id_number", "assigning_authority", "identifier_type_code")
-                )
-            ).alias("patient_id_json")
+            .pivot(
+                "patient_id_col_name"
+            )  # Turn the patient_id_col_name values into columns
+            .agg(
+                F.first("id_number")
+            )  # Assume they only have one patient id for each type
         )
 
         activity.heartbeat()
@@ -334,6 +393,7 @@ def import_hl7_files_to_deltalake(
                 F.col("msh-10").alias("message_control_id"),
                 F.col("msh-4").alias("sending_facility"),
                 F.col("msh-12").alias("version_id"),
+                F.col("pid-2").alias("mpi"),
                 F.col("pid-8").alias("sex"),
                 F.col("pid-10").alias("race"),
                 F.col("pid-11-5").alias("zip_or_postal_code"),
@@ -347,20 +407,6 @@ def import_hl7_files_to_deltalake(
                 F.col("obr-4-2").alias("service_name"),
                 F.col("obr-4-3").alias("service_coding_system"),
                 F.col("obr-24").alias("diagnostic_service_id"),
-                F.when(
-                    (F.length(F.col("obr-32-2")) > 0)
-                    & (F.length(F.col("obr-32-3")) > 0),
-                    F.concat(F.col("obr-32-3"), F.lit(" "), F.col("obr-32-2")),
-                )
-                .when(
-                    (F.length(F.col("obr-33-2")) > 0)
-                    & (F.length(F.col("obr-33-3")) > 0),
-                    F.concat(F.col("obr-33-3"), F.lit(" "), F.col("obr-33-2")),
-                )
-                .alias("primary_radiologist"),
-                F.col("dg1-3-1").alias("diagnosis_code"),
-                F.col("dg1-3-2").alias("diagnosis_code_text"),
-                F.col("dg1-3-3").alias("diagnosis_code_coding_scheme"),
                 F.col("zds-1").alias("study_instance_uid"),
                 # Create date and time objects
                 F.to_date(
@@ -383,11 +429,14 @@ def import_hl7_files_to_deltalake(
                         ("obr-22", "results_report_status_change_dt"),
                     )
                 ],
+                F.expr("datediff(YEAR, birth_date, requested_dt)").alias("patient_age"),
                 "source_file",
             )
             .join(report_df, "source_file", "left")
+            .join(diagnosis_df, "source_file", "left")
+            .join(patient_ids_df, "source_file", "left")
             .join(patient_id_df, "source_file", "left")
-            .join(patient_id_json_df, "source_file", "left")
+            .join(physician_df, "source_file", "left")
             .join(modality_map, "service_identifier", "left")
             .withColumn("year", F.year("message_dt"))
             .withColumn("updated", F.current_timestamp())
