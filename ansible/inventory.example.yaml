@@ -14,6 +14,11 @@ all:
     # K3s kubeconfig path (same for all k3s installations)
     kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 
+    # Staging node configuration
+    # Set to true to enable staging node with Harbor registry proxy for air-gapped deployments
+    # Requires staging group to be defined
+    use_staging_node: false
+
 # The staging group contains the staging node that acts as a data diode for air-gapped deployments.
 # The staging node hosts a Harbor registry that proxies container images from public registries.
 # Enable staging node functionality by setting `use_staging_node: true` in k3s_cluster vars.
@@ -73,11 +78,6 @@ k3s_cluster:
     server:
     agents:
   vars:
-    # Staging node configuration
-    # Set to true to enable staging node with Harbor registry proxy for air-gapped deployments
-    # Requires staging group to be defined above
-    use_staging_node: false
-
     # K3s config
     k3s_version: v1.32.3+k3s1 # Leave blank for latest stable
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
