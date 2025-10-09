@@ -12,10 +12,22 @@
           - harbor_namespace is defined
           - harbor_admin_password is defined
           - harbor_version is defined
-          - harbor_dockerhub_proxy_project is defined
-          - harbor_ghcr_proxy_project is defined
+          - harbor_registry_proxies is defined
+          - harbor_registry_proxies | length > 0
         fail_msg: 'Required Harbor variables are missing'
         success_msg: '✓ All required Harbor variables are set'
+
+    - name: Verify harbor_registry_proxies structure
+      ansible.builtin.assert:
+        that:
+          - item.public_registry is defined
+          - item.registry_name is defined
+          - item.registry_type is defined
+          - item.registry_url is defined
+          - item.project_name is defined
+        fail_msg: 'Registry proxy entry missing required fields'
+        success_msg: '✓ Registry proxy entry {{ item.registry_name }} is valid'
+      loop: '{{ harbor_registry_proxies }}'
 
     - name: Verify Harbor version format
       ansible.builtin.assert:

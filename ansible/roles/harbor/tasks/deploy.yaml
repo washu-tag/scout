@@ -137,7 +137,25 @@
   retries: 30
   delay: 10
 
-- name: Create Docker Hub registry endpoint
+- name: Initialize final registry proxies list
+  ansible.builtin.set_fact:
+    harbor_registry_proxies_final: []
+
+- name: Apply inventory overrides to registry proxies
+  ansible.builtin.set_fact:
+    harbor_registry_proxies_final: >-
+      {{
+        harbor_registry_proxies_final + [{
+          'public_registry': item.public_registry,
+          'registry_name': item.registry_name,
+          'registry_type': item.registry_type,
+          'registry_url': item.registry_url,
+          'project_name': vars['harbor_' + item.registry_name + '_proxy_project'] | default(item.project_name)
+        }]
+      }}
+  loop: '{{ harbor_registry_proxies }}'
+
+- name: Create registry endpoints
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/registries'
     validate_certs: false
@@ -148,26 +166,11 @@
     body_format: json
     status_code: [201, 409] # 409 = already exists
     body:
-      name: dockerhub
-      type: docker-hub
-      url: https://hub.docker.com
+      name: '{{ item.registry_name }}'
+      type: '{{ item.registry_type }}'
+      url: '{{ item.registry_url }}'
       insecure: false
-
-- name: Create GHCR registry endpoint
-  ansible.builtin.uri:
-    url: '{{ harbor_registry_url }}/api/v2.0/registries'
-    validate_certs: false
-    method: POST
-    user: admin
-    password: '{{ harbor_admin_password }}'
-    force_basic_auth: true
-    body_format: json
-    status_code: [201, 409]
-    body:
-      name: ghcr
-      type: github-ghcr
-      url: https://ghcr.io
-      insecure: false
+  loop: '{{ harbor_registry_proxies_final }}'
 
 - name: Get registries list
   ansible.builtin.uri:
@@ -178,12 +181,7 @@
     force_basic_auth: true
   register: registries_response
 
-- name: Extract registry IDs
-  ansible.builtin.set_fact:
-    dockerhub_registry_id: "{{ registries_response.json | selectattr('name', 'equalto', 'dockerhub') | map(attribute='id') | first }}"
-    ghcr_registry_id: "{{ registries_response.json | selectattr('name', 'equalto', 'ghcr') | map(attribute='id') | first }}"
-
-- name: Create Docker Hub proxy cache project
+- name: Create proxy cache projects
   ansible.builtin.uri:
     url: '{{ harbor_registry_url }}/api/v2.0/projects'
     validate_certs: false
@@ -194,24 +192,10 @@
     body_format: json
     status_code: [201, 409]
     body:
-      project_name: '{{ harbor_dockerhub_proxy_project }}'
-      registry_id: '{{ dockerhub_registry_id }}'
+      project_name: '{{ item.project_name }}'
+      registry_id: "{{ registries_response.json | selectattr('name', 'equalto', item.registry_name) | map(attribute='id') | first }}"
       public: true
-
-- name: Create GHCR proxy cache project
-  ansible.builtin.uri:
-    url: '{{ harbor_registry_url }}/api/v2.0/projects'
-    validate_certs: false
-    method: POST
-    user: admin
-    password: '{{ harbor_admin_password }}'
-    force_basic_auth: true
-    body_format: json
-    status_code: [201, 409]
-    body:
-      project_name: '{{ harbor_ghcr_proxy_project }}'
-      registry_id: '{{ ghcr_registry_id }}'
-      public: true
+  loop: '{{ harbor_registry_proxies_final }}'
 
 - name: Display Harbor deployment status
   ansible.builtin.debug:

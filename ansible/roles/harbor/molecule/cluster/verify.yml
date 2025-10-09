@@ -67,7 +67,7 @@
       ansible.builtin.debug:
         msg: 'Harbor version: {{ harbor_api_check.json.harbor_version }}'
 
-    - name: Verify Docker Hub registry endpoint exists
+    - name: Get all registries
       ansible.builtin.uri:
         url: 'https://{{ external_url }}:{{ harbor_nodeport_https }}/api/v2.0/registries'
         validate_certs: false
@@ -75,21 +75,8 @@
         password: '{{ harbor_admin_password }}'
         force_basic_auth: true
       register: registries
-      failed_when: >
-        registries.json | selectattr('name', 'equalto', 'dockerhub') | list | length == 0
 
-    - name: Verify GHCR registry endpoint exists
-      ansible.builtin.uri:
-        url: 'https://{{ external_url }}:{{ harbor_nodeport_https }}/api/v2.0/registries'
-        validate_certs: false
-        user: admin
-        password: '{{ harbor_admin_password }}'
-        force_basic_auth: true
-      register: registries_ghcr
-      failed_when: >
-        registries_ghcr.json | selectattr('name', 'equalto', 'ghcr') | list | length == 0
-
-    - name: Verify Docker Hub proxy project exists
+    - name: Get all projects
       ansible.builtin.uri:
         url: 'https://{{ external_url }}:{{ harbor_nodeport_https }}/api/v2.0/projects'
         validate_certs: false
@@ -97,29 +84,52 @@
         password: '{{ harbor_admin_password }}'
         force_basic_auth: true
       register: projects
-      failed_when: >
-        projects.json | selectattr('name', 'equalto', 'dockerhub-proxy') | list | length == 0
 
-    - name: Verify GHCR proxy project exists
-      ansible.builtin.uri:
-        url: 'https://{{ external_url }}:{{ harbor_nodeport_https }}/api/v2.0/projects'
-        validate_certs: false
-        user: admin
-        password: '{{ harbor_admin_password }}'
-        force_basic_auth: true
-      register: projects_ghcr
-      failed_when: >
-        projects_ghcr.json | selectattr('name', 'equalto', 'ghcr-proxy') | list | length == 0
+    - name: Initialize final registry proxies list
+      ansible.builtin.set_fact:
+        harbor_registry_proxies_final: []
+
+    - name: Apply inventory overrides to registry proxies
+      ansible.builtin.set_fact:
+        harbor_registry_proxies_final: >-
+          {{
+            harbor_registry_proxies_final + [{
+              'public_registry': item.public_registry,
+              'registry_name': item.registry_name,
+              'registry_type': item.registry_type,
+              'registry_url': item.registry_url,
+              'project_name': vars['harbor_' + item.registry_name + '_proxy_project'] | default(item.project_name)
+            }]
+          }}
+      loop: '{{ harbor_registry_proxies }}'
+
+    - name: Verify registry endpoints exist
+      ansible.builtin.assert:
+        that:
+          - registries.json | selectattr('name', 'equalto', item.registry_name) | list | length > 0
+        fail_msg: 'Registry endpoint {{ item.registry_name }} not found'
+        success_msg: '✓ Registry endpoint {{ item.registry_name }} exists'
+      loop: '{{ harbor_registry_proxies_final }}'
+
+    - name: Verify proxy projects exist
+      ansible.builtin.assert:
+        that:
+          - projects.json | selectattr('name', 'equalto', item.project_name) | list | length > 0
+        fail_msg: 'Proxy project {{ item.project_name }} not found'
+        success_msg: '✓ Proxy project {{ item.project_name }} exists'
+      loop: '{{ harbor_registry_proxies_final }}'
+
+    - name: Build verification summary
+      ansible.builtin.set_fact:
+        verification_summary: >-
+          {{ ['✓ Harbor namespace exists',
+              '✓ ' + (harbor_pods.resources | length | string) + ' Harbor pods running',
+              '✓ Harbor service exposed on port ' + (harbor_nodeport_https | string),
+              '✓ Harbor API accessible']
+            + (harbor_registry_proxies_final | map('regex_replace', '^.*$', '✓ ' + item.registry_name + ' registry endpoint configured') | list)
+            + (harbor_registry_proxies_final | map('regex_replace', '^.*$', '✓ ' + item.project_name + ' proxy project created') | list)
+            + ['Harbor is fully functional!'] }}
 
     - name: Display verification summary
       ansible.builtin.debug:
-        msg:
-          - '✓ Harbor namespace exists'
-          - '✓ {{ harbor_pods.resources | length }} Harbor pods running'
-          - '✓ Harbor service exposed on port {{ harbor_nodeport_https }}'
-          - '✓ Harbor API accessible'
-          - '✓ Docker Hub registry endpoint configured'
-          - '✓ GHCR registry endpoint configured'
-          - '✓ Docker Hub proxy project created'
-          - '✓ GHCR proxy project created'
-          - 'Harbor is fully functional!'
+        msg: '{{ verification_summary }}'
