@@ -35,6 +35,13 @@
         msg: 'No staging node configured (use_staging_node=false), skipping registry mirror configuration'
       when: not has_staging_node
 
+    - name: Remove registry mirror file when not using staging node
+      ansible.builtin.file:
+        path: /etc/rancher/k3s/registries.yaml
+        state: absent
+      when: not has_staging_node
+      register: registry_removal_task_result
+
     - name: Create registry mirror file
       when: has_staging_node
       block:
@@ -137,8 +144,10 @@
         name: k3s
         state: restarted
       when:
-        - registry_config_task_result is defined
-        - registry_config_task_result.changed | default(false)
+        - (registry_config_task_result is defined and
+          registry_config_task_result.changed | default(false)) or
+          (registry_removal_task_result is defined and
+          registry_removal_task_result.changed | default(false))
         - not k3s_install_result.changed
 
     - name: Update kubeconfig group permissions since write-kubeconfig-group isn't working
@@ -255,6 +264,8 @@
         name: k3s-agent
         state: restarted
       when:
-        - registry_config_task_result is defined
-        - registry_config_task_result.changed | default(false)
+        - (registry_config_task_result is defined and
+          registry_config_task_result.changed | default(false)) or
+          (registry_removal_task_result is defined and
+          registry_removal_task_result.changed | default(false))
         - not k3s_agent_install_result.changed
