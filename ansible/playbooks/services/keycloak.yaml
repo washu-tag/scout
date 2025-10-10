@@ -129,14 +129,12 @@
         http:
           httpEnabled: true
         hostname:
-          hostname: '{{ server_hostname }}'
+          hostname: 'kc.{{ server_hostname }}'
         ingress:
           enabled: false
         proxy:
           headers: xforwarded
         additionalOptions:
-          - name: http-relative-path
-            value: /kc
           - name: metrics-enabled
             value: 'true'
           - name: event-metrics-user-enabled
@@ -164,7 +162,7 @@
       spec:
         ingressClassName: traefik
         rules:
-          - host: '{{ server_hostname }}'
+          - host: 'kc.{{ server_hostname }}'
             http:
               paths:
                 - backend:
@@ -172,7 +170,7 @@
                       name: keycloak-service
                       port:
                         name: http
-                  path: /kc
+                  path: /
                   pathType: Prefix
 
 - name: Wait for Keycloak to be ready
@@ -222,6 +220,6 @@
         tag: '6.4.0-26'
       existingConfigSecret: 'keycloak-config'
       env:
-        KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/kc'
+        KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
         KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
       existingSecret: keycloak-admin-secret

@@ -22,5 +22,5 @@
     - name: Install Prometheus
       include_tasks: services/prometheus.yaml
 
-    - name: Install Loki, Promtail, and Grafana
-      include_tasks: services/grafana.yaml
+    # - name: Install Loki, Promtail, and Grafana
+    #   include_tasks: services/grafana.yaml

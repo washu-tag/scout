@@ -12,13 +12,13 @@ grafana.ini:
     email_attribute_path: email
     login_attribute_path: preferred_username
     name_attribute_path: name
-    auth_url: 'https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/auth'
-    token_url: 'https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/token'
-    api_url: 'https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/userinfo'
+    auth_url: 'https://kc.{{ server_hostname }}/realms/scout/protocol/openid-connect/auth'
+    token_url: 'https://kc.{{ server_hostname }}/realms/scout/protocol/openid-connect/token'
+    api_url: 'https://kc.{{ server_hostname }}/realms/scout/protocol/openid-connect/userinfo'
     role_attribute_path: contains(groups[*], 'grafana-admin') && 'Admin' || 'None'
     role_attribute_strict: true
     allow_assign_grafana_admin: true
-    signout_redirect_url: 'https://{{ server_hostname }}/oauth2/sign_out'
+    signout_redirect_url: 'https://oa2p.{{ server_hostname }}/sign_out'
   server:
     root_url: 'https://grafana.{{ server_hostname }}'
   metrics:
