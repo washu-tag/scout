@@ -6,19 +6,18 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
-    - name: Install explorer using Helm
-      kubernetes.core.helm:
-        name: explorer
-        release_namespace: explorer
-        create_namespace: true
-        chart_ref: '{{ scout_repo_dir }}/helm/explorer'
-        state: present
-        wait: true
-        wait_timeout: 5m
-        atomic: true
-        values_files:
+    - name: Deploy explorer
+      ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
+      vars:
+        helm_chart_name: explorer
+        helm_chart_ref: '{{ scout_repo_dir }}/helm/explorer'
+        helm_chart_namespace: explorer
+        helm_chart_create_namespace: true
+        helm_chart_wait: true
+        helm_chart_timeout: 5m
+        helm_chart_values_files:
           - '{{ scout_repo_dir }}/helm/explorer/values.yaml'
-        values:
+        helm_chart_values:
           image:
             repository: '{{ explorer_image | default(omit) }}'
             tag: '{{ explorer_image_tag | default(omit) }}'
@@ -30,5 +29,3 @@
                 paths:
                   - path: /
                     pathType: Prefix
-        kubeconfig: '{{ local_kubeconfig_yaml }}'
-      delegate_to: localhost

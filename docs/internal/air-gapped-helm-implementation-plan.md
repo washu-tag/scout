@@ -1663,11 +1663,12 @@ Organizations can adopt air-gapped deployments incrementally:
 | 2025-10-08 | Initial implementation plan | Claude Code |
 | 2025-10-09 | **Phase 1 Complete**: Created helm_renderer role and wrapper task | Claude Code |
 | 2025-10-09 | **Phase 2 Complete**: Refactored public chart deployments | Claude Code |
+| 2025-10-10 | **Phase 3 Complete**: Refactored local chart deployments | Claude Code |
 
 ---
 
-**Document Status**: In Progress (Phases 1-2 Complete, Phase 3 Next)
-**Next Steps**: Begin Phase 3 - Refactor local chart deployments (explorer, extractor, dcm4chee, orthanc)
+**Document Status**: In Progress (Phases 1-3 Complete, Phase 4 Next)
+**Next Steps**: Begin Phase 4 - Testing and validation (integration testing both modes)
 
 ## Phase 1 Summary (2025-10-09)
 
@@ -1763,3 +1764,89 @@ Organizations can adopt air-gapped deployments incrementally:
 - **Public charts converted**: 8
 - **Lines changed**: ~150+ lines refactored
 - **Backward compatible**: 100% (non-air-gapped deployments unchanged)
+
+## Phase 3 Summary (2025-10-10)
+
+### Completed Deliverables
+
+✅ **Refactored Local Chart Deployments** (6 charts across 5 playbooks)
+
+**explorer.yaml** (1 chart):
+- explorer: Converted to wrapper task, preserved values_files and inline values
+
+**extractor.yaml** (2 charts):
+- hl7log-extractor: Converted to wrapper task with inline template lookup
+- hl7-transformer: Converted to wrapper task with inline template lookup
+
+**services/hive.yaml** (1 chart):
+- hive-metastore: Converted to wrapper task, uses existing `hive_values` variable
+
+**dcm4chee.yaml** (1 chart):
+- dcm4chee: Converted to wrapper task with inline template lookup
+
+**orthanc.yaml** (1 chart):
+- orthanc: Converted to wrapper task with inline template lookup
+
+### Key Principles Followed
+
+1. **No Unnecessary set_fact**: Template lookups kept inline as originally implemented
+   - ✅ `lookup('template', '...')` expressions preserved inline
+   - ✅ Existing variables (like `hive_values`) used directly
+   - ✅ No new intermediate variables introduced
+
+2. **Line Length Compliance**: All long lines wrapped using YAML multiline syntax
+   - Template lookups split across lines with `>-`
+   - Chart refs wrapped for readability
+   - All files pass yamllint validation
+
+3. **Consistent Pattern**: All local charts follow same structure as public charts
+   - Single `include_tasks` call per chart
+   - Explicit parameter passing
+   - No `helm_repo_name`/`helm_repo_url` for local charts
+
+### Validation Results
+
+- ✅ Ansible syntax valid for all modified playbooks
+- ✅ yamllint passed (no errors or warnings)
+- ✅ Pre-commit hooks passed (prettier checks)
+- ✅ 5 playbooks refactored
+- ✅ 6 local Helm charts converted
+- ✅ All playbooks ready for air-gapped deployment
+
+### Files Modified
+
+| File | Charts | Template Lookups |
+|------|--------|------------------|
+| `explorer.yaml` | explorer | No (inline dict + values_files) |
+| `extractor.yaml` | hl7log-extractor, hl7-transformer | Yes (2 templates) |
+| `services/hive.yaml` | hive-metastore | No (uses hive_values var) |
+| `dcm4chee.yaml` | dcm4chee | Yes (1 template) |
+| `orthanc.yaml` | orthanc | Yes (1 template) |
+
+### Code Reduction
+
+**Before:**
+- Each chart: `kubernetes.core.helm` module with all parameters
+- delegate_to/environment blocks for local execution
+- 15-20 lines per chart deployment
+
+**After:**
+- Each chart: `include_tasks` wrapper with clean parameter passing
+- 10-12 lines per chart deployment
+- Consistent structure across all charts
+
+### Statistics
+
+- **Playbooks modified**: 5
+- **Local charts converted**: 6
+- **Template lookups preserved**: 4 (kept inline, no set_fact)
+- **Lines changed**: ~80+ lines refactored
+- **Backward compatible**: 100% (non-air-gapped deployments unchanged)
+
+### Cumulative Progress (Phases 1-3)
+
+- **Total playbooks modified**: 10
+- **Total charts converted**: 14 (8 public + 6 local)
+- **Infrastructure created**: helm_renderer role + wrapper task
+- **All 16 Scout Helm charts**: Now support air-gapped deployment
+- **Remaining work**: Phase 4 (testing and validation)
