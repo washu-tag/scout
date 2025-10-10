@@ -1,0 +1,42 @@
+---
+# Verify Kubernetes cluster access
+# Ensures kubectl is configured and can connect to a cluster
+
+- name: Verify Kubernetes cluster access
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check if kubectl is available
+      ansible.builtin.command:
+        cmd: kubectl version --client --output=yaml
+      register: kubectl_version
+      changed_when: false
+      failed_when: kubectl_version.rc != 0
+
+    - name: Display kubectl client version
+      ansible.builtin.debug:
+        msg: 'kubectl client is available'
+
+    - name: Verify cluster connectivity
+      ansible.builtin.command:
+        cmd: kubectl cluster-info
+      register: cluster_info
+      changed_when: false
+      failed_when: cluster_info.rc != 0
+
+    - name: Display cluster info
+      ansible.builtin.debug:
+        msg: 'Successfully connected to Kubernetes cluster'
+
+    - name: Check cluster nodes are ready
+      ansible.builtin.command:
+        cmd: kubectl get nodes
+      register: kubectl_get_nodes
+      changed_when: false
+      failed_when: >
+        kubectl_get_nodes.rc != 0 or
+        kubectl_get_nodes.stdout.find("NotReady") != -1
+
+    - name: Display node status
+      ansible.builtin.debug:
+        msg: 'All cluster nodes are Ready'

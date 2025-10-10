@@ -1,0 +1,44 @@
+---
+# Default scenario - Fast unit tests without real infrastructure
+# Tests role logic, variable resolution, and configuration
+
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+
+driver:
+  name: default
+
+platforms:
+  - name: localhost
+    groups:
+      - staging
+
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      roles_path: ${MOLECULE_PROJECT_DIRECTORY}/..
+      interpreter_python: auto_silent
+  inventory:
+    group_vars:
+      all:
+        # Mock environment - no real cluster needed
+        ansible_connection: local
+        gather_facts: false
+
+        # Use Python from the current environment (uvx virtualenv)
+        ansible_python_interpreter: '{{ ansible_playbook_python }}'
+
+        # Test paths (created by prepare.yml)
+        kubeconfig_yaml: /tmp/molecule_harbor_kubeconfig.yaml
+
+        # Test configuration
+        harbor_namespace: harbor-test
+        harbor_admin_password: TestPass123
+        harbor_storage_size: 1Gi
+        use_staging_node: true
+
+verifier:
+  name: ansible

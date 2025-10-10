@@ -1,0 +1,23 @@
+---
+# Cleanup Harbor test deployment
+# Removes the Helm release, namespace, and storage
+
+- name: Cleanup Harbor test deployment
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Uninstall Harbor Helm release
+      kubernetes.core.helm:
+        name: harbor
+        namespace: '{{ harbor_namespace }}'
+        state: absent
+        wait: true
+      ignore_errors: true
+
+    - name: Delete Harbor namespace
+      kubernetes.core.k8s:
+        state: absent
+        api_version: v1
+        kind: Namespace
+        name: '{{ harbor_namespace }}'
+      ignore_errors: true

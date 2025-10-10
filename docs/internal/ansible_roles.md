@@ -6,6 +6,8 @@ Scout's Ansible deployment is transitioning from a playbook-based architecture t
 
 Roles provide reusable, testable components with clear separation of concerns and centralized configuration management. Once complete, this transition will make the deployment more maintainable and easier to test.
 
+**Note on Ansible Galaxy**: Scout roles are **not published to Ansible Galaxy**. The `meta/main.yaml` files contain only minimal metadata (role_name and namespace) required to satisfy Molecule validation. They are not intended for Galaxy distribution.
+
 ## Directory Structure
 
 ```
@@ -73,6 +75,32 @@ Features:
 - Automatic database initialization for Hive Metastore, Superset, HL7 ingestion
 - Configurable resources, parameters, and storage
 - Molecule tests for role validation
+
+### harbor
+
+Deploys Harbor container registry as a proxy cache for air-gapped deployments:
+
+- **storage.yaml**: Creates host directories on staging node
+- **deploy.yaml**: Deploys Harbor via Helm chart, configures proxy cache projects
+
+Features:
+- Self-signed TLS certificate generation with Subject Alternative Names (SANs)
+- Docker Hub and GHCR proxy cache projects
+- API-based configuration of registry endpoints and proxy projects
+- Two exposure modes:
+  - **ingress** (default): Traefik ingress at domain root for production
+  - **nodePort**: NodePort 30443 for development or shared domains
+- external_url support for Tailscale/cross-network access
+- Automatic Harbor readiness checks
+- Idempotent deployment (handles already-exists scenarios)
+- Molecule tests for role validation
+
+Configuration:
+- `harbor_expose_type`: Set to 'ingress' or 'nodePort'
+- `external_url`: Optional Tailscale hostname or DNS name (overrides inventory_hostname)
+- `harbor_admin_password`: Admin password (vault-encrypted in inventory)
+
+Used by: Staging node deployment when `use_staging_node: true`
 
 ## Planned Role Refactoring
 

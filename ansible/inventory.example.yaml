@@ -1,4 +1,42 @@
 ---
+# Global settings that apply to all hosts
+all:
+  vars:
+    # SSH connection and privilege escalation
+    # There are many other params you could set here to customize your situation.
+    # See https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html#connecting-to-hosts-behavioral-inventory-parameters
+    ansible_user: '<ssh username>'
+    ansible_become: true
+    ansible_become_method: sudo
+    ansible_become_user: root
+    ansible_become_password: $(echo $ANSIBLE_BECOME_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    # K3s kubeconfig path (same for all k3s installations)
+    kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
+
+    # Staging node configuration
+    # Set to true to enable staging node with Harbor registry proxy for air-gapped deployments
+    # Requires staging group to be defined
+    use_staging_node: false
+
+# The staging group contains the staging node that acts as a data diode for air-gapped deployments.
+# The staging node hosts a Harbor registry that proxies container images from public registries.
+# Enable staging node functionality by setting `use_staging_node: true` in k3s_cluster vars.
+staging:
+  hosts:
+    FQDN-staging.edu:
+      ansible_host: staging # Host name to use for ssh connection
+      ansible_python_interpreter: /usr/bin/python3
+  vars:
+    # Staging-specific variables (only needed if use_staging_node: true)
+    # The staging node runs a separate k3s cluster from the main cluster
+    staging_k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    harbor_admin_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    harbor_storage_size: 100Gi
+    harbor_dir: /scout/persistence/harbor
+    harbor_namespace: harbor
+    harbor_version: '~1.14.0'
+
 # The server group contains the control plane nodes for the k3s cluster.
 server:
   hosts:
@@ -40,15 +78,6 @@ k3s_cluster:
     server:
     agents:
   vars:
-    # SSH connection and privilege escalation
-    # There are many other params you could set here to customize your situation.
-    # See https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html#connecting-to-hosts-behavioral-inventory-parameters
-    ansible_user: '<ssh username>'
-    ansible_become: true
-    ansible_become_method: sudo
-    ansible_become_user: root
-    ansible_become_password: $(echo $ANSIBLE_BECOME_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-
     # K3s config
     k3s_version: v1.32.3+k3s1 # Leave blank for latest stable
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -212,7 +241,6 @@ k3s_cluster:
     # You probably don't want to change these unless you know these items will be
     # stored in different locations on your system
     helm_plugins_dir: /root/.local/share/helm/plugins
-    kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 
     # Do not change the values below, they are hard-coded various places
     extractor_namespace: extractor

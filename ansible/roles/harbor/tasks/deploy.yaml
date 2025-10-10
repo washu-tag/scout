@@ -1,0 +1,206 @@
+---
+# Main Harbor deployment tasks
+
+- name: Add Harbor Helm repository
+  kubernetes.core.helm_repository:
+    name: harbor
+    repo_url: https://helm.goharbor.io
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ harbor_namespace }}'
+
+- name: Check if TLS secret already exists
+  kubernetes.core.k8s_info:
+    kind: Secret
+    namespace: '{{ harbor_namespace }}'
+    name: '{{ harbor_tls_secret_name }}'
+  register: existing_tls_secret
+
+- name: Generate and create TLS secret if it doesn't exist
+  when: existing_tls_secret.resources | length == 0
+  block:
+    - name: Generate self-signed certificate
+      ansible.builtin.shell: |
+        # Build SAN list so cert is valid for multiple DNS names
+        SAN="DNS:{{ inventory_hostname }}"
+        {% if external_url is defined and external_url | length > 0 %}
+        SAN="${SAN},DNS:{{ external_url }}"
+        {% endif %}
+        {% if ansible_host is defined and ansible_host | length > 0 %}
+        SAN="${SAN},DNS:{{ ansible_host }}"
+        {% endif %}
+
+        # Generate certificate with SANs
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+          -keyout /tmp/harbor-tls.key \
+          -out /tmp/harbor-tls.crt \
+          -subj "/CN={{ inventory_hostname }}/O=Scout Harbor" \
+          -addext "subjectAltName=${SAN}"
+      changed_when: true
+
+    - name: Read certificate file
+      ansible.builtin.slurp:
+        src: /tmp/harbor-tls.crt
+      register: harbor_tls_crt
+
+    - name: Read key file
+      ansible.builtin.slurp:
+        src: /tmp/harbor-tls.key
+      register: harbor_tls_key
+
+    - name: Create TLS secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: '{{ harbor_tls_secret_name }}'
+            namespace: '{{ harbor_namespace }}'
+          type: kubernetes.io/tls
+          data:
+            tls.crt: '{{ harbor_tls_crt.content }}'
+            tls.key: '{{ harbor_tls_key.content }}'
+
+    - name: Clean up temp cert
+      ansible.builtin.file:
+        name: /tmp/harbor-tls.crt
+        state: absent
+
+    - name: Clean up temp key
+      ansible.builtin.file:
+        name: /tmp/harbor-tls.key
+        state: absent
+
+- name: Set Harbor expose configuration for ingress mode
+  ansible.builtin.set_fact:
+    harbor_expose_config:
+      type: '{{ harbor_expose_type }}'
+      tls:
+        enabled: true
+        certSource: secret
+        secret:
+          secretName: '{{ harbor_tls_secret_name }}'
+      ingress:
+        hosts:
+          core: '{{ inventory_hostname }}'
+        className: traefik
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  when: harbor_expose_type == 'ingress'
+
+- name: Set Harbor expose configuration for nodePort mode
+  ansible.builtin.set_fact:
+    harbor_expose_config:
+      type: '{{ harbor_expose_type }}'
+      tls:
+        enabled: true
+        certSource: secret
+        secret:
+          secretName: '{{ harbor_tls_secret_name }}'
+      nodePort:
+        ports:
+          https:
+            nodePort: '{{ harbor_nodeport_https }}'
+  when: harbor_expose_type == 'nodePort'
+
+- name: Install/Upgrade Harbor
+  kubernetes.core.helm:
+    name: harbor
+    chart_ref: harbor/harbor
+    chart_version: '{{ harbor_version }}'
+    release_namespace: '{{ harbor_namespace }}'
+    create_namespace: true
+    release_state: present
+    update_repo_cache: true
+    wait: true
+    wait_timeout: 15m
+    atomic: true
+    values:
+      expose: '{{ harbor_expose_config }}'
+      externalURL: '{{ harbor_registry_url }}'
+      harborAdminPassword: '{{ harbor_admin_password }}'
+      chartmuseum:
+        enabled: false # Cannot proxy Helm charts
+
+- name: Wait for Harbor to be ready
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/systeminfo'
+    validate_certs: false
+    status_code: 200
+  register: harbor_health
+  until: harbor_health.status == 200
+  retries: 30
+  delay: 10
+
+- name: Initialize final registry proxies list
+  ansible.builtin.set_fact:
+    harbor_registry_proxies_final: []
+
+- name: Apply inventory overrides to registry proxies
+  ansible.builtin.set_fact:
+    harbor_registry_proxies_final: >-
+      {{
+        harbor_registry_proxies_final + [{
+          'public_registry': item.public_registry,
+          'registry_name': item.registry_name,
+          'registry_type': item.registry_type,
+          'registry_url': item.registry_url,
+          'project_name': vars['harbor_' + item.registry_name + '_proxy_project'] | default(item.project_name)
+        }]
+      }}
+  loop: '{{ harbor_registry_proxies }}'
+
+- name: Create registry endpoints
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/registries'
+    validate_certs: false
+    method: POST
+    user: admin
+    password: '{{ harbor_admin_password }}'
+    force_basic_auth: true
+    body_format: json
+    status_code: [201, 409] # 409 = already exists
+    body:
+      name: '{{ item.registry_name }}'
+      type: '{{ item.registry_type }}'
+      url: '{{ item.registry_url }}'
+      insecure: false
+  loop: '{{ harbor_registry_proxies_final }}'
+  register: registry_create_result
+  changed_when: registry_create_result.status == 201
+
+- name: Get registries list
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/registries'
+    validate_certs: false
+    user: admin
+    password: '{{ harbor_admin_password }}'
+    force_basic_auth: true
+  register: registries_response
+
+- name: Create proxy cache projects
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/projects'
+    validate_certs: false
+    method: POST
+    user: admin
+    password: '{{ harbor_admin_password }}'
+    force_basic_auth: true
+    body_format: json
+    status_code: [201, 409]
+    body:
+      project_name: '{{ item.project_name }}'
+      registry_id: "{{ registries_response.json | selectattr('name', 'equalto', item.registry_name) | map(attribute='id') | first }}"
+      public: true
+  loop: '{{ harbor_registry_proxies_final }}'
+  register: project_create_result
+  changed_when: project_create_result.status == 201
+
+- name: Display Harbor deployment status
+  ansible.builtin.debug:
+    msg: 'Harbor deployed successfully at {{ harbor_registry_url }}'
