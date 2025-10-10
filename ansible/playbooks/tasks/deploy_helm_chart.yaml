@@ -26,6 +26,13 @@
 
 - name: 'Deploy {{ helm_chart_name }} using Helm (non-air-gapped)'
   when: not (use_staging_node | default(false) | bool)
+  delegate_to: >-
+    {{ (helm_repo_name is not defined or helm_repo_name | length == 0) |
+    ternary('localhost', omit) }}
+  environment:
+    K8S_AUTH_KUBECONFIG: >-
+      {{ (helm_repo_name is not defined or helm_repo_name | length == 0) |
+      ternary(local_kubeconfig_yaml, omit) }}
   block:
     - name: 'Add Helm repository for {{ helm_chart_name }}'
       kubernetes.core.helm_repository:
