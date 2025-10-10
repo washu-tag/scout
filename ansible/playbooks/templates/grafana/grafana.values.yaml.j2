@@ -20,8 +20,7 @@ grafana.ini:
     allow_assign_grafana_admin: true
     signout_redirect_url: 'https://{{ server_hostname }}/oauth2/sign_out'
   server:
-    root_url: 'https://{{ server_hostname }}/grafana'
-    serve_from_sub_path: true
+    root_url: 'https://grafana.{{ server_hostname }}'
   metrics:
     enabled: true
   dashboards:
@@ -60,9 +59,8 @@ ingress:
     traefik.ingress.kubernetes.io/router.middlewares: >
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd
-  path: /grafana
   hosts:
-    - '{{ server_hostname }}'
+    - 'grafana.{{ server_hostname }}'
 
 datasources:
   datasources.yaml:

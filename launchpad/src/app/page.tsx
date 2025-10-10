@@ -89,6 +89,18 @@ export default function Home() {
     }
   }, [status, session]);
 
+  const getSubdomainUrl = (subdomain: string, path: string = '') => {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    // Ensure path starts with "/" if provided and isn't just ""
+    const normalizedPath = path ? (path.startsWith('/') ? path : `/${path}`) : '';
+    const url = `${protocol}//${subdomain}.${hostname}${normalizedPath}`;
+
+    console.debug('[Scout] getSubdomainUrl', { subdomain, hostname, protocol, path, url });
+
+    return url;
+  };
+
   return (
     <div className="min-h-screen w-full bg-white dark:bg-gray-900 transition-colors duration-500">
       {/* Header */}
@@ -112,7 +124,7 @@ export default function Home() {
         {/* Main Tools Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           <ToolCard
-            href="/jupyter"
+            href={getSubdomainUrl('jupyter')}
             icon={<FaPython className="text-4xl" />}
             title="Notebooks"
             description="Interactive data analysis and exploration with JupyterHub"
@@ -120,7 +132,7 @@ export default function Home() {
           />
 
           <ToolCard
-            href="/"
+            href={getSubdomainUrl('superset')}
             icon={<BiLineChart className="text-4xl" />}
             title="Analytics"
             description="Visualize data and create dashboards with Apache Superset"
@@ -156,7 +168,7 @@ export default function Home() {
             </h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <a
-                href="/minio/login"
+                href={getSubdomainUrl('minio', '/login')}
                 className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-800 hover:shadow-md transition-all duration-300 no-underline"
               >
                 <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
@@ -169,7 +181,7 @@ export default function Home() {
               </a>
 
               <a
-                href="/temporal/auth/sso?returnUrl=/temporal"
+                href={getSubdomainUrl('temporal', '/auth/sso')}
                 className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800 hover:shadow-md transition-all duration-300 no-underline"
               >
                 <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
@@ -182,7 +194,7 @@ export default function Home() {
               </a>
 
               <a
-                href="/grafana"
+                href={getSubdomainUrl('grafana')}
                 className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-orange-200 dark:hover:border-orange-800 hover:shadow-md transition-all duration-300 no-underline"
               >
                 <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">

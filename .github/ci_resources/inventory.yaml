@@ -147,6 +147,7 @@ k3s_cluster:
     # stored in different locations on your system
     helm_plugins_dir: /root/.local/share/helm/plugins
     kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
+    local_kubeconfig_yaml: '{{ kubeconfig_yaml }}'
 
     # Do not change the values below, they are hard-coded various places
     extractor_namespace: extractor

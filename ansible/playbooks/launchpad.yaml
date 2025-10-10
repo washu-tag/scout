@@ -7,21 +7,6 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
-    - name: Create Traefik Middleware to strip /launchpad prefix for internal traffic
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: traefik.io/v1alpha1
-          kind: Middleware
-          metadata:
-            name: explorer-strip-prefix
-            namespace: kube-system
-          spec:
-            stripPrefix:
-              prefixes:
-                - /launchpad
-      delegate_to: localhost
-
     - name: Install launchpad using Helm
       kubernetes.core.helm:
         name: launchpad
@@ -37,6 +22,7 @@
         values:
           image:
             repository: '{{ launchpad_image | default(omit) }}'
+            tag: '{{ launchpad_image_tag | default("latest") }}'
           auth:
             keycloak:
               enabled: true
@@ -56,6 +42,6 @@
             hosts:
               - host: '{{ server_hostname }}'
                 paths:
-                  - path: /launchpad
+                  - path: /
                     pathType: Prefix
       delegate_to: localhost

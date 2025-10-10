@@ -12,7 +12,6 @@
   hosts: server
   gather_facts: false
   environment:
-    HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   vars_files:
     - vars/lake_storage.yaml

@@ -74,4 +74,4 @@ web:
         kube-system-oauth2-proxy-auth@kubernetescrd
 {% endif %}
     hosts:
-      - '{{ server_hostname }}/temporal'
+      - 'temporal.{{ server_hostname }}'

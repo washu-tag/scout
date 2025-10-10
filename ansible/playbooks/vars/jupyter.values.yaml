@@ -3,7 +3,6 @@ proxy:
     type: ClusterIP
 
 hub:
-  baseUrl: /jupyter
   resources:
     requests:
       cpu: 100m
@@ -28,6 +27,8 @@ hub:
   config:
     Authenticator:
       allowed_users: '{{ (jupyter_allowed_users | default([])) }}'
+    JupyterHub:
+      subdomain_host: 'jupyter.{{ server_hostname }}'
     Spawner:
       http_timeout: 120
 
@@ -39,15 +40,13 @@ ingress:
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd
   hosts:
-    - '{{ server_hostname }}'
-  extraPaths:
-    - path: /jupyter
-      pathType: Prefix
-      backend:
-        service:
-          name: proxy-public
-          port:
-            name: http
+    - 'jupyter.{{ server_hostname }}'
+    - '*.jupyter.{{ server_hostname }}'
+  tls:
+    - hosts:
+        - 'jupyter.{{ server_hostname }}'
+        - '*.jupyter.{{ server_hostname }}'
+      secretName: jupyter-tls
 
 prePuller:
   hook:
@@ -57,8 +56,8 @@ prePuller:
 
 singleuser:
   image:
-    name: ghcr.io/washu-tag/pyspark-notebook
-    tag: 1.1.0
+    name: '{{ jupyter_singleuser_image_name | default("ghcr.io/washu-tag/pyspark-notebook") }}'
+    tag: '{{ jupyter_singleuser_image_tag | default("1.1.0") }}'
     pullPolicy: Never
   cmd: null
   lifecycleHooks:
@@ -77,12 +76,24 @@ singleuser:
               touch $FLAG_FILE
             fi
             {% endraw %}
+  extraFiles:
+    jupyter-server-config:
+      mountPath: /etc/jupyter/jupyter_server_config.py
+      stringData: |
+        # Set CSP headers to enable Voila plugin rendering in JupyterLab iframe
+        c.ServerApp.tornado_settings = {
+            'headers': {
+                'Content-Security-Policy': "frame-ancestors 'self'"
+            }
+        }
+
   cpu:
     limit: 4
     guarantee: 1
   memory:
     limit: 16G
     guarantee: 2G
+  extraResource: '{{ jupyter_singleuser_extra_resource | default({}) }}'
   storage:
     type: static
     static:

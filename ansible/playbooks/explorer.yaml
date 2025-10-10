@@ -3,25 +3,9 @@
   hosts: server
   gather_facts: false
   environment:
-    HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
-    - name: Create Traefik Middleware to strip /launchpad prefix for internal traffic
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: traefik.io/v1alpha1
-          kind: Middleware
-          metadata:
-            name: explorer-strip-prefix
-            namespace: kube-system
-          spec:
-            stripPrefix:
-              prefixes:
-                - /launchpad
-      delegate_to: localhost
-
     - name: Install explorer using Helm
       kubernetes.core.helm:
         name: explorer
@@ -37,15 +21,14 @@
         values:
           image:
             repository: '{{ explorer_image | default(omit) }}'
+            tag: '{{ explorer_image_tag | default(omit) }}'
           ingress:
             enabled: true
             className: traefik
-            annotations:
-              traefik.ingress.kubernetes.io/router.middlewares: >
-                kube-system-explorer-strip-prefix@kubernetescrd
             hosts:
               - host: '{{ server_hostname }}'
                 paths:
-                  - path: /launchpad
+                  - path: /
                     pathType: Prefix
+        kubeconfig: '{{ local_kubeconfig_yaml }}'
       delegate_to: localhost

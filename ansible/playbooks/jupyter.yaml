@@ -12,7 +12,6 @@
   hosts: server
   gather_facts: false
   environment:
-    HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   vars_files:
     - vars/jupyter_storage.yaml
@@ -26,7 +25,6 @@
         api_version: v1
         kind: Namespace
         state: present
-      delegate_to: localhost
 
     - name: Create PersistentVolumeClaim for Jupyter single-user storage
       kubernetes.core.k8s:
@@ -44,13 +42,25 @@
               requests:
                 storage: 250Gi
             storageClassName: '{{ jupyter_singleuser_storage_class }}'
-      delegate_to: localhost
+
+    - name: Create TLS secret for Jupyter
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: jupyter-tls
+            namespace: jupyter
+          type: kubernetes.io/tls
+          data:
+            tls.crt: '{{ tls_cert_path | b64encode }}'
+            tls.key: '{{ tls_key_path | b64encode }}'
 
     - name: Add JupyterHub Helm repository
       kubernetes.core.helm_repository:
         name: jupyterhub
         repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
-      delegate_to: localhost
 
     - name: Setup Spark Defaults ConfigMaps
       include_tasks: tasks/spark_config_setup.yaml
@@ -63,13 +73,11 @@
       ansible.builtin.include_vars:
         file: vars/jupyter.values.yaml
         name: jupyter_base_values
-      delegate_to: localhost
 
     - name: Load authentication-specific JupyterHub values
       ansible.builtin.include_vars:
         file: vars/jupyter.auth.{{ jupyter_auth_class }}.values.yaml
         name: jupyter_auth_values
-      delegate_to: localhost
 
     - name: Merge base and authentication-specific JupyterHub values
       set_fact:
@@ -88,4 +96,3 @@
         wait_timeout: 10m
         atomic: true
         values: '{{ jupyter_values }}'
-      delegate_to: localhost

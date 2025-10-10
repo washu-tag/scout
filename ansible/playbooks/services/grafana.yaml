@@ -2,7 +2,6 @@
   kubernetes.core.helm_repository:
     name: grafana
     repo_url: https://grafana.github.io/helm-charts
-  delegate_to: localhost
 
 - name: Create Loki namespace
   kubernetes.core.k8s:
@@ -10,7 +9,6 @@
     api_version: v1
     kind: Namespace
     state: present
-  delegate_to: localhost
 
 - name: Create S3 secret for Loki
   kubernetes.core.k8s:
@@ -25,7 +23,6 @@
       stringData:
         AWS_ACCESS_KEY_ID: '{{ s3_loki_writer }}'
         AWS_SECRET_ACCESS_KEY: '{{ s3_loki_writer_secret }}'
-  delegate_to: localhost
 
 - name: Install Loki using Helm
   kubernetes.core.helm:
@@ -36,6 +33,7 @@
     chart_version: ~6.29.0
     values: "{{ lookup('template', 'templates/loki.values.yaml.j2') | from_yaml }}"
     state: present
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
   delegate_to: localhost
 
 - name: Install Promtail using Helm
@@ -52,7 +50,6 @@
           clients:
             - url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local:3100/loki/api/v1/push'
     state: present
-  delegate_to: localhost
 
 - name: Create Grafana namespace
   kubernetes.core.k8s:
@@ -60,16 +57,34 @@
     api_version: v1
     kind: Namespace
     state: present
-  delegate_to: localhost
 
-- name: Apply Grafana dashboard configmaps
+- name: Create SMTP secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: smtp-grafana
+        namespace: '{{ grafana_namespace }}'
+        labels:
+          grafana_alert: '1'
+      type: Opaque
+      stringData:
+        user: '{{ grafana_smtp_user }}'
+        password: '{{ grafana_smtp_password }}'
+  when: grafana_alert_contact_point == 'email'
+
+- name: Configure and install Grafana
+  delegate_to: localhost
+  environment:
+    KUBECONFIG: '{{ local_kubeconfig_yaml }}'
   block:
     - name: Find all Grafana dashboards
       find:
         paths: 'files/grafana/dashboards/'
         patterns: '*.json'
       register: dashboard_files
-      delegate_to: localhost
 
     - name: Create ConfigMap for each Grafana dashboard
       no_log: true
@@ -89,16 +104,12 @@
       loop: '{{ dashboard_files.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
-      delegate_to: localhost
 
-- name: Apply Grafana alert rules as ConfigMaps
-  block:
     - name: Find all Grafana alerts
       find:
         paths: 'templates/grafana/alerts/'
         patterns: '*.json.j2'
       register: alert_templates
-      delegate_to: localhost
 
     - name: Create ConfigMap for each Grafana alert
       kubernetes.core.k8s:
@@ -112,36 +123,31 @@
             labels:
               grafana_alert: '1'
           data:
-            '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}': 
+            '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}':
               '{{ lookup("template", item.path) | to_nice_json }}'
       loop: '{{ alert_templates.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
-      delegate_to: localhost
 
-- name: Create Grafana notification policy as ConfigMap
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: notification-policy
-        namespace: '{{ grafana_namespace }}'
-        labels:
-          grafana_alert: '1'
-      data:
-        notification-policy.yaml: "{{ lookup('template', 'templates/grafana/notification-policy.yaml.j2') }}"
-  delegate_to: localhost
+    - name: Create Grafana notification policy as ConfigMap
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: notification-policy
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              grafana_alert: '1'
+          data:
+            notification-policy.yaml: "{{ lookup('template', 'templates/grafana/notification-policy.yaml.j2') }}"
 
-- name: Create contact point secrets
-  block:
     - name: Find all Grafana contact points
       find:
         paths: 'templates/grafana/contact-points/'
         patterns: '*.json.j2'
       register: contact_point_templates
-      delegate_to: localhost
 
     - name: Create Secret for each Grafana contact point
       kubernetes.core.k8s:
@@ -162,63 +168,42 @@
       when: grafana_alert_contact_point in (item.path | basename)
       loop_control:
         label: '{{ item.path | basename }}'
-      delegate_to: localhost
 
-- name: Create SMTP secret
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: smtp-grafana
-        namespace: '{{ grafana_namespace }}'
-        labels:
-          grafana_alert: '1'
-      type: Opaque
-      stringData:
-        user: '{{ grafana_smtp_user }}'
-        password: '{{ grafana_smtp_password }}'
-  when: grafana_alert_contact_point == 'email'
-  delegate_to: localhost
+    - name: Create OAuth2 Client Secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: keycloak-grafana-client-secret
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              grafana_alert: '1'
+          type: Opaque
+          stringData:
+            client-secret: '{{ keycloak_grafana_client_secret }}'
 
-- name: Create OAuth2 Client Secret
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: keycloak-grafana-client-secret
-        namespace: '{{ grafana_namespace }}'
-        labels:
-          grafana_alert: '1'
-      type: Opaque
-      stringData:
-        client-secret: '{{ keycloak_grafana_client_secret }}'
+    - name: Create postgres datasource secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: postgres-ingest-db-secret
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              grafana_datasource: 'true' # default value for: sidecar.datasources.label
+          stringData:
+            pg-db.yaml: "{{ lookup('template', 'templates/grafana/datasources/postgres-datasource.yaml.j2') }}"
 
-- name: Create postgres datasource secret
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: postgres-ingest-db-secret
-        namespace: '{{ grafana_namespace }}'
-        labels:
-          grafana_datasource: 'true' # default value for: sidecar.datasources.label
-      stringData:
-        pg-db.yaml: "{{ lookup('template', 'templates/grafana/datasources/postgres-datasource.yaml.j2') }}"
-  delegate_to: localhost
-
-- name: Install Grafana using Helm
-  kubernetes.core.helm:
-    state: present
-    name: grafana
-    chart_ref: grafana/grafana
-    release_namespace: '{{ grafana_namespace }}'
-    update_repo_cache: true
-    chart_version: ~8.12.1
-    values: '{{ lookup("template", "templates/grafana/grafana.values.yaml.j2") | from_yaml }}'
-  delegate_to: localhost
+    - name: Install Grafana using Helm
+      kubernetes.core.helm:
+        state: present
+        name: grafana
+        chart_ref: grafana/grafana
+        release_namespace: '{{ grafana_namespace }}'
+        update_repo_cache: true
+        chart_version: ~8.12.1
+        values: '{{ lookup("template", "templates/grafana/grafana.values.yaml.j2") | from_yaml }}'

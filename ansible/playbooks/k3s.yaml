@@ -31,8 +31,8 @@
   name: Install k3s on server node
   vars:
     uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
-    cert_path: '/root/{{ server_hostname }}.crt'
-    key_path: '/root/{{ server_hostname }}.key'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
   tasks:
     - name: Determine deployment context
       set_fact:
@@ -103,9 +103,6 @@
         - kubectl_get_nodes_result.stdout.find("NotReady") == -1
       retries: 30
       delay: 5
-      environment:
-        KUBECONFIG: '{{ kubeconfig_yaml }}'
-      delegate_to: localhost
 
     - name: Apply taint to control plane node
       kubernetes.core.k8s_taint:
@@ -114,8 +111,6 @@
         taints:
           - key: node-role.kubernetes.io/control-plane
             effect: PreferNoSchedule
-        kubeconfig: '{{ kubeconfig_yaml }}'
-      delegate_to: localhost
 
 ################################################################################
 - hosts: gpu_workers

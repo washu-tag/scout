@@ -7,7 +7,7 @@ hub:
     GitHubOAuthenticator:
       client_id: '{{ github_client_id }}'
       client_secret: '{{ github_client_secret }}'
-      oauth_callback_url: 'https://{{ server_hostname }}/jupyter/hub/oauth_callback'
+      oauth_callback_url: 'https://jupyter.{{ server_hostname }}/hub/oauth_callback'
       allowed_organizations:
         - '{{ github_organization }}'
       scope:

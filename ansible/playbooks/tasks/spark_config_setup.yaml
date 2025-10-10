@@ -4,7 +4,6 @@
     api_version: v1
     kind: Namespace
     state: present
-  delegate_to: localhost
 
 - name: Create Spark ConfigMap
   kubernetes.core.k8s:
@@ -23,6 +22,7 @@
           spark.hadoop.fs.s3a.endpoint.region {{ s3_region | default("us-east-1") }}
           spark.databricks.delta.schema.autoMerge.enabled true
           spark.databricks.delta.merge.repartitionBeforeWrite.enabled true
+          spark.databricks.delta.constraints.allowUnenforcedNotNull.enabled true
           spark.sql.extensions io.delta.sql.DeltaSparkSessionExtension
           spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog
           spark.hadoop.fs.s3a.path.style.access true
@@ -32,4 +32,3 @@
           spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
           spark.executor.memory {{ spark_memory | default("1g") }}
           spark.driver.memory {{ spark_memory | default("1g") }}
-  delegate_to: localhost

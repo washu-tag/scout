@@ -2,7 +2,6 @@
   kubernetes.core.helm_repository:
     name: superset
     repo_url: https://apache.github.io/superset
-  delegate_to: localhost
 
 - name: Create namespace
   kubernetes.core.k8s:
@@ -10,40 +9,40 @@
     api_version: v1
     kind: Namespace
     state: present
-  delegate_to: localhost
 
-- name: Find all analytics YAML files
+- name: Build dashboard ConfigMap data
   delegate_to: localhost
-  ansible.builtin.find:
-    paths: '{{ scout_repo_dir }}/analytics'
-    recurse: true
-    file_type: file
-    patterns: '*.yaml'
-  register: analytics_files
+  block:
+    - name: Find all analytics YAML files
+      ansible.builtin.find:
+        paths: '{{ scout_repo_dir }}/analytics'
+        recurse: true
+        file_type: file
+        patterns: '*.yaml'
+      register: analytics_files
 
-- name: Build ConfigMap data and items list
-  no_log: true
-  vars:
-    analytics_root: '{{ (scout_repo_dir | realpath) ~ "/analytics" }}'
-  ansible.builtin.set_fact:
-    superset_dashboard_data: >-
-      {{
-        superset_dashboard_data | default({}) |
-        combine({ (item.path | basename): lookup('file', item.path) })
-      }}
-    superset_dashboard_items: >-
-      {{
-        superset_dashboard_items | default([]) + [
-          {
-            'key': (item.path | basename),
-            'path': ((item.path | realpath) | regex_replace('^' ~ analytics_root ~ '/', 'analytics/'))
-          }
-        ]
-      }}
-  loop: '{{ analytics_files.files }}'
-  loop_control:
-    label: '{{ (item.path | realpath) | regex_replace("^" ~ analytics_root ~ "/", "") }}'
-  delegate_to: localhost
+    - name: Build ConfigMap data and items list
+      no_log: true
+      vars:
+        analytics_root: '{{ (scout_repo_dir | realpath) ~ "/analytics" }}'
+      ansible.builtin.set_fact:
+        superset_dashboard_data: >-
+          {{
+            superset_dashboard_data | default({}) |
+            combine({ (item.path | basename): lookup('file', item.path) })
+          }}
+        superset_dashboard_items: >-
+          {{
+            superset_dashboard_items | default([]) + [
+              {
+                'key': (item.path | basename),
+                'path': ((item.path | realpath) | regex_replace('^' ~ analytics_root ~ '/', 'analytics/'))
+              }
+            ]
+          }}
+      loop: '{{ analytics_files.files }}'
+      loop_control:
+        label: '{{ (item.path | realpath) | regex_replace("^" ~ analytics_root ~ "/", "") }}'
 
 - name: Create ConfigMap for datasource and dashboard yaml
   no_log: true
@@ -56,7 +55,20 @@
         name: dashboard-config
         namespace: superset
       data: '{{ superset_dashboard_data | default({}) }}'
+
+- name: Create ConfigMap with Scout logo for Superset branding
   delegate_to: localhost
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: scout-logo
+        namespace: superset
+      binaryData:
+        scout.png: '{{ lookup("file", "../../explorer/public/scout.png") | b64encode }}'
 
 - name: Install/Upgrade Superset Helm chart
   kubernetes.core.helm:
@@ -88,7 +100,7 @@
             kube-system-oauth2-proxy-auth@kubernetescrd
         path: /
         hosts:
-          - '{{ server_hostname }}'
+          - 'superset.{{ server_hostname }}'
       postgresql:
         enabled: false
       supersetNode:
@@ -101,11 +113,11 @@
       configOverrides:
         branding: |
           APP_NAME = "Scout Analytics"
-          APP_ICON = "https://{{ server_hostname }}/launchpad/favicon.ico"
+          APP_ICON = "/static/assets/images/scout.png"
           APP_ICON_WIDTH = 200
-          LOGO_TARGET_PATH = "https://{{ server_hostname }}/launchpad"
+          LOGO_TARGET_PATH = "https://{{ server_hostname }}"
           LOGO_TOOLTIP = "Scout Launchpad"
-          FAVICONS = [{"href": "https://{{ server_hostname }}/launchpad/favicon.ico"}]
+          FAVICONS = [{"href": "/static/assets/images/scout.png"}]
         custom_routing: |
           from flask import redirect, url_for
           from flask_appbuilder import expose, IndexView
@@ -118,6 +130,12 @@
                   return redirect(url_for("Superset.dashboard", dashboard_id_or_slug="scout"))
 
           FAB_INDEX_VIEW = f"{SupersetIndexView.__module__}.{SupersetIndexView.__name__}"
+        sql_alchemy: |
+          SQLALCHEMY_ENGINE_OPTIONS = {
+              "pool_size": 20,
+              "max_overflow": 30,
+              "pool_timeout": 60,
+          }
         enable_oauth: |
           from flask_appbuilder.security.manager import AUTH_OAUTH
           from flask_appbuilder.security.views import AuthOAuthView, expose
@@ -196,10 +214,18 @@
           configMap:
             name: dashboard-config
             items: '{{ superset_dashboard_items | default([]) }}'
+        - name: scout-logo
+          configMap:
+            name: scout-logo
+            defaultMode: 0644
 
       extraVolumeMounts:
         - name: dashboard-config
           mountPath: /app/dashboard-config
+        - name: scout-logo
+          mountPath: /app/superset/static/assets/images/scout.png
+          subPath: scout.png
+          readOnly: true
 
       init:
         initscript: |-
@@ -244,4 +270,3 @@
             echo "Dashboard imported successfully"
           fi
           {% endraw %}
-  delegate_to: localhost
