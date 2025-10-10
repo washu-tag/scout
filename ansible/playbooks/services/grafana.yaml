@@ -1,9 +1,4 @@
-- name: Add Grafana Helm repository
-  kubernetes.core.helm_repository:
-    name: grafana
-    repo_url: https://grafana.github.io/helm-charts
-  delegate_to: localhost
-
+---
 - name: Create Loki namespace
   kubernetes.core.k8s:
     name: '{{ loki_namespace }}'
@@ -25,34 +20,41 @@
         AWS_ACCESS_KEY_ID: '{{ s3_loki_writer }}'
         AWS_SECRET_ACCESS_KEY: '{{ s3_loki_writer_secret }}'
 
-- name: Install Loki using Helm
-  kubernetes.core.helm:
-    name: loki
-    chart_ref: grafana/loki
-    release_namespace: '{{ loki_namespace }}'
-    update_repo_cache: true
-    chart_version: ~6.29.0
-    values: "{{ lookup('template', 'templates/loki.values.yaml.j2') | from_yaml }}"
-    state: present
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
-  delegate_to: localhost
+- name: Deploy Loki
+  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  vars:
+    helm_chart_name: loki
+    helm_chart_ref: grafana/loki
+    helm_chart_namespace: '{{ loki_namespace }}'
+    helm_repo_name: grafana
+    helm_repo_url: https://grafana.github.io/helm-charts
+    helm_chart_version: '~6.29.0'
+    helm_chart_create_namespace: false
+    helm_chart_wait: true
+    helm_chart_timeout: 5m
+    helm_chart_values: >-
+      {{ lookup('template', 'templates/loki.values.yaml.j2') | from_yaml }}
 
-- name: Install Promtail using Helm
-  kubernetes.core.helm:
-    name: promtail
-    chart_ref: grafana/promtail
-    release_namespace: '{{ loki_namespace }}'
-    update_repo_cache: true
-    chart_version: ~6.16.6
-    values:
+- name: Deploy Promtail
+  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  vars:
+    helm_chart_name: promtail
+    helm_chart_ref: grafana/promtail
+    helm_chart_namespace: '{{ loki_namespace }}'
+    helm_repo_name: grafana
+    helm_repo_url: https://grafana.github.io/helm-charts
+    helm_chart_version: '~6.16.6'
+    helm_chart_create_namespace: false
+    helm_chart_wait: true
+    helm_chart_timeout: 5m
+    helm_chart_values:
       promtail:
         enabled: true
         config:
           clients:
-            - url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local:3100/loki/api/v1/push'
-    state: present
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
-  delegate_to: localhost
+            - url: >-
+                http://loki-gateway.{{ loki_namespace }}.svc.cluster.local:
+                3100/loki/api/v1/push
 
 - name: Create Grafana namespace
   kubernetes.core.k8s:
@@ -144,7 +146,9 @@
             labels:
               grafana_alert: '1'
           data:
-            notification-policy.yaml: "{{ lookup('template', 'templates/grafana/notification-policy.yaml.j2') }}"
+            notification-policy.yaml: >-
+              {{ lookup('template',
+              'templates/grafana/notification-policy.yaml.j2') }}
 
     - name: Find all Grafana contact points
       find:
@@ -182,16 +186,25 @@
             name: postgres-ingest-db-secret
             namespace: '{{ grafana_namespace }}'
             labels:
-              grafana_datasource: 'true' # default value for: sidecar.datasources.label
+              # default value for: sidecar.datasources.label
+              grafana_datasource: 'true'
           stringData:
-            pg-db.yaml: "{{ lookup('template', 'templates/grafana/datasources/postgres-datasource.yaml.j2') }}"
+            pg-db.yaml: >-
+              {{ lookup('template',
+              'templates/grafana/datasources/postgres-datasource.yaml.j2') }}
 
-    - name: Install Grafana using Helm
-      kubernetes.core.helm:
-        state: present
-        name: grafana
-        chart_ref: grafana/grafana
-        release_namespace: '{{ grafana_namespace }}'
-        update_repo_cache: true
-        chart_version: ~8.12.1
-        values: '{{ lookup("template", "templates/grafana/grafana.values.yaml.j2") | from_yaml }}'
+    - name: Deploy Grafana
+      ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+      vars:
+        helm_chart_name: grafana
+        helm_chart_ref: grafana/grafana
+        helm_chart_namespace: '{{ grafana_namespace }}'
+        helm_repo_name: grafana
+        helm_repo_url: https://grafana.github.io/helm-charts
+        helm_chart_version: '~8.12.1'
+        helm_chart_create_namespace: false
+        helm_chart_wait: true
+        helm_chart_timeout: 5m
+        helm_chart_values: >-
+          {{ lookup("template",
+          "templates/grafana/grafana.values.yaml.j2") | from_yaml }}

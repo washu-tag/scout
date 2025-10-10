@@ -14,14 +14,38 @@ all:
     # K3s kubeconfig path (same for all k3s installations)
     kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 
-    # Staging node configuration
-    # Set to true to enable staging node with Harbor registry proxy for air-gapped deployments
-    # Requires staging group to be defined
+    # Air-gapped deployment configuration
+    # Set to true to enable air-gapped deployment mode for Kubernetes clusters
+    # without internet access on worker nodes.
+    #
+    # When enabled (use_staging_node: true):
+    #   - Helm charts are rendered locally on the Ansible control node
+    #   - Pre-rendered manifests are applied directly to the cluster
+    #   - Container images are pulled through Harbor registry proxy on staging node
+    #   - Requires: staging group defined, Harbor deployed, registry mirrors configured
+    #
+    # When disabled (use_staging_node: false, default):
+    #   - Standard Helm deployment using kubernetes.core.helm module
+    #   - Charts pulled directly from public repositories
+    #   - Container images pulled directly from public registries
+    #   - Works with existing Scout deployments (backward compatible)
     use_staging_node: false
 
-# The staging group contains the staging node that acts as a data diode for air-gapped deployments.
-# The staging node hosts a Harbor registry that proxies container images from public registries.
-# Enable staging node functionality by setting `use_staging_node: true` in k3s_cluster vars.
+# The staging group contains the staging node that acts as a data diode
+# for air-gapped deployments.
+#
+# Role: The staging node hosts a Harbor registry that acts as a pull-through
+# proxy for container images from public registries (Docker Hub, GitHub Container
+# Registry, Quay.io, etc.). It runs a separate k3s cluster from the main cluster.
+#
+# Requirements for air-gapped deployments (use_staging_node: true):
+#   1. Staging node must have internet access
+#   2. Harbor must be deployed on staging node (playbooks/harbor.yaml)
+#   3. K3s cluster nodes must have registry mirrors configured to use Harbor
+#   4. Helm must be installed on the Ansible control node (localhost)
+#
+# Enable staging node functionality by setting `use_staging_node: true`
+# in k3s_cluster vars above.
 staging:
   hosts:
     FQDN-staging.edu:

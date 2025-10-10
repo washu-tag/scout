@@ -1,11 +1,6 @@
 ---
 # Main Harbor deployment tasks
 
-- name: Add Harbor Helm repository
-  kubernetes.core.helm_repository:
-    name: harbor
-    repo_url: https://helm.goharbor.io
-
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common
@@ -108,24 +103,24 @@
             nodePort: '{{ harbor_nodeport_https }}'
   when: harbor_expose_type == 'nodePort'
 
-- name: Install/Upgrade Harbor
-  kubernetes.core.helm:
-    name: harbor
-    chart_ref: harbor/harbor
-    chart_version: '{{ harbor_version }}'
-    release_namespace: '{{ harbor_namespace }}'
-    create_namespace: true
-    release_state: present
-    update_repo_cache: true
-    wait: true
-    wait_timeout: 15m
-    atomic: true
-    values:
+- name: Deploy Harbor
+  ansible.builtin.include_tasks: ../../playbooks/tasks/deploy_helm_chart.yaml
+  vars:
+    helm_chart_name: harbor
+    helm_chart_ref: harbor/harbor
+    helm_chart_version: '{{ harbor_version }}'
+    helm_chart_namespace: '{{ harbor_namespace }}'
+    helm_repo_name: harbor
+    helm_repo_url: https://helm.goharbor.io
+    helm_chart_create_namespace: true
+    helm_chart_wait: true
+    helm_chart_timeout: 15m
+    helm_chart_values:
       expose: '{{ harbor_expose_config }}'
       externalURL: '{{ harbor_registry_url }}'
       harborAdminPassword: '{{ harbor_admin_password }}'
       chartmuseum:
-        enabled: false # Cannot proxy Helm charts
+        enabled: false
 
 - name: Wait for Harbor to be ready
   ansible.builtin.uri:
@@ -150,7 +145,9 @@
           'registry_name': item.registry_name,
           'registry_type': item.registry_type,
           'registry_url': item.registry_url,
-          'project_name': vars['harbor_' + item.registry_name + '_proxy_project'] | default(item.project_name)
+          'project_name': >-
+            vars['harbor_' + item.registry_name + '_proxy_project'] |
+            default(item.project_name)
         }]
       }}
   loop: '{{ harbor_registry_proxies }}'
@@ -164,7 +161,8 @@
     password: '{{ harbor_admin_password }}'
     force_basic_auth: true
     body_format: json
-    status_code: [201, 409] # 409 = already exists
+    # 409 = already exists
+    status_code: [201, 409]
     body:
       name: '{{ item.registry_name }}'
       type: '{{ item.registry_type }}'
@@ -195,7 +193,10 @@
     status_code: [201, 409]
     body:
       project_name: '{{ item.project_name }}'
-      registry_id: "{{ registries_response.json | selectattr('name', 'equalto', item.registry_name) | map(attribute='id') | first }}"
+      registry_id: >-
+        {{ registries_response.json |
+        selectattr('name', 'equalto', item.registry_name) |
+        map(attribute='id') | first }}
       public: true
   loop: '{{ harbor_registry_proxies_final }}'
   register: project_create_result

@@ -1,9 +1,4 @@
-- name: Add Prometheus Helm repository
-  kubernetes.core.helm_repository:
-    name: prometheus-community
-    repo_url: https://prometheus-community.github.io/helm-charts
-  delegate_to: localhost
-
+---
 - name: Create namespace
   kubernetes.core.k8s:
     name: '{{ prometheus_namespace }}'
@@ -24,15 +19,18 @@
       stringData:
         metrics-api-token: '{{ jupyter_metrics_api_token }}'
 
-- name: Install Prometheus using Helm
-  kubernetes.core.helm:
-    state: present
-    name: prometheus
-    chart_ref: prometheus-community/prometheus
-    release_namespace: '{{ prometheus_namespace }}'
-    create_namespace: true
-    update_repo_cache: true
-    chart_version: ~27.11.0
-    values: '{{ lookup("template", "templates/prometheus.values.yaml.j2") | from_yaml }}'
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
-  delegate_to: localhost
+- name: Deploy Prometheus
+  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  vars:
+    helm_chart_name: prometheus
+    helm_chart_ref: prometheus-community/prometheus
+    helm_chart_namespace: '{{ prometheus_namespace }}'
+    helm_repo_name: prometheus-community
+    helm_repo_url: https://prometheus-community.github.io/helm-charts
+    helm_chart_version: '~27.11.0'
+    helm_chart_create_namespace: true
+    helm_chart_wait: true
+    helm_chart_timeout: 5m
+    helm_chart_values: >-
+      {{ lookup("template",
+      "templates/prometheus.values.yaml.j2") | from_yaml }}
