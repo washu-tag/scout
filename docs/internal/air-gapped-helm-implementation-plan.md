@@ -1677,6 +1677,16 @@ Organizations can adopt air-gapped deployments incrementally:
 - Uses `K8S_AUTH_KUBECONFIG` with `local_kubeconfig_yaml` for localhost execution
 - Preserves original behavior where local charts always run on control node (physical requirement)
 
+**Expansive Wait Behavior (apply_manifests.yaml)**:
+- Extended wait logic to support multiple workload types (not just Deployments)
+- Now waits for: Deployment, StatefulSet, DaemonSet, Job
+- Default behavior: Auto-detect and wait for all workload types
+- Override capability: `helm_chart_wait_for_kinds` parameter to specify which types to wait for
+- Eliminates need for manual Job waits (e.g., Temporal schema migration)
+- Proper StatefulSet readiness: Waits for `status.readyReplicas == status.replicas`
+- Proper DaemonSet readiness: Waits for `status.numberReady == status.desiredNumberScheduled`
+- Proper Job completion: Waits for `status.conditions[type=Complete]`
+
 **Documentation Enhancements**:
 - Enhanced `inventory.example.yaml` with comprehensive air-gapped deployment documentation
 - Updated `inventory.cluster03-staging-helmrefactor.yaml` with testing context
@@ -1686,6 +1696,12 @@ Organizations can adopt air-gapped deployments incrementally:
 - Awaiting cluster access for deployment testing
 - Test plan documented in `air-gapped-helm-test-plan.md`
 - Requires validation of both air-gapped and non-air-gapped modes
+
+**Post-Testing Cleanup:**
+Once expansive wait behavior is validated:
+- Remove manual Temporal schema Job wait from `orchestrator.yaml` (lines 142-149)
+- The automatic Job wait in `apply_manifests.yaml` replaces this workaround
+- Simplifies Temporal deployment logic
 
 ### Final Statistics
 
@@ -1708,8 +1724,10 @@ Organizations can adopt air-gapped deployments incrementally:
 2. **Automatic Mode Switching**: Controlled by single `use_staging_node` flag
 3. **Delegation Transparency**: Local charts automatically delegate to localhost
 4. **Registry Cleanup**: Automatic removal of mirror configuration when disabled
-5. **Comprehensive Testing**: Detailed test plan covers all validation scenarios
-6. **Complete Documentation**: Architecture decisions, implementation plan, and test procedures
+5. **Expansive Wait Logic**: Automatic detection and waiting for Deployment, StatefulSet, DaemonSet, and Job resources
+6. **Wait Override Capability**: Optional `helm_chart_wait_for_kinds` parameter for fine-grained control
+7. **Comprehensive Testing**: Detailed test plan covers all validation scenarios
+8. **Complete Documentation**: Architecture decisions, implementation plan, and test procedures
 
 ## References
 
