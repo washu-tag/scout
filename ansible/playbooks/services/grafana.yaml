@@ -87,7 +87,7 @@
   block:
     - name: Find all Grafana dashboards
       find:
-        paths: 'files/grafana/dashboards/'
+        paths: '{{ playbook_dir }}/files/grafana/dashboards/'
         patterns: '*.json'
       register: dashboard_files
 
@@ -112,7 +112,7 @@
 
     - name: Find all Grafana alerts
       find:
-        paths: 'templates/grafana/alerts/'
+        paths: '{{ playbook_dir }}/templates/grafana/alerts/'
         patterns: '*.json.j2'
       register: alert_templates
 
@@ -152,7 +152,7 @@
 
     - name: Find all Grafana contact points
       find:
-        paths: 'templates/grafana/contact-points/'
+        paths: '{{ playbook_dir }}/templates/grafana/contact-points/'
         patterns: '*.json.j2'
       register: contact_point_templates
 
