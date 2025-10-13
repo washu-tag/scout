@@ -188,6 +188,12 @@ cd ansible/roles/helm_renderer
 uvx molecule test
 ```
 
+The Molecule tests include:
+- **Rendering validation**: Verify charts render to valid YAML
+- **CRD detection**: Ensure CRDs are included in rendered output
+- **Variable validation**: Check required variables are enforced
+- **Error handling**: Verify failure scenarios are handled correctly
+
 Note: Full integration tests require a live Kubernetes cluster.
 
 ## License

@@ -1,25 +1,154 @@
 ---
-- name: Converge
+- name: Converge - Render Chart Tests (No Cluster Required)
   hosts: localhost
   gather_facts: false
+  connection: local
   vars:
     use_staging_node: true
-    kubeconfig_yaml: /tmp/test_kubeconfig
 
   tasks:
-    - name: Test rendering a simple chart (requires k8s cluster)
-      ansible.builtin.debug:
-        msg: >-
-          Molecule test would render a chart here.
-          Skipped without live cluster.
-      # Uncomment below when testing with a real cluster:
-      # ansible.builtin.include_role:
-      #   name: helm_renderer
-      # vars:
-      #   helm_chart_name: nginx
-      #   helm_chart_ref: oci://registry-1.docker.io/bitnamicharts/nginx
-      #   helm_chart_namespace: test-nginx
-      #   helm_chart_version: "18.2.4"
-      #   helm_chart_values:
-      #     service:
-      #       type: ClusterIP
+    - name: Check if Helm is installed
+      ansible.builtin.command: helm version --short
+      register: helm_check
+      changed_when: false
+      failed_when: false
+
+    - name: Skip rendering tests if Helm not available
+      ansible.builtin.meta: end_play
+      when: helm_check.rc != 0
+
+    - name: Add nginx Helm repository
+      kubernetes.core.helm_repository:
+        name: bitnami
+        repo_url: https://charts.bitnami.com/bitnami
+
+    - name: Create temporary directory for test renders
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: molecule_test_
+      register: test_render_dir
+
+    - name: Test 1 - Render simple nginx chart
+      block:
+        - name: Render nginx chart to directory
+          ansible.builtin.command:
+            cmd: >-
+              helm template test-nginx bitnami/nginx
+              --version 18.2.4
+              --namespace test-nginx
+              --set service.type=ClusterIP
+              --output-dir {{ test_render_dir.path }}/nginx
+          register: nginx_render
+          changed_when: true
+
+        - name: Find rendered YAML files
+          ansible.builtin.find:
+            paths: '{{ test_render_dir.path }}/nginx'
+            patterns: '*.yaml'
+            recurse: true
+          register: nginx_manifests
+
+        - name: Validate YAML syntax of rendered files
+          ansible.builtin.command:
+            cmd: 'python3 -c ''import yaml; yaml.safe_load_all(open("{{ item.path }}"))'''
+          loop: '{{ nginx_manifests.files }}'
+          loop_control:
+            label: '{{ item.path | basename }}'
+          changed_when: false
+
+        - name: Check that expected resources were rendered
+          ansible.builtin.shell: |
+            grep -l "kind: Deployment" {{ test_render_dir.path }}/nginx/**/*.yaml
+            grep -l "kind: Service" {{ test_render_dir.path }}/nginx/**/*.yaml
+          register: expected_resources
+          changed_when: false
+
+    - name: Test 2 - Render cert-manager chart (with CRDs)
+      block:
+        - name: Add jetstack repository
+          kubernetes.core.helm_repository:
+            name: jetstack
+            repo_url: https://charts.jetstack.io
+
+        - name: Render cert-manager chart
+          ansible.builtin.command:
+            cmd: >-
+              helm template test-cm jetstack/cert-manager
+              --version v1.14.2
+              --namespace cert-manager
+              --set installCRDs=true
+              --output-dir {{ test_render_dir.path }}/cert-manager
+          register: cm_render
+          changed_when: true
+
+        - name: Find CRD manifests
+          ansible.builtin.shell: |
+            find {{ test_render_dir.path }}/cert-manager -name "*.yaml" -exec grep -l "kind: CustomResourceDefinition" {} \;
+          register: crd_files
+          changed_when: false
+
+        - name: Verify CRDs were rendered
+          ansible.builtin.assert:
+            that:
+              - crd_files.stdout_lines | length > 0
+            fail_msg: 'No CRDs found in rendered cert-manager chart'
+            success_msg: 'Found {{ crd_files.stdout_lines | length }} CRD files'
+
+    - name: Test 3 - Validate helm_renderer role variables
+      block:
+        - name: Test missing required variables
+          ansible.builtin.include_role:
+            name: helm_renderer
+          vars:
+            # Missing helm_chart_ref intentionally
+            helm_chart_name: test
+            helm_chart_namespace: test
+          register: missing_vars_test
+          failed_when: false
+
+        - name: Verify validation fails with missing variables
+          ansible.builtin.assert:
+            that:
+              - missing_vars_test is failed
+            fail_msg: 'Role should fail when required variables are missing'
+            success_msg: 'Role correctly validates required variables'
+
+    - name: Test 4 - Render local chart (if available)
+      block:
+        - name: Check if scout repo is available
+          ansible.builtin.stat:
+            path: "{{ lookup('env', 'SCOUT_REPO_DIR') | default('/tmp/nonexistent', true) }}/helm/explorer"
+          register: scout_helm_chart
+
+        - name: Render local explorer chart
+          when: scout_helm_chart.stat.exists
+          ansible.builtin.command:
+            cmd: >-
+              helm template test-explorer
+              {{ scout_helm_chart.stat.path }}
+              --namespace explorer
+              --output-dir {{ test_render_dir.path }}/explorer
+          register: explorer_render
+          changed_when: true
+
+        - name: Verify local chart rendered
+          when: scout_helm_chart.stat.exists
+          ansible.builtin.find:
+            paths: '{{ test_render_dir.path }}/explorer'
+            patterns: '*.yaml'
+            recurse: true
+          register: explorer_manifests
+
+        - name: Report local chart test result
+          ansible.builtin.debug:
+            msg: >-
+              {% if scout_helm_chart.stat.exists %}
+              Local chart test: PASS ({{ explorer_manifests.matched }} files rendered)
+              {% else %}
+              Local chart test: SKIPPED (scout repo not found at $SCOUT_REPO_DIR)
+              {% endif %}
+
+    - name: Cleanup temporary directory
+      ansible.builtin.file:
+        path: '{{ test_render_dir.path }}'
+        state: absent
