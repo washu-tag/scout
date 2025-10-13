@@ -25,6 +25,47 @@
   loop: '{{ manifest_files.files }}'
   loop_control:
     label: '{{ item.path | basename }}'
+  register: apply_results
+  # Continue applying remaining manifests even if one fails
+  # We'll check for failures after all attempts
+  failed_when: false
+
+- name: 'Handle manifest apply failures'
+  when:
+    - apply_results.results | selectattr('failed', 'defined') | selectattr('failed') | list | length > 0
+  vars:
+    failed_manifests: "{{ apply_results.results | selectattr('failed', 'defined') | selectattr('failed') | list }}"
+  block:
+    - name: 'Clean up namespace on failure (if enabled)'
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: '{{ helm_chart_namespace }}'
+        state: absent
+        wait: true
+        wait_timeout: 120
+      when:
+        - helm_chart_cleanup_on_failure | default(false) | bool
+        - helm_chart_create_namespace | default(false) | bool
+
+    - name: 'Report manifest apply failures'
+      ansible.builtin.fail:
+        msg: |
+          Failed to apply {{ failed_manifests | length }} manifest(s) for {{ helm_chart_name }}:
+          {% for result in apply_results.results %}
+          {% if result.failed | default(false) %}
+            - {{ result.item.path | basename }}: {{ result.msg | default('Unknown error') }}
+          {% endfor %}
+
+          {% if helm_chart_cleanup_on_failure | default(false) | bool %}
+          Namespace {{ helm_chart_namespace }} was deleted due to failure.
+          {% else %}
+          Successful manifests remain applied. To clean up:
+            kubectl delete namespace {{ helm_chart_namespace }}
+          Or manually remove individual resources.
+
+          To enable automatic cleanup on failure, set: helm_chart_cleanup_on_failure: true
+          {% endif %}
 
 - name: 'Wait for deployments to be ready'
   when:

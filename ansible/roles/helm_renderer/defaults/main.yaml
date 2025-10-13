@@ -19,6 +19,11 @@ helm_chart_timeout: '5m'
 helm_chart_values: {}
 helm_chart_values_files: []
 
+# Error handling behavior
+# When true, automatically delete namespace if manifest application fails
+# When false, leave partially-applied resources for manual inspection/cleanup
+helm_chart_cleanup_on_failure: false
+
 # For repository charts only (optional)
 helm_repo_name: null
 helm_repo_url: null
