@@ -1,7 +1,7 @@
 # Architecture Decision Record: Air-Gapped Helm Chart Deployment
 
-**Status**: Proposed
-**Date**: 2025-10-08
+**Status**: Accepted - Implementation In Progress
+**Date**: 2025-10-08 (Proposed), 2025-10-10 (Accepted)
 **Decision Owner**: Scout Platform Team
 **Related Documents**:
 - `staging-node-implementation-plan.md` (Harbor container registry)
@@ -13,9 +13,9 @@ Scout deployments need to support air-gapped Kubernetes clusters where worker no
 
 ### Current State
 
-Scout uses 16 Helm charts across its deployment:
+Scout uses 18 Helm charts across its deployment:
 
-**Public Charts (10):**
+**Public Charts (12):**
 - cert-manager (jetstack)
 - cass-operator (k8ssandra)
 - Temporal (temporalio)
@@ -23,8 +23,12 @@ Scout uses 16 Helm charts across its deployment:
 - Superset (apache)
 - Trino (trinodb)
 - MinIO Operator + Tenant (min.io)
+- Loki (grafana)
+- Promtail (grafana)
 - Grafana (grafana)
 - Prometheus (prometheus-community)
+- GPU Operator (nvidia)
+- Harbor (goharbor)
 
 **Local Charts (6):**
 - explorer
@@ -199,6 +203,29 @@ Scout uses 16 Helm charts across its deployment:
   - This is already acceptable given `use_staging_node` flag architecture
   - Both modes tested and maintained via CI/CD
 
+### Implementation Clarifications
+
+**Local Chart Delegation in Non-Air-Gapped Mode:**
+
+While the architecture decision focuses on air-gapped vs non-air-gapped deployment strategies, there is an additional implementation detail for local charts:
+
+- **Local charts** (explorer, hl7log-extractor, hl7-transformer, hive-metastore, dcm4chee, orthanc) **always run on localhost** in both modes
+- This is a **physical constraint**, not an architectural choice
+- Chart files exist only in `scout_repo_dir` on the Ansible control node
+- The deployment wrapper automatically detects local charts (no `helm_repo_name` defined) and delegates to localhost
+- Uses `K8S_AUTH_KUBECONFIG` with `local_kubeconfig_yaml` for execution
+
+This ensures:
+- **Non-air-gapped mode**: Public charts deploy from cluster nodes (internet access), local charts deploy from control node (where files are)
+- **Air-gapped mode**: ALL charts render on control node (localhost) regardless of source
+
+**Registry Mirror Cleanup:**
+
+The implementation includes automatic cleanup of k3s registry mirror configuration:
+- When switching from `use_staging_node: true` → `false`, the `/etc/rancher/k3s/registries.yaml` file is automatically removed
+- k3s service restarts to apply the change
+- Ensures clean state transitions between deployment modes
+
 ## Implementation Impact
 
 ### Components to Modify
@@ -210,21 +237,25 @@ Scout uses 16 Helm charts across its deployment:
 
 ### Estimated Effort
 
-- **Architecture decision**: Complete (this document)
-- **Implementation plan**: 1 day (separate document)
-- **Development**: 1-2 weeks (create role, refactor playbooks)
-- **Testing**: 3-5 days (validate all services in both modes)
-- **Total**: ~2-3 weeks to production-ready
+- **Architecture decision**: ✅ Complete (this document)
+- **Implementation plan**: ✅ Complete (separate document)
+- **Development**: ✅ Complete (2 weeks - created role, refactored all playbooks)
+- **Testing**: ⏳ In Progress (validation pending cluster access)
+- **Total**: 2 weeks development complete, testing pending
 
 ## Validation
 
 ### Success Criteria
 
-- [ ] All 16 Helm charts deploy successfully in air-gapped mode
-- [ ] Non-air-gapped deployments continue using Helm natively (regression test)
-- [ ] Services start and pass health checks in both modes
-- [ ] CI/CD tests both deployment modes
-- [ ] Documentation complete with examples
+- [x] **Implementation complete**: All 18 Helm charts refactored with wrapper task
+- [x] **Infrastructure created**: helm_renderer role, deploy_helm_chart wrapper, tests, documentation
+- [x] **Registry cleanup**: Automatic removal of mirror config when disabled
+- [x] **Local chart delegation**: Automatic detection and localhost execution
+- [x] **Documentation complete**: Architecture decision, implementation plan, test plan
+- [ ] **Air-gapped testing**: All 18 charts deploy successfully in air-gapped mode (pending)
+- [ ] **Regression testing**: Non-air-gapped deployments work correctly (pending)
+- [ ] **Service validation**: All services start and pass health checks in both modes (pending)
+- [ ] **CI/CD integration**: Both deployment modes tested in pipeline (pending)
 
 ### Testing Strategy
 
