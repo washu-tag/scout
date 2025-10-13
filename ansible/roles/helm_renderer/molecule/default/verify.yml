@@ -15,10 +15,13 @@
         - '{{ playbook_dir }}/../../tasks/render_chart.yaml'
         - '{{ playbook_dir }}/../../tasks/apply_manifests.yaml'
         - '{{ playbook_dir }}/../../README.md'
-      failed_when: >-
-        not role_files.results |
-        map(attribute='stat.exists') |
-        select | list | length == 6
+
+    - name: Verify all role files exist
+      ansible.builtin.assert:
+        that:
+          - role_files.results | map(attribute='stat.exists') | select | list | length == 6
+        fail_msg: 'Some role files are missing'
+        success_msg: 'All role files exist'
 
     - name: Check if Helm is installed
       ansible.builtin.command: helm version --short

@@ -2,9 +2,6 @@
 - name: Converge - Render Chart Tests (No Cluster Required)
   hosts: localhost
   gather_facts: false
-  connection: local
-  vars:
-    use_staging_node: true
 
   tasks:
     - name: Check if Helm is installed
@@ -27,8 +24,12 @@
         state: directory
         prefix: molecule_test_
       register: test_render_dir
+      tags:
+        - molecule-idempotence-notest
 
     - name: Test 1 - Render simple nginx chart
+      tags:
+        - molecule-idempotence-notest
       block:
         - name: Render nginx chart to directory
           ansible.builtin.command:
@@ -58,12 +59,14 @@
 
         - name: Check that expected resources were rendered
           ansible.builtin.shell: |
-            grep -l "kind: Deployment" {{ test_render_dir.path }}/nginx/**/*.yaml
-            grep -l "kind: Service" {{ test_render_dir.path }}/nginx/**/*.yaml
+            find {{ test_render_dir.path }}/nginx -name "*.yaml" -exec grep -l "kind: Deployment" {} \;
+            find {{ test_render_dir.path }}/nginx -name "*.yaml" -exec grep -l "kind: Service" {} \;
           register: expected_resources
           changed_when: false
 
     - name: Test 2 - Render cert-manager chart (with CRDs)
+      tags:
+        - molecule-idempotence-notest
       block:
         - name: Add jetstack repository
           kubernetes.core.helm_repository:
@@ -96,20 +99,25 @@
 
     - name: Test 3 - Validate helm_renderer role variables
       block:
-        - name: Test missing required variables
-          ansible.builtin.include_role:
-            name: helm_renderer
-          vars:
-            # Missing helm_chart_ref intentionally
-            helm_chart_name: test
-            helm_chart_namespace: test
-          register: missing_vars_test
-          failed_when: false
+        - name: Test missing required variables (expect failure)
+          block:
+            - name: Include role with missing variables
+              ansible.builtin.include_role:
+                name: helm_renderer
+              vars:
+                # Missing helm_chart_ref intentionally
+                helm_chart_name: test
+                helm_chart_namespace: test
+          rescue:
+            - name: Validation failed as expected
+              ansible.builtin.set_fact:
+                validation_test_passed: true
 
         - name: Verify validation fails with missing variables
           ansible.builtin.assert:
             that:
-              - missing_vars_test is failed
+              - validation_test_passed is defined
+              - validation_test_passed | bool
             fail_msg: 'Role should fail when required variables are missing'
             success_msg: 'Role correctly validates required variables'
 
@@ -152,3 +160,5 @@
       ansible.builtin.file:
         path: '{{ test_render_dir.path }}'
         state: absent
+      tags:
+        - molecule-idempotence-notest

@@ -1,5 +1,7 @@
 ---
 galaxy_info:
+  role_name: helm_renderer
+  namespace: washu_tag
   author: Scout Platform Team
   description: Helm chart renderer for air-gapped Kubernetes deployments
   company: Washington University School of Medicine - TAG

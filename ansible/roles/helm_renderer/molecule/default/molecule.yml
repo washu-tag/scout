@@ -9,9 +9,20 @@ platforms:
       - localhost
 provisioner:
   name: ansible
+  config_options:
+    defaults:
+      roles_path: ${MOLECULE_PROJECT_DIRECTORY}/..
+      interpreter_python: auto_silent
   inventory:
-    host_vars:
-      localhost:
+    group_vars:
+      all:
+        # Mock environment - no real cluster needed
         ansible_connection: local
+
+        # Use Python from the current environment (uvx virtualenv)
+        ansible_python_interpreter: '{{ ansible_playbook_python }}'
+
+        # Test configuration
+        use_staging_node: true
 verifier:
   name: ansible
