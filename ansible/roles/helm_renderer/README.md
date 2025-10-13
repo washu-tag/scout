@@ -48,6 +48,7 @@ on the `use_staging_node` inventory variable:
 | `helm_chart_timeout` | `"5m"` | Timeout for wait operations |
 | `helm_chart_values` | `{}` | Values dictionary for chart customization |
 | `helm_chart_values_files` | `[]` | List of values file paths |
+| `helm_chart_cleanup_on_failure` | `false` | Automatically delete namespace if deployment fails |
 | `helm_repo_name` | `null` | Helm repository name (for repository charts) |
 | `helm_repo_url` | `null` | Helm repository URL (for repository charts) |
 | `use_staging_node` | `false` | Enable air-gapped deployment mode |
@@ -135,6 +136,48 @@ The role will automatically:
 3. Render charts using `helm template`
 4. Apply rendered manifests to the cluster
 5. Clean up temporary files
+
+## Error Handling
+
+The role includes robust error handling for partial deployment failures:
+
+### Partial Manifest Apply Failures
+
+If some manifests fail to apply, the role:
+1. Continues applying remaining manifests (doesn't fail fast)
+2. Collects all failures
+3. Reports which manifests failed and why
+4. Optionally cleans up the namespace (if `helm_chart_cleanup_on_failure: true`)
+
+**Example with cleanup disabled (default)**:
+```yaml
+- name: Deploy chart with manual cleanup
+  include_role:
+    name: helm_renderer
+  vars:
+    helm_chart_cleanup_on_failure: false  # Leave resources for inspection
+```
+
+On failure, you'll see:
+```
+Failed to apply 2 manifest(s) for my-app:
+  - deployment.yaml: error message here
+  - service.yaml: error message here
+
+Successful manifests remain applied. To clean up:
+  kubectl delete namespace my-namespace
+```
+
+**Example with automatic cleanup**:
+```yaml
+- name: Deploy chart with automatic cleanup
+  include_role:
+    name: helm_renderer
+  vars:
+    helm_chart_cleanup_on_failure: true  # Auto-delete on failure
+```
+
+On failure, the namespace is automatically deleted, leaving a clean state.
 
 ## Testing
 
