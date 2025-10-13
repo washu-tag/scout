@@ -34,9 +34,9 @@
     {{ (helm_repo_name is not defined or helm_repo_name | length == 0) |
     ternary('localhost', omit) }}
   environment:
-    K8S_AUTH_KUBECONFIG: >-
+    KUBECONFIG: >-
       {{ (helm_repo_name is not defined or helm_repo_name | length == 0) |
-      ternary(local_kubeconfig_yaml, omit) }}
+      ternary(local_kubeconfig_yaml, kubeconfig_yaml) }}
   block:
     - name: 'Add Helm repository for {{ helm_chart_name }}'
       kubernetes.core.helm_repository:

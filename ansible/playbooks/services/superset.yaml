@@ -55,6 +55,8 @@
 - name: Create ConfigMap with Scout logo for Superset branding
   delegate_to: localhost
   no_log: true
+  environment:
+    KUBECONFIG: '{{ local_kubeconfig_yaml }}'
   kubernetes.core.k8s:
     state: present
     definition:
