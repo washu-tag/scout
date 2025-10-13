@@ -2,9 +2,11 @@
 dependency:
   name: galaxy
 driver:
-  name: delegated
+  name: default
 platforms:
-  - name: instance
+  - name: localhost
+    groups:
+      - localhost
 provisioner:
   name: ansible
   inventory:
