@@ -53,9 +53,7 @@
         release_namespace: '{{ helm_chart_namespace }}'
         create_namespace: '{{ helm_chart_create_namespace | default(true) }}'
         release_state: present
-        update_repo_cache: >-
-          {{ (helm_repo_name is defined and helm_repo_name is not none and
-          helm_repo_name | length > 0) | ternary(true, false) }}
+        update_repo_cache: '{{ not is_local_chart | bool }}'
         wait: '{{ helm_chart_wait | default(true) }}'
         wait_timeout: "{{ helm_chart_timeout | default('5m') }}"
         atomic: true
