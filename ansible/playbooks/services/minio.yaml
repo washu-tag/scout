@@ -3,7 +3,9 @@
   include_vars: vars/minio.yaml
 
 - name: Deploy MinIO Operator
-  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: minio-operator
     helm_chart_ref: minio-operator/operator
@@ -11,8 +13,6 @@
     helm_chart_namespace: minio-operator
     helm_repo_name: minio-operator
     helm_repo_url: https://operator.min.io
-    helm_chart_create_namespace: true
-    helm_chart_wait: true
     helm_chart_timeout: "{{ minio_operator_wait_timeout | default('1m') }}"
 
 - name: Create tenant namespace
@@ -55,7 +55,9 @@
   loop: '{{ minio_users }}'
 
 - name: Deploy MinIO Tenant
-  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: '{{ minio_tenant_namespace }}'
     helm_chart_ref: minio-operator/tenant
@@ -64,7 +66,6 @@
     helm_repo_name: minio-operator
     helm_repo_url: https://operator.min.io
     helm_chart_create_namespace: false
-    helm_chart_wait: true
     helm_chart_timeout: "{{ minio_tenant_wait_timeout | default('5m') }}"
     helm_chart_values:
       tenant:

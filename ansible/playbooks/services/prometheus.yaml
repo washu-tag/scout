@@ -20,7 +20,9 @@
         metrics-api-token: '{{ jupyter_metrics_api_token }}'
 
 - name: Deploy Prometheus
-  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: prometheus
     helm_chart_ref: prometheus-community/prometheus
@@ -28,7 +30,4 @@
     helm_repo_name: prometheus-community
     helm_repo_url: https://prometheus-community.github.io/helm-charts
     helm_chart_version: '~27.11.0'
-    helm_chart_create_namespace: true
-    helm_chart_wait: true
-    helm_chart_timeout: 5m
     helm_chart_values: "{{ lookup('template', 'templates/prometheus.values.yaml.j2') | from_yaml }}"

@@ -21,7 +21,9 @@
         AWS_SECRET_ACCESS_KEY: '{{ s3_loki_writer_secret }}'
 
 - name: Deploy Loki
-  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: loki
     helm_chart_ref: grafana/loki
@@ -30,12 +32,12 @@
     helm_repo_url: https://grafana.github.io/helm-charts
     helm_chart_version: '~6.29.0'
     helm_chart_create_namespace: false
-    helm_chart_wait: true
-    helm_chart_timeout: 5m
     helm_chart_values: "{{ lookup('template', 'templates/loki.values.yaml.j2') | from_yaml }}"
 
 - name: Deploy Promtail
-  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: promtail
     helm_chart_ref: grafana/promtail
@@ -44,8 +46,6 @@
     helm_repo_url: https://grafana.github.io/helm-charts
     helm_chart_version: '~6.16.6'
     helm_chart_create_namespace: false
-    helm_chart_wait: true
-    helm_chart_timeout: 5m
     helm_chart_values:
       promtail:
         enabled: true
@@ -187,7 +187,9 @@
             pg-db.yaml: "{{ lookup('template', 'templates/grafana/datasources/postgres-datasource.yaml.j2') }}"
 
     - name: Deploy Grafana
-      ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: deploy_helm_chart
       vars:
         helm_chart_name: grafana
         helm_chart_ref: grafana/grafana
@@ -196,6 +198,4 @@
         helm_repo_url: https://grafana.github.io/helm-charts
         helm_chart_version: '~8.12.1'
         helm_chart_create_namespace: false
-        helm_chart_wait: true
-        helm_chart_timeout: 5m
         helm_chart_values: "{{ lookup('template', 'templates/grafana/grafana.values.yaml.j2') | from_yaml }}"

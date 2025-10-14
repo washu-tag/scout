@@ -5,14 +5,13 @@
     name: hive_values
 
 - name: Deploy Hive Metastore Service
-  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: hive-metastore
     helm_chart_ref: '{{ scout_repo_dir }}/helm/lake/hive-metastore'
     helm_chart_namespace: '{{ hive_namespace }}'
-    helm_chart_create_namespace: true
-    helm_chart_wait: true
-    helm_chart_timeout: 5m
     helm_chart_values: '{{ hive_values }}'
 
 - name: Wait for Hive to be ready

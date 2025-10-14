@@ -1,6 +1,8 @@
 ---
 - name: Deploy Trino
-  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: trino
     helm_chart_ref: trino/trino
@@ -8,9 +10,6 @@
     helm_chart_namespace: trino
     helm_repo_name: trino
     helm_repo_url: https://trinodb.github.io/charts
-    helm_chart_create_namespace: true
-    helm_chart_wait: true
-    helm_chart_timeout: 5m
     helm_chart_values:
       catalogs:
         delta: |

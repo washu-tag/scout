@@ -41,13 +41,14 @@
             'orthanc.json': "{{ lookup('template', 'templates/orthanc/orthanc-conf.json.j2') | to_nice_json }}"
 
     - name: Deploy Orthanc
-      ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: deploy_helm_chart
       vars:
         helm_chart_name: orthanc
         helm_chart_ref: '{{ scout_repo_dir }}/helm/orthanc'
         helm_chart_namespace: '{{ orthanc_namespace }}'
         helm_chart_create_namespace: false
-        helm_chart_wait: true
         helm_chart_timeout: 2m
         helm_chart_values: "{{ lookup('template', 'templates/orthanc/values.yaml.j2') | from_yaml }}"
 

@@ -193,6 +193,9 @@ jobs:
       - name: 'Molecule tests: postgres role'
         shell: bash
         run: cd ansible/roles/postgres && molecule test -s default
+      - name: 'Molecule tests: scout_common role'
+        shell: bash
+        run: cd ansible/roles/scout_common && molecule test -s default
   deploy-and-test:
     runs-on: ubuntu-latest
     needs:

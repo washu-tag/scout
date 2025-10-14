@@ -65,7 +65,9 @@
         jupyter_values: '{{ jupyter_base_values | combine(jupyter_auth_values, recursive=True) }}'
 
     - name: Deploy JupyterHub
-      ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: deploy_helm_chart
       vars:
         helm_chart_name: jupyter
         helm_chart_ref: jupyterhub/jupyterhub
@@ -73,7 +75,5 @@
         helm_chart_namespace: jupyter
         helm_repo_name: jupyterhub
         helm_repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
-        helm_chart_create_namespace: true
-        helm_chart_wait: true
         helm_chart_timeout: 10m
         helm_chart_values: '{{ jupyter_values }}'

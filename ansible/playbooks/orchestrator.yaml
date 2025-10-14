@@ -20,21 +20,22 @@
       include_tasks: tasks/storage_setup.yaml
 
     - name: Deploy cert-manager
-      ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: deploy_helm_chart
       vars:
         helm_chart_name: cert-manager
         helm_chart_ref: jetstack/cert-manager
         helm_chart_namespace: cert-manager
         helm_repo_name: jetstack
         helm_repo_url: https://charts.jetstack.io
-        helm_chart_create_namespace: true
-        helm_chart_wait: true
-        helm_chart_timeout: 5m
         helm_chart_values:
           installCRDs: true
 
     - name: Deploy cass-operator
-      ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: deploy_helm_chart
       vars:
         helm_chart_name: cass-operator
         helm_chart_ref: k8ssandra/cass-operator
@@ -42,8 +43,6 @@
         helm_chart_namespace: '{{ temporal_namespace }}'
         helm_repo_name: k8ssandra
         helm_repo_url: https://helm.k8ssandra.io/stable
-        helm_chart_create_namespace: true
-        helm_chart_wait: true
         helm_chart_timeout: 10m
 
     - name: Install the Cassandra datacenter
@@ -81,7 +80,9 @@
       changed_when: false
 
     - name: Deploy Temporal
-      ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: deploy_helm_chart
       vars:
         helm_chart_name: temporal
         helm_chart_ref: temporal/temporal
@@ -89,8 +90,6 @@
         helm_chart_namespace: '{{ temporal_namespace }}'
         helm_repo_name: temporal
         helm_repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
-        helm_chart_create_namespace: true
-        helm_chart_wait: true
         helm_chart_timeout: 15m
         helm_chart_values:
           prometheus:

@@ -69,7 +69,9 @@
         scout.png: '{{ lookup("file", "../../explorer/public/scout.png") | b64encode }}'
 
 - name: Deploy Superset
-  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: superset
     helm_chart_ref: superset/superset
@@ -77,8 +79,6 @@
     helm_chart_namespace: superset
     helm_repo_name: superset
     helm_repo_url: https://apache.github.io/superset
-    helm_chart_create_namespace: true
-    helm_chart_wait: true
     helm_chart_timeout: 15m
     helm_chart_values:
       image:

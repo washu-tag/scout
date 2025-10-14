@@ -9,6 +9,17 @@
 #
 # The deployment mode is controlled by the air_gapped inventory variable.
 #
+# This file is intended to be included using `include_role` with `tasks_from`:
+#
+#   - name: Deploy my chart
+#     include_role:
+#       name: scout_common
+#       tasks_from: deploy_helm_chart
+#     vars:
+#       helm_chart_name: my-release
+#       helm_chart_ref: repo/chart
+#       helm_chart_namespace: default
+#
 # Required variables:
 # - helm_chart_name: Helm release name
 # - helm_chart_ref: Chart reference (repo/chart or local path)

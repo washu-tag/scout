@@ -7,7 +7,9 @@
 
   tasks:
     - name: Deploy NVIDIA GPU Operator
-      ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: deploy_helm_chart
       vars:
         helm_chart_name: gpu-operator
         helm_chart_ref: gpu-operator/gpu-operator
@@ -15,8 +17,5 @@
         helm_chart_namespace: '{{ gpu_operator_namespace | default("gpu-operator") }}'
         helm_repo_name: gpu-operator
         helm_repo_url: https://nvidia.github.io/gpu-operator
-        helm_chart_create_namespace: true
-        helm_chart_wait: true
-        helm_chart_timeout: 5m
         helm_chart_values_files:
           - vars/gpu-operator.values.yaml
