@@ -19,14 +19,27 @@
 
 - name: 'Add Helm repository on localhost'
   delegate_to: localhost
-  kubernetes.core.helm_repository:
-    name: '{{ helm_repo_name }}'
-    repo_url: '{{ helm_repo_url }}'
+  ansible.builtin.command:
+    cmd: 'helm repo add {{ helm_repo_name }} {{ helm_repo_url }}'
+  register: helm_repo_add_result
+  failed_when: false
+  changed_when: "'has been added' in helm_repo_add_result.stdout"
   when:
     - helm_repo_name is defined
     - helm_repo_url is defined
     - helm_repo_name | length > 0
     - helm_repo_url | length > 0
+
+- name: 'Update Helm repositories on localhost'
+  delegate_to: localhost
+  ansible.builtin.command:
+    cmd: 'helm repo update'
+  when:
+    - helm_repo_name is defined
+    - helm_repo_url is defined
+    - helm_repo_name | length > 0
+    - helm_repo_url | length > 0
+  changed_when: false
 
 - name: 'Create temporary directory for rendered manifests'
   delegate_to: localhost
