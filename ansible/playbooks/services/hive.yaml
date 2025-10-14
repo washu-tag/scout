@@ -16,8 +16,6 @@
     helm_chart_values: '{{ hive_values }}'
 
 - name: Wait for Hive to be ready
-  command: >-
-    kubectl -n {{ hive_namespace }} wait --for=condition=Available
-    --timeout=300s deployments/hive-metastore
+  command: 'kubectl -n {{ hive_namespace }} wait --for=condition=Available --timeout=300s deployments/hive-metastore'
   register: hive_ready
   changed_when: false

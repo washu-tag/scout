@@ -31,6 +31,4 @@
     helm_chart_create_namespace: true
     helm_chart_wait: true
     helm_chart_timeout: 5m
-    helm_chart_values: >-
-      {{ lookup("template",
-      "templates/prometheus.values.yaml.j2") | from_yaml }}
+    helm_chart_values: "{{ lookup('template', 'templates/prometheus.values.yaml.j2') | from_yaml }}"

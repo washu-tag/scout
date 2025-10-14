@@ -80,9 +80,19 @@
       register: cassandra_ready
       changed_when: false
 
-    - name: Set Temporal chart values
-      ansible.builtin.set_fact:
-        temporal_chart_values:
+    - name: Deploy Temporal
+      ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
+      vars:
+        helm_chart_name: temporal
+        helm_chart_ref: temporal/temporal
+        helm_chart_version: '~0.62.0'
+        helm_chart_namespace: '{{ temporal_namespace }}'
+        helm_repo_name: temporal
+        helm_repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
+        helm_chart_create_namespace: true
+        helm_chart_wait: true
+        helm_chart_timeout: 15m
+        helm_chart_values:
           prometheus:
             enabled: false
           grafana:
@@ -124,20 +134,6 @@
               ingressClassName: traefik
               hosts:
                 - 'temporal.{{ server_hostname }}'
-
-    - name: Deploy Temporal
-      ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
-      vars:
-        helm_chart_name: temporal
-        helm_chart_ref: temporal/temporal
-        helm_chart_version: '~0.62.0'
-        helm_chart_namespace: '{{ temporal_namespace }}'
-        helm_repo_name: temporal
-        helm_repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
-        helm_chart_create_namespace: true
-        helm_chart_wait: true
-        helm_chart_timeout: 15m
-        helm_chart_values: '{{ temporal_chart_values }}'
 
     - name: Wait for Temporal schema job to complete
       shell: >-

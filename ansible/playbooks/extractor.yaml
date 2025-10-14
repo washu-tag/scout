@@ -70,26 +70,20 @@
       ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
       vars:
         helm_chart_name: hl7log-extractor
-        helm_chart_ref: >-
-          {{ scout_repo_dir }}/helm/extractor/hl7log-extractor
+        helm_chart_ref: '{{ scout_repo_dir }}/helm/extractor/hl7log-extractor'
         helm_chart_namespace: '{{ extractor_namespace }}'
         helm_chart_create_namespace: false
         helm_chart_wait: true
         helm_chart_timeout: 5m
-        helm_chart_values: >-
-          {{ lookup('template',
-          'templates/hl7log-extractor.values.yaml.j2') | from_yaml }}
+        helm_chart_values: "{{ lookup('template', 'templates/hl7log-extractor.values.yaml.j2') | from_yaml }}"
 
     - name: Deploy HL7 Transformer
       ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
       vars:
         helm_chart_name: hl7-transformer
-        helm_chart_ref: >-
-          {{ scout_repo_dir }}/helm/extractor/hl7-transformer
+        helm_chart_ref: '{{ scout_repo_dir }}/helm/extractor/hl7-transformer'
         helm_chart_namespace: '{{ extractor_namespace }}'
         helm_chart_create_namespace: false
         helm_chart_wait: true
         helm_chart_timeout: 5m
-        helm_chart_values: >-
-          {{ lookup('template',
-          'templates/hl7-transformer.values.yaml.j2') | from_yaml }}
+        helm_chart_values: "{{ lookup('template', 'templates/hl7-transformer.values.yaml.j2') | from_yaml }}"

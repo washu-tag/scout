@@ -144,10 +144,8 @@
         name: k3s
         state: restarted
       when:
-        - (registry_config_task_result is defined and
-          registry_config_task_result.changed | default(false)) or
-          (registry_removal_task_result is defined and
-          registry_removal_task_result.changed | default(false))
+        - (registry_config_task_result is defined and registry_config_task_result.changed | default(false)) or
+          (registry_removal_task_result is defined and registry_removal_task_result.changed | default(false))
         - not k3s_install_result.changed
 
     - name: Update kubeconfig group permissions since write-kubeconfig-group isn't working
@@ -264,8 +262,6 @@
         name: k3s-agent
         state: restarted
       when:
-        - (registry_config_task_result is defined and
-          registry_config_task_result.changed | default(false)) or
-          (registry_removal_task_result is defined and
-          registry_removal_task_result.changed | default(false))
+        - (registry_config_task_result is defined and registry_config_task_result.changed | default(false)) or
+          (registry_removal_task_result is defined and registry_removal_task_result.changed | default(false))
         - not k3s_agent_install_result.changed

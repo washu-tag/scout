@@ -32,8 +32,7 @@
     helm_chart_create_namespace: false
     helm_chart_wait: true
     helm_chart_timeout: 5m
-    helm_chart_values: >-
-      {{ lookup('template', 'templates/loki.values.yaml.j2') | from_yaml }}
+    helm_chart_values: "{{ lookup('template', 'templates/loki.values.yaml.j2') | from_yaml }}"
 
 - name: Deploy Promtail
   ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
@@ -52,9 +51,7 @@
         enabled: true
         config:
           clients:
-            - url: >-
-                http://loki-gateway.{{ loki_namespace }}.svc.cluster.local:
-                3100/loki/api/v1/push
+            - url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local:3100/loki/api/v1/push'
 
 - name: Create Grafana namespace
   kubernetes.core.k8s:
@@ -146,9 +143,7 @@
             labels:
               grafana_alert: '1'
           data:
-            notification-policy.yaml: >-
-              {{ lookup('template',
-              'templates/grafana/notification-policy.yaml.j2') }}
+            notification-policy.yaml: "{{ lookup('template', 'templates/grafana/notification-policy.yaml.j2') }}"
 
     - name: Find all Grafana contact points
       find:
@@ -189,9 +184,7 @@
               # default value for: sidecar.datasources.label
               grafana_datasource: 'true'
           stringData:
-            pg-db.yaml: >-
-              {{ lookup('template',
-              'templates/grafana/datasources/postgres-datasource.yaml.j2') }}
+            pg-db.yaml: "{{ lookup('template', 'templates/grafana/datasources/postgres-datasource.yaml.j2') }}"
 
     - name: Deploy Grafana
       ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
@@ -205,6 +198,4 @@
         helm_chart_create_namespace: false
         helm_chart_wait: true
         helm_chart_timeout: 5m
-        helm_chart_values: >-
-          {{ lookup("template",
-          "templates/grafana/grafana.values.yaml.j2") | from_yaml }}
+        helm_chart_values: "{{ lookup('template', 'templates/grafana/grafana.values.yaml.j2') | from_yaml }}"

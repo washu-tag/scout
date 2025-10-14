@@ -51,9 +51,7 @@
         helm_chart_create_namespace: false
         helm_chart_wait: true
         helm_chart_timeout: 10m
-        helm_chart_values: >-
-          {{ lookup('template',
-          'templates/dcm4chee/values.yaml.j2') | from_yaml }}
+        helm_chart_values: "{{ lookup('template', 'templates/dcm4chee/values.yaml.j2') | from_yaml }}"
 
 - name: Populate Dcm4chee
   hosts: server

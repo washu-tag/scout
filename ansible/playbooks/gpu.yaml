@@ -12,8 +12,7 @@
         helm_chart_name: gpu-operator
         helm_chart_ref: gpu-operator/gpu-operator
         helm_chart_version: '~24.9.2'
-        helm_chart_namespace: >-
-          {{ gpu_operator_namespace | default("gpu-operator") }}
+        helm_chart_namespace: '{{ gpu_operator_namespace | default("gpu-operator") }}'
         helm_repo_name: gpu-operator
         helm_repo_url: https://nvidia.github.io/gpu-operator
         helm_chart_create_namespace: true

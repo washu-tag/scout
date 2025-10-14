@@ -68,9 +68,19 @@
       binaryData:
         scout.png: '{{ lookup("file", "../../explorer/public/scout.png") | b64encode }}'
 
-- name: Set Superset chart values
-  ansible.builtin.set_fact:
-    superset_chart_values:
+- name: Deploy Superset
+  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  vars:
+    helm_chart_name: superset
+    helm_chart_ref: superset/superset
+    helm_chart_version: '0.14.2'
+    helm_chart_namespace: superset
+    helm_repo_name: superset
+    helm_repo_url: https://apache.github.io/superset
+    helm_chart_create_namespace: true
+    helm_chart_wait: true
+    helm_chart_timeout: 15m
+    helm_chart_values:
       image:
         repository: '{{ superset_image | default("ghcr.io/washu-tag/superset") }}'
         tag: 4.1.2
@@ -181,17 +191,3 @@
             echo "Dashboard imported successfully"
           fi
           {% endraw %}
-
-- name: Deploy Superset
-  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
-  vars:
-    helm_chart_name: superset
-    helm_chart_ref: superset/superset
-    helm_chart_version: '0.14.2'
-    helm_chart_namespace: superset
-    helm_repo_name: superset
-    helm_repo_url: https://apache.github.io/superset
-    helm_chart_create_namespace: true
-    helm_chart_wait: true
-    helm_chart_timeout: 15m
-    helm_chart_values: '{{ superset_chart_values }}'

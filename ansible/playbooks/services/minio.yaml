@@ -54,9 +54,19 @@
         CONSOLE_SECRET_KEY: '{{ item.secret_key }}'
   loop: '{{ minio_users }}'
 
-- name: Set MinIO Tenant chart values
-  ansible.builtin.set_fact:
-    minio_tenant_chart_values:
+- name: Deploy MinIO Tenant
+  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
+  vars:
+    helm_chart_name: '{{ minio_tenant_namespace }}'
+    helm_chart_ref: minio-operator/tenant
+    helm_chart_version: "{{ minio_version | default('~7.1.0') }}"
+    helm_chart_namespace: '{{ minio_tenant_namespace }}'
+    helm_repo_name: minio-operator
+    helm_repo_url: https://operator.min.io
+    helm_chart_create_namespace: false
+    helm_chart_wait: true
+    helm_chart_timeout: "{{ minio_tenant_wait_timeout | default('5m') }}"
+    helm_chart_values:
       tenant:
         name: '{{ minio_tenant_name }}'
         configSecret:
@@ -90,20 +100,6 @@
         buckets: '{{ minio_buckets }}'
         users: '{{ minio_credentials }}'
       ingress: '{{ minio_ingress_config }}'
-
-- name: Deploy MinIO Tenant
-  ansible.builtin.include_tasks: ../tasks/deploy_helm_chart.yaml
-  vars:
-    helm_chart_name: '{{ minio_tenant_namespace }}'
-    helm_chart_ref: minio-operator/tenant
-    helm_chart_version: "{{ minio_version | default('~7.1.0') }}"
-    helm_chart_namespace: '{{ minio_tenant_namespace }}'
-    helm_repo_name: minio-operator
-    helm_repo_url: https://operator.min.io
-    helm_chart_create_namespace: false
-    helm_chart_wait: true
-    helm_chart_timeout: "{{ minio_tenant_wait_timeout | default('5m') }}"
-    helm_chart_values: '{{ minio_tenant_chart_values }}'
 
 - name: Wait for MinIO StatefulSet to exist
   kubernetes.core.k8s_info:

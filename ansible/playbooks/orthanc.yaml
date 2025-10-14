@@ -38,9 +38,7 @@
             namespace: '{{ orthanc_namespace }}'
           type: Opaque
           stringData:
-            'orthanc.json': >-
-              {{ lookup('template',
-              'templates/orthanc/orthanc-conf.json.j2') | to_nice_json }}
+            'orthanc.json': "{{ lookup('template', 'templates/orthanc/orthanc-conf.json.j2') | to_nice_json }}"
 
     - name: Deploy Orthanc
       ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
@@ -51,9 +49,7 @@
         helm_chart_create_namespace: false
         helm_chart_wait: true
         helm_chart_timeout: 2m
-        helm_chart_values: >-
-          {{ lookup('template',
-          'templates/orthanc/values.yaml.j2') | from_yaml }}
+        helm_chart_values: "{{ lookup('template', 'templates/orthanc/values.yaml.j2') | from_yaml }}"
 
 - name: Populate Orthanc
   hosts: server
