@@ -27,6 +27,8 @@
   when:
     - helm_repo_name is defined
     - helm_repo_url is defined
+    - helm_repo_name is not none
+    - helm_repo_url is not none
     - helm_repo_name | length > 0
     - helm_repo_url | length > 0
 
@@ -37,6 +39,8 @@
   when:
     - helm_repo_name is defined
     - helm_repo_url is defined
+    - helm_repo_name is not none
+    - helm_repo_url is not none
     - helm_repo_name | length > 0
     - helm_repo_url | length > 0
   changed_when: false
@@ -74,6 +78,7 @@
       helm template {{ helm_chart_name }}
       {{ helm_chart_ref }}
       {% if helm_chart_version is defined and
+      helm_chart_version is not none and
       helm_chart_version | length > 0 %}
       --version {{ helm_chart_version }}{% endif %}
       --namespace {{ helm_chart_namespace }}

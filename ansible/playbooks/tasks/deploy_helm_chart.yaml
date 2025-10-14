@@ -31,12 +31,12 @@
 - name: 'Deploy {{ helm_chart_name }} using Helm (non-air-gapped)'
   when: not (use_staging_node | default(false) | bool)
   delegate_to: >-
-    {{ (helm_repo_name is not defined or helm_repo_name | length == 0) |
-    ternary('localhost', omit) }}
+    {{ (helm_repo_name is not defined or helm_repo_name is none or
+    helm_repo_name | length == 0) | ternary('localhost', omit) }}
   environment:
     KUBECONFIG: >-
-      {{ (helm_repo_name is not defined or helm_repo_name | length == 0) |
-      ternary(local_kubeconfig_yaml, kubeconfig_yaml) }}
+      {{ (helm_repo_name is not defined or helm_repo_name is none or
+      helm_repo_name | length == 0) | ternary(local_kubeconfig_yaml, kubeconfig_yaml) }}
   block:
     - name: 'Add Helm repository for {{ helm_chart_name }}'
       kubernetes.core.helm_repository:
@@ -45,6 +45,8 @@
       when:
         - helm_repo_name is defined
         - helm_repo_url is defined
+        - helm_repo_name is not none
+        - helm_repo_url is not none
         - helm_repo_name | length > 0
         - helm_repo_url | length > 0
 
@@ -57,8 +59,8 @@
         create_namespace: '{{ helm_chart_create_namespace | default(true) }}'
         release_state: present
         update_repo_cache: >-
-          {{ (helm_repo_name is defined and helm_repo_name | length > 0) |
-          ternary(true, false) }}
+          {{ (helm_repo_name is defined and helm_repo_name is not none and
+          helm_repo_name | length > 0) | ternary(true, false) }}
         wait: '{{ helm_chart_wait | default(true) }}'
         wait_timeout: "{{ helm_chart_timeout | default('5m') }}"
         atomic: true
