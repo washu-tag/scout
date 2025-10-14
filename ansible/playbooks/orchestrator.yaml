@@ -45,10 +45,6 @@
         helm_chart_create_namespace: true
         helm_chart_wait: true
         helm_chart_timeout: 10m
-        # API versions required for cass-operator webhooks (requires cert-manager)
-        # In air-gapped mode, helm template needs to know cert-manager APIs exist
-        helm_chart_api_versions:
-          - cert-manager.io/v1
 
     - name: Install the Cassandra datacenter
       kubernetes.core.k8s:

@@ -1,11 +1,15 @@
 # Architecture Decision Record: Air-Gapped Helm Chart Deployment
 
-**Status**: Accepted - Implementation In Progress
-**Date**: 2025-10-08 (Proposed), 2025-10-10 (Accepted)
+**Status**: Superseded by `air-gapped-helm-remote-deployment-adr.md` (2025-10-14)
+**Date**: 2025-10-08 (Proposed), 2025-10-10 (Accepted), 2025-10-14 (Superseded)
 **Decision Owner**: Scout Platform Team
 **Related Documents**:
 - `staging-node-implementation-plan.md` (Harbor container registry)
 - `air-gapped-helm-implementation-plan.md` (Implementation details)
+- `air-gapped-helm-remote-deployment-adr.md` (Superseding ADR)
+
+## Notice
+**This ADR has been superseded.** The local rendering approach described here was implemented but has been replaced by a simpler remote Helm deployment approach that leverages the permeable air-gap network topology. See `air-gapped-helm-remote-deployment-adr.md` for the current approach.
 
 ## Context
 

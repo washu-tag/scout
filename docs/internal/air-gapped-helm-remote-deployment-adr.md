@@ -1,7 +1,7 @@
 # Architecture Decision Record: Helm Deployment for Permeable Air-Gapped Environments
 
-**Status**: Proposed
-**Date**: 2025-10-14
+**Status**: Accepted
+**Date**: 2025-10-14 (Proposed and Accepted)
 **Decision Owner**: Scout Platform Team
 **Supersedes**: `air-gapped-helm-architecture-decision.md` (2025-10-08)
 **Related Documents**:
