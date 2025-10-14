@@ -43,6 +43,16 @@
                 storage: 250Gi
             storageClassName: '{{ jupyter_singleuser_storage_class }}'
 
+    - name: Read TLS certificate from remote host
+      ansible.builtin.slurp:
+        src: '{{ tls_cert_path }}'
+      register: tls_cert_content
+
+    - name: Read TLS key from remote host
+      ansible.builtin.slurp:
+        src: '{{ tls_key_path }}'
+      register: tls_key_content
+
     - name: Create TLS secret for Jupyter
       kubernetes.core.k8s:
         state: present
@@ -54,8 +64,8 @@
             namespace: jupyter
           type: kubernetes.io/tls
           data:
-            tls.crt: '{{ tls_cert_path | b64encode }}'
-            tls.key: '{{ tls_key_path | b64encode }}'
+            tls.crt: '{{ tls_cert_content.content }}'
+            tls.key: '{{ tls_key_content.content }}'
 
     - name: Add JupyterHub Helm repository
       kubernetes.core.helm_repository:
