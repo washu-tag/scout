@@ -103,19 +103,24 @@
             nodePort: '{{ harbor_nodeport_https }}'
   when: harbor_expose_type == 'nodePort'
 
+- name: Add Harbor Helm repository
+  kubernetes.core.helm_repository:
+    name: harbor
+    repo_url: https://helm.goharbor.io
+
 - name: Deploy Harbor
-  ansible.builtin.include_tasks: ../../playbooks/tasks/deploy_helm_chart.yaml
-  vars:
-    helm_chart_name: harbor
-    helm_chart_ref: harbor/harbor
-    helm_chart_version: '{{ harbor_version }}'
-    helm_chart_namespace: '{{ harbor_namespace }}'
-    helm_repo_name: harbor
-    helm_repo_url: https://helm.goharbor.io
-    helm_chart_create_namespace: true
-    helm_chart_wait: true
-    helm_chart_timeout: 15m
-    helm_chart_values:
+  kubernetes.core.helm:
+    name: harbor
+    chart_ref: harbor/harbor
+    chart_version: '{{ harbor_version }}'
+    release_namespace: '{{ harbor_namespace }}'
+    create_namespace: true
+    release_state: present
+    update_repo_cache: true
+    wait: true
+    wait_timeout: 15m
+    atomic: true
+    values:
       expose: '{{ harbor_expose_config }}'
       externalURL: '{{ harbor_registry_url }}'
       harborAdminPassword: '{{ harbor_admin_password }}'
