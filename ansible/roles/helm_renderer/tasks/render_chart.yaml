@@ -86,6 +86,11 @@
       --create-namespace{% endif %}
       {% for values_file in all_values_files %}
       --values {{ values_file }} {% endfor %}
+      {% if helm_chart_api_versions is defined and
+      helm_chart_api_versions is not none and
+      helm_chart_api_versions | length > 0 %}
+      {% for api_version in helm_chart_api_versions %}
+      --api-versions {{ api_version }} {% endfor %}{% endif %}
       --output-dir {{ helm_render_dir.path }}
 
 - name: 'Render Helm chart on localhost'
@@ -94,14 +99,79 @@
     cmd: '{{ helm_template_cmd }}'
   register: helm_template_result
   changed_when: true
+  failed_when: false # Handle errors in next task with better messaging
+
+- name: 'Check for API version requirements in template errors'
+  delegate_to: localhost
+  when: helm_template_result.rc != 0
+  block:
+    - name: 'Analyze helm template error for missing API versions'
+      ansible.builtin.set_fact:
+        missing_api_hint: |-
+          {% if 'cert-manager' in helm_template_result.stderr %}
+          HINT: This chart requires cert-manager API versions.
+          Add this to your helm_chart_api_versions:
+            helm_chart_api_versions:
+              - cert-manager.io/v1
+
+          {% elif 'ServiceMonitor' in helm_template_result.stderr or 'monitoring.coreos.com' in helm_template_result.stderr %}
+          HINT: This chart requires Prometheus Operator API versions.
+          Add this to your helm_chart_api_versions:
+            helm_chart_api_versions:
+              - monitoring.coreos.com/v1
+
+          {% elif 'Capabilities.APIVersions' in helm_template_result.stderr %}
+          HINT: This chart checks for API version availability during rendering.
+          Try inspecting the chart to find required API versions:
+            1. helm show all {{ helm_chart_ref }} | grep Capabilities.APIVersions
+            2. Check chart documentation for CRD dependencies
+            3. See: ansible/roles/helm_renderer/defaults/main.yaml for guidance
+
+          {% else %}
+          For air-gapped deployments, some charts require API versions to be specified.
+          See: ansible/roles/helm_renderer/defaults/main.yaml for detailed guidance
+          Common APIs: cert-manager.io/v1, monitoring.coreos.com/v1
+          {% endif %}
+
+          How to find required API versions:
+          ----------------------------------
+          1. Try: helm template {{ helm_chart_name }} {{ helm_chart_ref }} --api-versions cert-manager.io/v1
+          2. Inspect: helm show all {{ helm_chart_ref }} | grep -A 2 Capabilities.APIVersions
+          3. Check: Chart README or values.yaml for dependency requirements
+
+          Current helm_chart_api_versions: {{ helm_chart_api_versions | default([]) }}
+
+    - name: 'Fail with enhanced error message'
+      ansible.builtin.fail:
+        msg: |
+          ========================================================================
+          HELM TEMPLATE RENDERING FAILED
+          ========================================================================
+
+          Chart: {{ helm_chart_name }}
+          Reference: {{ helm_chart_ref }}
+          Version: {{ helm_chart_version | default('latest') }}
+          Namespace: {{ helm_chart_namespace }}
+
+          Error from Helm:
+          {{ helm_template_result.stderr }}
+
+          {{ missing_api_hint }}
+
+          Documentation:
+          - Role defaults: ansible/roles/helm_renderer/defaults/main.yaml
+          - README: ansible/roles/helm_renderer/README.md (search for "API Versions")
+          ========================================================================
 
 - name: 'Apply rendered manifests to cluster'
   ansible.builtin.include_tasks: apply_manifests.yaml
   vars:
     manifests_dir: '{{ helm_render_dir.path }}'
+  when: not (helm_chart_skip_apply | default(false) | bool)
 
 - name: 'Clean up temporary directory'
   delegate_to: localhost
   ansible.builtin.file:
     path: '{{ helm_render_dir.path }}'
     state: absent
+  when: not (helm_chart_skip_cleanup | default(false) | bool)

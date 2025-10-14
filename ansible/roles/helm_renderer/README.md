@@ -48,7 +48,10 @@ on the `use_staging_node` inventory variable:
 | `helm_chart_timeout` | `"5m"` | Timeout for wait operations |
 | `helm_chart_values` | `{}` | Values dictionary for chart customization |
 | `helm_chart_values_files` | `[]` | List of values file paths |
+| `helm_chart_api_versions` | `[]` | API versions for chart templating (see below) |
 | `helm_chart_cleanup_on_failure` | `false` | Automatically delete namespace if deployment fails |
+| `helm_chart_skip_apply` | `false` | Render only, don't apply (testing) |
+| `helm_chart_skip_cleanup` | `false` | Keep rendered files (debugging) |
 | `helm_repo_name` | `null` | Helm repository name (for repository charts) |
 | `helm_repo_url` | `null` | Helm repository URL (for repository charts) |
 | `use_staging_node` | `false` | Enable air-gapped deployment mode |
@@ -136,6 +139,126 @@ The role will automatically:
 3. Render charts using `helm template`
 4. Apply rendered manifests to the cluster
 5. Clean up temporary files
+
+### API Versions for Air-Gapped Deployments
+
+**Critical for charts with CRD dependencies!**
+
+Some Helm charts check for CRD availability during rendering using template logic like `{{ .Capabilities.APIVersions.Has "cert-manager.io/v1" }}`. In air-gapped mode, these checks fail because `helm template` doesn't connect to a cluster, causing deployment to fail with cryptic errors.
+
+#### When Do You Need This?
+
+You need to specify `helm_chart_api_versions` when deploying charts that:
+- Use admission webhooks (almost always requires cert-manager)
+- Reference CRDs from other charts in their templates
+- Have conditional logic based on API availability
+
+#### How to Identify the Need
+
+**Symptom 1 - Deployment Failure:**
+```
+Error: execution error at (cass-operator/templates/webhook-service.yaml:6:6):
+cass-operator webhooks require cert-manager to be installed in the cluster
+```
+
+**Symptom 2 - Test Rendering Locally:**
+```bash
+$ helm template test k8ssandra/cass-operator --version 0.55.2 --namespace temporal
+Error: execution error ... requires cert-manager ...
+```
+
+#### How to Find Required API Versions
+
+**Method 1 - Test with Common API Versions:**
+```bash
+# Try adding cert-manager (most common dependency)
+$ helm template test repo/chart \
+    --version X.Y.Z \
+    --namespace test \
+    --api-versions cert-manager.io/v1
+
+# If successful, you found it!
+```
+
+**Method 2 - Inspect Chart Templates:**
+```bash
+# Look for Capabilities checks in the chart
+$ helm show all repo/chart | grep -A 2 "Capabilities.APIVersions"
+
+# Example output:
+{{ if .Capabilities.APIVersions.Has "cert-manager.io/v1" }}
+  # This means you need: cert-manager.io/v1
+```
+
+**Method 3 - Check Dependency CRDs:**
+```bash
+# Download and inspect the dependency chart
+$ helm pull jetstack/cert-manager --untar
+$ grep "apiVersion:" cert-manager/crds/*.yaml | head -5
+
+# Output shows: apiVersion: apiextensions.k8s.io/v1
+# The CRD itself uses apiextensions, but the CRD group is cert-manager.io/v1
+```
+
+**Method 4 - Read Chart Documentation:**
+- Check the chart's README or values.yaml for dependency requirements
+- Look for mentions of "cert-manager", "webhooks", or "CRDs"
+
+#### Common API Versions
+
+| API Version | Used By | When Needed |
+|-------------|---------|-------------|
+| `cert-manager.io/v1` | Admission webhooks, TLS automation | Charts with MutatingWebhookConfiguration or ValidatingWebhookConfiguration |
+| `monitoring.coreos.com/v1` | Prometheus monitoring | Charts creating ServiceMonitor resources |
+| `snapshot.storage.k8s.io/v1` | Volume snapshots | Charts using VolumeSnapshot features |
+| `networking.k8s.io/v1` | Network policies | Charts with NetworkPolicy resources |
+| `policy/v1` | Pod disruption budgets | Charts using PodDisruptionBudget |
+
+#### Examples
+
+**cass-operator (requires cert-manager):**
+```yaml
+- name: Deploy cass-operator
+  ansible.builtin.include_tasks: tasks/deploy_helm_chart.yaml
+  vars:
+    helm_chart_name: cass-operator
+    helm_chart_ref: k8ssandra/cass-operator
+    helm_chart_version: '~0.55.2'
+    helm_chart_namespace: temporal
+    helm_repo_name: k8ssandra
+    helm_repo_url: https://helm.k8ssandra.io/stable
+    # Required: cass-operator uses admission webhooks
+    helm_chart_api_versions:
+      - cert-manager.io/v1
+```
+
+**Chart with multiple dependencies:**
+```yaml
+- name: Deploy monitoring stack
+  ansible.builtin.include_role:
+    name: helm_renderer
+  vars:
+    helm_chart_name: monitoring
+    helm_chart_ref: prometheus-community/kube-prometheus-stack
+    helm_chart_namespace: monitoring
+    helm_repo_name: prometheus-community
+    helm_repo_url: https://prometheus-community.github.io/helm-charts
+    helm_chart_api_versions:
+      - cert-manager.io/v1           # For webhook TLS
+      - monitoring.coreos.com/v1     # For ServiceMonitor CRDs
+```
+
+#### What If You Don't Set This?
+
+If a chart requires API versions but you don't provide them:
+
+1. **In non-air-gapped mode**: No impact (Helm queries the cluster directly)
+2. **In air-gapped mode**: Deployment will fail with errors like:
+   - `"requires cert-manager to be installed"`
+   - `"execution error at (chart/template.yaml:X:Y)"`
+   - Template rendering failures with cryptic messages
+
+**The fix**: Add the missing API version(s) to `helm_chart_api_versions`
 
 ## Error Handling
 

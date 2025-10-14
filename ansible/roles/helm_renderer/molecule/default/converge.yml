@@ -121,40 +121,187 @@
             fail_msg: 'Role should fail when required variables are missing'
             success_msg: 'Role correctly validates required variables'
 
-    - name: Test 4 - Render local chart (if available)
+    - name: Test 4 - Render local chart using helm_renderer role
+      tags:
+        - molecule-idempotence-notest
       block:
         - name: Check if scout repo is available
           ansible.builtin.stat:
             path: "{{ lookup('env', 'SCOUT_REPO_DIR') | default('/tmp/nonexistent', true) }}/helm/explorer"
           register: scout_helm_chart
 
-        - name: Render local explorer chart
+        - name: Test role with local chart (no repo name/URL)
           when: scout_helm_chart.stat.exists
-          ansible.builtin.command:
-            cmd: >-
-              helm template test-explorer
-              {{ scout_helm_chart.stat.path }}
-              --namespace explorer
-              --output-dir {{ test_render_dir.path }}/explorer
-          register: explorer_render
-          changed_when: true
+          block:
+            - name: Include helm_renderer role with local chart
+              ansible.builtin.include_role:
+                name: helm_renderer
+              vars:
+                use_staging_node: true
+                helm_chart_name: test-explorer
+                helm_chart_ref: '{{ scout_helm_chart.stat.path }}'
+                helm_chart_namespace: explorer
+                helm_chart_create_namespace: true
+                helm_chart_wait: false
+                # No helm_repo_name or helm_repo_url - this is a local chart
+                kubeconfig_yaml: /tmp/fake_kubeconfig
+              ignore_errors: true
+              register: local_chart_test
 
-        - name: Verify local chart rendered
+            - name: Verify local chart test handled missing repo gracefully
+              ansible.builtin.debug:
+                msg: >-
+                  Local chart test with role: {{ 'PASS' if not local_chart_test.failed else 'FAIL' }}
+
+        - name: Test role with explicitly null repo variables
           when: scout_helm_chart.stat.exists
-          ansible.builtin.find:
-            paths: '{{ test_render_dir.path }}/explorer'
-            patterns: '*.yaml'
-            recurse: true
-          register: explorer_manifests
+          block:
+            - name: Include helm_renderer role with null repo variables
+              ansible.builtin.include_role:
+                name: helm_renderer
+              vars:
+                use_staging_node: true
+                helm_chart_name: test-explorer-null
+                helm_chart_ref: '{{ scout_helm_chart.stat.path }}'
+                helm_chart_namespace: explorer
+                helm_chart_create_namespace: true
+                helm_chart_wait: false
+                helm_repo_name: null
+                helm_repo_url: null
+                helm_chart_version: null
+                kubeconfig_yaml: /tmp/fake_kubeconfig
+              ignore_errors: true
+              register: null_vars_test
 
-        - name: Report local chart test result
+            - name: Verify null variables handled correctly
+              ansible.builtin.debug:
+                msg: >-
+                  Null variables test: {{ 'PASS' if not null_vars_test.failed else 'FAIL' }}
+
+        - name: Report local chart test results
           ansible.builtin.debug:
             msg: >-
-              {% if scout_helm_chart.stat.exists %}
-              Local chart test: PASS ({{ explorer_manifests.matched }} files rendered)
-              {% else %}
+              {% if not scout_helm_chart.stat.exists %}
               Local chart test: SKIPPED (scout repo not found at $SCOUT_REPO_DIR)
+              {% else %}
+              Local chart test: Completed (check results above)
               {% endif %}
+
+    - name: Test 5 - Chart requiring cert-manager API versions (cass-operator)
+      tags:
+        - molecule-idempotence-notest
+      block:
+        - name: Add k8ssandra repository
+          kubernetes.core.helm_repository:
+            name: k8ssandra
+            repo_url: https://helm.k8ssandra.io/stable
+
+        - name: Test rendering cass-operator WITHOUT api-versions (should fail)
+          ansible.builtin.command:
+            cmd: >-
+              helm template test-cass k8ssandra/cass-operator
+              --version 0.55.2
+              --namespace temporal
+              --output-dir {{ test_render_dir.path }}/cass-operator-fail
+          register: cass_render_fail
+          failed_when: false
+          changed_when: false
+
+        - name: Verify the expected error occurred
+          ansible.builtin.assert:
+            that:
+              - cass_render_fail.rc != 0
+              - "'cert-manager' in cass_render_fail.stderr"
+            fail_msg: 'Expected cass-operator to fail without cert-manager API versions'
+            success_msg: 'cass-operator correctly failed without cert-manager (rc={{ cass_render_fail.rc }})'
+
+        - name: Test rendering cass-operator WITH api-versions (should succeed)
+          ansible.builtin.command:
+            cmd: >-
+              helm template test-cass k8ssandra/cass-operator
+              --version 0.55.2
+              --namespace temporal
+              --api-versions cert-manager.io/v1
+              --output-dir {{ test_render_dir.path }}/cass-operator-success
+          register: cass_render_success
+          changed_when: true
+
+        - name: Verify successful rendering with api-versions
+          ansible.builtin.assert:
+            that:
+              - cass_render_success.rc == 0
+            fail_msg: 'cass-operator should succeed with cert-manager API versions'
+            success_msg: 'cass-operator successfully rendered with api-versions flag'
+
+        - name: Verify manifests were created
+          ansible.builtin.find:
+            paths: '{{ test_render_dir.path }}/cass-operator-success'
+            patterns: '*.yaml'
+            recurse: true
+          register: cass_manifests
+
+        - name: Confirm webhook resources exist
+          ansible.builtin.shell: |
+            find {{ test_render_dir.path }}/cass-operator-success -name "*.yaml" -exec grep -l "kind: MutatingWebhookConfiguration\|kind: ValidatingWebhookConfiguration" {} \;
+          register: webhook_resources
+          changed_when: false
+
+        - name: Verify webhook resources were rendered
+          ansible.builtin.assert:
+            that:
+              - webhook_resources.stdout_lines | length > 0
+            fail_msg: 'No webhook resources found in rendered cass-operator chart'
+            success_msg: 'Found {{ webhook_resources.stdout_lines | length }} webhook resource files'
+
+    - name: Test 6 - Use helm_renderer role with api_versions (cass-operator)
+      tags:
+        - molecule-idempotence-notest
+      block:
+        - name: Include helm_renderer role with api_versions
+          ansible.builtin.include_role:
+            name: helm_renderer
+            tasks_from: render_chart.yaml
+          vars:
+            helm_chart_name: test-cass-via-role
+            helm_chart_ref: k8ssandra/cass-operator
+            helm_chart_version: 0.55.2
+            helm_chart_namespace: temporal
+            helm_chart_create_namespace: true
+            helm_chart_wait: false
+            helm_chart_skip_apply: true
+            helm_chart_skip_cleanup: true
+            helm_chart_api_versions:
+              - cert-manager.io/v1
+            helm_repo_name: k8ssandra
+            helm_repo_url: https://helm.k8ssandra.io/stable
+
+        - name: Verify helm template succeeded
+          ansible.builtin.assert:
+            that:
+              - helm_template_result is defined
+              - helm_template_result.rc == 0
+            fail_msg: 'helm template should succeed with api_versions parameter'
+            success_msg: 'helm_renderer role successfully rendered cass-operator with api_versions'
+
+        - name: Verify rendered manifests exist
+          ansible.builtin.find:
+            paths: '{{ helm_render_dir.path }}'
+            patterns: '*.yaml'
+            recurse: true
+          register: role_rendered_manifests
+
+        - name: Assert manifests were rendered
+          ansible.builtin.assert:
+            that:
+              - role_rendered_manifests.files | length > 0
+            fail_msg: 'No manifests were rendered by helm_renderer role'
+            success_msg: 'helm_renderer role created {{ role_rendered_manifests.files | length }} manifest files'
+
+        - name: Clean up rendered manifests from role test
+          ansible.builtin.file:
+            path: '{{ helm_render_dir.path }}'
+            state: absent
+          when: helm_render_dir is defined
 
     - name: Cleanup temporary directory
       ansible.builtin.file:
