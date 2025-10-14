@@ -24,50 +24,14 @@
 # - helm_repo_name: Repository name (for repo charts)
 # - helm_repo_url: Repository URL (for repo charts)
 
-- name: 'Deploy {{ helm_chart_name }} using Helm (non-air-gapped)'
-  when: not (air_gapped | default(false) | bool)
-  delegate_to: >-
-    {{ (helm_repo_name is not defined or helm_repo_name is none or
-    helm_repo_name | length == 0) | ternary('localhost', omit) }}
+- name: 'Deploy {{ helm_chart_name }} using Helm'
+  vars:
+    # Use localhost when air-gapped OR deploying local chart (no helm_repo_name)
+    is_local_chart: '{{ helm_repo_name is not defined or helm_repo_name is none or helm_repo_name | length == 0 }}'
+    use_localhost: '{{ air_gapped | default(false) | bool or is_local_chart | bool }}'
+  delegate_to: '{{ use_localhost | ternary("localhost", omit) }}'
   environment:
-    KUBECONFIG: >-
-      {{ (helm_repo_name is not defined or helm_repo_name is none or
-      helm_repo_name | length == 0) | ternary(local_kubeconfig_yaml, kubeconfig_yaml) }}
-  block:
-    - name: 'Add Helm repository for {{ helm_chart_name }}'
-      kubernetes.core.helm_repository:
-        name: '{{ helm_repo_name }}'
-        repo_url: '{{ helm_repo_url }}'
-      when:
-        - helm_repo_name is defined
-        - helm_repo_url is defined
-        - helm_repo_name is not none
-        - helm_repo_url is not none
-        - helm_repo_name | length > 0
-        - helm_repo_url | length > 0
-
-    - name: 'Install {{ helm_chart_name }}'
-      kubernetes.core.helm:
-        name: '{{ helm_chart_name }}'
-        chart_ref: '{{ helm_chart_ref }}'
-        chart_version: '{{ helm_chart_version | default(omit) }}'
-        release_namespace: '{{ helm_chart_namespace }}'
-        create_namespace: '{{ helm_chart_create_namespace | default(true) }}'
-        release_state: present
-        update_repo_cache: >-
-          {{ (helm_repo_name is defined and helm_repo_name is not none and
-          helm_repo_name | length > 0) | ternary(true, false) }}
-        wait: '{{ helm_chart_wait | default(true) }}'
-        wait_timeout: "{{ helm_chart_timeout | default('5m') }}"
-        atomic: true
-        values: '{{ helm_chart_values | default(omit) }}'
-        values_files: '{{ helm_chart_values_files | default(omit) }}'
-
-- name: 'Deploy {{ helm_chart_name }} using Helm (air-gapped)'
-  when: air_gapped | default(false) | bool
-  delegate_to: localhost
-  environment:
-    KUBECONFIG: '{{ local_kubeconfig_yaml }}'
+    KUBECONFIG: '{{ use_localhost | ternary(local_kubeconfig_yaml, kubeconfig_yaml) }}'
   block:
     - name: 'Add Helm repository for {{ helm_chart_name }}'
       kubernetes.core.helm_repository:
