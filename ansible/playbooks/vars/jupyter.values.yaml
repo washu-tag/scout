@@ -39,11 +39,6 @@ ingress:
   hosts:
     - 'jupyter.{{ server_hostname }}'
     - '*.jupyter.{{ server_hostname }}'
-  tls:
-    - hosts:
-        - 'jupyter.{{ server_hostname }}'
-        - '*.jupyter.{{ server_hostname }}'
-      secretName: jupyter-tls
 
 prePuller:
   hook:
