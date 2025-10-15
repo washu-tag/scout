@@ -1,8 +1,4 @@
-- name: Add Superset Helm repository
-  kubernetes.core.helm_repository:
-    name: superset
-    repo_url: https://apache.github.io/superset
-
+---
 - name: Create namespace
   kubernetes.core.k8s:
     name: superset
@@ -59,6 +55,8 @@
 - name: Create ConfigMap with Scout logo for Superset branding
   delegate_to: localhost
   no_log: true
+  environment:
+    KUBECONFIG: '{{ local_kubeconfig_yaml }}'
   kubernetes.core.k8s:
     state: present
     definition:
@@ -70,19 +68,19 @@
       binaryData:
         scout.png: '{{ lookup("file", "../../explorer/public/scout.png") | b64encode }}'
 
-- name: Install/Upgrade Superset Helm chart
-  kubernetes.core.helm:
-    name: superset
-    chart_ref: superset/superset
-    chart_version: 0.14.2
-    release_namespace: superset
-    create_namespace: true
-    release_state: present
-    update_repo_cache: true
-    wait: true
-    wait_timeout: 15m
-    atomic: true
-    values:
+- name: Deploy Superset
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: superset
+    helm_chart_ref: superset/superset
+    helm_chart_version: '0.14.2'
+    helm_chart_namespace: superset
+    helm_repo_name: superset
+    helm_repo_url: https://apache.github.io/superset
+    helm_chart_timeout: 15m
+    helm_chart_values:
       image:
         repository: '{{ superset_image | default("ghcr.io/washu-tag/superset") }}'
         tag: 4.1.2

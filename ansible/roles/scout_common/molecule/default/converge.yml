@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: false
+  roles:
+    - role: scout_common
+  tasks:
+    - name: Explain test purpose
+      ansible.builtin.debug:
+        msg: >
+          This is a unit test scenario for scout_common role.
+          The actual tests are in verify.yml.
+          This converge playbook loads the role to ensure defaults are available.

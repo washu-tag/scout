@@ -1,3 +1,10 @@
 ---
 # Defaults for scout_common role
 # This role contains shared tasks used across multiple Scout services
+
+# Helm deployment defaults
+helm_chart_create_namespace: true
+helm_chart_wait: true
+helm_chart_timeout: '5m'
+helm_chart_values: {}
+helm_chart_values_files: []

@@ -14,14 +14,40 @@ all:
     # K3s kubeconfig path (same for all k3s installations)
     kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 
-    # Staging node configuration
-    # Set to true to enable staging node with Harbor registry proxy for air-gapped deployments
-    # Requires staging group to be defined
-    use_staging_node: false
+    # Air-gapped deployment configuration
+    # Set to true to enable air-gapped deployment mode for Kubernetes clusters
+    # without internet access on worker nodes.
+    #
+    # When enabled (air_gapped: true):
+    #   - Helm charts deployed from localhost using remote kubeconfig
+    #   - Full Helm functionality retained (rollback, history, hooks)
+    #   - Container images pulled through Harbor registry proxy on staging node
+    #   - Requires: staging group defined, Harbor deployed, registry mirrors configured
+    #   - Requires: k8s API accessible from localhost (port 6443)
+    #
+    # When disabled (air_gapped: false, default):
+    #   - Standard Helm deployment using kubernetes.core.helm module
+    #   - Charts pulled directly from public repositories
+    #   - Container images pulled directly from public registries
+    #   - Works with existing Scout deployments (backward compatible)
+    air_gapped: false
 
-# The staging group contains the staging node that acts as a data diode for air-gapped deployments.
-# The staging node hosts a Harbor registry that proxies container images from public registries.
-# Enable staging node functionality by setting `use_staging_node: true` in k3s_cluster vars.
+# The staging group contains the staging node that acts as a data diode
+# for air-gapped deployments.
+#
+# Role: The staging node hosts a Harbor registry that acts as a pull-through
+# proxy for container images from public registries (Docker Hub, GitHub Container
+# Registry, Quay.io, etc.). It runs a separate k3s cluster from the main cluster.
+#
+# Requirements for air-gapped deployments (air_gapped: true):
+#   1. Staging node must have internet access
+#   2. Harbor must be deployed on staging node (playbooks/harbor.yaml)
+#   3. K3s cluster nodes must have registry mirrors configured to use Harbor
+#   4. Kubeconfig for air-gapped cluster must be accessible from localhost
+#   5. K8s API port (6443) must be accessible from localhost
+#
+# Enable air-gapped functionality by setting `air_gapped: true`
+# in all vars above.
 staging:
   hosts:
     FQDN-staging.edu:

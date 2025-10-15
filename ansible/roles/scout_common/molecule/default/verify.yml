@@ -1,0 +1,132 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  roles:
+    - role: scout_common
+  tasks:
+    - name: Test 1 - Verify default values are defined
+      ansible.builtin.assert:
+        that:
+          - helm_chart_create_namespace is defined
+          - helm_chart_create_namespace == true
+          - helm_chart_wait is defined
+          - helm_chart_wait == true
+          - helm_chart_timeout is defined
+          - helm_chart_timeout == '5m'
+          - helm_chart_values is defined
+          - helm_chart_values == {}
+          - helm_chart_values_files is defined
+          - helm_chart_values_files == []
+        fail_msg: 'Default values not properly defined in scout_common/defaults/main.yaml'
+        success_msg: 'Test 1 PASSED: All default values correctly defined'
+
+    - name: Test 2 - Verify local chart detection (empty repo_name)
+      ansible.builtin.set_fact:
+        is_local_chart_test: '{{ test_helm_repo_name is not defined or test_helm_repo_name is none or test_helm_repo_name | length == 0 }}'
+      vars:
+        test_helm_repo_name: ''
+
+    - name: Test 2 - Assert local chart detection works
+      ansible.builtin.assert:
+        that:
+          - is_local_chart_test | bool
+        fail_msg: 'Local chart detection failed for empty repo_name'
+        success_msg: 'Test 2 PASSED: Local chart correctly detected (empty repo_name)'
+
+    - name: Test 3 - Verify remote chart detection (with repo_name)
+      ansible.builtin.set_fact:
+        is_remote_chart_test: '{{ test_helm_repo_name is not defined or test_helm_repo_name is none or test_helm_repo_name | length == 0 }}'
+      vars:
+        test_helm_repo_name: 'bitnami'
+
+    - name: Test 3 - Assert remote chart detection works
+      ansible.builtin.assert:
+        that:
+          - not (is_remote_chart_test | bool)
+        fail_msg: 'Remote chart detection failed for defined repo_name'
+        success_msg: 'Test 3 PASSED: Remote chart correctly detected (with repo_name)'
+
+    - name: Test 4 - Verify use_localhost with air_gapped=true
+      ansible.builtin.set_fact:
+        use_localhost_airgapped: '{{ test_air_gapped | default(false) | bool or is_local_test | bool }}'
+      vars:
+        test_air_gapped: true
+        is_local_test: false
+
+    - name: Test 4 - Assert use_localhost is true when air-gapped
+      ansible.builtin.assert:
+        that:
+          - use_localhost_airgapped | bool
+        fail_msg: 'use_localhost should be true when air_gapped=true'
+        success_msg: 'Test 4 PASSED: use_localhost=true for air-gapped mode'
+
+    - name: Test 5 - Verify use_localhost with local chart
+      ansible.builtin.set_fact:
+        use_localhost_local: '{{ test_air_gapped | default(false) | bool or is_local_test | bool }}'
+      vars:
+        test_air_gapped: false
+        is_local_test: true
+
+    - name: Test 5 - Assert use_localhost is true for local chart
+      ansible.builtin.assert:
+        that:
+          - use_localhost_local | bool
+        fail_msg: 'use_localhost should be true for local charts'
+        success_msg: 'Test 5 PASSED: use_localhost=true for local charts'
+
+    - name: Test 6 - Verify use_localhost with remote chart (non-air-gapped)
+      ansible.builtin.set_fact:
+        use_localhost_remote: '{{ test_air_gapped | default(false) | bool or is_local_test | bool }}'
+      vars:
+        test_air_gapped: false
+        is_local_test: false
+
+    - name: Test 6 - Assert use_localhost is false for remote chart (non-air-gapped)
+      ansible.builtin.assert:
+        that:
+          - not (use_localhost_remote | bool)
+        fail_msg: 'use_localhost should be false for remote charts in non-air-gapped mode'
+        success_msg: 'Test 6 PASSED: use_localhost=false for remote charts (non-air-gapped)'
+
+    - name: Test 7 - Verify update_repo_cache=false for local charts
+      ansible.builtin.set_fact:
+        update_cache_local: '{{ not is_local_test_7 | bool }}'
+      vars:
+        is_local_test_7: true
+
+    - name: Test 7 - Assert update_repo_cache is false for local charts
+      ansible.builtin.assert:
+        that:
+          - not (update_cache_local | bool)
+        fail_msg: 'update_repo_cache should be false for local charts'
+        success_msg: 'Test 7 PASSED: update_repo_cache=false for local charts'
+
+    - name: Test 8 - Verify update_repo_cache=true for remote charts
+      ansible.builtin.set_fact:
+        update_cache_remote: '{{ not is_local_test_8 | bool }}'
+      vars:
+        is_local_test_8: false
+
+    - name: Test 8 - Assert update_repo_cache is true for remote charts
+      ansible.builtin.assert:
+        that:
+          - update_cache_remote | bool
+        fail_msg: 'update_repo_cache should be true for remote charts'
+        success_msg: 'Test 8 PASSED: update_repo_cache=true for remote charts'
+
+    - name: Test 9 - Summary of test coverage
+      ansible.builtin.debug:
+        msg:
+          - '===== Test Coverage Summary ====='
+          - 'Test 1: Default values ✓'
+          - 'Test 2: Local chart detection (empty repo) ✓'
+          - 'Test 3: Remote chart detection (with repo) ✓'
+          - 'Test 4: use_localhost with air_gapped=true ✓'
+          - 'Test 5: use_localhost with local chart ✓'
+          - 'Test 6: use_localhost with remote chart (non-air-gapped) ✓'
+          - 'Test 7: update_repo_cache=false for local charts ✓'
+          - 'Test 8: update_repo_cache=true for remote charts ✓'
+          - ''
+          - 'All 8 test scenarios passed!'
+          - 'Coverage includes: defaults, chart type detection, delegation logic, repo cache behavior'

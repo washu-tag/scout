@@ -26,17 +26,24 @@
   hosts: k3s_cluster
   gather_facts: false
   tasks:
-    - name: Check if staging node is configured
+    - name: Check if staging node is enabled
       ansible.builtin.set_fact:
-        has_staging_node: "{{ 'staging' in groups and use_staging_node | default(false) | bool }}"
+        use_staging_node: "{{ 'staging' in groups and air_gapped | default(false) | bool }}"
 
-    - name: Debug log if no staging node configured
+    - name: Debug log if staging node not enabled
       ansible.builtin.debug:
-        msg: 'No staging node configured (use_staging_node=false), skipping registry mirror configuration'
-      when: not has_staging_node
+        msg: 'Staging node not enabled (air_gapped=false), skipping registry mirror configuration'
+      when: not use_staging_node
+
+    - name: Remove registry mirror file when not using staging node
+      ansible.builtin.file:
+        path: /etc/rancher/k3s/registries.yaml
+        state: absent
+      when: not use_staging_node
+      register: registry_removal_task_result
 
     - name: Create registry mirror file
-      when: has_staging_node
+      when: use_staging_node
       block:
         - name: Create rancher k3s config directory
           ansible.builtin.file:
@@ -100,6 +107,12 @@
             mode: '0644'
           register: registry_config_task_result
 
+    - name: Determine if registry config changed
+      ansible.builtin.set_fact:
+        registry_config_changed: >-
+          {{ (registry_config_task_result is defined and registry_config_task_result.changed | default(false)) or
+             (registry_removal_task_result is defined and registry_removal_task_result.changed | default(false)) }}
+
 ################################################################################
 - hosts: server
   name: Install k3s on server node
@@ -126,7 +139,7 @@
         INSTALL_K3S_EXEC: >-
           --default-local-storage-path={{ base_dir }}
           --write-kubeconfig-mode=0640
-          {% if has_staging_node | default(false) %}--disable-default-registry-endpoint{% endif %}
+          {% if use_staging_node | default(false) %}--disable-default-registry-endpoint{% endif %}
         INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
         K3S_TOKEN: '{{ k3s_token }}'
         UNINSTALL_K3S_SH: '{{ uninstall_script }}'
@@ -137,8 +150,7 @@
         name: k3s
         state: restarted
       when:
-        - registry_config_task_result is defined
-        - registry_config_task_result.changed | default(false)
+        - registry_config_changed | default(false)
         - not k3s_install_result.changed
 
     - name: Update kubeconfig group permissions since write-kubeconfig-group isn't working
@@ -255,6 +267,5 @@
         name: k3s-agent
         state: restarted
       when:
-        - registry_config_task_result is defined
-        - registry_config_task_result.changed | default(false)
+        - registry_config_changed | default(false)
         - not k3s_agent_install_result.changed

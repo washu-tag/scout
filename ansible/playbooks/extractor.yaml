@@ -66,29 +66,24 @@
         spark_s3_username: '{{ s3_lake_writer }}'
         spark_s3_password: '{{ s3_lake_writer_secret }}'
 
-    - name: Deploy Extractor components
-      delegate_to: localhost
-      environment:
-        K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml }}'
-      block:
-        - name: Deploy HL7Log Extractor
-          kubernetes.core.helm:
-            name: hl7log-extractor
-            chart_ref: '{{ scout_repo_dir }}/helm/extractor/hl7log-extractor'
-            release_namespace: '{{ extractor_namespace }}'
-            release_state: present
-            wait: true
-            wait_timeout: 5m
-            atomic: true
-            values: "{{ lookup('template', 'templates/hl7log-extractor.values.yaml.j2') | from_yaml }}"
+    - name: Deploy HL7Log Extractor
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: deploy_helm_chart
+      vars:
+        helm_chart_name: hl7log-extractor
+        helm_chart_ref: '{{ scout_repo_dir }}/helm/extractor/hl7log-extractor'
+        helm_chart_namespace: '{{ extractor_namespace }}'
+        helm_chart_create_namespace: false
+        helm_chart_values: "{{ lookup('template', 'templates/hl7log-extractor.values.yaml.j2') | from_yaml }}"
 
-        - name: Deploy HL7 Transformer
-          kubernetes.core.helm:
-            name: hl7-transformer
-            chart_ref: '{{ scout_repo_dir }}/helm/extractor/hl7-transformer'
-            release_namespace: '{{ extractor_namespace }}'
-            release_state: present
-            wait: true
-            wait_timeout: 5m
-            atomic: true
-            values: "{{ lookup('template', 'templates/hl7-transformer.values.yaml.j2') | from_yaml }}"
+    - name: Deploy HL7 Transformer
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: deploy_helm_chart
+      vars:
+        helm_chart_name: hl7-transformer
+        helm_chart_ref: '{{ scout_repo_dir }}/helm/extractor/hl7-transformer'
+        helm_chart_namespace: '{{ extractor_namespace }}'
+        helm_chart_create_namespace: false
+        helm_chart_values: "{{ lookup('template', 'templates/hl7-transformer.values.yaml.j2') | from_yaml }}"

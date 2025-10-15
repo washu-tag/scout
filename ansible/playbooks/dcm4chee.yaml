@@ -42,17 +42,17 @@
             POSTGRES_USER: "{{ dcm4chee_db_user | default('pacs') }}"
             POSTGRES_PASSWORD: "{{ dcm4chee_db_password | default('pacs') }}"
 
-    - name: Install Dcm4chee using Helm
-      kubernetes.core.helm:
-        name: dcm4chee
-        release_namespace: '{{ dcm4chee_namespace }}'
-        create_namespace: false
-        chart_ref: '{{ scout_repo_dir }}/helm/dcm4chee'
-        state: present
-        wait: true
-        wait_timeout: 10m
-        atomic: true
-        values: "{{ lookup('template', 'templates/dcm4chee/values.yaml.j2') | from_yaml }}"
+    - name: Deploy Dcm4chee
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: deploy_helm_chart
+      vars:
+        helm_chart_name: dcm4chee
+        helm_chart_ref: '{{ scout_repo_dir }}/helm/dcm4chee'
+        helm_chart_namespace: '{{ dcm4chee_namespace }}'
+        helm_chart_create_namespace: false
+        helm_chart_timeout: 10m
+        helm_chart_values: "{{ lookup('template', 'templates/dcm4chee/values.yaml.j2') | from_yaml }}"
 
 - name: Populate Dcm4chee
   hosts: server

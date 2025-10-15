@@ -6,22 +6,16 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 
   tasks:
-    - name: Add NVIDIA GPU Operator repository
-      kubernetes.core.helm_repository:
-        name: gpu-operator
-        repo_url: https://nvidia.github.io/gpu-operator
-
-    - name: Install NVIDIA GPU Operator
-      kubernetes.core.helm:
-        name: gpu-operator
-        chart_ref: gpu-operator/gpu-operator
-        chart_version: ~24.9.2
-        release_namespace: '{{ gpu_operator_namespace | default("gpu-operator") }}'
-        create_namespace: true
-        release_state: present
-        update_repo_cache: true
-        wait: true
-        wait_timeout: 5m
-        atomic: true
-        values_files:
+    - name: Deploy NVIDIA GPU Operator
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: deploy_helm_chart
+      vars:
+        helm_chart_name: gpu-operator
+        helm_chart_ref: gpu-operator/gpu-operator
+        helm_chart_version: '~24.9.2'
+        helm_chart_namespace: '{{ gpu_operator_namespace | default("gpu-operator") }}'
+        helm_repo_name: gpu-operator
+        helm_repo_url: https://nvidia.github.io/gpu-operator
+        helm_chart_values_files:
           - vars/gpu-operator.values.yaml
