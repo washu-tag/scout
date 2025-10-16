@@ -1,0 +1,50 @@
+---
+# k3s_airgap Role Default Variables
+# Air-gapped k3s installation configuration
+
+# Version Configuration
+# k3s version to install - update this when upgrading k3s
+k3s_version: v1.33.5+k3s1
+
+# URL for k3s installation script
+k3s_install_script_url: https://get.k3s.io
+
+# Computed URL for k3s binary based on version
+k3s_binary_url: 'https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/k3s'
+
+# SELinux Configuration
+# Auto-detect SELinux status - will be true if SELinux is enabled on target hosts
+# Can be overridden in inventory to force enable/disable SELinux package installation
+k3s_selinux_enabled: "{{ ansible_selinux.status == 'enabled' if ansible_selinux is defined else false }}"
+
+# k3s-selinux RPM version
+# Update this when upgrading k3s-selinux package
+k3s_selinux_rpm_version: '1.6-1'
+
+# Computed URL for k3s-selinux RPM download
+k3s_selinux_rpm_url: "https://github.com/k3s-io/k3s-selinux/releases/download/v{{ k3s_selinux_rpm_version.split('-')[0] }}/k3s-selinux-{{ k3s_selinux_rpm_version }}.el9.noarch.rpm"
+
+# container-selinux RPM version
+# Update this when Rocky Linux/RHEL updates container-selinux package
+# Check version at: https://dl.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/Packages/c/
+container_selinux_rpm_version: '2.229.0-1.el9'
+
+# Computed URL for container-selinux RPM from Rocky Linux mirror
+container_selinux_rpm_url: 'https://dl.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/Packages/c/container-selinux-{{ container_selinux_rpm_version }}.noarch.rpm'
+
+# Download Configuration
+# Timeout for artifact downloads in seconds (5 minutes default)
+k3s_artifact_download_timeout: 300
+
+# Installation Path Configuration
+# Where to install k3s binary on target nodes
+k3s_binary_path: /usr/local/bin/k3s
+
+# Where to stage install script on target nodes (temporary)
+k3s_install_script_path: /tmp/install-k3s.sh
+
+# Where to stage k3s-selinux RPM on target nodes (temporary)
+k3s_selinux_rpm_path: /tmp/k3s-selinux.rpm
+
+# Where to stage container-selinux RPM on target nodes (temporary)
+container_selinux_rpm_path: /tmp/container-selinux.rpm

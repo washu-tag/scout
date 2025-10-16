@@ -1,0 +1,21 @@
+---
+# Molecule converge playbook for k3s_airgap role
+# This playbook applies the role to test hosts
+
+- name: Converge
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Include download_artifacts tasks
+      ansible.builtin.include_role:
+        name: k3s_airgap
+        tasks_from: download_artifacts
+
+    - name: Display temp directory for verification
+      ansible.builtin.debug:
+        var: k3s_artifact_temp_dir
+
+    - name: Include selinux tasks
+      ansible.builtin.include_role:
+        name: k3s_airgap
+        tasks_from: selinux

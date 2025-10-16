@@ -1,0 +1,106 @@
+---
+# Download k3s artifacts to Ansible control node
+# These tasks run on localhost with run_once to download artifacts once
+# and make them available for distribution to all target nodes
+
+- name: Create temporary directory for k3s artifacts
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: 'k3s_airgap_'
+  register: k3s_temp_dir
+  delegate_to: localhost
+  run_once: true
+
+- name: Download k3s binary
+  ansible.builtin.get_url:
+    url: '{{ k3s_binary_url }}'
+    dest: '{{ k3s_temp_dir.path }}/k3s'
+    mode: '0755'
+    timeout: '{{ k3s_artifact_download_timeout }}'
+  delegate_to: localhost
+  run_once: true
+
+- name: Download k3s install script
+  ansible.builtin.get_url:
+    url: '{{ k3s_install_script_url }}'
+    dest: '{{ k3s_temp_dir.path }}/install-k3s.sh'
+    mode: '0755'
+    timeout: '{{ k3s_artifact_download_timeout }}'
+  delegate_to: localhost
+  run_once: true
+
+- name: Download SELinux RPMs
+  when: k3s_selinux_enabled | bool
+  delegate_to: localhost
+  run_once: true
+  block:
+    - name: Download container-selinux RPM
+      ansible.builtin.get_url:
+        url: '{{ container_selinux_rpm_url }}'
+        dest: '{{ k3s_temp_dir.path }}/container-selinux.rpm'
+        mode: '0644'
+        timeout: '{{ k3s_artifact_download_timeout }}'
+
+    - name: Download k3s-selinux RPM
+      ansible.builtin.get_url:
+        url: '{{ k3s_selinux_rpm_url }}'
+        dest: '{{ k3s_temp_dir.path }}/k3s-selinux.rpm'
+        mode: '0644'
+        timeout: '{{ k3s_artifact_download_timeout }}'
+
+- name: Verify k3s binary was downloaded
+  ansible.builtin.stat:
+    path: '{{ k3s_temp_dir.path }}/k3s'
+  register: k3s_binary_stat
+  delegate_to: localhost
+  run_once: true
+
+- name: Verify install script was downloaded
+  ansible.builtin.stat:
+    path: '{{ k3s_temp_dir.path }}/install-k3s.sh'
+  register: k3s_install_script_stat
+  delegate_to: localhost
+  run_once: true
+
+- name: Fail if required artifacts are missing
+  ansible.builtin.fail:
+    msg: 'Required artifact missing: {{ item.name }}'
+  when: not item.stat.stat.exists
+  loop:
+    - name: k3s binary
+      stat: '{{ k3s_binary_stat }}'
+    - name: install script
+      stat: '{{ k3s_install_script_stat }}'
+  delegate_to: localhost
+  run_once: true
+
+- name: Verify SELinux RPMs were downloaded
+  when: k3s_selinux_enabled | bool
+  delegate_to: localhost
+  run_once: true
+  block:
+    - name: Check container-selinux RPM
+      ansible.builtin.stat:
+        path: '{{ k3s_temp_dir.path }}/container-selinux.rpm'
+      register: container_selinux_stat
+
+    - name: Check k3s-selinux RPM
+      ansible.builtin.stat:
+        path: '{{ k3s_temp_dir.path }}/k3s-selinux.rpm'
+      register: k3s_selinux_stat
+
+    - name: Fail if SELinux RPMs are missing
+      ansible.builtin.fail:
+        msg: 'Required SELinux RPM missing: {{ item.name }}'
+      when: not item.stat.stat.exists
+      loop:
+        - name: container-selinux
+          stat: '{{ container_selinux_stat }}'
+        - name: k3s-selinux
+          stat: '{{ k3s_selinux_stat }}'
+
+- name: Set fact with temp directory path
+  ansible.builtin.set_fact:
+    k3s_artifact_temp_dir: '{{ k3s_temp_dir.path }}'
+  # Note: NO delegate_facts, NO delegate_to
+  # This allows the fact to be shared with all hosts

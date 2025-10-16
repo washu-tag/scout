@@ -1,0 +1,53 @@
+---
+# Molecule verify playbook for k3s_airgap role
+# This playbook verifies the role worked correctly
+
+- name: Verify
+  hosts: all
+  gather_facts: true
+  vars_files:
+    - ../../defaults/main.yaml
+  tasks:
+    # Verify artifact URLs are accessible (don't actually download)
+    - name: Check k3s binary URL is accessible
+      ansible.builtin.uri:
+        url: '{{ k3s_binary_url }}'
+        method: HEAD
+        status_code: [200, 302]
+      delegate_to: localhost
+      run_once: true
+
+    - name: Check k3s install script URL is accessible
+      ansible.builtin.uri:
+        url: '{{ k3s_install_script_url }}'
+        method: HEAD
+        status_code: [200, 302]
+      delegate_to: localhost
+      run_once: true
+
+    - name: Verify temp directory pattern works
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: 'k3s_airgap_test_'
+      register: test_temp_dir
+      delegate_to: localhost
+      run_once: true
+
+    - name: Set test fact
+      ansible.builtin.set_fact:
+        test_artifact_temp_dir: '{{ test_temp_dir.path }}'
+
+    - name: Verify fact is accessible
+      ansible.builtin.assert:
+        that:
+          - test_artifact_temp_dir is defined
+          - test_artifact_temp_dir | length > 0
+        fail_msg: 'Fact sharing pattern does not work'
+        success_msg: 'Fact sharing pattern works correctly'
+
+    - name: Clean up test temp directory
+      ansible.builtin.file:
+        path: '{{ test_artifact_temp_dir }}'
+        state: absent
+      delegate_to: localhost
+      run_once: true
