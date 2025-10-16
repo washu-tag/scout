@@ -200,6 +200,13 @@ k3s_cluster:
     # Superset config
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
+    # Chatbot config
+    # Note: Most configuration is now in roles/chatbot/defaults/main.yaml
+    # Only secrets and production-specific overrides are needed here
+    open_webui_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    ollama_models:
+      - gpt-oss:120b
+
     # Orchestrator config
     cassandra_storage_size: 300Gi
     elasticsearch_storage_size: 100Gi
@@ -210,7 +217,6 @@ k3s_cluster:
     prometheus_namespace: prometheus
     grafana_namespace: grafana
     loki_namespace: loki
-    ollama_namespace: ollama
     gpu_operator_namespace: gpu-operator
 
     # Local paths
@@ -224,6 +230,8 @@ k3s_cluster:
     loki_dir: /scout/monitoring/loki
     grafana_dir: /scout/monitoring/grafana
     jupyter_dir: /scout/data/jupyter
+    ollama_dir: /scout/persistence/ollama
+    open_webui_dir: /scout/persistence/openwebui
     extractor_data_dir: /ceph/input/data
 
     # Parameters for optional PACS instances, only intended for use in development
