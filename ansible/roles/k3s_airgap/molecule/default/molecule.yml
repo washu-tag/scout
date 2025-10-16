@@ -1,0 +1,38 @@
+---
+# Molecule configuration for k3s_airgap role testing
+dependency:
+  name: galaxy
+driver:
+  name: default
+platforms:
+  - name: localhost
+    groups:
+      - k3s_cluster
+      - server
+provisioner:
+  name: ansible
+  env:
+    ANSIBLE_ROLES_PATH: ../../..
+  inventory:
+    host_vars:
+      localhost:
+        air_gapped: true
+        k3s_version: v1.33.5+k3s1
+        k3s_token: test-token-12345
+        k3s_selinux_enabled: false
+        base_dir: /tmp/k3s-test
+        ansible_connection: local
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+    - dependency
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - verify
+    - cleanup
+    - destroy
