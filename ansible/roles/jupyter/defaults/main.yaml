@@ -38,5 +38,9 @@ jupyter_storage_definitions:
 jupyter_singleuser_image_name: ghcr.io/washu-tag/pyspark-notebook
 jupyter_singleuser_image_tag: 1.1.0
 
+# MCP configuration
+jupyter_mcp_image: datalayer/jupyter-mcp-server:latest
+mcpo_image: ghcr.io/open-webui/mcpo:main
+
 # PrePuller configuration
 jupyter_prepuller_continuous: false
