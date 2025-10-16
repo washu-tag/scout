@@ -1,8 +1,8 @@
-# Architecture Decision Record: Helm Deployment for Air-Gapped Environments
+# ADR 0001: Helm Deployment for Air-Gapped Environments
 
 **Status**: Accepted
 **Date**: 2025-10-14
-**Decision Owner**: Scout Platform Team
+**Decision Owner**: TAG Team
 
 ## Context
 
