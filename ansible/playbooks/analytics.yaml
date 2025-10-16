@@ -4,9 +4,10 @@
   gather_facts: false
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-  tasks:
-    - name: Install Trino
-      include_tasks: services/trino.yaml
+    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
+  roles:
+    - trino
 
+  tasks:
     - name: Install Superset
       include_tasks: services/superset.yaml

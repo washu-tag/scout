@@ -207,6 +207,12 @@ k3s_cluster:
     ollama_models:
       - gpt-oss:120b
 
+    # Trino config
+    # Note: Most configuration is now in roles/trino/defaults/main.yaml
+    # Only production-specific resource overrides are needed here
+    trino_worker_memory_gb: 16 # Total pod memory for workers
+    trino_coordinator_memory_gb: 8 # Total pod memory for coordinator
+
     # Orchestrator config
     cassandra_storage_size: 300Gi
     elasticsearch_storage_size: 100Gi

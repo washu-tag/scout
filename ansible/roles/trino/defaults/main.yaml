@@ -1,0 +1,53 @@
+---
+# Trino role defaults
+# User-configurable settings are in inventory.yaml
+
+# Namespace
+trino_namespace: trino
+
+# Trino Helm configuration
+trino_helm_repo_name: trino
+trino_helm_repo_url: https://trinodb.github.io/charts
+trino_helm_chart_name: trino
+trino_helm_chart_version: ~1.40.0
+
+# Resource sizing - users should override these in inventory
+trino_worker_memory_gb: 16 # Total pod memory for workers
+trino_coordinator_memory_gb: 8 # Total pod memory for coordinator
+
+# Trino MCP server configuration
+mcp_trino_enabled: true
+mcp_trino_version: 3.2.2
+mcp_trino_repo_url: https://github.com/tuannvm/mcp-trino.git
+mcp_trino_repo_version: 'v{{ mcp_trino_version }}'
+mcp_trino_chart_path: /tmp/mcp-trino-chart
+mcp_trino_release_name: mcp-trino
+
+# Trino connection settings for MCP
+mcp_trino_host: trino
+mcp_trino_port: 8080
+mcp_trino_scheme: http
+mcp_trino_user: trino
+
+# Trino MCP Helm values
+mcp_trino_values:
+  replicaCount: 1
+  image:
+    tag: '{{ mcp_trino_version }}'
+  trino:
+    host: '{{ mcp_trino_host }}'
+    port: '{{ mcp_trino_port }}'
+    scheme: '{{ mcp_trino_scheme }}'
+    ssl: false
+    user: '{{ mcp_trino_user }}'
+    catalog: delta
+    schema: default
+    allowWriteQueries: false
+    queryTimeout: 600
+    allowlists:
+      catalogs: [delta]
+      schemas: [delta.default]
+      tables: []
+  service:
+    type: ClusterIP
+    port: 8080

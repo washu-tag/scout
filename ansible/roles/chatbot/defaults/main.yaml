@@ -10,7 +10,7 @@ open_webui_helm_repo_name: open-webui
 open_webui_helm_repo_url: https://helm.openwebui.com/
 open_webui_helm_chart_name: open-webui
 open_webui_helm_release_name: open-webui
-open_webui_helm_chart_version: ~8.8.0
+open_webui_helm_chart_version: ~8.11.0
 
 # Component names
 ollama_name: ollama
