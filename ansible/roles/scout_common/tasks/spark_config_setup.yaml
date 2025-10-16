@@ -1,9 +1,6 @@
-- name: Create namespace
-  kubernetes.core.k8s:
-    name: '{{ spark_defaults_configmap_namespace }}'
-    api_version: v1
-    kind: Namespace
-    state: present
+---
+# Create Spark configuration ConfigMap
+# This is used by JupyterHub and other Spark-enabled services
 
 - name: Create Spark ConfigMap
   kubernetes.core.k8s:

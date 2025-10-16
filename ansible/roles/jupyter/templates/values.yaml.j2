@@ -26,12 +26,25 @@ hub:
       storageClassName: '{{ jupyter_hub_storage_class }}'
   config:
     Authenticator:
-      allowed_users: '{{ (jupyter_allowed_users | default([])) }}'
+      allowed_users: {{ jupyter_allowed_users | default([]) | to_json }}
     JupyterHub:
       subdomain_host: 'jupyter.{{ server_hostname }}'
       authenticator_class: '{{ jupyter_auth_class | default("dummy") }}'
     Spawner:
       http_timeout: 120
+{% if jupyter_auth_class == 'dummy' %}
+    DummyAuthenticator:
+      password: '{{ jupyter_dummy_password }}'
+{% elif jupyter_auth_class == 'github' %}
+    GitHubOAuthenticator:
+      client_id: '{{ github_client_id }}'
+      client_secret: '{{ github_client_secret }}'
+      oauth_callback_url: 'https://jupyter.{{ server_hostname }}/hub/oauth_callback'
+      allowed_organizations:
+        - '{{ github_organization }}'
+      scope:
+        - read:org
+{% endif %}
 
 ingress:
   enabled: true
@@ -44,12 +57,12 @@ prePuller:
   hook:
     enabled: true
   continuous:
-    enabled: '{{ jupyter_prepuller_continuous | default(false) }}'
+    enabled: {{ jupyter_prepuller_continuous | default(false) }}
 
 singleuser:
   image:
-    name: '{{ jupyter_singleuser_image_name | default("ghcr.io/washu-tag/pyspark-notebook") }}'
-    tag: '{{ jupyter_singleuser_image_tag | default("1.1.0") }}'
+    name: '{{ jupyter_singleuser_image_name }}'
+    tag: '{{ jupyter_singleuser_image_tag }}'
     pullPolicy: Never
   cmd: null
   lifecycleHooks:
@@ -85,7 +98,7 @@ singleuser:
   memory:
     limit: 16G
     guarantee: 2G
-  extraResource: '{{ jupyter_singleuser_extra_resource | default({}) }}'
+  extraResource: {{ jupyter_singleuser_extra_resource | default({}) | to_json }}
   storage:
     type: static
     static:
@@ -117,6 +130,6 @@ singleuser:
       - to:
           - namespaceSelector:
               matchLabels:
-                kubernetes.io/metadata.name: '{{ ollama_namespace | default("ollama")}}'
+                kubernetes.io/metadata.name: '{{ chatbot_namespace }}'
         ports:
           - port: 11434

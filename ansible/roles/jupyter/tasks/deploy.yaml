@@ -1,0 +1,56 @@
+---
+# Deploy JupyterHub using Helm
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ jupyter_namespace }}'
+
+- name: Set up storage
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_setup
+  vars:
+    storage_definitions: '{{ jupyter_storage_definitions }}'
+
+- name: Create PersistentVolumeClaim for Jupyter single-user storage
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: '{{ jupyter_singleuser_pvc }}'
+        namespace: '{{ jupyter_namespace }}'
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: '{{ jupyter_singleuser_storage_size }}'
+        storageClassName: '{{ jupyter_singleuser_storage_class }}'
+
+- name: Setup Spark Defaults ConfigMap
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: spark_config_setup
+  vars:
+    spark_defaults_configmap_name: spark-defaults
+    spark_defaults_configmap_namespace: '{{ jupyter_namespace }}'
+    spark_memory: '{{ jupyter_spark_memory }}'
+
+- name: Deploy JupyterHub
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: jupyter
+    helm_chart_ref: '{{ jupyter_helm_repo_name }}/{{ jupyter_helm_chart_name }}'
+    helm_chart_version: '{{ jupyter_helm_chart_version }}'
+    helm_chart_namespace: '{{ jupyter_namespace }}'
+    helm_repo_name: '{{ jupyter_helm_repo_name }}'
+    helm_repo_url: '{{ jupyter_helm_repo_url }}'
+    helm_chart_timeout: 10m
+    helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

@@ -1,0 +1,6 @@
+---
+# Main entry point for Jupyter role
+# Deploys JupyterHub with Spark integration
+
+- name: Include Jupyter deployment
+  ansible.builtin.include_tasks: deploy.yaml

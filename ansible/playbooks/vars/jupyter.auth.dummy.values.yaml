@@ -1,4 +1,0 @@
-hub:
-  config:
-    DummyAuthenticator:
-      password: '{{ jupyter_dummy_password }}'
