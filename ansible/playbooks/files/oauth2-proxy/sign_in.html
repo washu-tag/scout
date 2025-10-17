@@ -5,77 +5,83 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sign In | Scout</title>
-  <link rel="stylesheet" href="{{.ProxyPrefix}}/static/css/bulma.min.css" />
   <style>
-    html {
-      height: 100%;
+    * {
       margin: 0;
-      font-family: "Segoe UI", Roboto, sans-serif;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
       background: linear-gradient(135deg, #3467a5 0%, #254470 100%);
       display: flex;
       justify-content: center;
       align-items: center;
+      padding: 20px;
     }
 
-    .login-card {
-      background: rgba(254, 254, 254, 1);
-      backdrop-filter: blur(6px);
-      padding: 2.5rem;
+    .card {
+      background: white;
+      padding: 40px;
       border-radius: 16px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.1);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
       text-align: center;
-      max-width: 400px;
-      width: 90%;
-    }
-
-    .login-card img {
-      max-width: 250px;
-    }
-
-    .login-card h2 {
-      font-size: 1.6rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: #254470;
-    }
-
-    .login-card p {
-      font-size: 1rem;
-      color: #555;
-      margin-bottom: 2.5rem;
-    }
-
-    .button.is-scout {
-      background-color: #254470;
-      color: white;
-      font-weight: 600;
-      border: none;
+      max-width: 450px;
       width: 100%;
     }
 
-    .button.is-scout:hover {
-      background-color: #254470;
+    .logo {
+      margin-bottom: 30px;
     }
 
-    .alert {
-      margin-top: 1rem;
-      padding: 0.75rem;
-      background-color: #f14668;
+    .logo img,
+    .logo svg {
+      max-width: 250px;
+      height: auto;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #254470;
+      margin-bottom: 15px;
+    }
+
+    p {
+      font-size: 1rem;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px 24px;
+      font-size: 1.1rem;
+      font-weight: 600;
       color: white;
-      border-radius: 8px;
+      background-color: #254470;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      text-decoration: none;
     }
 
-    .closebtn {
-      float: right;
-      cursor: pointer;
+    .btn:hover {
+      background-color: #1e3b61;
     }
   </style>
 </head>
-
 <body>
-  <div class="login-card">
-
-    <div class="block logo-box">
+  <div class="card">
+    <div class="logo">
       {{.LogoData}}
     </div>
 
@@ -87,21 +93,10 @@
 
     <form method="GET" action="{{.ProxyPrefix}}/start">
       <input type="hidden" name="rd" value="{{.Redirect}}" />
-      <button class="button is-scout is-medium" type="submit">
+      <button class="btn" type="submit">
         Continue with WashU Key
       </button>
     </form>
-
-    {{ if eq .StatusCode 400 401 }}
-      <div class="alert">
-        <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
-        {{ if eq .StatusCode 400 }}
-        {{.StatusCode}}: Username cannot be empty
-        {{ else }}
-        {{.StatusCode}}: Invalid Username or Password
-        {{ end }}
-      </div>
-    {{ end }}
   </div>
 
   <script>
