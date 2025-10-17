@@ -15,6 +15,10 @@ trino_helm_chart_version: ~1.40.0
 trino_worker_memory_gb: 16 # Total pod memory for workers
 trino_coordinator_memory_gb: 8 # Total pod memory for coordinator
 
+# Access control - two users with different permissions
+trino_admin_user: trino-admin # Full access user for admin operations (Superset)
+trino_readonly_user: trino-readonly # Read-only user for end users (Jupyter, MCP)
+
 # Trino MCP server configuration
 mcp_trino_enabled: true
 mcp_trino_version: 3.2.2
@@ -23,11 +27,11 @@ mcp_trino_repo_version: 'v{{ mcp_trino_version }}'
 mcp_trino_chart_path: /tmp/mcp-trino-chart
 mcp_trino_release_name: mcp-trino
 
-# Trino connection settings for MCP
+# Trino connection settings for MCP (uses read-only user)
 mcp_trino_host: trino
 mcp_trino_port: 8080
 mcp_trino_scheme: http
-mcp_trino_user: trino
+mcp_trino_user: '{{ trino_readonly_user }}'
 
 # Trino MCP Helm values
 mcp_trino_values:

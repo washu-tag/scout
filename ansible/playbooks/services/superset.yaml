@@ -14,24 +14,29 @@
         paths: '{{ scout_repo_dir }}/analytics'
         recurse: true
         file_type: file
-        patterns: '*.yaml'
+        patterns:
+          - '*.yaml'
+          - '*.yaml.j2'
       register: analytics_files
 
     - name: Build ConfigMap data and items list
       no_log: true
       vars:
         analytics_root: '{{ (scout_repo_dir | realpath) ~ "/analytics" }}'
+        is_template: '{{ item.path.endswith(".j2") }}'
+        file_basename: '{{ (item.path | basename | regex_replace("\.j2$", "")) }}'
+        file_content: '{{ lookup("template" if is_template else "file", item.path) }}'
       ansible.builtin.set_fact:
         superset_dashboard_data: >-
           {{
             superset_dashboard_data | default({}) |
-            combine({ (item.path | basename): lookup('file', item.path) })
+            combine({ file_basename: file_content })
           }}
         superset_dashboard_items: >-
           {{
             superset_dashboard_items | default([]) + [
               {
-                'key': (item.path | basename),
+                'key': file_basename,
                 'path': ((item.path | realpath) | regex_replace('^' ~ analytics_root ~ '/', 'analytics/'))
               }
             ]
