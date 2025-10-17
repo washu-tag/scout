@@ -7,7 +7,4 @@
     K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
   roles:
     - trino
-
-  tasks:
-    - name: Install Superset
-      include_tasks: services/superset.yaml
+    - superset
