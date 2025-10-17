@@ -209,7 +209,7 @@ export default function Home() {
               </a>
 
               <a
-                href={getSubdomainUrl('keycloak', '/admin/scout/console')}
+                href={getSubdomainUrl('kc', '/admin/scout/console')}
                 className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-800 hover:shadow-md transition-all duration-300 no-underline"
               >
                 <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
