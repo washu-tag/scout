@@ -40,8 +40,9 @@ k3s_artifact_download_timeout: 300
 # Where to install k3s binary on target nodes
 k3s_binary_path: /usr/local/bin/k3s
 
-# Where to stage install script on target nodes (temporary)
-k3s_install_script_path: /tmp/install-k3s.sh
+# Where to install k3s installation script on target nodes
+# Uses the same path as online mode for consistency
+k3s_install_script_path: /root/bin/get.k3s.io.sh
 
 # Where to stage k3s-selinux RPM on target nodes (temporary)
 k3s_selinux_rpm_path: /tmp/k3s-selinux.rpm

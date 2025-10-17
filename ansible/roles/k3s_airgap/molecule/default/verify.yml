@@ -51,3 +51,14 @@
         state: absent
       delegate_to: localhost
       run_once: true
+
+    - name: Verify role variables are defined
+      ansible.builtin.assert:
+        that:
+          - k3s_version is defined
+          - k3s_binary_path is defined
+          - k3s_install_script_path is defined
+          - k3s_selinux_enabled is defined
+          - k3s_artifact_download_timeout is defined
+        fail_msg: 'Required role variables are missing'
+        success_msg: 'All required role variables are defined'
