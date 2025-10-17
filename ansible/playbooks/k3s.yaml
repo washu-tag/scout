@@ -10,11 +10,12 @@
         state: directory
         mode: '0700'
 
-    - name: Download K3s installation script
+    - name: Download K3s installation script (online mode)
       ansible.builtin.get_url:
         url: https://get.k3s.io
         dest: /root/bin/get.k3s.io.sh
         mode: '0755'
+      when: not (air_gapped | default(false) | bool)
 
     - name: Add python kubernetes library from system package
       package:
@@ -114,6 +115,16 @@
              (registry_removal_task_result is defined and registry_removal_task_result.changed | default(false)) }}
 
 ################################################################################
+- name: Prepare for air-gapped installation
+  hosts: k3s_cluster
+  gather_facts: true
+  tasks:
+    - name: Include k3s_airgap role for air-gapped installation
+      ansible.builtin.include_role:
+        name: k3s_airgap
+      when: air_gapped | default(false) | bool
+
+################################################################################
 - hosts: server
   name: Install k3s on server node
   roles:
@@ -138,6 +149,7 @@
         cmd: /root/bin/get.k3s.io.sh
         creates: '{{ uninstall_script }}'
       environment:
+        INSTALL_K3S_SKIP_DOWNLOAD: "{{ 'true' if air_gapped | default(false) | bool else omit }}"
         INSTALL_K3S_EXEC: >-
           --default-local-storage-path={{ base_dir }}
           --write-kubeconfig-mode=0640
@@ -258,6 +270,7 @@
         cmd: /root/bin/get.k3s.io.sh
         creates: '{{ uninstall_script }}'
       environment:
+        INSTALL_K3S_SKIP_DOWNLOAD: "{{ 'true' if air_gapped | default(false) | bool else omit }}"
         INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
         K3S_URL: 'https://{{ groups["server"][0] }}:6443'
         K3S_TOKEN: '{{ k3s_token }}'
