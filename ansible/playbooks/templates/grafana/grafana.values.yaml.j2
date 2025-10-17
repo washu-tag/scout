@@ -18,7 +18,7 @@ grafana.ini:
     role_attribute_path: contains(groups[*], 'grafana-admin') && 'Admin' || 'None'
     role_attribute_strict: true
     allow_assign_grafana_admin: true
-    signout_redirect_url: 'https://oa2p.{{ server_hostname }}/sign_out'
+    signout_redirect_url: 'https://oa2p.{{ server_hostname }}/oauth2/sign_out'
   server:
     root_url: 'https://grafana.{{ server_hostname }}'
   metrics:

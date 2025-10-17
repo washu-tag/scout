@@ -68,7 +68,7 @@
         name: scout-logo
         namespace: superset
       binaryData:
-        scout.png: '{{ lookup("file", "../../explorer/public/scout.png") | b64encode }}'
+        scout.png: '{{ lookup("file", "../../launchpad/public/scout.png") | b64encode }}'
 
 - name: Install/Upgrade Superset Helm chart
   kubernetes.core.helm:
@@ -193,7 +193,7 @@
               @expose('/logout/', methods=['GET', 'POST'])
               def logout(self):
                   super().logout()
-                  return redirect('https://oa2p.{{ server_hostname }}/sign_out')
+                  return redirect('https://oa2p.{{ server_hostname }}/oauth2/sign_out')
 
           class KeycloakSecurityManager(SupersetSecurityManager):
               """

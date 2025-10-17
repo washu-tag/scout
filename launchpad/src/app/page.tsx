@@ -90,6 +90,8 @@ export default function Home() {
   }, [status, session]);
 
   const getSubdomainUrl = (subdomain: string, path: string = '') => {
+    if (typeof window === 'undefined') return '#';
+
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
     // Ensure path starts with "/" if provided and isn't just ""

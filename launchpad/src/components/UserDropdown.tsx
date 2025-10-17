@@ -62,7 +62,7 @@ export default function UserDropdown() {
 
               // Get the OAuth2 sign out URL from the API
               try {
-                const response = await fetch('/launchpad/api/auth/signout', {
+                const response = await fetch('/api/auth/signout', {
                   method: 'POST',
                 });
                 const data = await response.json();

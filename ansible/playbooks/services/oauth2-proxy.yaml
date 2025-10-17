@@ -64,7 +64,7 @@
         cookieSecret: '{{ oauth2_proxy_cookie_secret }}'
         configFile: |
           provider = "keycloak-oidc"
-          redirect_url = "https://oa2p.{{ server_hostname }}/callback"
+          redirect_url = "https://oa2p.{{ server_hostname }}/oauth2/callback"
           oidc_issuer_url = "https://kc.{{ server_hostname }}/realms/scout"
           allowed_roles = "scout-user"
           cookie_expire = "{{ oauth2_proxy_cookie_expire | default('8h') }}"
@@ -107,7 +107,7 @@
         namespace: kube-system
       spec:
         forwardAuth:
-          address: 'https://oa2p.{{ server_hostname }}/auth'
+          address: 'https://oa2p.{{ server_hostname }}/oauth2/auth'
           trustForwardHeader: true
           authResponseHeaders:
             - X-Auth-Request-Access-Token
@@ -129,4 +129,4 @@
           service:
             name: oauth2-proxy
             port: 80
-          query: '/sign_in?rd={url}'
+          query: '/oauth2/sign_in?rd={url}'

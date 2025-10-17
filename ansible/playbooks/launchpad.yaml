@@ -31,7 +31,7 @@
               issuer: 'https://kc.{{ server_hostname }}/realms/scout'
             nextAuthUrl: 'https://{{ server_hostname }}/api/auth'
             nextAuthSecret: '{{ launchpad_nextauth_secret }}'
-            oauth2ProxySignOutUrl: 'https://oa2p.{{ server_hostname }}/sign_out'
+            oauth2ProxySignOutUrl: 'https://oa2p.{{ server_hostname }}/oauth2/sign_out'
           ingress:
             enabled: true
             className: traefik

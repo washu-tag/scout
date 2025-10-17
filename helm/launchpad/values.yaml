@@ -77,11 +77,11 @@ resources:
 
 livenessProbe:
   httpGet:
-    path: /launchpad
+    path: /
     port: 3000
 readinessProbe:
   httpGet:
-    path: /launchpad
+    path: /
     port: 3000
 
 autoscaling:

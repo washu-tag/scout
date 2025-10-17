@@ -8,11 +8,11 @@ hub:
       login_service: 'Keycloak'
       client_id: '{{ keycloak_jupyterhub_client_id }}'
       client_secret: '{{ keycloak_jupyterhub_client_secret }}'
-      oauth_callback_url: 'https://{{ server_hostname }}/jupyter/hub/oauth_callback'
+      oauth_callback_url: 'https://jupyter.{{ server_hostname }}/hub/oauth_callback'
       authorize_url: 'https://kc.{{ server_hostname }}/realms/scout/protocol/openid-connect/auth'
       token_url: 'https://kc.{{ server_hostname }}/realms/scout/protocol/openid-connect/token'
       userdata_url: 'https://kc.{{ server_hostname }}/realms/scout/protocol/openid-connect/userinfo'
-      logout_redirect_url: 'https://oa2p.{{ server_hostname }}/sign_out'
+      logout_redirect_url: 'https://oa2p.{{ server_hostname }}/oauth2/sign_out'
       userdata_params:
         state: 'state'
       username_claim: 'preferred_username'
