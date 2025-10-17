@@ -8,22 +8,8 @@
   vars_files:
     - ../../defaults/main.yaml
   tasks:
-    # Verify artifact URLs are accessible (don't actually download)
-    - name: Check k3s binary URL is accessible
-      ansible.builtin.uri:
-        url: '{{ k3s_binary_url }}'
-        method: HEAD
-        status_code: [200, 302]
-      delegate_to: localhost
-      run_once: true
-
-    - name: Check k3s install script URL is accessible
-      ansible.builtin.uri:
-        url: '{{ k3s_install_script_url }}'
-        method: HEAD
-        status_code: [200, 302]
-      delegate_to: localhost
-      run_once: true
+    # Note: URL accessibility is already verified by successful downloads in converge.yml
+    # No need to test URLs separately since we actually download the files
 
     - name: Verify temp directory pattern works
       ansible.builtin.tempfile:

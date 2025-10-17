@@ -3,6 +3,28 @@
 # These tasks run on localhost with run_once to download artifacts once
 # and make them available for distribution to all target nodes
 
+- name: Detect latest stable k3s version if not specified
+  ansible.builtin.uri:
+    url: https://update.k3s.io/v1-release/channels/stable
+    follow_redirects: safe
+    return_content: false
+    status_code: [200, 301, 302]
+  register: k3s_stable_release
+  delegate_to: localhost
+  run_once: true
+  when: k3s_version is not defined or k3s_version == ''
+
+- name: Set k3s_version to latest stable if not specified
+  ansible.builtin.set_fact:
+    k3s_version: "{{ k3s_stable_release.url | regex_search('/tag/(.+)$', '\\1') | first }}"
+  when: k3s_version is not defined or k3s_version == ''
+
+- name: Display k3s version being used
+  ansible.builtin.debug:
+    msg: 'Installing k3s version: {{ k3s_version }}'
+  delegate_to: localhost
+  run_once: true
+
 - name: Create temporary directory for k3s artifacts
   ansible.builtin.tempfile:
     state: directory
@@ -13,7 +35,7 @@
 
 - name: Download k3s binary
   ansible.builtin.get_url:
-    url: '{{ k3s_binary_url }}'
+    url: '{{ k3s_binary_base_url }}/{{ k3s_version }}/k3s'
     dest: '{{ k3s_temp_dir.path }}/k3s'
     mode: '0755'
     timeout: '{{ k3s_artifact_download_timeout }}'

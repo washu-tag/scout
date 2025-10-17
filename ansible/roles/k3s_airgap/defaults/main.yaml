@@ -3,14 +3,15 @@
 # Air-gapped k3s installation configuration
 
 # Version Configuration
-# k3s version to install - update this when upgrading k3s
-k3s_version: v1.33.5+k3s1
+# k3s version to install - if not specified or empty, will use latest stable
+# Set to empty string or omit to auto-detect latest stable version
+# Example: k3s_version: v1.33.5+k3s1
+k3s_version: ''
 
-# URL for k3s installation script
+# Base URLs for k3s artifacts
+# Note: Full URLs are constructed at runtime after version detection
 k3s_install_script_url: https://get.k3s.io
-
-# Computed URL for k3s binary based on version
-k3s_binary_url: 'https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/k3s'
+k3s_binary_base_url: https://github.com/k3s-io/k3s/releases/download
 
 # SELinux Configuration
 # Auto-detect SELinux status - will be true if SELinux is enabled on target hosts

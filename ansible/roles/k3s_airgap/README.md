@@ -24,7 +24,9 @@ See `defaults/main.yaml` for all available variables.
 
 ### Version Configuration
 
-- `k3s_version`: k3s version to install (default: v1.33.5+k3s1)
+- `k3s_version`: k3s version to install (default: '' - auto-detects latest stable)
+  - If empty or not specified, automatically detects latest stable version from https://update.k3s.io/v1-release/channels/stable
+  - Set to specific version to pin (e.g., 'v1.33.5+k3s1')
 - `k3s_selinux_rpm_version`: k3s-selinux RPM version (default: "1.6-1")
 - `container_selinux_rpm_version`: container-selinux RPM version (default: "2.229.0-1.el9")
 

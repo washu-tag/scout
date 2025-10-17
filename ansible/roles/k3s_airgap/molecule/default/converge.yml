@@ -8,7 +8,7 @@
   gather_facts: true
   vars:
     air_gapped: true
-    k3s_version: v1.33.5+k3s1
+    k3s_version: '' # Test auto-detection of latest stable
     k3s_token: test-token
     base_dir: /tmp/k3s-test
     use_staging_node: false
