@@ -68,3 +68,8 @@
   ansible.builtin.command: 'kubectl -n {{ chatbot_namespace }} wait --for=condition=Ready --timeout=300s pod -l app.kubernetes.io/name=open-webui'
   register: open_webui_ready
   changed_when: false
+
+# Pull Ollama models asynchronously (optional)
+- name: Pull Ollama models
+  ansible.builtin.include_tasks: pull_models.yaml
+  when: ollama_models is defined and ollama_models | length > 0

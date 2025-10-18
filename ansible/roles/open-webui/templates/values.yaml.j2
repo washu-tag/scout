@@ -11,7 +11,7 @@ ollama:
       type: 'nvidia'
       number: 1
     models:
-      pull: {{ ollama_models }}
+      pull: []  # Models are pulled asynchronously via separate Job to avoid Helm timeout
   persistentVolume:
     enabled: true
     storageClass: {{ ollama_storage_class }}
