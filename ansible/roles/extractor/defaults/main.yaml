@@ -1,0 +1,13 @@
+---
+# Default values for Extractor deployment
+
+# Extractor image repositories
+hl7log_extractor_image: ghcr.io/washu-tag/hl7log-extractor
+hl7_transformer_image: ghcr.io/washu-tag/hl7-transformer
+
+# Extractor configuration
+hl7log_extractor_timeout: 480
+hl7log_extractor_heartbeat_timeout: 30
+hl7log_extractor_concurrency: 150
+hl7_transformer_timeout: 60
+hl7_transformer_spark_memory: 4g
