@@ -1,0 +1,40 @@
+---
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ prometheus_namespace }}'
+
+- name: Set up storage
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_setup
+  vars:
+    storage_definitions: '{{ prometheus_storage_definitions }}'
+
+- name: Create JupyterHub metrics API token secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: jupyterhub-metrics-api-token
+        namespace: '{{ prometheus_namespace }}'
+      type: Opaque
+      stringData:
+        metrics-api-token: '{{ jupyter_metrics_api_token }}'
+
+- name: Deploy Prometheus
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ prometheus_helm_chart_name }}'
+    helm_chart_ref: '{{ prometheus_helm_repo_name }}/{{ prometheus_helm_chart_name }}'
+    helm_chart_namespace: '{{ prometheus_namespace }}'
+    helm_repo_name: '{{ prometheus_helm_repo_name }}'
+    helm_repo_url: '{{ prometheus_helm_repo_url }}'
+    helm_chart_version: '{{ prometheus_helm_chart_version }}'
+    helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
