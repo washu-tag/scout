@@ -6,7 +6,7 @@
 grafana_helm_repo_name: grafana
 grafana_helm_repo_url: https://grafana.github.io/helm-charts
 grafana_helm_chart_name: grafana
-grafana_helm_chart_version: ~8.12.1
+grafana_helm_chart_version: ~10.1.1
 
 # Storage configuration
 grafana_name: grafana

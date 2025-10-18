@@ -5,11 +5,11 @@
 # Helm configuration
 loki_helm_repo_name: grafana
 loki_helm_repo_url: https://grafana.github.io/helm-charts
-loki_helm_chart_version: ~6.29.0
+loki_helm_chart_version: ~6.43.0
 loki_helm_timeout: 5m
 
 # Promtail configuration
-promtail_helm_chart_version: ~6.16.6
+promtail_helm_chart_version: ~6.17.0
 
 # Storage configuration
 loki_name: loki
