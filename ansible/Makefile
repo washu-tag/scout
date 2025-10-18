@@ -40,6 +40,7 @@ clone-scout:
 
 install-k3s: deps
 	$(ANSIBLE_CMD) playbooks/k3s.yaml
+	$(ANSIBLE_CMD) playbooks/gpu.yaml
 
 config-traefik: install-k3s
 	$(ANSIBLE_CMD) playbooks/traefik.yaml
