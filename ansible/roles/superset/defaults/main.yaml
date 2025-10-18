@@ -2,9 +2,6 @@
 # Superset role defaults
 # User-configurable settings are in inventory.yaml
 
-# Namespace
-superset_namespace: superset
-
 # Helm configuration
 superset_helm_repo_name: superset
 superset_helm_repo_url: https://apache.github.io/superset

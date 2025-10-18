@@ -2,9 +2,6 @@
 # Loki role defaults
 # User-configurable settings are in inventory.yaml
 
-# Namespace
-loki_namespace: loki
-
 # Helm configuration
 loki_helm_repo_name: grafana
 loki_helm_repo_url: https://grafana.github.io/helm-charts

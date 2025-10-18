@@ -2,9 +2,6 @@
 # Trino role defaults
 # User-configurable settings are in inventory.yaml
 
-# Namespace
-trino_namespace: trino
-
 # Trino Helm configuration
 trino_helm_repo_name: trino
 trino_helm_repo_url: https://trinodb.github.io/charts

@@ -2,9 +2,6 @@
 # Grafana role defaults
 # User-configurable settings are in inventory.yaml
 
-# Namespace
-grafana_namespace: grafana
-
 # Helm configuration
 grafana_helm_repo_name: grafana
 grafana_helm_repo_url: https://grafana.github.io/helm-charts
