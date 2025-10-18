@@ -7,4 +7,4 @@
     name: scout_common
     tasks_from: storage_dir
   vars:
-    storage_definitions: '{{ temporal_storage_definitions }}'
+    storage_definitions: '{{ elasticsearch_storage_definitions }}'

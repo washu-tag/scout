@@ -1,0 +1,23 @@
+---
+# Default values for Elasticsearch deployment (using ECK)
+
+# ECK operator version (updated October 2025)
+eck_operator_version: ~3.1.0  # Latest: 3.1.0 (July 2025)
+
+# Storage naming
+elasticsearch_name: elasticsearch
+elasticsearch_storage_class: '{{ elasticsearch_name }}-storage'
+
+# Storage definitions for persistent volumes
+elasticsearch_storage_definitions:
+  - name: '{{ elasticsearch_name }}'
+    size: "{{ elasticsearch_storage_size | default('100Gi') }}"
+    path: '{{ elasticsearch_dir }}'
+    pv_name: '{{ elasticsearch_name }}-pv'
+    storage_class_name: '{{ elasticsearch_storage_class }}'
+
+# Elasticsearch configuration (ECK)
+elasticsearch_version: 9.1.5  # Latest: 9.1.5 (October 6, 2025)
+elasticsearch_cluster_name: elasticsearch
+elasticsearch_node_count: 1
+elasticsearch_heap_size: 1Gi
