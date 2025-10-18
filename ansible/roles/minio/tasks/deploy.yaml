@@ -1,6 +1,11 @@
 ---
-- name: Include MinIO variables
-  include_vars: vars/minio.yaml
+# MinIO Operator and Tenant deployment
+- name: Set up storage
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_setup
+  vars:
+    storage_definitions: '{{ minio_storage_definitions }}'
 
 - name: Deploy MinIO Operator
   ansible.builtin.include_role:

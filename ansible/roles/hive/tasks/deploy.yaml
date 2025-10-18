@@ -1,9 +1,4 @@
 ---
-- name: Load values file
-  ansible.builtin.include_vars:
-    file: vars/hive.values.yaml
-    name: hive_values
-
 - name: Deploy Hive Metastore Service
   ansible.builtin.include_role:
     name: scout_common

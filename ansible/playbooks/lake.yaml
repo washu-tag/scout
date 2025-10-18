@@ -2,25 +2,17 @@
 - name: Create storage directories for Lake
   hosts: minio_hosts
   gather_facts: false
-  vars_files:
-    - vars/lake_storage.yaml
   tasks:
     - name: Create storage directories
-      include_tasks: tasks/storage_dir_create.yaml
+      ansible.builtin.include_role:
+        name: minio
+        tasks_from: storage
 
 - name: Install components for Lake service
   hosts: server
   gather_facts: false
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-  vars_files:
-    - vars/lake_storage.yaml
-  tasks:
-    - name: Set up storage
-      include_tasks: tasks/storage_setup.yaml
-
-    - name: Install MinIO
-      include_tasks: services/minio.yaml
-
-    - name: Install Hive Metastore Service (HMS)
-      include_tasks: services/hive.yaml
+  roles:
+    - role: minio
+    - role: hive

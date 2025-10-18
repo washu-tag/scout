@@ -1,0 +1,6 @@
+---
+# Main entry point for hive role
+# Calls deploy tasks for Kubernetes deployment
+
+- name: Include deployment tasks
+  ansible.builtin.include_tasks: deploy.yaml

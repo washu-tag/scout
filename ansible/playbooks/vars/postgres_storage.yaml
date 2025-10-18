@@ -1,9 +1,0 @@
-postgres_name: postgres
-postgres_storage_class: '{{ postgres_name }}-storage'
-
-storage_definitions:
-  - name: '{{ postgres_name }}'
-    size: "{{ postgres_storage_size | default('100Gi') }}"
-    path: '{{ postgres_dir }}'
-    pv_name: '{{ postgres_name }}-pv'
-    storage_class_name: '{{ postgres_storage_class }}'
