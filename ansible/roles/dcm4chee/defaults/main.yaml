@@ -1,3 +1,7 @@
+---
+# Default values for Dcm4chee deployment
+
+# Storage naming
 dcm4chee_name: dcm4chee
 dcm4chee_wildfly_name: dcm4chee-wildfly
 dcm4chee_wildfly_storage_class: '{{ dcm4chee_wildfly_name }}-storage'
@@ -10,7 +14,8 @@ dcm4chee_openldap_storage_class: '{{ dcm4chee_openldap_name }}-storage'
 dcm4chee_slapd_name: dcm4chee-slapd
 dcm4chee_slapd_storage_class: '{{ dcm4chee_slapd_name }}-storage'
 
-storage_definitions:
+# Storage definitions for persistent volumes
+dcm4chee_storage_definitions:
   - name: '{{ dcm4chee_wildfly_name }}'
     size: "{{ dcm4chee_wildfly_storage_size | default('10Gi') }}"
     path: '{{ dcm4chee_dir }}/wildfly'
@@ -36,3 +41,8 @@ storage_definitions:
     path: '{{ dcm4chee_dir }}/slapd.d'
     pv_name: '{{ dcm4chee_slapd_name }}-pv'
     storage_class_name: '{{ dcm4chee_slapd_storage_class }}'
+
+# Database configuration
+dcm4chee_db: pacsdb
+dcm4chee_db_user: pacs
+dcm4chee_db_password: pacs

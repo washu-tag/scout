@@ -1,0 +1,48 @@
+---
+# Kubernetes deployment tasks for Orthanc
+# These tasks run on the server host (which has access to k3s_cluster inventory variables)
+
+# Storage setup (StorageClass and PersistentVolumes)
+- name: Set up storage
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_setup
+  vars:
+    storage_definitions: '{{ orthanc_storage_definitions }}'
+
+- name: Create Orthanc namespace
+  kubernetes.core.k8s:
+    name: '{{ orthanc_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Create Orthanc conf secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: orthanc-secret
+        namespace: '{{ orthanc_namespace }}'
+      type: Opaque
+      stringData:
+        'orthanc.json': "{{ lookup('template', 'orthanc-conf.json.j2') | to_nice_json }}"
+
+- name: Deploy Orthanc
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: orthanc
+    helm_chart_ref: '{{ scout_repo_dir }}/helm/orthanc'
+    helm_chart_namespace: '{{ orthanc_namespace }}'
+    helm_chart_create_namespace: false
+    helm_chart_timeout: 2m
+    helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
+# Populate PACS with test data (optional)
+- name: Populate Orthanc with test data
+  ansible.builtin.include_tasks: populate.yaml
+  when: orthanc_populate is defined

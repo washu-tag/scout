@@ -1,8 +1,0 @@
----
-- name: Create storage directory
-  ansible.builtin.file:
-    path: '{{ item.path }}'
-    state: directory
-    mode: '0777'
-  loop: '{{ storage_definitions }}'
-  when: item.node_url is not defined or item.node_url == inventory_hostname

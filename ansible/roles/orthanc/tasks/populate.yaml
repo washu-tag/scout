@@ -1,3 +1,7 @@
+---
+# Populate Orthanc PACS with test data via DICOM C-STORE
+# This task creates a Kubernetes Job to run storescu
+
 - name: Populate PACS via C-STORE
   kubernetes.core.k8s:
     state: present
@@ -5,17 +9,17 @@
       apiVersion: batch/v1
       kind: Job
       metadata:
-        generateName: 'pacs-populate-'
-        namespace: '{{ target_namespace }}'
+        generateName: 'orthanc-populate-'
+        namespace: '{{ orthanc_namespace }}'
         labels:
-          app: pacs-populate
+          app: orthanc-populate
       spec:
         ttlSecondsAfterFinished: 600
         backoffLimit: 3
         template:
           metadata:
             labels:
-              app: pacs-populate
+              app: orthanc-populate
           spec:
             restartPolicy: Never
             containers:
@@ -24,7 +28,7 @@
                 command:
                   - storescu
                   - -c
-                  - '{{ called_aet }}@{{ dicom_host }}:{{ dicom_port }}'
+                  - 'ORTHANC@orthanc.{{ orthanc_namespace }}:{{ orthanc_dicom_port }}'
                   - '/data'
                 volumeMounts:
                   - name: data
@@ -33,4 +37,4 @@
             volumes:
               - name: data
                 hostPath:
-                  path: '{{ data_dir }}'
+                  path: '{{ orthanc_populate }}'
