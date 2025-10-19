@@ -1,0 +1,130 @@
+---
+# Kubernetes deployment tasks for Temporal cluster
+# These tasks run on the server host (which has access to k3s_cluster inventory variables)
+# NOTE: This role expects Cassandra and Elasticsearch to already be deployed
+
+# Deploy Temporal
+- name: Deploy Temporal
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: temporal
+    helm_chart_ref: temporal/temporal
+    helm_chart_version: '{{ temporal_version | default("~0.67.0") }}'
+    helm_chart_namespace: '{{ temporal_namespace }}'
+    helm_repo_name: temporal
+    helm_repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
+    helm_chart_timeout: 20m
+    helm_chart_values:
+      prometheus:
+        enabled: false
+      grafana:
+        enabled: false
+      server:
+        replicaCount: '{{ temporal_server_replica_count | default(1) }}'
+        config:
+          namespaces:
+            create: true
+          persistence:
+            default:
+              driver: 'cassandra'
+              cassandra:
+                hosts:
+                  [
+                    '{{ cassandra_cluster_name | default("cassandra-cluster") }}-{{ cassandra_datacenter_name | default("dc1") }}-service.{{ cassandra_namespace }}',
+                  ]
+                port: 9042
+                keyspace: temporal
+                existingSecret: '{{ cassandra_cluster_name | default("cassandra-cluster") }}-superuser'
+                replicationFactor: 1
+                consistency:
+                  default:
+                    consistency: 'local_quorum'
+                    serialConsistency: 'local_serial'
+            visibility:
+              driver: 'elasticsearch'
+              elasticsearch:
+                version: 'v8'
+                url:
+                  scheme: 'https'
+                  host: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-http.{{ elasticsearch_namespace }}:9200'
+                indices:
+                  visibility: 'temporal_visibility_v1'
+                username: 'elastic'
+                password: '${ELASTICSEARCH_PASSWORD}'
+                logLevel: 'error'
+        env:
+          - name: ELASTICSEARCH_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-elastic-user'
+                key: elastic
+      cassandra:
+        enabled: false
+      elasticsearch:
+        enabled: false # Using ECK-managed Elasticsearch instead
+      web:
+        ingress:
+          enabled: true
+          ingressClassName: traefik
+          hosts:
+            - 'temporal.{{ server_hostname }}'
+
+- name: Wait for Temporal schema job to complete
+  shell: >-
+    JOB_NAME=$(kubectl -n {{ temporal_namespace }} get jobs -l app.kubernetes.io/component=schema
+    --sort-by='.metadata.creationTimestamp'
+    -o jsonpath='{.items[-1].metadata.name}' 2>/dev/null || echo "");
+    if [ -n "$JOB_NAME" ]; then
+      kubectl -n {{ temporal_namespace }} wait --for=condition=complete --timeout=300s job/$JOB_NAME;
+    fi
+  register: temporal_schema
+  changed_when: false
+
+# Set up scheduled tasks
+- name: Construct cron schedule
+  when: scheduled_ingest_cron is undefined and scheduled_ingest_hour is defined
+  set_fact:
+    scheduled_ingest_cron: '0 {{ scheduled_ingest_hour }} * * *'
+
+- name: Add scheduled task for prospective report indexing
+  when: scheduled_ingest_cron is defined
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: 'add-prospective-indexing'
+        namespace: '{{ temporal_namespace }}'
+        labels:
+          app: prospective-indexing
+      spec:
+        backoffLimit: 5
+        template:
+          metadata:
+            labels:
+              app: prospective-indexing
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: prospective-indexing-setup
+                image: temporalio/admin-tools
+                env:
+                  - name: TEMPORAL_ADDRESS
+                    value: 'temporal-frontend.{{ temporal_namespace }}:7233'
+                command:
+                  - temporal
+                  - schedule
+                  - create
+                  - '--schedule-id'
+                  - ScheduledReportIngest
+                  - '--workflow-id'
+                  - ScheduledReportIngest
+                  - '--task-queue'
+                  - ingest-hl7-log
+                  - '--type'
+                  - IngestHl7LogWorkflow
+                  - '--cron'
+                  - '{{ scheduled_ingest_cron }}'

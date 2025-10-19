@@ -90,7 +90,7 @@
         helm_chart_namespace: '{{ temporal_namespace }}'
         helm_repo_name: temporal
         helm_repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
-        helm_chart_timeout: 15m
+        helm_chart_timeout: 30m
         helm_chart_values:
           prometheus:
             enabled: false
