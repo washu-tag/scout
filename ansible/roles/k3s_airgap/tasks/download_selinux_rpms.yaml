@@ -1,0 +1,252 @@
+---
+# Download SELinux RPMs using Kubernetes Job on staging cluster
+# This task runs a Rocky Linux 9 container that uses yum to download k3s-selinux
+# and its dependencies (including container-selinux) with proper version resolution
+
+- name: Generate unique Job name with timestamp
+  ansible.builtin.set_fact:
+    selinux_job_name: 'k3s-selinux-downloader-{{ ansible_date_time.epoch }}'
+    selinux_staging_dir: '/tmp/k3s-selinux-rpms-{{ ansible_date_time.epoch }}'
+  delegate_to: localhost
+  run_once: true
+
+- name: Create Kubernetes Job manifest for SELinux package download
+  ansible.builtin.set_fact:
+    selinux_downloader_job:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: '{{ selinux_job_name }}'
+        namespace: '{{ k3s_package_download_namespace }}'
+        labels:
+          app: k3s-selinux-downloader
+          managed-by: ansible
+      spec:
+        ttlSecondsAfterFinished: 300
+        backoffLimit: 5
+        template:
+          metadata:
+            labels:
+              app: k3s-selinux-downloader
+          spec:
+            restartPolicy: Never
+            volumes:
+              - name: rpm-storage
+                emptyDir: {}
+            initContainers:
+              - name: downloader
+                image: rockylinux/rockylinux:9.6
+                volumeMounts:
+                  - name: rpm-storage
+                    mountPath: /downloads
+                command:
+                  - /bin/bash
+                  - -c
+                  - |
+                    set -e
+                    set -x
+
+                    echo "Installing yum-utils for yumdownloader..."
+                    yum install -y yum-utils
+
+                    echo "Configuring Rancher k3s repository..."
+                    cat > /etc/yum.repos.d/rancher-k3s-common.repo <<EOF
+                    [rancher-k3s-common-{{ k3s_selinux_channel }}]
+                    name=Rancher K3s Common ({{ k3s_selinux_channel }})
+                    baseurl=https://{{ k3s_selinux_rpm_site }}/k3s/{{ k3s_selinux_channel }}/common/centos/9/noarch
+                    enabled=1
+                    gpgcheck=1
+                    repo_gpgcheck=0
+                    gpgkey=https://{{ k3s_selinux_rpm_site }}/public.key
+                    EOF
+
+                    echo "Repository configuration:"
+                    cat /etc/yum.repos.d/rancher-k3s-common.repo
+
+                    echo "Downloading k3s-selinux and dependencies..."
+                    mkdir -p /downloads/all
+                    yumdownloader --destdir=/downloads/all --resolve k3s-selinux
+
+                    echo "All downloaded packages:"
+                    ls -lh /downloads/all/
+
+                    echo "Filtering to only k3s-selinux and container-selinux..."
+                    mkdir -p /downloads
+                    find /downloads/all \( -name 'k3s-selinux-*.rpm' -o -name 'container-selinux-*.rpm' \) -exec cp {} /downloads/ \;
+
+                    echo "Filtered packages:"
+                    ls -lh /downloads/
+
+                    echo "Package count: $(ls /downloads/*.rpm 2>/dev/null | wc -l)"
+
+                    if [ ! -f /downloads/*.rpm ]; then
+                      echo "ERROR: No RPM files were downloaded!"
+                      exit 1
+                    fi
+
+                    echo "Download and filtering completed successfully"
+            containers:
+              - name: sleeper
+                image: rockylinux/rockylinux:9.6
+                command: ['sleep', '300']
+                volumeMounts:
+                  - name: rpm-storage
+                    mountPath: /downloads
+                    readOnly: true
+  delegate_to: localhost
+  run_once: true
+
+- name: Deploy SELinux downloader Job to staging cluster
+  kubernetes.core.k8s:
+    state: present
+    definition: '{{ selinux_downloader_job }}'
+    kubeconfig: "{{ hostvars[groups['staging'][0]].kubeconfig_yaml }}"
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  register: job_created
+
+- name: Wait for Pod to be created
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: '{{ k3s_package_download_namespace }}'
+    label_selectors:
+      - 'job-name={{ selinux_job_name }}'
+    kubeconfig: "{{ hostvars[groups['staging'][0]].kubeconfig_yaml }}"
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  register: job_pods
+  until: job_pods.resources | length > 0
+  retries: 30
+  delay: 2
+
+- name: Set Pod name fact
+  ansible.builtin.set_fact:
+    selinux_downloader_pod: '{{ job_pods.resources[0].metadata.name }}'
+  delegate_to: localhost
+  run_once: true
+
+- name: Wait for init container (downloader) to complete
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    name: '{{ selinux_downloader_pod }}'
+    namespace: '{{ k3s_package_download_namespace }}'
+    kubeconfig: "{{ hostvars[groups['staging'][0]].kubeconfig_yaml }}"
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  register: pod_status
+  until: >
+    pod_status.resources | length > 0 and
+    pod_status.resources[0].status.initContainerStatuses is defined and
+    pod_status.resources[0].status.initContainerStatuses | length > 0 and
+    pod_status.resources[0].status.initContainerStatuses[0].state.terminated is defined
+  retries: '{{ (k3s_package_download_timeout / 10) | int }}'
+  delay: 10
+  failed_when: false
+
+- name: Check if init container failed
+  ansible.builtin.fail:
+    msg: 'SELinux package download failed. Init container exit code: {{ pod_status.resources[0].status.initContainerStatuses[0].state.terminated.exitCode }}. Check logs with: kubectl logs {{ selinux_downloader_pod }} -n {{ k3s_package_download_namespace }} -c downloader'
+  when: >
+    pod_status.resources | length == 0 or
+    pod_status.resources[0].status.initContainerStatuses[0].state.terminated.exitCode != 0
+  delegate_to: localhost
+  run_once: true
+
+- name: Display Pod name for kubectl cp
+  ansible.builtin.debug:
+    msg: 'Extracting RPMs from Pod: {{ selinux_downloader_pod }}'
+  delegate_to: localhost
+  run_once: true
+
+- name: Create staging directory on staging node
+  ansible.builtin.file:
+    path: '{{ selinux_staging_dir }}'
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+
+- name: Copy RPMs from sleeper container to staging node
+  ansible.builtin.command:
+    cmd: >
+      kubectl cp
+      {{ k3s_package_download_namespace }}/{{ selinux_downloader_pod }}:/downloads/
+      {{ selinux_staging_dir }}/
+      -c sleeper
+      --kubeconfig={{ hostvars[groups['staging'][0]].kubeconfig_yaml }}
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  register: kubectl_cp_result
+  changed_when: kubectl_cp_result.rc == 0
+
+- name: Find RPM files on staging node
+  ansible.builtin.find:
+    paths: '{{ selinux_staging_dir }}'
+    patterns: '*.rpm'
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  register: staging_rpm_files
+
+- name: Display found RPMs on staging node
+  ansible.builtin.debug:
+    msg: 'Found {{ staging_rpm_files.files | length }} RPM files on staging node: {{ staging_rpm_files.files | map(attribute="path") | map("basename") | list }}'
+  delegate_to: localhost
+  run_once: true
+
+- name: Fail if no RPMs found on staging node
+  ansible.builtin.fail:
+    msg: 'No RPM files found in {{ selinux_staging_dir }} on staging node'
+  when: staging_rpm_files.files | length == 0
+  delegate_to: localhost
+  run_once: true
+
+- name: Fetch RPMs from staging node to Ansible control node
+  ansible.builtin.fetch:
+    src: '{{ item.path }}'
+    dest: '{{ k3s_temp_dir.path }}/{{ item.path | basename }}'
+    flat: true
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  loop: '{{ staging_rpm_files.files }}'
+
+- name: Verify RPMs were copied successfully
+  ansible.builtin.find:
+    paths: '{{ k3s_temp_dir.path }}'
+    patterns: '*.rpm'
+  delegate_to: localhost
+  run_once: true
+  register: downloaded_rpms
+
+- name: Display downloaded RPMs
+  ansible.builtin.debug:
+    msg: "Downloaded {{ downloaded_rpms.files | length }} RPM files: {{ downloaded_rpms.files | map(attribute='path') | map('basename') | list }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Fail if no RPMs were downloaded
+  ansible.builtin.fail:
+    msg: 'No RPM files found in {{ k3s_temp_dir.path }}'
+  when: downloaded_rpms.files | length == 0
+  delegate_to: localhost
+  run_once: true
+
+- name: Clean up RPM directory on staging node
+  ansible.builtin.file:
+    path: '{{ selinux_staging_dir }}'
+    state: absent
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+
+- name: Delete SELinux downloader Job
+  kubernetes.core.k8s:
+    state: absent
+    api_version: batch/v1
+    kind: Job
+    name: '{{ selinux_job_name }}'
+    namespace: '{{ k3s_package_download_namespace }}'
+    kubeconfig: "{{ hostvars[groups['staging'][0]].kubeconfig_yaml }}"
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  when: job_created is changed
