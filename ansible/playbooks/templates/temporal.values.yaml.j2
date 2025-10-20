@@ -26,7 +26,7 @@ server:
     authorization:
       jwtKeyProvider:
         keySourceURIs:
-          - https://kc.{{ server_hostname }}/realms/scout/protocol/openid-connect/certs
+          - https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/certs
         refreshInterval: 1m
       permissionsClaimName: groups
       authorizer: default
@@ -52,7 +52,7 @@ web:
     - name: TEMPORAL_AUTH_ENABLED
       value: 'true'
     - name: TEMPORAL_AUTH_PROVIDER_URL
-      value: 'https://kc.{{ server_hostname }}/realms/scout'
+      value: 'https://keycloak.{{ server_hostname }}/realms/scout'
     - name: TEMPORAL_AUTH_CLIENT_ID
       value: '{{ keycloak_temporal_client_id }}'
     - name: TEMPORAL_AUTH_CLIENT_SECRET

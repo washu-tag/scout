@@ -129,7 +129,7 @@
         http:
           httpEnabled: true
         hostname:
-          hostname: 'kc.{{ server_hostname }}'
+          hostname: 'keycloak.{{ server_hostname }}'
         ingress:
           enabled: false
         proxy:
@@ -162,7 +162,7 @@
       spec:
         ingressClassName: traefik
         rules:
-          - host: 'kc.{{ server_hostname }}'
+          - host: 'keycloak.{{ server_hostname }}'
             http:
               paths:
                 - backend:

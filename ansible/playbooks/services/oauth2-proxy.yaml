@@ -64,8 +64,8 @@
         cookieSecret: '{{ oauth2_proxy_cookie_secret }}'
         configFile: |
           provider = "keycloak-oidc"
-          redirect_url = "https://oa2p.{{ server_hostname }}/oauth2/callback"
-          oidc_issuer_url = "https://kc.{{ server_hostname }}/realms/scout"
+          redirect_url = "https://auth.{{ server_hostname }}/oauth2/callback"
+          oidc_issuer_url = "https://keycloak.{{ server_hostname }}/realms/scout"
           allowed_roles = "scout-user"
           cookie_expire = "{{ oauth2_proxy_cookie_expire | default('8h') }}"
           skip_provider_button = false
@@ -76,14 +76,14 @@
           custom_sign_in_logo = "/var/www/static/logo/logo.png"
           cookie_domains = [".{{ server_hostname }}"]
           whitelist_domains = [".{{ server_hostname }}"]
-          backend_logout_url = "https://kc.{{ server_hostname }}/realms/scout/protocol/openid-connect/logout?id_token_hint={id_token}&post_logout_redirect_uri=https://{{ server_hostname }}"
+          backend_logout_url = "https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/logout?id_token_hint={id_token}&post_logout_redirect_uri=https://{{ server_hostname }}"
           banner = "Continue with WashU Key"
       ingress:
         enabled: true
         className: traefik
         path: /
         hosts:
-          - 'oa2p.{{ server_hostname }}'
+          - 'auth.{{ server_hostname }}'
       extraVolumes:
         - name: oauth2-proxy-templates
           configMap:
@@ -109,7 +109,7 @@
         namespace: kube-system
       spec:
         forwardAuth:
-          address: 'https://oa2p.{{ server_hostname }}/oauth2/auth'
+          address: 'https://auth.{{ server_hostname }}/oauth2/auth'
           trustForwardHeader: true
           authResponseHeaders:
             - X-Auth-Request-Access-Token

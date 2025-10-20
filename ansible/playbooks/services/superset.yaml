@@ -152,10 +152,10 @@
                       "client_id": "{{ keycloak_superset_client_id }}",
                       "client_secret": "{{ keycloak_superset_client_secret }}",
                       "client_kwargs": {"scope": "openid microprofile-jwt"},
-                      "api_base_url": "https://kc.{{ server_hostname }}/realms/scout/protocol/",
-                      "access_token_url": "https://kc.{{ server_hostname }}/realms/scout/protocol/openid-connect/token",
-                      "authorize_url": "https://kc.{{ server_hostname }}/realms/scout/protocol/openid-connect/auth",
-                      "jwks_uri": "https://kc.{{ server_hostname }}/realms/scout/protocol/openid-connect/certs",
+                      "api_base_url": "https://keycloak.{{ server_hostname }}/realms/scout/protocol/",
+                      "access_token_url": "https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/token",
+                      "authorize_url": "https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/auth",
+                      "jwks_uri": "https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/certs",
                       "request_token_url": None
                   },
               }
@@ -193,7 +193,7 @@
               @expose('/logout/', methods=['GET', 'POST'])
               def logout(self):
                   super().logout()
-                  return redirect('https://oa2p.{{ server_hostname }}/oauth2/sign_out')
+                  return redirect('https://auth.{{ server_hostname }}/oauth2/sign_out')
 
           class KeycloakSecurityManager(SupersetSecurityManager):
               """

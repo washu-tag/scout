@@ -118,7 +118,7 @@
       // Get root domain by stripping known Scout subdomains
       function getRootDomain() {
         const host = window.location.host;
-        const knownSubdomains = ['oa2p', 'jupyter', 'superset', 'grafana', 'minio', 'kc', 'temporal'];
+        const knownSubdomains = ['auth', 'jupyter', 'superset', 'grafana', 'minio', 'keycloak', 'temporal'];
 
         // Handle wildcard jupyter subdomains (e.g., username.jupyter.example.com)
         // Match pattern: anything.jupyter.domain.com -> domain.com
@@ -153,7 +153,7 @@
         rdInput.value += window.location.hash;
       }
 
-      // Update form to use oa2p subdomain
+      // Update form to use auth subdomain
       function updateFormAction() {
         const form = document.querySelector("form");
         if (!form) {
@@ -169,7 +169,7 @@
 
         const rootDomain = getRootDomain();
         const protocol = window.location.protocol;
-        const updatedAction = protocol + "//oa2p." + rootDomain + currentAction;
+        const updatedAction = protocol + "//auth." + rootDomain + currentAction;
 
         form.setAttribute("action", updatedAction);
         console.debug("Form action updated:", updatedAction);
@@ -192,12 +192,12 @@
           return true;
         }
 
-        // Get the origin (removing oa2p subdomain if present for correct redirect)
+        // Get the origin (removing auth subdomain if present for correct redirect)
         let origin = window.location.origin;
         const rootDomain = getRootDomain();
 
-        // If we're on oa2p subdomain, redirect to root domain instead
-        if (window.location.host.startsWith('oa2p.')) {
+        // If we're on auth subdomain, redirect to root domain instead
+        if (window.location.host.startsWith('auth.')) {
           origin = window.location.protocol + '//' + rootDomain;
         }
 
