@@ -35,24 +35,41 @@ We will implement air-gapped k3s installation using the following approach:
 - Airgap image tarballs on each node: Requires distributing large files to every node
 - **Rejected because:** Pull-through cache is simpler and leverages existing infrastructure
 
-### 2. Pre-Stage SELinux RPMs (Download and Install Locally)
+### 2. Pre-Stage SELinux RPMs Using Kubernetes Job
 
-**Decision:** Download both `k3s-selinux` and `container-selinux` RPM files locally and install them using the `yum` command with local package file paths.
+**Decision:** Use a Kubernetes Job on the staging cluster to download `k3s-selinux` and its dependencies (including `container-selinux`) using yum with the Rancher k3s repository, then extract RPMs for distribution to air-gapped nodes.
 
 **Rationale:**
 - Air-gapped nodes cannot reach internet repositories
-- `k3s-selinux` is not in standard Rocky/RHEL repositories (only GitHub releases)
-- `container-selinux` is in AppStream but inaccessible without local repo mirrors
-- Pre-staging both RPMs ensures consistent, predictable installation
-- Works regardless of node repository configuration
+- `k3s-selinux` is hosted in Rancher's custom repository (rpm.rancher.io), not standard repos
+- Using yum for download ensures automatic dependency resolution (no manual version tracking)
+- Staging cluster is guaranteed available and online in air-gapped deployments
+- Matches k3s install script's official repository configuration exactly
+
+**Implementation Pattern:**
+```yaml
+Job with two containers:
+  - initContainer (downloader): Configures Rancher repo, runs yumdownloader, exits
+  - mainContainer (sleeper): Keeps pod running for file extraction
+  - Shared emptyDir volume: Files accessible to both containers
+```
+
+**Process Flow:**
+1. Ansible creates Kubernetes Job on staging cluster
+2. Init container downloads RPMs to emptyDir volume and exits
+3. Main container (sleep infinity) keeps pod running
+4. Ansible extracts RPMs using `kubectl cp` from running pod
+5. Ansible deletes Job (pod auto-cleaned)
 
 **Alternatives Considered:**
-- Host a yum repository on the staging node: Adds significant complexity for setup and maintenance
-- **Rejected because:** Hosting a repository is overly complex for this use case
+- Manual RPM URL downloads: Requires tracking versions and URLs, prone to 404 errors
+- hostPath volume: Requires node affinity and manual cleanup
+- **Rejected because:** Init container pattern is simpler and more reliable
 
 **Dependency Handling:**
-- If RPM installation fails due to missing dependencies (e.g., `selinux-policy` version mismatch), handle outside Ansible playbooks
-- This is an accepted tradeoff to avoid complex dependency resolution in Ansible
+- yum automatically resolves all dependencies during download
+- No manual dependency tracking needed
+- All packages guaranteed compatible (resolved by yum from same repository)
 
 ### 3. Temporary Artifact Staging (No Caching)
 
@@ -101,23 +118,26 @@ We will implement air-gapped k3s installation using the following approach:
 
 - **Simplified operations:** Harbor automatically caches images; no manual image staging
 - **Reduced complexity:** Temporary artifacts eliminate cache management
-- **Reliable SELinux handling:** Pre-staged RPMs work regardless of node configuration
+- **Automatic dependency resolution:** yum handles all SELinux package dependencies automatically
+- **No version maintenance:** No hardcoded RPM versions or URLs to update
+- **Reliable SELinux handling:** Packages guaranteed compatible via yum resolution
 - **Backward compatible:** Existing deployments unaffected
-- **Leverages existing infrastructure:** Harbor already deployed for Scout
+- **Leverages existing infrastructure:** Uses staging cluster already required for Harbor
 
 ### Negative
 
 - **No automatic rollback:** Failed upgrades require manual recovery
 - **Harbor dependency:** Harbor must be deployed before k3s (already true for Scout in air-gapped mode)
-- **Manual dependency resolution:** SELinux dependency failures require manual intervention
-- **Version maintenance:** `container-selinux` version must be updated in role defaults
+- **Staging cluster dependency:** Staging k3s cluster must be running for SELinux package downloads
+- **Kubernetes client requirement:** Ansible control node needs kubectl and kubernetes.core collection
 
 ### Risks and Mitigations
 
 | Risk | Mitigation |
 |------|-----------|
 | Harbor unavailable during installation | Harbor deployed first via main playbook; clear dependencies |
-| SELinux dependency failures | Document recovery procedures; acceptable for rare edge cases |
+| Staging cluster unavailable | Ensure staging k3s cluster is running before k3s_airgap role executes |
+| Kubernetes Job fails to download packages | Job logs available via kubectl; automatic retry via Job backoffLimit |
 | Failed upgrades difficult to recover | Always test in staging first; document manual recovery |
 
 ## Out of Scope
@@ -130,12 +150,14 @@ The following are explicitly out of scope for this implementation:
 
 ## Implementation Notes
 
-- Target k3s version: v1.33.5+k3s1 (current stable)
-- Target k3s-selinux version: 1.6-1 (current stable)
-- Target container-selinux version: 2.229.0-1.el9 (configurable in role defaults)
-- All artifacts downloaded on Ansible control node (requires internet access)
+- Target k3s version: v1.33.5+k3s1 (current stable, auto-detected if not specified)
+- SELinux packages resolved automatically from Rancher k3s repository (stable channel)
+- Kubernetes Job runs on staging cluster in `default` namespace
+- Job uses Rocky Linux 9 container image for package downloads
+- All artifacts downloaded to Ansible control node temporary directory
 - Temporary directory automatically created/cleaned by Ansible
 - SELinux package installation conditional on `ansible_selinux.status == 'enabled'`
+- Requires `kubernetes.core` Ansible collection and kubectl on staging node
 
 ## References
 
