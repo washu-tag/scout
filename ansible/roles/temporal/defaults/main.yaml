@@ -3,3 +3,6 @@
 
 # Temporal server configuration
 temporal_server_replica_count: 1
+
+# Scheduled workflow configuration
+scheduled_ingest_hour: 6 # Alternatively, full schedule can be specified with scheduled_ingest_cron

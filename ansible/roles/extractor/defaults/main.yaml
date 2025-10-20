@@ -12,4 +12,10 @@ hl7log_extractor_timeout: 480
 hl7log_extractor_heartbeat_timeout: 30
 hl7log_extractor_concurrency: 150
 hl7_transformer_timeout: 60
-hl7_transformer_spark_memory: 4g
+hl7_transformer_spark_memory: 8g
+
+# Container paths
+hl7logs_root_dir: /data
+
+# S3 paths
+hl7_path: 's3://{{ lake_bucket }}/hl7'

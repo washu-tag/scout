@@ -115,40 +115,28 @@ k3s_cluster:
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
     minio_storage_size: 750Gi
     minio_volumes_per_server: 2
-    s3_username: minio
     s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    s3_region: us-east-1
-    s3_lake_reader: lake-reader
     s3_lake_reader_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    s3_lake_writer: lake-writer
     s3_lake_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    s3_loki_writer: loki-writer
     s3_loki_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Monitor config
     prometheus_storage_size: 100Gi
     loki_storage_size: 100Gi
     grafana_storage_size: 50Gi
-    grafana_alert_contact_point: slack # email or slack
     grafana_smtp_host: '' # Include the port in the value
     grafana_smtp_user: $(echo $SMTP_USER | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     grafana_smtp_password: $(echo $SMTP_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     grafana_smtp_from_address: ''
-    grafana_smtp_from_name: 'Scout'
-    grafana_smtp_skip_verify: false
-    grafana_email_recipients: [''] # Grafana validation requires an address if using email
     slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     slack_channel_id: $(echo $SLACK_CHANNEL | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Jupyter config
-    jupyter_auth_class: dummy # dummy or github
     github_client_id: $(echo $CLIENT_ID | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     github_client_secret: $(echo $CLIENT_SECRET | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     github_organization: org
     jupyter_dummy_password: $(echo $JH_DUMMY_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    jupyter_allowed_users: [] # empty list means all users can log in
     jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    jupyter_prepuller_continuous: false
     jupyter_hub_storage_size: 15Gi
     jupyter_singleuser_storage_size: 250Gi
     jupyter_singleuser_extra_resource:
@@ -160,11 +148,8 @@ k3s_cluster:
     # Postgres config
     # Note: Most postgres configuration is now in roles/postgres/defaults/main.yaml
     # Only secrets and production-specific overrides are needed here
-    postgres_user: scout
     postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    hive_postgres_user: hive
     hive_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    superset_postgres_user: superset
     superset_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
@@ -232,43 +217,5 @@ k3s_cluster:
     orthanc_dir: /scout/data/orthanc
     dcm4chee_dir: /scout/data/dcm4chee
 
-    # Within the container mounted paths
-    hl7logs_root_dir: /data
-    modality_map_path: /data/modality_mapping_codes.csv
-
-    # Object storage paths
-    lake_bucket: lake
-    scratch_bucket: scratch
-    hl7_path: 's3://{{ lake_bucket }}/hl7'
-    scratch_path: 's3://{{ scratch_bucket }}'
-    delta_lake_path: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefix, it is used just like s3://
-
-    # Database table names
-    report_delta_table_name: reports
-    ingest_postgres_table_name: ingest
-
-    # Extractor performance tuning
-    hl7log_extractor_timeout: 480
-    hl7log_extractor_heartbeat_timeout: 30
-    hl7log_extractor_concurrency: 150
-    hl7_transformer_timeout: 60
-
-    # Resources
-    hl7_transformer_spark_memory: 8g
-    jupyter_spark_memory: 8g
-    temporal_cassandra_init_heap: 2G
-    temporal_cassandra_max_heap: 8G
-
-    # Installation conveniences
-    scheduled_ingest_hour: 6 # Alternatively, full schedule can be specified with scheduled_ingest_cron instead
-
-    # BEGIN - DO NOT CHANGE
-    # You probably don't want to change these unless you know these items will be
-    # stored in different locations on your system
-    helm_plugins_dir: /root/.local/share/helm/plugins
-
-    # computed values, used across playbooks
-    s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
-    hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
-    server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
-    # END - DO NOT CHANGE
+    # All other configuration defaults are in roles/scout_common/defaults/main.yaml
+    # Override them here if needed for this environment

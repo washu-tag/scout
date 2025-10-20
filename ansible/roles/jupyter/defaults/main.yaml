@@ -38,5 +38,12 @@ jupyter_storage_definitions:
 jupyter_singleuser_image_name: ghcr.io/washu-tag/pyspark-notebook
 jupyter_singleuser_image_tag: 1.1.0
 
+# Authentication configuration
+jupyter_auth_class: dummy # Options: dummy or github
+jupyter_allowed_users: [] # Empty list means all users can log in
+
 # PrePuller configuration
 jupyter_prepuller_continuous: false
+
+# Spark configuration
+jupyter_spark_memory: 8g

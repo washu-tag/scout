@@ -1,6 +1,9 @@
 ---
 # Default values for Orthanc deployment
 
+# DICOM configuration
+orthanc_dicom_port: 4242
+
 # Storage naming
 orthanc_name: orthanc
 orthanc_storage_class: '{{ orthanc_name }}-storage'

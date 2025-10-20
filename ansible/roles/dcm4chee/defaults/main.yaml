@@ -1,6 +1,9 @@
 ---
 # Default values for Dcm4chee deployment
 
+# DICOM configuration
+dcm4chee_dicom_port: 11112
+
 # Storage naming
 dcm4chee_name: dcm4chee
 dcm4chee_wildfly_name: dcm4chee-wildfly
