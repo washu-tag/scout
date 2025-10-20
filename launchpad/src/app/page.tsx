@@ -92,7 +92,7 @@ const ToolsGrid = () => {
       minio: getUrl('minio', '/login'),
       temporal: getUrl('temporal', '/auth/sso'),
       grafana: getUrl('grafana'),
-      keycloak: getUrl('kc', '/admin/scout/console'),
+      keycloak: getUrl('keycloak', '/admin/scout/console'),
     });
 
     console.debug('[Scout] Subdomain URLs generated', { protocol, hostname });
