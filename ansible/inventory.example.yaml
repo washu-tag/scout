@@ -11,8 +11,8 @@ all:
     ansible_become_user: root
     ansible_become_password: $(echo $ANSIBLE_BECOME_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
-    # K3s kubeconfig path (same for all k3s installations)
-    kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
+    # K3s kubeconfig path, modify if not using K3s
+    # kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 
     # Air-gapped deployment configuration
     # Set to true to enable air-gapped deployment mode for Kubernetes clusters
@@ -30,7 +30,7 @@ all:
     #   - Charts pulled directly from public repositories
     #   - Container images pulled directly from public registries
     #   - Works with existing Scout deployments (backward compatible)
-    air_gapped: false
+    # air_gapped: false  # Default is false; set to true here to override
 
 # The staging group contains the staging node that acts as a data diode
 # for air-gapped deployments.
@@ -60,7 +60,6 @@ staging:
     harbor_admin_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     harbor_storage_size: 100Gi
     harbor_dir: /scout/persistence/harbor
-    harbor_version: '~1.14.0'
 
 # The server group contains the control plane nodes for the k3s cluster.
 server:
@@ -104,7 +103,6 @@ k3s_cluster:
     agents:
   vars:
     # K3s config
-    k3s_version: v1.32.3+k3s1 # Leave blank for latest stable
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
 
@@ -213,7 +211,6 @@ k3s_cluster:
     extractor_data_dir: /ceph/input/data
 
     # Parameters for optional PACS instances, only intended for use in development
-    orthanc_dicom_port: 4242
     orthanc_dir: /scout/data/orthanc
     dcm4chee_dir: /scout/data/dcm4chee
 
