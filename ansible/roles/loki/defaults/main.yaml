@@ -1,0 +1,26 @@
+---
+# Loki role defaults
+# User-configurable settings are in inventory.yaml
+
+# Helm configuration
+loki_helm_repo_name: grafana
+loki_helm_repo_url: https://grafana.github.io/helm-charts
+loki_helm_timeout: 5m
+
+# Storage configuration
+loki_name: loki
+loki_storage_class: '{{ loki_name }}-storage'
+loki_storage_size: 200Gi
+loki_dir: /scout/monitoring/loki
+
+# S3 credentials for Loki storage
+s3_loki_writer: loki-writer
+s3_loki_writer_secret: changeme
+
+# Storage definitions
+loki_storage_definitions:
+  - name: '{{ loki_name }}'
+    size: '{{ loki_storage_size }}'
+    path: '{{ loki_dir }}'
+    pv_name: '{{ loki_name }}-pv'
+    storage_class_name: '{{ loki_storage_class }}'

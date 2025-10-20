@@ -38,14 +38,15 @@ deps:
 clone-scout:
 	$(ANSIBLE_CMD) playbooks/scout.yaml
 
-install-k3s: deps
+install-helm:
+	$(ANSIBLE_CMD) playbooks/helm.yaml
+
+install-k3s: deps install-helm
 	$(ANSIBLE_CMD) playbooks/k3s.yaml
+	$(ANSIBLE_CMD) playbooks/gpu.yaml
 
 config-traefik: install-k3s
 	$(ANSIBLE_CMD) playbooks/traefik.yaml
-
-install-helm:
-	$(ANSIBLE_CMD) playbooks/helm.yaml
 
 install-postgres:
 	$(ANSIBLE_CMD) playbooks/postgres.yaml
@@ -71,6 +72,7 @@ install-monitor:
 install-explorer:
 	$(ANSIBLE_CMD) playbooks/explorer.yaml
 
+# For tests
 install-orthanc:
 	$(ANSIBLE_CMD) playbooks/orthanc.yaml
 

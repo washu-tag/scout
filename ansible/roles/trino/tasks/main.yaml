@@ -1,0 +1,5 @@
+---
+# Main entry point for Trino role
+
+- name: Include Trino deployment
+  ansible.builtin.include_tasks: deploy.yaml

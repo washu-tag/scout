@@ -1,0 +1,15 @@
+---
+- name: Deploy Hive Metastore Service
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: hive-metastore
+    helm_chart_ref: '{{ scout_repo_dir }}/helm/lake/hive-metastore'
+    helm_chart_namespace: '{{ hive_namespace }}'
+    helm_chart_values: '{{ hive_values }}'
+
+- name: Wait for Hive to be ready
+  command: 'kubectl -n {{ hive_namespace }} wait --for=condition=Available --timeout=300s deployments/hive-metastore'
+  register: hive_ready
+  changed_when: false

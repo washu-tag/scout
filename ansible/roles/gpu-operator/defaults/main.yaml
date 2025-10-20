@@ -1,0 +1,14 @@
+---
+# Default values for NVIDIA GPU Operator deployment
+
+# Namespace
+gpu_operator_namespace: gpu-operator
+
+# GPU operator Helm chart values
+gpu_operator_values:
+  toolkit:
+    env:
+      - name: CONTAINERD_CONFIG
+        value: /var/lib/rancher/k3s/agent/etc/containerd/config.toml
+      - name: CONTAINERD_SOCKET
+        value: /run/k3s/containerd/containerd.sock

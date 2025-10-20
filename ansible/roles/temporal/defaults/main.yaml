@@ -1,0 +1,5 @@
+---
+# Default values for Temporal deployment
+
+# Temporal server configuration
+temporal_server_replica_count: 1

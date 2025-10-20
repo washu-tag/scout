@@ -1,192 +1,28 @@
 ---
-- name: Create storage directories for Temporal
+- name: Create storage directories for Cassandra
   hosts: k3s_cluster
   gather_facts: false
-  vars_files:
-    - vars/orchestrator_storage.yaml
   tasks:
     - name: Create storage directories
-      include_tasks: tasks/storage_dir_create.yaml
+      ansible.builtin.include_role:
+        name: cassandra
+        tasks_from: storage
 
-- name: Install Temporal and workers
+- name: Create storage directories for Elasticsearch
+  hosts: k3s_cluster
+  gather_facts: false
+  tasks:
+    - name: Create storage directories
+      ansible.builtin.include_role:
+        name: elasticsearch
+        tasks_from: storage
+
+- name: Install Cassandra, Elasticsearch, and Temporal
   hosts: server
   gather_facts: false
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-  vars_files:
-    - vars/orchestrator_storage.yaml
-  tasks:
-    - name: Set up storage
-      include_tasks: tasks/storage_setup.yaml
-
-    - name: Deploy cert-manager
-      ansible.builtin.include_role:
-        name: scout_common
-        tasks_from: deploy_helm_chart
-      vars:
-        helm_chart_name: cert-manager
-        helm_chart_ref: jetstack/cert-manager
-        helm_chart_namespace: cert-manager
-        helm_repo_name: jetstack
-        helm_repo_url: https://charts.jetstack.io
-        helm_chart_values:
-          installCRDs: true
-
-    - name: Deploy cass-operator
-      ansible.builtin.include_role:
-        name: scout_common
-        tasks_from: deploy_helm_chart
-      vars:
-        helm_chart_name: cass-operator
-        helm_chart_ref: k8ssandra/cass-operator
-        helm_chart_version: '~0.55.2'
-        helm_chart_namespace: '{{ temporal_namespace }}'
-        helm_repo_name: k8ssandra
-        helm_repo_url: https://helm.k8ssandra.io/stable
-        helm_chart_timeout: 10m
-
-    - name: Install the Cassandra datacenter
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: cassandra.datastax.com/v1beta1
-          kind: CassandraDatacenter
-          metadata:
-            name: dc1
-            namespace: '{{ temporal_namespace }}'
-          spec:
-            clusterName: temporal-cassandra
-            serverType: cassandra
-            serverVersion: '5.0.3'
-            size: 1
-            storageConfig:
-              cassandraDataVolumeClaimSpec:
-                storageClassName: '{{ cassandra_storage_class }}'
-                accessModes:
-                  - ReadWriteOnce
-                resources:
-                  requests:
-                    storage: "{{ cassandra_storage_size | default('100Gi') }}"
-            racks:
-              - name: r1
-            config:
-              jvm-server-options:
-                initial_heap_size: '{{ temporal_cassandra_init_heap | default("2G") }}'
-                max_heap_size: '{{ temporal_cassandra_max_heap | default("8G") }}'
-
-    - name: Wait for Cassandra to be ready
-      command: 'kubectl -n {{ temporal_namespace }} wait --for=condition=Ready --timeout=600s cassandradatacenter/dc1'
-      register: cassandra_ready
-      changed_when: false
-
-    - name: Deploy Temporal
-      ansible.builtin.include_role:
-        name: scout_common
-        tasks_from: deploy_helm_chart
-      vars:
-        helm_chart_name: temporal
-        helm_chart_ref: temporal/temporal
-        helm_chart_version: '~0.62.0'
-        helm_chart_namespace: '{{ temporal_namespace }}'
-        helm_repo_name: temporal
-        helm_repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
-        helm_chart_timeout: 15m
-        helm_chart_values:
-          prometheus:
-            enabled: false
-          grafana:
-            enabled: false
-          server:
-            replicaCount: 1
-            config:
-              namespaces:
-                create: true
-              persistence:
-                default:
-                  driver: 'cassandra'
-                  cassandra:
-                    hosts: ['temporal-cassandra-dc1-service.{{ temporal_namespace }}']
-                    port: 9042
-                    keyspace: temporal
-                    existingSecret: 'temporal-cassandra-superuser'
-                    replicationFactor: 1
-                    consistency:
-                      default:
-                        consistency: 'local_quorum'
-                        serialConsistency: 'local_serial'
-          cassandra:
-            enabled: false
-          elasticsearch:
-            replicas: 1
-            persistence:
-              enabled: true
-            volumeClaimTemplate:
-              accessModes:
-                - ReadWriteOnce
-              storageClassName: '{{ elasticsearch_storage_class }}'
-              resources:
-                requests:
-                  storage: '{{ elasticsearch_storage_size | default("100Gi") }}'
-          web:
-            ingress:
-              enabled: true
-              ingressClassName: traefik
-              hosts:
-                - 'temporal.{{ server_hostname }}'
-
-    - name: Wait for Temporal schema job to complete
-      shell: >-
-        JOB_NAME=$(kubectl -n {{ temporal_namespace }} get jobs -l app.kubernetes.io/component=schema
-        --sort-by='.metadata.creationTimestamp'
-        -o jsonpath='{.items[-1].metadata.name}' 2>/dev/null || echo "");
-        if [ -n "$JOB_NAME" ]; then
-          kubectl -n {{ temporal_namespace }} wait --for=condition=complete --timeout=300s job/$JOB_NAME;
-        fi
-      register: temporal_schema
-      changed_when: false
-
-    - name: Construct cron schedule
-      when: scheduled_ingest_cron is undefined and scheduled_ingest_hour is defined
-      set_fact:
-        scheduled_ingest_cron: '0 {{ scheduled_ingest_hour }} * * *'
-
-    - name: Add scheduled task for prospective report indexing
-      when: scheduled_ingest_cron is defined
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: batch/v1
-          kind: Job
-          metadata:
-            name: 'add-prospective-indexing'
-            namespace: '{{ temporal_namespace }}'
-            labels:
-              app: prospective-indexing
-          spec:
-            backoffLimit: 5
-            template:
-              metadata:
-                labels:
-                  app: prospective-indexing
-              spec:
-                restartPolicy: Never
-                containers:
-                  - name: prospective-indexing-setup
-                    image: temporalio/admin-tools
-                    env:
-                      - name: TEMPORAL_ADDRESS
-                        value: 'temporal-frontend.{{ temporal_namespace }}:7233'
-                    command:
-                      - temporal
-                      - schedule
-                      - create
-                      - '--schedule-id'
-                      - ScheduledReportIngest
-                      - '--workflow-id'
-                      - ScheduledReportIngest
-                      - '--task-queue'
-                      - ingest-hl7-log
-                      - '--type'
-                      - IngestHl7LogWorkflow
-                      - '--cron'
-                      - '{{ scheduled_ingest_cron }}'
+  roles:
+    - role: cassandra
+    - role: elasticsearch
+    - role: temporal

@@ -1,0 +1,75 @@
+---
+# Kubernetes deployment tasks for Cassandra cluster
+# These tasks run on the server host (which has access to k3s_cluster inventory variables)
+
+# Storage setup (StorageClass and PersistentVolumes)
+- name: Set up storage
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_setup
+  vars:
+    storage_definitions: '{{ cassandra_storage_definitions }}'
+
+# Deploy cert-manager (required by cass-operator)
+- name: Deploy cert-manager
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: cert-manager
+    helm_chart_ref: jetstack/cert-manager
+    helm_chart_version: '{{ cert_manager_version }}'
+    helm_chart_namespace: '{{ cert_manager_namespace }}'
+    helm_repo_name: jetstack
+    helm_repo_url: https://charts.jetstack.io
+    helm_chart_values:
+      installCRDs: true
+
+# Deploy Cassandra operator
+- name: Deploy cass-operator
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: cass-operator
+    helm_chart_ref: k8ssandra/cass-operator
+    helm_chart_version: '{{ cass_operator_version }}'
+    helm_chart_namespace: '{{ cassandra_namespace }}'
+    helm_repo_name: k8ssandra
+    helm_repo_url: https://helm.k8ssandra.io/stable
+    helm_chart_timeout: 10m
+
+# Deploy Cassandra datacenter
+- name: Install the Cassandra datacenter
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: cassandra.datastax.com/v1beta1
+      kind: CassandraDatacenter
+      metadata:
+        name: '{{ cassandra_datacenter_name | default("dc1") }}'
+        namespace: '{{ cassandra_namespace }}'
+      spec:
+        clusterName: '{{ cassandra_cluster_name | default("cassandra-cluster") }}'
+        serverType: cassandra
+        serverVersion: '{{ cassandra_server_version }}'
+        size: 1
+        storageConfig:
+          cassandraDataVolumeClaimSpec:
+            storageClassName: '{{ cassandra_storage_class }}'
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: "{{ cassandra_storage_size | default('100Gi') }}"
+        racks:
+          - name: r1
+        config:
+          jvm-server-options:
+            initial_heap_size: '{{ cassandra_init_heap | default("2G") }}'
+            max_heap_size: '{{ cassandra_max_heap | default("8G") }}'
+
+- name: Wait for Cassandra to be ready
+  command: 'kubectl -n {{ cassandra_namespace }} wait --for=condition=Ready --timeout=600s cassandradatacenter/{{ cassandra_datacenter_name | default("dc1") }}'
+  register: cassandra_ready
+  changed_when: false

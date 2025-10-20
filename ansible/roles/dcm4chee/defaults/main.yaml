@@ -1,0 +1,48 @@
+---
+# Default values for Dcm4chee deployment
+
+# Storage naming
+dcm4chee_name: dcm4chee
+dcm4chee_wildfly_name: dcm4chee-wildfly
+dcm4chee_wildfly_storage_class: '{{ dcm4chee_wildfly_name }}-storage'
+dcm4chee_storage_name: dcm4chee-storage
+dcm4chee_storage_storage_class: '{{ dcm4chee_storage_name }}-storage'
+dcm4chee_db_name: dcm4chee-db
+dcm4chee_db_storage_class: '{{ dcm4chee_db_name }}-storage'
+dcm4chee_openldap_name: dcm4chee-openldap
+dcm4chee_openldap_storage_class: '{{ dcm4chee_openldap_name }}-storage'
+dcm4chee_slapd_name: dcm4chee-slapd
+dcm4chee_slapd_storage_class: '{{ dcm4chee_slapd_name }}-storage'
+
+# Storage definitions for persistent volumes
+dcm4chee_storage_definitions:
+  - name: '{{ dcm4chee_wildfly_name }}'
+    size: "{{ dcm4chee_wildfly_storage_size | default('10Gi') }}"
+    path: '{{ dcm4chee_dir }}/wildfly'
+    pv_name: '{{ dcm4chee_wildfly_name }}-pv'
+    storage_class_name: '{{ dcm4chee_wildfly_storage_class }}'
+  - name: '{{ dcm4chee_storage_name }}'
+    size: "{{ dcm4chee_storage_storage_size | default('10Gi') }}"
+    path: '{{ dcm4chee_dir }}/storage'
+    pv_name: '{{ dcm4chee_storage_name }}-pv'
+    storage_class_name: '{{ dcm4chee_storage_storage_class }}'
+  - name: '{{ dcm4chee_db_name }}'
+    size: "{{ dcm4chee_db_storage_size | default('10Gi') }}"
+    path: '{{ dcm4chee_dir }}/dbdir'
+    pv_name: '{{ dcm4chee_db_name }}-pv'
+    storage_class_name: '{{ dcm4chee_db_storage_class }}'
+  - name: '{{ dcm4chee_openldap_name }}'
+    size: "{{ dcm4chee_openldap_storage_size | default('10Gi') }}"
+    path: '{{ dcm4chee_dir }}/ldap'
+    pv_name: '{{ dcm4chee_openldap_name }}-pv'
+    storage_class_name: '{{ dcm4chee_openldap_storage_class }}'
+  - name: '{{ dcm4chee_slapd_name }}'
+    size: "{{ dcm4chee_slapd_storage_size | default('10Gi') }}"
+    path: '{{ dcm4chee_dir }}/slapd.d'
+    pv_name: '{{ dcm4chee_slapd_name }}-pv'
+    storage_class_name: '{{ dcm4chee_slapd_storage_class }}'
+
+# Database configuration
+dcm4chee_db: pacsdb
+dcm4chee_db_user: pacs
+dcm4chee_db_password: pacs

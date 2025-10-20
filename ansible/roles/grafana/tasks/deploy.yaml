@@ -1,0 +1,152 @@
+---
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ grafana_namespace }}'
+
+- name: Set up storage
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_setup
+  vars:
+    storage_definitions: '{{ grafana_storage_definitions }}'
+
+- name: Create SMTP secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: smtp-grafana
+        namespace: '{{ grafana_namespace }}'
+        labels:
+          grafana_alert: '1'
+      type: Opaque
+      stringData:
+        user: '{{ grafana_smtp_user }}'
+        password: '{{ grafana_smtp_password }}'
+  when: grafana_alert_contact_point == 'email'
+
+- name: Configure and install Grafana
+  delegate_to: localhost
+  block:
+    - name: Find all Grafana dashboards
+      ansible.builtin.find:
+        paths: '{{ grafana_dashboards_path }}'
+        patterns: '*.json'
+      register: dashboard_files
+
+    - name: Create ConfigMap for each Grafana dashboard
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        definition: |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: '{{ item.path | basename | regex_replace(".json$", "") }}'
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              grafana_dashboard: '1'
+          data:
+            '{{ item.path | basename }}':
+              {{ lookup("file", item.path) | to_nice_json }}
+      loop: '{{ dashboard_files.files }}'
+      loop_control:
+        label: '{{ item.path | basename }}'
+
+    - name: Find all Grafana alerts
+      ansible.builtin.find:
+        paths: '{{ grafana_alerts_path }}'
+        patterns: '*.json.j2'
+      register: alert_templates
+
+    - name: Create ConfigMap for each Grafana alert
+      kubernetes.core.k8s:
+        state: present
+        definition: |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: '{{ item.path | basename | regex_replace(".json.j2$", "") }}'
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              grafana_alert: '1'
+          data:
+            '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}':
+              '{{ lookup("template", item.path) | to_nice_json }}'
+      loop: '{{ alert_templates.files }}'
+      loop_control:
+        label: '{{ item.path | basename }}'
+
+    - name: Create Grafana notification policy as ConfigMap
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: notification-policy
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              grafana_alert: '1'
+          data:
+            notification-policy.yaml: "{{ lookup('template', 'notification-policy.yaml.j2') }}"
+
+    - name: Find all Grafana contact points
+      ansible.builtin.find:
+        paths: '{{ grafana_contact_points_path }}'
+        patterns: '*.json.j2'
+      register: contact_point_templates
+
+    - name: Create Secret for each Grafana contact point
+      kubernetes.core.k8s:
+        state: present
+        definition: |
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: '{{ item.path | basename | regex_replace(".json.j2$", "") }}'
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              grafana_alert: '1'
+          type: Opaque
+          stringData:
+            '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}':
+              '{{ lookup("template", item.path) | to_nice_json }}'
+      loop: '{{ contact_point_templates.files }}'
+      when: grafana_alert_contact_point in (item.path | basename)
+      loop_control:
+        label: '{{ item.path | basename }}'
+
+    - name: Create postgres datasource secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: postgres-ingest-db-secret
+            namespace: '{{ grafana_namespace }}'
+            labels:
+              # default value for: sidecar.datasources.label
+              grafana_datasource: 'true'
+          stringData:
+            pg-db.yaml: "{{ lookup('template', 'datasources/postgres-datasource.yaml.j2') }}"
+
+    - name: Deploy Grafana
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: deploy_helm_chart
+      vars:
+        helm_chart_name: '{{ grafana_helm_chart_name }}'
+        helm_chart_ref: '{{ grafana_helm_repo_name }}/{{ grafana_helm_chart_name }}'
+        helm_chart_namespace: '{{ grafana_namespace }}'
+        helm_repo_name: '{{ grafana_helm_repo_name }}'
+        helm_repo_url: '{{ grafana_helm_repo_url }}'
+        helm_chart_version: '{{ grafana_helm_chart_version }}'
+        helm_chart_create_namespace: false
+        helm_chart_values: "{{ lookup('template', 'grafana.values.yaml.j2') | from_yaml }}"

@@ -1,0 +1,18 @@
+---
+# Default values for Elasticsearch deployment (using ECK)
+
+# Storage naming
+elasticsearch_name: elasticsearch
+elasticsearch_storage_class: '{{ elasticsearch_name }}-storage'
+
+# Storage definitions for persistent volumes
+elasticsearch_storage_definitions:
+  - name: '{{ elasticsearch_name }}'
+    size: "{{ elasticsearch_storage_size | default('100Gi') }}"
+    path: '{{ elasticsearch_dir }}'
+    pv_name: '{{ elasticsearch_name }}-pv'
+    storage_class_name: '{{ elasticsearch_storage_class }}'
+
+# Elasticsearch configuration (ECK)
+elasticsearch_cluster_name: elasticsearch
+elasticsearch_heap_size: 1g # JVM heap size notation (use 'g' not 'Gi')
