@@ -2,14 +2,10 @@
 # Trino role defaults
 # User-configurable settings are in inventory.yaml
 
-# Namespace
-trino_namespace: trino
-
 # Trino Helm configuration
 trino_helm_repo_name: trino
 trino_helm_repo_url: https://trinodb.github.io/charts
 trino_helm_chart_name: trino
-trino_helm_chart_version: ~1.40.0
 
 # Resource sizing - users should override these in inventory
 trino_worker_memory_gb: 16 # Total pod memory for workers
