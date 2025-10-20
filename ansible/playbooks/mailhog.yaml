@@ -2,6 +2,8 @@
 - name: Deploy MailHog to Kubernetes
   hosts: server
   gather_facts: false
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
   vars:
     mailhog_namespace: mailhog
   tasks:
@@ -34,9 +36,6 @@
                 containers:
                   - name: mailhog
                     image: "{{ mailhog_image | default('mailhog/mailhog:latest') }}"
-                    env:
-                      - name: MH_UI_WEB_PATH
-                        value: /mailhog
                     ports:
                       - containerPort: 1025
                         name: smtp
