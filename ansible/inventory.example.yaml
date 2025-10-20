@@ -60,7 +60,6 @@ staging:
     harbor_admin_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     harbor_storage_size: 100Gi
     harbor_dir: /scout/persistence/harbor
-    harbor_namespace: harbor
     harbor_version: '~1.14.0'
 
 # The server group contains the control plane nodes for the k3s cluster.
@@ -210,19 +209,10 @@ k3s_cluster:
     cassandra_storage_size: 300Gi
     elasticsearch_storage_size: 100Gi
 
-    # Namespaces that can be changed
-    hive_namespace: hive
-    postgres_cluster_namespace: cloudnative-pg
-    prometheus_namespace: prometheus
-    grafana_namespace: grafana
-    loki_namespace: loki
-    gpu_operator_namespace: gpu-operator
-    extractor_namespace: extractor
-    minio_tenant_namespace: minio-scout
-    temporal_namespace: temporal
-    jupyter_namespace: jupyter
-    superset_namespace: superset
-    trino_namespace: trino
+    # Namespaces
+    # Default namespaces are defined in roles/scout_common/defaults/main.yaml
+    # Override them here if you need custom namespace names
+    # Example: prometheus_namespace: my-custom-prometheus-namespace
 
     # Local paths
     base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
@@ -238,8 +228,6 @@ k3s_cluster:
     extractor_data_dir: /ceph/input/data
 
     # Parameters for optional PACS instances, only intended for use in development
-    orthanc_namespace: orthanc
-    dcm4chee_namespace: dcm4chee
     orthanc_dicom_port: 4242
     orthanc_dir: /scout/data/orthanc
     dcm4chee_dir: /scout/data/dcm4chee

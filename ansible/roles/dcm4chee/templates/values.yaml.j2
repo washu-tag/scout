@@ -50,8 +50,8 @@ arcVolumeMounts:
     mountPropagation: HostToContainer
 
 versions:
-  arc: '{{ dcm4chee_arc_version | default("5.34.0") }}'
-  db: '{{ dcm4chee_db_version | default("17.4-34") }}'
-  ldap: '{{ dcm4chee_ldap_version | default("2.6.8-34.0") }}'
+  arc: '{{ dcm4chee_arc_version }}'
+  db: '{{ dcm4chee_db_version }}'
+  ldap: '{{ dcm4chee_ldap_version }}'
 
 timezone: '{{ dcm4chee_timezone | default("America/Chicago") }}'

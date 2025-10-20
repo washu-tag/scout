@@ -13,7 +13,7 @@
     "spark.sql.warehouse.dir": "s3a://ci-lake/delta"
   },
   "postgresConfig": {
-    "url": "jdbc:postgresql://postgresql-cluster-r.cloudnative-pg:5432/ingest",
+    "url": "jdbc:postgresql://postgresql-cluster-r.cnpg:5432/ingest",
     "username": "scout",
     "password": "scout123"
   },

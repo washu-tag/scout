@@ -1,9 +1,9 @@
 replicaCount: 1
 
 image:
-  repository: "{{ orthanc_image | default('jodogne/orthanc-plugins') }}"
+  repository: "{{ orthanc_image }}"
   pullPolicy: IfNotPresent
-  tag: "{{ orthanc_version | default('latest') }}"
+  tag: "{{ orthanc_version }}"
 
 imagePullSecrets: []
 nameOverride: ''
