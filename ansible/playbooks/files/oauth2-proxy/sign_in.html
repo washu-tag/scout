@@ -112,18 +112,113 @@
   </div>
 
   <script>
-    if (window.location.hash) {
-      (function () {
-        var inputs = document.getElementsByName('rd');
-        for (var i = 0; i < inputs.length; i++) {
-          var idx = inputs[i].value.indexOf('#');
-          if (idx >= 0) {
-            inputs[i].value = inputs[i].value.substr(0, idx);
-          }
-          inputs[i].value += window.location.hash;
+    (function() {
+      'use strict';
+
+      // Get root domain by stripping known Scout subdomains
+      function getRootDomain() {
+        const host = window.location.host;
+        const knownSubdomains = ['oa2p', 'jupyter', 'superset', 'grafana', 'minio', 'kc', 'temporal'];
+
+        // Handle wildcard jupyter subdomains (e.g., username.jupyter.example.com)
+        // Match pattern: anything.jupyter.domain.com -> domain.com
+        const wildcardMatch = host.match(/^[^.]+\.jupyter\.(.+)$/);
+        if (wildcardMatch) {
+          return wildcardMatch[1];
         }
-      })();
-    }
+
+        // Strip known subdomains
+        for (const subdomain of knownSubdomains) {
+          if (host.startsWith(subdomain + '.')) {
+            return host.substring(subdomain.length + 1);
+          }
+        }
+
+        // No subdomain found - assume this IS the root domain
+        return host;
+      }
+
+      // Preserve hash fragments in redirect URL
+      function preserveHashFragment() {
+        if (!window.location.hash) return;
+
+        const rdInput = document.querySelector("input[name='rd']");
+        if (!rdInput) return;
+
+        // Remove any existing hash and append current one
+        const hashIndex = rdInput.value.indexOf('#');
+        if (hashIndex >= 0) {
+          rdInput.value = rdInput.value.substring(0, hashIndex);
+        }
+        rdInput.value += window.location.hash;
+      }
+
+      // Update form to use oa2p subdomain
+      function updateFormAction() {
+        const form = document.querySelector("form");
+        if (!form) {
+          console.error("Sign-in form not found");
+          return false;
+        }
+
+        const currentAction = form.getAttribute("action");
+        if (!currentAction) {
+          console.error("Form action attribute missing");
+          return false;
+        }
+
+        const rootDomain = getRootDomain();
+        const protocol = window.location.protocol;
+        const updatedAction = protocol + "//oa2p." + rootDomain + currentAction;
+
+        form.setAttribute("action", updatedAction);
+        console.debug("Form action updated:", updatedAction);
+        return true;
+      }
+
+      // Update redirect URL to include current origin
+      function updateRedirectUrl() {
+        const rdInput = document.querySelector("input[name='rd']");
+        if (!rdInput) {
+          console.error("Redirect input not found");
+          return false;
+        }
+
+        const currentValue = rdInput.value;
+
+        // If redirect is already an absolute URL, don't modify it
+        if (currentValue.startsWith('http://') || currentValue.startsWith('https://')) {
+          console.debug("Redirect is already absolute:", currentValue);
+          return true;
+        }
+
+        // Get the origin (removing oa2p subdomain if present for correct redirect)
+        let origin = window.location.origin;
+        const rootDomain = getRootDomain();
+
+        // If we're on oa2p subdomain, redirect to root domain instead
+        if (window.location.host.startsWith('oa2p.')) {
+          origin = window.location.protocol + '//' + rootDomain;
+        }
+
+        rdInput.value = origin + currentValue;
+        console.debug("Redirect URL updated:", rdInput.value);
+        return true;
+      }
+
+      // Initialize all adjustments
+      try {
+        preserveHashFragment();
+        const formOk = updateFormAction();
+        const redirectOk = updateRedirectUrl();
+
+        if (!formOk || !redirectOk) {
+          console.error("Sign-in page initialization incomplete");
+        }
+      } catch (error) {
+        console.error("Sign-in page initialization error:", error);
+      }
+    })();
   </script>
 </body>
 </html>
