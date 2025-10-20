@@ -14,31 +14,38 @@
 - name: Install SELinux packages
   when: k3s_selinux_enabled | bool
   block:
-    - name: Copy container-selinux RPM to node
-      ansible.builtin.copy:
-        src: '{{ k3s_artifact_temp_dir }}/container-selinux.rpm'
-        dest: '{{ container_selinux_rpm_path }}'
-        mode: '0644'
+    - name: Create staging directory for SELinux RPMs
+      ansible.builtin.file:
+        path: '{{ k3s_selinux_rpm_staging_dir }}'
+        state: directory
+        mode: '0755'
 
-    - name: Copy k3s-selinux RPM to node
-      ansible.builtin.copy:
-        src: '{{ k3s_artifact_temp_dir }}/k3s-selinux.rpm'
-        dest: '{{ k3s_selinux_rpm_path }}'
-        mode: '0644'
+    - name: Find all RPM files in artifact directory
+      ansible.builtin.find:
+        paths: '{{ k3s_artifact_temp_dir }}'
+        patterns: '*.rpm'
+      delegate_to: localhost
+      register: rpm_files_to_copy
 
-    - name: Install container-selinux package
+    - name: Copy all SELinux RPMs to node
+      ansible.builtin.copy:
+        src: '{{ item.path }}'
+        dest: '{{ k3s_selinux_rpm_staging_dir }}/{{ item.path | basename }}'
+        mode: '0644'
+      loop: '{{ rpm_files_to_copy.files }}'
+
+    - name: Find all RPM files on node
+      ansible.builtin.find:
+        paths: '{{ k3s_selinux_rpm_staging_dir }}'
+        patterns: '*.rpm'
+      register: rpm_files_on_node
+
+    - name: Install all SELinux packages
       ansible.builtin.yum:
-        name: '{{ container_selinux_rpm_path }}'
+        name: '{{ rpm_files_on_node.files | map(attribute="path") | list }}'
         state: present
         disable_gpg_check: true
-      register: container_selinux_install
-
-    - name: Install k3s-selinux package
-      ansible.builtin.yum:
-        name: '{{ k3s_selinux_rpm_path }}'
-        state: present
-        disable_gpg_check: true
-      register: k3s_selinux_install
+      register: selinux_install
 
     - name: Verify k3s SELinux policy module is loaded
       ansible.builtin.command: semodule -l
@@ -48,10 +55,7 @@
       delay: 2
       until: "'k3s' in semodule_list.stdout"
 
-    - name: Clean up RPM files from node
+    - name: Clean up staging directory
       ansible.builtin.file:
-        path: '{{ item }}'
+        path: '{{ k3s_selinux_rpm_staging_dir }}'
         state: absent
-      loop:
-        - '{{ container_selinux_rpm_path }}'
-        - '{{ k3s_selinux_rpm_path }}'

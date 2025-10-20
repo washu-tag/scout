@@ -51,24 +51,9 @@
   delegate_to: localhost
   run_once: true
 
-- name: Download SELinux RPMs
+- name: Download SELinux RPMs using Kubernetes Job
+  ansible.builtin.include_tasks: download_selinux_rpms.yaml
   when: k3s_selinux_enabled | bool
-  delegate_to: localhost
-  run_once: true
-  block:
-    - name: Download container-selinux RPM
-      ansible.builtin.get_url:
-        url: '{{ container_selinux_rpm_url }}'
-        dest: '{{ k3s_temp_dir.path }}/container-selinux.rpm'
-        mode: '0644'
-        timeout: '{{ k3s_artifact_download_timeout }}'
-
-    - name: Download k3s-selinux RPM
-      ansible.builtin.get_url:
-        url: '{{ k3s_selinux_rpm_url }}'
-        dest: '{{ k3s_temp_dir.path }}/k3s-selinux.rpm'
-        mode: '0644'
-        timeout: '{{ k3s_artifact_download_timeout }}'
 
 - name: Verify k3s binary was downloaded
   ansible.builtin.stat:
@@ -101,25 +86,16 @@
   delegate_to: localhost
   run_once: true
   block:
-    - name: Check container-selinux RPM
-      ansible.builtin.stat:
-        path: '{{ k3s_temp_dir.path }}/container-selinux.rpm'
-      register: container_selinux_stat
+    - name: Find SELinux RPM files
+      ansible.builtin.find:
+        paths: '{{ k3s_temp_dir.path }}'
+        patterns: '*-selinux*.rpm'
+      register: selinux_rpm_files
 
-    - name: Check k3s-selinux RPM
-      ansible.builtin.stat:
-        path: '{{ k3s_temp_dir.path }}/k3s-selinux.rpm'
-      register: k3s_selinux_stat
-
-    - name: Fail if SELinux RPMs are missing
+    - name: Fail if no SELinux RPMs found
       ansible.builtin.fail:
-        msg: 'Required SELinux RPM missing: {{ item.name }}'
-      when: not item.stat.stat.exists
-      loop:
-        - name: container-selinux
-          stat: '{{ container_selinux_stat }}'
-        - name: k3s-selinux
-          stat: '{{ k3s_selinux_stat }}'
+        msg: 'No SELinux RPM files found in {{ k3s_temp_dir.path }}'
+      when: selinux_rpm_files.files | length == 0
 
 - name: Set fact with temp directory path
   ansible.builtin.set_fact:
