@@ -89,7 +89,7 @@ const ToolsGrid = () => {
     setSubdomainUrls({
       jupyter: getUrl('jupyter'),
       superset: getUrl('superset'),
-      minio: getUrl('minio', '/login'),
+      minio: getUrl('minio'),
       temporal: getUrl('temporal', '/auth/sso'),
       grafana: getUrl('grafana'),
       keycloak: getUrl('keycloak', '/admin/scout/console'),
