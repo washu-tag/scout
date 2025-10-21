@@ -1,6 +1,6 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
-    install-postgres install-auth install-lake install-analytics install-orchestrator install-extractor \
-    install-monitor install-jupyter install-launchpad echo
+    install-postgres install-lake install-analytics install-orchestrator install-extractor \
+    install-monitor install-jupyter install-launchpad install-chat echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -78,6 +78,9 @@ install-monitor:
 
 install-launchpad:
 	$(ANSIBLE_CMD) playbooks/launchpad.yaml
+
+install-chat:
+	$(ANSIBLE_CMD) playbooks/chatbot.yaml
 
 # For tests
 install-orthanc:

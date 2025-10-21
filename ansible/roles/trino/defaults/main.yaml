@@ -42,3 +42,48 @@ trino_worker_resources:
   limits:
     cpu: '{{ trino_worker_cpu_limit }}'
     memory: '{{ trino_worker_max_heap | jvm_memory_to_k8s(2) }}'
+
+# Access control - user credentials for authentication and authorization
+# Trino is configured with password authentication to prevent user impersonation
+# REQUIRED: Passwords must be set in inventory.yaml (use vault encryption)
+# Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+trino_admin_user: trino-admin # Full access user for admin operations (Superset)
+trino_admin_password: '' # REQUIRED: Set in inventory
+trino_readonly_user: trino-readonly # Read-only user for end users (Jupyter, MCP)
+trino_readonly_password: '' # REQUIRED: Set in inventory
+
+# Trino MCP server configuration
+mcp_trino_enabled: true
+mcp_trino_repo_url: https://github.com/tuannvm/mcp-trino.git
+mcp_trino_repo_version: 'v{{ mcp_trino_version }}'
+mcp_trino_chart_path: /tmp/mcp-trino-chart
+mcp_trino_release_name: mcp-trino
+
+# Trino connection settings for MCP (uses read-only user)
+mcp_trino_host: trino
+mcp_trino_port: 8080
+mcp_trino_scheme: http
+mcp_trino_user: '{{ trino_readonly_user }}'
+
+# Trino MCP Helm values
+mcp_trino_values:
+  replicaCount: 1
+  image:
+    tag: '{{ mcp_trino_version }}'
+  trino:
+    host: '{{ mcp_trino_host }}'
+    port: '{{ mcp_trino_port }}'
+    scheme: '{{ mcp_trino_scheme }}'
+    ssl: false
+    user: '{{ mcp_trino_user }}'
+    catalog: delta
+    schema: default
+    allowWriteQueries: false
+    queryTimeout: 600
+    allowlists:
+      catalogs: [delta]
+      schemas: [delta.default]
+      tables: []
+  service:
+    type: ClusterIP
+    port: 8080

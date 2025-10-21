@@ -1,5 +1,5 @@
 database_name: Scout Data Lake
-sqlalchemy_uri: trino://trino@trino.trino:8080/delta
+sqlalchemy_uri: trino://{{ trino_admin_user }}@trino.{{ trino_namespace }}:8080/delta
 cache_timeout: null
 expose_in_sqllab: true
 allow_run_async: false

@@ -10,11 +10,18 @@ hub:
       admin: false
       # Secret would be preferred, but not clear how to do that in this chart
       api_token: '{{ jupyter_metrics_api_token }}'
+    mcp:
+      admin: false
+      api_token: '{{ jupyter_mcp_api_token }}'
   loadRoles:
     metrics:
       description: 'Read JupyterHub metrics'
       scopes: [read:metrics]
       services: [prometheus]
+    mcp:
+      description: 'Allow MCP sidecars to access single-user server APIs'
+      scopes: [access:servers]
+      services: [mcp]
   db:
     pvc:
       storageClassName: '{{ use_custom_storage_classes | ternary(jupyter_hub_storage_class, omit) }}'
@@ -107,11 +114,26 @@ singleuser:
             # Copy Scout quickstart samples on first login
             FLAG_FILE=/home/$NB_USER/.scout_quickstart
             if [ ! -f $FLAG_FILE ]; then
+              mkdir -p /home/$NB_USER/models
               mkdir -p /home/$NB_USER/Scout &&
               cp -r /opt/scout/samples/* /home/$NB_USER/Scout/ &&
               chown -R $NB_USER:$NB_GID /home/$NB_USER/Scout &&
               touch $FLAG_FILE
             fi
+  extraEnv:
+    JUPYTERHUB_ALLOW_TOKEN_IN_URL: '1'
+    # HuggingFace model cache directory - models downloaded from HF Hub are stored here
+    # This directory is created in postStart hook and persists with user's home directory
+    HF_HOME: '/home/jovyan/models'
+    # Trino connection information for read-only access from notebooks
+    # Users can connect with: trino.dbapi.connect(host=os.getenv('TRINO_HOST'), ...)
+    TRINO_HOST: 'trino.{{ trino_namespace }}'
+    TRINO_PORT: '8080'
+    TRINO_SCHEME: 'http'
+    TRINO_USER: '{{ trino_readonly_user }}'
+    TRINO_PASSWORD: '{{ trino_readonly_password }}'
+    TRINO_CATALOG: 'delta'
+    TRINO_SCHEMA: 'default'
   extraFiles:
     jupyter-server-config:
       mountPath: /etc/jupyter/jupyter_server_config.py
@@ -142,6 +164,90 @@ singleuser:
         name: spark-config-writable
         mountPath: /usr/local/spark/conf/spark-defaults.conf
         subPath: spark-defaults.conf
+  extraContainers:
+    - name: jupyter-mcp
+      image: '{{ jupyter_mcp_image }}'
+      imagePullPolicy: IfNotPresent
+      ports:
+        - containerPort: 4040
+      command: ['/bin/sh', '-lc']
+      args:
+        - |
+          set -euo pipefail
+          SERVICE_PREFIX="/user/$HUB_USERNAME"
+          if [ -n "$SERVER_NAME" ]; then
+            SERVICE_PREFIX="$SERVICE_PREFIX/$SERVER_NAME"
+          fi
+
+          HUB_BASE="http://proxy-public.{{ jupyter_namespace }}.svc.cluster.local"
+          BASE="$HUB_BASE$SERVICE_PREFIX"
+          export BASE
+
+          echo "[mcp/wait] Jupyter API"
+          python -c "$WAIT_FOR_JUPYTER_PY"
+
+          echo "[mcp] starting jupyter-mcp-server"
+          exec jupyter-mcp-server start \
+            --transport streamable-http \
+            --provider jupyter \
+            --port 4040 \
+            --document-url "$BASE" \
+            --runtime-url  "$BASE" \
+            --document-id "$NB_PATH" \
+            --start-new-runtime false \
+            --document-token "$JUPYTER_MCP_SERVICE_TOKEN" \
+            --runtime-token  "$JUPYTER_MCP_SERVICE_TOKEN"
+      env:
+        - name: JUPYTER_MCP_SERVICE_TOKEN
+          value: '{{ jupyter_mcp_api_token }}'
+        - name: HUB_USERNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['hub.jupyter.org/username']
+        - name: SERVER_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['hub.jupyter.org/servername']
+        - name: NB_PATH
+          value: "notebook.ipynb"
+        - name: WAIT_FOR_JUPYTER_PY
+          value: |
+            import os, time, urllib.request, urllib.error
+            base = os.environ["BASE"]
+            nb   = os.environ.get("NB_PATH","notebook.ipynb")
+            tok  = os.environ.get("JUPYTER_MCP_SERVICE_TOKEN","")
+            hdrs = dict([("Authorization", "token " + tok)]) if tok else dict()
+            def wait(url):
+                while True:
+                    try:
+                        req = urllib.request.Request(url, headers=hdrs)
+                        urllib.request.urlopen(req, timeout=3).read()
+                        break
+                    except Exception:
+                        time.sleep(1)
+            wait(base + "/api/kernels")
+
+    - name: mcpo
+      image: '{{ mcpo_image }}'
+      imagePullPolicy: IfNotPresent
+      ports:
+        - containerPort: 8000
+      command: ['/bin/sh', '-c']
+      args:
+        - |
+          set -e
+          # Wait for jupyter-mcp HTTP to be live
+          echo "[mcpo] waiting"
+          until curl -sS -o /dev/null --max-time 2 http://127.0.0.1:4040/; do
+            echo "still waiting..."; sleep 2;
+          done;
+          echo "[mcpo] starting"
+          exec uvx mcpo \
+            --host 0.0.0.0 \
+            --port 8000 \
+            --server-type streamable-http \
+            -- \
+            http://127.0.0.1:4040/mcp
   networkPolicy:
     egress:
       # Allow access to MinIO for data lake storage
@@ -162,3 +268,24 @@ singleuser:
                 app.kubernetes.io/instance: '{{ hive_metastore_instance_readonly }}'
         ports:
           - port: 9083
+      # Allow access to Ollama for AI model inference via MCP
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ chatbot_namespace }}'
+        ports:
+          - port: 11434
+      # Allow access to Trino for SQL queries via MCP
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ trino_namespace }}'
+        ports:
+          - port: 8080
+      # Allow access to JupyterHub proxy for MCP inter-notebook communication
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ jupyter_namespace }}'
+        ports:
+          - port: 80

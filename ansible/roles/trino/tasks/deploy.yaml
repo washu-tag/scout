@@ -1,7 +1,5 @@
 ---
-# Deploy Trino using Helm
-# Trino auto-configures query.max-memory-per-node and memory.heap-headroom-per-node
-# as 30% of heap each, so we only need to set JVM heap and pod memory
+# Deploy Trino using Helm with file-based access control
 
 - name: Deploy Trino
   ansible.builtin.include_role:

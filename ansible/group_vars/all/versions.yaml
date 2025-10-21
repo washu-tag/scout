@@ -52,6 +52,11 @@ grafana_helm_chart_version: ~10.1.1
 
 # Notebooks & Interactive Computing
 jupyter_helm_chart_version: ~4.3.0
+jupyter_mcp_image: datalayer/jupyter-mcp-server:v0.17.0
+
+# AI & ML
+open_webui_helm_chart_version: ~8.11.0
+mcpo_image: ghcr.io/open-webui/mcpo:v0.0.19
 
 # Monitoring & Observability - Prometheus
 prometheus_helm_chart_version: ~27.41.1

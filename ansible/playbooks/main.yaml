@@ -56,3 +56,6 @@
 
 - name: Install Launchpad
   import_playbook: launchpad.yaml
+
+- name: Install Chat
+  import_playbook: chatbot.yaml
