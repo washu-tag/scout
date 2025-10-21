@@ -115,27 +115,11 @@
     (function() {
       'use strict';
 
-      // Get root domain by stripping known Scout subdomains
+      // Get root domain passed in from Footer variable (because oauth2-proxy templates are limited)
       function getRootDomain() {
-        const host = window.location.host;
-        const knownSubdomains = ['auth', 'jupyter', 'superset', 'grafana', 'minio', 'keycloak', 'temporal'];
-
-        // Handle wildcard jupyter subdomains (e.g., username.jupyter.example.com)
-        // Match pattern: anything.jupyter.domain.com -> domain.com
-        const wildcardMatch = host.match(/^[^.]+\.jupyter\.(.+)$/);
-        if (wildcardMatch) {
-          return wildcardMatch[1];
-        }
-
-        // Strip known subdomains
-        for (const subdomain of knownSubdomains) {
-          if (host.startsWith(subdomain + '.')) {
-            return host.substring(subdomain.length + 1);
-          }
-        }
-
-        // No subdomain found - assume this IS the root domain
-        return host;
+        const footer = "{{.Footer}}";
+        console.debug("Footer content / root domain:", footer);
+        return footer;
       }
 
       // Preserve hash fragments in redirect URL
