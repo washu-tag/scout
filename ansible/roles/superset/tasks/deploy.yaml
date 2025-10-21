@@ -108,6 +108,7 @@
           db_user: '{{ superset_postgres_user }}'
           db_pass: '{{ superset_postgres_password }}'
           db_name: '{{ superset_database }}'
+        resources: '{{ superset_resources }}'
       configOverrides:
         branding: |
           APP_NAME = "{{ superset_app_name }}"

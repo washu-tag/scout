@@ -3,8 +3,6 @@
 # Override in inventory files as needed
 
 # Harbor helm chart configuration
-harbor_version: '~1.14.0'
-harbor_namespace: harbor
 harbor_storage_size: 100Gi
 harbor_admin_password: 'Harbor12345' # Override in inventory with vault-encrypted value!
 

@@ -41,6 +41,7 @@ singleBinary:
   persistence:
     enabled: true
     storageClass: '{{ loki_storage_class }}'
+  resources: {{ loki_resources | to_json }}
   extraEnv:
     - name: AWS_ACCESS_KEY_ID
       valueFrom:

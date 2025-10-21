@@ -47,10 +47,10 @@
       apiVersion: cassandra.datastax.com/v1beta1
       kind: CassandraDatacenter
       metadata:
-        name: '{{ cassandra_datacenter_name | default("dc1") }}'
+        name: '{{ cassandra_datacenter_name }}'
         namespace: '{{ cassandra_namespace }}'
       spec:
-        clusterName: '{{ cassandra_cluster_name | default("cassandra-cluster") }}'
+        clusterName: '{{ cassandra_cluster_name }}'
         serverType: cassandra
         serverVersion: '{{ cassandra_server_version }}'
         size: 1
@@ -61,15 +61,22 @@
               - ReadWriteOnce
             resources:
               requests:
-                storage: "{{ cassandra_storage_size | default('100Gi') }}"
+                storage: '{{ cassandra_storage_size }}'
         racks:
           - name: r1
+        resources:
+          requests:
+            cpu: '{{ cassandra_cpu_request }}'
+            memory: '{{ cassandra_max_heap | jvm_memory_to_k8s }}'
+          limits:
+            cpu: '{{ cassandra_cpu_limit }}'
+            memory: '{{ cassandra_max_heap | jvm_memory_to_k8s(2) }}'
         config:
           jvm-server-options:
-            initial_heap_size: '{{ cassandra_init_heap | default("2G") }}'
-            max_heap_size: '{{ cassandra_max_heap | default("8G") }}'
+            initial_heap_size: '{{ cassandra_init_heap }}'
+            max_heap_size: '{{ cassandra_max_heap }}'
 
 - name: Wait for Cassandra to be ready
-  command: 'kubectl -n {{ cassandra_namespace }} wait --for=condition=Ready --timeout=600s cassandradatacenter/{{ cassandra_datacenter_name | default("dc1") }}'
+  command: 'kubectl -n {{ cassandra_namespace }} wait --for=condition=Ready --timeout=600s cassandradatacenter/{{ cassandra_datacenter_name }}'
   register: cassandra_ready
   changed_when: false

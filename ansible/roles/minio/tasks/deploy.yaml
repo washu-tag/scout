@@ -81,8 +81,9 @@
           - servers: '{{ groups["minio_hosts"] | length | default(1) }}'
             name: pool-0
             volumesPerServer: '{{ minio_volumes_per_server | default(1) }}'
-            size: "{{ minio_storage_size | default('100Gi') }}"
-            storageClassName: "{{ minio_storage_class | default('minio-storage') }}"
+            size: '{{ minio_storage_size }}'
+            storageClassName: '{{ minio_storage_class }}'
+            resources: '{{ minio_resources }}'
             tolerations:
               # Ensure MinIO pods can run on control plane nodes
               - key: 'node-role.kubernetes.io/control-plane'

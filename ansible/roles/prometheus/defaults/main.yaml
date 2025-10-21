@@ -10,7 +10,7 @@ prometheus_helm_chart_name: prometheus
 # Storage configuration
 prometheus_name: prometheus
 prometheus_storage_class: '{{ prometheus_name }}-storage'
-prometheus_storage_size: 100Gi
+prometheus_storage_size: 10Gi
 prometheus_dir: /scout/monitoring/prometheus
 
 # Storage definitions
@@ -20,3 +20,12 @@ prometheus_storage_definitions:
     path: '{{ prometheus_dir }}'
     pv_name: '{{ prometheus_name }}-pv'
     storage_class_name: '{{ prometheus_storage_class }}'
+
+# Resource configuration (dev defaults - CI friendly)
+prometheus_resources:
+  requests:
+    cpu: 250m
+    memory: 1Gi
+  limits:
+    cpu: 2
+    memory: 2Gi

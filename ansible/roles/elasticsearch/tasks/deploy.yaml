@@ -40,7 +40,7 @@
       apiVersion: elasticsearch.k8s.elastic.co/v1
       kind: Elasticsearch
       metadata:
-        name: '{{ elasticsearch_cluster_name | default("elasticsearch") }}'
+        name: '{{ elasticsearch_cluster_name }}'
         namespace: '{{ elasticsearch_namespace }}'
       spec:
         version: '{{ elasticsearch_version }}'
@@ -59,14 +59,14 @@
                   - name: elasticsearch
                     env:
                       - name: ES_JAVA_OPTS
-                        value: '-Xms{{ elasticsearch_heap_size | default("1g") }} -Xmx{{ elasticsearch_heap_size | default("1g") }}'
+                        value: '-Xms{{ elasticsearch_heap_size }} -Xmx{{ elasticsearch_heap_size }}'
                     resources:
                       requests:
-                        memory: '{{ (elasticsearch_heap_size | default("1g") | regex_replace("g", "Gi")) }}'
-                        cpu: 500m
+                        cpu: '{{ elasticsearch_cpu_request }}'
+                        memory: '{{ elasticsearch_heap_size | jvm_memory_to_k8s }}'
                       limits:
-                        memory: '{{ (elasticsearch_heap_size | default("1g") | regex_replace("g", "") | int * 2) | string }}Gi'
-                        cpu: 2
+                        cpu: '{{ elasticsearch_cpu_limit }}'
+                        memory: '{{ elasticsearch_heap_size | jvm_memory_to_k8s(2) }}'
             volumeClaimTemplates:
               - metadata:
                   name: elasticsearch-data
@@ -76,13 +76,13 @@
                   storageClassName: '{{ elasticsearch_storage_class }}'
                   resources:
                     requests:
-                      storage: '{{ elasticsearch_storage_size | default("100Gi") }}'
+                      storage: '{{ elasticsearch_storage_size }}'
 
 - name: Wait for Elasticsearch to be ready
   kubernetes.core.k8s_info:
     api_version: elasticsearch.k8s.elastic.co/v1
     kind: Elasticsearch
-    name: '{{ elasticsearch_cluster_name | default("elasticsearch") }}'
+    name: '{{ elasticsearch_cluster_name }}'
     namespace: '{{ elasticsearch_namespace }}'
   register: elasticsearch_status
   until:

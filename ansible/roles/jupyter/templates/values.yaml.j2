@@ -3,13 +3,7 @@ proxy:
     type: ClusterIP
 
 hub:
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256M
-    limits:
-      cpu: 1
-      memory: 1G
+  resources: {{ jupyter_hub_resources | to_json }}
   shutdownOnLogout: true
   services:
     prometheus:
@@ -63,7 +57,7 @@ singleuser:
   image:
     name: '{{ jupyter_singleuser_image_name }}'
     tag: '{{ jupyter_singleuser_image_tag }}'
-    pullPolicy: Never
+    pullPolicy: IfNotPresent
   cmd: null
   lifecycleHooks:
     postStart:
@@ -91,11 +85,11 @@ singleuser:
         }
 
   cpu:
-    limit: 4
-    guarantee: 1
+    guarantee: '{{ jupyter_singleuser_cpu_request }}'
+    limit: '{{ jupyter_singleuser_cpu_limit }}'
   memory:
-    limit: 16G
-    guarantee: 2G
+    guarantee: '{{ jupyter_singleuser_memory_request if jupyter_singleuser_memory_request else (jupyter_spark_memory | jvm_memory_to_k8s) }}'
+    limit: '{{ jupyter_singleuser_memory_limit if jupyter_singleuser_memory_limit else (jupyter_spark_memory | jvm_memory_to_k8s(2)) }}'
   extraResource: '{{ jupyter_singleuser_extra_resource | default({}) }}'
   storage:
     type: static
@@ -113,12 +107,14 @@ singleuser:
         subPath: spark-defaults.conf
   networkPolicy:
     egress:
+      # Allow access to MinIO for data lake storage
       - to:
           - namespaceSelector:
               matchLabels:
                 kubernetes.io/metadata.name: '{{ minio_tenant_namespace }}'
         ports:
           - port: 9000
+      # Allow access to Hive Metastore for metadata queries
       - to:
           - namespaceSelector:
               matchLabels:

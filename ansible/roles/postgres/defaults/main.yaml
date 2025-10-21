@@ -4,7 +4,15 @@
 
 # Postgres storage configuration
 postgres_storage_size: 1Gi
-postgres_resources: {}
+
+# Resource configuration (dev defaults - CI friendly)
+postgres_resources:
+  requests:
+    cpu: 250m
+    memory: 1Gi
+  limits:
+    cpu: 2
+    memory: 2Gi
 postgres_parameters:
   max_connections: '100'
   shared_buffers: '256MB'

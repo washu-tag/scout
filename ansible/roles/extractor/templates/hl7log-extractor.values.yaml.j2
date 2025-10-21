@@ -12,6 +12,7 @@ env:
 service:
   type: ClusterIP
   port: 8080
+resources: {{ hl7log_extractor_resources | to_json }}
 volumes:
   - name: data
     hostPath:
