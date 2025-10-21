@@ -1,0 +1,18 @@
+---
+- name: Create storage directories for Chatbot
+  hosts: k3s_cluster
+  gather_facts: false
+  tasks:
+    - name: Create storage directories
+      ansible.builtin.include_role:
+        name: open-webui
+        tasks_from: storage
+
+- name: Deploy Chatbot
+  hosts: server
+  gather_facts: false
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
+  roles:
+    - open-webui

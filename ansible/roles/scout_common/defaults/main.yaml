@@ -52,6 +52,7 @@ cassandra_namespace: cassandra
 cert_manager_namespace: cert-manager
 eck_operator_namespace: eck-operator
 elasticsearch_namespace: elastic
+chatbot_namespace: chatbot
 jupyter_namespace: jupyter
 superset_namespace: superset
 trino_namespace: trino

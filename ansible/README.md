@@ -13,6 +13,7 @@ Scout uses Ansible to orchestrate deployment of a distributed data analysis plat
 - **Notebooks**: JupyterHub with PySpark for interactive data analysis
 - **Monitoring**: Prometheus, Loki, and Grafana for observability
 - **Launchpad**: Central landing page and service navigation hub
+- **AI/ML**: Open WebUI with Ollama for AI-powered chat
 
 ## Prerequisites
 
@@ -135,6 +136,7 @@ make install-extractor    # HL7 processing services
 make install-jupyter      # JupyterHub
 make install-monitor      # Prometheus + Loki + Grafana
 make install-launchpad    # Launchpad web interface
+make install-chat         # Open WebUI + Ollama
 ```
 
 ### Development Tools
@@ -672,6 +674,7 @@ ansible/
 │   ├── trino/                   # Trino query engine
 │   ├── superset/                # Apache Superset
 │   ├── jupyter/                 # JupyterHub
+│   ├── open-webui/              # Open WebUI + Ollama
 │   ├── prometheus/              # Prometheus monitoring
 │   ├── loki/                    # Loki log aggregation
 │   ├── grafana/                 # Grafana dashboards

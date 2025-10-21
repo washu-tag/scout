@@ -1,0 +1,46 @@
+---
+# Pull Ollama models asynchronously via Kubernetes Job
+# This runs after Ollama deployment to avoid blocking Helm install
+
+- name: Create model pull Job
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        generateName: 'ollama-pull-models-'
+        namespace: '{{ chatbot_namespace }}'
+        labels:
+          app: ollama-pull-models
+      spec:
+        ttlSecondsAfterFinished: 600 # Clean up 10 minutes after completion
+        backoffLimit: 3
+        template:
+          metadata:
+            labels:
+              app: ollama-pull-models
+          spec:
+            restartPolicy: OnFailure
+            containers:
+              - name: ollama-pull
+                image: ollama/ollama:latest
+                env:
+                  - name: OLLAMA_HOST
+                    value: 'http://{{ ollama_name }}.{{ chatbot_namespace }}:11434'
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    set -e
+                    echo "Waiting for Ollama to be ready..."
+                    until ollama list > /dev/null 2>&1; do
+                      echo "Ollama not ready, waiting..."
+                      sleep 5
+                    done
+                    echo "Ollama is ready, pulling models..."
+                    {% for model in ollama_models %}
+                    echo "Pulling model: {{ model }}"
+                    ollama pull {{ model }}
+                    {% endfor %}
+                    echo "All models pulled successfully"
