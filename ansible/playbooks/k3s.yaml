@@ -16,9 +16,11 @@
         dest: /root/bin/get.k3s.io.sh
         mode: '0755'
 
-    - name: Add python kubernetes library from system package
+    - name: Add python libraries from system packages
       package:
-        name: python3-kubernetes
+        name:
+          - python3-kubernetes
+          - python3-passlib
         state: present
 
 ################################################################################

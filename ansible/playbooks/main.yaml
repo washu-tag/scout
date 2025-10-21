@@ -51,3 +51,6 @@
 
 - name: Install Explorer
   import_playbook: explorer.yaml
+
+- name: Install Chat
+  import_playbook: chatbot.yaml
