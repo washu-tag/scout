@@ -1,5 +1,10 @@
 ---
 # Main entry point for Trino role
+# Deploys Trino and its MCP server
 
 - name: Include Trino deployment
   ansible.builtin.include_tasks: deploy.yaml
+
+- name: Include Trino MCP deployment
+  ansible.builtin.include_tasks: mcp.yaml
+  when: mcp_trino_enabled | default(true) | bool

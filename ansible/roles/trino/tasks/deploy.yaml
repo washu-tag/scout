@@ -1,7 +1,18 @@
 ---
-# Deploy Trino using Helm
-# Trino auto-configures query.max-memory-per-node and memory.heap-headroom-per-node
-# as 30% of heap each, so we only need to set JVM heap and pod memory
+# Deploy Trino using Helm with file-based access control
+
+- name: Validate required Trino passwords
+  ansible.builtin.assert:
+    that:
+      - trino_admin_password is defined
+      - trino_admin_password | length > 0
+      - trino_readonly_password is defined
+      - trino_readonly_password | length > 0
+    fail_msg: >
+      Trino passwords (trino_admin_password and trino_readonly_password) are required for authentication.
+      Please set them in your inventory.yaml (use vault encryption).
+      Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+    quiet: true
 
 - name: Deploy Trino
   ansible.builtin.include_role:

@@ -1,0 +1,58 @@
+---
+# Open WebUI and Ollama role defaults
+# User-configurable settings are in inventory.yaml
+
+# Helm configuration
+open_webui_helm_repo_name: open-webui
+open_webui_helm_repo_url: https://helm.openwebui.com/
+open_webui_helm_chart_name: open-webui
+open_webui_helm_release_name: open-webui
+
+# Component names
+ollama_name: ollama
+open_webui_name: open-webui
+
+# Storage configuration
+ollama_storage_class: '{{ ollama_name }}-storage'
+ollama_storage_size: 200Gi
+ollama_models: []
+
+open_webui_storage_class: '{{ open_webui_name }}-storage'
+open_webui_storage_size: 100Gi
+
+# PostgreSQL configuration
+open_webui_database: openwebui
+open_webui_postgres_user: openwebui
+# REQUIRED: Must be set in inventory.yaml (use vault encryption)
+# Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+open_webui_postgres_password: ''
+
+# Storage definitions
+chatbot_storage_definitions:
+  - name: '{{ ollama_name }}'
+    size: '{{ ollama_storage_size }}'
+    path: '{{ ollama_dir }}'
+    pv_name: '{{ ollama_name }}-pv'
+    storage_class_name: '{{ ollama_storage_class }}'
+  - name: '{{ open_webui_name }}'
+    size: '{{ open_webui_storage_size }}'
+    path: '{{ open_webui_dir }}'
+    pv_name: '{{ open_webui_name }}-pv'
+    storage_class_name: '{{ open_webui_storage_class }}'
+
+# Resource configuration (dev defaults)
+ollama_resources:
+  requests:
+    cpu: 2
+    memory: 4Gi
+  limits:
+    cpu: 8
+    memory: 16Gi
+
+open_webui_resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 2
+    memory: 2Gi
