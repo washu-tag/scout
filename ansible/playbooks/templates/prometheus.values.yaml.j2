@@ -88,7 +88,7 @@ extraScrapeConfigs: |
         target_label: pod
 
   - job_name: keycloak
-    metrics_path: /kc/metrics
+    metrics_path: /metrics
     static_configs:
       - targets: ['keycloak-service.{{ keycloak_namespace }}:9000']
 

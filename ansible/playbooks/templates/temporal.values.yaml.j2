@@ -26,7 +26,7 @@ server:
     authorization:
       jwtKeyProvider:
         keySourceURIs:
-          - https://{{ server_hostname }}/kc/realms/scout/protocol/openid-connect/certs
+          - https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/certs
         refreshInterval: 1m
       permissionsClaimName: groups
       authorizer: default
@@ -48,19 +48,17 @@ elasticsearch:
 
 web:
   additionalEnv:
-    - name: TEMPORAL_UI_PUBLIC_PATH
-      value: /temporal
 {% if temporal_oidc_enabled | default(true) %}
     - name: TEMPORAL_AUTH_ENABLED
       value: 'true'
     - name: TEMPORAL_AUTH_PROVIDER_URL
-      value: 'https://{{ server_hostname }}/kc/realms/scout'
+      value: 'https://keycloak.{{ server_hostname }}/realms/scout'
     - name: TEMPORAL_AUTH_CLIENT_ID
       value: '{{ keycloak_temporal_client_id }}'
     - name: TEMPORAL_AUTH_CLIENT_SECRET
       value: '{{ keycloak_temporal_client_secret }}'
     - name: TEMPORAL_AUTH_CALLBACK_URL
-      value: 'https://{{ server_hostname }}/temporal/auth/sso/callback'
+      value: 'https://temporal.{{ server_hostname }}/auth/sso/callback'
     - name: TEMPORAL_AUTH_SCOPES
       value: openid microprofile-jwt
 {% endif %}

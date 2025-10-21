@@ -13,7 +13,6 @@ ENV KC_METRICS_ENABLED=true
 ENV KC_EVENT_METRICS_USER_ENABLED=true
 ENV KC_EVENT_METRICS_USER_TAGS=realm,idp,clientId
 ENV KC_DB=postgres
-ENV KC_HTTP_RELATIVE_PATH=/kc
 
 # Build Keycloak with extensions
 WORKDIR /opt/keycloak

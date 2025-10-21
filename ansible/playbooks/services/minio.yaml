@@ -43,14 +43,12 @@
           export MINIO_REGION_NAME={{ s3_region }}
           export MINIO_REGION={{ s3_region }}
           {% if minio_oidc_enabled | default(true) %}
-          export MINIO_IDENTITY_OPENID_CONFIG_URL_PRIMARY_IAM="https://{{ server_hostname }}/kc/realms/scout/.well-known/openid-configuration"
+          export MINIO_IDENTITY_OPENID_CONFIG_URL_PRIMARY_IAM="https://keycloak.{{ server_hostname }}/realms/scout/.well-known/openid-configuration"
           export MINIO_IDENTITY_OPENID_CLIENT_ID_PRIMARY_IAM="{{ keycloak_minio_client_id }}"
           export MINIO_IDENTITY_OPENID_CLIENT_SECRET_PRIMARY_IAM="{{ keycloak_minio_client_secret }}"
           export MINIO_IDENTITY_OPENID_DISPLAY_NAME_PRIMARY_IAM="Keycloak SSO"
           export MINIO_IDENTITY_OPENID_SCOPES_PRIMARY_IAM="openid,microprofile-jwt"
           export MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC_PRIMARY_IAM="on"
-          export MINIO_IDENTITY_OPENID_REDIRECT_URI="https://{{ server_hostname }}/minio/oauth_callback/"
-          export MINIO_BROWSER_REDIRECT_URL="https://{{ server_hostname }}/minio/"
           export MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC="on"
           {% endif %}
 

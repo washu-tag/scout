@@ -5,92 +5,166 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{.StatusCode}} {{.Title}} | Scout</title>
-  <link rel="stylesheet" href="{{.ProxyPrefix}}/static/css/bulma.min.css" />
-  <link rel="stylesheet" href="{{.ProxyPrefix}}/static/css/all.min.css" />
   <style>
-    html {
-      height: 100%;
+    * {
       margin: 0;
-      font-family: "Segoe UI", Roboto, sans-serif;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
       background: linear-gradient(135deg, #3467a5 0%, #254470 100%);
       display: flex;
       justify-content: center;
       align-items: center;
+      padding: 20px;
+      position: relative;
     }
 
-    .error-card {
-      background: rgba(254, 254, 254, 1);
-      backdrop-filter: blur(6px);
-      padding: 2.5rem;
+    .card {
+      background: white;
+      padding: 40px;
       border-radius: 16px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.1);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
       text-align: center;
-      max-width: 400px;
-      width: 90%;
-    }
-
-    .error-card img {
-      max-width: 200px;
-      margin-bottom: 1.5rem;
+      max-width: 450px;
+      width: 100%;
     }
 
     .status-code {
       font-size: 5rem;
       font-weight: bold;
       color: #1e3b61;
-      margin-bottom: 0.5rem;
+      margin-bottom: 20px;
+      line-height: 1;
     }
 
     h1 {
-      font-size: 1.6rem;
+      font-size: 1.75rem;
       font-weight: 600;
       color: #254470;
-      margin-bottom: 1rem;
+      margin-bottom: 20px;
     }
 
     p {
       font-size: 1rem;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .link {
+      color: #254470;
+      text-decoration: underline;
+      font-weight: 500;
+    }
+
+    .link:hover {
+      color: #1e3b61;
+    }
+
+    .info-box {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      cursor: pointer;
+      background: #fafafa;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .info-header:hover {
+      background: #f0f0f0;
+    }
+
+    .info-title {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .info-toggle {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .info-content {
+      padding: 16px;
+      text-align: left;
+      display: none;
+      background: white;
+    }
+
+    .info-content.show {
+      display: block;
+    }
+
+    .info-content div {
+      margin-bottom: 10px;
       color: #555;
-      margin-bottom: 1.5rem;
       word-wrap: break-word;
     }
 
-    .button.is-scout {
-      background-color: #254470;
-      color: white;
-      font-weight: 600;
-      border: none;
-      width: 75%;
-      margin: 0 0.5rem;
+    .info-content div:last-child {
+      margin-bottom: 0;
     }
 
-    .button.is-scout-yellow {
+    .button-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .btn-yellow {
       background-color: #f2c04a;
       color: white;
-      font-weight: 600;
-      border: none;
-      width: 75%;
-      margin: 0 0.5rem;
     }
 
-    .button.is-scout:hover {
+    .btn-yellow:hover {
+      background-color: #e0b03a;
+    }
+
+    .btn-blue {
+      background-color: #254470;
+      color: white;
+    }
+
+    .btn-blue:hover {
       background-color: #1e3b61;
-    }
-
-    .button {
-        margin: 0 0.5rem;
-    }
-
-    .card-toggle {
-      cursor: pointer;
     }
 
     footer {
       position: absolute;
-      bottom: 1rem;
+      bottom: 20px;
       width: 100%;
       color: #eee;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       text-align: center;
     }
 
@@ -98,82 +172,64 @@
       color: #eee;
       text-decoration: underline;
     }
-
-    .scout-link {
-      color: #254470;
-      text-decoration: underline;
-      font-weight: 500;
-    }
   </style>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      let toggles = document.getElementsByClassName('card-toggle');
-      for (let i = 0; i < toggles.length; i++) {
-        toggles[i].addEventListener('click', function(e) {
-          e.currentTarget.closest('.card').querySelector('.card-content').classList.toggle('is-hidden');
-        });
-      }
-    });
-  </script>
 </head>
-
 <body>
-  <div class="error-card">
+  <div class="card">
     {{ if eq .StatusCode 403 }}
       <h1>Access Pending</h1>
       <p>
-        Thank you for your interest in Scout! Your account is currently pending approval. You'll receive an email once your access has been granted.
+        Thank you for your interest in Scout! Your account is currently pending approval. You'll receive an email once your account is approved by an administrator.
+      </p>
+      <p>In the meantime, you can:</p>
+      <p>
+        <a href="https://washu-scout.readthedocs.io/en/latest/" class="link">Visit our documentation</a>
       </p>
       <p>
-        In the meantime, you can:
-      </p>
-      <p>
-        <a href="https://washu-scout.readthedocs.io/en/latest/" class="scout-link">Visit our documentation</a>
-      </p>
-      <p>
-        <a href="/" class="scout-link">Return to Scout</a>
+        <a href="/" class="link">Return to Scout</a>
       </p>
     {{ else }}
-        {{ if or .Message .RequestID }}
-        <div class="status-code">{{.StatusCode}}</div>
+      <div class="status-code">{{.StatusCode}}</div>
 
-        <div id="more-info" class="card is-shadowless mb-4">
-            <header class="card-header is-shadowless">
-            <p class="card-header-title">More Info</p>
-            <a class="card-header-icon card-toggle" aria-label="toggle info">
-                <i class="fa fa-angle-down"></i>
-            </a>
-            </header>
-            <div class="card-content has-text-left is-hidden">
-            {{ if .Message }}
-            <div class="content">{{.Message}}</div>
-            {{ end }}
-            {{ if .RequestID }}
-            <div class="content">Request ID: {{.RequestID}}</div>
-            {{ end }}
-            </div>
+      {{ if or .Message .RequestID }}
+      <div class="info-box">
+        <div class="info-header" onclick="toggleInfo()">
+          <span class="info-title">More Info</span>
+          <span class="info-toggle" id="toggle-icon">▼</span>
         </div>
-        {{ end }}
-        {{ if .Redirect }}
-        <div class="columns is-mobile is-gapless mt-4">
-        <div class="column pr-1">
-            <form method="GET" action="{{.Redirect}}">
-            <button type="submit" class="button is-scout-yellow is-fullwidth">Go back</button>
-            </form>
+        <div class="info-content" id="info-content">
+          {{ if .Message }}
+          <div>{{.Message}}</div>
+          {{ end }}
+          {{ if .RequestID }}
+          <div>Request ID: {{.RequestID}}</div>
+          {{ end }}
         </div>
-        <div class="column pl-1">
-            <form method="GET" action="{{.ProxyPrefix}}/sign_in">
-            <input type="hidden" name="rd" value="{{.Redirect}}" />
-            <button type="submit" class="button is-scout is-fullwidth">Sign in</button>
-            </form>
-        </div>
-        </div>
-        {{ end }}
+      </div>
+      {{ end }}
+
+      {{ if .Redirect }}
+      <div class="button-row">
+        <form method="GET" action="{{.Redirect}}" style="flex: 1;">
+          <button type="submit" class="btn btn-yellow">Go back</button>
+        </form>
+        <form method="GET" action="{{.ProxyPrefix}}/sign_in" style="flex: 1;">
+          <input type="hidden" name="rd" value="{{.Redirect}}" />
+          <button type="submit" class="btn btn-blue">Sign in</button>
+        </form>
+      </div>
+      {{ end }}
     {{ end }}
-
   </div>
 
+  <script>
+    function toggleInfo() {
+      const content = document.getElementById('info-content');
+      const icon = document.getElementById('toggle-icon');
+      content.classList.toggle('show');
+      icon.textContent = content.classList.contains('show') ? '▲' : '▼';
+    }
+  </script>
 </body>
 </html>
 {{end}}

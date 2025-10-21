@@ -28,10 +28,10 @@
               enabled: true
               clientId: '{{ keycloak_launchpad_client_id }}'
               clientSecret: '{{ keycloak_launchpad_client_secret }}'
-              issuer: 'https://{{ server_hostname }}/kc/realms/scout'
-            nextAuthUrl: 'https://{{ server_hostname }}/launchpad/api/auth'
+              issuer: 'https://keycloak.{{ server_hostname }}/realms/scout'
+            nextAuthUrl: 'https://{{ server_hostname }}/api/auth'
             nextAuthSecret: '{{ launchpad_nextauth_secret }}'
-            oauth2ProxySignOutUrl: 'https://{{ server_hostname }}/oauth2/sign_out'
+            oauth2ProxySignOutUrl: 'https://auth.{{ server_hostname }}/oauth2/sign_out'
           ingress:
             enabled: true
             className: traefik
