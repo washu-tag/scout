@@ -79,11 +79,11 @@ const ToolsGrid = () => {
   useEffect(() => {
     // Generate all subdomain URLs once on client side where window is available
     const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
+    const host = window.location.host;
 
     const getUrl = (subdomain: string, path: string = '') => {
       const normalizedPath = path ? (path.startsWith('/') ? path : `/${path}`) : '';
-      return `${protocol}//${subdomain}.${hostname}${normalizedPath}`;
+      return `${protocol}//${subdomain}.${host}${normalizedPath}`;
     };
 
     setSubdomainUrls({
@@ -95,7 +95,7 @@ const ToolsGrid = () => {
       keycloak: getUrl('keycloak', '/admin/scout/console'),
     });
 
-    console.debug('[Scout] Subdomain URLs generated', { protocol, hostname });
+    console.debug('[Scout] Subdomain URLs generated', { protocol, host });
   }, []);
 
   // Don't render until subdomain URLs are set on client side
