@@ -1,0 +1,40 @@
+{% raw %}#!/bin/sh
+set -eu
+echo "Upgrading DB schema..."
+superset db upgrade
+echo "Initializing roles..."
+superset init
+{{ if .Values.init.createAdmin }}
+echo "Creating admin user..."
+superset fab create-admin \
+                --username {{ .Values.init.adminUser.username }} \
+                --firstname {{ .Values.init.adminUser.firstname }} \
+                --lastname {{ .Values.init.adminUser.lastname }} \
+                --email {{ .Values.init.adminUser.email }} \
+                --password {{ .Values.init.adminUser.password }} \
+                || true
+{{- end }}
+{{ if .Values.init.loadExamples }}
+echo "Loading examples..."
+superset load_examples
+{{- end }}
+if [ -f "{{ .Values.extraConfigMountPath }}/import_datasources.yaml" ]; then
+  echo "Importing database connections.... "
+  superset import_datasources -p {{ .Values.extraConfigMountPath }}/import_datasources.yaml
+fi
+# Import the dashboard
+if [ -d /app/dashboard-config ]; then
+  echo "Importing dashboard..."
+  cd /app/dashboard-config
+  zip -r ~/dashboard.zip analytics
+  cd -
+  superset import-dashboards -p ~/dashboard.zip -u admin
+  result=$?
+  if [ $result != 0 ]; then
+    echo "Error importing dashboard"
+    exit $result
+  fi
+  rm -f ~/dashboard.zip
+  echo "Dashboard imported successfully"
+fi
+{% endraw %}

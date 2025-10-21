@@ -1,0 +1,17 @@
+---
+# Default values for Orthanc deployment
+
+# DICOM configuration
+orthanc_dicom_port: 4242
+
+# Storage naming
+orthanc_name: orthanc
+orthanc_storage_class: '{{ orthanc_name }}-storage'
+
+# Storage definitions for persistent volumes
+orthanc_storage_definitions:
+  - name: '{{ orthanc_name }}'
+    size: "{{ orthanc_storage_size | default('100Gi') }}"
+    path: '{{ orthanc_dir }}'
+    pv_name: '{{ orthanc_name }}-pv'
+    storage_class_name: '{{ orthanc_storage_class }}'

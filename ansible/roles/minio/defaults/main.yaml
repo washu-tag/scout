@@ -1,0 +1,103 @@
+---
+# Default values for MinIO deployment
+
+# Namespace configuration
+minio_tenant_name: scout
+
+# Storage naming
+minio_name: minio
+minio_storage_class: minio-storage
+
+# Storage definitions for persistent volumes
+# Dynamically generated based on minio_hosts inventory group
+minio_storage_definitions_raw: >-
+  [{% set ns = namespace(last_node=false) -%}
+  {% for node_url in groups["minio_hosts"] -%}
+    {% if loop.last %}{% set ns.last_node = true %}{% endif %}
+    {% for i in range(0, minio_volumes_per_server) -%}
+      {
+        "name": "{{ minio_name }}-{{ node_url }}-{{ i }}",
+        "size": "{{ minio_storage_size | default('100Gi') }}",
+        "path": "{{ minio_dir }}{{ i }}",
+        "pv_name": "{{ minio_name }}-pv-{{ node_url }}-{{ i }}",
+        "storage_class_name": "{{ minio_storage_class }}",
+        "node_url": "{{ node_url }}"
+      }{% if not (loop.last and ns.last_node) %},{% endif %}
+    {%- endfor %}
+  {%- endfor %}]
+minio_storage_definitions: '{{ minio_storage_definitions_raw if not (minio_storage_definitions_raw is string) else (minio_storage_definitions_raw | from_yaml) }}'
+# Environment variables
+minio_env_secret_name: minio-scout-env-configuration
+minio_env_variables:
+  - name: MINIO_BROWSER_REDIRECT_URL
+    value: 'https://minio.{{ server_hostname }}'
+  - name: MINIO_PROMETHEUS_AUTH_TYPE
+    value: public
+  - name: MINIO_SCANNER_SPEED
+    value: slowest
+
+# Ingress configuration
+minio_ingress_config:
+  console:
+    enabled: true
+    ingressClassName: traefik
+    host: 'minio.{{ server_hostname }}'
+    path: '/'
+    pathType: Prefix
+
+# Bucket definitions
+minio_buckets:
+  - name: loki-chunks
+  - name: loki-ruler
+  - name: loki-admin
+  - name: '{{ lake_bucket }}'
+  - name: '{{ scratch_bucket }}'
+
+# S3 User credentials
+minio_users:
+  - access_key: '{{ s3_lake_reader }}'
+    secret_key: '{{ s3_lake_reader_secret }}'
+  - access_key: '{{ s3_lake_writer }}'
+    secret_key: '{{ s3_lake_writer_secret }}'
+  - access_key: '{{ s3_loki_writer }}'
+    secret_key: '{{ s3_loki_writer_secret }}'
+
+# User mapping
+minio_credentials:
+  - name: '{{ s3_lake_reader }}-creds'
+  - name: '{{ s3_lake_writer }}-creds'
+  - name: '{{ s3_loki_writer }}-creds'
+
+# IAM Policy definitions
+minio_policies:
+  - name: lake-r
+    actions:
+      - s3:GetObject
+      - s3:GetBucketLocation
+      - s3:ListBucket
+    resources:
+      - 'arn:aws:s3:::{{ lake_bucket }}'
+      - 'arn:aws:s3:::{{ lake_bucket }}/*'
+    user: '{{ s3_lake_reader }}'
+  - name: lake-rw
+    actions:
+      - s3:*
+    resources:
+      - 'arn:aws:s3:::{{ lake_bucket }}'
+      - 'arn:aws:s3:::{{ lake_bucket }}/*'
+      - 'arn:aws:s3:::{{ scratch_bucket }}'
+      - 'arn:aws:s3:::{{ scratch_bucket }}/*'
+    user: '{{ s3_lake_writer }}'
+  - name: loki-rw
+    actions:
+      - s3:*
+    resources:
+      - arn:aws:s3:::loki-*
+      - arn:aws:s3:::loki-*/*
+    user: '{{ s3_loki_writer }}'
+
+# Wait times and retries
+minio_wait_retries: 60
+minio_wait_delay: 5
+minio_bootstrap_wait_retries: 30
+minio_bootstrap_wait_delay: 10

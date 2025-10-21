@@ -1,6 +1,6 @@
-.PHONY: all deps install-k3s config-traefik install-helm clone-scout install-postgres \
-        install-lake install-analytics install-orchestrator install-extractor \
-        install-monitor install-jupyter install-explorer echo
+.PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
+    install-postgres install-lake install-analytics install-orchestrator install-extractor \
+    install-monitor install-jupyter install-explorer echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -38,14 +38,19 @@ deps:
 clone-scout:
 	$(ANSIBLE_CMD) playbooks/scout.yaml
 
-install-k3s: deps
+install-helm:
+	$(ANSIBLE_CMD) playbooks/helm.yaml
+
+install-k3s: deps install-helm
 	$(ANSIBLE_CMD) playbooks/k3s.yaml
 
 config-traefik: install-k3s
 	$(ANSIBLE_CMD) playbooks/traefik.yaml
 
-install-helm:
-	$(ANSIBLE_CMD) playbooks/helm.yaml
+install-gpu-op:
+	$(ANSIBLE_CMD) playbooks/gpu.yaml
+
+setup-k3s: install-k3s config-traefik install-gpu-op
 
 install-postgres:
 	$(ANSIBLE_CMD) playbooks/postgres.yaml
@@ -71,6 +76,7 @@ install-monitor:
 install-explorer:
 	$(ANSIBLE_CMD) playbooks/explorer.yaml
 
+# For tests
 install-orthanc:
 	$(ANSIBLE_CMD) playbooks/orthanc.yaml
 

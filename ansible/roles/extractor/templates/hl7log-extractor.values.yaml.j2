@@ -1,0 +1,65 @@
+image:
+  repository: '{{ hl7log_extractor_image_repository }}'
+  tag: '{{ hl7log_extractor_image_tag }}'
+envFrom:
+  - secretRef:
+      name: s3-secret
+  - configMapRef:
+      name: s3-env
+env:
+  - name: TZ
+    value: 'US/Central'
+service:
+  type: ClusterIP
+  port: 8080
+volumes:
+  - name: data
+    hostPath:
+      path: '{{ extractor_data_dir }}'
+volumeMounts:
+  - name: data
+    mountPath: /data
+    readOnly: true
+    mountPropagation: HostToContainer
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 15
+  periodSeconds: 10
+config:
+  application:
+    management:
+      metrics:
+        tags:
+          namespace: '{{ extractor_namespace }}'
+    s3:
+      endpoint: '{{ s3_endpoint }}'
+      region: '{{ s3_region }}'
+    spring:
+      datasource:
+        url: 'jdbc:postgresql://postgresql-cluster-rw.{{ postgres_cluster_namespace }}:5432/ingest'
+        username: '{{ postgres_user }}'
+        password: '{{ postgres_password }}'
+      temporal:
+        connection:
+          target: 'temporal-frontend.{{ temporal_namespace }}:7233'
+    scout:
+      workflowArgDefaults:
+        ingestHl7Log:
+          logsRootPath: '{{ hl7logs_root_dir }}'
+          scratchSpaceRootPath: '{{ scratch_path }}'
+          hl7OutputPath: '{{ hl7_path }}'
+          splitAndUploadTimeout: {{ hl7log_extractor_timeout | default(480) }}
+          splitAndUploadHeartbeatTimeout: {{ hl7log_extractor_heartbeat_timeout | default(30) }}
+          splitAndUploadConcurrency: {{ hl7log_extractor_concurrency | default(150) }}
+        ingestHl7ToDeltaLake:
+          deltaIngestTimeout: {{ hl7_transformer_timeout | default(60) }}
+          reportTableName: '{{ report_delta_table_name }}'
+          modalityMapPath: '{{ modality_map_path }}'

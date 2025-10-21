@@ -2,6 +2,8 @@
 - name: Configure Traefik
   hosts: server
   gather_facts: false
+  roles:
+    - scout_common
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
 

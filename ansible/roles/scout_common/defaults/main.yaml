@@ -1,6 +1,7 @@
 ---
 # Defaults for scout_common role
-# This role contains shared tasks used across multiple Scout services
+# This role contains shared tasks and default configuration values
+# All values here can be overridden in inventory.yaml
 
 # Helm deployment defaults
 helm_chart_create_namespace: true
@@ -8,3 +9,70 @@ helm_chart_wait: true
 helm_chart_timeout: '5m'
 helm_chart_values: {}
 helm_chart_values_files: []
+
+# Custom images (override from inventory for CI/CD)
+# Explorer: explorer_image_repository and explorer_image_tag (see roles/explorer/defaults/main.yaml)
+# Superset: superset_image_repository and superset_image_tag (see roles/superset/defaults/main.yaml)
+# Jupyter: jupyter_singleuser_image_name and jupyter_singleuser_image_tag (see roles/jupyter/defaults/main.yaml)
+# Extractors: hl7log_extractor_image_repository/tag and hl7_transformer_image_repository/tag (see roles/extractor/defaults/main.yaml)
+
+# Kubernetes configuration
+kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
+air_gapped: false
+
+# Default namespaces
+cnpg_operator_namespace: cnpg-operator
+postgres_cluster_namespace: cnpg
+prometheus_namespace: prometheus
+grafana_namespace: grafana
+loki_namespace: loki
+gpu_operator_namespace: gpu-operator
+extractor_namespace: extractor
+minio_operator_namespace: minio-operator
+minio_tenant_namespace: minio-scout
+hive_namespace: hive
+temporal_namespace: temporal
+cassandra_namespace: cassandra
+cert_manager_namespace: cert-manager
+eck_operator_namespace: eck-operator
+elasticsearch_namespace: elastic
+jupyter_namespace: jupyter
+superset_namespace: superset
+trino_namespace: trino
+harbor_namespace: harbor
+orthanc_namespace: orthanc
+dcm4chee_namespace: dcm4chee
+explorer_namespace: explorer
+
+# S3/MinIO configuration (passwords defined in inventory)
+s3_region: us-east-1
+s3_username: minio
+s3_lake_reader: lake-reader
+s3_lake_writer: lake-writer
+s3_loki_writer: loki-writer
+lake_bucket: lake
+scratch_bucket: scratch
+
+# Database usernames (passwords defined in inventory)
+postgres_user: scout
+hive_postgres_user: hive
+superset_postgres_user: superset
+
+# Database table names
+report_delta_table_name: reports
+ingest_postgres_table_name: ingest
+
+# Helm configuration
+helm_plugins_dir: /root/.local/share/helm/plugins
+
+# Container mounted paths
+modality_map_path: /data/modality_mapping_codes.csv
+
+# Object storage paths (use variables for bucket names)
+scratch_path: 's3://{{ scratch_bucket }}'
+delta_lake_path: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefix
+
+# Computed values (DO NOT CHANGE)
+s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
+hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
+server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'

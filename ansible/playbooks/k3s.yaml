@@ -116,6 +116,8 @@
 ################################################################################
 - hosts: server
   name: Install k3s on server node
+  roles:
+    - scout_common
   vars:
     uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
   environment:

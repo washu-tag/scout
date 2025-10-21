@@ -1,0 +1,62 @@
+---
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ loki_namespace }}'
+
+- name: Set up storage
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_setup
+  vars:
+    storage_definitions: '{{ loki_storage_definitions }}'
+
+- name: Create S3 secret for Loki
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: loki-secrets
+        namespace: '{{ loki_namespace }}'
+      type: Opaque
+      stringData:
+        AWS_ACCESS_KEY_ID: '{{ s3_loki_writer }}'
+        AWS_SECRET_ACCESS_KEY: '{{ s3_loki_writer_secret }}'
+
+- name: Deploy Loki
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: loki
+    helm_chart_ref: '{{ loki_helm_repo_name }}/loki'
+    helm_chart_namespace: '{{ loki_namespace }}'
+    helm_repo_name: '{{ loki_helm_repo_name }}'
+    helm_repo_url: '{{ loki_helm_repo_url }}'
+    helm_chart_version: '{{ loki_helm_chart_version }}'
+    helm_chart_create_namespace: false
+    helm_chart_timeout: '{{ loki_helm_timeout }}'
+    helm_chart_values: "{{ lookup('template', 'loki.values.yaml.j2') | from_yaml }}"
+
+- name: Deploy Promtail
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: promtail
+    helm_chart_ref: '{{ loki_helm_repo_name }}/promtail'
+    helm_chart_namespace: '{{ loki_namespace }}'
+    helm_repo_name: '{{ loki_helm_repo_name }}'
+    helm_repo_url: '{{ loki_helm_repo_url }}'
+    helm_chart_version: '{{ promtail_helm_chart_version }}'
+    helm_chart_create_namespace: false
+    helm_chart_values:
+      promtail:
+        enabled: true
+        config:
+          clients:
+            - url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local:3100/loki/api/v1/push'

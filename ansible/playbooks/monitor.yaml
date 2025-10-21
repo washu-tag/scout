@@ -1,26 +1,30 @@
 ---
-- name: Create storage directories for Prometheus, Loki, and Grafana
+- name: Create storage directories for monitoring
   hosts: k3s_cluster
   gather_facts: false
-  vars_files:
-    - vars/monitor_storage.yaml
   tasks:
-    - name: Create storage directories
-      include_tasks: tasks/storage_dir_create.yaml
+    - name: Create Prometheus storage directories
+      ansible.builtin.include_role:
+        name: prometheus
+        tasks_from: storage
 
-- name: Install components for Monitor service
+    - name: Create Loki storage directories
+      ansible.builtin.include_role:
+        name: loki
+        tasks_from: storage
+
+    - name: Create Grafana storage directories
+      ansible.builtin.include_role:
+        name: grafana
+        tasks_from: storage
+
+- name: Install monitoring components
   hosts: server
   gather_facts: false
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-  vars_files:
-    - vars/monitor_storage.yaml
-  tasks:
-    - name: Setup storage
-      include_tasks: tasks/storage_setup.yaml
-
-    - name: Install Prometheus
-      include_tasks: services/prometheus.yaml
-
-    - name: Install Loki, Promtail, and Grafana
-      include_tasks: services/grafana.yaml
+    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
+  roles:
+    - prometheus
+    - loki
+    - grafana

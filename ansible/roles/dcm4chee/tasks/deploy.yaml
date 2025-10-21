@@ -1,0 +1,50 @@
+---
+# Kubernetes deployment tasks for Dcm4chee
+# These tasks run on the server host (which has access to k3s_cluster inventory variables)
+
+# Storage setup (StorageClass and PersistentVolumes)
+- name: Set up storage
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_setup
+  vars:
+    storage_definitions: '{{ dcm4chee_storage_definitions }}'
+
+- name: Create Dcm4chee namespace
+  kubernetes.core.k8s:
+    name: '{{ dcm4chee_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Create DB secrets
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: dcm4chee-db-secret
+        namespace: '{{ dcm4chee_namespace }}'
+      type: Opaque
+      stringData:
+        POSTGRES_DB: "{{ dcm4chee_db | default('pacsdb') }}"
+        POSTGRES_USER: "{{ dcm4chee_db_user | default('pacs') }}"
+        POSTGRES_PASSWORD: "{{ dcm4chee_db_password | default('pacs') }}"
+
+- name: Deploy Dcm4chee
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: dcm4chee
+    helm_chart_ref: '{{ scout_repo_dir }}/helm/dcm4chee'
+    helm_chart_namespace: '{{ dcm4chee_namespace }}'
+    helm_chart_create_namespace: false
+    helm_chart_timeout: 10m
+    helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
+# Populate PACS with test data (optional)
+- name: Populate Dcm4chee with test data
+  ansible.builtin.include_tasks: populate.yaml
+  when: dcm4chee_populate is defined

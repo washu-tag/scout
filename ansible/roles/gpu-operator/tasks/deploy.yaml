@@ -1,0 +1,16 @@
+---
+# Kubernetes deployment tasks for NVIDIA GPU Operator
+# These tasks run on the server host (which has access to k3s_cluster inventory variables)
+
+- name: Deploy NVIDIA GPU Operator
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: gpu-operator
+    helm_chart_ref: gpu-operator/gpu-operator
+    helm_chart_version: '{{ gpu_operator_version }}'
+    helm_chart_namespace: '{{ gpu_operator_namespace | default("gpu-operator") }}'
+    helm_repo_name: gpu-operator
+    helm_repo_url: https://nvidia.github.io/gpu-operator
+    helm_chart_values: '{{ gpu_operator_values }}'

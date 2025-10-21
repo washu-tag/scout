@@ -4,27 +4,5 @@
   gather_facts: false
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-
-  tasks:
-    - name: Deploy explorer
-      ansible.builtin.include_role:
-        name: scout_common
-        tasks_from: deploy_helm_chart
-      vars:
-        helm_chart_name: explorer
-        helm_chart_ref: '{{ scout_repo_dir }}/helm/explorer'
-        helm_chart_namespace: explorer
-        helm_chart_values_files:
-          - '{{ scout_repo_dir }}/helm/explorer/values.yaml'
-        helm_chart_values:
-          image:
-            repository: '{{ explorer_image | default(omit) }}'
-            tag: '{{ explorer_image_tag | default(omit) }}'
-          ingress:
-            enabled: true
-            className: traefik
-            hosts:
-              - host: '{{ server_hostname }}'
-                paths:
-                  - path: /
-                    pathType: Prefix
+  roles:
+    - role: explorer
