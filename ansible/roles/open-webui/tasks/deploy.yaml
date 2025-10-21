@@ -1,0 +1,86 @@
+---
+# Kubernetes deployment tasks for Open WebUI with Ollama
+# These tasks run on the server host
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - open_webui_postgres_password is defined
+      - open_webui_postgres_password | length > 0
+    fail_msg: >
+      open_webui_postgres_password is required but not set.
+      Please set it in your inventory.yaml (use vault encryption).
+      Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+    quiet: true
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ chatbot_namespace }}'
+
+- name: Set up storage
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_setup
+  vars:
+    storage_definitions: '{{ chatbot_storage_definitions }}'
+
+- name: Setup PostgreSQL database and user
+  block:
+    - name: Create user (ignore if exists)
+      kubernetes.core.k8s_exec:
+        namespace: '{{ postgres_cluster_namespace }}'
+        pod: '{{ postgres_cluster_name }}-1'
+        command: |
+          psql --dbname=postgres -c "CREATE USER {{ open_webui_postgres_user }} WITH PASSWORD '{{ open_webui_postgres_password }}';"
+      register: user_result
+      failed_when:
+        - user_result.rc != 0
+        - '"already exists" not in user_result.stderr'
+
+    - name: Create database (ignore if exists)
+      kubernetes.core.k8s_exec:
+        namespace: '{{ postgres_cluster_namespace }}'
+        pod: '{{ postgres_cluster_name }}-1'
+        command: |
+          psql --dbname=postgres -c "CREATE DATABASE {{ open_webui_database }} OWNER {{ open_webui_postgres_user }};"
+      register: db_result
+      failed_when:
+        - db_result.rc != 0
+        - '"already exists" not in db_result.stderr'
+
+    - name: Grant schema ownership to user
+      kubernetes.core.k8s_exec:
+        namespace: '{{ postgres_cluster_namespace }}'
+        pod: '{{ postgres_cluster_name }}-1'
+        command: |
+          psql --dbname={{ open_webui_database }} -c "ALTER SCHEMA public OWNER TO {{ open_webui_postgres_user }};"
+      register: schema_privileges_result
+      failed_when:
+        - schema_privileges_result.rc != 0
+
+- name: Deploy Open WebUI using Helm
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ open_webui_helm_release_name }}'
+    helm_chart_ref: '{{ open_webui_helm_repo_name }}/{{ open_webui_helm_chart_name }}'
+    helm_chart_namespace: '{{ chatbot_namespace }}'
+    helm_chart_version: '{{ open_webui_helm_chart_version }}'
+    helm_repo_name: '{{ open_webui_helm_repo_name }}'
+    helm_repo_url: '{{ open_webui_helm_repo_url }}'
+    helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+    helm_chart_timeout: '10m'
+
+- name: Wait for Open WebUI to be ready
+  ansible.builtin.command: 'kubectl -n {{ chatbot_namespace }} wait --for=condition=Ready --timeout=300s pod -l app.kubernetes.io/name=open-webui'
+  register: open_webui_ready
+  changed_when: false
+
+# Pull Ollama models asynchronously (optional)
+- name: Pull Ollama models
+  ansible.builtin.include_tasks: pull_models.yaml
+  when: ollama_models is defined and ollama_models | length > 0

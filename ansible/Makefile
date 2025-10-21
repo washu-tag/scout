@@ -82,6 +82,9 @@ install-monitor:
 install-launchpad:
 	$(ANSIBLE_CMD) playbooks/launchpad.yaml
 
+install-chat:
+	$(ANSIBLE_CMD) playbooks/chatbot.yaml
+
 # For tests
 install-orthanc:
 	$(ANSIBLE_CMD) playbooks/orthanc.yaml

@@ -1,0 +1,22 @@
+---
+# Deploy Trino MCP server in the Trino namespace
+# Provides MCP interface to Trino for AI assistants
+
+- name: Clone or update mcp-trino repository
+  ansible.builtin.git:
+    repo: '{{ mcp_trino_repo_url }}'
+    dest: '{{ mcp_trino_chart_path }}'
+    version: '{{ mcp_trino_repo_version }}'
+    update: true
+  delegate_to: localhost
+  run_once: true
+
+- name: Deploy Trino MCP using Helm
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ mcp_trino_release_name }}'
+    helm_chart_ref: '{{ mcp_trino_chart_path }}/charts/mcp-trino'
+    helm_chart_namespace: '{{ trino_namespace }}'
+    helm_chart_values: '{{ mcp_trino_values }}'
