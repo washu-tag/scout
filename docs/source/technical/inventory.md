@@ -329,84 +329,9 @@ postgres_password: !vault |
       ...more encrypted data...
 ```
 
-Or use inline command substitution in the example file (then encrypt by running the commands):
-
-```yaml
-postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-```
-
-#### Required Secrets
-
-All services require passwords and tokens. Here's a complete list:
-
-**K3s:**
-```
-k3s_token: !vault |...
-```
-
-**PostgreSQL:**
-```
-postgres_password: !vault |...
-postgres_superuser_password: !vault |...
-```
-
-**MinIO (S3):**
-```
-s3_password: !vault |...
-s3_lake_reader_secret: !vault |...
-s3_lake_writer_secret: !vault |...
-```
-
-**Loki:**
-```
-s3_loki_writer_secret: !vault |...
-```
-
-**Jupyter:**
-```
-jupyter_metrics_api_token: !vault |...
-jupyter_mcp_api_token: !vault |...
-jupyter_dummy_password: !vault |...  # If using dummy auth
-# Or for GitHub auth:
-github_client_id: !vault |...
-github_client_secret: !vault |...
-```
-
-**Grafana:**
-```
-# For Slack alerts:
-slack_token: !vault |...
-slack_channel_id: !vault |...
-# Or for email alerts:
-grafana_smtp_user: !vault |...
-grafana_smtp_password: !vault |...
-```
-
-**Superset:**
-```
-superset_postgres_password: !vault |...
-superset_secret: !vault |...
-```
-
-**Hive Metastore:**
-```
-hive_postgres_password: !vault |...
-```
-
-**Open WebUI:**
-```
-open_webui_postgres_password: !vault |...
-```
-
-**Staging/Harbor (if using air-gapped):**
-```
-staging_k3s_token: !vault |...
-harbor_admin_password: !vault |...
-```
-
 ### Resource Allocations
 
-Override default resource allocations for each service. All services have sensible defaults defined in their role's `defaults/main.yaml`, but you can override them for your environment.
+Override default resource allocations for each service. All services have development-scale defaults defined in their role's `defaults/main.yaml`, but you can override them for your environment.
 
 #### PostgreSQL
 
@@ -459,7 +384,7 @@ trino_coordinator_cpu_request: 1
 trino_coordinator_cpu_limit: 3
 ```
 
-JVM heap is computed automatically as ~80% of memory.
+JVM heap is computed automatically in by Trino as ~80% of memory.
 
 #### MinIO
 
@@ -670,7 +595,7 @@ Default namespaces are defined in `roles/scout_common/defaults/main.yaml`. Overr
 ```yaml
 k3s_cluster:
   vars:
-    postgres_cluster_namespace: postgres      # Default: cloudnative-pg
+    postgres_cluster_namespace: postgres      # Default: cnpg
     jupyter_namespace: custom-jupyter         # Default: jupyter
     superset_namespace: custom-superset       # Default: superset
     temporal_namespace: custom-temporal       # Default: temporal
