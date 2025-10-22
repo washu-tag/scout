@@ -14,41 +14,4 @@
     helm_chart_namespace: '{{ trino_namespace }}'
     helm_repo_name: '{{ trino_helm_repo_name }}'
     helm_repo_url: '{{ trino_helm_repo_url }}'
-    helm_chart_values:
-      # Coordinator sizing - JVM heap at 80% of pod memory
-      coordinator:
-        jvm:
-          maxHeapSize: '{{ (trino_coordinator_memory_gb * 0.8) | round | int }}G'
-        resources:
-          requests:
-            memory: '{{ trino_coordinator_memory_gb }}Gi'
-          limits:
-            memory: '{{ trino_coordinator_memory_gb }}Gi'
-        annotations:
-          prometheus.io/trino_scrape: 'true'
-
-      # Worker sizing - JVM heap at 80% of pod memory
-      worker:
-        jvm:
-          maxHeapSize: '{{ (trino_worker_memory_gb * 0.8) | round | int }}G'
-        resources:
-          requests:
-            memory: '{{ trino_worker_memory_gb }}Gi'
-          limits:
-            memory: '{{ trino_worker_memory_gb }}Gi'
-        annotations:
-          prometheus.io/trino_scrape: 'true'
-
-      # Catalogs
-      catalogs:
-        delta: |
-          connector.name=delta_lake
-          hive.metastore.uri={{ hive_metastore_endpoint }}
-          delta.security=ALLOW_ALL
-          delta.enable-non-concurrent-writes=true
-          fs.native-s3.enabled=true
-          s3.aws-access-key={{ s3_lake_writer }}
-          s3.aws-secret-key={{ s3_lake_writer_secret }}
-          s3.region={{ s3_region }}
-          s3.endpoint={{ s3_endpoint }}
-          s3.path-style-access=true
+    helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
