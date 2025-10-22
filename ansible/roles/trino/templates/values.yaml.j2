@@ -5,7 +5,6 @@ server:
     query:
       # Cluster-wide max memory = workers × worker_heap × per_node_fraction
       maxMemory: "{{ trino_worker_max_heap | multiply_memory(trino_worker_count * trino_per_node_query_memory_fraction) }}B"
-    authenticationType: PASSWORD
 
 # Access control configuration using Helm chart's built-in support
 accessControl:
@@ -38,18 +37,6 @@ accessControl:
           }
         ]
       }
-
-# Authentication configuration - password-based to prevent user impersonation
-auth:
-  passwordAuth: |-
-    # Format: username:bcrypt_hash
-    # Passwords are hashed with bcrypt (cost 8) for performance
-    {{ trino_admin_user }}:{{ trino_admin_password | password_hash('bcrypt', rounds=8) }}
-    {{ trino_readonly_user }}:{{ trino_readonly_password | password_hash('bcrypt', rounds=8) }}
-
-additionalConfigProperties:
-  - http-server.authentication.allow-insecure-over-http=true
-  - internal-communication.shared-secret={{ trino_internal_shared_secret }}
 
 # Coordinator configuration
 # JVM heap = trino_coordinator_max_heap, pod memory limit = 2x heap for off-heap overhead

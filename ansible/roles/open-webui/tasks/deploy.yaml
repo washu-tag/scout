@@ -73,6 +73,7 @@
     helm_repo_name: '{{ open_webui_helm_repo_name }}'
     helm_repo_url: '{{ open_webui_helm_repo_url }}'
     helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+    helm_chart_timeout: '10m'
 
 - name: Wait for Open WebUI to be ready
   ansible.builtin.command: 'kubectl -n {{ chatbot_namespace }} wait --for=condition=Ready --timeout=300s pod -l app.kubernetes.io/name=open-webui'

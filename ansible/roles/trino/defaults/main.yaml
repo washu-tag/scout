@@ -64,7 +64,6 @@ mcp_trino_host: trino
 mcp_trino_port: 8080
 mcp_trino_scheme: http
 mcp_trino_user: '{{ trino_readonly_user }}'
-mcp_trino_password: '{{ trino_readonly_password }}'
 
 # Trino MCP Helm values
 mcp_trino_values:
@@ -77,7 +76,6 @@ mcp_trino_values:
     scheme: '{{ mcp_trino_scheme }}'
     ssl: false
     user: '{{ mcp_trino_user }}'
-    password: '{{ mcp_trino_password }}'
     catalog: delta
     schema: default
     allowWriteQueries: false
