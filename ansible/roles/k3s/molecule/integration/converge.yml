@@ -1,0 +1,9 @@
+---
+# Molecule Integration Test - Converge
+# Tests actual k3s installation in a container with systemd
+- name: Converge
+  hosts: all
+  gather_facts: true
+
+  roles:
+    - role: k3s
