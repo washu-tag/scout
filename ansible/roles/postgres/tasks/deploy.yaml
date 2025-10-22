@@ -30,7 +30,6 @@
     helm_chart_namespace: '{{ cnpg_operator_namespace }}'
     helm_repo_name: cnpg
     helm_repo_url: https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/
-    helm_chart_timeout: "{{ minio_operator_wait_timeout | default('1m') }}"
 
 - name: Create namespace
   ansible.builtin.include_role:
