@@ -393,7 +393,9 @@ def import_hl7_files_to_deltalake(
                 F.col("msh-10").alias("message_control_id"),
                 F.col("msh-4").alias("sending_facility"),
                 F.col("msh-12").alias("version_id"),
-                F.col("pid-2").alias("mpi"),
+                F.when(F.col("pid-2") == "", None)
+                .otherwise(F.col("pid-2"))
+                .alias("mpi"),
                 F.col("pid-8").alias("sex"),
                 F.col("pid-10").alias("race"),
                 F.col("pid-11-5").alias("zip_or_postal_code"),
@@ -429,7 +431,9 @@ def import_hl7_files_to_deltalake(
                         ("obr-22", "results_report_status_change_dt"),
                     )
                 ],
-                F.expr("datediff(YEAR, birth_date, requested_dt)").alias("patient_age"),
+                F.expr("CAST(datediff(YEAR, birth_date, requested_dt) AS INT)").alias(
+                    "patient_age"
+                ),
                 "source_file",
             )
             .join(report_df, "source_file", "left")
