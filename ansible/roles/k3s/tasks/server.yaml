@@ -1,0 +1,98 @@
+---
+# k3s Server Installation
+# Installs and configures k3s server (control plane) node
+# Only runs on hosts in the 'server' group
+
+- name: Determine deployment context
+  ansible.builtin.set_fact:
+    is_local_deployment: '{{ inventory_hostname == ansible_hostname or ansible_connection | default("ssh") == "local" }}'
+
+- name: Create directory for K3s data
+  ansible.builtin.file:
+    path: '{{ base_dir }}'
+    state: directory
+    mode: '0755'
+
+- name: Install k3s server
+  ansible.builtin.command:
+    cmd: /root/bin/get.k3s.io.sh
+    creates: /usr/local/bin/k3s-uninstall.sh
+  environment:
+    INSTALL_K3S_SKIP_DOWNLOAD: "{{ 'true' if air_gapped | default(false) | bool else omit }}"
+    INSTALL_K3S_EXEC: >-
+      --default-local-storage-path={{ base_dir }}
+      --write-kubeconfig-mode=0640
+      {% if use_staging_node | default(false) %}--disable-default-registry-endpoint{% endif %}
+    INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
+    K3S_TOKEN: '{{ k3s_token }}'
+    UNINSTALL_K3S_SH: /usr/local/bin/k3s-uninstall.sh
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: k3s_install_result
+
+- name: Restart k3s to pick up registry config changes
+  ansible.builtin.systemd:
+    name: k3s
+    state: restarted
+  when:
+    - registry_config_changed | default(false)
+    - not k3s_install_result.changed
+
+- name: Update kubeconfig group permissions since write-kubeconfig-group isn't working
+  ansible.builtin.file:
+    path: /etc/rancher/k3s/k3s.yaml
+    state: file
+    mode: '0640'
+    group: '{{ kubeconfig_group }}'
+
+- name: Set up kubeconfig
+  ansible.builtin.include_tasks: '{{ playbook_dir }}/tasks/set_up_kubeconfig.yaml'
+
+- name: Ensure k3s control plane server is started
+  ansible.builtin.systemd:
+    name: k3s
+    state: started
+    enabled: true
+    scope: system
+  register: k3s_systemd_start_k3s
+  until: k3s_systemd_start_k3s is succeeded
+  retries: 3
+  delay: 3
+  failed_when:
+    - k3s_systemd_start_k3s is not succeeded
+    - not ansible_check_mode
+  changed_when: false
+
+- name: Check that the server is available to accept connections
+  ansible.builtin.wait_for:
+    port: 6443
+    host: 127.0.0.1
+    delay: 5
+    sleep: 5
+    timeout: 300
+  changed_when: false
+
+- name: Check that server is ready
+  ansible.builtin.command:
+    cmd: kubectl get nodes
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  changed_when: false
+  failed_when: >-
+    kubectl_get_nodes_result.stdout.find("was refused") != -1 or
+    kubectl_get_nodes_result.stdout.find("ServiceUnavailable") != -1
+  register: kubectl_get_nodes_result
+  until:
+    - kubectl_get_nodes_result.rc == 0
+    - kubectl_get_nodes_result.stdout.find("NotReady") == -1
+  retries: 30
+  delay: 5
+
+- name: Apply taint to control plane node
+  kubernetes.core.k8s_taint:
+    name: '{{ inventory_hostname }}'
+    state: present
+    taints:
+      - key: node-role.kubernetes.io/control-plane
+        effect: PreferNoSchedule
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
