@@ -42,19 +42,23 @@ kubeconfig_group: wheel
 # Timeout for artifact downloads in seconds (5 minutes default)
 k3s_artifact_download_timeout: 300
 
+# Directory for k3s-related binaries and scripts (created if it doesn't exist)
+k3s_bin_dir: /root/bin
+
 # Where to install k3s binary on target nodes
 k3s_binary_path: /usr/local/bin/k3s
 
-# Where to install k3s installation script on target nodes
-k3s_install_script_path: /root/bin/get.k3s.io.sh
+# Note: k3s_install_script_path is computed dynamically as {{ k3s_bin_dir }}/get.k3s.io.sh
+# Override k3s_bin_dir to change the install script path
 
 ################################################################################
 # SELinux Configuration
 ################################################################################
 
-# Auto-detect SELinux status - will be true if SELinux is enabled on target hosts
-# Can be overridden in inventory to force enable/disable SELinux package installation
-k3s_selinux_enabled: "{{ ansible_selinux.status == 'enabled' if ansible_selinux is defined else false }}"
+# Enable SELinux package installation
+# Set to true/false to force enable/disable, or leave undefined for auto-detection
+# Auto-detection checks if SELinux is enabled on target hosts
+# k3s_selinux_enabled: true
 
 # Rancher k3s repository configuration for SELinux package downloads
 # Channel to use: stable, testing, or latest
