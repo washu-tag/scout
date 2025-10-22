@@ -44,8 +44,52 @@
     mode: '0640'
     group: '{{ kubeconfig_group }}'
 
-- name: Set up kubeconfig
-  ansible.builtin.include_tasks: '{{ playbook_dir }}/tasks/set_up_kubeconfig.yaml'
+- name: Setup kubeconfig for remote deployment
+  when: not is_local_deployment
+  block:
+    - name: Set kubeconfig dir path
+      ansible.builtin.set_fact:
+        local_kubeconfig_yaml_dir: '{{ scout_repo_dir }}/.kube/scout/{{ ansible_host | default(inventory_hostname) }}'
+
+    - name: Set kubeconfig path
+      ansible.builtin.set_fact:
+        local_kubeconfig_yaml: '{{ local_kubeconfig_yaml_dir }}/config'
+
+    - name: Fetch k3s kubeconfig
+      ansible.builtin.slurp:
+        src: '{{ kubeconfig_yaml }}'
+      register: k3s_kubeconfig_raw
+
+    - name: Parse and modify kubeconfig
+      ansible.builtin.set_fact:
+        k3s_kubeconfig: '{{ k3s_kubeconfig_raw.content | b64decode | from_yaml }}'
+
+    - name: Update server address in kubeconfig
+      ansible.builtin.set_fact:
+        modified_kubeconfig: '{{ k3s_kubeconfig | combine(cluster_update, recursive=True) }}'
+      vars:
+        cluster_update:
+          clusters:
+            - name: '{{ k3s_kubeconfig.clusters[0].name }}'
+              cluster:
+                server: 'https://{{ ansible_host | default(inventory_hostname) }}:6443'
+                # certificate-authority-data: '{{ k3s_kubeconfig.clusters[0].cluster["certificate-authority-data"] }}'
+                # NOTE: The certificates we have only validate for hostnames that we can't use to reach the machines, so we cannot TLS validate the connection
+                insecure-skip-tls-verify: true
+
+    - name: Create kubeconfig dir
+      ansible.builtin.file:
+        path: '{{ local_kubeconfig_yaml_dir }}'
+        state: directory
+        mode: '0700'
+      delegate_to: localhost
+
+    - name: Write modified kubeconfig locally
+      ansible.builtin.copy:
+        content: '{{ modified_kubeconfig | to_nice_yaml }}'
+        dest: '{{ local_kubeconfig_yaml }}'
+        mode: '0600'
+      delegate_to: localhost
 
 - name: Ensure k3s control plane server is started
   ansible.builtin.systemd:

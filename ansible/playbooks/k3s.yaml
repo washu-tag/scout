@@ -28,12 +28,3 @@
     - k3s
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-
-################################################################################
-- name: Set up kubeconfig on server node
-  hosts: server
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-  tasks:
-    - name: Set up kubeconfig
-      include_tasks: tasks/set_up_kubeconfig.yaml

@@ -35,6 +35,9 @@ base_dir: /var/lib/rancher/k3s
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 kubeconfig_group: wheel
 
+# If we are deploying locally this will be overwritten with a path to a local copy of the remote kubeconfig
+local_kubeconfig_yaml: '{{ kubeconfig_yaml }}'
+
 ################################################################################
 # Air-Gapped Artifact Configuration
 ################################################################################
