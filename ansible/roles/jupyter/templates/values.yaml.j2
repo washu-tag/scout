@@ -70,7 +70,7 @@ prePuller:
   hook:
     enabled: true
   continuous:
-    enabled: '{{ jupyter_prepuller_continuous | default(false) }}'
+    enabled: {{ jupyter_prepuller_continuous | default(false) }}
 
 singleuser:
   image:
@@ -109,7 +109,7 @@ singleuser:
   memory:
     limit: 16G
     guarantee: 2G
-  extraResource: '{{ jupyter_singleuser_extra_resource | default({}) }}'
+  extraResource: {{ jupyter_singleuser_extra_resource | default({}) }}
   storage:
     type: static
     static:

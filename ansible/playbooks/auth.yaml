@@ -5,9 +5,6 @@
   environment:
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-  tasks:
-    - name: Install Keycloak
-      include_tasks: services/keycloak.yaml
-
-    - name: Install OAuth2 Proxy
-      include_tasks: services/oauth2-proxy.yaml
+  roles:
+    - role: keycloak
+    - role: oauth2-proxy

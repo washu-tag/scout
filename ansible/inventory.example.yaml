@@ -110,50 +110,40 @@ k3s_cluster:
     tls_cert_path: ''
     tls_key_path: ''
 
-    # Oauth2 Proxy config
+    # OAuth2 Proxy config
     oauth2_proxy_cookie_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    oauth2_proxy_cookie_expire: '8h' # Optional, default is 8h
 
     # Keycloak Config
-    keycloak_namespace: auth
     keycloak_bootstrap_admin_user: admin
     keycloak_bootstrap_admin_password: admin
-    keycloak_postgres_user: keycloak
-    keycloak_postgres_password: keycloak123
-    keycloak_smtp_host: 'mailhog-service.mailhog'
-    keycloak_smtp_port: '1025'
-    keycloak_smtp_from: 'example@example.com'
-    keycloak_smtp_from_display_name: 'Scout'
-    keycloak_smtp_reply_to: ''
-    keycloak_smtp_reply_to_display_name: ''
-    keycloak_smtp_envelope_from: ''
+
+    # Keycloak SMTP configuration (optional, for email notifications)
+    keycloak_smtp_host: ''
+    keycloak_smtp_port: ''
+    keycloak_smtp_from: ''
+    keycloak_smtp_from_display_name: ''
     keycloak_smtp_auth: ''
-    keycloak_smtp_ssl: 'false'
-    keycloak_smtp_starttls: 'false'
-    keycloak_smtp_debug: 'false'
+    keycloak_smtp_ssl: ''
+    keycloak_smtp_starttls: ''
+
+    # Keycloak IDP configuration
+    keycloak_default_provider: github # 'github' or 'microsoft'
     keycloak_gh_client_id: 'your-github-client'
     keycloak_gh_client_secret: 'your-github-secret'
     keycloak_microsoft_client_id: 'your-microsoft-client'
     keycloak_microsoft_client_secret: 'your-microsoft-secret'
     keycloak_microsoft_tenant_id: 'your-microsoft-tenant-id'
-    keycloak_default_provider: github
-    keycloak_oauth2_proxy_client_id: 'oauth2-proxy'
+
+    # Keycloak Client Secrets for Scout services
     keycloak_oauth2_proxy_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    keycloak_superset_client_id: 'superset'
     keycloak_superset_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    keycloak_jupyterhub_client_id: 'jupyterhub'
     keycloak_jupyterhub_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    keycloak_grafana_client_id: 'grafana'
     keycloak_grafana_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    keycloak_temporal_client_id: 'temporal'
     keycloak_temporal_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    keycloak_minio_client_id: 'minio'
     keycloak_minio_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    keycloak_launchpad_client_id: 'launchpad'
     keycloak_launchpad_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Launchpad config
-    launchpad_namespace: launchpad
     launchpad_nextauth_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
@@ -197,6 +187,7 @@ k3s_cluster:
     hive_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     superset_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    keycloak_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Production resource overrides (defaults in role are for dev)
     postgres_resources:

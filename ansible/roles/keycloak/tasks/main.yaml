@@ -105,7 +105,7 @@
     state: present
     namespace: '{{ keycloak_namespace }}'
     definition:
-      apiVersion: k8s.keycloak.org/v2alpha1 # TODO: Alpha? Look for stable version
+      apiVersion: k8s.keycloak.org/v2alpha1
       kind: Keycloak
       metadata:
         name: keycloak
@@ -193,7 +193,7 @@
       metadata:
         name: keycloak-config
       data:
-        scout-realm.json: "{{ lookup('template', 'templates/keycloak/scout-realm.json.j2') | b64encode }}"
+        scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | b64encode }}"
 
 # https://github.com/adorsys/keycloak-config-cli/issues/1287
 - name: Download Keycloak Config CLI Helm chart

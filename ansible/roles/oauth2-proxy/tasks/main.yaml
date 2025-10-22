@@ -1,14 +1,15 @@
+---
 - name: Add OAuth2 Proxy Helm repository
   delegate_to: localhost
   kubernetes.core.helm_repository:
     name: oauth2-proxy
-    repo_url: https://oauth2-proxy.github.io/manifests
+    repo_url: '{{ oauth2_proxy_chart_repo }}'
 
 - name: Create ConfigMap with OAuth2 Proxy html templates
   block:
     - name: Find all html files in oauth2-proxy templates directory
       find:
-        paths: 'files/oauth2-proxy'
+        paths: '{{ role_path }}/files'
         patterns: '*.html'
       register: oauth2_proxy_templates
       delegate_to: localhost
@@ -44,14 +45,14 @@
         namespace: kube-system
       type: Opaque
       data:
-        logo.png: '{{ lookup("file", "files/oauth2-proxy/scout.jpg") | b64encode }}'
+        logo.png: '{{ lookup("file", role_path + "/files/scout.jpg") | b64encode }}'
 
 - name: Install OAuth2 Proxy with helm
   delegate_to: localhost
   kubernetes.core.helm:
     name: oauth2-proxy
     chart_ref: oauth2-proxy/oauth2-proxy
-    chart_version: ~7.12.0
+    chart_version: '{{ oauth2_proxy_chart_version }}'
     release_namespace: kube-system
     release_state: present
     wait: true
@@ -67,7 +68,7 @@
           redirect_url = "https://auth.{{ server_hostname }}/oauth2/callback"
           oidc_issuer_url = "https://keycloak.{{ server_hostname }}/realms/scout"
           allowed_roles = "scout-user"
-          cookie_expire = "{{ oauth2_proxy_cookie_expire | default('8h') }}"
+          cookie_expire = "{{ oauth2_proxy_cookie_expire }}"
           skip_provider_button = false
           email_domains=  ['*']
           reverse_proxy = true
@@ -77,7 +78,7 @@
           cookie_domains = [".{{ server_hostname }}"]
           whitelist_domains = [".{{ server_hostname }}"]
           backend_logout_url = "https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/logout?id_token_hint={id_token}&post_logout_redirect_uri=https://{{ server_hostname }}"
-          banner = "{{ oauth2_proxy_banner | default('Continue with WashU Key') }}"
+          banner = "{{ oauth2_proxy_banner }}"
           footer = "{{ server_hostname }}" # Hacky way to pass server hostname to sign_in template
       ingress:
         enabled: true
