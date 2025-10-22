@@ -37,7 +37,7 @@ ingress:
         - path: /
           pathType: Prefix
 
-resources: {}
+resources: {{ orthanc_resources | to_json }}
 
 livenessProbe:
   tcpSocket:

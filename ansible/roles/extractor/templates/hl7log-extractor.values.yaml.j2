@@ -12,6 +12,7 @@ env:
 service:
   type: ClusterIP
   port: 8080
+resources: {{ hl7log_extractor_resources | to_json }}
 volumes:
   - name: data
     hostPath:
@@ -44,7 +45,7 @@ config:
       region: '{{ s3_region }}'
     spring:
       datasource:
-        url: 'jdbc:postgresql://postgresql-cluster-rw.{{ postgres_cluster_namespace }}:5432/ingest'
+        url: 'jdbc:postgresql://{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}:5432/{{ ingest_postgres_table_name }}'
         username: '{{ postgres_user }}'
         password: '{{ postgres_password }}'
       temporal:

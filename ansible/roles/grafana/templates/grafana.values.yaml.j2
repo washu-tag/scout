@@ -76,5 +76,7 @@ persistence:
   enabled: true
   storageClassName: '{{ grafana_storage_class }}'
 
+resources: {{ grafana_resources | to_json }}
+
 livenessProbe:
   initialDelaySeconds: 180

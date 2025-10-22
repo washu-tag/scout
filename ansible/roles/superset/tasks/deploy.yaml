@@ -103,11 +103,12 @@
         enabled: false
       supersetNode:
         connections:
-          db_host: 'postgresql-cluster-rw.{{ postgres_cluster_namespace }}'
+          db_host: '{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}'
           db_port: '5432'
           db_user: '{{ superset_postgres_user }}'
           db_pass: '{{ superset_postgres_password }}'
           db_name: '{{ superset_database }}'
+        resources: '{{ superset_resources }}'
       configOverrides:
         branding: |
           APP_NAME = "{{ superset_app_name }}"

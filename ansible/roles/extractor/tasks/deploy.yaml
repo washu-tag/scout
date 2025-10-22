@@ -20,7 +20,7 @@
         namespace: '{{ extractor_namespace }}'
       type: Opaque
       stringData:
-        DB_HOST: 'postgresql-cluster-rw.{{ postgres_cluster_namespace }}'
+        DB_HOST: '{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}'
         DB_PORT: '5432'
         DB_NAME: '{{ ingest_postgres_table_name }}'
         DB_USER: '{{ postgres_user }}'

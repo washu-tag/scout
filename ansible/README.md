@@ -252,7 +252,7 @@ Scout uses Ansible's variable precedence system (low to high):
     - Environment-specific config, secrets, paths, resource sizes
     - **Overrides all role defaults** ✓
 4. **Group vars** (`group_vars/all/versions.yaml`) - **Higher than inventory**
-    - Component versions (managed by Renovate)
+    - Component versions (to be managed by Renovate, probably)
     - **Cannot be overridden by inventory** (use `-e` flag instead)
 5. **Extra vars** (`-e` flag) - **Highest**
 
@@ -307,6 +307,147 @@ k3s_cluster:
 ```
 
 See `roles/scout_common/defaults/main.yaml` for all available namespace variables.
+
+## Custom Filter Plugins
+
+Scout includes custom Jinja2 filter plugins to extend Ansible's templating capabilities. These filters help standardize complex transformations and conversions across roles.
+
+### Available Filters
+
+#### `jvm_memory_to_k8s`
+
+Converts JVM heap sizes to Kubernetes memory specifications with proper binary unit handling.
+
+**Background**: JVM interprets `-Xmx2G` as 2 gibibytes (binary, 1024³), but Kubernetes interprets `2G` as 2 gigabytes (decimal, 1000³). This filter ensures JVM and Kubernetes use matching binary units to prevent out-of-memory errors.
+
+**Usage:**
+```yaml
+# Simple conversion (1x)
+memory: "{{ cassandra_max_heap | jvm_memory_to_k8s }}"
+# Input: "2G" → Output: "2Gi"
+
+# With multiplier (2x for limits to account for off-heap memory)
+memory: "{{ cassandra_max_heap | jvm_memory_to_k8s(2) }}"
+# Input: "2G" → Output: "4Gi"
+```
+
+**Supported units** (case-insensitive):
+- `K`/`k` → `Ki` (kibibytes)
+- `M`/`m` → `Mi` (mebibytes)
+- `G`/`g` → `Gi` (gibibytes)
+
+**Smart conversion examples:**
+- `"1024M"` → `"1Gi"` (automatically converts to larger unit)
+- `"512M"` → `"512Mi"` (keeps original unit)
+- `"512M" | jvm_memory_to_k8s(2)` → `"1Gi"` (multiplies then converts)
+
+**Services using this filter:**
+- Cassandra (JVM heap → container memory)
+- Elasticsearch (JVM heap → container memory)
+- HL7 Transformer (Spark memory → container memory)
+- Jupyter (Spark memory → container memory)
+
+### Creating Custom Filters
+
+1. **Create filter plugin file** in `filter_plugins/`:
+
+```python
+#!/usr/bin/env python3
+"""
+Custom Jinja2 filters for Scout.
+"""
+
+def my_custom_filter(input_value, arg1="default"):
+    """
+    Description of what your filter does.
+
+    Args:
+        input_value: The input to transform
+        arg1: Optional argument
+
+    Returns:
+        Transformed output
+    """
+    # Your transformation logic here
+    return f"{input_value}-{arg1}"
+
+
+class FilterModule(object):
+    """Ansible filter plugin class."""
+
+    def filters(self):
+        return {
+            'my_custom_filter': my_custom_filter,
+        }
+```
+
+2. **Use filter in templates or defaults**:
+
+```yaml
+result: "{{ my_variable | my_custom_filter }}"
+result_with_arg: "{{ my_variable | my_custom_filter('custom') }}"
+```
+
+3. **Create unit tests** in `tests/unit/filter_plugins/test_*.py`:
+
+```python
+import sys
+from pathlib import Path
+
+# Add filter_plugins to path so we can import the module
+filter_plugins_path = Path(__file__).parent.parent.parent.parent / "filter_plugins"
+sys.path.insert(0, str(filter_plugins_path))
+
+import pytest
+from my_filters import my_custom_filter
+
+def test_my_custom_filter():
+    assert my_custom_filter("test") == "test-default"
+    assert my_custom_filter("test", "custom") == "test-custom"
+```
+
+4. **Run tests** using `uvx`:
+
+```bash
+uvx pytest tests/unit/filter_plugins/test_my_filters.py -v
+```
+
+### Testing Filter Plugins
+
+Scout uses pytest for filter plugin testing. Tests are located in `tests/unit/filter_plugins/`.
+
+**Run all filter tests:**
+```bash
+uvx pytest tests/unit/filter_plugins/ -v
+```
+
+**Run specific test file:**
+```bash
+uvx pytest tests/unit/filter_plugins/test_jvm_memory.py -v
+```
+
+**Run specific test:**
+```bash
+uvx pytest tests/unit/filter_plugins/test_jvm_memory.py::TestJvmMemoryToK8s::test_gigabytes_uppercase -v
+```
+
+### Filter Plugin Best Practices
+
+1. **Document thoroughly**: Include docstrings with examples
+2. **Handle edge cases**: Validate inputs and provide clear error messages
+3. **Write comprehensive tests**: Cover normal cases, edge cases, and error conditions
+4. **Keep filters focused**: Each filter should do one thing well
+5. **Use type hints**: Make function signatures clear with Python type hints
+6. **Test with actual data**: Include tests using real values from inventory
+
+### Example: JVM Memory Filter
+
+See `filter_plugins/jvm_memory.py` and `tests/unit/filter_plugins/test_jvm_memory.py` for a complete example of:
+- Unit conversion with validation
+- Smart unit selection (e.g., `1024M` → `1Gi`)
+- Multiplier support for derived values
+- Comprehensive test coverage (25 test cases)
+- Real-world usage in multiple roles
 
 ## GPU Support
 
@@ -473,16 +614,20 @@ Scale service replicas by adjusting replica counts in role defaults.
 ```
 ansible/
 ├── collections/requirements.yaml # Ansible collection dependencies
+├── filter_plugins/              # Custom Jinja2 filters
+│   └── jvm_memory.py            # JVM to K8s memory conversion
+├── tests/unit/filter_plugins/   # Unit tests for filter plugins
+│   └── test_jvm_memory.py       # Unit tests for jvm_memory filter
 ├── group_vars/all/
-│   └── versions.yaml             # Centralized version management
-├── inventory.example.yaml        # Example inventory (copy to inventory.yaml)
-├── playbooks/                    # Ansible playbooks
-│   ├── main.yaml                 # Main orchestration playbook
-│   ├── k3s.yaml                  # K3s installation
-│   ├── lake.yaml                 # Data lake (MinIO + Hive)
-│   ├── analytics.yaml            # Analytics (Trino + Superset)
-│   ├── orchestrator.yaml         # Temporal workflow engine
-│   └── ...                       # Additional service playbooks
+│   └── versions.yaml            # Centralized version management
+├── inventory.example.yaml       # Example inventory (copy to inventory.yaml)
+├── playbooks/                   # Ansible playbooks
+│   ├── main.yaml                # Main orchestration playbook
+│   ├── k3s.yaml                 # K3s installation
+│   ├── lake.yaml                # Data lake (MinIO + Hive)
+│   ├── analytics.yaml           # Analytics (Trino + Superset)
+│   ├── orchestrator.yaml        # Temporal workflow engine
+│   └── ...                      # Additional service playbooks
 ├── roles/
 │   ├── scout_common/            # Shared defaults and helper tasks
 │   │   ├── defaults/main.yaml   # ALL Scout defaults (override in inventory)
@@ -500,7 +645,7 @@ ansible/
 │   ├── grafana/                 # Grafana dashboards
 │   └── ...                      # Additional roles
 ├── Makefile                     # Convenience targets
-└──README.md                     # This file
+└── README.md                    # This file
 ```
 
 ## Additional Resources

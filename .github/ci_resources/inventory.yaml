@@ -76,7 +76,7 @@ k3s_cluster:
     scratch_bucket: ci-scratch
 
     # Resources
-    hl7_transformer_spark_memory: 1g
-    jupyter_spark_memory: 1g
+    hl7_transformer_spark_memory: 1G
+    jupyter_spark_memory: 1G
     cassandra_init_heap: 1G
     cassandra_max_heap: 1G

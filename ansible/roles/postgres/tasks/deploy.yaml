@@ -30,7 +30,6 @@
     helm_chart_namespace: '{{ cnpg_operator_namespace }}'
     helm_repo_name: cnpg
     helm_repo_url: https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/
-    helm_chart_timeout: "{{ minio_operator_wait_timeout | default('1m') }}"
 
 - name: Create namespace
   ansible.builtin.include_role:
@@ -81,7 +80,7 @@
       apiVersion: postgresql.cnpg.io/v1
       kind: Cluster
       metadata:
-        name: postgresql-cluster
+        name: '{{ postgres_cluster_name }}'
         namespace: '{{ postgres_cluster_namespace }}'
       spec:
         instances: 1
@@ -109,17 +108,17 @@
       apiVersion: v1
       kind: Service
       metadata:
-        name: postgresql-cluster-metrics
+        name: '{{ postgres_cluster_name }}-metrics'
         namespace: '{{ postgres_cluster_namespace }}'
       spec:
         selector:
-          cnpg.io/cluster: postgresql-cluster
+          cnpg.io/cluster: '{{ postgres_cluster_name }}'
         ports:
           - name: metrics
             port: 9187
             targetPort: metrics
 
 - name: Wait for Postgres to be ready
-  ansible.builtin.command: 'kubectl -n {{ postgres_cluster_namespace }} wait --for=condition=Ready --timeout=300s cluster/postgresql-cluster'
+  ansible.builtin.command: 'kubectl -n {{ postgres_cluster_namespace }} wait --for=condition=Ready --timeout=300s cluster/{{ postgres_cluster_name }}'
   register: postgres_ready
   changed_when: false
