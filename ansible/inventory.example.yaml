@@ -450,7 +450,7 @@ k3s_cluster:
       - gpt-oss:120b
     ollama_resources:
       requests:
-        cpu: 8
+        cpu: 4
         memory: 32Gi
       limits:
         cpu: 16
