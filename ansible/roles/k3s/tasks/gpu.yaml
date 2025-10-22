@@ -1,0 +1,37 @@
+---
+# GPU Worker Configuration
+# Configures k3s runtime for GPU worker nodes with NVIDIA container toolkit
+# Only runs on hosts in the 'gpu_workers' group
+
+- name: Create storage directory
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    mode: '0755'
+
+- name: Write k3s service configuration for GPU runtime
+  ansible.builtin.copy:
+    dest: /etc/rancher/k3s/config.yaml
+    content: |
+      default-runtime: nvidia
+    mode: '0644'
+
+- name: Add NVIDIA container toolkit repository
+  ansible.builtin.get_url:
+    url: https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+    dest: /etc/yum.repos.d/nvidia-container-toolkit.repo
+    mode: '0644'
+
+- name: Install NVIDIA container toolkit packages
+  ansible.builtin.package:
+    name:
+      - nvidia-container-toolkit
+      - nvidia-container-toolkit-base
+      - libnvidia-container-tools
+      - libnvidia-container1
+    state: present
+
+- name: Verify NVIDIA container toolkit installation
+  ansible.builtin.command: nvidia-ctk --version
+  register: nvidia_ctk_version
+  changed_when: false

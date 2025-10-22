@@ -1,0 +1,22 @@
+---
+# k3s Prerequisites
+# Common setup tasks required before k3s installation
+# Runs on all k3s cluster nodes (server, agents, gpu_workers)
+
+- name: Create /root/bin directory
+  ansible.builtin.file:
+    path: /root/bin
+    state: directory
+    mode: '0700'
+
+- name: Download K3s installation script (online mode)
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: /root/bin/get.k3s.io.sh
+    mode: '0755'
+  when: not (air_gapped | default(false) | bool)
+
+- name: Add python kubernetes library from system package
+  ansible.builtin.package:
+    name: python3-kubernetes
+    state: present

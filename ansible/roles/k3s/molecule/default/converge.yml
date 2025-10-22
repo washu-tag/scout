@@ -1,0 +1,90 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: true
+  pre_tasks:
+    - name: Explain test purpose
+      ansible.builtin.debug:
+        msg: >
+          This is a unit test scenario for the k3s role.
+          Tests verify role logic, conditionals, and file generation WITHOUT actually installing k3s.
+          The actual test assertions are in verify.yml.
+
+    # Mock prerequisites to allow role to run without external dependencies
+    - name: Create mock directories
+      ansible.builtin.file:
+        path: '{{ item }}'
+        state: directory
+        mode: '0755'
+      loop:
+        - /root/bin
+        - /tmp/molecule-k3s-test
+        - /tmp/molecule-scout-repo/.kube/scout/localhost
+        - /etc/rancher/k3s
+
+    - name: Create mock install script to prevent actual installation
+      ansible.builtin.copy:
+        dest: /root/bin/get.k3s.io.sh
+        content: |
+          #!/bin/bash
+          # Mock k3s install script for testing
+          # Captures environment variables without installing k3s
+          echo "MOCK INSTALL: Would install k3s with:"
+          echo "  INSTALL_K3S_SKIP_DOWNLOAD=${INSTALL_K3S_SKIP_DOWNLOAD:-not set}"
+          echo "  INSTALL_K3S_EXEC=${INSTALL_K3S_EXEC:-not set}"
+          echo "  INSTALL_K3S_VERSION=${INSTALL_K3S_VERSION:-not set}"
+          echo "  K3S_TOKEN=${K3S_TOKEN:-not set}"
+          echo "  K3S_URL=${K3S_URL:-not set}"
+          # Create uninstall script to satisfy 'creates' condition
+          touch "${UNINSTALL_K3S_SH}"
+          exit 0
+        mode: '0755'
+
+    - name: Create mock k3s binary
+      ansible.builtin.copy:
+        dest: /tmp/molecule-k3s-test/k3s
+        content: |
+          #!/bin/bash
+          echo "Mock k3s binary"
+        mode: '0755'
+
+    - name: Create mock kubeconfig
+      ansible.builtin.copy:
+        dest: /tmp/molecule-k3s-test/kubeconfig
+        content: |
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - name: default
+            cluster:
+              server: https://127.0.0.1:6443
+              certificate-authority-data: bW9jay1jZXJ0
+          contexts:
+          - name: default
+            context:
+              cluster: default
+              user: default
+          current-context: default
+          users:
+          - name: default
+            user:
+              client-certificate-data: bW9jay1jZXJ0
+              client-key-data: bW9jay1rZXk=
+        mode: '0640'
+
+    - name: Create mock kubectl command
+      ansible.builtin.copy:
+        dest: /usr/local/bin/kubectl
+        content: |
+          #!/bin/bash
+          # Mock kubectl for testing
+          if [[ "$*" == "get nodes" ]]; then
+            echo "NAME        STATUS   ROLES           AGE   VERSION"
+            echo "localhost   Ready    control-plane   1m    v1.30.0+k3s1"
+            exit 0
+          fi
+          exit 0
+        mode: '0755'
+
+  roles:
+    - role: k3s

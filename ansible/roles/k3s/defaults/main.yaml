@@ -1,0 +1,96 @@
+---
+# k3s Role Default Variables
+# Consolidated configuration for k3s installation (online and air-gapped modes)
+
+################################################################################
+# Version and Source Configuration
+################################################################################
+
+# k3s version to install - if not specified or empty, will use latest stable
+# Set to empty string or omit to auto-detect latest stable version
+# Example: k3s_version: v1.33.5+k3s1
+k3s_version: ''
+
+# Base URLs for k3s artifacts
+k3s_install_script_url: https://get.k3s.io
+k3s_binary_base_url: https://github.com/k3s-io/k3s/releases/download
+
+################################################################################
+# Deployment Mode Configuration
+################################################################################
+
+# Enable air-gapped installation mode
+# When true: Downloads artifacts to control node, deploys without internet access
+# When false: Uses online installation via get.k3s.io
+air_gapped: false
+
+# Cluster join token (required)
+# All servers and agents must use the same token
+k3s_token: ''
+
+# k3s data directory
+base_dir: /var/lib/rancher/k3s
+
+# Kubeconfig file path and permissions
+kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
+kubeconfig_group: wheel
+
+################################################################################
+# Air-Gapped Artifact Configuration
+################################################################################
+
+# Timeout for artifact downloads in seconds (5 minutes default)
+k3s_artifact_download_timeout: 300
+
+# Where to install k3s binary on target nodes
+k3s_binary_path: /usr/local/bin/k3s
+
+# Where to install k3s installation script on target nodes
+k3s_install_script_path: /root/bin/get.k3s.io.sh
+
+################################################################################
+# SELinux Configuration
+################################################################################
+
+# Auto-detect SELinux status - will be true if SELinux is enabled on target hosts
+# Can be overridden in inventory to force enable/disable SELinux package installation
+k3s_selinux_enabled: "{{ ansible_selinux.status == 'enabled' if ansible_selinux is defined else false }}"
+
+# Rancher k3s repository configuration for SELinux package downloads
+# Channel to use: stable, testing, or latest
+k3s_selinux_channel: stable
+
+# Rancher RPM repository site
+k3s_selinux_rpm_site: rpm.rancher.io
+
+# Where to stage SELinux RPMs on target nodes (temporary directory)
+k3s_selinux_rpm_staging_dir: /tmp/k3s-selinux-rpms
+
+################################################################################
+# Kubernetes Job Configuration (for SELinux package download in air-gapped mode)
+################################################################################
+
+# Namespace where the SELinux downloader Job will run on the staging cluster
+k3s_package_download_namespace: default
+
+# Timeout in seconds to wait for the SELinux package download Job to complete
+k3s_package_download_timeout: 300
+################################################################################
+# Internal Variables (set at runtime)
+################################################################################
+
+# These variables are computed during role execution and should not be
+# overridden in inventory files
+
+# Temporary directory for storing artifacts on Ansible control node
+# Set by download_artifacts.yaml task
+# k3s_artifact_temp_dir: /tmp/k3s_airgap_XXXXXX
+
+# Harbor registry configuration
+# Computed from harbor role defaults and inventory variables
+# use_staging_node: true/false
+# staging_harbor_host: hostname:port
+# staging_harbor_proxies: list of proxy configurations
+
+# Registry configuration change tracking
+# registry_config_changed: true/false
