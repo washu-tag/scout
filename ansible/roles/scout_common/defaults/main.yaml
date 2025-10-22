@@ -67,6 +67,11 @@ superset_postgres_user: superset
 report_delta_table_name: reports
 ingest_postgres_table_name: ingest
 
+# Trino
+# Access control - user credentials for authentication and authorization
+trino_admin_user: trino-admin # Full access user for admin operations (Superset)
+trino_readonly_user: trino-readonly # Read-only user for end users (Jupyter, MCP)
+
 # Helm configuration
 helm_plugins_dir: /root/.local/share/helm/plugins
 
