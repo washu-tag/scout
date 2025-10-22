@@ -23,7 +23,7 @@ The `inventory.yaml` file is an Ansible inventory that tells Scout where to depl
 
 2. Edit `inventory.yaml` to customize for your environment
 
-3. Encrypt secrets using Ansible Vault (see [Configuring Secrets](#configuring-secrets))
+3. Encrypt secrets using Ansible Vault (see {ref}`Configuring Secrets <configuring-secrets>`)
 
 4. Deploy Scout:
    ```bash
@@ -214,7 +214,7 @@ staging:
     harbor_dir: /scout/persistence/harbor
 ```
 
-See [Air-Gapped Deployment](#air-gapped-deployment) for details.
+See {ref}`Air-Gapped Deployment <air-gapped-deployment>` for details.
 
 ## Cluster Configuration (`k3s_cluster` vars)
 
@@ -277,6 +277,7 @@ extractor_data_dir: /ceph/input/data    # HL7 log input directory
 - `/scout/persistence/*` - Database persistence
 - `/scout/monitoring/*` - Monitoring and logs
 
+(configuring-secrets)=
 ### Configuring Secrets
 
 Scout uses [Ansible Vault](https://docs.ansible.com/ansible/latest/vault_guide/index.html) to encrypt sensitive values like passwords, tokens, and API keys.
@@ -339,30 +340,30 @@ postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault
 All services require passwords and tokens. Here's a complete list:
 
 **K3s:**
-```yaml
+```
 k3s_token: !vault |...
 ```
 
 **PostgreSQL:**
-```yaml
+```
 postgres_password: !vault |...
 postgres_superuser_password: !vault |...
 ```
 
 **MinIO (S3):**
-```yaml
+```
 s3_password: !vault |...
 s3_lake_reader_secret: !vault |...
 s3_lake_writer_secret: !vault |...
 ```
 
 **Loki:**
-```yaml
+```
 s3_loki_writer_secret: !vault |...
 ```
 
 **Jupyter:**
-```yaml
+```
 jupyter_metrics_api_token: !vault |...
 jupyter_mcp_api_token: !vault |...
 jupyter_dummy_password: !vault |...  # If using dummy auth
@@ -372,7 +373,7 @@ github_client_secret: !vault |...
 ```
 
 **Grafana:**
-```yaml
+```
 # For Slack alerts:
 slack_token: !vault |...
 slack_channel_id: !vault |...
@@ -382,23 +383,23 @@ grafana_smtp_password: !vault |...
 ```
 
 **Superset:**
-```yaml
+```
 superset_postgres_password: !vault |...
 superset_secret: !vault |...
 ```
 
 **Hive Metastore:**
-```yaml
+```
 hive_postgres_password: !vault |...
 ```
 
 **Open WebUI:**
-```yaml
+```
 open_webui_postgres_password: !vault |...
 ```
 
 **Staging/Harbor (if using air-gapped):**
-```yaml
+```
 staging_k3s_token: !vault |...
 harbor_admin_password: !vault |...
 ```
@@ -576,7 +577,7 @@ open_webui_resources:
 
 #### K3s
 
-```yaml
+```
 k3s_token: !vault |...  # Cluster join token
 kubeconfig_group: 'docker'  # Linux group for kubectl access
 ```
@@ -598,7 +599,7 @@ minio_volumes_per_server: 2  # Must be >= 2 if minio_hosts has > 1 node
 
 Choose between dummy authentication (for testing) or GitHub OAuth:
 
-```yaml
+```
 jupyter_auth_class: dummy  # or 'github'
 
 # For dummy auth:
@@ -614,7 +615,7 @@ github_organization: your-org-name
 
 Configure alert notifications via Slack or email:
 
-```yaml
+```
 grafana_alert_contact_point: slack  # or 'email'
 
 # Slack configuration:
@@ -678,6 +679,7 @@ k3s_cluster:
 
 See `roles/scout_common/defaults/main.yaml` for the complete list of namespace variables.
 
+(air-gapped-deployment)=
 ## Air-Gapped Deployment
 
 Scout supports air-gapped deployments for environments without internet access on production nodes.
@@ -706,7 +708,7 @@ Scout supports air-gapped deployments for environments without internet access o
 
 Add a staging host with internet access:
 
-```yaml
+```
 staging:
   hosts:
     staging.example.edu:
@@ -849,6 +851,6 @@ After creating your `inventory.yaml`:
 4. **Monitor deployment:** Check pod status with `kubectl get pods -A`
 
 For more information, see:
-- [Ansible README](../../ansible/README.md)
+- `ansible/README.md` in the Scout repository
 - [Ansible Inventory Documentation](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html)
 - [Ansible Vault Documentation](https://docs.ansible.com/ansible/latest/vault_guide/index.html)
