@@ -34,4 +34,3 @@ trino_worker_resources:
   limits:
     cpu: '{{ trino_worker_cpu_limit }}'
     memory: '{{ trino_worker_memory_gb }}Gi'
-
