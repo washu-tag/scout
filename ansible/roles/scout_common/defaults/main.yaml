@@ -105,6 +105,11 @@ ingest_postgres_table_name: ingest
 hive_metastore_instance: hive-metastore
 hive_metastore_instance_readonly: hive-metastore-readonly
 
+# Trino
+# Access control - user credentials for authentication and authorization
+trino_admin_user: trino-admin # Full access user for admin operations (Superset)
+trino_readonly_user: trino-readonly # Read-only user for end users (Jupyter, MCP)
+
 # Helm configuration
 helm_plugins_dir: /root/.local/share/helm/plugins
 

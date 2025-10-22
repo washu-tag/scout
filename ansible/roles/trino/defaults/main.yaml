@@ -43,15 +43,6 @@ trino_worker_resources:
     cpu: '{{ trino_worker_cpu_limit }}'
     memory: '{{ trino_worker_max_heap | jvm_memory_to_k8s(2) }}'
 
-# Access control - user credentials for authentication and authorization
-# Trino is configured with password authentication to prevent user impersonation
-# REQUIRED: Passwords must be set in inventory.yaml (use vault encryption)
-# Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
-trino_admin_user: trino-admin # Full access user for admin operations (Superset)
-trino_admin_password: '' # REQUIRED: Set in inventory
-trino_readonly_user: trino-readonly # Read-only user for end users (Jupyter, MCP)
-trino_readonly_password: '' # REQUIRED: Set in inventory
-
 # Trino MCP server configuration
 mcp_trino_enabled: true
 mcp_trino_repo_url: https://github.com/tuannvm/mcp-trino.git
