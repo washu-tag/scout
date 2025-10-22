@@ -17,7 +17,6 @@ k3s_cluster:
     launchpad_image: docker.io/local/washu-tag/launchpad
 
     # K3s config
-    k3s_version: v1.32.3+k3s1 # Leave blank for latest stable
     k3s_token: K3S_TOKEN
     kubeconfig_group: root
 
@@ -101,20 +100,12 @@ k3s_cluster:
     elasticsearch_storage_size: 1Gi
     temporal_oidc_enabled: false
 
-    # Namespaces that can be changed
-    hive_namespace: hive
-    postgres_cluster_namespace: cloudnative-pg
-    prometheus_namespace: prometheus
-    grafana_namespace: grafana
-    loki_namespace: loki
-    ollama_namespace: ollama
-
     # Local paths
     base_dir: /var/lib
     scout_repo_dir: WORK_DIR
     minio_dir: '{{ base_dir }}/minio'
-    temporal_cassandra_dir: '{{ base_dir }}/cassandra'
-    temporal_elasticsearch_dir: '{{ base_dir }}/elasticsearch'
+    cassandra_dir: '{{ base_dir }}/cassandra'
+    elasticsearch_dir: '{{ base_dir }}/elasticsearch'
     postgres_dir: '{{ base_dir }}/postgres'
     prometheus_dir: '{{ base_dir }}/prometheus'
     loki_dir: '{{ base_dir }}/loki'
@@ -122,40 +113,12 @@ k3s_cluster:
     jupyter_dir: '{{ base_dir }}/jupyter'
     extractor_data_dir: '{{ scout_repo_dir }}/tests/staging_test_data'
 
-    # Within the container mounted paths
-    hl7logs_root_dir: /data
-    modality_map_path: /data/modality_mapping_codes.csv
-
     # Object storage paths
     lake_bucket: ci-lake
     scratch_bucket: ci-scratch
-    hl7_path: 's3://{{ lake_bucket }}/hl7'
-    scratch_path: 's3://{{ scratch_bucket }}'
-    delta_lake_path: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefix, it is used just like s3://
-
-    # Database table names
-    report_delta_table_name: reports
-    ingest_postgres_table_name: ingest
 
     # Resources
     hl7_transformer_spark_memory: 1g
     jupyter_spark_memory: 1g
-    temporal_cassandra_init_heap: 1G
-    temporal_cassandra_max_heap: 1G
-
-    # You probably don't want to change these unless you know these items will be
-    # stored in different locations on your system
-    helm_plugins_dir: /root/.local/share/helm/plugins
-    kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
-    local_kubeconfig_yaml: '{{ kubeconfig_yaml }}'
-
-    # Do not change the values below, they are hard-coded various places
-    extractor_namespace: extractor
-    minio_tenant_namespace: minio-scout
-    temporal_namespace: temporal
-
-    # computed values, used across playbooks
-    s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
-    hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
-    server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
-    # End do not change
+    cassandra_init_heap: 1G
+    cassandra_max_heap: 1G

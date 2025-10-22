@@ -1,0 +1,36 @@
+---
+# Superset role defaults
+# User-configurable settings are in inventory.yaml
+
+# Helm configuration
+superset_helm_repo_name: superset
+superset_helm_repo_url: https://apache.github.io/superset
+superset_helm_chart_name: superset
+superset_helm_timeout: 15m
+
+# Custom Superset image (override from inventory for CI/CD)
+superset_image_repository: ghcr.io/washu-tag/superset
+superset_image_tag: 5.0.0
+
+# Redis image
+superset_redis_image_repository: bitnamilegacy/redis
+
+# Branding
+superset_app_name: Scout Analytics
+superset_logo_width: 200
+
+# SQL Alchemy pool settings
+superset_pool_size: 20
+superset_pool_max_overflow: 30
+superset_pool_timeout: 60
+
+# PostgreSQL configuration
+superset_postgres_user: superset
+superset_postgres_password: changeme
+superset_database: superset
+
+# Analytics directory path
+superset_analytics_dir: '{{ scout_repo_dir }}/analytics'
+
+# Scout logo path
+superset_logo_path: '{{ scout_repo_dir }}/launchpad/public/scout.png'

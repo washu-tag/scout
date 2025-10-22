@@ -1,0 +1,94 @@
+---
+# Kubernetes deployment tasks for Elasticsearch cluster using ECK
+# These tasks run on the server host (which has access to k3s_cluster inventory variables)
+
+# Storage setup (StorageClass and PersistentVolumes)
+- name: Set up storage
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_setup
+  vars:
+    storage_definitions: '{{ elasticsearch_storage_definitions }}'
+
+# Deploy ECK operator (Elastic Cloud on Kubernetes)
+- name: Deploy ECK operator
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: eck-operator
+    helm_chart_ref: elastic/eck-operator
+    helm_chart_version: '{{ eck_operator_version }}'
+    helm_chart_namespace: '{{ eck_operator_namespace }}'
+    helm_repo_name: elastic
+    helm_repo_url: https://helm.elastic.co
+    helm_chart_values:
+      managedNamespaces: ['{{ elasticsearch_namespace }}']
+
+- name: Create namespace
+  kubernetes.core.k8s:
+    name: '{{ elasticsearch_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+# Deploy Elasticsearch cluster using ECK
+- name: Deploy Elasticsearch cluster
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: elasticsearch.k8s.elastic.co/v1
+      kind: Elasticsearch
+      metadata:
+        name: '{{ elasticsearch_cluster_name | default("elasticsearch") }}'
+        namespace: '{{ elasticsearch_namespace }}'
+      spec:
+        version: '{{ elasticsearch_version }}'
+        http:
+          tls:
+            selfSignedCertificate:
+              disabled: true # Disable TLS for simpler internal access
+        nodeSets:
+          - name: default
+            count: 1
+            config:
+              node.store.allow_mmap: false
+            podTemplate:
+              spec:
+                containers:
+                  - name: elasticsearch
+                    env:
+                      - name: ES_JAVA_OPTS
+                        value: '-Xms{{ elasticsearch_heap_size | default("1g") }} -Xmx{{ elasticsearch_heap_size | default("1g") }}'
+                    resources:
+                      requests:
+                        memory: '{{ (elasticsearch_heap_size | default("1g") | regex_replace("g", "Gi")) }}'
+                        cpu: 500m
+                      limits:
+                        memory: '{{ (elasticsearch_heap_size | default("1g") | regex_replace("g", "") | int * 2) | string }}Gi'
+                        cpu: 2
+            volumeClaimTemplates:
+              - metadata:
+                  name: elasticsearch-data
+                spec:
+                  accessModes:
+                    - ReadWriteOnce
+                  storageClassName: '{{ elasticsearch_storage_class }}'
+                  resources:
+                    requests:
+                      storage: '{{ elasticsearch_storage_size | default("100Gi") }}'
+
+- name: Wait for Elasticsearch to be ready
+  kubernetes.core.k8s_info:
+    api_version: elasticsearch.k8s.elastic.co/v1
+    kind: Elasticsearch
+    name: '{{ elasticsearch_cluster_name | default("elasticsearch") }}'
+    namespace: '{{ elasticsearch_namespace }}'
+  register: elasticsearch_status
+  until:
+    - elasticsearch_status.resources | length > 0
+    - elasticsearch_status.resources[0].status.health is defined
+    - elasticsearch_status.resources[0].status.health == 'green' or elasticsearch_status.resources[0].status.health == 'yellow'
+  retries: 60
+  delay: 10
+  changed_when: false

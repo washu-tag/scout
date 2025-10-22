@@ -1,0 +1,8 @@
+---
+# Node-side storage directory creation for Harbor
+- name: Create storage directories
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_dir
+  vars:
+    storage_definitions: '{{ harbor_storage_definitions }}'

@@ -2,83 +2,17 @@
 - name: Create storage directories for Jupyter
   hosts: k3s_cluster
   gather_facts: false
-  vars_files:
-    - vars/jupyter_storage.yaml
   tasks:
     - name: Create storage directories
-      include_tasks: tasks/storage_dir_create.yaml
+      ansible.builtin.include_role:
+        name: jupyter
+        tasks_from: storage
 
-- name: Install JupyterHub
+- name: Deploy JupyterHub
   hosts: server
   gather_facts: false
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-  vars_files:
-    - vars/jupyter_storage.yaml
-  tasks:
-    - name: Set up storage
-      include_tasks: tasks/storage_setup.yaml
-
-    - name: Create Jupyter namespace
-      kubernetes.core.k8s:
-        name: jupyter
-        api_version: v1
-        kind: Namespace
-        state: present
-
-    - name: Create PersistentVolumeClaim for Jupyter single-user storage
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: PersistentVolumeClaim
-          metadata:
-            name: '{{ jupyter_singleuser_pvc }}'
-            namespace: jupyter
-          spec:
-            accessModes:
-              - ReadWriteOnce
-            resources:
-              requests:
-                storage: 250Gi
-            storageClassName: '{{ jupyter_singleuser_storage_class }}'
-
-    - name: Add JupyterHub Helm repository
-      kubernetes.core.helm_repository:
-        name: jupyterhub
-        repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
-
-    - name: Setup Spark Defaults ConfigMaps
-      include_tasks: tasks/spark_config_setup.yaml
-      vars:
-        spark_defaults_configmap_name: spark-defaults
-        spark_defaults_configmap_namespace: jupyter
-        spark_memory: '{{ jupyter_spark_memory }}'
-
-    - name: Load base JupyterHub values
-      ansible.builtin.include_vars:
-        file: vars/jupyter.values.yaml
-        name: jupyter_base_values
-
-    - name: Load authentication-specific JupyterHub values
-      ansible.builtin.include_vars:
-        file: vars/jupyter.auth.{{ jupyter_auth_class }}.values.yaml
-        name: jupyter_auth_values
-
-    - name: Merge base and authentication-specific JupyterHub values
-      set_fact:
-        jupyter_values: '{{ jupyter_base_values | combine(jupyter_auth_values, recursive=True) }}'
-
-    - name: Install JupyterHub using Helm
-      kubernetes.core.helm:
-        state: present
-        name: jupyter
-        chart_ref: jupyterhub/jupyterhub
-        release_namespace: jupyter
-        create_namespace: true
-        update_repo_cache: true
-        chart_version: ~4.2.0
-        wait: true
-        wait_timeout: 10m
-        atomic: true
-        values: '{{ jupyter_values }}'
+    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
+  roles:
+    - jupyter

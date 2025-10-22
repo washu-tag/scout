@@ -19,23 +19,18 @@
   delegate_to: localhost
   run_once: true
 
-- name: Add Postgres Helm repository
-  kubernetes.core.helm_repository:
-    name: cnpg
-    repo_url: https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/
-
-- name: Install/Upgrade Postgres Operator
-  kubernetes.core.helm:
-    name: cnpg
-    chart_ref: cnpg/cloudnative-pg
-    chart_version: ~0.23.2
-    release_namespace: cnpg-system
-    create_namespace: true
-    release_state: present
-    update_repo_cache: true
-    wait: true
-    wait_timeout: 5m
-    atomic: true
+- name: Deploy Postgres Operator
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: cnpg
+    helm_chart_ref: cnpg/cloudnative-pg
+    helm_chart_version: '{{ cnpg_version }}'
+    helm_chart_namespace: '{{ cnpg_operator_namespace }}'
+    helm_repo_name: cnpg
+    helm_repo_url: https://raw.githubusercontent.com/cloudnative-pg/charts/refs/heads/gh-pages/
+    helm_chart_timeout: "{{ minio_operator_wait_timeout | default('1m') }}"
 
 - name: Create namespace
   ansible.builtin.include_role:

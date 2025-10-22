@@ -12,9 +12,8 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /tmp/* /var/tmp/*
 
-# Install required Python packages
-RUN . /app/.venv/bin/activate && \
-    uv pip install \
+# Install required Python packages using uv
+RUN uv pip install --no-cache \
     authlib \
     psycopg2-binary \
     pyhive \

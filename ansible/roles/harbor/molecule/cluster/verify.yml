@@ -1,0 +1,135 @@
+---
+# Verify Harbor deployment
+# Tests that Harbor is fully functional with existing k8s cluster
+
+- name: Verify Harbor deployment
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check Harbor namespace with kubectl
+      ansible.builtin.command:
+        cmd: kubectl get namespace {{ harbor_namespace }}
+      register: namespace_check
+      changed_when: false
+      failed_when: namespace_check.rc != 0
+
+    - name: Verify Harbor namespace exists
+      kubernetes.core.k8s_info:
+        kind: Namespace
+        name: '{{ harbor_namespace }}'
+      register: harbor_ns
+
+    - name: Debug namespace info
+      ansible.builtin.debug:
+        var: harbor_ns
+
+    - name: Assert namespace exists
+      ansible.builtin.assert:
+        that:
+          - harbor_ns.resources | length > 0
+        fail_msg: 'Harbor namespace not found'
+        success_msg: '✓ Harbor namespace exists'
+
+    - name: Verify Harbor pods are running
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: '{{ harbor_namespace }}'
+        label_selectors:
+          - app=harbor
+      register: harbor_pods
+      failed_when: >
+        harbor_pods.resources | length == 0 or
+        harbor_pods.resources | selectattr('status.phase', 'ne', 'Running') | list | length > 0
+
+    - name: Display Harbor pod count
+      ansible.builtin.debug:
+        msg: 'Harbor has {{ harbor_pods.resources | length }} pods running'
+
+    - name: Verify Harbor service exists
+      kubernetes.core.k8s_info:
+        kind: Service
+        namespace: '{{ harbor_namespace }}'
+        name: harbor
+      register: harbor_svc
+      failed_when: harbor_svc.resources | length == 0
+
+    - name: Verify Harbor API is accessible
+      ansible.builtin.uri:
+        url: 'https://{{ external_url }}:{{ harbor_nodeport_https }}/api/v2.0/systeminfo'
+        validate_certs: false
+        status_code: 200
+      register: harbor_api_check
+      retries: 30
+      delay: 10
+      until: harbor_api_check.status == 200
+
+    - name: Display Harbor system info
+      ansible.builtin.debug:
+        msg: 'Harbor version: {{ harbor_api_check.json.harbor_version }}'
+
+    - name: Get all registries
+      ansible.builtin.uri:
+        url: 'https://{{ external_url }}:{{ harbor_nodeport_https }}/api/v2.0/registries'
+        validate_certs: false
+        user: admin
+        password: '{{ harbor_admin_password }}'
+        force_basic_auth: true
+      register: registries
+
+    - name: Get all projects
+      ansible.builtin.uri:
+        url: 'https://{{ external_url }}:{{ harbor_nodeport_https }}/api/v2.0/projects'
+        validate_certs: false
+        user: admin
+        password: '{{ harbor_admin_password }}'
+        force_basic_auth: true
+      register: projects
+
+    - name: Initialize final registry proxies list
+      ansible.builtin.set_fact:
+        harbor_registry_proxies_final: []
+
+    - name: Apply inventory overrides to registry proxies
+      ansible.builtin.set_fact:
+        harbor_registry_proxies_final: >-
+          {{
+            harbor_registry_proxies_final + [{
+              'public_registry': item.public_registry,
+              'registry_name': item.registry_name,
+              'registry_type': item.registry_type,
+              'registry_url': item.registry_url,
+              'project_name': vars['harbor_' + item.registry_name + '_proxy_project'] | default(item.project_name)
+            }]
+          }}
+      loop: '{{ harbor_registry_proxies }}'
+
+    - name: Verify registry endpoints exist
+      ansible.builtin.assert:
+        that:
+          - registries.json | selectattr('name', 'equalto', item.registry_name) | list | length > 0
+        fail_msg: 'Registry endpoint {{ item.registry_name }} not found'
+        success_msg: '✓ Registry endpoint {{ item.registry_name }} exists'
+      loop: '{{ harbor_registry_proxies_final }}'
+
+    - name: Verify proxy projects exist
+      ansible.builtin.assert:
+        that:
+          - projects.json | selectattr('name', 'equalto', item.project_name) | list | length > 0
+        fail_msg: 'Proxy project {{ item.project_name }} not found'
+        success_msg: '✓ Proxy project {{ item.project_name }} exists'
+      loop: '{{ harbor_registry_proxies_final }}'
+
+    - name: Build verification summary
+      ansible.builtin.set_fact:
+        verification_summary: >-
+          {{ ['✓ Harbor namespace exists',
+              '✓ ' + (harbor_pods.resources | length | string) + ' Harbor pods running',
+              '✓ Harbor service exposed on port ' + (harbor_nodeport_https | string),
+              '✓ Harbor API accessible']
+            + (harbor_registry_proxies_final | map('regex_replace', '^.*$', '✓ ' + item.registry_name + ' registry endpoint configured') | list)
+            + (harbor_registry_proxies_final | map('regex_replace', '^.*$', '✓ ' + item.project_name + ' proxy project created') | list)
+            + ['Harbor is fully functional!'] }}
+
+    - name: Display verification summary
+      ansible.builtin.debug:
+        msg: '{{ verification_summary }}'

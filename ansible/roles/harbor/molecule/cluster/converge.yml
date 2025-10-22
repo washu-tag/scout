@@ -1,0 +1,11 @@
+---
+# Deploy Harbor to existing Kubernetes cluster
+# Tests the full Harbor role deployment
+
+- name: Converge
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Deploy Harbor
+      ansible.builtin.include_role:
+        name: harbor

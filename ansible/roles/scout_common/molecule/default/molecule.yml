@@ -1,0 +1,23 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: default
+platforms:
+  - name: localhost
+    groups:
+      - k3s_cluster
+provisioner:
+  name: ansible
+  env:
+    ANSIBLE_ROLES_PATH: '../../..'
+  inventory:
+    host_vars:
+      localhost:
+        # Mock kubeconfig paths for testing
+        kubeconfig_yaml: /mock/cluster/kubeconfig
+        local_kubeconfig_yaml: /mock/local/kubeconfig
+        # Test with non-air-gapped mode by default
+        air_gapped: false
+verifier:
+  name: ansible

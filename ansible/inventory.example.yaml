@@ -1,4 +1,66 @@
 ---
+# Global settings that apply to all hosts
+all:
+  vars:
+    # SSH connection and privilege escalation
+    # There are many other params you could set here to customize your situation.
+    # See https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html#connecting-to-hosts-behavioral-inventory-parameters
+    ansible_user: '<ssh username>'
+    ansible_become: true
+    ansible_become_method: sudo
+    ansible_become_user: root
+    ansible_become_password: $(echo $ANSIBLE_BECOME_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    # K3s kubeconfig path, modify if not using K3s
+    # kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
+
+    # Air-gapped deployment configuration
+    # Set to true to enable air-gapped deployment mode for Kubernetes clusters
+    # without internet access on worker nodes.
+    #
+    # When enabled (air_gapped: true):
+    #   - Helm charts deployed from localhost using remote kubeconfig
+    #   - Full Helm functionality retained (rollback, history, hooks)
+    #   - Container images pulled through Harbor registry proxy on staging node
+    #   - Requires: staging group defined, Harbor deployed, registry mirrors configured
+    #   - Requires: k8s API accessible from localhost (port 6443)
+    #
+    # When disabled (air_gapped: false, default):
+    #   - Standard Helm deployment using kubernetes.core.helm module
+    #   - Charts pulled directly from public repositories
+    #   - Container images pulled directly from public registries
+    #   - Works with existing Scout deployments (backward compatible)
+    # air_gapped: false  # Default is false; set to true here to override
+
+# The staging group contains the staging node that acts as a data diode
+# for air-gapped deployments.
+#
+# Role: The staging node hosts a Harbor registry that acts as a pull-through
+# proxy for container images from public registries (Docker Hub, GitHub Container
+# Registry, Quay.io, etc.). It runs a separate k3s cluster from the main cluster.
+#
+# Requirements for air-gapped deployments (air_gapped: true):
+#   1. Staging node must have internet access
+#   2. Harbor must be deployed on staging node (playbooks/harbor.yaml)
+#   3. K3s cluster nodes must have registry mirrors configured to use Harbor
+#   4. Kubeconfig for air-gapped cluster must be accessible from localhost
+#   5. K8s API port (6443) must be accessible from localhost
+#
+# Enable air-gapped functionality by setting `air_gapped: true`
+# in all vars above.
+staging:
+  hosts:
+    FQDN-staging.edu:
+      ansible_host: staging # Host name to use for ssh connection
+      ansible_python_interpreter: /usr/bin/python3
+  vars:
+    # Staging-specific variables (only needed if use_staging_node: true)
+    # The staging node runs a separate k3s cluster from the main cluster
+    staging_k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    harbor_admin_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    harbor_storage_size: 100Gi
+    harbor_dir: /scout/persistence/harbor
+
 # The server group contains the control plane nodes for the k3s cluster.
 server:
   hosts:
@@ -40,17 +102,7 @@ k3s_cluster:
     server:
     agents:
   vars:
-    # SSH connection and privilege escalation
-    # There are many other params you could set here to customize your situation.
-    # See https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html#connecting-to-hosts-behavioral-inventory-parameters
-    ansible_user: '<ssh username>'
-    ansible_become: true
-    ansible_become_method: sudo
-    ansible_become_user: root
-    ansible_become_password: $(echo $ANSIBLE_BECOME_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-
     # K3s config
-    k3s_version: v1.32.3+k3s1 # Leave blank for latest stable
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
 
@@ -107,14 +159,9 @@ k3s_cluster:
     # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
     minio_storage_size: 750Gi
     minio_volumes_per_server: 2
-    s3_username: minio
     s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    s3_region: us-east-1
-    s3_lake_reader: lake-reader
     s3_lake_reader_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    s3_lake_writer: lake-writer
     s3_lake_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    s3_loki_writer: loki-writer
     s3_loki_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Monitor config
@@ -124,25 +171,15 @@ k3s_cluster:
     prometheus_storage_size: 100Gi
     loki_storage_size: 100Gi
     grafana_storage_size: 50Gi
-    grafana_alert_contact_point: slack # email or slack
     grafana_smtp_host: '' # Include the port in the value
     grafana_smtp_user: $(echo $SMTP_USER | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     grafana_smtp_password: $(echo $SMTP_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     grafana_smtp_from_address: ''
-    grafana_smtp_from_name: 'Scout'
-    grafana_smtp_skip_verify: false
-    grafana_email_recipients: [''] # Grafana validation requires an address if using email
     slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     slack_channel_id: $(echo $SLACK_CHANNEL | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     # Jupyter config
-    github_client_id: $(echo $CLIENT_ID | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    github_client_secret: $(echo $CLIENT_SECRET | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    github_organization: org
-    jupyter_dummy_password: $(echo $JH_DUMMY_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    jupyter_allowed_users: [] # empty list means all users can log in
     jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    jupyter_prepuller_continuous: false
     jupyter_hub_storage_size: 15Gi
     jupyter_singleuser_storage_size: 250Gi
     jupyter_singleuser_extra_resource:
@@ -157,9 +194,7 @@ k3s_cluster:
     postgres_cluster_namespace: postgres
     postgres_user: scout
     postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    hive_postgres_user: hive
     hive_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    superset_postgres_user: superset
     superset_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
@@ -195,11 +230,20 @@ k3s_cluster:
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     hive_namespace: hive
 
+    # Trino config
+    # Note: Most configuration is now in roles/trino/defaults/main.yaml
+    # Only production-specific resource overrides are needed here
+    trino_worker_memory_gb: 16 # Total pod memory for workers
+    trino_coordinator_memory_gb: 8 # Total pod memory for coordinator
+
     # Orchestrator config
     cassandra_storage_size: 300Gi
     elasticsearch_storage_size: 100Gi
 
-    # Namespaces that can be changed
+    # Namespaces
+    # Default namespaces are defined in roles/scout_common/defaults/main.yaml
+    # Override them here if you need custom namespace names
+    # Example: prometheus_namespace: my-custom-prometheus-namespace
     ollama_namespace: ollama
     gpu_operator_namespace: gpu-operator
 
@@ -207,8 +251,8 @@ k3s_cluster:
     base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
     scout_repo_dir: /scout/data/scout
     minio_dir: /scout/data/minio
-    temporal_cassandra_dir: /scout/persistence/cassandra
-    temporal_elasticsearch_dir: /scout/persistence/elasticsearch
+    cassandra_dir: /scout/persistence/cassandra
+    elasticsearch_dir: /scout/persistence/elasticsearch
     postgres_dir: /scout/persistence/postgres
     prometheus_dir: /scout/monitoring/prometheus
     loki_dir: /scout/monitoring/loki
@@ -217,55 +261,8 @@ k3s_cluster:
     extractor_data_dir: /ceph/input/data
 
     # Parameters for optional PACS instances, only intended for use in development
-    orthanc_namespace: orthanc
-    dcm4chee_namespace: dcm4chee
-    orthanc_dicom_port: 4242
     orthanc_dir: /scout/data/orthanc
     dcm4chee_dir: /scout/data/dcm4chee
 
-    # Within the container mounted paths
-    hl7logs_root_dir: /data
-    modality_map_path: /data/modality_mapping_codes.csv
-
-    # Object storage paths
-    lake_bucket: lake
-    scratch_bucket: scratch
-    hl7_path: 's3://{{ lake_bucket }}/hl7'
-    scratch_path: 's3://{{ scratch_bucket }}'
-    delta_lake_path: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefix, it is used just like s3://
-
-    # Database table names
-    report_delta_table_name: reports
-    ingest_postgres_table_name: ingest
-
-    # Extractor performance tuning
-    hl7log_extractor_timeout: 480
-    hl7log_extractor_heartbeat_timeout: 30
-    hl7log_extractor_concurrency: 150
-    hl7_transformer_timeout: 60
-
-    # Resources
-    hl7_transformer_spark_memory: 8g
-    jupyter_spark_memory: 8g
-    temporal_cassandra_init_heap: 2G
-    temporal_cassandra_max_heap: 8G
-
-    # Installation conveniences
-    scheduled_ingest_hour: 6 # Alternatively, full schedule can be specified with scheduled_ingest_cron instead
-
-    # BEGIN - DO NOT CHANGE
-    # You probably don't want to change these unless you know these items will be
-    # stored in different locations on your system
-    helm_plugins_dir: /root/.local/share/helm/plugins
-    kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
-
-    # Do not change the values below, they are hard-coded various places
-    extractor_namespace: extractor
-    minio_tenant_namespace: minio-scout
-    temporal_namespace: temporal
-
-    # computed values, used across playbooks
-    s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
-    hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
-    server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
-    # END - DO NOT CHANGE
+    # All other configuration defaults are in roles/scout_common/defaults/main.yaml
+    # Override them here if needed for this environment

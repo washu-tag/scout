@@ -1,0 +1,73 @@
+---
+# Unified wrapper for Helm chart deployment
+# Handles both air-gapped and non-air-gapped modes
+#
+# This task file provides a consistent interface for deploying Helm charts
+# across all Scout playbooks. It automatically switches between:
+# - Helm-native deployment (non-air-gapped): Uses kubernetes.core.helm module on cluster nodes
+# - Remote Helm deployment (air-gapped): Uses kubernetes.core.helm module from localhost with remote kubeconfig
+#
+# The deployment mode is controlled by the air_gapped inventory variable.
+#
+# This file is intended to be included using `include_role` with `tasks_from`:
+#
+#   - name: Deploy my chart
+#     include_role:
+#       name: scout_common
+#       tasks_from: deploy_helm_chart
+#     vars:
+#       helm_chart_name: my-release
+#       helm_chart_ref: repo/chart
+#       helm_chart_namespace: default
+#
+# Required variables:
+# - helm_chart_name: Helm release name
+# - helm_chart_ref: Chart reference (repo/chart or local path)
+# - helm_chart_namespace: Target namespace
+#
+# Optional variables:
+# - helm_chart_version: Chart version (for repo charts)
+# - helm_chart_create_namespace: Create namespace if missing (default: true)
+# - helm_chart_wait: Wait for resources to be ready (default: true)
+# - helm_chart_timeout: Timeout for wait (default: '5m')
+# - helm_chart_values: Values dict
+# - helm_chart_values_files: List of values files
+# - helm_repo_name: Repository name (for repo charts)
+# - helm_repo_url: Repository URL (for repo charts)
+
+- name: 'Deploy {{ helm_chart_name }} using Helm'
+  vars:
+    # Use localhost when air-gapped OR deploying local chart (no helm_repo_name)
+    is_local_chart: '{{ helm_repo_name is not defined or helm_repo_name is none or helm_repo_name | length == 0 }}'
+    use_localhost: '{{ air_gapped | default(false) | bool or is_local_chart | bool }}'
+  delegate_to: '{{ "localhost" if use_localhost else inventory_hostname }}'
+  environment:
+    # Note: Both sides of conditional are evaluated by Jinja2, so local_kubeconfig_yaml needs default
+    KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) if use_localhost else kubeconfig_yaml }}'
+  block:
+    - name: 'Add Helm repository for {{ helm_chart_name }}'
+      kubernetes.core.helm_repository:
+        name: '{{ helm_repo_name }}'
+        repo_url: '{{ helm_repo_url }}'
+      when:
+        - helm_repo_name is defined
+        - helm_repo_url is defined
+        - helm_repo_name is not none
+        - helm_repo_url is not none
+        - helm_repo_name | length > 0
+        - helm_repo_url | length > 0
+
+    - name: 'Install {{ helm_chart_name }}'
+      kubernetes.core.helm:
+        name: '{{ helm_chart_name }}'
+        chart_ref: '{{ helm_chart_ref }}'
+        chart_version: '{{ helm_chart_version | default(omit) }}'
+        release_namespace: '{{ helm_chart_namespace }}'
+        create_namespace: '{{ helm_chart_create_namespace | default(true) }}'
+        release_state: present
+        update_repo_cache: '{{ not is_local_chart | bool }}'
+        wait: '{{ helm_chart_wait | default(true) }}'
+        wait_timeout: "{{ helm_chart_timeout | default('5m') }}"
+        atomic: true
+        values: '{{ helm_chart_values | default(omit) }}'
+        values_files: '{{ helm_chart_values_files | default(omit) }}'

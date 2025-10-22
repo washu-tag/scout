@@ -1,0 +1,67 @@
+---
+# Default configuration for harbor role
+# Override in inventory files as needed
+
+# Harbor helm chart configuration
+harbor_version: '~1.14.0'
+harbor_namespace: harbor
+harbor_storage_size: 100Gi
+harbor_admin_password: 'Harbor12345' # Override in inventory with vault-encrypted value!
+
+# Harbor exposure configuration
+# Use 'ingress' for production air-gapped deployments with dedicated domain
+# Use 'nodePort' for development or when domain root is not available
+harbor_expose_type: ingress # Options: 'ingress' or 'nodePort'
+harbor_nodeport_https: 30443 # HTTPS NodePort when harbor_expose_type is 'nodePort'
+
+# Computed variables for registry mirror configuration
+# Use external_url if available, otherwise fall back to inventory_hostname
+harbor_registry_url: "https://{{ external_url | default(inventory_hostname) }}{% if harbor_expose_type == 'nodePort' %}:{{ harbor_nodeport_https }}{% endif %}"
+
+# Registry proxy configuration
+# List of public registries to proxy through Harbor
+# Each proxy prject name can be overridden in inventory with harbor_<registry_name>_proxy_project variable
+harbor_registry_proxies:
+  - public_registry: docker.io
+    registry_name: dockerhub
+    registry_type: docker-hub
+    registry_url: https://hub.docker.com
+    project_name: dockerhub-proxy
+  - public_registry: ghcr.io
+    registry_name: ghcr
+    registry_type: github-ghcr
+    registry_url: https://ghcr.io
+    project_name: ghcr-proxy
+  - public_registry: quay.io
+    registry_name: quay
+    registry_type: quay
+    registry_url: https://quay.io
+    project_name: quay-proxy
+  - public_registry: cr.k8ssandra.io
+    registry_name: k8ssandra
+    registry_type: docker-registry
+    registry_url: https://cr.k8ssandra.io
+    project_name: k8ssandra-proxy
+  - public_registry: registry.k8s.io
+    registry_name: k8s
+    registry_type: docker-registry
+    registry_url: https://registry.k8s.io
+    project_name: k8s-proxy
+  - public_registry: docker.elastic.co
+    registry_name: elastic
+    registry_type: docker-registry
+    registry_url: https://docker.elastic.co
+    project_name: elastic-proxy
+  - public_registry: nvcr.io
+    registry_name: nvidia
+    registry_type: docker-registry
+    registry_url: https://nvcr.io
+    project_name: nvidia-proxy
+  - public_registry: apachesuperset.docker.scarf.sh
+    registry_name: apachesuperset
+    registry_type: docker-registry
+    registry_url: https://apachesuperset.docker.scarf.sh
+    project_name: apachesuperset-proxy
+
+# TLS configuration
+harbor_tls_secret_name: harbor-tls

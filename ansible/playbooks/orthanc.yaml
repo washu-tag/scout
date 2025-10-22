@@ -2,11 +2,11 @@
 - name: Create storage directories for Orthanc
   hosts: k3s_cluster
   gather_facts: false
-  vars_files:
-    - vars/orthanc_storage.yaml
   tasks:
     - name: Create storage directories
-      include_tasks: tasks/storage_dir_create.yaml
+      ansible.builtin.include_role:
+        name: orthanc
+        tasks_from: storage
 
 - name: Install Orthanc
   hosts: server
@@ -14,50 +14,5 @@
   environment:
     HELM_PLUGINS: '{{ helm_plugins_dir }}'
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-  vars_files:
-    - vars/orthanc_storage.yaml
-  tasks:
-    - name: Set up storage
-      include_tasks: tasks/storage_setup.yaml
-
-    - name: Create Orthanc namespace
-      kubernetes.core.k8s:
-        name: '{{ orthanc_namespace }}'
-        api_version: v1
-        kind: Namespace
-        state: present
-
-    - name: Create Orthanc conf secret
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: orthanc-secret
-            namespace: '{{ orthanc_namespace }}'
-          type: Opaque
-          stringData:
-            'orthanc.json': "{{ lookup('template', 'templates/orthanc/orthanc-conf.json.j2') | to_nice_json }}"
-
-    - name: Install Orthanc using Helm
-      kubernetes.core.helm:
-        name: orthanc
-        release_namespace: '{{ orthanc_namespace }}'
-        create_namespace: false
-        chart_ref: '{{ scout_repo_dir }}/helm/orthanc'
-        state: present
-        wait: true
-        wait_timeout: 2m
-        atomic: true
-        values: "{{ lookup('template', 'templates/orthanc/values.yaml.j2') | from_yaml }}"
-
-- name: Populate Orthanc
-  hosts: server
-  gather_facts: false
-  vars_files:
-    - vars/orthanc_populate.yaml
-  tasks:
-    - name: Populate PACS
-      include_tasks: tasks/populate_pacs.yaml
-      when: orthanc_populate is defined
+  roles:
+    - role: orthanc

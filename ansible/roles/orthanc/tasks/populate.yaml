@@ -1,0 +1,40 @@
+---
+# Populate Orthanc PACS with test data via DICOM C-STORE
+# This task creates a Kubernetes Job to run storescu
+
+- name: Populate PACS via C-STORE
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        generateName: 'orthanc-populate-'
+        namespace: '{{ orthanc_namespace }}'
+        labels:
+          app: orthanc-populate
+      spec:
+        ttlSecondsAfterFinished: 600
+        backoffLimit: 3
+        template:
+          metadata:
+            labels:
+              app: orthanc-populate
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: dcm4che
+                image: 'dcm4che/dcm4che-tools:{{ dcm4che_tools_version }}'
+                command:
+                  - storescu
+                  - -c
+                  - 'ORTHANC@orthanc.{{ orthanc_namespace }}:{{ orthanc_dicom_port }}'
+                  - '/data'
+                volumeMounts:
+                  - name: data
+                    mountPath: /data
+                    readOnly: true
+            volumes:
+              - name: data
+                hostPath:
+                  path: '{{ orthanc_populate }}'

@@ -1,5 +1,0 @@
-target_namespace: '{{ orthanc_namespace }}'
-data_dir: '{{ orthanc_populate }}'
-called_aet: ORTHANC
-dicom_host: 'orthanc.{{ orthanc_namespace }}'
-dicom_port: '{{ orthanc_dicom_port }}'
