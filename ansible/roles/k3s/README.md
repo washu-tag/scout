@@ -61,14 +61,14 @@ This role expects hosts to be organized into the following groups:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `k3s_artifact_download_timeout` | `300` | Timeout for artifact downloads (seconds) |
+| `k3s_bin_dir` | `/root/bin` | Directory for k3s scripts (created if needed). Install script will be placed at `{{ k3s_bin_dir }}/get.k3s.io.sh` |
 | `k3s_binary_path` | `/usr/local/bin/k3s` | Where to install k3s binary |
-| `k3s_install_script_path` | `/root/bin/get.k3s.io.sh` | Where to install k3s script |
 
 ### SELinux Configuration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `k3s_selinux_enabled` | Auto-detect | Install SELinux packages if SELinux is enabled |
+| `k3s_selinux_enabled` | Auto-detect | Install SELinux packages. Set to `true`/`false` to override, or leave undefined for auto-detection based on target host SELinux status |
 | `k3s_selinux_channel` | `stable` | Rancher repo channel (stable/testing/latest) |
 | `k3s_selinux_rpm_site` | `rpm.rancher.io` | Rancher RPM repository site |
 | `k3s_selinux_rpm_staging_dir` | `/tmp/k3s-selinux-rpms` | Temporary directory for RPM staging |
@@ -222,24 +222,30 @@ The role is organized into focused task files:
 
 ## Testing
 
-This role includes a comprehensive Molecule test suite:
+This role includes Molecule integration tests that perform actual k3s installation in Docker containers:
 
 ```bash
 cd ansible/roles/k3s
-molecule test
+# Requires Docker and molecule-plugins[docker]
+uvx --with molecule-plugins[docker] molecule test -s integration
 ```
 
-The tests verify:
-- Default variable values
-- Online vs air-gapped mode conditionals
-- SELinux auto-detection
-- Registry mirror configuration logic
-- Group membership detection (server/agents/gpu_workers)
-- Installation path defaults
-- Timeout configurations
-- Version auto-detection logic
+**What the tests do:**
+- Spin up Rocky Linux 9 container with systemd support
+- Install k3s server using the role
+- Verify k3s systemd service is active
+- Verify k3s cluster is responsive (`kubectl get nodes`)
+- Verify node reaches Ready state
+- Check kubeconfig file generation and permissions
 
-Tests use mocks to verify role logic without actually installing k3s.
+**Why integration tests (not unit tests):**
+The k3s role performs system-level operations (systemd service management, privileged installation, Kubernetes cluster creation) that cannot be meaningfully mocked. Integration tests validate real installation behavior including systemd integration and cluster health.
+
+**Limitations:**
+- Tests require Docker daemon with privileged container support
+- Air-gapped mode testing requires pre-staged artifacts (not yet implemented)
+- Multi-node scenarios are tested in CI with real deployments
+- Tests take 2-5 minutes (vs seconds for unit tests)
 
 ## Troubleshooting
 

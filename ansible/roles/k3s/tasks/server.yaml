@@ -15,7 +15,7 @@
 
 - name: Install k3s server
   ansible.builtin.command:
-    cmd: /root/bin/get.k3s.io.sh
+    cmd: '{{ k3s_install_script_path }}'
     creates: /usr/local/bin/k3s-uninstall.sh
   environment:
     INSTALL_K3S_SKIP_DOWNLOAD: "{{ 'true' if air_gapped | default(false) | bool else omit }}"
@@ -39,7 +39,7 @@
 
 - name: Update kubeconfig group permissions since write-kubeconfig-group isn't working
   ansible.builtin.file:
-    path: /etc/rancher/k3s/k3s.yaml
+    path: '{{ kubeconfig_yaml }}'
     state: file
     mode: '0640'
     group: '{{ kubeconfig_group }}'

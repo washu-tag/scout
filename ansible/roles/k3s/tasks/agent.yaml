@@ -5,7 +5,7 @@
 
 - name: Install k3s agent
   ansible.builtin.command:
-    cmd: /root/bin/get.k3s.io.sh
+    cmd: '{{ k3s_install_script_path }}'
     creates: /usr/local/bin/k3s-agent-uninstall.sh
   environment:
     INSTALL_K3S_SKIP_DOWNLOAD: "{{ 'true' if air_gapped | default(false) | bool else omit }}"
