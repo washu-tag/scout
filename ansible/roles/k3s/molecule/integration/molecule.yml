@@ -1,0 +1,33 @@
+---
+# Molecule Integration Test Configuration for k3s Role
+# Uses Docker driver to test actual k3s installation in containers with systemd
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: k3s-rockylinux9
+    image: geerlingguy/docker-rockylinux9-ansible:latest
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+    groups:
+      - server
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      roles_path: ${MOLECULE_PROJECT_DIRECTORY}/..
+      callbacks_enabled: ansible.posix.profile_tasks
+  inventory:
+    group_vars:
+      all:
+        # Use online mode for integration tests (simpler, tests real download)
+        air_gapped: false
+        k3s_selinux_enabled: true
+        k3s_token: test-token-for-molecule
+verifier:
+  name: ansible
