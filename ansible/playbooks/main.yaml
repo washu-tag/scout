@@ -34,6 +34,9 @@
 - name: Install Lake
   import_playbook: lake.yaml
 
+- name: Install Chat
+  import_playbook: chatbot.yaml
+
 - name: Install Analytics
   import_playbook: analytics.yaml
 
@@ -51,6 +54,3 @@
 
 - name: Install Explorer
   import_playbook: explorer.yaml
-
-- name: Install Chat
-  import_playbook: chatbot.yaml
