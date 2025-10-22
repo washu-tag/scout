@@ -380,6 +380,7 @@ k3s_cluster:
     # Authentication - passwords prevent user impersonation
     trino_admin_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     trino_readonly_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    trino_internal_shared_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     #---------------------------------------------------------------------------
     # Extractor
