@@ -378,9 +378,6 @@ k3s_cluster:
     # Override query memory allocation if needed (default: 0.3 = 30% of heap per Trino docs)
     # trino_per_node_query_memory_fraction: 0.3
     # Authentication - passwords prevent user impersonation
-    trino_admin_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    trino_readonly_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    trino_internal_shared_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     #---------------------------------------------------------------------------
     # Extractor
