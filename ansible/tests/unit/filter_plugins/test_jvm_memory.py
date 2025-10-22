@@ -14,7 +14,7 @@ filter_plugins_path = Path(__file__).parent.parent.parent.parent / "filter_plugi
 sys.path.insert(0, str(filter_plugins_path))
 
 import pytest
-from jvm_memory import jvm_memory_to_k8s
+from jvm_memory import jvm_memory_to_k8s, multiply_memory
 
 
 class TestJvmMemoryToK8s:
@@ -180,6 +180,60 @@ class TestJvmMemoryToK8s:
         # Jupyter prod
         assert jvm_memory_to_k8s("8G") == "8Gi"
         assert jvm_memory_to_k8s("8G", 2) == "16Gi"
+
+
+class TestMultiplyMemory:
+    """Test cases for multiply_memory filter."""
+
+    def test_gigabytes_uppercase(self):
+        """Test multiplying gigabytes with uppercase G."""
+        assert multiply_memory("8G", 2) == "16G"
+        assert multiply_memory("4G", 2) == "8G"
+        assert multiply_memory("1G", 2) == "2G"
+
+    def test_gigabytes_lowercase(self):
+        """Test multiplying gigabytes with lowercase g."""
+        assert multiply_memory("8g", 2) == "16G"
+        assert multiply_memory("4g", 2) == "8G"
+
+    def test_megabytes(self):
+        """Test multiplying megabytes."""
+        assert multiply_memory("512M", 2) == "1024M"
+        assert multiply_memory("256M", 2) == "512M"
+        assert multiply_memory("1024M", 2) == "2048M"
+
+    def test_kilobytes(self):
+        """Test multiplying kilobytes."""
+        assert multiply_memory("1024K", 2) == "2048K"
+        assert multiply_memory("512K", 2) == "1024K"
+
+    def test_multiplier_1x(self):
+        """Test 1x multiplier (no change)."""
+        assert multiply_memory("8G", 1) == "8G"
+        assert multiply_memory("512M", 1) == "512M"
+
+    def test_multiplier_3x(self):
+        """Test 3x multiplier."""
+        assert multiply_memory("8G", 3) == "24G"
+        assert multiply_memory("2G", 3) == "6G"
+
+    def test_jupyter_common_values(self):
+        """Test common JupyterHub memory values."""
+        assert multiply_memory("8G", 2) == "16G"
+        assert multiply_memory("1G", 2) == "2G"
+        assert multiply_memory("24G", 2) == "48G"
+
+    def test_whitespace_handling(self):
+        """Test that leading/trailing whitespace is handled."""
+        assert multiply_memory(" 8G ", 2) == "16G"
+        assert multiply_memory("  512M  ", 2) == "1024M"
+
+    def test_invalid_format(self):
+        """Test invalid format raises error."""
+        with pytest.raises(ValueError, match="Invalid memory format"):
+            multiply_memory("invalid", 2)
+        with pytest.raises(ValueError, match="Invalid memory format"):
+            multiply_memory("8Gi", 2)  # Should use K, M, G, T (not Ki, Mi, Gi)
 
 
 if __name__ == "__main__":

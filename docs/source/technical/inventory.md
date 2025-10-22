@@ -402,6 +402,7 @@ minio_resources:
 
 ```yaml
 # Spark memory for notebook containers
+# Note: Use JupyterHub format (K, M, G, T) not Kubernetes format (Ki, Mi, Gi, Ti)
 jupyter_spark_memory: 8G
 
 # CPU resources
@@ -412,8 +413,9 @@ jupyter_singleuser_cpu_limit: 8
 
 # Optional: Override memory for non-Spark workloads
 # By default, memory is computed from spark_memory (1x request, 2x limit)
-# jupyter_singleuser_memory_request: 16Gi
-# jupyter_singleuser_memory_limit: 32Gi
+# Note: JupyterHub requires decimal suffixes (K, M, G, T), not binary (Ki, Mi, Gi, Ti)
+# jupyter_singleuser_memory_request: 16G
+# jupyter_singleuser_memory_limit: 32G
 
 # Hub resources
 jupyter_hub_resources:

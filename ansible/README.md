@@ -345,7 +345,33 @@ memory: "{{ cassandra_max_heap | jvm_memory_to_k8s(2) }}"
 - Cassandra (JVM heap → container memory)
 - Elasticsearch (JVM heap → container memory)
 - HL7 Transformer (Spark memory → container memory)
-- Jupyter (Spark memory → container memory)
+
+#### `multiply_memory`
+
+Multiplies a memory specification by a factor while preserving the unit. Used for services that require decimal suffixes (K, M, G, T) rather than Kubernetes binary suffixes (Ki, Mi, Gi, Ti).
+
+**Usage:**
+```yaml
+# Double the memory (for limits)
+memory: "{{ jupyter_spark_memory | multiply_memory(2) }}"
+# Input: "8G" → Output: "16G"
+
+# Triple the memory
+memory: "{{ jupyter_spark_memory | multiply_memory(3) }}"
+# Input: "8G" → Output: "24G"
+```
+
+**Supported units** (case-insensitive):
+- `K`/`k` → `K` (kilobytes)
+- `M`/`m` → `M` (megabytes)
+- `G`/`g` → `G` (gigabytes)
+- `T`/`t` → `T` (terabytes)
+
+**Use cases:**
+- JupyterHub (requires decimal suffixes, not Kubernetes binary format)
+
+**Services using this filter:**
+- JupyterHub (Spark memory → singleuser container limits)
 
 ### Creating Custom Filters
 

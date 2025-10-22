@@ -298,7 +298,7 @@ k3s_cluster:
     jupyter_dummy_password: $(echo $JH_DUMMY_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # Resources
     jupyter_spark_memory: 8G
-    # Memory computed from spark_memory (guarantee/requests = 1x = 8Gi, limit = 2x = 16Gi)
+    # Memory computed from spark_memory (guarantee/requests = 1x = 8G, limit = 2x = 16G)
     # Override CPU if needed (defaults: 0.25 request, 1 limit)
     # Note: JupyterHub Helm chart 4.3.x requires numeric values (not strings like "250m")
     # Use fractional cores (0.25 = 250 millicores) or whole numbers
@@ -307,8 +307,8 @@ k3s_cluster:
     # Override memory for non-Spark workloads (pandas, numpy, data loading, etc.)
     # By default, memory is computed from jupyter_spark_memory
     # Set these to give users more RAM than Spark alone needs:
-    # jupyter_singleuser_memory_request: 16Gi
-    # jupyter_singleuser_memory_limit: 32Gi
+    # jupyter_singleuser_memory_request: 16G
+    # jupyter_singleuser_memory_limit: 32G
     jupyter_hub_resources:
       requests:
         cpu: 500m
