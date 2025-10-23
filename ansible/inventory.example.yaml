@@ -208,7 +208,6 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-
     # Production resource overrides (defaults in role are for dev)
     postgres_resources:
       requests:
