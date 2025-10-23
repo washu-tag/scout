@@ -140,3 +140,5 @@
         effect: PreferNoSchedule
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
+  # Skip taint on staging nodes (single-node cluster needs to run workloads)
+  when: "'staging' not in group_names"
