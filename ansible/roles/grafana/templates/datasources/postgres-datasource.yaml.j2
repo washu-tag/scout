@@ -3,7 +3,7 @@ datasources:
   - name: ingest-db
     type: grafana-postgresql-datasource
     uid: postgres_ingest_db_datasource_01
-    url: 'postgresql-cluster-r.{{ postgres_cluster_namespace }}:5432'
+    url: '{{ postgres_cluster_name }}-r.{{ postgres_cluster_namespace }}:5432'
     user: '{{ postgres_user }}'
     secureJsonData:
       password: '{{ postgres_password }}'

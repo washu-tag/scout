@@ -7,7 +7,30 @@ trino_helm_repo_name: trino
 trino_helm_repo_url: https://trinodb.github.io/charts
 trino_helm_chart_name: trino
 
-# Resource sizing - users should override these in inventory
-trino_worker_memory_gb: 16 # Total pod memory for workers
-trino_coordinator_memory_gb: 8 # Total pod memory for coordinator
+# Memory
+trino_worker_memory_gb: 2 # Total pod memory for workers
+trino_coordinator_memory_gb: 1 # Total pod memory for coordinator
 
+# CPU (dev defaults - CI friendly)
+trino_worker_cpu_request: 250m
+trino_worker_cpu_limit: 2
+trino_coordinator_cpu_request: 250m
+trino_coordinator_cpu_limit: 1
+
+# Resource configuration (dev defaults - CI friendly)
+# Consolidated resource blocks for templates
+trino_coordinator_resources:
+  requests:
+    cpu: '{{ trino_coordinator_cpu_request }}'
+    memory: '{{ trino_coordinator_memory_gb }}Gi'
+  limits:
+    cpu: '{{ trino_coordinator_cpu_limit }}'
+    memory: '{{ trino_coordinator_memory_gb }}Gi'
+
+trino_worker_resources:
+  requests:
+    cpu: '{{ trino_worker_cpu_request }}'
+    memory: '{{ trino_worker_memory_gb }}Gi'
+  limits:
+    cpu: '{{ trino_worker_cpu_limit }}'
+    memory: '{{ trino_worker_memory_gb }}Gi'

@@ -4,15 +4,22 @@
 # Storage naming
 elasticsearch_name: elasticsearch
 elasticsearch_storage_class: '{{ elasticsearch_name }}-storage'
+elasticsearch_storage_size: 10Gi
 
 # Storage definitions for persistent volumes
 elasticsearch_storage_definitions:
   - name: '{{ elasticsearch_name }}'
-    size: "{{ elasticsearch_storage_size | default('100Gi') }}"
+    size: '{{ elasticsearch_storage_size }}'
     path: '{{ elasticsearch_dir }}'
     pv_name: '{{ elasticsearch_name }}-pv'
     storage_class_name: '{{ elasticsearch_storage_class }}'
 
 # Elasticsearch configuration (ECK)
 elasticsearch_cluster_name: elasticsearch
-elasticsearch_heap_size: 1g # JVM heap size notation (use 'g' not 'Gi')
+elasticsearch_heap_size: 1G # JVM heap size notation
+
+# Resource configuration (dev defaults - CI friendly)
+# Memory: requests = heap_size, limits = 2x heap_size to account for off-heap memory and OS cache
+# Memory is computed in tasks using jvm_memory_to_k8s filter (not computable here in defaults)
+elasticsearch_cpu_request: 250m
+elasticsearch_cpu_limit: 2

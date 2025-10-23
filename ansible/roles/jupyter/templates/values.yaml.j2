@@ -3,13 +3,7 @@ proxy:
     type: ClusterIP
 
 hub:
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256M
-    limits:
-      cpu: 1
-      memory: 1G
+  resources: {{ jupyter_hub_resources | to_json }}
   shutdownOnLogout: true
   services:
     prometheus:
@@ -54,6 +48,19 @@ hub:
         - 'jupyterhub-admin'
     Spawner:
       http_timeout: 120
+{% if jupyter_auth_class == 'dummy' %}
+    DummyAuthenticator:
+      password: '{{ jupyter_dummy_password }}'
+{% elif jupyter_auth_class == 'github' %}
+    GitHubOAuthenticator:
+      client_id: '{{ github_client_id }}'
+      client_secret: '{{ github_client_secret }}'
+      oauth_callback_url: 'https://jupyter.{{ server_hostname }}/hub/oauth_callback'
+      allowed_organizations:
+        - '{{ github_organization }}'
+      scope:
+        - read:org
+{% endif %}
 
 ingress:
   enabled: true
@@ -76,7 +83,7 @@ singleuser:
   image:
     name: '{{ jupyter_singleuser_image_name }}'
     tag: '{{ jupyter_singleuser_image_tag }}'
-    pullPolicy: Never
+    pullPolicy: IfNotPresent
   cmd: null
   lifecycleHooks:
     postStart:
@@ -104,12 +111,12 @@ singleuser:
         }
 
   cpu:
-    limit: 4
-    guarantee: 1
+    guarantee: {{ jupyter_singleuser_cpu_request }}
+    limit: {{ jupyter_singleuser_cpu_limit }}
   memory:
-    limit: 16G
-    guarantee: 2G
-  extraResource: {{ jupyter_singleuser_extra_resource | default({}) }}
+    guarantee: '{{ jupyter_singleuser_memory_request if jupyter_singleuser_memory_request else (jupyter_spark_memory | jvm_memory_to_k8s) }}'
+    limit: '{{ jupyter_singleuser_memory_limit if jupyter_singleuser_memory_limit else (jupyter_spark_memory | jvm_memory_to_k8s(2)) }}'
+  extraResource: {{ jupyter_singleuser_extra_resource | default({}) | to_json }}
   storage:
     type: static
     static:
@@ -126,12 +133,14 @@ singleuser:
         subPath: spark-defaults.conf
   networkPolicy:
     egress:
+      # Allow access to MinIO for data lake storage
       - to:
           - namespaceSelector:
               matchLabels:
                 kubernetes.io/metadata.name: '{{ minio_tenant_namespace }}'
         ports:
           - port: 9000
+      # Allow access to Hive Metastore for metadata queries
       - to:
           - namespaceSelector:
               matchLabels:

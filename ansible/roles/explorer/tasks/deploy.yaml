@@ -1,0 +1,30 @@
+---
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ explorer_namespace }}'
+
+- name: Deploy Explorer
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: explorer
+    helm_chart_ref: '{{ explorer_helm_chart_ref }}'
+    helm_chart_namespace: '{{ explorer_namespace }}'
+    helm_chart_values_files:
+      - '{{ scout_repo_dir }}/helm/explorer/values.yaml'
+    helm_chart_values:
+      image:
+        repository: '{{ explorer_image_repository }}'
+        tag: '{{ explorer_image_tag }}'
+      ingress:
+        enabled: true
+        className: traefik
+        hosts:
+          - host: '{{ server_hostname }}'
+            paths:
+              - path: /
+                pathType: Prefix

@@ -1,0 +1,10 @@
+---
+# Explorer role defaults
+# User-configurable settings are in inventory.yaml
+
+# Helm configuration
+explorer_helm_chart_ref: '{{ scout_repo_dir }}/helm/explorer'
+
+# Custom Explorer image (override from inventory for CI/CD)
+explorer_image_repository: ghcr.io/washu-tag/explorer
+explorer_image_tag: 1.1.0

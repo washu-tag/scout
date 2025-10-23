@@ -71,13 +71,16 @@ s3_loki_writer: loki-writer
 lake_bucket: lake
 scratch_bucket: scratch
 
-# Database usernames (passwords defined in inventory)
+# Database
+postgres_cluster_name: postgresql-cluster
+
+# Usernames (passwords defined in inventory)
 postgres_user: scout
 hive_postgres_user: hive
 superset_postgres_user: superset
 keycloak_postgres_user: keycloak
 
-# Database table names
+# Table names
 report_delta_table_name: reports
 ingest_postgres_table_name: ingest
 

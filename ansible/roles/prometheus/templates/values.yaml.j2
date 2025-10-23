@@ -18,6 +18,7 @@ server:
     enabled: true
     storageClass: {{ prometheus_storage_class }}
   retention: 15d
+  resources: {{ prometheus_resources | to_json }}
   extraSecretMounts:
     - name: jupyterhub-metrics-api-token
       secretName: jupyterhub-metrics-api-token
@@ -78,7 +79,7 @@ extraScrapeConfigs: |
     relabel_configs:
       - source_labels: [__meta_kubernetes_service_name]
         action: keep
-        regex: postgresql-cluster-metrics
+        regex: {{ postgres_cluster_name }}-metrics
       - source_labels: [__meta_kubernetes_endpoint_port_name]
         action: keep
         regex: metrics

@@ -102,22 +102,77 @@ k3s_cluster:
     server:
     agents:
   vars:
-    # K3s config
+    # Note: Most configuration is now in roles/<role>/defaults/main.yaml
+    # or roles/scout_common/defaults/main.yaml (for variables used across roles)
+    # Only secrets and production-specific resource overrides are required here,
+    # though you can override any role variables you desire.
+    #
+    # To override versions in group_vars/all/versions.yaml, you need to pass the
+    # variable to ansible with -e.
+
+    # Namespaces
+    # Default namespaces are defined in roles/scout_common/defaults/main.yaml
+    # Override them here if you need custom namespace names
+    # Example: prometheus_namespace: my-custom-prometheus-namespace
+
+    #############################################################################
+    ### On-prem storage                                                       ###
+    #############################################################################
+
+    # Storage disk space
+    postgres_storage_size: 100Gi
+    cassandra_storage_size: 300Gi
+    elasticsearch_storage_size: 100Gi
+    jupyter_hub_storage_size: 15Gi
+    jupyter_singleuser_storage_size: 250Gi
+    prometheus_storage_size: 100Gi
+    loki_storage_size: 100Gi
+    grafana_storage_size: 50Gi
+    minio_storage_size: 750Gi
+
+    # Local paths
+    base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
+    scout_repo_dir: /scout/data/scout
+    minio_dir: /scout/data/minio
+    cassandra_dir: /scout/persistence/cassandra
+    elasticsearch_dir: /scout/persistence/elasticsearch
+    postgres_dir: /scout/persistence/postgres
+    prometheus_dir: /scout/monitoring/prometheus
+    loki_dir: /scout/monitoring/loki
+    grafana_dir: /scout/monitoring/grafana
+    jupyter_dir: /scout/data/jupyter
+    extractor_data_dir: /ceph/input/data
+    # Parameters for optional PACS instances, only intended for use in development
+    orthanc_dir: /scout/data/orthanc
+    dcm4chee_dir: /scout/data/dcm4chee
+
+    #############################################################################
+    ### Service-specific secrets and resources                                ###
+    #############################################################################
+
+    #---------------------------------------------------------------------------
+    # K3s
+    #---------------------------------------------------------------------------
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
 
-    # Traefik config
+    #---------------------------------------------------------------------------
+    # Traefik
+    #---------------------------------------------------------------------------
     tls_cert_path: ''
     tls_key_path: ''
 
-    # OAuth2 Proxy config
+    #---------------------------------------------------------------------------
+    # OAuth2 Proxy
+    #---------------------------------------------------------------------------
     oauth2_proxy_cookie_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
-    # Keycloak Config
+    #---------------------------------------------------------------------------
+    # Keycloak
+    #---------------------------------------------------------------------------
     keycloak_bootstrap_admin_user: admin
     keycloak_bootstrap_admin_password: admin
-
-    # Keycloak SMTP configuration (optional, for email notifications)
+    # SMTP configuration (optional, for email notifications)
     keycloak_smtp_host: ''
     keycloak_smtp_port: ''
     keycloak_smtp_from: ''
@@ -125,16 +180,14 @@ k3s_cluster:
     keycloak_smtp_auth: ''
     keycloak_smtp_ssl: ''
     keycloak_smtp_starttls: ''
-
-    # Keycloak IDP configuration
+    # IDP configuration
     keycloak_default_provider: github # 'github' or 'microsoft'
     keycloak_gh_client_id: 'your-github-client'
     keycloak_gh_client_secret: 'your-github-secret'
     keycloak_microsoft_client_id: 'your-microsoft-client'
     keycloak_microsoft_client_secret: 'your-microsoft-secret'
     keycloak_microsoft_tenant_id: 'your-microsoft-tenant-id'
-
-    # Keycloak Client Secrets for Scout services
+    # Client secrets for Scout services
     keycloak_oauth2_proxy_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_superset_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_jupyterhub_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -143,52 +196,19 @@ k3s_cluster:
     keycloak_minio_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_launchpad_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
-    # Launchpad config
+    #---------------------------------------------------------------------------
+    # Launchpad
+    #---------------------------------------------------------------------------
     launchpad_nextauth_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
-    # Minio config, ensure passwords meet complexity requirements (must be >=8 characters)
-    minio_storage_size: 750Gi
-    minio_volumes_per_server: 2
-    s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    s3_lake_reader_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    s3_lake_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    s3_loki_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-
-    # Monitor config
-    prometheus_namespace: prometheus
-    grafana_namespace: grafana
-    loki_namespace: loki
-    prometheus_storage_size: 100Gi
-    loki_storage_size: 100Gi
-    grafana_storage_size: 50Gi
-    grafana_smtp_host: '' # Include the port in the value
-    grafana_smtp_user: $(echo $SMTP_USER | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    grafana_smtp_password: $(echo $SMTP_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    grafana_smtp_from_address: ''
-    slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    slack_channel_id: $(echo $SLACK_CHANNEL | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-
-    # Jupyter config
-    jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    jupyter_hub_storage_size: 15Gi
-    jupyter_singleuser_storage_size: 250Gi
-    jupyter_singleuser_extra_resource:
-      guarantees:
-        nvidia.com/gpu: '1'
-      limits:
-        nvidia.com/gpu: '1'
-
-    # Postgres config
-    # Note: Most postgres configuration is now in roles/postgres/defaults/main.yaml
-    # Only secrets and production-specific overrides are needed here
-    postgres_cluster_namespace: postgres
-    postgres_user: scout
+    #---------------------------------------------------------------------------
+    # PostgreSQL
+    #---------------------------------------------------------------------------
     postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     hive_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     superset_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-
     # Production resource overrides (defaults in role are for dev)
     postgres_resources:
       requests:
@@ -197,7 +217,6 @@ k3s_cluster:
       limits:
         cpu: 6
         memory: 96Gi
-    postgres_storage_size: 100Gi
     postgres_parameters: # Production tuning (defaults in role are for dev)
       max_connections: '100'
       shared_buffers: '16GB'
@@ -217,43 +236,183 @@ k3s_cluster:
       max_parallel_workers: '4'
       max_parallel_maintenance_workers: '2'
 
-    # Analytics config
+    #---------------------------------------------------------------------------
+    # Cassandra
+    #---------------------------------------------------------------------------
+    cassandra_init_heap: 6G
+    cassandra_max_heap: 12G
+    # Memory computed from max_heap (requests = 1x = 12Gi, limits = 2x = 24Gi)
+    # Override CPU if needed (defaults: 250m request, 2 limit):
+    cassandra_cpu_request: 2
+    cassandra_cpu_limit: 4
+
+    #---------------------------------------------------------------------------
+    # Elasticsearch
+    #---------------------------------------------------------------------------
+    elasticsearch_heap_size: 6G
+    # Memory computed from heap_size (requests = 1x = 6Gi, limits = 2x = 12Gi)
+    # Override CPU if needed (defaults: 250m request, 2 limit):
+    elasticsearch_cpu_request: 1
+    elasticsearch_cpu_limit: 3
+
+    #---------------------------------------------------------------------------
+    # MinIO (Object Storage)
+    #---------------------------------------------------------------------------
+    # Ensure passwords meet complexity requirements (must be >=8 characters)
+    minio_volumes_per_server: 2 # See comment with `minio_hosts`
+    s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    s3_lake_reader_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    s3_lake_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    minio_resources:
+      requests:
+        cpu: 2
+        memory: 8Gi
+      limits:
+        cpu: 4
+        memory: 8Gi
+
+    #---------------------------------------------------------------------------
+    # Prometheus
+    #---------------------------------------------------------------------------
+    prometheus_resources:
+      requests:
+        cpu: 2
+        memory: 8Gi
+      limits:
+        cpu: 4
+        memory: 8Gi
+
+    #---------------------------------------------------------------------------
+    # Loki
+    #---------------------------------------------------------------------------
+    s3_loki_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    loki_resources:
+      requests:
+        cpu: 2
+        memory: 8Gi
+      limits:
+        cpu: 4
+        memory: 8Gi
+
+    #---------------------------------------------------------------------------
+    # Grafana
+    #---------------------------------------------------------------------------
+    grafana_alert_contact_point: slack # email or slack
+    # Slack configuration
+    slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    slack_channel_id: $(echo $SLACK_CHANNEL | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # SMTP configuration
+    grafana_smtp_host: '' # Include the port in the value
+    grafana_smtp_user: $(echo $SMTP_USER | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    grafana_smtp_password: $(echo $SMTP_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    grafana_smtp_from_address: ''
+    grafana_smtp_from_name: 'Scout'
+    grafana_smtp_skip_verify: false
+    grafana_email_recipients: ['']
+    # Resources
+    grafana_resources:
+      requests:
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
+
+    #---------------------------------------------------------------------------
+    # Jupyter
+    #---------------------------------------------------------------------------
+    # Authentication
+    jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    jupyter_auth_class: dummy # Options: dummy or github
+    # GitHub auth
+    github_client_id: $(echo $CLIENT_ID | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    github_client_secret: $(echo $CLIENT_SECRET | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    github_organization: org
+    # Dummy auth
+    jupyter_dummy_password: $(echo $JH_DUMMY_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # Resources
+    jupyter_spark_memory: 8G
+    # Memory computed from spark_memory (guarantee/requests = 1x = 8Gi, limit = 2x = 16Gi)
+    # Override CPU if needed (defaults: 250m request, 1 limit):
+    jupyter_singleuser_cpu_request: 2
+    jupyter_singleuser_cpu_limit: 8
+    # Override memory for non-Spark workloads (pandas, numpy, data loading, etc.)
+    # By default, memory is computed from jupyter_spark_memory
+    # Set these to give users more RAM than Spark alone needs:
+    # jupyter_singleuser_memory_request: 16Gi
+    # jupyter_singleuser_memory_limit: 32Gi
+    jupyter_hub_resources:
+      requests:
+        cpu: 500m
+        memory: 1G
+      limits:
+        cpu: 2
+        memory: 2G
+    jupyter_singleuser_extra_resource:
+      guarantees:
+        nvidia.com/gpu: '1'
+      limits:
+        nvidia.com/gpu: '1'
+
+    #---------------------------------------------------------------------------
+    # Temporal
+    #---------------------------------------------------------------------------
+    temporal_resources:
+      requests:
+        cpu: 1
+        memory: 4Gi
+      limits:
+        cpu: 2
+        memory: 8Gi
+
+    #---------------------------------------------------------------------------
+    # Superset
+    #---------------------------------------------------------------------------
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    hive_namespace: hive
+    superset_resources:
+      requests:
+        cpu: 1
+        memory: 4Gi
+      limits:
+        cpu: 2
+        memory: 8Gi
 
-    # Trino config
-    # Note: Most configuration is now in roles/trino/defaults/main.yaml
-    # Only production-specific resource overrides are needed here
-    trino_worker_memory_gb: 16 # Total pod memory for workers
-    trino_coordinator_memory_gb: 8 # Total pod memory for coordinator
+    #---------------------------------------------------------------------------
+    # Hive Metastore
+    #---------------------------------------------------------------------------
+    hive_resources:
+      requests:
+        cpu: 1
+        memory: 4Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
 
-    # Orchestrator config
-    cassandra_storage_size: 300Gi
-    elasticsearch_storage_size: 100Gi
+    #---------------------------------------------------------------------------
+    # Trino
+    #---------------------------------------------------------------------------
+    # Trino uses direct memory sizing (not heap-based like Cassandra/Elasticsearch)
+    # JVM heap is computed as 80% of memory_gb
+    trino_worker_memory_gb: 12 # Total pod memory = 12Gi (heap will be ~10g)
+    trino_coordinator_memory_gb: 6 # Total pod memory = 6Gi (heap will be ~5g)
+    # Override CPU if needed (defaults: 250m request, 2/1 limit for worker/coordinator):
+    trino_worker_cpu_request: 2
+    trino_worker_cpu_limit: 6
+    trino_coordinator_cpu_request: 1
+    trino_coordinator_cpu_limit: 3
 
-    # Namespaces
-    # Default namespaces are defined in roles/scout_common/defaults/main.yaml
-    # Override them here if you need custom namespace names
-    # Example: prometheus_namespace: my-custom-prometheus-namespace
-    ollama_namespace: ollama
-    gpu_operator_namespace: gpu-operator
-
-    # Local paths
-    base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
-    scout_repo_dir: /scout/data/scout
-    minio_dir: /scout/data/minio
-    cassandra_dir: /scout/persistence/cassandra
-    elasticsearch_dir: /scout/persistence/elasticsearch
-    postgres_dir: /scout/persistence/postgres
-    prometheus_dir: /scout/monitoring/prometheus
-    loki_dir: /scout/monitoring/loki
-    grafana_dir: /scout/monitoring/grafana
-    jupyter_dir: /scout/data/jupyter
-    extractor_data_dir: /ceph/input/data
-
-    # Parameters for optional PACS instances, only intended for use in development
-    orthanc_dir: /scout/data/orthanc
-    dcm4chee_dir: /scout/data/dcm4chee
-
-    # All other configuration defaults are in roles/scout_common/defaults/main.yaml
-    # Override them here if needed for this environment
+    #---------------------------------------------------------------------------
+    # Extractor
+    #---------------------------------------------------------------------------
+    hl7log_extractor_resources:
+      requests:
+        cpu: 2
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 8Gi
+    hl7_transformer_spark_memory: 16G
+    # Memory computed from spark_memory (requests = 1x = 16Gi, limits = 2x = 32Gi)
+    # Override CPU if needed (defaults: 250m request, 4 limit):
+    hl7_transformer_cpu_request: 2
+    hl7_transformer_cpu_limit: 4

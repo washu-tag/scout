@@ -7,11 +7,21 @@ orthanc_dicom_port: 4242
 # Storage naming
 orthanc_name: orthanc
 orthanc_storage_class: '{{ orthanc_name }}-storage'
+orthanc_storage_size: 100Gi
 
 # Storage definitions for persistent volumes
 orthanc_storage_definitions:
   - name: '{{ orthanc_name }}'
-    size: "{{ orthanc_storage_size | default('100Gi') }}"
+    size: '{{ orthanc_storage_size }}'
     path: '{{ orthanc_dir }}'
     pv_name: '{{ orthanc_name }}-pv'
     storage_class_name: '{{ orthanc_storage_class }}'
+
+# Resource configuration (dev defaults)
+orthanc_resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 2
+    memory: 2Gi

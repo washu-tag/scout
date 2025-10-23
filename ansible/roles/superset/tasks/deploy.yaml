@@ -96,10 +96,6 @@
       ingress:
         enabled: true
         ingressClassName: traefik
-        annotations:
-          traefik.ingress.kubernetes.io/router.middlewares: >
-            kube-system-oauth2-proxy-error@kubernetescrd,
-            kube-system-oauth2-proxy-auth@kubernetescrd
         path: /
         hosts:
           - 'superset.{{ server_hostname }}'
@@ -107,11 +103,12 @@
         enabled: false
       supersetNode:
         connections:
-          db_host: 'postgresql-cluster-rw.{{ postgres_cluster_namespace }}'
+          db_host: '{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}'
           db_port: '5432'
           db_user: '{{ superset_postgres_user }}'
           db_pass: '{{ superset_postgres_password }}'
           db_name: '{{ superset_database }}'
+        resources: '{{ superset_resources }}'
       configOverrides:
         branding: |
           APP_NAME = "{{ superset_app_name }}"
@@ -138,79 +135,6 @@
               "max_overflow": {{ superset_pool_max_overflow }},
               "pool_timeout": {{ superset_pool_timeout }},
           }
-        enable_oauth: |
-          from flask_appbuilder.security.manager import AUTH_OAUTH
-          from flask_appbuilder.security.views import AuthOAuthView, expose
-          from superset.security import SupersetSecurityManager
-          from flask import redirect, session
-          import logging
-
-          OAUTH_PROVIDERS = OPENID_PROVIDERS = [
-              {
-                  "name": "keycloak",
-                  "icon": "fa-key",
-                  "token_key": "access_token",
-                  "remote_app": {
-                      "client_id": "{{ keycloak_superset_client_id }}",
-                      "client_secret": "{{ keycloak_superset_client_secret }}",
-                      "client_kwargs": {"scope": "openid microprofile-jwt"},
-                      "api_base_url": "https://keycloak.{{ server_hostname }}/realms/scout/protocol/",
-                      "access_token_url": "https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/token",
-                      "authorize_url": "https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/auth",
-                      "jwks_uri": "https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/certs",
-                      "request_token_url": None
-                  },
-              }
-          ]
-
-          AUTH_ROLES_MAPPING = {
-              "superset_admin": ["Admin"],
-              "superset_alpha": ["Alpha"],
-              "superset_gamma": ["Gamma"],
-              "superset_sql_lab": ["sql_lab"]
-          }
-
-          AUTH_TYPE = AUTH_OAUTH
-          AUTH_USER_REGISTRATION = True
-          AUTH_USER_REGISTRATION_ROLE = 'Alpha'
-          AUTH_ROLES_SYNC_AT_LOGIN = True
-
-          class KeycloakOAuthView(AuthOAuthView):
-              """
-              Custom Auth View to handle Keycloak login and logout redirection
-              """
-              @expose("/login/")
-              def login(self, provider="keycloak"):
-                  # Hacky workaround to remove stale 'Access is Denied' error messages from session.
-                  # When an unauthenticated user tries to access a protected page, Superset queues an 'Access is Denied' popup message.
-                  # With OAuth, the user is redirected to an external login page, so the error is not shown immediately.
-                  # After successful login, the old error message is displayed, which is confusing since the user now has access.
-                  flashes = session.get('_flashes', [])
-                  logging.debug(f"Flashes before cleanup: {flashes}")
-                  session['_flashes'] = [f for f in flashes if f != ('danger', 'Access is Denied')]
-                  logging.debug(f"Flashes after cleanup: {session.get('_flashes', [])}")
-
-                  return super().login(provider=provider)
-
-              @expose('/logout/', methods=['GET', 'POST'])
-              def logout(self):
-                  super().logout()
-                  return redirect('https://auth.{{ server_hostname }}/oauth2/sign_out')
-
-          class KeycloakSecurityManager(SupersetSecurityManager):
-              """
-              Create a new SecurityManager that uses the KeycloakOAuthView and Keycloak role mapping
-              """
-
-              def __init__(self, appbuilder):
-                  super(KeycloakSecurityManager, self).__init__(appbuilder)
-                  app = self.appbuilder.get_app
-                  app.config.setdefault("AUTH_ROLES_MAPPING", AUTH_ROLES_MAPPING)
-                  app.config.setdefault("AUTH_TYPE", AUTH_OAUTH)
-                  self.authoauthview = KeycloakOAuthView
-
-          CUSTOM_SECURITY_MANAGER = KeycloakSecurityManager
-
       extraVolumes:
         - name: dashboard-config
           configMap:

@@ -10,7 +10,7 @@ grafana_helm_chart_name: grafana
 # Storage configuration
 grafana_name: grafana
 grafana_storage_class: '{{ grafana_name }}-storage'
-grafana_storage_size: 50Gi
+grafana_storage_size: 5Gi
 grafana_dir: /scout/monitoring/grafana
 
 # Alert configuration
@@ -35,3 +35,12 @@ grafana_storage_definitions:
     path: '{{ grafana_dir }}'
     pv_name: '{{ grafana_name }}-pv'
     storage_class_name: '{{ grafana_storage_class }}'
+
+# Resource configuration (dev defaults)
+grafana_resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    cpu: 1
+    memory: 1Gi

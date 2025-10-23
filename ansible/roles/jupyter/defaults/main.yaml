@@ -9,16 +9,15 @@ jupyter_namespace: jupyter
 jupyter_helm_repo_name: jupyterhub
 jupyter_helm_repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
 jupyter_helm_chart_name: jupyterhub
-jupyter_helm_chart_version: ~4.3.0
 
 # Storage configuration
 jupyter_hub_name: jupyter-hub
 jupyter_hub_storage_class: '{{ jupyter_hub_name }}-storage'
-jupyter_hub_storage_size: 15Gi
+jupyter_hub_storage_size: 1Gi
 
 jupyter_singleuser_name: jupyter-singleuser
 jupyter_singleuser_storage_class: '{{ jupyter_singleuser_name }}-storage'
-jupyter_singleuser_storage_size: 250Gi
+jupyter_singleuser_storage_size: 10Gi
 jupyter_singleuser_pvc: '{{ jupyter_singleuser_name }}-pvc'
 
 # Storage definitions
@@ -38,8 +37,29 @@ jupyter_storage_definitions:
 jupyter_singleuser_image_name: ghcr.io/washu-tag/pyspark-notebook
 jupyter_singleuser_image_tag: 1.1.0
 
+# Authentication configuration
+jupyter_auth_class: dummy # Options: dummy or github
+jupyter_allowed_users: [] # Empty list means all users can log in
+
 # PrePuller configuration
 jupyter_prepuller_continuous: false
 
 # Spark configuration
-jupyter_spark_memory: 8g
+jupyter_spark_memory: 1G
+
+# Resource configuration (dev defaults - CI friendly)
+jupyter_hub_resources:
+  requests:
+    cpu: 100m
+    memory: 256M
+  limits:
+    cpu: 500m
+    memory: 512M
+
+# Single-user pod resources
+# Memory is computed from jupyter_spark_memory by default (using jvm_memory_to_k8s filter)
+# Override jupyter_singleuser_memory_* to set explicit values for non-Spark workloads
+jupyter_singleuser_cpu_request: 250m
+jupyter_singleuser_cpu_limit: 1
+jupyter_singleuser_memory_request: '' # Default: computed from jupyter_spark_memory
+jupyter_singleuser_memory_limit: '' # Default: computed from jupyter_spark_memory * 2
