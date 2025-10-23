@@ -101,7 +101,7 @@
   kubernetes.core.k8s:
     state: present
     definition: '{{ selinux_downloader_job }}'
-    kubeconfig: "{{ hostvars[groups['staging'][0]].kubeconfig_yaml }}"
+    kubeconfig: '{{ kubeconfig_yaml }}'
   delegate_to: "{{ groups['staging'][0] }}"
   run_once: true
   register: job_created
@@ -113,7 +113,7 @@
     namespace: '{{ k3s_package_download_namespace }}'
     label_selectors:
       - 'job-name={{ selinux_job_name }}'
-    kubeconfig: "{{ hostvars[groups['staging'][0]].kubeconfig_yaml }}"
+    kubeconfig: '{{ kubeconfig_yaml }}'
   delegate_to: "{{ groups['staging'][0] }}"
   run_once: true
   register: job_pods
@@ -133,7 +133,7 @@
     kind: Pod
     name: '{{ selinux_downloader_pod }}'
     namespace: '{{ k3s_package_download_namespace }}'
-    kubeconfig: "{{ hostvars[groups['staging'][0]].kubeconfig_yaml }}"
+    kubeconfig: '{{ kubeconfig_yaml }}'
   delegate_to: "{{ groups['staging'][0] }}"
   run_once: true
   register: pod_status
@@ -176,7 +176,7 @@
       {{ k3s_package_download_namespace }}/{{ selinux_downloader_pod }}:/downloads/
       {{ selinux_staging_dir }}/
       -c sleeper
-      --kubeconfig={{ hostvars[groups['staging'][0]].kubeconfig_yaml }}
+      --kubeconfig={{ kubeconfig_yaml }}
   delegate_to: "{{ groups['staging'][0] }}"
   run_once: true
   register: kubectl_cp_result
@@ -247,7 +247,7 @@
     kind: Job
     name: '{{ selinux_job_name }}'
     namespace: '{{ k3s_package_download_namespace }}'
-    kubeconfig: "{{ hostvars[groups['staging'][0]].kubeconfig_yaml }}"
+    kubeconfig: '{{ kubeconfig_yaml }}'
   delegate_to: "{{ groups['staging'][0] }}"
   run_once: true
   when: job_created is changed
