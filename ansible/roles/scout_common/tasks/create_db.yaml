@@ -33,10 +33,10 @@
   kubernetes.core.k8s_exec:
     namespace: '{{ postgres_cluster_namespace }}'
     pod: '{{ postgres_cluster_name }}-1'
-    command: |
-      cat <<'SQL' | psql --dbname=postgres
-      {{ db_init_sql_script }}
-      SQL
+    command:
+      - psql
+      - --dbname=postgres
+    stdin: '{{ db_init_sql_script }}'
 
 - name: Configure RDS database initialization settings
   delegate_to: localhost
