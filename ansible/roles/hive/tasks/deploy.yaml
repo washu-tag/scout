@@ -1,4 +1,12 @@
----
+- name: Initialize Hive Metastore database
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_db
+  vars:
+    db_name: hive
+    db_user: '{{ hive_postgres_user }}'
+    db_pass: '{{ hive_postgres_password }}'
+
 - name: Deploy Hive Metastore Service
   ansible.builtin.include_role:
     name: scout_common

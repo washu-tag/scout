@@ -105,7 +105,7 @@ env:
   - name: HIVE_METASTORE_DRIVER
     value: 'org.postgresql.Driver'
   - name: HIVE_METASTORE_JDBC_URL
-    value: 'jdbc:postgresql://postgresql-cluster-rw.cloudnative-pg:5432/scout?sslmode=disable'
+    value: '{{ jdbc_url }}/scout?sslmode=disable'
   - name: HIVE_METASTORE_USER
     value: 'scout'
   - name: HIVE_METASTORE_PASSWORD
