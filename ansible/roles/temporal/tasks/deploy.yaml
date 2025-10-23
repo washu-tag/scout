@@ -205,7 +205,7 @@
                 image: temporalio/admin-tools
                 env:
                   - name: TEMPORAL_ADDRESS
-                    value: 'temporal-frontend.{{ temporal_namespace }}:7233'
+                    value: 'temporal-internal-frontend.{{ temporal_namespace }}:7236'
                 command:
                   - temporal
                   - schedule
