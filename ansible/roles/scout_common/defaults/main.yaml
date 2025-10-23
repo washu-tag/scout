@@ -11,7 +11,7 @@ helm_chart_values: {}
 helm_chart_values_files: []
 
 # Custom images (override from inventory for CI/CD)
-# Explorer: explorer_image_repository and explorer_image_tag (see roles/explorer/defaults/main.yaml)
+# Launchpad: launchpad_image_repository and launchpad_image_tag (see roles/launchpad/defaults/main.yaml)
 # Superset: superset_image_repository and superset_image_tag (see roles/superset/defaults/main.yaml)
 # Jupyter: jupyter_singleuser_image_name and jupyter_singleuser_image_tag (see roles/jupyter/defaults/main.yaml)
 # Extractors: hl7log_extractor_image_repository/tag and hl7_transformer_image_repository/tag (see roles/extractor/defaults/main.yaml)
@@ -42,9 +42,8 @@ trino_namespace: trino
 harbor_namespace: harbor
 orthanc_namespace: orthanc
 dcm4chee_namespace: dcm4chee
-explorer_namespace: explorer
-keycloak_namespace: keycloak
 launchpad_namespace: launchpad
+keycloak_namespace: keycloak
 
 # Keycloak oauth client id's and secrets (override secrets in inventory)
 keycloak_oauth2_proxy_client_id: oauth2-proxy
