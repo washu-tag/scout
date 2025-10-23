@@ -26,8 +26,12 @@ resources:
     memory: '{{ hl7_transformer_spark_memory | jvm_memory_to_k8s(2) }}'
 volumes:
   - name: data
+{% if aws_deployment %}
+    emptyDir: {}
+{% else %}
     hostPath:
       path: '{{ extractor_data_dir }}'
+{% endif %}
   - name: spark-defaults
     configMap:
       name: spark-defaults
@@ -35,7 +39,9 @@ volumeMounts:
   - name: data
     mountPath: /data
     readOnly: true
+{% if not aws_deployment %}
     mountPropagation: HostToContainer
+{% endif %}
   - name: spark-defaults
     mountPath: /opt/spark/conf/spark-defaults.conf
     subPath: spark-defaults.conf

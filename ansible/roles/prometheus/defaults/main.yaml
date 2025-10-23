@@ -9,7 +9,7 @@ prometheus_helm_chart_name: prometheus
 
 # Storage configuration
 prometheus_name: prometheus
-prometheus_storage_class: '{{ prometheus_name }}-storage'
+prometheus_storage_class: '{{ aws_deployment | ternary(ebs_storage_class_name, prometheus_name ~ "-storage") }}'
 prometheus_storage_size: 10Gi
 prometheus_dir: /scout/monitoring/prometheus
 

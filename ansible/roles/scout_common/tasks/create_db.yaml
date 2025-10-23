@@ -1,0 +1,118 @@
+- name: Validate required database parameters
+  ansible.builtin.assert:
+    that:
+      - (db_name is defined) and (db_name | length > 0)
+      - (db_user is defined) and (db_user | length > 0)
+      - (db_pass is defined) and (db_pass | length > 0)
+    fail_msg: 'db_name, db_user, and db_pass must be defined for database initialization'
+
+- name: Configure database initialization script
+  ansible.builtin.set_fact:
+    db_init_sql_script: |
+      \set ON_ERROR_STOP on
+
+      DO $do$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{{ db_user }}') THEN
+          EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', '{{ db_user }}', '{{ db_pass }}');
+        END IF;
+      END;
+      $do$ LANGUAGE plpgsql;
+
+      GRANT {{ db_user }} TO CURRENT_USER;
+
+      SELECT 'CREATE DATABASE {{db_name}} OWNER {{ db_user }}'
+      WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '{{db_name}}');
+      \gexec
+
+      REVOKE {{ db_user }} FROM CURRENT_USER;
+
+- name: Initialize cloud-native PostgreSQL database
+  when: not aws_deployment
+  delegate_to: localhost
+  kubernetes.core.k8s_exec:
+    namespace: '{{ postgres_cluster_namespace }}'
+    pod: '{{ postgres_cluster_name }}-1'
+    command: |
+      cat <<'SQL' | psql --dbname=postgres
+      {{ db_init_sql_script }}
+      SQL
+
+- name: Configure RDS database initialization settings
+  delegate_to: localhost
+  when: aws_deployment
+  ansible.builtin.set_fact:
+    db_init_sslmode: "{{ vars.get('db_sslmode', 'require') }}"
+    db_init_namespace: "{{ vars.get('db_init_namespace', 'db-init') }}"
+    db_init_psql_conn: "host={{ vars.get('db_host') }} port={{ vars.get('db_port', 5432) }} dbname=postgres user={{ vars.get('postgres_superuser', 'postgres') }} sslmode={{ vars.get('db_sslmode', 'require') }}"
+    db_init_job_name: "db-init-{{ (db_name | lower | regex_replace('[^a-z0-9-]', '-') | regex_replace('^-+', '') | regex_replace('-+$', '')) | default('db', true) }}-{{ lookup('pipe', 'date +%s') }}"
+
+- name: Ensure db_init namespace exists
+  delegate_to: localhost  
+  when: aws_deployment
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ db_init_namespace }}"
+
+- name: Submit RDS db_init job
+  delegate_to: localhost
+  when: aws_deployment
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: "{{ db_init_job_name }}"
+        namespace: "{{ db_init_namespace }}"
+      spec:
+        ttlSecondsAfterFinished: 300
+        backoffLimit: 0
+        template:
+          metadata:
+            labels:
+              job-name: "{{ db_init_job_name }}"
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: psql
+                image: postgres:16
+                env:
+                  - name: PGPASSWORD
+                    value: "{{ postgres_superuser_password }}"
+                command:
+                  - sh
+                  - -lc
+                  - |
+                    set -e
+                    cat <<'SQL' | psql "{{ db_init_psql_conn }}"
+                    {{ db_init_sql_script }}
+                    SQL
+
+- name: Wait for RDS db_init job to complete
+  delegate_to: localhost
+  when: aws_deployment
+  kubernetes.core.k8s_info:
+    api_version: batch/v1
+    kind: Job
+    namespace: "{{ db_init_namespace }}"
+    name: "{{ db_init_job_name }}"
+    wait: true
+    wait_condition:
+      type: Complete
+      status: "True"
+    wait_sleep: 2
+    wait_timeout: 300
+  register: _job_info
+
+- name: Fail if RDS init failed
+  delegate_to: localhost
+  when:
+    - aws_deployment
+    - (_job_info.resources[0].status.failed | default(0) | int) > 0
+  ansible.builtin.fail:
+    msg: "RDS init Job {{ db_init_job_name }} failed. Check pod logs."
