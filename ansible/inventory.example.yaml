@@ -170,8 +170,10 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     # Keycloak
     #---------------------------------------------------------------------------
+    keycloak_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # Keycloak admin console
     keycloak_bootstrap_admin_user: admin
-    keycloak_bootstrap_admin_password: admin
+    keycloak_bootstrap_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # SMTP configuration (optional, for email notifications)
     keycloak_smtp_host: ''
     keycloak_smtp_port: ''
@@ -206,9 +208,7 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     postgres_superuser_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    hive_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    superset_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    keycloak_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
     # Production resource overrides (defaults in role are for dev)
     postgres_resources:
       requests:
@@ -368,6 +368,7 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     # Superset
     #---------------------------------------------------------------------------
+    superset_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     superset_resources:
       requests:
@@ -380,6 +381,7 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     # Hive Metastore
     #---------------------------------------------------------------------------
+    hive_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     hive_resources:
       requests:
         cpu: 1
