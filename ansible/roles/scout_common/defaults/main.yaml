@@ -2,6 +2,7 @@
 # Defaults for scout_common role
 # This role contains shared tasks and default configuration values
 # All values here can be overridden in inventory.yaml
+timezone: 'America/Chicago'
 
 # Helm deployment defaults
 helm_chart_create_namespace: true
