@@ -15,3 +15,6 @@ temporal_resources:
 
 # Scheduled workflow configuration
 scheduled_ingest_hour: 6 # Alternatively, full schedule can be specified with scheduled_ingest_cron
+
+# OIDC configuration
+temporal_oidc_enabled: true

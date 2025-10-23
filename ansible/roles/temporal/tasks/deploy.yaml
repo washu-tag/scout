@@ -70,7 +70,7 @@
                 serialConsistency: 'local_serial'
 
 - name: Add authorization config if OIDC enabled
-  when: temporal_oidc_enabled | default(true)
+  when: temporal_oidc_enabled
   set_fact:
     temporal_server_config: '{{ temporal_server_config | combine(temporal_auth_config, recursive=true) }}'
   vars:
@@ -95,7 +95,7 @@
           - 'temporal.{{ server_hostname }}'
 
 - name: Add web OIDC config if enabled
-  when: temporal_oidc_enabled | default(true)
+  when: temporal_oidc_enabled
   set_fact:
     temporal_web_config: '{{ temporal_web_config | combine(temporal_web_oidc_config, recursive=true) }}'
   vars:

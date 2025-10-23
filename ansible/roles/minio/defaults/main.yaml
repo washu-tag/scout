@@ -106,6 +106,9 @@ minio_policies:
       - arn:aws:s3:::loki-*/*
     user: '{{ s3_loki_writer }}'
 
+# OIDC configuration
+minio_oidc_enabled: true
+
 # Wait times and retries
 minio_wait_retries: 60
 minio_wait_delay: 5
