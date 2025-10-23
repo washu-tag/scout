@@ -12,8 +12,8 @@ k3s_cluster:
   children:
     server:
   vars:
-    hl7log_extractor_image_repository: docker.io/local/washu-tag/hl7log-extractor
-    hl7_transformer_image_repository: docker.io/local/washu-tag/hl7-transformer
+    hl7log_extractor_image: docker.io/local/washu-tag/hl7log-extractor
+    hl7_transformer_image: docker.io/local/washu-tag/hl7-transformer
     launchpad_image: docker.io/local/washu-tag/launchpad
 
     # K3s config
