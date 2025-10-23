@@ -3,6 +3,7 @@ package edu.washu.tag.tests;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import edu.washu.tag.BaseTest;
+import edu.washu.tag.model.IngestJobDetails;
 import edu.washu.tag.model.IngestJobInput;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -15,9 +16,9 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-@Test(groups = BaseTest.RELAUNCH_PRECURSOR)
 public class TestStatusDatabase extends BaseTest {
 
     private static final Logger logger = LoggerFactory.getLogger(TestStatusDatabase.class);
@@ -42,6 +43,17 @@ public class TestStatusDatabase extends BaseTest {
     public static final String ERROR_MESSAGE = "error_message";
 
     public static final int SPLIT_AND_UPLOAD_RETRIES = 5;
+
+    private static final String TABLE = "postgres" + System.currentTimeMillis();
+    protected IngestJobDetails ingestWorkflow;
+
+    @BeforeClass
+    private void launchIngestion() {
+        ingestWorkflow = temporalClient.launchIngest(
+            new IngestJobInput().setReportTableName(TABLE).setLogsRootPath("/data/postgres"),
+            true
+        );
+    }
 
     /**
      * Tests the state of the ingest database after the test data has been processed by Scout.
@@ -372,7 +384,7 @@ public class TestStatusDatabase extends BaseTest {
     @Test
     public void testIngestImproperLogPath() {
         final String date = "20150101";
-        final String improperLog = "/data/" + date + ".log";
+        final String improperLog = "/data/postgres/" + date + ".log";
         final String workflowId = temporalClient.launchIngest(
             new IngestJobInput().setLogPaths(improperLog),
             false

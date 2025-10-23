@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.washu.tag.BaseTest;
 import edu.washu.tag.TestQuery;
 import edu.washu.tag.TestQuerySuite;
+import edu.washu.tag.model.IngestJobInput;
 import edu.washu.tag.util.FileIOUtils;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ public class TestScoutQueries extends BaseTest {
     private SparkSession spark;
     private static final TestQuerySuite<?> exportedQueries = readQueries();
     private static final Logger logger = LoggerFactory.getLogger(TestScoutQueries.class);
+    private static final String TABLE = "testdata" + System.currentTimeMillis();
 
     @BeforeClass
     private void initSparkSession() {
@@ -27,6 +29,14 @@ public class TestScoutQueries extends BaseTest {
             .config(config.getSparkConfig())
             .enableHiveSupport()
             .getOrCreate();
+    }
+
+    @BeforeClass
+    private void ingest() {
+        temporalClient.launchIngest(
+            new IngestJobInput().setReportTableName(TABLE).setLogsRootPath("/data/extraction"),
+            true
+        );
     }
 
     @DataProvider(name = "known_queries")
@@ -43,12 +53,9 @@ public class TestScoutQueries extends BaseTest {
         runTest(queryId);
     }
 
-    @Test(dependsOnGroups = BaseTest.RELAUNCH_PRECURSOR, alwaysRun = true)
+    @Test
     public void testRepeatIngest() {
-        temporalClient.launchIngest(
-            config.getTemporalConfig().getIngestJobInput(),
-            true
-        );
+        ingest();
         runTest("all"); // make sure no rows in the whole dataset have been duplicated
         runTest("extended_metadata"); // ...and let's make sure the metadata still looks good
     }
@@ -75,6 +82,7 @@ public class TestScoutQueries extends BaseTest {
 
     private void runTest(String id) {
         final TestQuery<?> query = getQueryById(id);
+        query.setSql(query.getSql().replace(TestQuerySuite.TABLE_PLACEHOLDER, TABLE));
         logger.info("Performing query with spark: {}", query.getSql());
         query.getExpectedQueryResult().validateResult(spark.sql(query.getSql()));
     }
