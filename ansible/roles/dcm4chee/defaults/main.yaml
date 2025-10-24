@@ -1,5 +1,6 @@
 ---
 # Default values for Dcm4chee deployment
+dcm4chee_timezone: '{{ timezone }}'
 
 # DICOM configuration
 dcm4chee_dicom_port: 11112
