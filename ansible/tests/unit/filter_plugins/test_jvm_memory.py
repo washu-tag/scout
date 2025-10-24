@@ -20,220 +20,141 @@ from jvm_memory import jvm_memory_to_k8s, multiply_memory
 class TestJvmMemoryToK8s:
     """Test cases for jvm_memory_to_k8s filter."""
 
-    def test_gigabytes_uppercase(self):
-        """Test conversion of gigabytes with uppercase G."""
+    def test_basic_conversions(self):
+        """Test basic JVM memory unit conversions (G, M, K) with case-insensitivity and whitespace."""
+        # Gigabytes (case insensitive)
         assert jvm_memory_to_k8s("1G") == "1Gi"
-        assert jvm_memory_to_k8s("2G") == "2Gi"
+        assert jvm_memory_to_k8s("2g") == "2Gi"
         assert jvm_memory_to_k8s("16G") == "16Gi"
 
-    def test_gigabytes_lowercase(self):
-        """Test conversion of gigabytes with lowercase g (case-insensitive)."""
-        assert jvm_memory_to_k8s("1g") == "1Gi"
-        assert jvm_memory_to_k8s("2g") == "2Gi"
-        assert jvm_memory_to_k8s("16g") == "16Gi"
-
-    def test_megabytes_uppercase(self):
-        """Test conversion of megabytes with uppercase M."""
+        # Megabytes (with whitespace)
         assert jvm_memory_to_k8s("512M") == "512Mi"
+        assert jvm_memory_to_k8s(" 512M ") == "512Mi"
         assert jvm_memory_to_k8s("1024M") == "1Gi"  # Smart conversion
-        assert jvm_memory_to_k8s("2048M") == "2Gi"  # Smart conversion
 
-    def test_megabytes_lowercase(self):
-        """Test conversion of megabytes with lowercase m (case-insensitive)."""
-        assert jvm_memory_to_k8s("512m") == "512Mi"
-        assert jvm_memory_to_k8s("1024m") == "1Gi"  # Smart conversion
-
-    def test_kilobytes_uppercase(self):
-        """Test conversion of kilobytes with uppercase K."""
-        assert jvm_memory_to_k8s("1024K") == "1Mi"  # Smart conversion
-        assert jvm_memory_to_k8s("2048K") == "2Mi"  # Smart conversion
-        assert jvm_memory_to_k8s("512K") == "512Ki"
-
-    def test_kilobytes_lowercase(self):
-        """Test conversion of kilobytes with lowercase k (case-insensitive)."""
+        # Kilobytes (case + whitespace)
         assert jvm_memory_to_k8s("1024k") == "1Mi"  # Smart conversion
-        assert jvm_memory_to_k8s("512k") == "512Ki"
-
-    def test_multiplier_2x(self):
-        """Test 2x multiplier for limits (off-heap/overhead memory)."""
-        assert jvm_memory_to_k8s("1G", 2) == "2Gi"
-        assert jvm_memory_to_k8s("2G", 2) == "4Gi"
-        assert jvm_memory_to_k8s("8G", 2) == "16Gi"
-        assert jvm_memory_to_k8s("512M", 2) == "1Gi"
-        assert jvm_memory_to_k8s("256M", 2) == "512Mi"
-
-    def test_multiplier_3x(self):
-        """Test 3x multiplier (edge case)."""
-        assert jvm_memory_to_k8s("1G", 3) == "3Gi"
-        assert jvm_memory_to_k8s("512M", 3) == "1536Mi"
-
-    def test_multiplier_1x_explicit(self):
-        """Test explicit 1x multiplier (same as default)."""
-        assert jvm_memory_to_k8s("2G", 1) == "2Gi"
-        assert jvm_memory_to_k8s("512M", 1) == "512Mi"
-
-    def test_whitespace_handling(self):
-        """Test that leading/trailing whitespace is handled."""
-        assert jvm_memory_to_k8s(" 2G ") == "2Gi"
-        assert jvm_memory_to_k8s("  512M  ") == "512Mi"
-        assert jvm_memory_to_k8s("\t1G\t") == "1Gi"
-
-    def test_mixed_case(self):
-        """Test mixed case handling (should work case-insensitively)."""
-        # Note: Only the unit suffix is case-insensitive, not the number
-        assert jvm_memory_to_k8s("2g") == "2Gi"
-        assert jvm_memory_to_k8s("2G") == "2Gi"
-
-    def test_smart_conversion_1024M_to_Gi(self):
-        """Test smart conversion of 1024M to Gi."""
-        assert jvm_memory_to_k8s("1024M") == "1Gi"
-        assert jvm_memory_to_k8s("2048M") == "2Gi"
-        assert jvm_memory_to_k8s("3072M") == "3Gi"
-
-    def test_smart_conversion_1024K_to_Mi(self):
-        """Test smart conversion of 1024K to Mi."""
-        assert jvm_memory_to_k8s("1024K") == "1Mi"
-        assert jvm_memory_to_k8s("2048K") == "2Mi"
-
-    def test_non_divisible_megabytes(self):
-        """Test megabytes that don't convert cleanly to Gi."""
-        assert jvm_memory_to_k8s("768M") == "768Mi"
-        assert jvm_memory_to_k8s("1536M") == "1536Mi"  # 1.5 Gi but stays as Mi
-
-    def test_non_divisible_kilobytes(self):
-        """Test kilobytes that don't convert cleanly to Mi."""
+        assert jvm_memory_to_k8s("\t2048K\t") == "2Mi"
         assert jvm_memory_to_k8s("512K") == "512Ki"
-        assert jvm_memory_to_k8s("768K") == "768Ki"
 
-    def test_common_cassandra_values(self):
-        """Test common Cassandra heap sizes."""
-        # Dev
-        assert jvm_memory_to_k8s("2G") == "2Gi"
-        assert jvm_memory_to_k8s("2G", 2) == "4Gi"
-        # Prod
-        assert jvm_memory_to_k8s("16G") == "16Gi"
-        assert jvm_memory_to_k8s("16G", 2) == "32Gi"
-
-    def test_common_elasticsearch_values(self):
-        """Test common Elasticsearch heap sizes."""
-        # Dev
-        assert jvm_memory_to_k8s("1G") == "1Gi"
+    def test_multipliers(self):
+        """Test multipliers (integer and float) for resource requests/limits."""
+        # Integer multipliers
+        assert jvm_memory_to_k8s("2G", 1) == "2Gi"
         assert jvm_memory_to_k8s("1G", 2) == "2Gi"
-        # Prod
-        assert jvm_memory_to_k8s("8G") == "8Gi"
-        assert jvm_memory_to_k8s("8G", 2) == "16Gi"
+        assert jvm_memory_to_k8s("512M", 2) == "1Gi"
+        assert jvm_memory_to_k8s("1G", 3) == "3Gi"
+        assert jvm_memory_to_k8s("1G", 4) == "4Gi"
 
-    def test_common_spark_values(self):
-        """Test common Spark memory sizes."""
-        # Dev
-        assert jvm_memory_to_k8s("1G") == "1Gi"
-        assert jvm_memory_to_k8s("1G", 2) == "2Gi"
-        # Prod
-        assert jvm_memory_to_k8s("24G") == "24Gi"
-        assert jvm_memory_to_k8s("24G", 2) == "48Gi"
+        # Float multipliers
+        assert jvm_memory_to_k8s("2G", 0.5) == "1Gi"
+        assert jvm_memory_to_k8s("8G", 1.5) == "12Gi"
+        assert jvm_memory_to_k8s("6G", 1.0/3.0) == "2Gi"
+        assert jvm_memory_to_k8s("512M", 4) == "2Gi"
+        assert jvm_memory_to_k8s("1.5G", 1.5) == "2304Mi"
 
-    def test_invalid_format_no_number(self):
-        """Test invalid format with no number."""
-        with pytest.raises(ValueError, match="Invalid heap size format"):
-            jvm_memory_to_k8s("G")
+    def test_smart_unit_conversion(self):
+        """Test smart conversion to larger units when divisible, plus edge cases."""
+        # Converts to Gi when divisible
+        assert jvm_memory_to_k8s("2048M") == "2Gi"
+        assert jvm_memory_to_k8s("1024K") == "1Mi"
 
-    def test_invalid_format_special_chars(self):
-        """Test invalid format with special characters."""
-        with pytest.raises(ValueError, match="Invalid heap size format"):
-            jvm_memory_to_k8s("2@G")
+        # Stays in original unit when not cleanly divisible
+        assert jvm_memory_to_k8s("768M") == "768Mi"
+        assert jvm_memory_to_k8s("1536M") == "1536Mi"
 
-    def test_invalid_format_multiple_units(self):
-        """Test invalid format with multiple units."""
-        with pytest.raises(ValueError, match="Invalid heap size format"):
-            jvm_memory_to_k8s("2GM")
-
-    def test_invalid_format_text(self):
-        """Test invalid format with text."""
-        with pytest.raises(ValueError, match="Invalid heap size format"):
-            jvm_memory_to_k8s("two-gigs")
-
-    def test_edge_case_zero(self):
-        """Test edge case of zero memory (technically valid)."""
+        # Edge cases: zero and very large values
         assert jvm_memory_to_k8s("0G") == "0Gi"
-        assert jvm_memory_to_k8s("0M") == "0Mi"
-
-    def test_edge_case_very_large(self):
-        """Test very large memory values."""
         assert jvm_memory_to_k8s("128G") == "128Gi"
-        assert jvm_memory_to_k8s("256G") == "256Gi"
+
+    def test_invalid_formats(self):
+        """Test various invalid format errors."""
+        with pytest.raises(ValueError, match="Invalid heap size format"):
+            jvm_memory_to_k8s("G")  # No number
+        with pytest.raises(ValueError, match="Invalid heap size format"):
+            jvm_memory_to_k8s("2@G")  # Special chars
+        with pytest.raises(ValueError, match="Invalid heap size format"):
+            jvm_memory_to_k8s("2GM")  # Multiple units
+        with pytest.raises(ValueError, match="Invalid heap size format"):
+            jvm_memory_to_k8s("two-gigs")  # Text
 
     def test_inventory_example_values(self):
-        """Test actual values from inventory.example.yaml."""
-        # Cassandra prod
+        """Test actual values from inventory.example.yaml with common multipliers."""
+        # Cassandra, Elasticsearch, Spark, Jupyter typical configs
         assert jvm_memory_to_k8s("8G") == "8Gi"
-        assert jvm_memory_to_k8s("16G") == "16Gi"
+        assert jvm_memory_to_k8s("8G", 2) == "16Gi"
         assert jvm_memory_to_k8s("16G", 2) == "32Gi"
-
-        # Elasticsearch prod
-        assert jvm_memory_to_k8s("8G") == "8Gi"
-        assert jvm_memory_to_k8s("8G", 2) == "16Gi"
-
-        # Spark prod
         assert jvm_memory_to_k8s("24G") == "24Gi"
-        assert jvm_memory_to_k8s("24G", 2) == "48Gi"
 
-        # Jupyter prod
-        assert jvm_memory_to_k8s("8G") == "8Gi"
-        assert jvm_memory_to_k8s("8G", 2) == "16Gi"
+        # Elasticsearch with 2x and 4x multipliers
+        assert jvm_memory_to_k8s("512M", 2) == "1Gi"
+        assert jvm_memory_to_k8s("512M", 4) == "2Gi"
+        assert jvm_memory_to_k8s("8G", 4) == "32Gi"
+
+    def test_float_inputs_and_multipliers(self):
+        """Test float input values and float multipliers."""
+        # Float inputs convert to Mi when not evenly divisible to Gi
+        assert jvm_memory_to_k8s("1.5G") == "1536Mi"
+        assert jvm_memory_to_k8s("0.5G") == "512Mi"
+        assert jvm_memory_to_k8s("2.5G") == "2560Mi"
+
+        # Float inputs with multipliers
+        assert jvm_memory_to_k8s("1.5G", 2.0) == "3Gi"
+        assert jvm_memory_to_k8s("0.5G", 4.0) == "2Gi"
+        assert jvm_memory_to_k8s("1024M", 0.5) == "512Mi"
+
+    def test_float_precision_rounding(self):
+        """
+        This test verifies edge cases that might theoretically be problematic:
+        - Division operations (e.g., 1024/3 * 3)
+        - Complex float arithmetic with multipliers
+        """
+        # (1024/3) * 3 should equal exactly 1024M = 1Gi
+        third_of_1024 = 1024 / 3
+        assert jvm_memory_to_k8s(f"{third_of_1024}M", 3) == "1Gi"
+
+        # Complex float arithmetic
+        assert jvm_memory_to_k8s("1.5G", 2.0/3.0) == "1Gi"
 
 
 class TestMultiplyMemory:
     """Test cases for multiply_memory filter."""
 
-    def test_gigabytes_uppercase(self):
-        """Test multiplying gigabytes with uppercase G."""
+    def test_basic_operations(self):
+        """Test basic multiplication across units with case-insensitivity."""
+        # Different units (case insensitive)
         assert multiply_memory("8G", 2) == "16G"
-        assert multiply_memory("4G", 2) == "8G"
-        assert multiply_memory("1G", 2) == "2G"
-
-    def test_gigabytes_lowercase(self):
-        """Test multiplying gigabytes with lowercase g."""
         assert multiply_memory("8g", 2) == "16G"
-        assert multiply_memory("4g", 2) == "8G"
-
-    def test_megabytes(self):
-        """Test multiplying megabytes."""
         assert multiply_memory("512M", 2) == "1024M"
-        assert multiply_memory("256M", 2) == "512M"
-        assert multiply_memory("1024M", 2) == "2048M"
-
-    def test_kilobytes(self):
-        """Test multiplying kilobytes."""
         assert multiply_memory("1024K", 2) == "2048K"
-        assert multiply_memory("512K", 2) == "1024K"
 
-    def test_multiplier_1x(self):
-        """Test 1x multiplier (no change)."""
+        # Different multipliers
         assert multiply_memory("8G", 1) == "8G"
-        assert multiply_memory("512M", 1) == "512M"
-
-    def test_multiplier_3x(self):
-        """Test 3x multiplier."""
         assert multiply_memory("8G", 3) == "24G"
-        assert multiply_memory("2G", 3) == "6G"
 
-    def test_jupyter_common_values(self):
-        """Test common JupyterHub memory values."""
-        assert multiply_memory("8G", 2) == "16G"
-        assert multiply_memory("1G", 2) == "2G"
-        assert multiply_memory("24G", 2) == "48G"
-
-    def test_whitespace_handling(self):
-        """Test that leading/trailing whitespace is handled."""
+        # Whitespace handling
         assert multiply_memory(" 8G ", 2) == "16G"
-        assert multiply_memory("  512M  ", 2) == "1024M"
 
-    def test_invalid_format(self):
-        """Test invalid format raises error."""
+    def test_invalid_formats(self):
+        """Test invalid format errors."""
         with pytest.raises(ValueError, match="Invalid memory format"):
             multiply_memory("invalid", 2)
         with pytest.raises(ValueError, match="Invalid memory format"):
             multiply_memory("8Gi", 2)  # Should use K, M, G, T (not Ki, Mi, Gi)
+
+    def test_float_operations(self):
+        """Test float multipliers and float inputs."""
+        # Float multipliers with integer results
+        assert multiply_memory("8G", 0.5) == "4G"
+        assert multiply_memory("8G", 1.5) == "12G"
+
+        # Float multipliers with decimal results
+        assert multiply_memory("3G", 1.5) == "4.5G"
+
+        # Float inputs with multipliers
+        assert multiply_memory("1.5G", 1.5) == "2.25G"
+        assert multiply_memory("1.5G", 2) == "3G"
+        assert multiply_memory("0.5G", 3.0) == "1.5G"
 
 
 if __name__ == "__main__":
