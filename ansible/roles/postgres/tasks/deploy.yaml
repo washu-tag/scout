@@ -68,7 +68,7 @@
       spec:
         instances: 1
         storage:
-          storageClass: '{{ postgres_storage_class }}'
+          storageClass: '{{ use_custom_storage_classes | ternary(postgres_storage_class, omit) }}'
           size: 100Mi
         resources: '{{ postgres_resources }}'
         enableSuperuserAccess: true
