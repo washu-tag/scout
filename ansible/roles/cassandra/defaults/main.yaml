@@ -3,7 +3,7 @@
 
 # Storage naming
 cassandra_name: cassandra
-cassandra_storage_class: '{{ cassandra_name ~ "-storage" }}'
+cassandra_storage_class: '{{ cassandra_name }}-storage'
 cassandra_storage_size: 10Gi
 
 # Storage definitions for persistent volumes
