@@ -114,6 +114,10 @@ k3s_cluster:
     #
     # To override versions in group_vars/all/versions.yaml, you need to pass the
     # variable to ansible with -e.
+    #
+    # Best practice for upgrades: Test version upgrades in your staging
+    # environment before applying them to production. For example:
+    #   ansible-playbook -e "k3s_version=v1.35.0+k3s1" playbooks/k3s.yaml
 
     # Set this to execute ansible commands as root
     ansible_become: true
