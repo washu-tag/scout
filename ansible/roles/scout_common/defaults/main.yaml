@@ -89,3 +89,4 @@ db_host: '{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}'
 db_host_ro: '{{ postgres_cluster_name }}-r.{{ postgres_cluster_namespace }}'
 db_port: 5432
 jdbc_url: 'jdbc:postgresql://{{ db_host }}:{{ db_port }}'
+use_custom_storage_classes: '{{ not aws_deployment }}'

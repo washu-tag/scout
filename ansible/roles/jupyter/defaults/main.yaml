@@ -12,11 +12,11 @@ jupyter_helm_chart_name: jupyterhub
 
 # Storage configuration
 jupyter_hub_name: jupyter-hub
-jupyter_hub_storage_class: '{{ aws_deployment | ternary(ebs_storage_class_name, jupyter_hub_name ~ "-storage") }}'
+jupyter_hub_storage_class: '{{ jupyter_hub_name ~ "-storage" }}'
 jupyter_hub_storage_size: 1Gi
 
 jupyter_singleuser_name: jupyter-singleuser
-jupyter_singleuser_storage_class: '{{ aws_deployment | ternary(ebs_storage_class_name, jupyter_singleuser_name ~ "-storage") }}'
+jupyter_singleuser_storage_class: '{{ jupyter_singleuser_name ~ "-storage" }}'
 jupyter_singleuser_storage_size: 10Gi
 jupyter_singleuser_pvc: '{{ jupyter_singleuser_name }}-pvc'
 
