@@ -12,7 +12,7 @@ Scout uses Ansible to orchestrate deployment of a distributed data analysis plat
 - **Extractor**: HL7 log processing and transformation services
 - **Notebooks**: JupyterHub with PySpark for interactive data analysis
 - **Monitoring**: Prometheus, Loki, and Grafana for observability
-- **Explorer**: Web-based data exploration interface
+- **Launchpad**: Central landing page and service navigation hub
 
 ## Prerequisites
 
@@ -134,7 +134,7 @@ make install-orchestrator # Temporal + Cassandra + Elasticsearch
 make install-extractor    # HL7 processing services
 make install-jupyter      # JupyterHub
 make install-monitor      # Prometheus + Loki + Grafana
-make install-explorer     # Explorer web interface
+make install-launchpad    # Launchpad web interface
 ```
 
 ### Development Tools

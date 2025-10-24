@@ -1,0 +1,14 @@
+---
+# Defaults for oauth2-proxy role
+# User-configurable settings are in inventory.yaml
+
+# OAuth2 Proxy Helm chart configuration
+oauth2_proxy_chart_repo: https://oauth2-proxy.github.io/manifests
+oauth2_proxy_chart_version: ~7.12.0
+
+# OAuth2 Proxy cookie configuration
+oauth2_proxy_cookie_secret: changeme-cookie-secret
+oauth2_proxy_cookie_expire: 8h
+
+# OAuth2 Proxy UI customization
+oauth2_proxy_banner: Continue with WashU Key

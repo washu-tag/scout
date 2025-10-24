@@ -31,6 +31,9 @@
 - name: Install Postgres
   import_playbook: postgres.yaml
 
+- name: Install Auth
+  import_playbook: auth.yaml
+
 - name: Install Lake
   import_playbook: lake.yaml
 
@@ -49,5 +52,5 @@
 - name: Install Monitor
   import_playbook: monitor.yaml
 
-- name: Install Explorer
-  import_playbook: explorer.yaml
+- name: Install Launchpad
+  import_playbook: launchpad.yaml

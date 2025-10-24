@@ -20,29 +20,42 @@ hub:
       storageClassName: '{{ jupyter_hub_storage_class }}'
   config:
     Authenticator:
-      allowed_users: '{{ (jupyter_allowed_users | default([])) }}'
+      auto_login: true
     JupyterHub:
       subdomain_host: 'jupyter.{{ server_hostname }}'
-      authenticator_class: '{{ jupyter_auth_class | default("dummy") }}'
+      authenticator_class: 'oauthenticator.generic.GenericOAuthenticator'
+    GenericOAuthenticator:
+      login_service: 'Keycloak'
+      client_id: '{{ keycloak_jupyterhub_client_id }}'
+      client_secret: '{{ keycloak_jupyterhub_client_secret }}'
+      oauth_callback_url: 'https://jupyter.{{ server_hostname }}/hub/oauth_callback'
+      authorize_url: 'https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/auth'
+      token_url: 'https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/token'
+      userdata_url: 'https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/userinfo'
+      logout_redirect_url: 'https://auth.{{ server_hostname }}/oauth2/sign_out'
+      userdata_params:
+        state: 'state'
+      username_claim: 'preferred_username'
+      scope:
+        - openid
+        - microprofile-jwt
+      enable_auth_state: true
+      auth_state_groups_key: 'oauth_user.groups'
+      manage_groups: true
+      allowed_groups:
+        - 'jupyterhub-user'
+      admin_groups:
+        - 'jupyterhub-admin'
     Spawner:
       http_timeout: 120
-{% if jupyter_auth_class == 'dummy' %}
-    DummyAuthenticator:
-      password: '{{ jupyter_dummy_password }}'
-{% elif jupyter_auth_class == 'github' %}
-    GitHubOAuthenticator:
-      client_id: '{{ github_client_id }}'
-      client_secret: '{{ github_client_secret }}'
-      oauth_callback_url: 'https://jupyter.{{ server_hostname }}/hub/oauth_callback'
-      allowed_organizations:
-        - '{{ github_organization }}'
-      scope:
-        - read:org
-{% endif %}
 
 ingress:
   enabled: true
   ingressClassName: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: >
+      kube-system-oauth2-proxy-error@kubernetescrd,
+      kube-system-oauth2-proxy-auth@kubernetescrd
   hosts:
     - 'jupyter.{{ server_hostname }}'
     - '*.jupyter.{{ server_hostname }}'

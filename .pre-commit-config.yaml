@@ -48,3 +48,10 @@ repos:
         pass_filenames: false
         files: \.java$
         entry: bash -c 'cd tests && ./gradlew checkstyleMain checkstyleTest'
+      - id: checkstyle-keycloak
+        name: checkstyle (keycloak)
+        language: system
+        verbose: true
+        pass_filenames: false
+        files: \.java$
+        entry: bash -c 'cd keycloak/event-listener && ./gradlew clean checkstyleMain checkstyleTest'

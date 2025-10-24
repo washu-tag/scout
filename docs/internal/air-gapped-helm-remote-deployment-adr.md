@@ -37,7 +37,7 @@ Scout deployments support air-gapped Kubernetes clusters where worker nodes cann
 - k8s API: Accessible from staging node (permeable)
 - Harbor: Accessible from cluster nodes
 
-Scout uses 18 Helm charts: 12 public (cert-manager, Temporal, JupyterHub, Superset, Trino, MinIO, monitoring stack, Harbor) and 6 local (explorer, extractors, hive-metastore, PACS).
+Scout uses 18 Helm charts: 12 public (cert-manager, Temporal, JupyterHub, Superset, Trino, MinIO, monitoring stack, Harbor) and 6 local (launchpad, extractors, hive-metastore, PACS).
 
 ## Decision
 

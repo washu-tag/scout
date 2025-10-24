@@ -1,3 +1,0 @@
----
-- name: Deploy Explorer
-  ansible.builtin.import_tasks: deploy.yaml
