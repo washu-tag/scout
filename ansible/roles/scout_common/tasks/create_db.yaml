@@ -36,9 +36,10 @@
     pod: '{{ postgres_cluster_name }}-1'
     command:
       - /bin/sh
-      - -ceu
+      - -c
       - |
-        psql --no-psqlrc -v ON_ERROR_STOP=1 --dbname='{{ db_superuser_dbname }}' <<'SQL'
+        set -e
+        cat <<'SQL' | psql --no-psqlrc -v ON_ERROR_STOP=1 --dbname='{{ db_superuser_dbname }}'
         {{ db_init_sql_script }}
         SQL
 
