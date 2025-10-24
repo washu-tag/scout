@@ -8,7 +8,7 @@ envFrom:
       name: s3-env
 env:
   - name: TZ
-    value: 'US/Central'
+    value: '{{ hl7log_extractor_timezone }}'
 service:
   type: ClusterIP
   port: 8080
