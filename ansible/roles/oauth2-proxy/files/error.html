@@ -186,7 +186,7 @@
         <a href="https://washu-scout.readthedocs.io/en/latest/" class="link">Visit our documentation</a>
       </p>
       <p>
-        <a href="/" class="link">Return to Scout</a>
+        <a id="return-to-scout" href="/" class="link">Return to Scout</a>
       </p>
     {{ else }}
       <div class="status-code">{{.StatusCode}}</div>
@@ -229,6 +229,40 @@
       content.classList.toggle('show');
       icon.textContent = content.classList.contains('show') ? '▲' : '▼';
     }
+  </script>
+
+  <script>
+    // Update Return to Scout Link to use Launchpad root domain
+    (function() {
+      'use strict';
+
+      // Get root domain passed in from Footer variable (because oauth2-proxy templates are limited)
+      function getRootDomain() {
+        const footer = "{{.Footer}}";
+        console.debug("Footer content / root domain:", footer);
+        return footer;
+      }
+
+      // Update Return to Scout link
+      function updateReturnLink() {
+        const returnLink = document.getElementById("return-to-scout");
+        
+        if (!returnLink) {
+          console.error("Return to Scout link not found");
+          return false;
+        }
+
+        const rootDomain = getRootDomain();
+        const protocol = window.location.protocol;
+        const updatedHref = protocol + "//" + rootDomain + "/";
+
+        console.debug("Return to Scout link updated:", updatedHref);
+
+        returnLink.href = updatedHref;
+      }
+
+      updateReturnLink();
+    })();
   </script>
 </body>
 </html>

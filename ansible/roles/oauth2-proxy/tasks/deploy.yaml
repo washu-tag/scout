@@ -80,6 +80,7 @@
           backend_logout_url = "https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/logout?id_token_hint={id_token}&post_logout_redirect_uri=https://{{ server_hostname }}"
           banner = "{{ oauth2_proxy_banner }}"
           footer = "{{ server_hostname }}" # Hacky way to pass server hostname to sign_in template
+          upstreams = ["static://200"]
       ingress:
         enabled: true
         className: traefik
