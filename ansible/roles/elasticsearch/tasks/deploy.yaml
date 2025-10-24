@@ -73,7 +73,7 @@
                 spec:
                   accessModes:
                     - ReadWriteOnce
-                  storageClassName: '{{ elasticsearch_storage_class }}'
+                  storageClassName: '{{ use_custom_storage_classes | ternary(elasticsearch_storage_class, omit) }}'
                   resources:
                     requests:
                       storage: '{{ elasticsearch_storage_size }}'
