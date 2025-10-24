@@ -49,7 +49,7 @@ class TestJvmMemoryToK8s:
         # Float multipliers
         assert jvm_memory_to_k8s("2G", 0.5) == "1Gi"
         assert jvm_memory_to_k8s("8G", 1.5) == "12Gi"
-        assert jvm_memory_to_k8s("6G", 1.0/3.0) == "2Gi"
+        assert jvm_memory_to_k8s("6G", 1.0 / 3.0) == "2Gi"
         assert jvm_memory_to_k8s("512M", 4) == "2Gi"
         assert jvm_memory_to_k8s("1.5G", 1.5) == "2304Mi"
 
@@ -114,7 +114,7 @@ class TestJvmMemoryToK8s:
         assert jvm_memory_to_k8s(f"{third_of_1024}M", 3) == "1Gi"
 
         # Complex float arithmetic
-        assert jvm_memory_to_k8s("1.5G", 2.0/3.0) == "1Gi"
+        assert jvm_memory_to_k8s("1.5G", 2.0 / 3.0) == "1Gi"
 
 
 class TestMultiplyMemory:
