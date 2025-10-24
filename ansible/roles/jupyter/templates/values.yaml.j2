@@ -156,7 +156,7 @@ singleuser:
             SERVICE_PREFIX="$SERVICE_PREFIX/$SERVER_NAME"
           fi
 
-          HUB_BASE="http://proxy-public.{{ jupyter_namespace }}.svc.cluster.local"
+          HUB_BASE="https://$HUB_USERNAME.jupyter.{{ server_hostname }}"
           BASE="$HUB_BASE$SERVICE_PREFIX"
           export BASE
 
@@ -191,7 +191,6 @@ singleuser:
           value: |
             import os, time, urllib.request, urllib.error
             base = os.environ["BASE"]
-            nb   = os.environ.get("NB_PATH","notebook.ipynb")
             tok  = os.environ.get("JUPYTER_MCP_SERVICE_TOKEN","")
             hdrs = dict([("Authorization", "token " + tok)]) if tok else dict()
             def wait(url):
