@@ -37,76 +37,73 @@
       - --dbname=postgres
     stdin: '{{ db_init_sql_script }}'
 
-- name: Configure RDS database initialization settings
+- name: Initialize RDS database
   when: aws_deployment
-  ansible.builtin.set_fact:
-    db_init_sslmode: "{{ vars.get('db_sslmode', 'require') }}"
-    db_init_namespace: "{{ vars.get('db_init_namespace', 'db-init') }}"
-    db_init_psql_conn: "host={{ vars.get('db_host') }} port={{ vars.get('db_port', 5432) }} dbname=postgres user={{ vars.get('postgres_superuser', 'postgres') }} sslmode={{ vars.get('db_sslmode', 'require') }}"
-    db_init_job_name: "db-init-{{ (db_name | lower | regex_replace('[^a-z0-9-]', '-') | regex_replace('^-+', '') | regex_replace('-+$', '')) | default('db', true) }}-{{ lookup('pipe', 'date +%s') }}"
+  block:
+    - name: Configure RDS database initialization settings
+      ansible.builtin.set_fact:
+        db_init_sslmode: "{{ vars.get('db_sslmode', 'require') }}"
+        db_init_namespace: "{{ vars.get('db_init_namespace', 'db-init') }}"
+        db_init_psql_conn: "host={{ vars.get('db_host') }} port={{ vars.get('db_port', 5432) }} dbname=postgres user={{ vars.get('postgres_superuser', 'postgres') }} sslmode={{ vars.get('db_sslmode', 'require') }}"
+        db_init_job_name: "db-init-{{ (db_name | lower | regex_replace('[^a-z0-9-]', '-') | regex_replace('^-+', '') | regex_replace('-+$', '')) | default('db', true) }}-{{ lookup('pipe', 'date +%s') }}"
 
-- name: Ensure db_init namespace exists
-  when: aws_deployment
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Namespace
-      metadata:
-        name: '{{ db_init_namespace }}'
-
-- name: Submit RDS db_init job
-  when: aws_deployment
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: batch/v1
-      kind: Job
-      metadata:
-        name: '{{ db_init_job_name }}'
-        namespace: '{{ db_init_namespace }}'
-      spec:
-        ttlSecondsAfterFinished: 300
-        backoffLimit: 0
-        template:
+    - name: Ensure db_init namespace exists
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
           metadata:
-            labels:
-              job-name: '{{ db_init_job_name }}'
+            name: '{{ db_init_namespace }}'
+
+    - name: Submit RDS db_init job
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: '{{ db_init_job_name }}'
+            namespace: '{{ db_init_namespace }}'
           spec:
-            restartPolicy: Never
-            containers:
-              - name: psql
-                image: postgres:16
-                env:
-                  - name: PGPASSWORD
-                    value: '{{ postgres_superuser_password }}'
-                command:
-                  - sh
-                  - -lc
-                  - |
-                    set -e
-                    cat <<'SQL' | psql "{{ db_init_psql_conn }}"
-                    {{ db_init_sql_script }}
-                    SQL
+            ttlSecondsAfterFinished: 300
+            backoffLimit: 0
+            template:
+              metadata:
+                labels:
+                  job-name: '{{ db_init_job_name }}'
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: psql
+                    image: postgres:16
+                    env:
+                      - name: PGPASSWORD
+                        value: '{{ postgres_superuser_password }}'
+                    command:
+                      - sh
+                      - -lc
+                      - |
+                        set -e
+                        cat <<'SQL' | psql "{{ db_init_psql_conn }}"
+                        {{ db_init_sql_script }}
+                        SQL
 
-- name: Wait for RDS db_init job to complete
-  when: aws_deployment
-  kubernetes.core.k8s_info:
-    api_version: batch/v1
-    kind: Job
-    namespace: '{{ db_init_namespace }}'
-    name: '{{ db_init_job_name }}'
-    wait: true
-    wait_condition:
-      type: Complete
-      status: 'True'
-    wait_sleep: 2
-    wait_timeout: 300
-  register: _job_info
+    - name: Wait for RDS db_init job to complete
+      kubernetes.core.k8s_info:
+        api_version: batch/v1
+        kind: Job
+        namespace: '{{ db_init_namespace }}'
+        name: '{{ db_init_job_name }}'
+        wait: true
+        wait_condition:
+          type: Complete
+          status: 'True'
+        wait_sleep: 2
+        wait_timeout: 300
+      register: _job_info
 
-- name: Fail if RDS init failed
-  when:
-    - aws_deployment
-    - (_job_info.resources[0].status.failed | default(0) | int) > 0
-  ansible.builtin.fail:
-    msg: 'RDS init Job {{ db_init_job_name }} failed. Check pod logs.'
+    - name: Fail if RDS init failed
+      when: (_job_info.resources[0].status.failed | default(0) | int) > 0
+      ansible.builtin.fail:
+        msg: 'RDS init Job {{ db_init_job_name }} failed. Check pod logs.'
