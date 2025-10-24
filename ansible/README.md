@@ -273,9 +273,9 @@ postgres_dir: /scout/persistence/postgres
 
 **Resource allocations** (in `inventory.yaml`):
 ```yaml
-# Trino memory allocation
-trino_worker_memory_gb: 32
-trino_coordinator_memory_gb: 16
+# Trino memory allocation (JVM heap notation)
+trino_worker_max_heap: 16G
+trino_coordinator_max_heap: 8G
 
 # PostgreSQL resources
 postgres_resources:
@@ -344,6 +344,7 @@ memory: "{{ cassandra_max_heap | jvm_memory_to_k8s(2) }}"
 **Services using this filter:**
 - Cassandra (JVM heap → container memory)
 - Elasticsearch (JVM heap → container memory)
+- Trino (JVM heap → container memory)
 - HL7 Transformer (Spark memory → container memory)
 
 #### `multiply_memory`

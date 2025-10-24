@@ -373,18 +373,18 @@ elasticsearch_cpu_limit: 3
 
 Memory is computed automatically from heap size (requests = 1x heap, limits = 2x heap).
 
-#### Trino
+#### Trino (JVM-based)
 
 ```yaml
-trino_worker_memory_gb: 12        # Total pod memory
-trino_coordinator_memory_gb: 6    # Total pod memory
+trino_worker_max_heap: 8G
+trino_coordinator_max_heap: 4G
 trino_worker_cpu_request: 2
 trino_worker_cpu_limit: 6
 trino_coordinator_cpu_request: 1
 trino_coordinator_cpu_limit: 3
 ```
 
-JVM heap is computed automatically in by Trino as ~80% of memory.
+Memory is computed automatically from heap size (requests = 1x heap, limits = 2x heap).
 
 #### MinIO
 

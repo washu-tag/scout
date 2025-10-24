@@ -8,8 +8,8 @@ trino_helm_repo_url: https://trinodb.github.io/charts
 trino_helm_chart_name: trino
 
 # Memory
-trino_worker_memory_gb: 2 # Total pod memory for workers
-trino_coordinator_memory_gb: 1 # Total pod memory for coordinator
+trino_worker_max_heap: 2G # JVM heap size for workers
+trino_coordinator_max_heap: 1G # JVM heap size for coordinator
 
 # CPU (dev defaults - CI friendly)
 trino_worker_cpu_request: 250m
@@ -22,15 +22,15 @@ trino_coordinator_cpu_limit: 1
 trino_coordinator_resources:
   requests:
     cpu: '{{ trino_coordinator_cpu_request }}'
-    memory: '{{ trino_coordinator_memory_gb }}Gi'
+    memory: '{{ trino_coordinator_max_heap | jvm_memory_to_k8s }}'
   limits:
     cpu: '{{ trino_coordinator_cpu_limit }}'
-    memory: '{{ trino_coordinator_memory_gb }}Gi'
+    memory: '{{ trino_coordinator_max_heap | jvm_memory_to_k8s(2) }}'
 
 trino_worker_resources:
   requests:
     cpu: '{{ trino_worker_cpu_request }}'
-    memory: '{{ trino_worker_memory_gb }}Gi'
+    memory: '{{ trino_worker_max_heap | jvm_memory_to_k8s }}'
   limits:
     cpu: '{{ trino_worker_cpu_limit }}'
-    memory: '{{ trino_worker_memory_gb }}Gi'
+    memory: '{{ trino_worker_max_heap | jvm_memory_to_k8s(2) }}'
