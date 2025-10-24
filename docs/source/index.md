@@ -8,7 +8,7 @@ HL7 radiology reports are processed and ingested into a data lake where they are
 ## Quickstart
 
 ### Scout Launchpad
-After [authenticating](authentication.md) and being approved for access, your initial landing page is the Scout Launchpad. 
+After [authentication](authentication.md), your initial landing page is the Scout Launchpad. 
 From here, you can access all Scout services, including Scout Analytics (Superset), Scout Notebooks (JupyterHub), 
 and this documentation site.
 
