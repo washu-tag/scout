@@ -7,21 +7,21 @@ HL7 radiology reports are processed and ingested into a data lake where they are
 
 ## Quickstart
 
+### Scout Launchpad
+After [authenticating](authentication.md) and being approved for access, your initial landing page is the Scout Launchpad. 
+From here, you can access all Scout services, including Scout Analytics (Superset), Scout Notebooks (JupyterHub), 
+and this documentation site.
+
+![Scout Launchpad](images/ScoutLaunchpad.png)
+
+
 ### Scout Analytics
-Your initial landing page is the Scout Dashboard. It is designed to give you an overview of all report data. From here, you can
-analyze and explore the data within Scout Analytics, either 
+Selecting "Analytics" from the Launchpad will take you to Superset, the data visualization and exploration tool used by Scout. Your initial landing page is the Scout Dashboard. It is designed to give you an overview of all report data. From here, you can analyze and explore the data within Scout Analytics, either 
 [graphically](https://superset.apache.org/docs/using-superset/creating-your-first-dashboard) or via 
 [SQL Lab](https://incubator-superset.readthedocs.io/en/latest/sqllab.html) 
 (see the [Trino SQL documentation](https://trino.io/docs/current/language.html) for a general reference to the Trino SQL syntax and language support).
 
 ![Scout Dashboard](images/ScoutDashboard.png)
-
-
-### Scout Launchpad
-From Scout Analytics, click the "Scout" icon in the top left to navigate to the Scout Launchpad, where you can access other Scout 
-services, including Notebooks, this documentation, and the services for system administrators.
-
-![Scout Launchpad](images/ScoutLaunchpad.png)
 
 
 ### Scout Notebooks
@@ -56,5 +56,6 @@ services
 dataschema
 ingest
 tips
+authentication
 technical/index
 ```
