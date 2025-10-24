@@ -54,8 +54,7 @@ s3_loki_writer: loki-writer
 lake_bucket: lake
 scratch_bucket: scratch
 
-# AWS
-ebs_storage_class_name: ebs
+# Deployment Type
 deployment_type: onprem
 
 # Database

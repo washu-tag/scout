@@ -3,7 +3,7 @@
     db_connect_name: "{{ db_connect_name | default('postgres', true) }}"
     db_connect_user: "{{ db_connect_user | default('postgres', true) }}"
     db_connect_pass: '{{ db_connect_pass | default(postgres_superuser_password, true) }}'
-    db_connect_sslmode: "{{ vars.get('db_connect_sslmode', 'require') }}"
+    db_connect_sslmode: "{{ db_connect_sslmode | default('require', true) }}"
     maintenance_namespace: db-maintenance
 
 - name: Configure DB derived variables
