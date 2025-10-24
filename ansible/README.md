@@ -273,9 +273,14 @@ postgres_dir: /scout/persistence/postgres
 
 **Resource allocations** (in `inventory.yaml`):
 ```yaml
-# Trino memory allocation (JVM heap notation)
+# JVM-based services
+# Cassandra/Trino: requests = 1x heap, limits = 2x heap
+cassandra_max_heap: 12G
 trino_worker_max_heap: 16G
 trino_coordinator_max_heap: 8G
+
+# Elasticsearch: requests = 2x heap, limits = 4x heap (follows Elastic best practices)
+elasticsearch_max_heap: 3G  # Keep ≤ 26GB for compressed OOPs
 
 # PostgreSQL resources
 postgres_resources:
@@ -342,10 +347,10 @@ memory: "{{ cassandra_max_heap | jvm_memory_to_k8s(2) }}"
 - `"512M" | jvm_memory_to_k8s(2)` → `"1Gi"` (multiplies then converts)
 
 **Services using this filter:**
-- Cassandra (JVM heap → container memory)
-- Elasticsearch (JVM heap → container memory)
-- Trino (JVM heap → container memory)
-- HL7 Transformer (Spark memory → container memory)
+- Cassandra (JVM heap → container memory: 1x request, 2x limit)
+- Elasticsearch (JVM heap → container memory: 2x request, 4x limit)
+- Trino (JVM heap → container memory: 1x request, 2x limit)
+- HL7 Transformer (Spark memory → container memory: 1x request, 2x limit)
 
 #### `multiply_memory`
 

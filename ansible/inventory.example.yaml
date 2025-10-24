@@ -215,8 +215,9 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     # Elasticsearch
     #---------------------------------------------------------------------------
-    elasticsearch_heap_size: 6G
-    # Memory computed from heap_size (requests = 1x = 6Gi, limits = 2x = 12Gi)
+    elasticsearch_max_heap: 3G
+    # Memory computed from heap_size (requests = 2x = 6Gi, limits = 4x = 12Gi)
+    # Note: Heap should be ≤ 50% of pod memory, and ≤ 26GB for compressed OOPs
     # Override CPU if needed (defaults: 250m request, 2 limit):
     elasticsearch_cpu_request: 1
     elasticsearch_cpu_limit: 3

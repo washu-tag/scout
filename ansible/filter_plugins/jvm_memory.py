@@ -35,7 +35,7 @@ def jvm_memory_to_k8s(heap_size, multiplier=1):
     Examples:
         {{ cassandra_max_heap | jvm_memory_to_k8s }}         -> "2Gi"
         {{ cassandra_max_heap | jvm_memory_to_k8s(2) }}      -> "4Gi"
-        {{ elasticsearch_heap_size | jvm_memory_to_k8s }}    -> "1Gi"
+        {{ elasticsearch_max_heap | jvm_memory_to_k8s }}     -> "1Gi"
         {{ "512M" | jvm_memory_to_k8s }}                     -> "512Mi"
         {{ "512M" | jvm_memory_to_k8s(2) }}                  -> "1Gi" (1024Mi converted)
         {{ "1024K" | jvm_memory_to_k8s }}                    -> "1Mi" (converted up)

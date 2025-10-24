@@ -59,14 +59,14 @@
                   - name: elasticsearch
                     env:
                       - name: ES_JAVA_OPTS
-                        value: '-Xms{{ elasticsearch_heap_size }} -Xmx{{ elasticsearch_heap_size }}'
+                        value: '-Xms{{ elasticsearch_max_heap }} -Xmx{{ elasticsearch_max_heap }}'
                     resources:
                       requests:
                         cpu: '{{ elasticsearch_cpu_request }}'
-                        memory: '{{ elasticsearch_heap_size | jvm_memory_to_k8s }}'
+                        memory: '{{ elasticsearch_max_heap | jvm_memory_to_k8s(2) }}'
                       limits:
                         cpu: '{{ elasticsearch_cpu_limit }}'
-                        memory: '{{ elasticsearch_heap_size | jvm_memory_to_k8s(2) }}'
+                        memory: '{{ elasticsearch_max_heap | jvm_memory_to_k8s(4) }}'
             volumeClaimTemplates:
               - metadata:
                   name: elasticsearch-data

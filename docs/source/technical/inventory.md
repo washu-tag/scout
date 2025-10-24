@@ -366,12 +366,12 @@ Memory is computed automatically from heap size (requests = 1x heap, limits = 2x
 #### Elasticsearch (JVM-based)
 
 ```yaml
-elasticsearch_heap_size: 6G
+elasticsearch_max_heap: 3G
 elasticsearch_cpu_request: 1
 elasticsearch_cpu_limit: 3
 ```
 
-Memory is computed automatically from heap size (requests = 1x heap, limits = 2x heap).
+Memory is computed automatically from heap size (requests = 2x heap, limits = 4x heap to allow burst).
 
 #### Trino (JVM-based)
 
