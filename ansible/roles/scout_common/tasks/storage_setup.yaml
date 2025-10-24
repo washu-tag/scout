@@ -1,5 +1,23 @@
 ---
+- name: Add EBS storage class for AWS deployment
+  when: aws_deployment
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: ebs
+        annotations:
+          storageclass.kubernetes.io/is-default-class: 'true'
+      provisioner: ebs.csi.eks.amazonaws.com
+      volumeBindingMode: WaitForFirstConsumer
+      allowVolumeExpansion: true
+      parameters:
+        type: gp3
+
 - name: Add storage classes
+  when: not aws_deployment
   kubernetes.core.k8s:
     state: present
     definition:
@@ -12,6 +30,7 @@
   loop: '{{ storage_definitions }}'
 
 - name: Add persistent volumes
+  when: not aws_deployment
   kubernetes.core.k8s:
     state: present
     definition:
@@ -26,7 +45,7 @@
         accessModes:
           - ReadWriteOnce
         persistentVolumeReclaimPolicy: Retain
-        storageClassName: '{{ item.storage_class_name }}'
+        storageClassName: '{{ use_custom_storage_classes | ternary(item.storage_class_name, omit) }}'
         local: "{{ item.node_url is defined | ternary({'path': item.path}, omit) }}"
         nodeAffinity: >-
           {{ item.node_url is defined | ternary({

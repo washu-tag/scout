@@ -2,23 +2,6 @@
 # Kubernetes deployment tasks for PostgreSQL cluster
 # These tasks run on the server host (which has access to k3s_cluster inventory variables)
 
-- name: Initialize empty SQL statements list
-  ansible.builtin.set_fact:
-    postgres_init_sql: []
-
-- name: Add SQL statements from role templates
-  ansible.builtin.set_fact:
-    postgres_init_sql: '{{ postgres_init_sql + lookup("template", item) | from_yaml }}'
-  when: module_enabled not in vars or vars[module_enabled] | bool
-  vars:
-    module_name: "{{ item | basename | regex_replace('_init_sql\\.yaml$', '') }}"
-    module_enabled: "{{ module_name + '_enabled' }}"
-  loop: "{{ lookup('fileglob', role_path ~ '/templates/postgres_init/*_init_sql.yaml', wantlist=True) }}"
-  loop_control:
-    label: '{{ item | basename }}'
-  delegate_to: localhost
-  run_once: true
-
 - name: Deploy Postgres Operator
   ansible.builtin.include_role:
     name: scout_common
@@ -85,7 +68,7 @@
       spec:
         instances: 1
         storage:
-          storageClass: '{{ postgres_storage_class }}'
+          storageClass: '{{ use_custom_storage_classes | ternary(postgres_storage_class, omit) }}'
           size: 100Mi
         resources: '{{ postgres_resources }}'
         enableSuperuserAccess: true
@@ -93,13 +76,6 @@
           name: superuser-secret
         postgresql:
           parameters: '{{ postgres_parameters }}'
-        bootstrap:
-          initdb:
-            database: '{{ ingest_postgres_table_name }}'
-            owner: '{{ postgres_user }}'
-            secret:
-              name: postgres-user
-            postInitSQL: '{{ postgres_init_sql }}'
 
 - name: Expose metrics service for Prometheus
   kubernetes.core.k8s:

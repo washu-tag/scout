@@ -54,6 +54,9 @@ s3_loki_writer: loki-writer
 lake_bucket: lake
 scratch_bucket: scratch
 
+# Deployment Type
+deployment_type: onprem
+
 # Database
 postgres_cluster_name: postgresql-cluster
 
@@ -80,3 +83,9 @@ delta_lake_path: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefi
 s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
 hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
 server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
+aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"
+db_host: '{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}'
+db_host_ro: '{{ postgres_cluster_name }}-r.{{ postgres_cluster_namespace }}'
+db_port: 5432
+jdbc_url: 'jdbc:postgresql://{{ db_host }}:{{ db_port }}'
+use_custom_storage_classes: '{{ not aws_deployment }}'

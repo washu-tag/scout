@@ -1,0 +1,81 @@
+- name: Configure DB variables
+  ansible.builtin.set_fact:
+    db_connect_name: "{{ db_connect_name | default('postgres', true) }}"
+    db_connect_user: "{{ db_connect_user | default('postgres', true) }}"
+    db_connect_pass: '{{ db_connect_pass | default(postgres_superuser_password, true) }}'
+    db_connect_sslmode: "{{ db_connect_sslmode | default('require', true) }}"
+    maintenance_namespace: db-maintenance
+
+- name: Configure DB derived variables
+  ansible.builtin.set_fact:
+    psql_connection: 'host={{ db_host }} port={{ db_port }} dbname={{ db_connect_name }} user={{ db_connect_user }} sslmode={{ db_connect_sslmode }}'
+    psql_job_name: "psql-{{ (db_connect_name | lower | regex_replace('[^a-z0-9-]', '-') | regex_replace('^-+', '') | regex_replace('-+$', '')) | default('db', true) }}-{{ lookup('pipe', 'date +%s') }}"
+
+- name: Verify SQL script input
+  ansible.builtin.assert:
+    that:
+      - sql_script is defined
+      - sql_script is string
+      - (sql_script | trim | length) > 0
+    fail_msg: 'Provide sql_script as a non-empty string.'
+
+- name: Ensure db-maintenance namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: '{{ maintenance_namespace }}'
+
+- name: Submit PSQL job
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: '{{ psql_job_name }}'
+        namespace: '{{ maintenance_namespace }}'
+      spec:
+        ttlSecondsAfterFinished: 300
+        backoffLimit: 0
+        template:
+          metadata:
+            labels:
+              job-name: '{{ psql_job_name }}'
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: psql
+                image: postgres:16
+                env:
+                  - name: PGPASSWORD
+                    value: '{{ db_connect_pass }}'
+                command:
+                  - sh
+                  - -lc
+                  - |
+                    set -e
+                    cat <<'SQL' | psql --no-psqlrc -v ON_ERROR_STOP=1 "{{ psql_connection }}"
+                    {{ sql_script }}
+                    SQL
+
+- name: Wait for PSQL job to complete
+  kubernetes.core.k8s_info:
+    api_version: batch/v1
+    kind: Job
+    namespace: '{{ maintenance_namespace }}'
+    name: '{{ psql_job_name }}'
+    wait: true
+    wait_condition:
+      type: Complete
+      status: 'True'
+    wait_sleep: 2
+    wait_timeout: 300
+  register: _job_info
+
+- name: Fail if PSQL job failed
+  when: (_job_info.resources[0].status.failed | default(0) | int) > 0
+  ansible.builtin.fail:
+    msg: 'PSQL Job {{ psql_job_name }} failed. Check pod logs.'
