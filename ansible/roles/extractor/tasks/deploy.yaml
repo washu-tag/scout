@@ -30,7 +30,7 @@
       type: Opaque
       stringData:
         DB_HOST: '{{ db_host }}'
-        DB_PORT: '{{ db_port | string }}'
+        DB_PORT: '{{ db_port }}'
         DB_NAME: '{{ ingest_postgres_table_name }}'
         DB_USER: '{{ postgres_user }}'
         DB_PASSWORD: '{{ postgres_password }}'
