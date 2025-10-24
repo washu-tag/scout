@@ -6,10 +6,13 @@ all:
     # There are many other params you could set here to customize your situation.
     # See https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html#connecting-to-hosts-behavioral-inventory-parameters
     ansible_user: '<ssh username>'
-    ansible_become: true
     ansible_become_method: sudo
     ansible_become_user: root
     ansible_become_password: $(echo $ANSIBLE_BECOME_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    # Do *not* set this to true for all, or ansible will act as root on localhost and make things difficult
+    # Instead set ansible_become: true in the staging and k3s_cluster groups
+    # ansible_become: true
 
     # K3s kubeconfig path, modify if not using K3s
     # kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
@@ -54,6 +57,8 @@ staging:
       ansible_host: staging # Host name to use for ssh connection
       ansible_python_interpreter: /usr/bin/python3
   vars:
+    ansible_become: true
+
     # Staging-specific variables (only needed if use_staging_node: true)
     # The staging node runs a separate k3s cluster from the main cluster
     staging_k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -109,6 +114,9 @@ k3s_cluster:
     #
     # To override versions in group_vars/all/versions.yaml, you need to pass the
     # variable to ansible with -e.
+
+    # Set this to execute ansible commands as root
+    ansible_become: true
 
     # Namespaces
     # Default namespaces are defined in roles/scout_common/defaults/main.yaml
@@ -291,7 +299,9 @@ k3s_cluster:
     # Resources
     jupyter_spark_memory: 8G
     # Memory computed from spark_memory (guarantee/requests = 1x = 8Gi, limit = 2x = 16Gi)
-    # Override CPU if needed (defaults: 250m request, 1 limit):
+    # Override CPU if needed (defaults: 0.25 request, 1 limit)
+    # Note: JupyterHub Helm chart 4.3.x requires numeric values (not strings like "250m")
+    # Use fractional cores (0.25 = 250 millicores) or whole numbers
     jupyter_singleuser_cpu_request: 2
     jupyter_singleuser_cpu_limit: 8
     # Override memory for non-Spark workloads (pandas, numpy, data loading, etc.)
