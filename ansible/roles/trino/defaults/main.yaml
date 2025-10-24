@@ -7,9 +7,17 @@ trino_helm_repo_name: trino
 trino_helm_repo_url: https://trinodb.github.io/charts
 trino_helm_chart_name: trino
 
+# Resource sizing - users should override these in inventory
+# Worker count
+trino_worker_count: 2 # Number of worker replicas
+
 # Memory
 trino_worker_max_heap: 2G # JVM heap size for workers
 trino_coordinator_max_heap: 1G # JVM heap size for coordinator
+
+# Query memory allocation (Trino recommendation: 30% of heap)
+# Per https://trino.io/docs/current/admin/properties-resource-management.html
+trino_per_node_query_memory_fraction: 0.3 # Fraction of heap allocated to query.max-memory-per-node
 
 # CPU (dev defaults - CI friendly)
 trino_worker_cpu_request: 250m

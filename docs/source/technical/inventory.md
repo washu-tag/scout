@@ -376,15 +376,24 @@ Memory is computed automatically from heap size (requests = 2x heap, limits = 4x
 #### Trino (JVM-based)
 
 ```yaml
+trino_worker_count: 2  # Number of worker replicas
 trino_worker_max_heap: 8G
 trino_coordinator_max_heap: 4G
 trino_worker_cpu_request: 2
 trino_worker_cpu_limit: 6
 trino_coordinator_cpu_request: 1
 trino_coordinator_cpu_limit: 3
+# Optional: Override query memory allocation (default 0.3 = 30% of heap)
+# trino_per_node_query_memory_fraction: 0.3
 ```
 
 Memory is computed automatically from heap size (requests = 1x heap, limits = 2x heap).
+
+**Query Memory Limits:**
+- `query.max-memory-per-node` is set to `heap_size × trino_per_node_query_memory_fraction` (default 30%)
+- `query.max-memory` (cluster-wide) is calculated as `worker_count × worker_heap × trino_per_node_query_memory_fraction`
+- These limits scale automatically with worker count and heap size changes
+- Only override `trino_per_node_query_memory_fraction` if you understand [Trino's memory management](https://trino.io/docs/current/admin/properties-resource-management.html)
 
 #### MinIO
 

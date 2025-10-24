@@ -362,6 +362,7 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     # Trino
     #---------------------------------------------------------------------------
+    trino_worker_count: 2 # Number of worker replicas
     trino_worker_max_heap: 12G
     trino_coordinator_max_heap: 6G
     # Override CPU if needed (defaults: 250m request, 2/1 limit for worker/coordinator):
@@ -369,6 +370,8 @@ k3s_cluster:
     trino_worker_cpu_limit: 6
     trino_coordinator_cpu_request: 1
     trino_coordinator_cpu_limit: 3
+    # Override query memory allocation if needed (default: 0.3 = 30% of heap per Trino docs)
+    # trino_per_node_query_memory_fraction: 0.3
 
     #---------------------------------------------------------------------------
     # Extractor
