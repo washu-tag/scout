@@ -1,4 +1,10 @@
-# [Reference the ticket you are addressing and provide a succinct and descriptive title for the pull request, e.g., "SCOUT-12 Improve caching mechanism for API calls"]
+## Description
+
+### Product
+[Provide a summary explanation of your changes from a product/user perspective. More details should be found in your updates to the user docs.]
+
+### Technical
+[Provide a summary explanation of your changes from a technical perspective. More details should be found in your updates to the technical docs.]
 
 ## Type of change
 - [ ] Work behind a feature flag
@@ -9,17 +15,10 @@
 - [ ] Documentation update
 - [ ] Test update
 
-If this pull request is for work that is behind a feature flag, or for documentation or test updates, most of the details below are not required; The level of attention to each is left to the discretion of the developer. 
-
+<!-- 
+If this pull request is for work that is behind a feature flag, or for documentation or test updates, most of the details below are not required; The level of attention to each is left to the discretion of the developer.
 For all other change types, the developer should attempt to provide as much detail as is reasonable.
-
-## Description
-
-### Product
-[Provide a summary explanation of your changes from a product/user perspective. More details should be found in your updates to the user docs.]
-
-### Technical
-[Provide a summary explanation of your changes from a technical perspective. More details should be found in your updates to the technical docs.]
+-->
 
 ## Impact
 
@@ -47,9 +46,9 @@ For all other change types, the developer should attempt to provide as much deta
 [Any additional information or direction for reviewers.]
 
 ## Checklist
-- [ ] My code adheres to the coding and style guidelines of the project.
-- [ ] I have commented my code, particularly in hard-to-understand areas.
-- [ ] I have added or updated user documentation, if appropriate.
-- [ ] I have added or updated technical documentation, including an architectural decision record, if appropriate.
-- [ ] I have added unit tests, unless this is a test code PR.
-- [ ] I have added end-to-end tests, unless this is a documentation-only PR.
+- [ ] My code adheres to the coding and style guidelines of the project (and I've run `pre-commit run --all-files`)
+- [ ] I have commented my code, particularly in hard-to-understand areas
+- [ ] I have added or updated user documentation, if appropriate
+- [ ] I have added or updated technical documentation, including an architectural decision record, if appropriate
+- [ ] I have added unit tests, if appropriate
+- [ ] I have added end-to-end tests, if appropriate
