@@ -5,11 +5,11 @@
 - name: Initialize extractor database
   ansible.builtin.include_role:
     name: scout_common
-    tasks_from: create_db
+    tasks_from: create_db_with_owner
   vars:
     db_name: '{{ ingest_postgres_table_name }}'
-    db_user: '{{ postgres_user }}'
-    db_pass: '{{ postgres_password }}'
+    db_owner: '{{ postgres_user }}'
+    db_owner_pass: '{{ postgres_password }}'
 
 - name: Create namespace
   kubernetes.core.k8s:
