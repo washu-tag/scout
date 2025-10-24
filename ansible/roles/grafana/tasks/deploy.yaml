@@ -32,6 +32,8 @@
 
 - name: Configure and install Grafana
   delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
   block:
     - name: Find all Grafana dashboards
       ansible.builtin.find:

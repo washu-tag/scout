@@ -53,9 +53,11 @@ jupyter_hub_resources:
     memory: 512M
 
 # Single-user pod resources
-# Memory is computed from jupyter_spark_memory by default (using jvm_memory_to_k8s filter)
+# Memory defaults to jupyter_spark_memory (JupyterHub format: K, M, G, T)
 # Override jupyter_singleuser_memory_* to set explicit values for non-Spark workloads
-jupyter_singleuser_cpu_request: 250m
+# Note: JupyterHub Helm chart 4.3.x requires numeric values (not strings like "250m")
+# Use fractional cores (0.25 = 250 millicores) or whole numbers
+jupyter_singleuser_cpu_request: 0.25
 jupyter_singleuser_cpu_limit: 1
-jupyter_singleuser_memory_request: '' # Default: computed from jupyter_spark_memory
-jupyter_singleuser_memory_limit: '' # Default: computed from jupyter_spark_memory * 2
+jupyter_singleuser_memory_request: '' # Default: jupyter_spark_memory
+jupyter_singleuser_memory_limit: '' # Default: jupyter_spark_memory * 2

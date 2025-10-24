@@ -101,8 +101,8 @@ singleuser:
     guarantee: {{ jupyter_singleuser_cpu_request }}
     limit: {{ jupyter_singleuser_cpu_limit }}
   memory:
-    guarantee: '{{ jupyter_singleuser_memory_request if jupyter_singleuser_memory_request else (jupyter_spark_memory | jvm_memory_to_k8s) }}'
-    limit: '{{ jupyter_singleuser_memory_limit if jupyter_singleuser_memory_limit else (jupyter_spark_memory | jvm_memory_to_k8s(2)) }}'
+    guarantee: '{{ jupyter_singleuser_memory_request if jupyter_singleuser_memory_request else jupyter_spark_memory }}'
+    limit: '{{ jupyter_singleuser_memory_limit if jupyter_singleuser_memory_limit else (jupyter_spark_memory | multiply_memory(2)) }}'
   extraResource: {{ jupyter_singleuser_extra_resource | default({}) | to_json }}
   storage:
     type: static
@@ -111,11 +111,13 @@ singleuser:
       subPath: '{username}'
     capacity: 10Gi
     extraVolumes:
-      - name: spark-defaults
+      spark-defaults:
+        name: spark-defaults
         configMap:
           name: spark-defaults
     extraVolumeMounts:
-      - name: spark-defaults
+      spark-defaults:
+        name: spark-defaults
         mountPath: /usr/local/spark/conf/spark-defaults.conf
         subPath: spark-defaults.conf
   networkPolicy:

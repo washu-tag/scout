@@ -123,7 +123,7 @@ all:
 
 **Key variables:**
 - `ansible_user`: SSH username for connecting to nodes
-- `ansible_become`: Enable privilege escalation (typically `true`)
+- `ansible_become`: Enable privilege escalation. Note: This should _not_ be set to `true` when running air-gapped installs as a non-privileged user on a remote host.
 - `ansible_become_method`: How to escalate privileges (typically `sudo`)
 - `ansible_become_password`: Encrypted sudo password
 
@@ -366,25 +366,34 @@ Memory is computed automatically from heap size (requests = 1x heap, limits = 2x
 #### Elasticsearch (JVM-based)
 
 ```yaml
-elasticsearch_heap_size: 6G
+elasticsearch_max_heap: 3G
 elasticsearch_cpu_request: 1
 elasticsearch_cpu_limit: 3
 ```
 
-Memory is computed automatically from heap size (requests = 1x heap, limits = 2x heap).
+Memory is computed automatically from heap size (requests = 2x heap, limits = 4x heap to allow burst).
 
-#### Trino
+#### Trino (JVM-based)
 
 ```yaml
-trino_worker_memory_gb: 12        # Total pod memory
-trino_coordinator_memory_gb: 6    # Total pod memory
+trino_worker_count: 2  # Number of worker replicas
+trino_worker_max_heap: 8G
+trino_coordinator_max_heap: 4G
 trino_worker_cpu_request: 2
 trino_worker_cpu_limit: 6
 trino_coordinator_cpu_request: 1
 trino_coordinator_cpu_limit: 3
+# Optional: Override query memory allocation (default 0.3 = 30% of heap)
+# trino_per_node_query_memory_fraction: 0.3
 ```
 
-JVM heap is computed automatically in by Trino as ~80% of memory.
+Memory is computed automatically from heap size (requests = 1x heap, limits = 2x heap).
+
+**Query Memory Limits:**
+- `query.max-memory-per-node` is set to `heap_size × trino_per_node_query_memory_fraction` (default 30%)
+- `query.max-memory` (cluster-wide) is calculated as `worker_count × worker_heap × trino_per_node_query_memory_fraction`
+- These limits scale automatically with worker count and heap size changes
+- Only override `trino_per_node_query_memory_fraction` if you understand [Trino's memory management](https://trino.io/docs/current/admin/properties-resource-management.html)
 
 #### MinIO
 
@@ -402,16 +411,20 @@ minio_resources:
 
 ```yaml
 # Spark memory for notebook containers
+# Note: Use JupyterHub format (K, M, G, T) not Kubernetes format (Ki, Mi, Gi, Ti)
 jupyter_spark_memory: 8G
 
 # CPU resources
+# Note: JupyterHub Helm chart 4.3.x requires numeric values (not strings like "250m")
+# Use fractional cores (0.25 = 250 millicores) or whole numbers
 jupyter_singleuser_cpu_request: 2
 jupyter_singleuser_cpu_limit: 8
 
 # Optional: Override memory for non-Spark workloads
 # By default, memory is computed from spark_memory (1x request, 2x limit)
-# jupyter_singleuser_memory_request: 16Gi
-# jupyter_singleuser_memory_limit: 32Gi
+# Note: JupyterHub requires decimal suffixes (K, M, G, T), not binary (Ki, Mi, Gi, Ti)
+# jupyter_singleuser_memory_request: 16G
+# jupyter_singleuser_memory_limit: 32G
 
 # Hub resources
 jupyter_hub_resources:

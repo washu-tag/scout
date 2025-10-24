@@ -52,5 +52,5 @@
     helm_chart_namespace: '{{ jupyter_namespace }}'
     helm_repo_name: '{{ jupyter_helm_repo_name }}'
     helm_repo_url: '{{ jupyter_helm_repo_url }}'
-    helm_chart_timeout: 10m
+    helm_chart_timeout: 15m
     helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

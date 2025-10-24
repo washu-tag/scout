@@ -1,15 +1,35 @@
-# Coordinator sizing - JVM heap at 80% of pod memory
+# Server configuration (cluster-wide settings)
+server:
+  workers: {{ trino_worker_count }}
+  config:
+    query:
+      # Cluster-wide max memory = workers × worker_heap × per_node_fraction
+      maxMemory: "{{ trino_worker_max_heap | multiply_memory(trino_worker_count * trino_per_node_query_memory_fraction) }}B"
+
+# Coordinator configuration
+# JVM heap = trino_coordinator_max_heap, pod memory limit = 2x heap for off-heap overhead
 coordinator:
   jvm:
-    maxHeapSize: '{{ (trino_coordinator_memory_gb * 0.8) | round | int }}G'
+    maxHeapSize: {{ trino_coordinator_max_heap }}
+  config:
+    memory:
+      heapHeadroomPerNode: "" # Per https://trino.io/docs/current/admin/properties-resource-management.html#memory-heap-headroom-per-node defaults to 30% of maxHeapSize
+    query:
+      maxMemoryPerNode: "{{ trino_coordinator_max_heap | multiply_memory(trino_per_node_query_memory_fraction) }}B"
   resources: {{ trino_coordinator_resources | to_json }}
   annotations:
     prometheus.io/trino_scrape: 'true'
 
-# Worker sizing - JVM heap at 80% of pod memory
+# Worker configuration
+# JVM heap = trino_worker_max_heap, pod memory limit = 2x heap for off-heap overhead
 worker:
   jvm:
-    maxHeapSize: '{{ (trino_worker_memory_gb * 0.8) | round | int }}G'
+    maxHeapSize: {{ trino_worker_max_heap }}
+  config:
+    memory:
+      heapHeadroomPerNode: ""
+    query:
+      maxMemoryPerNode: "{{ trino_worker_max_heap | multiply_memory(trino_per_node_query_memory_fraction) }}B"
   resources: {{ trino_worker_resources | to_json }}
   annotations:
     prometheus.io/trino_scrape: 'true'
