@@ -123,7 +123,7 @@ all:
 
 **Key variables:**
 - `ansible_user`: SSH username for connecting to nodes
-- `ansible_become`: Enable privilege escalation (typically `true`)
+- `ansible_become`: Enable privilege escalation. Note: This should _not_ be set to `true` when running air-gapped installs as a non-privileged user on a remote host.
 - `ansible_become_method`: How to escalate privileges (typically `sudo`)
 - `ansible_become_password`: Encrypted sudo password
 
@@ -405,6 +405,8 @@ minio_resources:
 jupyter_spark_memory: 8G
 
 # CPU resources
+# Note: JupyterHub Helm chart 4.3.x requires numeric values (not strings like "250m")
+# Use fractional cores (0.25 = 250 millicores) or whole numbers
 jupyter_singleuser_cpu_request: 2
 jupyter_singleuser_cpu_limit: 8
 

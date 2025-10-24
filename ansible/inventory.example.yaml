@@ -299,7 +299,9 @@ k3s_cluster:
     # Resources
     jupyter_spark_memory: 8G
     # Memory computed from spark_memory (guarantee/requests = 1x = 8Gi, limit = 2x = 16Gi)
-    # Override CPU if needed (defaults: 250m request, 1 limit):
+    # Override CPU if needed (defaults: 0.25 request, 1 limit)
+    # Note: JupyterHub Helm chart 4.3.x requires numeric values (not strings like "250m")
+    # Use fractional cores (0.25 = 250 millicores) or whole numbers
     jupyter_singleuser_cpu_request: 2
     jupyter_singleuser_cpu_limit: 8
     # Override memory for non-Spark workloads (pandas, numpy, data loading, etc.)
