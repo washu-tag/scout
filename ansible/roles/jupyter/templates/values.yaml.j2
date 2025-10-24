@@ -85,8 +85,8 @@ singleuser:
         }
 
   cpu:
-    guarantee: "{{ jupyter_singleuser_cpu_request }}"
-    limit: "{{ jupyter_singleuser_cpu_limit }}"
+    guarantee: {{ jupyter_singleuser_cpu_request }}
+    limit: {{ jupyter_singleuser_cpu_limit }}
   memory:
     guarantee: '{{ jupyter_singleuser_memory_request if jupyter_singleuser_memory_request else (jupyter_spark_memory | jvm_memory_to_k8s) }}'
     limit: '{{ jupyter_singleuser_memory_limit if jupyter_singleuser_memory_limit else (jupyter_spark_memory | jvm_memory_to_k8s(2)) }}'
