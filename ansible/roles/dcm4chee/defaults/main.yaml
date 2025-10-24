@@ -8,19 +8,19 @@ dcm4chee_dicom_port: 11112
 # Storage naming
 dcm4chee_name: dcm4chee
 dcm4chee_wildfly_name: dcm4chee-wildfly
-dcm4chee_wildfly_storage_class: '{{ dcm4chee_wildfly_name ~ "-storage" }}'
+dcm4chee_wildfly_storage_class: '{{ dcm4chee_wildfly_name }}-storage'
 dcm4chee_wildfly_storage_size: 10Gi
 dcm4chee_storage_name: dcm4chee-storage
-dcm4chee_storage_storage_class: '{{ dcm4chee_storage_name ~ "-storage" }}'
+dcm4chee_storage_storage_class: '{{ dcm4chee_storage_name }}-storage'
 dcm4chee_storage_storage_size: 10Gi
 dcm4chee_db_name: dcm4chee-db
-dcm4chee_db_storage_class: '{{ dcm4chee_db_name ~ "-storage" }}'
+dcm4chee_db_storage_class: '{{ dcm4chee_db_name }}-storage'
 dcm4chee_db_storage_size: 10Gi
 dcm4chee_openldap_name: dcm4chee-openldap
-dcm4chee_openldap_storage_class: '{{ dcm4chee_openldap_name ~ "-storage" }}'
+dcm4chee_openldap_storage_class: '{{ dcm4chee_openldap_name }}-storage'
 dcm4chee_openldap_storage_size: 10Gi
 dcm4chee_slapd_name: dcm4chee-slapd
-dcm4chee_slapd_storage_class: '{{ dcm4chee_slapd_name ~ "-storage" }}'
+dcm4chee_slapd_storage_class: '{{ dcm4chee_slapd_name }}-storage'
 dcm4chee_slapd_storage_size: 10Gi
 
 # Storage definitions for persistent volumes
