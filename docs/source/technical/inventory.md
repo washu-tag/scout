@@ -732,6 +732,35 @@ Scout uses Ansible's variable precedence system. Understanding this helps you kn
   ansible-playbook -e "k3s_version=v1.30.0+k3s1" playbooks/k3s.yaml
   ```
 
+### Testing Upgrades
+
+**Always test version upgrades in your staging environment before applying them to production.** This practice minimizes the risk of unexpected issues and allows you to validate compatibility before impacting production workloads.
+
+**Recommended upgrade workflow:**
+
+1. **Test in staging:** Use the `-e` flag to override versions in your staging environment
+   ```bash
+   # Example: Testing k3s upgrade
+   ansible-playbook -i inventory.staging.yaml -e "k3s_version=v1.35.0+k3s1" playbooks/k3s.yaml
+
+   # Example: Testing multiple component upgrades
+   ansible-playbook -i inventory.staging.yaml \
+     -e "k3s_version=v1.35.0+k3s1" \
+     -e "temporal_version=0.68.0" \
+     playbooks/main.yaml
+   ```
+
+2. **Validate staging deployment:** Verify that all services start correctly, run integration tests, and check for compatibility issues
+
+3. **Update versions centrally:** Once validated, update `group_vars/all/versions.yaml` to apply the new versions to all environments
+
+4. **Deploy to production:** Run the standard deployment without version overrides (uses versions from `group_vars/all/versions.yaml`)
+   ```bash
+   ansible-playbook -i inventory.yaml playbooks/k3s.yaml
+   ```
+
+This approach ensures that version changes are thoroughly tested before they reach production, reducing the likelihood of failed upgrades or service disruptions.
+
 ## Validating Your Inventory
 
 ### Check Configuration Loading
