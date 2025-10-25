@@ -116,10 +116,14 @@ singleuser:
                 kubernetes.io/metadata.name: '{{ minio_tenant_namespace }}'
         ports:
           - port: 9000
-      # Allow access to Hive Metastore for metadata queries
+      # Allow access to Hive Metastore (readonly) for metadata queries
+      # Only allow access to readonly metastore, not write metastore
       - to:
           - namespaceSelector:
               matchLabels:
                 kubernetes.io/metadata.name: '{{ hive_namespace }}'
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/instance: hive-metastore-readonly
         ports:
           - port: 9083

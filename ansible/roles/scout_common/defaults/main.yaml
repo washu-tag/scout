@@ -63,7 +63,12 @@ postgres_cluster_name: postgresql-cluster
 # Usernames (passwords defined in inventory)
 postgres_user: scout
 hive_postgres_user: hive
+hive_readonly_postgres_user: hive_readonly
 superset_postgres_user: superset
+
+# Database names
+hive_database_name: hive
+superset_database_name: superset
 
 # Table names
 report_delta_table_name: reports
@@ -82,6 +87,7 @@ delta_lake_path: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefi
 # Computed values (DO NOT CHANGE)
 s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
 hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
+hive_metastore_endpoint_readonly: 'thrift://hive-metastore-readonly.{{ hive_namespace }}:9083'
 server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
 aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"
 db_host: '{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}'

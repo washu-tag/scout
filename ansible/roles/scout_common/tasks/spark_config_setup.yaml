@@ -1,6 +1,12 @@
 ---
 # Create Spark configuration ConfigMap
 # This is used by JupyterHub and other Spark-enabled services
+#
+# Parameters:
+#   spark_hive_metastore_uri: Which Hive metastore to connect to
+#     - Pass hive_metastore_endpoint for write access (HL7 transformer, extractors)
+#     - Pass hive_metastore_endpoint_readonly for readonly access (Jupyter)
+#     - Defaults to hive_metastore_endpoint (write) for backward compatibility
 
 - name: Create Spark ConfigMap
   kubernetes.core.k8s:
@@ -24,7 +30,7 @@
           spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog
           spark.hadoop.fs.s3a.path.style.access true
           spark.hadoop.fs.s3a.aws.credentials.provider org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
-          spark.hadoop.hive.metastore.uris {{ hive_metastore_endpoint }}
+          spark.hadoop.hive.metastore.uris {{ spark_hive_metastore_uri | default(hive_metastore_endpoint) }}
           spark.sql.warehouse.dir {{ delta_lake_path }}
           spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
           spark.executor.memory {{ spark_memory | default("1G") }}
