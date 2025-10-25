@@ -1,0 +1,35 @@
+---
+# Create readonly PostgreSQL user for Hive Metastore
+# This user has SELECT-only access to metadata tables
+# Delta Lake uses its own transaction log, so no lock table access needed
+
+- name: Check if readonly user exists
+  kubernetes.core.k8s_exec:
+    namespace: '{{ postgres_cluster_namespace }}'
+    pod: '{{ postgres_cluster_name }}-1'
+    command: >
+      psql -U postgres -d {{ hive_database_name }} -tAc
+      "SELECT 1 FROM pg_roles WHERE rolname='{{ hive_readonly_postgres_user }}'"
+  register: readonly_user_exists
+  changed_when: false
+  failed_when: false
+
+- name: Create readonly PostgreSQL user
+  kubernetes.core.k8s_exec:
+    namespace: '{{ postgres_cluster_namespace }}'
+    pod: '{{ postgres_cluster_name }}-1'
+    command:
+      - psql
+      - -U
+      - postgres
+      - -d
+      - '{{ hive_database_name }}'
+      - -c
+      - |
+        CREATE USER {{ hive_readonly_postgres_user }} WITH PASSWORD '{{ hive_readonly_postgres_password }}';
+        GRANT CONNECT ON DATABASE {{ hive_database_name }} TO {{ hive_readonly_postgres_user }};
+        GRANT USAGE ON SCHEMA public TO {{ hive_readonly_postgres_user }};
+        GRANT SELECT ON ALL TABLES IN SCHEMA public TO {{ hive_readonly_postgres_user }};
+        GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO {{ hive_readonly_postgres_user }};
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO {{ hive_readonly_postgres_user }};
+  when: readonly_user_exists.stdout != "1"
