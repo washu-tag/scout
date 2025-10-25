@@ -25,5 +25,6 @@
       GRANT USAGE ON SCHEMA public TO {{ hive_readonly_postgres_user }};
       GRANT SELECT ON ALL TABLES IN SCHEMA public TO {{ hive_readonly_postgres_user }};
       GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO {{ hive_readonly_postgres_user }};
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO {{ hive_readonly_postgres_user }};"
+      ALTER DEFAULT PRIVILEGES FOR ROLE {{ hive_postgres_user }} IN SCHEMA public GRANT SELECT ON TABLES TO {{ hive_readonly_postgres_user }};
+      ALTER DEFAULT PRIVILEGES FOR ROLE {{ hive_postgres_user }} IN SCHEMA public GRANT SELECT ON SEQUENCES TO {{ hive_readonly_postgres_user }};"
   when: readonly_user_exists.stdout != "1"
