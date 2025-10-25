@@ -18,18 +18,12 @@
   kubernetes.core.k8s_exec:
     namespace: '{{ postgres_cluster_namespace }}'
     pod: '{{ postgres_cluster_name }}-1'
-    command:
-      - psql
-      - -U
-      - postgres
-      - -d
-      - '{{ hive_database_name }}'
-      - -c
-      - |
-        CREATE USER {{ hive_readonly_postgres_user }} WITH PASSWORD '{{ hive_readonly_postgres_password }}';
-        GRANT CONNECT ON DATABASE {{ hive_database_name }} TO {{ hive_readonly_postgres_user }};
-        GRANT USAGE ON SCHEMA public TO {{ hive_readonly_postgres_user }};
-        GRANT SELECT ON ALL TABLES IN SCHEMA public TO {{ hive_readonly_postgres_user }};
-        GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO {{ hive_readonly_postgres_user }};
-        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO {{ hive_readonly_postgres_user }};
+    command: >-
+      psql -U postgres -d {{ hive_database_name }} -c
+      "CREATE USER {{ hive_readonly_postgres_user }} WITH PASSWORD '{{ hive_readonly_postgres_password }}';
+      GRANT CONNECT ON DATABASE {{ hive_database_name }} TO {{ hive_readonly_postgres_user }};
+      GRANT USAGE ON SCHEMA public TO {{ hive_readonly_postgres_user }};
+      GRANT SELECT ON ALL TABLES IN SCHEMA public TO {{ hive_readonly_postgres_user }};
+      GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO {{ hive_readonly_postgres_user }};
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO {{ hive_readonly_postgres_user }};"
   when: readonly_user_exists.stdout != "1"
