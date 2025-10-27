@@ -1,0 +1,82 @@
+prometheus:
+  enabled: false
+grafana:
+  enabled: false
+cassandra:
+  enabled: false
+elasticsearch:
+  enabled: false
+  external: true
+  version: 'v7' # All ES versions (7/8/9) use v7 template format
+  scheme: 'http' # TLS disabled on Elasticsearch for simplicity
+  host: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-http.{{ elasticsearch_namespace }}'
+  port: 9200
+  username: 'elastic'
+  password: '{{ elasticsearch_password }}'
+  visibilityIndex: 'temporal_visibility_v1'
+  logLevel: 'error'
+server:
+  replicaCount: '{{ temporal_server_replica_count | default(1) }}'
+  resources: {{ temporal_resources }}
+  internalFrontend:
+    enabled: true
+  config:
+    namespaces:
+      create: true
+    persistence:
+      default:
+        driver: 'cassandra'
+        cassandra:
+          hosts:
+            [
+              '{{ cassandra_cluster_name | default("cassandra-cluster") }}-{{ cassandra_datacenter_name | default("dc1") }}-service.{{ cassandra_namespace }}',
+            ]
+          port: 9042
+          keyspace: temporal
+          existingSecret: '{{ cassandra_cluster_name | default("cassandra-cluster") }}-superuser'
+          replicationFactor: 1
+          consistency:
+            default:
+              consistency: 'local_quorum'
+              serialConsistency: 'local_serial'
+{% if temporal_oidc_enabled %}
+    authorization:
+      jwtKeyProvider:
+        keySourceURIs:
+          - '{{ keycloak_oidc_certs_url }}'
+        refreshInterval: 1m
+      permissionsClaimName: groups
+      authorizer: default
+      claimMapper: default
+{% endif %}
+  env:
+    - name: ELASTICSEARCH_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-elastic-user'
+          key: elastic
+web:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts:
+      - 'temporal.{{ server_hostname }}'
+{% if temporal_oidc_enabled %}
+    annotations:
+      traefik.ingress.kubernetes.io/router.middlewares: >
+        kube-system-oauth2-proxy-error@kubernetescrd,
+        kube-system-oauth2-proxy-auth@kubernetescrd
+  additionalEnv:
+    - name: TEMPORAL_AUTH_ENABLED
+      value: 'true'
+    - name: TEMPORAL_AUTH_PROVIDER_URL
+      value: '{{ keycloak_realm_url }}'
+    - name: TEMPORAL_AUTH_CLIENT_ID
+      value: '{{ keycloak_temporal_client_id }}'
+    - name: TEMPORAL_AUTH_CLIENT_SECRET
+      value: '{{ keycloak_temporal_client_secret }}'
+    - name: TEMPORAL_AUTH_CALLBACK_URL
+      value: 'https://temporal.{{ server_hostname }}/auth/sso/callback'
+    - name: TEMPORAL_AUTH_SCOPES
+      value: openid microprofile-jwt
+{% endif %}
