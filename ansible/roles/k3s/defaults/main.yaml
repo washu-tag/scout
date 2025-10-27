@@ -28,8 +28,8 @@ air_gapped: false
 # All servers and agents must use the same token
 k3s_token: ''
 
-# k3s data directory
-base_dir: /var/lib/rancher/k3s
+# Path to directory for container images and sandbox data
+base_dir: /var/lib/rancher/k3s/storage
 
 # Kubeconfig file path and permissions
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml

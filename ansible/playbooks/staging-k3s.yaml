@@ -33,8 +33,6 @@
     k3s_token: '{{ staging_k3s_token }}'
     # Staging node has internet access, use online installation mode
     air_gapped: false
-    # Storage directory configuration
-    base_dir: '{{ base_dir | default("/var/lib/rancher/k3s/storage") }}'
     # Kubeconfig group for staging node
     kubeconfig_group: '{{ kubeconfig_group | default("root") }}'
   environment:
