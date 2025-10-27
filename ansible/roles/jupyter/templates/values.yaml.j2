@@ -124,6 +124,6 @@ singleuser:
                 kubernetes.io/metadata.name: '{{ hive_namespace }}'
             podSelector:
               matchLabels:
-                app.kubernetes.io/instance: hive-metastore-readonly
+                app.kubernetes.io/instance: '{{ hive_metastore_instance_readonly }}'
         ports:
           - port: 9083

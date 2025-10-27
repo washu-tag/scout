@@ -11,7 +11,7 @@
 - name: Deploy write metastore
   ansible.builtin.include_tasks: deploy_metastore.yaml
   vars:
-    hive_deployment_name: hive-metastore
+    hive_deployment_name: '{{ hive_metastore_instance }}'
 
 # Create readonly PostgreSQL user for readonly metastore
 - name: Setup readonly PostgreSQL user
@@ -21,9 +21,9 @@
 - name: Deploy readonly metastore
   ansible.builtin.include_tasks: deploy_metastore.yaml
   vars:
-    hive_deployment_name: hive-metastore-readonly
+    hive_deployment_name: '{{ hive_metastore_instance_readonly }}'
     hive_template_vars:
-      hive_fullname_override: 'hive-metastore-readonly'
+      hive_fullname_override: '{{ hive_metastore_instance_readonly }}'
       hive_metastore_db_user: '{{ hive_readonly_postgres_user }}'
       hive_metastore_db_password: '{{ hive_readonly_postgres_password }}'
       hive_s3_access_key: '{{ s3_lake_reader }}'

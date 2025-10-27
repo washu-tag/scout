@@ -74,6 +74,10 @@ superset_database_name: superset
 report_delta_table_name: reports
 ingest_postgres_table_name: ingest
 
+# Hive deployment
+hive_metastore_instance: hive-metastore
+hive_metastore_instance_readonly: hive-metastore-readonly
+
 # Helm configuration
 helm_plugins_dir: /root/.local/share/helm/plugins
 
@@ -86,8 +90,8 @@ delta_lake_path: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefi
 
 # Computed values (DO NOT CHANGE)
 s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
-hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
-hive_metastore_endpoint_readonly: 'thrift://hive-metastore-readonly.{{ hive_namespace }}:9083'
+hive_metastore_endpoint: 'thrift://{{ hive_metastore_instance }}.{{ hive_namespace }}:9083'
+hive_metastore_endpoint_readonly: 'thrift://{{ hive_metastore_instance_readonly }}.{{ hive_namespace }}:9083'
 server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
 aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"
 db_host: '{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}'
