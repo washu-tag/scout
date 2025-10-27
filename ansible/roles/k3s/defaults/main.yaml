@@ -3,13 +3,8 @@
 # Consolidated configuration for k3s installation (online and air-gapped modes)
 
 ################################################################################
-# Version and Source Configuration
+# Source Configuration
 ################################################################################
-
-# k3s version to install - if not specified or empty, will use latest stable
-# Set to empty string or omit to auto-detect latest stable version
-# Example: k3s_version: v1.33.5+k3s1
-k3s_version: ''
 
 # Base URLs for k3s artifacts
 k3s_install_script_url: https://get.k3s.io
