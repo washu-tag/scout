@@ -2,6 +2,14 @@
 # Create readonly PostgreSQL user for Hive Metastore
 # This user has SELECT-only access to metadata tables
 # Delta Lake uses its own transaction log, so no lock table access needed
+- name: Validate required database parameters
+  ansible.builtin.assert:
+    that:
+      - (hive_database_name is defined and hive_database_name | length > 0) and
+        (hive_postgres_user is defined and hive_postgres_user | length > 0) and
+        (hive_readonly_postgres_user is defined and hive_readonly_postgres_user | length > 0) and
+        (hive_readonly_postgres_password is defined and hive_readonly_postgres_password | length > 0)
+    fail_msg: 'Provide hive_database_name, hive_postgres_user, hive_readonly_postgres_user, and hive_readonly_postgres_password for database initialization'
 
 - name: Create readonly PostgreSQL user
   ansible.builtin.include_role:
