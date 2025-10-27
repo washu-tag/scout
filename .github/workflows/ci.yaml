@@ -325,6 +325,29 @@ jobs:
         if: always()
         run: |
           sudo -E kubectl -n extractor logs deployment/hl7-transformer
+      - name: Install tmate
+        shell: bash
+        run: |
+          set -e
+          TMATE_LINUX_VERSION="2.4.0"
+          TMATE_ARCH="amd64"
+          echo "Downloading tmate..."
+          curl -sL "https://github.com/tmate-io/tmate/releases/download/${TMATE_LINUX_VERSION}/tmate-${TMATE_LINUX_VERSION}-static-linux-${TMATE_ARCH}.tar.xz" -o /tmp/tmate.tar.xz
+          echo "Extracting tmate..."
+          mkdir -p /tmp/tmate
+          tar x -C /tmp/tmate -f /tmp/tmate.tar.xz --strip-components=1
+          echo "Moving tmate into /usr/local/bin..."
+          sudo mv /tmp/tmate/tmate /usr/local/bin/tmate
+          sudo chmod +x /usr/local/bin/tmate
+          # Clean up
+          rm -rf /tmp/tmate /tmp/tmate.tar.xz
+          tmate -V
+        if: failure()
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          install-dependencies: false # Mirror download error from `apt-get install -y openssh-client`
+        if: failure()
   publish:
     if: github.ref_name == 'main'
     runs-on: ubuntu-latest
