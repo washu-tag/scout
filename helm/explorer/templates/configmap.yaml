@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "explorer.fullname" . }}-config
+  labels:
+    {{- include "explorer.labels" . | nindent 4 }}
+data:
+  config.js: |
+    window.scoutConfig = {
+      enableChat: {{ .Values.enableChat | default false }}
+    };

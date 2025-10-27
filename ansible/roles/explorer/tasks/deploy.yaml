@@ -20,6 +20,7 @@
       image:
         repository: '{{ explorer_image_repository }}'
         tag: '{{ explorer_image_tag }}'
+      enableChat: '{{ enable_chat | default(false) }}'
       ingress:
         enabled: true
         className: traefik

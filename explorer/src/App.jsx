@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { FaPython } from 'react-icons/fa';
 import { SiMinio, SiTemporal, SiGrafana, SiReadthedocs } from 'react-icons/si';
-import { BiLineChart } from 'react-icons/bi';
+import { BiLineChart, BiMessageSquareDetail } from 'react-icons/bi';
 
 export default function App() {
   const [mounted, setMounted] = useState(false);
+  const [enableChat, setEnableChat] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    // Check if chat is enabled from window config
+    if (window.scoutConfig?.enableChat) {
+      setEnableChat(true);
+    }
   }, []);
 
   const getSubdomainUrl = (subdomain) => {
@@ -37,7 +42,7 @@ export default function App() {
         </div>
 
         {/* Main Tools Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-12">
+        <div className={`grid grid-cols-1 ${enableChat ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-6 md:gap-8 mb-12`}>
           <a
             href={getSubdomainUrl('jupyter')}
             className="group flex items-center justify-center p-8 md:p-10 bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-blue-100 no-underline"
@@ -54,6 +59,25 @@ export default function App() {
               </div>
             </div>
           </a>
+
+          {enableChat && (
+            <a
+              href={getSubdomainUrl('chat')}
+              className="group flex items-center justify-center p-8 md:p-10 bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-green-100 no-underline"
+            >
+              <div className="flex flex-col md:flex-row items-center text-center md:text-left gap-6">
+                <div className="p-5 rounded-full bg-green-50 text-green-600 group-hover:bg-green-100 transition-colors duration-300">
+                  <BiMessageSquareDetail className="text-6xl md:text-7xl" />
+                </div>
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-semibold text-gray-800 mb-2">Chat</h2>
+                  <p className="text-gray-600">
+                    Interact with AI assistants for data queries and analysis
+                  </p>
+                </div>
+              </div>
+            </a>
+          )}
 
           <a
             href={getSubdomainUrl('superset')}
