@@ -47,58 +47,18 @@
       data:
         logo.png: '{{ lookup("file", role_path + "/files/scout.jpg") | b64encode }}'
 
-- name: Install OAuth2 Proxy with helm
-  delegate_to: localhost
-  kubernetes.core.helm:
-    name: oauth2-proxy
-    chart_ref: oauth2-proxy/oauth2-proxy
-    chart_version: '{{ oauth2_proxy_chart_version }}'
-    release_namespace: kube-system
-    release_state: present
-    wait: true
-    wait_timeout: 3m
-    atomic: true
-    values:
-      config:
-        clientID: '{{ keycloak_oauth2_proxy_client_id }}'
-        clientSecret: '{{ keycloak_oauth2_proxy_client_secret }}'
-        cookieSecret: '{{ oauth2_proxy_cookie_secret }}'
-        configFile: |
-          provider = "keycloak-oidc"
-          redirect_url = "{{ oauth2_proxy_callback_url }}"
-          oidc_issuer_url = "{{ keycloak_realm_url }}"
-          allowed_roles = "scout-user"
-          cookie_expire = "{{ oauth2_proxy_cookie_expire }}"
-          skip_provider_button = false
-          email_domains=  ['*']
-          reverse_proxy = true
-          real_client_ip_header =  "X-Forwarded-For"
-          custom_templates_dir = "/etc/oauth2-proxy/templates"
-          custom_sign_in_logo = "/var/www/static/logo/logo.png"
-          cookie_domains = [".{{ server_hostname }}"]
-          whitelist_domains = [".{{ server_hostname }}"]
-          backend_logout_url = "{{ keycloak_oidc_logout_url }}?id_token_hint={id_token}&post_logout_redirect_uri=https://{{ server_hostname }}"
-          banner = "{{ oauth2_proxy_banner }}"
-          footer = "{{ server_hostname }}" # Hacky way to pass server hostname to sign_in template
-          upstreams = ["static://200"]
-      ingress:
-        enabled: true
-        className: traefik
-        path: /
-        hosts:
-          - '{{ oauth2_proxy_subdomain }}.{{ server_hostname }}'
-      extraVolumes:
-        - name: oauth2-proxy-templates
-          configMap:
-            name: oauth2-proxy-templates
-        - name: oauth2-proxy-logo
-          secret:
-            secretName: oauth2-proxy-logo
-      extraVolumeMounts:
-        - name: oauth2-proxy-templates
-          mountPath: /etc/oauth2-proxy/templates
-        - name: oauth2-proxy-logo
-          mountPath: /var/www/static/logo
+- name: Deploy OAuth2 Proxy
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: oauth2-proxy
+    helm_chart_ref: oauth2-proxy/oauth2-proxy
+    helm_chart_namespace: kube-system
+    helm_repo_name: oauth2-proxy
+    helm_repo_url: '{{ oauth2_proxy_chart_repo }}'
+    helm_chart_version: '{{ oauth2_proxy_chart_version }}'
+    helm_chart_values: '{{ lookup("template", "values.yaml.j2") | from_yaml }}'
 
 - name: Install OAuth2 Proxy Auth Middleware
   delegate_to: localhost
