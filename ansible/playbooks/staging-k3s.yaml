@@ -1,7 +1,8 @@
 ---
-# This playbook installs k3s on the staging node for Harbor deployment
-# The staging node runs a separate k3s cluster from the main Scout cluster
-# It must be deployed BEFORE the main k3s cluster so Harbor can cache images
+# Staging K3s Installation Playbook
+# Installs k3s on the staging node for Harbor deployment (air-gapped mode only)
+#
+# Documentation: docs/source/technical/air-gapped.md
 
 - name: Shared pre-requisites for staging K3s
   hosts: staging

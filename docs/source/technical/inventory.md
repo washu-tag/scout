@@ -195,7 +195,7 @@ minio_hosts:
 
 ### Staging Group
 
-For air-gapped deployments, define a staging node with internet access that runs Harbor registry:
+For air-gapped deployments, define a staging node with internet access (Ansible automatically deploys K3s and Harbor on this node):
 
 ```yaml
 staging:
@@ -515,9 +515,12 @@ open_webui_resources:
 
 #### K3s
 
-```
-k3s_token: !vault |...  # Cluster join token
-kubeconfig_group: 'docker'  # Linux group for kubectl access
+```yaml
+k3s_token: !vault |...  # Cluster join token for servers and agents to authenticate (required, no default)
+k3s_version: v1.30.0+k3s1  # K3s version to install (leave unset to auto-detect latest stable)
+k3s_extra_args: '--snapshotter=native'  # Additional arguments for k3s server (e.g., for containers)
+base_dir: /var/lib/rancher/k3s/storage  # K3s data directory (default shown)
+kubeconfig_group: docker  # Linux group for kubectl access (default: root)
 ```
 
 #### Traefik Ingress
@@ -622,81 +625,19 @@ See `roles/scout_common/defaults/main.yaml` for the complete list of namespace v
 
 Scout supports air-gapped deployments for environments without internet access on production nodes.
 
-### Architecture
+**Important:** Air-gapped deployments require Rocky Linux 9 on production k3s nodes due to SELinux package dependencies.
 
-```
-┌──────────────┐         ┌──────────────────────────────┐
-│   Internet   │────────▶│  Staging Node (Harbor)       │
-└──────────────┘         │  - K3s cluster               │
-                         │  - Harbor registry proxy     │
-                         └──────┬───────────────────────┘
-                                │
-                         Air Gap│ (registry mirrors)
-                                │
-                         ┌──────▼───────────────────────┐
-                         │  Production K3s Cluster      │
-                         │  - No internet access        │
-                         │  - Pulls images via Harbor   │
-                         └──────────────────────────────┘
-```
+Ansible automatically deploys K3s and Harbor on a staging node when air-gapped mode is enabled. You only need to define the staging host in your inventory and run the playbooks.
 
-### Setup Steps
+For complete air-gapped deployment documentation, see [Air-Gapped Deployment Guide](air-gapped.md).
 
-#### 1. Define Staging Node
+### Quick Setup
 
-Add a staging host with internet access:
+1. Set `air_gapped: true` in inventory
+2. Define staging node in inventory (see [Air-Gapped Deployment Guide](air-gapped.md))
+3. Run playbooks: `staging-k3s.yaml`, `harbor.yaml`, `k3s.yaml`, `main.yaml`
 
-```
-staging:
-  hosts:
-    staging.example.edu:
-      ansible_host: staging
-      ansible_python_interpreter: /usr/bin/python3
-  vars:
-    staging_k3s_token: !vault |...
-    harbor_admin_password: !vault |...
-    harbor_storage_size: 100Gi
-    harbor_dir: /scout/persistence/harbor
-```
-
-#### 2. Enable Air-Gapped Mode
-
-Set the global air-gapped flag:
-
-```yaml
-all:
-  vars:
-    air_gapped: true
-```
-
-#### 3. Deploy Staging Infrastructure
-
-Deploy K3s and Harbor on the staging node:
-
-```bash
-ansible-playbook -i inventory.yaml playbooks/staging-k3s.yaml
-ansible-playbook -i inventory.yaml playbooks/harbor.yaml
-```
-
-#### 4. Configure Production Cluster
-
-The production K3s cluster will automatically be configured with registry mirrors pointing to Harbor. Ensure the K8s API (port 6443) is accessible from your Ansible control machine.
-
-#### 5. Deploy Scout
-
-Deploy Scout normally. Helm charts will be deployed from localhost, and container images will be pulled through Harbor:
-
-```bash
-make all
-```
-
-### Requirements for Air-Gapped Mode
-
-- Staging node must have internet access
-- Harbor must be deployed on staging node before Scout deployment
-- Production K3s nodes must have network access to Harbor
-- K8s API (port 6443) must be accessible from Ansible control machine
-- Kubeconfig for production cluster must be accessible from control machine
+See [Air-Gapped Deployment Guide](air-gapped.md) for detailed instructions.
 
 ## Configuration Hierarchy
 

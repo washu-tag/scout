@@ -1,24 +1,12 @@
 ---
 # K3s Installation Playbook
-# Installs k3s on server and agent nodes using the k3s role
+# Installs k3s on server and agent nodes
 # Supports both online and air-gapped deployment modes
 #
-# Required inventory groups:
-#   - k3s_cluster: All k3s nodes (server + agents + gpu_workers)
-#   - server: k3s server node(s)
-#   - agents: k3s agent nodes (optional)
-#   - gpu_workers: k3s agent nodes with GPU support (optional, subset of agents)
-#   - staging: Staging node for air-gapped deployments (optional)
-#
-# Required variables:
-#   - k3s_token: Cluster join token
-#
-# Optional variables:
-#   - air_gapped: Enable air-gapped mode (default: false)
-#   - k3s_version: k3s version to install (default: latest stable)
-#   - base_dir: k3s data directory (default: /var/lib/rancher/k3s)
-#
-# See ansible/roles/k3s/README.md for full documentation
+# Documentation:
+#   - Inventory configuration: docs/source/technical/inventory.md
+#   - Air-gapped deployment: docs/source/technical/air-gapped.md
+#   - Role details: ansible/roles/k3s/README.md
 
 ################################################################################
 - name: Install k3s cluster
