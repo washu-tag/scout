@@ -1,0 +1,43 @@
+---
+# Molecule Integration Test - Verify
+# Verifies k3s is actually installed and running
+- name: Verify
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Verify k3s binary is installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+      failed_when: not k3s_binary.stat.exists
+
+    - name: Verify k3s service is running
+      ansible.builtin.systemd:
+        name: k3s
+      register: k3s_service
+      failed_when: k3s_service.status.ActiveState != 'active'
+
+    - name: Verify k3s cluster is responsive
+      ansible.builtin.command: k3s kubectl get nodes
+      register: k3s_nodes
+      changed_when: false
+      failed_when: k3s_nodes.rc != 0
+
+    - name: Display k3s node status
+      ansible.builtin.debug:
+        var: k3s_nodes.stdout_lines
+
+    - name: Verify node is Ready
+      ansible.builtin.assert:
+        that:
+          - "'Ready' in k3s_nodes.stdout"
+        fail_msg: 'k3s node is not in Ready state'
+        success_msg: 'k3s cluster is healthy'
+
+    - name: Verify kubeconfig exists and has correct permissions
+      ansible.builtin.stat:
+        path: /etc/rancher/k3s/k3s.yaml
+      register: kubeconfig
+      failed_when: >
+        not kubeconfig.stat.exists or
+        kubeconfig.stat.mode != '0640'

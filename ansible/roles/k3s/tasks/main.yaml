@@ -1,0 +1,61 @@
+---
+# k3s Role - Main Task Orchestration
+# Entry point that coordinates all k3s installation tasks
+# Supports both online and air-gapped deployment modes
+
+- name: Display k3s installation mode
+  ansible.builtin.debug:
+    msg: "k3s installation mode: {{ 'AIR-GAPPED' if air_gapped | default(false) | bool else 'ONLINE' }}"
+
+################################################################################
+# Prerequisites - Common setup for all nodes
+################################################################################
+
+- name: Run prerequisite tasks
+  ansible.builtin.include_tasks: prerequisites.yaml
+
+################################################################################
+# Artifact Preparation - Online or Air-Gapped
+################################################################################
+
+- name: Prepare k3s artifacts
+  ansible.builtin.include_tasks: artifacts.yaml
+
+################################################################################
+# SELinux Package Installation - Air-Gapped Only
+################################################################################
+
+- name: Install SELinux packages for k3s
+  ansible.builtin.include_tasks: selinux.yaml
+  when: air_gapped | default(false) | bool
+
+################################################################################
+# Registry Mirror Configuration - Air-Gapped Only
+################################################################################
+
+- name: Configure Harbor registry mirrors
+  ansible.builtin.include_tasks: registry.yaml
+
+################################################################################
+# Server Installation - Only on server nodes (includes staging)
+################################################################################
+
+- name: Install k3s server
+  ansible.builtin.include_tasks: server.yaml
+  when: "'server' in group_names or 'staging' in group_names"
+
+################################################################################
+# GPU Worker Configuration - Only on GPU worker nodes
+################################################################################
+
+- name: Configure GPU workers
+  ansible.builtin.include_tasks: gpu.yaml
+  when: "'gpu_workers' in group_names"
+
+################################################################################
+# Agent Installation - Only on agent nodes
+################################################################################
+
+- name: Install k3s agent
+  ansible.builtin.include_tasks: agent.yaml
+  when: "'agents' in group_names"
