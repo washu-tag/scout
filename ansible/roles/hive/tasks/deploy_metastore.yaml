@@ -26,7 +26,7 @@
     tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: '{{ hive_deployment_name }}'
-    helm_chart_ref: '{{ scout_repo_dir }}/helm/lake/hive-metastore'
+    helm_chart_ref: '{{ scout_repo_dir }}/helm/hive-metastore'
     helm_chart_namespace: '{{ hive_namespace }}'
     helm_chart_values: "{{ lookup('template', 'values.yaml.j2', template_vars=hive_template_vars | default({})) | from_yaml }}"
 
