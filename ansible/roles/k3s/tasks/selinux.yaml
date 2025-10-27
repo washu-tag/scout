@@ -42,7 +42,7 @@
       register: rpm_files_on_node
 
     - name: Install all SELinux packages
-      ansible.builtin.yum:
+      ansible.builtin.dnf:
         name: '{{ rpm_files_on_node.files | map(attribute="path") | list }}'
         state: present
         disable_gpg_check: true
