@@ -56,6 +56,7 @@
       delay: 2
       until: "'k3s' in semodule_list.stdout"
 
+  always:
     - name: Clean up staging directory
       ansible.builtin.file:
         path: '{{ k3s_selinux_rpm_staging_dir }}'
