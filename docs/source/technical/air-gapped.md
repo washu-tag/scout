@@ -67,6 +67,7 @@ This requirement exists because air-gapped installations download SELinux packag
 - Ansible control → Production K8s API (port 6443)
 - Ansible control → All nodes (SSH, port 22)
 
+(staging-host-configuration)=
 ## Staging Host Configuration
 
 ### Adding Staging to Inventory
@@ -118,7 +119,7 @@ openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/
 openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh --name 'harbor_admin_password'
 ```
 
-See [Configuring Secrets](inventory.md#configuring-secrets) for more details on Ansible Vault.
+See {ref}`configuring-secrets` for more details on Ansible Vault.
 
 ## Air-Gapped Configuration Variables
 
@@ -180,7 +181,7 @@ all:
 
 ### 2. Configure Staging Host
 
-Add the staging host and credentials to your inventory (see [Staging Host Configuration](#staging-host-configuration) above).
+Add the staging host and credentials to your inventory (see {ref}`staging-host-configuration` above).
 
 ### 3. Configure Production Cluster
 
@@ -307,7 +308,7 @@ This approach ensures correct package versions for Rocky Linux 9 without requiri
 
 When upgrading k3s or other components:
 1. Test the upgrade in your staging environment first
-2. Use `-e` flag to override versions temporarily (see [Testing Upgrades](inventory.md#testing-upgrades))
+2. Use `-e` flag to override versions temporarily (see {ref}`testing-upgrades`)
 3. Update `group_vars/all/versions.yaml` after validating the upgrade
 4. Deploy to production
 

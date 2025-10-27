@@ -516,11 +516,22 @@ open_webui_resources:
 #### K3s
 
 ```yaml
-k3s_token: !vault |...  # Cluster join token for servers and agents to authenticate (required, no default)
-k3s_version: v1.30.0+k3s1  # K3s version to install (leave unset to auto-detect latest stable)
-k3s_extra_args: '--snapshotter=native'  # Additional arguments for k3s server (e.g., for containers)
-base_dir: /var/lib/rancher/k3s/storage  # K3s data directory (default shown)
-kubeconfig_group: docker  # Linux group for kubectl access (default: root)
+# Cluster join token for servers and agents to authenticate (required, no default)
+k3s_token: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      ...encrypted...
+
+# K3s version to install (leave unset to auto-detect latest stable)
+k3s_version: v1.30.0+k3s1
+
+# Additional arguments for k3s server (e.g., for containers)
+k3s_extra_args: '--snapshotter=native'
+
+# K3s data directory (default: /var/lib/rancher/k3s/storage)
+base_dir: /var/lib/rancher/k3s/storage
+
+# Linux group for kubectl access (default: root)
+kubeconfig_group: docker
 ```
 
 #### Traefik Ingress
@@ -673,6 +684,7 @@ Scout uses Ansible's variable precedence system. Understanding this helps you kn
   ansible-playbook -e "k3s_version=v1.30.0+k3s1" playbooks/k3s.yaml
   ```
 
+(testing-upgrades)=
 ### Testing Upgrades
 
 **Always test version upgrades in your staging environment before applying them to production.** This practice minimizes the risk of unexpected issues and allows you to validate compatibility before impacting production workloads.
