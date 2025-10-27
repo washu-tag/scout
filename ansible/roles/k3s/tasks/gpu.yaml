@@ -3,7 +3,7 @@
 # Configures k3s runtime for GPU worker nodes with NVIDIA container toolkit
 # Only runs on hosts in the 'gpu_workers' group
 
-- name: Create storage directory
+- name: Create rancher k3s config directory
   ansible.builtin.file:
     path: /etc/rancher/k3s
     state: directory
