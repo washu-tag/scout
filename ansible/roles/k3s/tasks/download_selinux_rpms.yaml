@@ -78,9 +78,10 @@
                     echo "Filtered packages:"
                     ls -lh /downloads/
 
-                    echo "Package count: $(ls /downloads/*.rpm 2>/dev/null | wc -l)"
+                    rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
+                    echo "Package count: $rpm_count"
 
-                    if [ ! -f /downloads/*.rpm ]; then
+                    if [ "$rpm_count" -eq 0 ]; then
                       echo "ERROR: No RPM files were downloaded!"
                       exit 1
                     fi
