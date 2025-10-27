@@ -1,7 +1,7 @@
 # ADR 0002: K3s Air-Gapped Deployment Strategy
 
-**Date:** 2025-10-15
-**Status:** Proposed
+**Date:** 2025-10-27
+**Status:** Accepted
 **Deciders:** TAG Team
 
 ## Context
