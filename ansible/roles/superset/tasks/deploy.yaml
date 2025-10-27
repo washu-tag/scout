@@ -1,4 +1,13 @@
 ---
+- name: Initialize Superset database
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_db_with_owner
+  vars:
+    db_name: '{{ superset_database }}'
+    db_owner: '{{ superset_postgres_user }}'
+    db_owner_pass: '{{ superset_postgres_password }}'
+
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common
@@ -104,8 +113,8 @@
         enabled: false
       supersetNode:
         connections:
-          db_host: '{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}'
-          db_port: '5432'
+          db_host: '{{ db_host }}'
+          db_port: '{{ db_port }}'
           db_user: '{{ superset_postgres_user }}'
           db_pass: '{{ superset_postgres_password }}'
           db_name: '{{ superset_database }}'

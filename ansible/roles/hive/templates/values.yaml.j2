@@ -52,7 +52,7 @@ env:
   - name: HIVE_METASTORE_DRIVER
     value: 'org.postgresql.Driver'
   - name: HIVE_METASTORE_JDBC_URL
-    value: 'jdbc:postgresql://{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}:5432/hive'
+    value: '{{ jdbc_url }}/hive'
   - name: HIVE_METASTORE_USER
     value: '{{ hive_postgres_user }}'
   - name: HIVE_METASTORE_PASSWORD
