@@ -54,7 +54,7 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     }
 
     /**
-     * Registraion events are user events. Send welcome email to users and
+     * Registration events are user events. Send welcome email to users and
      * approval email to admins.
      */
     @Override
