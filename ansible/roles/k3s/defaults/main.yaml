@@ -28,6 +28,9 @@ air_gapped: false
 # All servers and agents must use the same token
 k3s_token: ''
 
+# Additional arguments to pass to k3s server (e.g., '--snapshotter=native' for container environments)
+k3s_extra_args: ''
+
 # Path to directory for container images and sandbox data
 base_dir: /var/lib/rancher/k3s/storage
 

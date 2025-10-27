@@ -52,6 +52,7 @@ This role expects hosts to be organized into the following groups:
 |----------|---------|-------------|
 | `air_gapped` | `false` | Enable air-gapped installation mode |
 | `k3s_token` | `''` | **Required** Cluster join token for all servers and agents |
+| `k3s_extra_args` | `''` | Additional arguments to pass to k3s server (e.g., `--snapshotter=native` for container environments) |
 | `base_dir` | `/var/lib/rancher/k3s` | k3s data directory |
 | `kubeconfig_yaml` | `/etc/rancher/k3s/k3s.yaml` | Path to kubeconfig file |
 | `kubeconfig_group` | `wheel` | Group ownership for kubeconfig |

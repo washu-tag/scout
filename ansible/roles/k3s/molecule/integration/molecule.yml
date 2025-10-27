@@ -29,5 +29,7 @@ provisioner:
         air_gapped: false
         k3s_selinux_enabled: true
         k3s_token: test-token-for-molecule
+        # Use native snapshotter for Docker container environment (overlayfs doesn't work in nested containers)
+        k3s_extra_args: '--snapshotter=native'
 verifier:
   name: ansible
