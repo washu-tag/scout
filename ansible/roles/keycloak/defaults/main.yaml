@@ -3,7 +3,7 @@
 # User-configurable settings are in inventory.yaml
 
 # Keycloak image
-keycloak_image: ghcr.io/washu-tag/keycloak:1.1.0
+keycloak_image: ghcr.io/washu-tag/keycloak:26.4.2
 
 # Keycloak admin console credentials (override in inventory for production)
 keycloak_bootstrap_admin_user: admin
