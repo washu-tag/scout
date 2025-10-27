@@ -155,10 +155,10 @@
                       "client_id": "{{ keycloak_superset_client_id }}",
                       "client_secret": "{{ keycloak_superset_client_secret }}",
                       "client_kwargs": {"scope": "openid microprofile-jwt"},
-                      "api_base_url": "https://keycloak.{{ server_hostname }}/realms/scout/protocol/",
-                      "access_token_url": "https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/token",
-                      "authorize_url": "https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/auth",
-                      "jwks_uri": "https://keycloak.{{ server_hostname }}/realms/scout/protocol/openid-connect/certs",
+                      "api_base_url": "{{ keycloak_realm_url }}/protocol/",
+                      "access_token_url": "{{ keycloak_oidc_token_url }}",
+                      "authorize_url": "{{ keycloak_oidc_auth_url }}",
+                      "jwks_uri": "{{ keycloak_oidc_certs_url }}",
                       "request_token_url": None
                   },
               }
@@ -191,7 +191,7 @@
               @expose('/logout/', methods=['GET', 'POST'])
               def logout(self):
                   super().logout()
-                  return redirect('https://auth.{{ server_hostname }}/oauth2/sign_out')
+                  return redirect('{{ oauth2_proxy_signout_url }}')
           class KeycloakSecurityManager(SupersetSecurityManager):
               """
               Create a new SecurityManager that uses the KeycloakOAuthView and Keycloak role mapping

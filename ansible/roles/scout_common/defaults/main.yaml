@@ -94,7 +94,28 @@ modality_map_path: /data/modality_mapping_codes.csv
 scratch_path: 's3://{{ scratch_bucket }}'
 delta_lake_path: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefix
 
+# OAuth2 Proxy configuration
+oauth2_proxy_subdomain: auth
+
+# Keycloak configuration (DO NOT CHANGE)
+# The realm and subdomain values are hardcoded in Launchpad.
+# These variables are used for constructing the authentication URLs below.
+keycloak_realm_name: scout
+keycloak_subdomain: keycloak
+
 # Computed values (DO NOT CHANGE)
 s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
 hive_metastore_endpoint: 'thrift://hive-metastore.{{ hive_namespace }}:9083'
 server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
+keycloak_base_url: 'https://{{ keycloak_subdomain }}.{{ server_hostname }}'
+keycloak_realm_url: '{{ keycloak_base_url }}/realms/{{ keycloak_realm_name }}'
+keycloak_oidc_auth_url: '{{ keycloak_realm_url }}/protocol/openid-connect/auth'
+keycloak_oidc_token_url: '{{ keycloak_realm_url }}/protocol/openid-connect/token'
+keycloak_oidc_userinfo_url: '{{ keycloak_realm_url }}/protocol/openid-connect/userinfo'
+keycloak_oidc_certs_url: '{{ keycloak_realm_url }}/protocol/openid-connect/certs'
+keycloak_oidc_logout_url: '{{ keycloak_realm_url }}/protocol/openid-connect/logout'
+keycloak_wellknown_url: '{{ keycloak_realm_url }}/.well-known/openid-configuration'
+oauth2_proxy_base_url: 'https://{{ oauth2_proxy_subdomain }}.{{ server_hostname }}'
+oauth2_proxy_callback_url: '{{ oauth2_proxy_base_url }}/oauth2/callback'
+oauth2_proxy_signout_url: '{{ oauth2_proxy_base_url }}/oauth2/sign_out'
+oauth2_proxy_auth_url: '{{ oauth2_proxy_base_url }}/oauth2/auth'
