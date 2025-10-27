@@ -5,8 +5,7 @@
 # OAuth2 Proxy Helm chart configuration
 oauth2_proxy_chart_repo: https://oauth2-proxy.github.io/manifests
 
-# OAuth2 Proxy cookie configuration
-oauth2_proxy_cookie_secret: changeme-cookie-secret
+# OAuth2 Proxy cookie configuration (cookie_secret must be defined in inventory)
 oauth2_proxy_cookie_expire: 8h
 
 # OAuth2 Proxy UI customization

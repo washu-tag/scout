@@ -46,21 +46,14 @@ dcm4chee_namespace: dcm4chee
 launchpad_namespace: launchpad
 keycloak_namespace: keycloak
 
-# Keycloak oauth client id's and secrets (override secrets in inventory)
+# Keycloak OAuth client IDs and secrets (client secrets must be defined in inventory)
 keycloak_oauth2_proxy_client_id: oauth2-proxy
-keycloak_oauth2_proxy_client_secret: changeme-oauth2-proxy-secret
 keycloak_superset_client_id: superset
-keycloak_superset_client_secret: changeme-superset-secret
 keycloak_jupyterhub_client_id: jupyterhub
-keycloak_jupyterhub_client_secret: changeme-jupyterhub-secret
 keycloak_grafana_client_id: grafana
-keycloak_grafana_client_secret: changeme-grafana-secret
 keycloak_temporal_client_id: temporal
-keycloak_temporal_client_secret: changeme-temporal-secret
 keycloak_minio_client_id: minio
-keycloak_minio_client_secret: changeme-minio-secret
 keycloak_launchpad_client_id: launchpad
-keycloak_launchpad_client_secret: changeme-launchpad-secret
 
 # S3/MinIO configuration (passwords defined in inventory)
 s3_region: us-east-1

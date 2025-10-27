@@ -139,9 +139,9 @@ See [Post-Deployment Configuration](#post-deployment-configuration) for first-ti
 
 ## Configuration
 
-> **Development vs Production**: Production deployments require all secrets to be generated and vault-encrypted. Development environments can omit these variables to use insecure defaults for rapid setup.
-
 ### Required Inventory Variables
+
+All secrets must be defined in your inventory file and should be vault-encrypted for production deployments.
 
 **Keycloak Admin**:
 ```yaml

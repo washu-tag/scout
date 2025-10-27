@@ -5,13 +5,11 @@
 # Keycloak image
 keycloak_image: ghcr.io/washu-tag/keycloak:26.4.2
 
-# Keycloak admin console credentials (override in inventory for production)
+# Keycloak admin console credentials (password must be defined in inventory)
 keycloak_bootstrap_admin_user: admin
-keycloak_bootstrap_admin_password: admin
 
-# Keycloak database password
+# Keycloak database credentials (password must be defined in inventory)
 keycloak_postgres_user: keycloak
-keycloak_postgres_password: changeme
 
 # SMTP configuration for email notifications
 keycloak_smtp_host: mailhog-service.mailhog
