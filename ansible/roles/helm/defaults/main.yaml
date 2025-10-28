@@ -1,0 +1,15 @@
+---
+# Default variables for helm role
+# These can be overridden when including the role
+
+# Directory where helm install script is downloaded
+helm_script_dir: /root/bin
+
+# Helm version to install (empty string for latest)
+helm_version: ''
+
+# Whether to install helm diff plugin
+helm_install_diff_plugin: true
+
+# URL for helm diff plugin
+helm_diff_plugin_url: 'https://github.com/databus23/helm-diff'
