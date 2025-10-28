@@ -374,6 +374,7 @@ jobs:
         with:
           image-name: superset
       - name: 'Push Image - keycloak'
+        if: needs.changes.outputs.keycloak == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: keycloak
