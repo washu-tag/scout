@@ -1,0 +1,49 @@
+---
+# Generic RPM Installation from Artifacts
+# Installs RPM packages from the artifact directory to target nodes
+# Used for air-gapped installation of packages that were downloaded via Kubernetes Job
+#
+# Required parameters:
+#   - rpm_staging_dir: Directory path on target node where RPMs will be staged
+#   - rpm_package_type: Description of package type for logging (e.g., "SELinux", "GPU")
+
+- name: Create staging directory for {{ rpm_package_type }} RPMs
+  ansible.builtin.file:
+    path: '{{ rpm_staging_dir }}'
+    state: directory
+    mode: '0755'
+
+- name: Find all RPM files in artifact directory
+  ansible.builtin.find:
+    paths: '{{ k3s_artifact_temp_dir }}'
+    patterns: '*.rpm'
+  delegate_to: localhost
+  register: rpm_files_to_copy
+
+- name: Copy all {{ rpm_package_type }} RPMs to node
+  ansible.builtin.copy:
+    src: '{{ item.path }}'
+    dest: '{{ rpm_staging_dir }}/{{ item.path | basename }}'
+    mode: '0644'
+  loop: '{{ rpm_files_to_copy.files }}'
+
+- name: Find all RPM files on node
+  ansible.builtin.find:
+    paths: '{{ rpm_staging_dir }}'
+    patterns: '*.rpm'
+  register: rpm_files_on_node
+
+- name: Install all {{ rpm_package_type }} packages
+  ansible.builtin.dnf:
+    name: '{{ rpm_files_on_node.files | map(attribute="path") | list }}'
+    state: present
+    disable_gpg_check: true
+    disablerepo: '*'
+    # Disable all repos to prevent metadata refresh in air-gapped environment
+    # All dependencies are already included in the downloaded RPM files
+  register: rpm_install_result
+
+- name: Clean up staging directory
+  ansible.builtin.file:
+    path: '{{ rpm_staging_dir }}'
+    state: absent
