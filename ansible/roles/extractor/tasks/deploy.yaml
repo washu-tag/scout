@@ -2,6 +2,15 @@
 # Kubernetes deployment tasks for Extractor services
 # These tasks run on the server host (which has access to k3s_cluster inventory variables)
 
+- name: Initialize extractor database
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_db_with_owner
+  vars:
+    db_name: '{{ ingest_postgres_table_name }}'
+    db_owner: '{{ postgres_user }}'
+    db_owner_pass: '{{ postgres_password }}'
+
 - name: Create namespace
   kubernetes.core.k8s:
     name: '{{ extractor_namespace }}'
@@ -20,8 +29,8 @@
         namespace: '{{ extractor_namespace }}'
       type: Opaque
       stringData:
-        DB_HOST: '{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}'
-        DB_PORT: '5432'
+        DB_HOST: '{{ db_host }}'
+        DB_PORT: '{{ db_port | string }}'
         DB_NAME: '{{ ingest_postgres_table_name }}'
         DB_USER: '{{ postgres_user }}'
         DB_PASSWORD: '{{ postgres_password }}'

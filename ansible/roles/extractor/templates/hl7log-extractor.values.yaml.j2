@@ -15,13 +15,19 @@ service:
 resources: {{ hl7log_extractor_resources | to_json }}
 volumes:
   - name: data
+{% if aws_deployment %}
+    emptyDir: {}
+{% else %}
     hostPath:
       path: '{{ extractor_data_dir }}'
+{% endif %}
 volumeMounts:
   - name: data
     mountPath: /data
     readOnly: true
+{% if not aws_deployment %}
     mountPropagation: HostToContainer
+{% endif %}
 livenessProbe:
   httpGet:
     path: /actuator/health/liveness
@@ -45,7 +51,7 @@ config:
       region: '{{ s3_region }}'
     spring:
       datasource:
-        url: 'jdbc:postgresql://{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}:5432/{{ ingest_postgres_table_name }}'
+        url: '{{ jdbc_url }}/{{ ingest_postgres_table_name }}'
         username: '{{ postgres_user }}'
         password: '{{ postgres_password }}'
       temporal:

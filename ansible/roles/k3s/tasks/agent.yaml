@@ -1,0 +1,24 @@
+---
+# k3s Agent Installation
+# Installs k3s agent and joins it to the k3s server
+# Only runs on hosts in the 'agents' group
+
+- name: Install k3s agent
+  ansible.builtin.command:
+    cmd: '{{ k3s_install_script_path }}'
+    creates: /usr/local/bin/k3s-agent-uninstall.sh
+  environment:
+    INSTALL_K3S_SKIP_DOWNLOAD: "{{ 'true' if air_gapped | default(false) | bool else omit }}"
+    INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
+    K3S_URL: 'https://{{ groups["server"][0] }}:6443'
+    K3S_TOKEN: '{{ k3s_token }}'
+    UNINSTALL_K3S_SH: /usr/local/bin/k3s-agent-uninstall.sh
+  register: k3s_agent_install_result
+
+- name: Restart k3s-agent to pick up registry config changes
+  ansible.builtin.systemd:
+    name: k3s-agent
+    state: restarted
+  when:
+    - registry_config_changed | default(false)
+    - not k3s_agent_install_result.changed

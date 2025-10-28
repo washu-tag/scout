@@ -1,7 +1,8 @@
 ---
-# This playbook installs k3s on the staging node for Harbor deployment
-# The staging node runs a separate k3s cluster from the main Scout cluster
-# It must be deployed BEFORE the main k3s cluster so Harbor can cache images
+# Staging K3s Installation Playbook
+# Installs k3s on the staging node for Harbor deployment (air-gapped mode only)
+#
+# Documentation: docs/source/technical/air-gapped.md
 
 - name: Shared pre-requisites for staging K3s
   hosts: staging
@@ -29,78 +30,20 @@
 - name: Install k3s on staging node
   hosts: staging
   vars:
-    uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
+    # Map staging_k3s_token to k3s_token expected by k3s role
+    k3s_token: '{{ staging_k3s_token }}'
+    # Staging node has internet access, use online installation mode
+    air_gapped: false
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
     K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
-  tasks:
-    - name: Determine deployment context
-      ansible.builtin.set_fact:
-        is_local_deployment: '{{ inventory_hostname == ansible_hostname or ansible_connection | default("ssh") == "local" }}'
+  roles:
+    # This role handles installation, service management, and verification
+    # It will use online installation mode (air_gapped=false)
+    # It will NOT configure registry mirrors (staging IS the registry)
+    - role: k3s
 
-    - name: Create directory for K3s data
-      ansible.builtin.file:
-        path: '{{ base_dir | default("/var/lib/rancher/k3s/storage") }}'
-        state: directory
-        mode: '0755'
-
-    - name: Install k3s server on staging node
-      ansible.builtin.command:
-        cmd: /root/bin/get.k3s.io.sh
-        creates: '{{ uninstall_script }}'
-      environment:
-        INSTALL_K3S_EXEC: >-
-          --default-local-storage-path={{ base_dir | default("/var/lib/rancher/k3s/storage") }}
-          --write-kubeconfig-mode=0640
-        INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
-        K3S_TOKEN: '{{ staging_k3s_token }}'
-        UNINSTALL_K3S_SH: '{{ uninstall_script }}'
-
-    - name: Update kubeconfig group permissions
-      ansible.builtin.file:
-        path: /etc/rancher/k3s/k3s.yaml
-        state: file
-        mode: '0640'
-        group: '{{ kubeconfig_group | default("root") }}'
-
-    - name: Ensure k3s server is started
-      ansible.builtin.systemd:
-        name: k3s
-        state: started
-        enabled: true
-        scope: system
-      register: k3s_systemd_start_k3s
-      until: k3s_systemd_start_k3s is succeeded
-      retries: 3
-      delay: 3
-      failed_when:
-        - k3s_systemd_start_k3s is not succeeded
-        - not ansible_check_mode
-      changed_when: false
-
-    - name: Check that the server is available to accept connections
-      ansible.builtin.wait_for:
-        port: 6443
-        host: 127.0.0.1
-        delay: 5
-        sleep: 5
-        timeout: 300
-      changed_when: false
-
-    - name: Check that server is ready
-      ansible.builtin.command:
-        cmd: kubectl get nodes
-      changed_when: false
-      failed_when: >-
-        kubectl_get_nodes_result.stdout.find("was refused") != -1 or
-        kubectl_get_nodes_result.stdout.find("ServiceUnavailable") != -1
-      register: kubectl_get_nodes_result
-      until:
-        - kubectl_get_nodes_result.rc == 0
-        - kubectl_get_nodes_result.stdout.find("NotReady") == -1
-      retries: 30
-      delay: 5
-
+  post_tasks:
     - name: Display staging k3s cluster status
       ansible.builtin.debug:
         msg: 'Staging k3s cluster is ready for Harbor deployment'

@@ -6,7 +6,7 @@ minio_tenant_name: scout
 
 # Storage naming
 minio_name: minio
-minio_storage_class: minio-storage
+minio_storage_class: '{{ minio_name }}-storage'
 minio_storage_size: 10Gi
 
 # Storage definitions for persistent volumes

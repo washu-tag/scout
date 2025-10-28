@@ -17,7 +17,7 @@ hub:
       services: [prometheus]
   db:
     pvc:
-      storageClassName: '{{ jupyter_hub_storage_class }}'
+      storageClassName: '{{ use_custom_storage_classes | ternary(jupyter_hub_storage_class, omit) }}'
   config:
     Authenticator:
       auto_login: true
