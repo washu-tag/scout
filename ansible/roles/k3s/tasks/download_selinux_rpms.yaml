@@ -47,7 +47,7 @@
                     set -e
                     set -x
 
-                    echo "Installing dnf-plugins-core for yumdownloader..."
+                    echo "Installing dnf-plugins-core for dnf download..."
                     dnf install -y dnf-plugins-core
 
                     echo "Configuring Rancher k3s repository..."
@@ -66,7 +66,7 @@
 
                     echo "Downloading k3s-selinux and dependencies..."
                     mkdir -p /downloads/all
-                    yumdownloader --destdir=/downloads/all --resolve k3s-selinux
+                    dnf download --resolve --destdir=/downloads/all k3s-selinux
 
                     echo "All downloaded packages:"
                     ls -lh /downloads/all/
