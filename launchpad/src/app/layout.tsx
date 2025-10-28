@@ -15,7 +15,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Scout - Radiology Report Explorer',
-  description: 'A radiology report exploration tool by the Translational AI Group at WashU',
+  description:
+    "A clinical insights platform brought to you by the Mallinckrodt Institute of Radiology's Translational AI Group (TAG) at Washington University.",
   icons: {
     icon: '/scout.png',
     apple: '/scout.png',
