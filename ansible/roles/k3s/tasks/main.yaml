@@ -59,3 +59,17 @@
 - name: Install k3s agent
   ansible.builtin.include_tasks: agent.yaml
   when: "'agents' in group_names"
+
+################################################################################
+# Cleanup - Remove temporary artifact directory
+################################################################################
+
+- name: Clean up artifact temporary directory
+  ansible.builtin.file:
+    path: '{{ k3s_artifact_temp_dir }}'
+    state: absent
+  delegate_to: localhost
+  run_once: true
+  when:
+    - air_gapped | default(false) | bool
+    - k3s_artifact_temp_dir is defined
