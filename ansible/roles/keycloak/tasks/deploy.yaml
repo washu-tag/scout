@@ -43,31 +43,14 @@
       reason: NewReplicaSetAvailable
     wait_timeout: 300
 
-- name: Setup PostgreSQL database and user
-  block:
-    - name: Create user (ignore if exists)
-      delegate_to: localhost
-      kubernetes.core.k8s_exec:
-        namespace: '{{ postgres_cluster_namespace }}'
-        pod: '{{ postgres_cluster_name }}-1'
-        command: |
-          psql --dbname=postgres -c "CREATE USER {{ keycloak_postgres_user }} WITH PASSWORD '{{ keycloak_postgres_password }}';"
-      register: user_result
-      failed_when:
-        - user_result.rc != 0
-        - '"already exists" not in user_result.stderr'
-
-    - name: Create database (ignore if exists)
-      delegate_to: localhost
-      kubernetes.core.k8s_exec:
-        namespace: '{{ postgres_cluster_namespace }}'
-        pod: '{{ postgres_cluster_name }}-1'
-        command: |
-          psql --dbname=postgres -c "CREATE DATABASE keycloak WITH ENCODING 'UTF8' OWNER {{ keycloak_postgres_user }};"
-      register: db_result
-      failed_when:
-        - db_result.rc != 0
-        - '"already exists" not in db_result.stderr'
+- name: Initialize Keycloak database
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_db_with_owner
+  vars:
+    db_name: keycloak
+    db_owner: '{{ keycloak_postgres_user }}'
+    db_owner_pass: '{{ keycloak_postgres_password }}'
 
 - name: Create Keycloak DB secret
   delegate_to: localhost
@@ -123,9 +106,9 @@
           passwordSecret:
             name: keycloak-db-secret
             key: password
-          host: 'postgresql-cluster-rw.{{ postgres_cluster_namespace }}'
+          host: '{{ db_host }}'
           database: keycloak
-          port: 5432
+          port: '{{ db_port}}'
         http:
           httpEnabled: true
         hostname:
