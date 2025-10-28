@@ -15,41 +15,11 @@
 - name: Install SELinux packages
   when: k3s_selinux_enabled | bool
   block:
-    - name: Create staging directory for SELinux RPMs
-      ansible.builtin.file:
-        path: '{{ k3s_selinux_rpm_staging_dir }}'
-        state: directory
-        mode: '0755'
-
-    - name: Find all RPM files in artifact directory
-      ansible.builtin.find:
-        paths: '{{ k3s_artifact_temp_dir }}'
-        patterns: '*.rpm'
-      delegate_to: localhost
-      register: rpm_files_to_copy
-
-    - name: Copy all SELinux RPMs to node
-      ansible.builtin.copy:
-        src: '{{ item.path }}'
-        dest: '{{ k3s_selinux_rpm_staging_dir }}/{{ item.path | basename }}'
-        mode: '0644'
-      loop: '{{ rpm_files_to_copy.files }}'
-
-    - name: Find all RPM files on node
-      ansible.builtin.find:
-        paths: '{{ k3s_selinux_rpm_staging_dir }}'
-        patterns: '*.rpm'
-      register: rpm_files_on_node
-
-    - name: Install all SELinux packages
-      ansible.builtin.dnf:
-        name: '{{ rpm_files_on_node.files | map(attribute="path") | list }}'
-        state: present
-        disable_gpg_check: true
-        disablerepo: '*'
-        # Disable all repos to prevent metadata refresh in air-gapped environment
-        # All dependencies are already included in the downloaded RPM files
-      register: selinux_install
+    - name: Install SELinux RPMs from artifacts
+      ansible.builtin.include_tasks: install_rpms_from_artifacts.yaml
+      vars:
+        rpm_staging_dir: '{{ k3s_selinux_rpm_staging_dir }}'
+        rpm_package_type: 'SELinux'
 
     - name: Verify k3s SELinux policy module is loaded
       ansible.builtin.command: semodule -l
@@ -58,9 +28,3 @@
       retries: 3
       delay: 2
       until: "'k3s' in semodule_list.stdout"
-
-  always:
-    - name: Clean up staging directory
-      ansible.builtin.file:
-        path: '{{ k3s_selinux_rpm_staging_dir }}'
-        state: absent
