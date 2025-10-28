@@ -16,10 +16,15 @@ elasticsearch_storage_definitions:
 
 # Elasticsearch configuration (ECK)
 elasticsearch_cluster_name: elasticsearch
-elasticsearch_heap_size: 1G # JVM heap size notation
+# JVM heap size (Xms and Xmx both set to this value)
+# Guidelines per https://www.elastic.co/guide/en/elasticsearch/reference/current/heap-size.html:
+#   - Heap should be ≤ 50% of total pod memory for off-heap buffers and OS cache
+#   - Set to no more than 26GB (safe limit for compressed OOPs; can be 30-31GB on some systems)
+#   - Xms = Xmx prevents JVM heap resizing which can cause pauses
+elasticsearch_max_heap: 512M
 
 # Resource configuration (dev defaults - CI friendly)
-# Memory: requests = heap_size, limits = 2x heap_size to account for off-heap memory and OS cache
+# Memory: requests = 2x heap (guarantees minimum per Elastic guidelines), limits = 4x heap (allows burst)
 # Memory is computed in tasks using jvm_memory_to_k8s filter (not computable here in defaults)
 elasticsearch_cpu_request: 250m
 elasticsearch_cpu_limit: 2

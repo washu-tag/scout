@@ -1,0 +1,29 @@
+- name: Validate required database parameters
+  ansible.builtin.assert:
+    that:
+      - (db_name is defined and db_name | length > 0) and
+        (db_owner is defined and db_owner | length > 0) and
+        (db_owner_pass is defined and db_owner_pass | length > 0)
+    fail_msg: 'Provide db_name, db_owner, and db_owner_pass for database initialization'
+
+- name: Execute initialization SQL
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: execute_sql
+  vars:
+    sql_script: |-
+      DO $do$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{{ db_owner }}') THEN
+          EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', '{{ db_owner }}', '{{ db_owner_pass }}');
+        END IF;
+      END;
+      $do$ LANGUAGE plpgsql;
+
+      GRANT {{ db_owner }} TO CURRENT_USER;
+
+      SELECT 'CREATE DATABASE {{db_name}} OWNER {{ db_owner }}'
+      WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '{{db_name}}');
+      \gexec
+
+      REVOKE {{ db_owner }} FROM CURRENT_USER;

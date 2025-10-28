@@ -30,7 +30,7 @@
         resources:
           requests:
             storage: '{{ jupyter_singleuser_storage_size }}'
-        storageClassName: '{{ jupyter_singleuser_storage_class }}'
+        storageClassName: '{{ use_custom_storage_classes | ternary(jupyter_singleuser_storage_class, omit) }}'
 
 - name: Setup Spark Defaults ConfigMap
   ansible.builtin.include_role:
@@ -40,6 +40,9 @@
     spark_defaults_configmap_name: spark-defaults
     spark_defaults_configmap_namespace: '{{ jupyter_namespace }}'
     spark_memory: '{{ jupyter_spark_memory }}'
+    spark_hive_metastore_uri: '{{ hive_metastore_endpoint_readonly }}'
+    spark_s3_username: '{{ s3_lake_reader }}'
+    spark_s3_password: '{{ s3_lake_reader_secret }}'
 
 - name: Deploy JupyterHub
   ansible.builtin.include_role:
@@ -52,5 +55,5 @@
     helm_chart_namespace: '{{ jupyter_namespace }}'
     helm_repo_name: '{{ jupyter_helm_repo_name }}'
     helm_repo_url: '{{ jupyter_helm_repo_url }}'
-    helm_chart_timeout: 10m
+    helm_chart_timeout: 15m
     helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

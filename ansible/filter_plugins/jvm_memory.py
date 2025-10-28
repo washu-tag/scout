@@ -35,7 +35,7 @@ def jvm_memory_to_k8s(heap_size, multiplier=1):
     Examples:
         {{ cassandra_max_heap | jvm_memory_to_k8s }}         -> "2Gi"
         {{ cassandra_max_heap | jvm_memory_to_k8s(2) }}      -> "4Gi"
-        {{ elasticsearch_heap_size | jvm_memory_to_k8s }}    -> "1Gi"
+        {{ elasticsearch_max_heap | jvm_memory_to_k8s }}     -> "1Gi"
         {{ "512M" | jvm_memory_to_k8s }}                     -> "512Mi"
         {{ "512M" | jvm_memory_to_k8s(2) }}                  -> "1Gi" (1024Mi converted)
         {{ "1024K" | jvm_memory_to_k8s }}                    -> "1Mi" (converted up)
@@ -99,10 +99,45 @@ def jvm_memory_to_k8s(heap_size, multiplier=1):
         return f"{int(value_bytes)}"
 
 
+def multiply_memory(memory_str, multiplier=1):
+    """
+    Multiply a memory specification by a factor, preserving the unit.
+
+    Args:
+        memory_str: Memory string (e.g., "8G", "512M", "1024K")
+        multiplier: Multiplier (default: 1)
+
+    Returns:
+        Memory string with multiplied value (e.g., "16G", "1024M", "2048K")
+
+    Examples:
+        {{ "8G" | multiply_memory(2) }}    -> "16G"
+        {{ "512M" | multiply_memory(2) }}  -> "1024M"
+    """
+    memory_str = str(memory_str).strip()
+    match = re.match(r"^(\d+(?:\.\d+)?)\s*([KMGT])?$", memory_str, re.IGNORECASE)
+    if not match:
+        raise ValueError(
+            f"Invalid memory format: {memory_str}. "
+            f"Expected format: '2G', '512M', '1024K' (case-insensitive)"
+        )
+
+    value_str, unit = match.groups()
+    value = float(value_str) * multiplier
+
+    # Convert to int if it's a whole number
+    if value == int(value):
+        value = int(value)
+
+    unit = unit.upper() if unit else ""
+    return f"{value}{unit}"
+
+
 class FilterModule(object):
     """Ansible filter plugin class."""
 
     def filters(self):
         return {
             "jvm_memory_to_k8s": jvm_memory_to_k8s,
+            "multiply_memory": multiply_memory,
         }

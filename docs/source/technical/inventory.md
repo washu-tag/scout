@@ -123,7 +123,7 @@ all:
 
 **Key variables:**
 - `ansible_user`: SSH username for connecting to nodes
-- `ansible_become`: Enable privilege escalation (typically `true`)
+- `ansible_become`: Enable privilege escalation. Note: This should _not_ be set to `true` when running air-gapped installs as a non-privileged user on a remote host.
 - `ansible_become_method`: How to escalate privileges (typically `sudo`)
 - `ansible_become_password`: Encrypted sudo password
 
@@ -195,7 +195,7 @@ minio_hosts:
 
 ### Staging Group
 
-For air-gapped deployments, define a staging node with internet access that runs Harbor registry:
+For air-gapped deployments, define a staging node with internet access (Ansible automatically deploys K3s and Harbor on this node):
 
 ```yaml
 staging:
@@ -366,25 +366,34 @@ Memory is computed automatically from heap size (requests = 1x heap, limits = 2x
 #### Elasticsearch (JVM-based)
 
 ```yaml
-elasticsearch_heap_size: 6G
+elasticsearch_max_heap: 3G
 elasticsearch_cpu_request: 1
 elasticsearch_cpu_limit: 3
 ```
 
-Memory is computed automatically from heap size (requests = 1x heap, limits = 2x heap).
+Memory is computed automatically from heap size (requests = 2x heap, limits = 4x heap to allow burst).
 
-#### Trino
+#### Trino (JVM-based)
 
 ```yaml
-trino_worker_memory_gb: 12        # Total pod memory
-trino_coordinator_memory_gb: 6    # Total pod memory
+trino_worker_count: 2  # Number of worker replicas
+trino_worker_max_heap: 8G
+trino_coordinator_max_heap: 4G
 trino_worker_cpu_request: 2
 trino_worker_cpu_limit: 6
 trino_coordinator_cpu_request: 1
 trino_coordinator_cpu_limit: 3
+# Optional: Override query memory allocation (default 0.3 = 30% of heap)
+# trino_per_node_query_memory_fraction: 0.3
 ```
 
-JVM heap is computed automatically in by Trino as ~80% of memory.
+Memory is computed automatically from heap size (requests = 1x heap, limits = 2x heap).
+
+**Query Memory Limits:**
+- `query.max-memory-per-node` is set to `heap_size × trino_per_node_query_memory_fraction` (default 30%)
+- `query.max-memory` (cluster-wide) is calculated as `worker_count × worker_heap × trino_per_node_query_memory_fraction`
+- These limits scale automatically with worker count and heap size changes
+- Only override `trino_per_node_query_memory_fraction` if you understand [Trino's memory management](https://trino.io/docs/current/admin/properties-resource-management.html)
 
 #### MinIO
 
@@ -402,16 +411,20 @@ minio_resources:
 
 ```yaml
 # Spark memory for notebook containers
+# Note: Use JupyterHub format (K, M, G, T) not Kubernetes format (Ki, Mi, Gi, Ti)
 jupyter_spark_memory: 8G
 
 # CPU resources
+# Note: JupyterHub Helm chart 4.3.x requires numeric values (not strings like "250m")
+# Use fractional cores (0.25 = 250 millicores) or whole numbers
 jupyter_singleuser_cpu_request: 2
 jupyter_singleuser_cpu_limit: 8
 
 # Optional: Override memory for non-Spark workloads
 # By default, memory is computed from spark_memory (1x request, 2x limit)
-# jupyter_singleuser_memory_request: 16Gi
-# jupyter_singleuser_memory_limit: 32Gi
+# Note: JupyterHub requires decimal suffixes (K, M, G, T), not binary (Ki, Mi, Gi, Ti)
+# jupyter_singleuser_memory_request: 16G
+# jupyter_singleuser_memory_limit: 32G
 
 # Hub resources
 jupyter_hub_resources:
@@ -502,9 +515,23 @@ open_webui_resources:
 
 #### K3s
 
-```
-k3s_token: !vault |...  # Cluster join token
-kubeconfig_group: 'docker'  # Linux group for kubectl access
+```yaml
+# Cluster join token for servers and agents to authenticate (required, no default)
+k3s_token: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      ...encrypted...
+
+# K3s version to install (leave unset to auto-detect latest stable)
+k3s_version: v1.30.0+k3s1
+
+# Additional arguments for k3s server (e.g., for containers)
+k3s_extra_args: '--snapshotter=native'
+
+# K3s data directory (default: /var/lib/rancher/k3s/storage)
+base_dir: /var/lib/rancher/k3s/storage
+
+# Linux group for kubectl access (default: root)
+kubeconfig_group: docker
 ```
 
 #### Traefik Ingress
@@ -609,81 +636,19 @@ See `roles/scout_common/defaults/main.yaml` for the complete list of namespace v
 
 Scout supports air-gapped deployments for environments without internet access on production nodes.
 
-### Architecture
+**Important:** Air-gapped deployments require Rocky Linux 9 on production k3s nodes due to SELinux package dependencies.
 
-```
-┌──────────────┐         ┌──────────────────────────────┐
-│   Internet   │────────▶│  Staging Node (Harbor)       │
-└──────────────┘         │  - K3s cluster               │
-                         │  - Harbor registry proxy     │
-                         └──────┬───────────────────────┘
-                                │
-                         Air Gap│ (registry mirrors)
-                                │
-                         ┌──────▼───────────────────────┐
-                         │  Production K3s Cluster      │
-                         │  - No internet access        │
-                         │  - Pulls images via Harbor   │
-                         └──────────────────────────────┘
-```
+Ansible automatically deploys K3s and Harbor on a staging node when air-gapped mode is enabled. You only need to define the staging host in your inventory and run the playbooks.
 
-### Setup Steps
+For complete air-gapped deployment documentation, see [Air-Gapped Deployment Guide](air-gapped.md).
 
-#### 1. Define Staging Node
+### Quick Setup
 
-Add a staging host with internet access:
+1. Set `air_gapped: true` in inventory
+2. Define staging node in inventory (see [Air-Gapped Deployment Guide](air-gapped.md))
+3. Run playbooks: `staging-k3s.yaml`, `harbor.yaml`, `k3s.yaml`, `main.yaml`
 
-```
-staging:
-  hosts:
-    staging.example.edu:
-      ansible_host: staging
-      ansible_python_interpreter: /usr/bin/python3
-  vars:
-    staging_k3s_token: !vault |...
-    harbor_admin_password: !vault |...
-    harbor_storage_size: 100Gi
-    harbor_dir: /scout/persistence/harbor
-```
-
-#### 2. Enable Air-Gapped Mode
-
-Set the global air-gapped flag:
-
-```yaml
-all:
-  vars:
-    air_gapped: true
-```
-
-#### 3. Deploy Staging Infrastructure
-
-Deploy K3s and Harbor on the staging node:
-
-```bash
-ansible-playbook -i inventory.yaml playbooks/staging-k3s.yaml
-ansible-playbook -i inventory.yaml playbooks/harbor.yaml
-```
-
-#### 4. Configure Production Cluster
-
-The production K3s cluster will automatically be configured with registry mirrors pointing to Harbor. Ensure the K8s API (port 6443) is accessible from your Ansible control machine.
-
-#### 5. Deploy Scout
-
-Deploy Scout normally. Helm charts will be deployed from localhost, and container images will be pulled through Harbor:
-
-```bash
-make all
-```
-
-### Requirements for Air-Gapped Mode
-
-- Staging node must have internet access
-- Harbor must be deployed on staging node before Scout deployment
-- Production K3s nodes must have network access to Harbor
-- K8s API (port 6443) must be accessible from Ansible control machine
-- Kubeconfig for production cluster must be accessible from control machine
+See [Air-Gapped Deployment Guide](air-gapped.md) for detailed instructions.
 
 ## Configuration Hierarchy
 
@@ -718,6 +683,36 @@ Scout uses Ansible's variable precedence system. Understanding this helps you kn
   ```bash
   ansible-playbook -e "k3s_version=v1.30.0+k3s1" playbooks/k3s.yaml
   ```
+
+(testing-upgrades)=
+### Testing Upgrades
+
+**Always test version upgrades in your staging environment before applying them to production.** This practice minimizes the risk of unexpected issues and allows you to validate compatibility before impacting production workloads.
+
+**Recommended upgrade workflow:**
+
+1. **Test in staging:** Use the `-e` flag to override versions in your staging environment
+   ```bash
+   # Example: Testing k3s upgrade
+   ansible-playbook -i inventory.staging.yaml -e "k3s_version=v1.35.0+k3s1" playbooks/k3s.yaml
+
+   # Example: Testing multiple component upgrades
+   ansible-playbook -i inventory.staging.yaml \
+     -e "k3s_version=v1.35.0+k3s1" \
+     -e "temporal_version=0.68.0" \
+     playbooks/main.yaml
+   ```
+
+2. **Validate staging deployment:** Verify that all services start correctly, run integration tests, and check for compatibility issues
+
+3. **Update versions centrally:** Once validated, update `group_vars/all/versions.yaml` to apply the new versions to all environments
+
+4. **Deploy to production:** Run the standard deployment without version overrides (uses versions from `group_vars/all/versions.yaml`)
+   ```bash
+   ansible-playbook -i inventory.yaml playbooks/k3s.yaml
+   ```
+
+This approach ensures that version changes are thoroughly tested before they reach production, reducing the likelihood of failed upgrades or service disruptions.
 
 ## Validating Your Inventory
 

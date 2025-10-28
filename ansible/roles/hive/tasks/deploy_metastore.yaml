@@ -1,0 +1,35 @@
+---
+# Deploy a Hive Metastore Service (write or readonly)
+#
+# Parameters:
+#   hive_deployment_name: Name of the deployment (e.g., 'hive-metastore' or 'hive-metastore-readonly')
+#   hive_template_vars: (optional) Dictionary of template variable overrides for values.yaml.j2
+#
+# Examples:
+#   Write metastore:
+#     include_tasks: deploy_metastore.yaml
+#     vars:
+#       hive_deployment_name: hive-metastore
+#
+#   Readonly metastore:
+#     include_tasks: deploy_metastore.yaml
+#     vars:
+#       hive_deployment_name: hive-metastore-readonly
+#       hive_template_vars:
+#         hive_fullname_override: 'hive-metastore-readonly'
+#         hive_metastore_db_user: '{{ hive_readonly_postgres_user }}'
+#         ...
+
+- name: Deploy Hive Metastore Service ({{ hive_deployment_name }})
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ hive_deployment_name }}'
+    helm_chart_ref: '{{ scout_repo_dir }}/helm/hive-metastore'
+    helm_chart_namespace: '{{ hive_namespace }}'
+    helm_chart_values: "{{ lookup('template', 'values.yaml.j2', template_vars=hive_template_vars | default({})) | from_yaml }}"
+
+- name: Wait for {{ hive_deployment_name }} to be ready
+  command: 'kubectl -n {{ hive_namespace }} wait --for=condition=Available --timeout=300s deployments/{{ hive_deployment_name }}'
+  changed_when: false
