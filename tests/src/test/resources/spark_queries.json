@@ -4,7 +4,7 @@
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 34,
+        "expectedNumResults": 31,
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
@@ -18,7 +18,7 @@
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 31,
+        "expectedNumResults": 23,
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
@@ -33,7 +33,7 @@
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 8,
+        "expectedNumResults": 18,
         "additionalValidation": {
           "type": ".DateComparisonValidation",
           "description": "patient born after 1990-12-31",
@@ -48,7 +48,7 @@
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 22,
+        "expectedNumResults": 16,
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
@@ -63,7 +63,7 @@
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 9,
+        "expectedNumResults": 8,
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
@@ -79,15 +79,15 @@
       "expectedQueryResult": {
         "type": ".GroupedAggregationResult",
         "result": {
-          "IR": {
-            "male_count": 2,
+          "MR": {
+            "male_count": 4,
             "female_count": 2,
-            "total_count": 4
+            "total_count": 6
           },
           "US": {
-            "male_count": 4,
-            "female_count": 1,
-            "total_count": 5
+            "male_count": 5,
+            "female_count": 2,
+            "total_count": 7
           },
           "XR": {
             "male_count": 13,
@@ -96,28 +96,33 @@
           },
           "MG": {
             "male_count": 0,
-            "female_count": 12,
-            "total_count": 12
+            "female_count": 9,
+            "total_count": 9
+          },
+          "IR": {
+            "male_count": 1,
+            "female_count": 2,
+            "total_count": 3
           },
           "": {
-            "male_count": 1,
-            "female_count": 4,
-            "total_count": 5
+            "male_count": 5,
+            "female_count": 3,
+            "total_count": 8
           },
-          "PET": {
-            "male_count": 1,
+          "CT": {
+            "male_count": 0,
             "female_count": 1,
-            "total_count": 2
+            "total_count": 1
           },
           "NM": {
-            "male_count": 4,
-            "female_count": 1,
-            "total_count": 5
-          },
-          "MR": {
             "male_count": 1,
-            "female_count": 3,
-            "total_count": 4
+            "female_count": 0,
+            "total_count": 1
+          },
+          "PET": {
+            "male_count": 0,
+            "female_count": 2,
+            "total_count": 2
           }
         },
         "primaryColumnName": "primary_modality",
@@ -131,22 +136,22 @@
         "type": ".GroupedAggregationResult",
         "result": {
           "": {
-            "total_count": 8
+            "total_count": 7
           },
           "F": {
-            "total_count": 11
+            "total_count": 9
           },
           "Wet Read": {
-            "total_count": 6
+            "total_count": 7
           },
           "Prelim": {
-            "total_count": 11
+            "total_count": 16
           },
           "Final": {
-            "total_count": 17
+            "total_count": 19
           },
           "P": {
-            "total_count": 7
+            "total_count": 2
           }
         },
         "primaryColumnName": "report_status",
@@ -160,82 +165,82 @@
         "type": ".ExactRowsResult",
         "uniqueIdColumnName": "message_control_id",
         "rowAssertions": {
-          "2.25.204398915138762988851874407954207601533": {
+          "2.25.83733773296604060316231433263389742135": {
+            "version_id": "2.4",
+            "mpi": null,
+            "sending_facility": "ABCHOSP",
+            "service_identifier": "IMG2816",
+            "sex": "M",
+            "zip_or_postal_code": "61111",
+            "country": "USA",
+            "orc_2_placer_order_number": null,
+            "obr_2_placer_order_number": "1804679",
+            "patient_age": null,
+            "principal_result_interpreter": "TONY MAY",
+            "assistant_result_interpreter": "[ERIN PROCTOR]",
+            "technician": "[]",
+            "orc_3_filler_order_number": null,
+            "obr_3_filler_order_number": "620943125",
+            "service_name": "US ABDOMEN LIMITED",
+            "service_coding_system": "UNKDEV",
+            "diagnostic_service_id": "IMG",
+            "study_instance_uid": null,
+            "birth_date": "1942-01-03",
+            "message_dt": "2025-08-14T21:06:45+00:00",
+            "requested_dt": null,
+            "results_report_status_change_dt": "2025-08-14T21:06:45+00:00",
+            "year": "2025"
+          },
+          "2.25.86894298082825883439238171253269619380": {
             "version_id": "2.3",
-            "mpi": "6419351",
+            "mpi": "7209352",
             "sending_facility": "ABCHOSP",
             "service_identifier": "IMG154",
             "sex": "M",
             "zip_or_postal_code": "61111",
             "country": "",
             "orc_2_placer_order_number": "",
-            "obr_2_placer_order_number": "3480069",
+            "obr_2_placer_order_number": "96932",
             "patient_age": null,
-            "principal_result_interpreter": "MEGAN FLORES",
+            "principal_result_interpreter": "ANA OLSON",
             "assistant_result_interpreter": "[]",
-            "technician": "[HOLLY BARRY]",
+            "technician": "[WALTER HOLLAND]",
             "orc_3_filler_order_number": "",
-            "obr_3_filler_order_number": "800257419",
+            "obr_3_filler_order_number": "620943126",
             "service_name": "XR ABDOMEN AP 1 VIEW",
             "service_coding_system": null,
             "diagnostic_service_id": "",
             "study_instance_uid": null,
-            "birth_date": "1992-01-10",
-            "message_dt": "2025-08-14T12:56:21+00:00",
+            "birth_date": "1942-01-03",
+            "message_dt": "2025-08-14T11:14:34+00:00",
             "requested_dt": null,
-            "results_report_status_change_dt": "2025-08-14T12:56:21+00:00",
+            "results_report_status_change_dt": "2025-08-14T11:14:34+00:00",
             "year": "2025"
           },
-          "2.25.121043577106706659500131090336553354531": {
-            "version_id": "2.4",
-            "mpi": null,
-            "sending_facility": "ABCHOSP",
-            "service_identifier": "IMG154",
-            "sex": "F",
-            "zip_or_postal_code": "61111",
-            "country": "USA",
-            "orc_2_placer_order_number": null,
-            "obr_2_placer_order_number": "5539751",
-            "patient_age": null,
-            "principal_result_interpreter": "JACQUELINE BISHOP",
-            "assistant_result_interpreter": "[LUIS SMALL]",
-            "technician": "[]",
-            "orc_3_filler_order_number": null,
-            "obr_3_filler_order_number": "800257423",
-            "service_name": "XR ABDOMEN AP 1 VIEW",
-            "service_coding_system": "UNKDEV",
-            "diagnostic_service_id": "IMG",
-            "study_instance_uid": null,
-            "birth_date": "1958-08-09",
-            "message_dt": "2025-08-14T19:05:25+00:00",
-            "requested_dt": null,
-            "results_report_status_change_dt": "2025-08-14T19:05:25+00:00",
-            "year": "2025"
-          },
-          "2.25.203807271003801336156822674911037502972": {
+          "2.25.296476389772545408330432299707949012627": {
             "version_id": "2.7",
             "mpi": null,
             "sending_facility": "ABCHOSP",
-            "service_identifier": "IMG4185",
-            "sex": "F",
+            "service_identifier": "IMG154",
+            "sex": "M",
             "zip_or_postal_code": "61111",
             "country": "USA",
-            "orc_2_placer_order_number": "5185399",
-            "obr_2_placer_order_number": "5185399",
-            "patient_age": "63",
+            "orc_2_placer_order_number": "8989586",
+            "obr_2_placer_order_number": "8989586",
+            "patient_age": "83",
             "principal_result_interpreter": null,
-            "assistant_result_interpreter": "[LUIS SMALL]",
-            "technician": "[JASON WEBB]",
-            "orc_3_filler_order_number": "800257430",
-            "obr_3_filler_order_number": "800257430",
-            "service_name": "IR INTRO CATHETER AORTA BILATERAL",
+            "assistant_result_interpreter": "[CRAIG TAYLOR]",
+            "technician": "[JENNIFER LUNA]",
+            "orc_3_filler_order_number": "620943127",
+            "obr_3_filler_order_number": "620943127",
+            "service_name": "XR ABDOMEN AP 1 VIEW",
             "service_coding_system": "UNKDEV",
-            "diagnostic_service_id": "XA",
-            "study_instance_uid": "2.25.314490230937939957455802523623947719892",
-            "birth_date": "1962-01-20",
-            "message_dt": "2025-08-14T12:18:32+00:00",
-            "requested_dt": "2025-08-14T10:30:00+00:00",
-            "results_report_status_change_dt": "2025-08-14T12:18:32+00:00",
+            "diagnostic_service_id": "CR",
+            "study_instance_uid": "2.25.45082695915432443522339748305965022803",
+            "birth_date": "1942-01-03",
+            "message_dt": "2025-08-14T10:47:01+00:00",
+            "requested_dt": "2025-08-14T08:33:06+00:00",
+            "results_report_status_change_dt": "2025-08-14T10:47:01+00:00",
             "year": "2025"
           }
         },
@@ -274,7 +279,7 @@
           }
         ]
       },
-      "sql": "SELECT * FROM %TABLE_PLACEHOLDER% WHERE message_control_id IN ('2.25.204398915138762988851874407954207601533', '2.25.121043577106706659500131090336553354531', '2.25.203807271003801336156822674911037502972')",
+      "sql": "SELECT * FROM %TABLE_PLACEHOLDER% WHERE message_control_id IN ('2.25.83733773296604060316231433263389742135', '2.25.86894298082825883439238171253269619380', '2.25.296476389772545408330432299707949012627')",
       "id": "extended_metadata"
     },
     {
@@ -282,103 +287,110 @@
         "type": ".ExactRowsResult",
         "uniqueIdColumnName": "message_control_id",
         "rowAssertions": {
-          "2.25.219548451968858381851753454287567971428": {
-            "abc_mr": "ABC1538608",
-            "epic_mrn": "EPIC2056919",
+          "2.25.41258099665624655163358344119626209265": {
+            "abc_mr": "ABC1234330",
+            "epic_mrn": "EPIC2603471",
             "legacy_patient_id_un": null,
-            "empi_mr": "6419351",
-            "patient_ids": "[[ABC1538608,ABC,MR,], [EPIC2056919,EPIC,MRN,], [6419351,EMPI,MR,]]"
+            "empi_mr": "7209352",
+            "patient_ids": "[[ABC1234330,ABC,MR,], [EPIC2603471,EPIC,MRN,], [7209352,EMPI,MR,]]"
           },
-          "2.25.61155004502365997902991606362324782931": {
-            "abc_mr": "ABC1538608",
-            "epic_mrn": "EPIC2056919",
+          "2.25.83733773296604060316231433263389742135": {
+            "abc_mr": "ABC1234330",
+            "epic_mrn": "EPIC2603471",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1538608,ABC,MR,], [EPIC2056919,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234330,ABC,MR,], [EPIC2603471,EPIC,MRN,]]"
           },
-          "2.25.204398915138762988851874407954207601533": {
+          "2.25.86894298082825883439238171253269619380": {
             "abc_mr": null,
             "epic_mrn": null,
-            "legacy_patient_id_un": "8540367",
+            "legacy_patient_id_un": "9566019",
             "empi_mr": null,
-            "patient_ids": "[[8540367,,,UN]]"
+            "patient_ids": "[[9566019,,,UN]]"
           },
-          "2.25.328973252536500389074993126308062841002": {
-            "abc_mr": "ABC1538609",
-            "epic_mrn": "EPIC2056920",
+          "2.25.296476389772545408330432299707949012627": {
+            "abc_mr": "ABC1234330",
+            "epic_mrn": "EPIC2603471",
+            "legacy_patient_id_un": null,
+            "empi_mr": "7209352",
+            "patient_ids": "[[ABC1234330,ABC,MR,], [EPIC2603471,EPIC,MRN,], [7209352,EMPI,MR,]]"
+          },
+          "2.25.27294531846963388481947318112461449032": {
+            "abc_mr": "ABC1234331",
+            "epic_mrn": "EPIC2603472",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1538609,ABC,MR,], [EPIC2056920,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234331,ABC,MR,], [EPIC2603472,EPIC,MRN,]]"
           },
-          "2.25.188036692001324128072425296115844067182": {
-            "abc_mr": "ABC1538609",
-            "epic_mrn": "EPIC2056920",
+          "2.25.66092044680927012484208907663249350495": {
+            "abc_mr": "ABC1234331",
+            "epic_mrn": "EPIC2603472",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1538609,ABC,MR,], [EPIC2056920,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234331,ABC,MR,], [EPIC2603472,EPIC,MRN,]]"
           },
-          "2.25.37795153549849511405749573418478407533": {
-            "abc_mr": "ABC1538609",
-            "epic_mrn": "EPIC2056920",
+          "2.25.72756099571087589399340186312311126974": {
+            "abc_mr": "ABC1234331",
+            "epic_mrn": "EPIC2603472",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1538609,ABC,MR,], [EPIC2056920,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234331,ABC,MR,], [EPIC2603472,EPIC,MRN,]]"
           },
-          "2.25.121043577106706659500131090336553354531": {
-            "abc_mr": "ABC1538610",
-            "epic_mrn": "EPIC2056921",
+          "2.25.8517564923695072524410339422472128015": {
+            "abc_mr": "ABC1234332",
+            "epic_mrn": "EPIC2603473",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1538610,ABC,MR,], [EPIC2056921,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234332,ABC,MR,], [EPIC2603473,EPIC,MRN,]]"
           },
-          "2.25.102637249815259293738918189168983894057": {
-            "abc_mr": "ABC1538611",
-            "epic_mrn": "EPIC2056922",
+          "2.25.338503419107449463704505260997993941596": {
+            "abc_mr": "ABC1234332",
+            "epic_mrn": "EPIC2603473",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1538611,ABC,MR,], [EPIC2056922,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234332,ABC,MR,], [EPIC2603473,EPIC,MRN,]]"
           },
-          "2.25.106740314803027468744708885437152926967": {
-            "abc_mr": "ABC1538611",
-            "epic_mrn": "EPIC2056922",
+          "2.25.46922071367648385371960750069272638650": {
+            "abc_mr": "ABC1234332",
+            "epic_mrn": "EPIC2603473",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1538611,ABC,MR,], [EPIC2056922,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234332,ABC,MR,], [EPIC2603473,EPIC,MRN,]]"
           },
-          "2.25.141708643737957297303047458699896564028": {
-            "abc_mr": "ABC1538611",
-            "epic_mrn": "EPIC2056922",
+          "2.25.255447108864050578016103835923469143730": {
+            "abc_mr": "ABC1234333",
+            "epic_mrn": "EPIC2603474",
+            "legacy_patient_id_un": null,
+            "empi_mr": "7209355",
+            "patient_ids": "[[ABC1234333,ABC,MR,], [EPIC2603474,EPIC,MRN,], [7209355,EMPI,MR,]]"
+          },
+          "2.25.269543980460923814767645637194759190589": {
+            "abc_mr": "ABC1234333",
+            "epic_mrn": "EPIC2603474",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1538611,ABC,MR,], [EPIC2056922,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234333,ABC,MR,], [EPIC2603474,EPIC,MRN,]]"
           },
-          "2.25.239806527677042120944431850418213781171": {
-            "abc_mr": "ABC1538611",
-            "epic_mrn": "EPIC2056922",
-            "legacy_patient_id_un": null,
-            "empi_mr": null,
-            "patient_ids": "[[ABC1538611,ABC,MR,], [EPIC2056922,EPIC,MRN,]]"
-          },
-          "2.25.201339583218469953996551461947620745895": {
-            "abc_mr": "ABC1538612",
-            "epic_mrn": "EPIC2056923",
-            "legacy_patient_id_un": null,
-            "empi_mr": null,
-            "patient_ids": "[[ABC1538612,ABC,MR,], [EPIC2056923,EPIC,MRN,]]"
-          },
-          "2.25.292146506290779935026264127891051142916": {
+          "2.25.213732642005146782981422416471503084231": {
             "abc_mr": null,
             "epic_mrn": null,
-            "legacy_patient_id_un": "8540371",
+            "legacy_patient_id_un": "9566022",
             "empi_mr": null,
-            "patient_ids": "[[8540371,,,UN]]"
+            "patient_ids": "[[9566022,,,UN]]"
           },
-          "2.25.203807271003801336156822674911037502972": {
-            "abc_mr": "ABC1538612",
-            "epic_mrn": "EPIC2056923",
+          "2.25.209518007095785260615917265844163878634": {
+            "abc_mr": "ABC1234334",
+            "epic_mrn": "EPIC2603475",
             "legacy_patient_id_un": null,
-            "empi_mr": "6419355",
-            "patient_ids": "[[ABC1538612,ABC,MR,], [EPIC2056923,EPIC,MRN,], [6419355,EMPI,MR,]]"
+            "empi_mr": null,
+            "patient_ids": "[[ABC1234334,ABC,MR,], [EPIC2603475,EPIC,MRN,]]"
+          },
+          "2.25.279562864306182853939133746784869784459": {
+            "abc_mr": "ABC1234334",
+            "epic_mrn": "EPIC2603475",
+            "legacy_patient_id_un": null,
+            "empi_mr": null,
+            "patient_ids": "[[ABC1234334,ABC,MR,], [EPIC2603475,EPIC,MRN,]]"
           }
         },
         "columnTypes": [
@@ -388,7 +400,7 @@
           }
         ]
       },
-      "sql": "SELECT * FROM %TABLE_PLACEHOLDER% WHERE (abc_mr IN ('ABC1538608', 'ABC1538608', 'ABC1538609', 'ABC1538609', 'ABC1538609', 'ABC1538610', 'ABC1538611', 'ABC1538611', 'ABC1538611', 'ABC1538611', 'ABC1538612', 'ABC1538612') OR legacy_patient_id_un IN ('8540367', '8540371'))",
+      "sql": "SELECT * FROM %TABLE_PLACEHOLDER% WHERE (abc_mr IN ('ABC1234330', 'ABC1234330', 'ABC1234330', 'ABC1234331', 'ABC1234331', 'ABC1234331', 'ABC1234332', 'ABC1234332', 'ABC1234332', 'ABC1234333', 'ABC1234333', 'ABC1234334', 'ABC1234334') OR legacy_patient_id_un IN ('9566019', '9566022'))",
       "id": "patient_id"
     },
     {
@@ -414,23 +426,81 @@
         "type": ".ExactRowsResult",
         "uniqueIdColumnName": "message_control_id",
         "rowAssertions": {
-          "2.25.61155004502365997902991606362324782931": {
-            "report_text": "MICHAEL WINTERS, M.D.\n\n\n\n********FINAL REPORT********\n\n\n \nACC#  Date Time  Exam\n\n\n800257418 Aug 14 2025 12:51PM IMG2816 US ABDOMEN LIMITED\nEXAMINATION: Abdominal and pelvic ultrasound\n\nFINDINGS:\nInserted statement for testing with special chars: ±60%÷\nUltrasound reveals moderate bilateral hydronephrosis. The kidney\nparenchyma shows maintained cortical thickness and echogenicity. No\nobvious obstructing calculi visualized in the renal pelvis or\nureters. Bladder appears partially filled, without masses or\nsignificant wall thickening.\n\n\nIMPRESSION:\nModerate bilateral hydronephrosis likely secondary to obstructive\nuropathy. No clear cause identified sonographically. Suggest further\nurologic evaluation and correlation.\nRequested By: Small,Luis P. M.D.\n\nDictated By: Michael Winters, M.D. on Aug 14 2025 12:51PM\n\nThis document has been electronically signed by: Michael Winters,\nM.D. on Aug 14 2025 12:51PM\n \n\n\n \n\n\n \n800257418^UK^ZB"
+          "2.25.83733773296604060316231433263389742135": {
+            "report_text": "TONY MAY, M.D.\n\n\n\n********FINAL REPORT********\n\n\n \nACC#  Date Time  Exam\n\n\n620943125 Aug 14 2025 09:06PM IMG2816 US ABDOMEN LIMITED\nEXAMINATION: Ultrasound study of the abdomen and pelvis.\n\nFINDINGS:\nInserted statement for testing with special chars: ±60%÷\nUltrasound interrogation reveals multiple hyperechoic foci with\nposterior acoustic shadowing within the gallbladder consistent with\ncholelithiasis. No gallbladder wall thickening or pericholecystic\nfluid noted, suggesting absence of acute cholecystitis. Kidneys show\nnormal echogenicity without stones or hydronephrosis. Bladder appears\nnormal.\n\n\nIMPRESSION:\nCholelithiasis without sonographic evidence of acute cholecystitis.\nRecommend clinical correlation and follow-up if symptomatic.\nRequested By: Proctor,Erin R. M.D.\n\nDictated By: Tony May, M.D. on Aug 14 2025 09:06PM\n\nThis document has been electronically signed by: Tony May, M.D. on\nAug 14 2025 09:06PM\n \n\n\n \n\n\n \n620943125^UK^ZB"
           },
-          "2.25.204398915138762988851874407954207601533": {
-            "report_text": "EXAMINATION: Abdominal radiography\nFINDINGS:\nThe abdominal X-ray demonstrates mildly dilated loops of small bowel\nwith air-fluid levels, suggestive of early small bowel obstruction.\nThere is no free intraperitoneal air identified. Soft tissue and bony\nstructures appear within normal limits. No abnormal calcifications or\nforeign bodies noted.\n\n\nIMPRESSION:\nFindings consistent with early small bowel obstruction without\nevidence of perforation. Recommend clinical correlation and possibly\nfurther imaging if symptoms persist or worsen."
+          "2.25.86894298082825883439238171253269619380": {
+            "report_text": "EXAMINATION: Repeat abdomen X-ray imaging study on the same date to\ncompare with prior.\nFINDINGS:\nImages confirm stable appearance compared to initial study conducted\nearlier on August 14, 2025. No interval development of free air,\nobstruction, or abnormal calcifications. Soft tissues and bony\nstructures remain unchanged.\n\n\nIMPRESSION:\nNo changes noted relative to prior abdominal X-ray dated August 14,\n2025. No evidence of acute abdominal pathology."
           },
-          "2.25.121043577106706659500131090336553354531": {
-            "report_text": "JACQUELINE BISHOP, M.D.\n\n\n\n********Preliminary Report********\n\n\n \nACC#  Date Time  Exam\n\n\n800257423 Aug 14 2025 07:05PM IMG154 XR ABDOMEN AP 1 VIEW\nEXAMINATION: Abdominal X-ray\n\nFINDINGS:\nAbdominal radiograph reveals diffuse gaseous distention within the\ncolon with fecal loading, mild stool retention. No signs of free air\nor obstruction. Bony structures normal. Soft tissues unremarkable.\n\n\nIMPRESSION:\nConstipation with fecal impaction suggested. No acute obstruction or\nperforation seen.\nRequested By: Wood,Joseph S. M.D.\n\nDictated By: Jacqueline Bishop, M.D. on Aug 14 2025 07:05PM\n\nPending review by: Luis Small, M.D.\n \n\n\n \n\n\n \n800257423^UK^ZB"
+          "2.25.296476389772545408330432299707949012627": {
+            "report_text": "EXAMINATION: Abdomen X-ray imaging study.\nFINDINGS:\nRadiographs demonstrate diffuse abdominal soft tissue gas shadows\nwith no evidence of free intraperitoneal air or abnormal\ncalcifications. No bowel obstruction signs are visualized. Abdominal\norgans including liver and spleen appear within normal size limits\nbut superimposition limits detailed assessment. No notable renal or\nbladder silhouette abnormalities.\n\n\nIMPRESSION:\nUnremarkable abdominal X-ray with no radiographic signs of bowel\nobstruction or free air. Findings are nonspecific but do not suggest\nacute abdominal pathology at this time.\nDictated by: Craig Taylor Interpreter, M.D."
           },
-          "2.25.203807271003801336156822674911037502972": {
-            "report_text": "EXAMINATION: Coronary X-ray angiography\nFINDINGS:\nX-ray angiographic images depict multi-vessel coronary artery disease\nwith 50-60% stenosis of proximal right coronary artery and 40%\nirregular plaques in the circumflex artery. No occlusive thrombi\nvisualized. Ventricular motion preserved.\n\n\nIMPRESSION:\nModerate multi-vessel coronary artery disease. Clinical correlation\nand medical management advised.\nDictated by: Luis Small Interpreter, M.D."
+          "2.25.269543980460923814767645637194759190589": {
+            "report_text": "CANDICE DAVIS, M.D.\n\n\n\n********Final Report********\n\n\n \nACC#  Date Time  Exam\n\n\n620943135 Aug 14 2025 09:28PM MDXREVNT Radiology Event\nEXAMINATION: Single-view X-ray including chest region.\n\nFINDINGS:\nFrontal X-ray demonstrates no acute fractures or dislocations of the\nribs or clavicles. Mild cardiomegaly is noted. Lung fields show faint\nopacity in the right lower zone consistent with mild atelectasis but\nno acute infiltrate. Diaphragmatic contours are intact.\n\n\nIMPRESSION:\nNo acute osseous abnormalities. Mild cardiomegaly and faint\natelectatic changes. Recommend clinical assessment and correlation\nwith prior chest X-rays.\nRequested By: Perez,Gregory K. M.D.\n\nDictated By: Candice Davis, M.D. on Aug 14 2025 09:28PM\n\nThis document has been electronically signed by: Candice Davis, M.D.\non Aug 14 2025 09:28PM\n \n\n\n \n\n\n \n620943135^UK^ZB"
           }
         },
         "columnTypes": []
       },
-      "sql": "SELECT message_control_id, report_text FROM %TABLE_PLACEHOLDER% WHERE message_control_id IN ('2.25.61155004502365997902991606362324782931', '2.25.204398915138762988851874407954207601533', '2.25.121043577106706659500131090336553354531', '2.25.203807271003801336156822674911037502972')",
+      "sql": "SELECT message_control_id, report_text FROM %TABLE_PLACEHOLDER% WHERE message_control_id IN ('2.25.83733773296604060316231433263389742135', '2.25.86894298082825883439238171253269619380', '2.25.296476389772545408330432299707949012627', '2.25.269543980460923814767645637194759190589')",
       "id": "report_text"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".ExactRowsResult",
+        "uniqueIdColumnName": "message_control_id",
+        "rowAssertions": {
+          "2.25.27294531846963388481947318112461449032": {
+            "version_id": "2.4",
+            "report_section_addendum": "",
+            "report_section_findings": "",
+            "report_section_impression": "",
+            "report_section_technician_note": ""
+          },
+          "2.25.66092044680927012484208907663249350495": {
+            "version_id": "2.7",
+            "report_section_addendum": "",
+            "report_section_findings": "EXAMINATION: Single-view mammographic imaging of the left breast\nutilizing standard mediolateral oblique projection.\nFINDINGS:\nThe mammogram demonstrates heterogeneously dense fibroglandular\ntissue distributed throughout the left breast. There is no definitive\npresence of malignant-appearing masses or focal asymmetries. A few\nbenign-appearing cystic structures are noted in the upper outer\nquadrant, characterized by round, well-circumscribed radiolucencies\nwithout associated suspicious calcifications. Microcalcifications\npresent are predominantly coarse and scattered, consistent with\nbenign etiology. Skin and nipple contours appear intact without\nretraction or distortion. No evidence of architectural distortion or\nsuspicious spiculations is observed. The axillary tail was partially\nvisualized with no abnormal lymphadenopathy discernible.\n\n",
+            "report_section_impression": "IMPRESSION:\nFindings are consistent with benign fibroglandular changes with\nmultiple simple cysts and no suspicious features warranting biopsy at\nthis time. Given the heterogeneously dense breast parenchyma, subtle\nlesions may be obscured; correlation with clinical findings and\ncontinued routine screening recommended. No interval imaging\navailable for direct comparison with this study. Recommend follow-up\nmammogram in one year unless clinical changes arise.\nDictated by: Melissa Wright Interpreter, M.D.",
+            "report_section_technician_note": "Patient mentioned slight tenderness during compression but tolerated\nthe procedure well overall. Advised gentle communication to minimize\ndiscomfort in future scans."
+          },
+          "2.25.204310474482794041567619032273688214567": {
+            "version_id": "2.7",
+            "report_section_addendum": "ADDENDUM: Correction to the report: The initial assessment\nunderestimated the extent of the architectural distortion seen in the\nlower outer quadrant. Additional magnification views and ultrasound\ncorrelation are recommended for further evaluation.",
+            "report_section_findings": "EXAMINATION: Single-view mammogram of the left breast.\n\nFINDINGS:\nThe mammogram demonstrates heterogeneous breast parenchyma with\nscattered areas of fibroglandular density. Notably, there is a focal\narchitectural distortion measuring approximately 1.2 cm located in\nthe lower outer quadrant of the left breast, without overt\ncalcifications. No discrete masses are identified within the imaging\nfield. The nipple-areolar complexes are symmetric, and skin contours\nare unremarkable. No axillary lymphadenopathy is visualized on this\nlimited single-view study.\n\n",
+            "report_section_impression": "IMPRESSION:\nHeterogeneous breast density with a focal architectural distortion in\nthe lower outer quadrant of the left breast suspicious for an\nunderlying malignancy. Absence of discrete mass or\nmicrocalcifications on the single view warrants further imaging with\ntargeted mammographic views and ultrasonography to characterize this\nfinding. Recommend tissue sampling if correlating sonographic\nabnormality is found.\nDictated by: Erin Cervantes Interpreter, M.D.",
+            "report_section_technician_note": ""
+          },
+          "2.25.296178717141651566495466184955661956860": {
+            "version_id": "2.3",
+            "report_section_addendum": "ADDENDUM: Revised the impression to reflect progression in\ndegenerative changes noted since previous study on 2025-08-14.",
+            "report_section_findings": "EXAMINATION: Lateral single-view X-ray imaging of the cervical spine.\n\nFINDINGS:\nThe lateral cervical spine X-ray demonstrates progression of\nmulti-level degenerative spondylotic disease compared to the prior\nexam dated 2025-08-14. Intervertebral disc space narrowing is now\nmore pronounced at both C5-C6 and C6-C7 levels. There is an increase\nin osteophytic proliferation along the anterior vertebral margins\nextending from C4 to C7, consistent with advancing spondylosis. The\nvertebral alignment retains normal lordosis without evidence of\nkyphotic deformity or acute subluxation. Facet joint hypertrophy\npersists at multiple levels with worsening hypertrophic changes.\nNeural foraminal narrowing at C5-C6 is more conspicuous bilaterally,\npotentially increasing impingement on the exiting nerve roots. No\nacute fractures or subluxations are detected. Prevertebral soft\ntissues are unremarkable without signs of edema or swelling. The\nodontoid process remains intact and well visualized.\n\n",
+            "report_section_impression": "IMPRESSION:\nMarked progression of cervical spondylosis compared to 2025-08-14,\nwith exacerbated degenerative disc disease at C5-C6 and C6-C7\nmanifested by intensified intervertebral disc space narrowing and\nexpanded anterior osteophytosis from C4 through C7. Facet joint\nhypertrophy and bilateral foraminal stenosis have worsened,\nincreasing the risk of nerve root impingement which may correlate\nclinically with exacerbated radiculopathy or cervical pain. Vertebral\nalignment is preserved with no acute osseous injury or malalignment.\nContinued clinical monitoring is advised, with consideration for\nadvanced imaging such as MRI to further evaluate neural element\ninvolvement if symptoms progress.",
+            "report_section_technician_note": ""
+          }
+        },
+        "columnTypes": []
+      },
+      "sql": "SELECT * FROM %TABLE_PLACEHOLDER% WHERE message_control_id IN ('2.25.27294531846963388481947318112461449032', '2.25.66092044680927012484208907663249350495', '2.25.204310474482794041567619032273688214567', '2.25.296178717141651566495466184955661956860')",
+      "id": "report_sections"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".ExactRowsResult",
+        "uniqueIdColumnName": "message_control_id",
+        "rowAssertions": {
+          "2.25.296476389772545408330432299707949012627": {
+            "diagnoses": "[[R10.9,Unspecified abdominal pain,I10]]"
+          }
+        },
+        "columnTypes": [
+          {
+            "type": ".ArrayType",
+            "columnName": "diagnoses"
+          }
+        ]
+      },
+      "sql": "SELECT diagnoses FROM %TABLE_PLACEHOLDER% WHERE message_control_id IN ('2.25.296476389772545408330432299707949012627')",
+      "id": "diagnoses"
     }
   ]
 }
