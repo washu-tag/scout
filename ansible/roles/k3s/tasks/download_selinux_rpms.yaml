@@ -1,7 +1,9 @@
 ---
 # Download SELinux RPMs using Kubernetes Job on staging cluster
-# This task runs a Rocky Linux 9 container that uses yum to download k3s-selinux
-# and its dependencies (including container-selinux) with proper version resolution
+# This task runs a Rocky Linux 9 container that uses dnf to download k3s-selinux
+# and ALL its dependencies (including container-selinux, selinux-policy-base, etc.)
+# with proper version resolution. All dependency RPMs are included to ensure
+# air-gapped installation can succeed without external repository access.
 # Only runs in air-gapped mode when SELinux is enabled
 
 - name: Generate unique Job name with timestamp
@@ -64,18 +66,11 @@
                     echo "Repository configuration:"
                     cat /etc/yum.repos.d/rancher-k3s-common.repo
 
-                    echo "Downloading k3s-selinux and dependencies..."
-                    mkdir -p /downloads/all
-                    dnf download --resolve --destdir=/downloads/all k3s-selinux
-
-                    echo "All downloaded packages:"
-                    ls -lh /downloads/all/
-
-                    echo "Filtering to only k3s-selinux and container-selinux..."
+                    echo "Downloading k3s-selinux and ALL dependencies..."
                     mkdir -p /downloads
-                    find /downloads/all \( -name 'k3s-selinux-*.rpm' -o -name 'container-selinux-*.rpm' \) -exec cp {} /downloads/ \;
+                    dnf download --resolve --destdir=/downloads k3s-selinux
 
-                    echo "Filtered packages:"
+                    echo "All downloaded packages (including dependencies):"
                     ls -lh /downloads/
 
                     rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
@@ -86,7 +81,7 @@
                       exit 1
                     fi
 
-                    echo "Download and filtering completed successfully"
+                    echo "Download completed successfully with $rpm_count packages"
             containers:
               - name: sleeper
                 image: rockylinux/rockylinux:9.6
@@ -223,7 +218,7 @@
 
 - name: Display downloaded RPMs
   ansible.builtin.debug:
-    msg: "Downloaded {{ downloaded_rpms.files | length }} RPM files: {{ downloaded_rpms.files | map(attribute='path') | map('basename') | list }}"
+    msg: "Downloaded {{ downloaded_rpms.files | length }} RPM files (k3s-selinux + all dependencies): {{ downloaded_rpms.files | map(attribute='path') | map('basename') | list }}"
   delegate_to: localhost
   run_once: true
 
