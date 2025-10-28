@@ -195,7 +195,8 @@
       data:
         scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | b64encode }}"
 
-# https://github.com/adorsys/keycloak-config-cli/issues/1287
+# Workaround for broken helm repo: https://github.com/adorsys/keycloak-config-cli/issues/1287
+# TODO: Once issue is resolved, migrate to scout_common deploy_helm_chart task
 - name: Create temporary directory for Helm chart
   delegate_to: localhost
   ansible.builtin.tempfile:
@@ -206,7 +207,7 @@
 - name: Download Keycloak Config CLI Helm chart
   delegate_to: localhost
   ansible.builtin.get_url:
-    url: https://adorsys.github.io/keycloak-config-cli/helm-charts/keycloak-config-cli-6.4.1-SNAPSHOT.tgz
+    url: 'https://adorsys.github.io/keycloak-config-cli/helm-charts/keycloak-config-cli-{{ keycloak_config_cli_helm_chart_version }}.tgz'
     dest: '{{ helm_temp_dir.path }}/keycloak-config-cli.tgz'
     mode: '0644'
 
@@ -223,8 +224,8 @@
     atomic: true
     values:
       image:
-        repository: 'docker.io/adorsys/keycloak-config-cli'
-        tag: '6.4.0-26'
+        repository: '{{ keycloak_config_cli_image }}'
+        tag: '{{ keycloak_config_cli_image_tag }}'
       existingConfigSecret: 'keycloak-config'
       env:
         KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
