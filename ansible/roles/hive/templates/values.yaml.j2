@@ -7,7 +7,7 @@ image:
 
 imagePullSecrets: []
 nameOverride: ''
-fullnameOverride: ''
+fullnameOverride: '{{ hive_fullname_override | default("") }}'
 
 serviceAccount:
   create: false
@@ -52,19 +52,19 @@ env:
   - name: HIVE_METASTORE_DRIVER
     value: 'org.postgresql.Driver'
   - name: HIVE_METASTORE_JDBC_URL
-    value: '{{ jdbc_url }}/hive'
+    value: '{{ jdbc_url }}/{{ hive_database_name }}'
   - name: HIVE_METASTORE_USER
-    value: '{{ hive_postgres_user }}'
+    value: '{{ hive_metastore_db_user }}'
   - name: HIVE_METASTORE_PASSWORD
-    value: '{{ hive_postgres_password }}'
+    value: '{{ hive_metastore_db_password }}'
   - name: HIVE_METASTORE_WAREHOUSE_DIR
     value: '{{ delta_lake_path }}'
   - name: S3_ENDPOINT
     value: '{{ s3_endpoint }}'
   - name: S3_ACCESS_KEY
-    value: '{{ s3_lake_writer }}'
+    value: '{{ hive_s3_access_key }}'
   - name: S3_SECRET_KEY
-    value: '{{ s3_lake_writer_secret }}'
+    value: '{{ hive_s3_secret_key }}'
   - name: S3_PATH_STYLE_ACCESS
     value: 'true'
   - name: REGION

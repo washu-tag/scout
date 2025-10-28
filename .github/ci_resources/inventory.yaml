@@ -48,6 +48,7 @@ k3s_cluster:
     postgres_superuser_password: scout123
     hive_postgres_user: hive
     hive_postgres_password: hive123
+    hive_readonly_postgres_password: hivero123
     superset_postgres_user: superset
     superset_postgres_password: superset123
     postgres_resources: {} # No resource requests/limits

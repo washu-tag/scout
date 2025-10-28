@@ -1,0 +1,33 @@
+---
+# Create readonly PostgreSQL user for Hive Metastore
+# This user has SELECT-only access to metadata tables
+# Delta Lake uses its own transaction log, so no lock table access needed
+- name: Validate required database parameters
+  ansible.builtin.assert:
+    that:
+      - (hive_database_name is defined and hive_database_name | length > 0) and
+        (hive_postgres_user is defined and hive_postgres_user | length > 0) and
+        (hive_readonly_postgres_user is defined and hive_readonly_postgres_user | length > 0) and
+        (hive_readonly_postgres_password is defined and hive_readonly_postgres_password | length > 0)
+    fail_msg: 'Provide hive_database_name, hive_postgres_user, hive_readonly_postgres_user, and hive_readonly_postgres_password for database initialization'
+
+- name: Create readonly PostgreSQL user
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: execute_sql
+  vars:
+    db_connect_name: '{{ hive_database_name }}'
+    sql_script: |-
+      DO $do$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{{ hive_readonly_postgres_user }}') THEN
+          EXECUTE format('CREATE USER %I WITH PASSWORD %L', '{{ hive_readonly_postgres_user }}', '{{ hive_readonly_postgres_password }}');
+          EXECUTE format('GRANT CONNECT ON DATABASE %I TO %I', '{{ hive_database_name }}', '{{ hive_readonly_postgres_user }}');
+          EXECUTE format('GRANT USAGE ON SCHEMA public TO %I', '{{ hive_readonly_postgres_user }}');
+          EXECUTE format('GRANT SELECT ON ALL TABLES IN SCHEMA public TO %I', '{{ hive_readonly_postgres_user }}');
+          EXECUTE format('GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO %I', '{{ hive_readonly_postgres_user }}');
+          EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public GRANT SELECT ON TABLES TO %I', '{{ hive_postgres_user }}', '{{ hive_readonly_postgres_user }}');
+          EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public GRANT SELECT ON SEQUENCES TO %I', '{{ hive_postgres_user }}', '{{ hive_readonly_postgres_user }}');
+        END IF;
+      END;
+      $do$ LANGUAGE plpgsql;
