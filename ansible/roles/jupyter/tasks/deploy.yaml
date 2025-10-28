@@ -41,6 +41,8 @@
     spark_defaults_configmap_namespace: '{{ jupyter_namespace }}'
     spark_memory: '{{ jupyter_spark_memory }}'
     spark_hive_metastore_uri: '{{ hive_metastore_endpoint_readonly }}'
+    spark_s3_username: '{{ s3_lake_reader }}'
+    spark_s3_password: '{{ s3_lake_reader_secret }}'
 
 - name: Deploy JupyterHub
   ansible.builtin.include_role:
