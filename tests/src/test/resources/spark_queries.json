@@ -488,8 +488,8 @@
         "type": ".ExactRowsResult",
         "uniqueIdColumnName": "message_control_id",
         "rowAssertions": {
-          "2.25.296476389772545408330432299707949012627": {
-            "diagnoses": "[[R10.9,Unspecified abdominal pain,I10]]"
+          "2.25.255447108864050578016103835923469143730": {
+            "diagnoses": "[[J18.9,Pneumonia, unspecified organism,I10], [R04.2,Hemoptysis,I10], [R91.8,Other nonspecific abnormal finding of lung field,I10]]"
           }
         },
         "columnTypes": [
@@ -499,7 +499,7 @@
           }
         ]
       },
-      "sql": "SELECT diagnoses FROM %TABLE_PLACEHOLDER% WHERE message_control_id IN ('2.25.296476389772545408330432299707949012627')",
+      "sql": "SELECT message_control_id, diagnoses FROM %TABLE_PLACEHOLDER% WHERE message_control_id IN ('2.25.255447108864050578016103835923469143730')",
       "id": "diagnoses"
     }
   ]
