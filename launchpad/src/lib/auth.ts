@@ -23,7 +23,6 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      session.accessToken = token.accessToken as string;
       session.user.username = token.username as string;
       session.user.groups = token.groups as string[];
       // Add admin role to session based on Keycloak groups
