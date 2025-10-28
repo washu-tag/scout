@@ -46,6 +46,9 @@
         name: '{{ rpm_files_on_node.files | map(attribute="path") | list }}'
         state: present
         disable_gpg_check: true
+        disablerepo: '*'
+        # Disable all repos to prevent metadata refresh in air-gapped environment
+        # All dependencies are already included in the downloaded RPM files
       register: selinux_install
 
     - name: Verify k3s SELinux policy module is loaded
