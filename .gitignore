@@ -11,3 +11,5 @@ docs/build
 build/
 .aider*
 .kube/
+.claude/settings.local.json
+**/.claude/settings.local.json
