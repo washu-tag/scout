@@ -87,6 +87,9 @@ k3s_package_download_namespace: default
 
 # Timeout in seconds to wait for the SELinux package download Job to complete
 k3s_package_download_timeout: 300
+
+# Rocky Linux container image used for package download jobs
+k3s_package_download_image: rockylinux/rockylinux:9.6
 ################################################################################
 # Internal Variables (set at runtime)
 ################################################################################

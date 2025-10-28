@@ -15,6 +15,7 @@
 - name: Install SELinux RPMs from artifacts
   ansible.builtin.include_tasks: install_rpms_from_artifacts.yaml
   vars:
+    rpm_artifact_dir: '{{ k3s_selinux_artifact_dir }}'
     rpm_staging_dir: '{{ k3s_selinux_rpm_staging_dir }}'
     rpm_package_type: 'SELinux'
   when: k3s_selinux_enabled | bool

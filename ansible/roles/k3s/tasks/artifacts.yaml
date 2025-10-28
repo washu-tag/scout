@@ -40,6 +40,24 @@
       delegate_to: localhost
       run_once: true
 
+    - name: Create temporary directory for SELinux RPMs
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: 'k3s_selinux_'
+      register: k3s_selinux_temp_dir
+      delegate_to: localhost
+      run_once: true
+      when: k3s_selinux_enabled | bool
+
+    - name: Create temporary directory for GPU RPMs
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: 'k3s_gpu_'
+      register: k3s_gpu_temp_dir
+      delegate_to: localhost
+      run_once: true
+      when: groups['gpu_workers'] | default([]) | length > 0
+
     - name: Download k3s binary
       ansible.builtin.get_url:
         url: '{{ k3s_binary_base_url }}/{{ k3s_version }}/k3s'
@@ -99,13 +117,13 @@
       block:
         - name: Find SELinux RPM files
           ansible.builtin.find:
-            paths: '{{ k3s_temp_dir.path }}'
+            paths: '{{ k3s_selinux_temp_dir.path }}'
             patterns: '*-selinux*.rpm'
           register: selinux_rpm_files
 
         - name: Fail if no SELinux RPMs found
           ansible.builtin.fail:
-            msg: 'No SELinux RPM files found in {{ k3s_temp_dir.path }}'
+            msg: 'No SELinux RPM files found in {{ k3s_selinux_temp_dir.path }}'
           when: selinux_rpm_files.files | length == 0
 
     - name: Verify GPU RPMs were downloaded
@@ -115,20 +133,22 @@
       block:
         - name: Find GPU RPM files
           ansible.builtin.find:
-            paths: '{{ k3s_temp_dir.path }}'
+            paths: '{{ k3s_gpu_temp_dir.path }}'
             patterns: '*nvidia*.rpm,*libnvidia*.rpm'
           register: gpu_rpm_files
 
         - name: Fail if no GPU RPMs found
           ansible.builtin.fail:
-            msg: 'No GPU RPM files found in {{ k3s_temp_dir.path }}'
+            msg: 'No GPU RPM files found in {{ k3s_gpu_temp_dir.path }}'
           when: gpu_rpm_files.files | length == 0
 
-    - name: Set fact with temp directory path
+    - name: Set facts with temp directory paths
       ansible.builtin.set_fact:
         k3s_artifact_temp_dir: '{{ k3s_temp_dir.path }}'
+        k3s_selinux_artifact_dir: '{{ k3s_selinux_temp_dir.path | default("") }}'
+        k3s_gpu_artifact_dir: '{{ k3s_gpu_temp_dir.path | default("") }}'
       # Note: NO delegate_facts, NO delegate_to
-      # This allows the fact to be shared with all hosts
+      # This allows the facts to be shared with all hosts
 
 ################################################################################
 # Air-Gapped Mode: Copy artifacts to target nodes
