@@ -12,19 +12,18 @@
     msg: 'SELinux is not enabled, skipping SELinux package installation'
   when: not k3s_selinux_enabled | bool
 
-- name: Install SELinux packages
+- name: Install SELinux RPMs from artifacts
+  ansible.builtin.include_tasks: install_rpms_from_artifacts.yaml
+  vars:
+    rpm_staging_dir: '{{ k3s_selinux_rpm_staging_dir }}'
+    rpm_package_type: 'SELinux'
   when: k3s_selinux_enabled | bool
-  block:
-    - name: Install SELinux RPMs from artifacts
-      ansible.builtin.include_tasks: install_rpms_from_artifacts.yaml
-      vars:
-        rpm_staging_dir: '{{ k3s_selinux_rpm_staging_dir }}'
-        rpm_package_type: 'SELinux'
 
-    - name: Verify k3s SELinux policy module is loaded
-      ansible.builtin.command: semodule -l
-      register: semodule_list
-      changed_when: false
-      retries: 3
-      delay: 2
-      until: "'k3s' in semodule_list.stdout"
+- name: Verify k3s SELinux policy module is loaded
+  ansible.builtin.command: semodule -l
+  register: semodule_list
+  changed_when: false
+  retries: 3
+  delay: 2
+  until: "'k3s' in semodule_list.stdout"
+  when: k3s_selinux_enabled | bool

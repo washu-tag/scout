@@ -11,201 +11,204 @@
 #   - rpm_download_script: Bash script to run in init container for downloading
 #   - rpm_package_type: Description of package type (e.g., "SELinux", "GPU")
 
-- name: Create Kubernetes Job manifest for RPM package download
-  ansible.builtin.set_fact:
-    rpm_downloader_job:
-      apiVersion: batch/v1
-      kind: Job
-      metadata:
-        name: '{{ rpm_job_name }}'
-        namespace: '{{ k3s_package_download_namespace }}'
-        labels:
-          app: 'k3s-{{ rpm_package_type | lower }}-downloader'
-          managed-by: ansible
-      spec:
-        ttlSecondsAfterFinished: 300
-        backoffLimit: 5
-        template:
+- block:
+    - name: Create Kubernetes Job manifest for RPM package download
+      ansible.builtin.set_fact:
+        rpm_downloader_job:
+          apiVersion: batch/v1
+          kind: Job
           metadata:
+            name: '{{ rpm_job_name }}'
+            namespace: '{{ k3s_package_download_namespace }}'
             labels:
               app: 'k3s-{{ rpm_package_type | lower }}-downloader'
+              managed-by: ansible
           spec:
-            restartPolicy: Never
-            volumes:
-              - name: rpm-storage
-                emptyDir: {}
-            initContainers:
-              - name: downloader
-                image: rockylinux/rockylinux:9.6
-                volumeMounts:
+            ttlSecondsAfterFinished: 300
+            backoffLimit: 5
+            template:
+              metadata:
+                labels:
+                  app: 'k3s-{{ rpm_package_type | lower }}-downloader'
+              spec:
+                restartPolicy: Never
+                volumes:
                   - name: rpm-storage
-                    mountPath: /downloads
-                command:
-                  - /bin/bash
-                  - -c
-                  - '{{ rpm_download_script }}'
-            containers:
-              - name: sleeper
-                image: rockylinux/rockylinux:9.6
-                command: ['sleep', '300']
-                volumeMounts:
-                  - name: rpm-storage
-                    mountPath: /downloads
-                    readOnly: true
-  delegate_to: localhost
-  run_once: true
+                    emptyDir: {}
+                initContainers:
+                  - name: downloader
+                    image: rockylinux/rockylinux:9.6
+                    volumeMounts:
+                      - name: rpm-storage
+                        mountPath: /downloads
+                    command:
+                      - /bin/bash
+                      - -c
+                      - '{{ rpm_download_script }}'
+                containers:
+                  - name: sleeper
+                    image: rockylinux/rockylinux:9.6
+                    command: ['sleep', '300']
+                    volumeMounts:
+                      - name: rpm-storage
+                        mountPath: /downloads
+                        readOnly: true
+      delegate_to: localhost
+      run_once: true
 
-- name: Deploy {{ rpm_package_type }} downloader Job to staging cluster
-  kubernetes.core.k8s:
-    state: present
-    definition: '{{ rpm_downloader_job }}'
-    kubeconfig: '{{ kubeconfig_yaml }}'
-  delegate_to: "{{ groups['staging'][0] }}"
-  run_once: true
-  register: job_created
+    - name: Deploy {{ rpm_package_type }} downloader Job to staging cluster
+      kubernetes.core.k8s:
+        state: present
+        definition: '{{ rpm_downloader_job }}'
+        kubeconfig: '{{ kubeconfig_yaml }}'
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      register: job_created
 
-- name: Wait for Pod to be created
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Pod
-    namespace: '{{ k3s_package_download_namespace }}'
-    label_selectors:
-      - 'job-name={{ rpm_job_name }}'
-    kubeconfig: '{{ kubeconfig_yaml }}'
-  delegate_to: "{{ groups['staging'][0] }}"
-  run_once: true
-  register: job_pods
-  until: job_pods.resources | length > 0
-  retries: 30
-  delay: 2
+    - name: Wait for Pod to be created
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: '{{ k3s_package_download_namespace }}'
+        label_selectors:
+          - 'job-name={{ rpm_job_name }}'
+        kubeconfig: '{{ kubeconfig_yaml }}'
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      register: job_pods
+      until: job_pods.resources | length > 0
+      retries: 30
+      delay: 2
 
-- name: Set Pod name fact
-  ansible.builtin.set_fact:
-    rpm_downloader_pod: '{{ job_pods.resources[0].metadata.name }}'
-  delegate_to: localhost
-  run_once: true
+    - name: Set Pod name fact
+      ansible.builtin.set_fact:
+        rpm_downloader_pod: '{{ job_pods.resources[0].metadata.name }}'
+      delegate_to: localhost
+      run_once: true
 
-- name: Wait for init container (downloader) to complete
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Pod
-    name: '{{ rpm_downloader_pod }}'
-    namespace: '{{ k3s_package_download_namespace }}'
-    kubeconfig: '{{ kubeconfig_yaml }}'
-  delegate_to: "{{ groups['staging'][0] }}"
-  run_once: true
-  register: pod_status
-  until: >
-    pod_status.resources | length > 0 and
-    pod_status.resources[0].status.initContainerStatuses is defined and
-    pod_status.resources[0].status.initContainerStatuses | length > 0 and
-    pod_status.resources[0].status.initContainerStatuses[0].state.terminated is defined
-  retries: '{{ (k3s_package_download_timeout / 10) | int }}'
-  delay: 10
-  failed_when: false
+    - name: Wait for init container (downloader) to complete
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        name: '{{ rpm_downloader_pod }}'
+        namespace: '{{ k3s_package_download_namespace }}'
+        kubeconfig: '{{ kubeconfig_yaml }}'
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      register: pod_status
+      until: >
+        pod_status.resources | length > 0 and
+        pod_status.resources[0].status.initContainerStatuses is defined and
+        pod_status.resources[0].status.initContainerStatuses | length > 0 and
+        pod_status.resources[0].status.initContainerStatuses[0].state.terminated is defined
+      retries: '{{ (k3s_package_download_timeout / 10) | int }}'
+      delay: 10
+      failed_when: false
 
-- name: Check if init container failed
-  ansible.builtin.fail:
-    msg: '{{ rpm_package_type }} package download failed. Init container exit code: {{ pod_status.resources[0].status.initContainerStatuses[0].state.terminated.exitCode }}. Check logs with: kubectl logs {{ rpm_downloader_pod }} -n {{ k3s_package_download_namespace }} -c downloader'
-  when: >
-    pod_status.resources | length == 0 or
-    pod_status.resources[0].status.initContainerStatuses[0].state.terminated.exitCode != 0
-  delegate_to: localhost
-  run_once: true
+    - name: Check if init container failed
+      ansible.builtin.fail:
+        msg: '{{ rpm_package_type }} package download failed. Init container exit code: {{ pod_status.resources[0].status.initContainerStatuses[0].state.terminated.exitCode }}. Check logs with: kubectl logs {{ rpm_downloader_pod }} -n {{ k3s_package_download_namespace }} -c downloader'
+      when: >
+        pod_status.resources | length == 0 or
+        pod_status.resources[0].status.initContainerStatuses[0].state.terminated.exitCode != 0
+      delegate_to: localhost
+      run_once: true
 
-- name: Display Pod name for kubectl cp
-  ansible.builtin.debug:
-    msg: 'Extracting RPMs from Pod: {{ rpm_downloader_pod }}'
-  delegate_to: localhost
-  run_once: true
+    - name: Display Pod name for kubectl cp
+      ansible.builtin.debug:
+        msg: 'Extracting RPMs from Pod: {{ rpm_downloader_pod }}'
+      delegate_to: localhost
+      run_once: true
 
-- name: Create staging directory on staging node
-  ansible.builtin.file:
-    path: '{{ rpm_staging_dir }}'
-    state: directory
-    mode: '0755'
-  delegate_to: "{{ groups['staging'][0] }}"
-  run_once: true
+    - name: Create staging directory on staging node
+      ansible.builtin.file:
+        path: '{{ rpm_staging_dir }}'
+        state: directory
+        mode: '0755'
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
 
-- name: Copy RPMs from sleeper container to staging node
-  ansible.builtin.command:
-    cmd: >
-      kubectl cp
-      {{ k3s_package_download_namespace }}/{{ rpm_downloader_pod }}:/downloads/
-      {{ rpm_staging_dir }}/
-      -c sleeper
-      --kubeconfig={{ kubeconfig_yaml }}
-  delegate_to: "{{ groups['staging'][0] }}"
-  run_once: true
-  register: kubectl_cp_result
-  changed_when: kubectl_cp_result.rc == 0
+    - name: Copy RPMs from sleeper container to staging node
+      ansible.builtin.command:
+        cmd: >
+          kubectl cp
+          {{ k3s_package_download_namespace }}/{{ rpm_downloader_pod }}:/downloads/
+          {{ rpm_staging_dir }}/
+          -c sleeper
+          --kubeconfig={{ kubeconfig_yaml }}
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      register: kubectl_cp_result
+      changed_when: kubectl_cp_result.rc == 0
 
-- name: Find RPM files on staging node
-  ansible.builtin.find:
-    paths: '{{ rpm_staging_dir }}'
-    patterns: '*.rpm'
-  delegate_to: "{{ groups['staging'][0] }}"
-  run_once: true
-  register: staging_rpm_files
+    - name: Find RPM files on staging node
+      ansible.builtin.find:
+        paths: '{{ rpm_staging_dir }}'
+        patterns: '*.rpm'
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      register: staging_rpm_files
 
-- name: Display found RPMs on staging node
-  ansible.builtin.debug:
-    msg: 'Found {{ staging_rpm_files.files | length }} RPM files on staging node: {{ staging_rpm_files.files | map(attribute="path") | map("basename") | list }}'
-  delegate_to: localhost
-  run_once: true
+    - name: Display found RPMs on staging node
+      ansible.builtin.debug:
+        msg: 'Found {{ staging_rpm_files.files | length }} RPM files on staging node: {{ staging_rpm_files.files | map(attribute="path") | map("basename") | list }}'
+      delegate_to: localhost
+      run_once: true
 
-- name: Fail if no RPMs found on staging node
-  ansible.builtin.fail:
-    msg: 'No RPM files found in {{ rpm_staging_dir }} on staging node'
-  when: staging_rpm_files.files | length == 0
-  delegate_to: localhost
-  run_once: true
+    - name: Fail if no RPMs found on staging node
+      ansible.builtin.fail:
+        msg: 'No RPM files found in {{ rpm_staging_dir }} on staging node'
+      when: staging_rpm_files.files | length == 0
+      delegate_to: localhost
+      run_once: true
 
-- name: Fetch RPMs from staging node to Ansible control node
-  ansible.builtin.fetch:
-    src: '{{ item.path }}'
-    dest: '{{ k3s_temp_dir.path }}/{{ item.path | basename }}'
-    flat: true
-  delegate_to: "{{ groups['staging'][0] }}"
-  run_once: true
-  loop: '{{ staging_rpm_files.files }}'
+    - name: Fetch RPMs from staging node to Ansible control node
+      ansible.builtin.fetch:
+        src: '{{ item.path }}'
+        dest: '{{ k3s_temp_dir.path }}/{{ item.path | basename }}'
+        flat: true
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      loop: '{{ staging_rpm_files.files }}'
 
-- name: Verify RPMs were copied successfully
-  ansible.builtin.find:
-    paths: '{{ k3s_temp_dir.path }}'
-    patterns: '*.rpm'
-  delegate_to: localhost
-  run_once: true
-  register: downloaded_rpms
+    - name: Verify RPMs were copied successfully
+      ansible.builtin.find:
+        paths: '{{ k3s_temp_dir.path }}'
+        patterns: '*.rpm'
+      delegate_to: localhost
+      run_once: true
+      register: downloaded_rpms
 
-- name: Display downloaded RPMs
-  ansible.builtin.debug:
-    msg: "Downloaded {{ downloaded_rpms.files | length }} RPM files ({{ rpm_package_type }} + all dependencies): {{ downloaded_rpms.files | map(attribute='path') | map('basename') | list }}"
-  delegate_to: localhost
-  run_once: true
+    - name: Display downloaded RPMs
+      ansible.builtin.debug:
+        msg: "Downloaded {{ downloaded_rpms.files | length }} RPM files ({{ rpm_package_type }} + all dependencies): {{ downloaded_rpms.files | map(attribute='path') | map('basename') | list }}"
+      delegate_to: localhost
+      run_once: true
 
-- name: Fail if no RPMs were downloaded
-  ansible.builtin.fail:
-    msg: 'No RPM files found in {{ k3s_temp_dir.path }}'
-  when: downloaded_rpms.files | length == 0
-  delegate_to: localhost
-  run_once: true
+    - name: Fail if no RPMs were downloaded
+      ansible.builtin.fail:
+        msg: 'No RPM files found in {{ k3s_temp_dir.path }}'
+      when: downloaded_rpms.files | length == 0
+      delegate_to: localhost
+      run_once: true
 
-- name: Clean up RPM directory on staging node
-  ansible.builtin.file:
-    path: '{{ rpm_staging_dir }}'
-    state: absent
-  delegate_to: "{{ groups['staging'][0] }}"
-  run_once: true
+  always:
+    - name: Clean up RPM directory on staging node
+      ansible.builtin.file:
+        path: '{{ rpm_staging_dir }}'
+        state: absent
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      when: rpm_staging_dir is defined
 
-- name: Delete {{ rpm_package_type }} downloader Job
-  kubernetes.core.k8s:
-    state: absent
-    api_version: batch/v1
-    kind: Job
-    name: '{{ rpm_job_name }}'
-    namespace: '{{ k3s_package_download_namespace }}'
-    kubeconfig: '{{ kubeconfig_yaml }}'
-  delegate_to: "{{ groups['staging'][0] }}"
-  run_once: true
-  when: job_created is changed
+    - name: Delete {{ rpm_package_type }} downloader Job
+      kubernetes.core.k8s:
+        state: absent
+        api_version: batch/v1
+        kind: Job
+        name: '{{ rpm_job_name }}'
+        namespace: '{{ k3s_package_download_namespace }}'
+        kubeconfig: '{{ kubeconfig_yaml }}'
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      when: job_created is defined and job_created is changed
