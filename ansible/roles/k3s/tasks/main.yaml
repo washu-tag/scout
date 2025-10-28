@@ -61,10 +61,10 @@
   when: "'agents' in group_names"
 
 ################################################################################
-# Cleanup - Remove temporary artifact directory
+# Cleanup - Remove temporary artifact directories
 ################################################################################
 
-- name: Clean up artifact temporary directory
+- name: Clean up k3s artifact temporary directory
   ansible.builtin.file:
     path: '{{ k3s_artifact_temp_dir }}'
     state: absent
@@ -73,3 +73,25 @@
   when:
     - air_gapped | default(false) | bool
     - k3s_artifact_temp_dir is defined
+
+- name: Clean up SELinux artifact temporary directory
+  ansible.builtin.file:
+    path: '{{ k3s_selinux_artifact_dir }}'
+    state: absent
+  delegate_to: localhost
+  run_once: true
+  when:
+    - air_gapped | default(false) | bool
+    - k3s_selinux_artifact_dir is defined
+    - k3s_selinux_artifact_dir != ""
+
+- name: Clean up GPU artifact temporary directory
+  ansible.builtin.file:
+    path: '{{ k3s_gpu_artifact_dir }}'
+    state: absent
+  delegate_to: localhost
+  run_once: true
+  when:
+    - air_gapped | default(false) | bool
+    - k3s_gpu_artifact_dir is defined
+    - k3s_gpu_artifact_dir != ""

@@ -4,6 +4,7 @@
 # Used for air-gapped installation of packages that were downloaded via Kubernetes Job
 #
 # Required parameters:
+#   - rpm_artifact_dir: Directory path on control node containing RPMs to install
 #   - rpm_staging_dir: Directory path on target node where RPMs will be staged
 #   - rpm_package_type: Description of package type for logging (e.g., "SELinux", "GPU")
 
@@ -16,7 +17,7 @@
 
     - name: Find all RPM files in artifact directory
       ansible.builtin.find:
-        paths: '{{ k3s_artifact_temp_dir }}'
+        paths: '{{ rpm_artifact_dir }}'
         patterns: '*.rpm'
       delegate_to: localhost
       register: rpm_files_to_copy

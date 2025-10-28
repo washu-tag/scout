@@ -49,3 +49,5 @@
 
 - name: Download GPU packages via Kubernetes Job
   ansible.builtin.include_tasks: download_rpms_via_job.yaml
+  vars:
+    rpm_artifact_dir: '{{ k3s_gpu_temp_dir.path }}'

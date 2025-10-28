@@ -20,6 +20,7 @@
   when: air_gapped | default(false) | bool
   ansible.builtin.include_tasks: install_rpms_from_artifacts.yaml
   vars:
+    rpm_artifact_dir: '{{ k3s_gpu_artifact_dir }}'
     rpm_staging_dir: '{{ k3s_gpu_rpm_staging_dir }}'
     rpm_package_type: 'GPU'
 
