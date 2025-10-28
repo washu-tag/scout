@@ -1,20 +1,17 @@
 ---
 - name: Apply Keycloak CRD
-  delegate_to: localhost
   no_log: true
   kubernetes.core.k8s:
     state: present
     src: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.4.2/kubernetes/keycloaks.k8s.keycloak.org-v1.yml
 
 - name: Apply Keycloak KeycloakRealmImport CRD
-  delegate_to: localhost
   no_log: true
   kubernetes.core.k8s:
     state: present
     src: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.4.2/kubernetes/keycloakrealmimports.k8s.keycloak.org-v1.yml
 
 - name: Create Keycloak CR namespace
-  delegate_to: localhost
   kubernetes.core.k8s:
     name: '{{ keycloak_namespace }}'
     api_version: v1
@@ -22,7 +19,6 @@
     state: present
 
 - name: Apply Keycloak Operator
-  delegate_to: localhost
   no_log: true
   kubernetes.core.k8s:
     state: present
@@ -30,7 +26,6 @@
     namespace: '{{ keycloak_namespace }}'
 
 - name: Wait for Keycloak Operator to be ready
-  delegate_to: localhost
   kubernetes.core.k8s_info:
     api_version: apps/v1
     kind: Deployment
@@ -53,7 +48,6 @@
     db_owner_pass: '{{ keycloak_postgres_password }}'
 
 - name: Create Keycloak DB secret
-  delegate_to: localhost
   kubernetes.core.k8s:
     state: present
     namespace: '{{ keycloak_namespace }}'
@@ -68,7 +62,6 @@
         password: '{{ keycloak_postgres_password }}'
 
 - name: Create Keycloak Admin secret
-  delegate_to: localhost
   kubernetes.core.k8s:
     state: present
     namespace: '{{ keycloak_namespace }}'
@@ -83,7 +76,6 @@
         password: '{{ keycloak_bootstrap_admin_password }}'
 
 - name: Create Keycloak CR
-  delegate_to: localhost
   kubernetes.core.k8s:
     state: present
     namespace: '{{ keycloak_namespace }}'
@@ -132,7 +124,6 @@
 
 # The operator wants to use a subdomain and does not appear to support a path-based ingress
 - name: Create Keycloak Ingress
-  delegate_to: localhost
   kubernetes.core.k8s:
     state: present
     namespace: '{{ keycloak_namespace }}'
@@ -157,7 +148,6 @@
                   pathType: Prefix
 
 - name: Wait for Keycloak to be ready
-  delegate_to: localhost
   shell: >-
     kubectl wait --for=condition=Ready --timeout=5m keycloak/keycloak -n {{ keycloak_namespace }}
   register: keycloak_ready

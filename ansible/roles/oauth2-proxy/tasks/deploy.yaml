@@ -1,10 +1,4 @@
 ---
-- name: Add OAuth2 Proxy Helm repository
-  delegate_to: localhost
-  kubernetes.core.helm_repository:
-    name: oauth2-proxy
-    repo_url: '{{ oauth2_proxy_chart_repo }}'
-
 - name: Create ConfigMap with OAuth2 Proxy html templates
   block:
     - name: Find all html files in oauth2-proxy templates directory
@@ -61,7 +55,6 @@
     helm_chart_values: '{{ lookup("template", "values.yaml.j2") | from_yaml }}'
 
 - name: Install OAuth2 Proxy Auth Middleware
-  delegate_to: localhost
   kubernetes.core.k8s:
     state: present
     definition:
@@ -78,7 +71,6 @@
             - X-Auth-Request-Access-Token
 
 - name: Install OAuth2 Proxy Error Middleware
-  delegate_to: localhost
   kubernetes.core.k8s:
     state: present
     definition:
