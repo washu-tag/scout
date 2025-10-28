@@ -49,7 +49,7 @@ We will implement air-gapped k3s installation using the following approach:
 **Implementation Pattern:**
 ```yaml
 Job with two containers:
-  - initContainer (downloader): Configures Rancher repo, runs yumdownloader, exits
+  - initContainer (downloader): Configures Rancher repo, runs dnf download, exits
   - mainContainer (sleeper): Keeps pod running for file extraction
   - Shared emptyDir volume: Files accessible to both containers
 ```
