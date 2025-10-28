@@ -21,11 +21,6 @@
         dest: /root/bin/get.k3s.io.sh
         mode: '0755'
 
-    - name: Add python kubernetes library from system package
-      ansible.builtin.package:
-        name: python3-kubernetes
-        state: present
-
 ################################################################################
 - name: Install k3s on staging node
   hosts: staging

@@ -33,7 +33,5 @@
     - not (air_gapped | default(false) | bool)
     - not (k3s_install_script_stat.stat.exists | default(false))
 
-- name: Add python kubernetes library from system package
-  ansible.builtin.package:
-    name: python3-kubernetes
-    state: present
+- name: Install python kubernetes library
+  ansible.builtin.include_tasks: python_packages.yaml

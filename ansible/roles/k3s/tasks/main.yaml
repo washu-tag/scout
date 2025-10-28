@@ -95,3 +95,14 @@
     - air_gapped | default(false) | bool
     - k3s_gpu_artifact_dir is defined
     - k3s_gpu_artifact_dir != ""
+
+- name: Clean up Python artifact temporary directory
+  ansible.builtin.file:
+    path: '{{ k3s_python_artifact_dir }}'
+    state: absent
+  delegate_to: localhost
+  run_once: true
+  when:
+    - air_gapped | default(false) | bool
+    - k3s_python_artifact_dir is defined
+    - k3s_python_artifact_dir != ""

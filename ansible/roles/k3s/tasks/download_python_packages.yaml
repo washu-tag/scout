@@ -1,0 +1,42 @@
+---
+# Download Python kubernetes library RPMs using Kubernetes Job on staging cluster
+# This task runs a Rocky Linux 9 container that uses dnf to download python3-kubernetes
+# and ALL its dependencies with proper version resolution. All dependency RPMs are included
+# to ensure air-gapped installation can succeed without external repository access.
+# Only runs in air-gapped mode
+
+- name: Generate unique Job name and staging directory with timestamp
+  ansible.builtin.set_fact:
+    rpm_job_name: 'k3s-python-downloader-{{ ansible_date_time.epoch }}'
+    rpm_staging_dir: '/tmp/k3s-python-rpms-{{ ansible_date_time.epoch }}'
+    rpm_package_type: 'Python'
+    rpm_download_script: |
+      set -e
+      set -x
+
+      echo "Installing dnf-plugins-core for dnf download..."
+      dnf install -y dnf-plugins-core
+
+      echo "Downloading python3-kubernetes and ALL dependencies..."
+      mkdir -p /downloads
+      dnf download --resolve --destdir=/downloads python3-kubernetes
+
+      echo "All downloaded packages (including dependencies):"
+      ls -lh /downloads/
+
+      rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
+      echo "Package count: $rpm_count"
+
+      if [ "$rpm_count" -eq 0 ]; then
+        echo "ERROR: No RPM files were downloaded!"
+        exit 1
+      fi
+
+      echo "Download completed successfully with $rpm_count packages"
+  delegate_to: localhost
+  run_once: true
+
+- name: Download Python packages via Kubernetes Job
+  ansible.builtin.include_tasks: download_rpms_via_job.yaml
+  vars:
+    rpm_artifact_dir: '{{ k3s_python_temp_dir.path }}'

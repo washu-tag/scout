@@ -58,6 +58,14 @@
       run_once: true
       when: groups['gpu_workers'] | default([]) | length > 0
 
+    - name: Create temporary directory for Python RPMs
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: 'k3s_python_'
+      register: k3s_python_temp_dir
+      delegate_to: localhost
+      run_once: true
+
     - name: Download k3s binary
       ansible.builtin.get_url:
         url: '{{ k3s_binary_base_url }}/{{ k3s_version }}/k3s'
@@ -83,6 +91,9 @@
     - name: Download GPU packages using Kubernetes Job
       ansible.builtin.include_tasks: download_gpu_packages.yaml
       when: groups['gpu_workers'] | default([]) | length > 0
+
+    - name: Download Python packages using Kubernetes Job
+      ansible.builtin.include_tasks: download_python_packages.yaml
 
     - name: Verify k3s binary was downloaded
       ansible.builtin.stat:
@@ -142,11 +153,27 @@
             msg: 'No GPU RPM files found in {{ k3s_gpu_temp_dir.path }}'
           when: gpu_rpm_files.files | length == 0
 
+    - name: Verify Python RPMs were downloaded
+      delegate_to: localhost
+      run_once: true
+      block:
+        - name: Find Python RPM files
+          ansible.builtin.find:
+            paths: '{{ k3s_python_temp_dir.path }}'
+            patterns: 'python3-kubernetes*.rpm'
+          register: python_rpm_files
+
+        - name: Fail if no Python RPMs found
+          ansible.builtin.fail:
+            msg: 'No Python RPM files found in {{ k3s_python_temp_dir.path }}'
+          when: python_rpm_files.files | length == 0
+
     - name: Set facts with temp directory paths
       ansible.builtin.set_fact:
         k3s_artifact_temp_dir: '{{ k3s_temp_dir.path }}'
         k3s_selinux_artifact_dir: '{{ k3s_selinux_temp_dir.path | default("") }}'
         k3s_gpu_artifact_dir: '{{ k3s_gpu_temp_dir.path | default("") }}'
+        k3s_python_artifact_dir: '{{ k3s_python_temp_dir.path }}'
       # Note: NO delegate_facts, NO delegate_to
       # This allows the facts to be shared with all hosts
 
