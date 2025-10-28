@@ -16,20 +16,65 @@
       default-runtime: nvidia
     mode: '0644'
 
-- name: Add NVIDIA container toolkit repository
-  ansible.builtin.get_url:
-    url: https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
-    dest: /etc/yum.repos.d/nvidia-container-toolkit.repo
-    mode: '0644'
-
 - name: Install NVIDIA container toolkit packages
-  ansible.builtin.package:
-    name:
-      - nvidia-container-toolkit
-      - nvidia-container-toolkit-base
-      - libnvidia-container-tools
-      - libnvidia-container1
-    state: present
+  when: air_gapped | default(false) | bool
+  block:
+    - name: Create staging directory for GPU RPMs
+      ansible.builtin.file:
+        path: '{{ k3s_gpu_rpm_staging_dir }}'
+        state: directory
+        mode: '0755'
+
+    - name: Find all RPM files in artifact directory
+      ansible.builtin.find:
+        paths: '{{ k3s_artifact_temp_dir }}'
+        patterns: '*.rpm'
+      delegate_to: localhost
+      register: rpm_files_to_copy
+
+    - name: Copy all GPU RPMs to node
+      ansible.builtin.copy:
+        src: '{{ item.path }}'
+        dest: '{{ k3s_gpu_rpm_staging_dir }}/{{ item.path | basename }}'
+        mode: '0644'
+      loop: '{{ rpm_files_to_copy.files }}'
+
+    - name: Find all RPM files on node
+      ansible.builtin.find:
+        paths: '{{ k3s_gpu_rpm_staging_dir }}'
+        patterns: '*.rpm'
+      register: rpm_files_on_node
+
+    - name: Install all GPU packages
+      ansible.builtin.dnf:
+        name: '{{ rpm_files_on_node.files | map(attribute="path") | list }}'
+        state: present
+        disable_gpg_check: true
+      register: gpu_install
+
+  always:
+    - name: Clean up staging directory
+      ansible.builtin.file:
+        path: '{{ k3s_gpu_rpm_staging_dir }}'
+        state: absent
+
+- name: Install NVIDIA container toolkit packages (online mode)
+  when: not (air_gapped | default(false) | bool)
+  block:
+    - name: Add NVIDIA container toolkit repository
+      ansible.builtin.get_url:
+        url: https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+        dest: /etc/yum.repos.d/nvidia-container-toolkit.repo
+        mode: '0644'
+
+    - name: Install NVIDIA container toolkit packages
+      ansible.builtin.package:
+        name:
+          - nvidia-container-toolkit
+          - nvidia-container-toolkit-base
+          - libnvidia-container-tools
+          - libnvidia-container1
+        state: present
 
 - name: Verify NVIDIA container toolkit installation
   ansible.builtin.command: nvidia-ctk --version
