@@ -111,7 +111,7 @@
         name: keycloak
       spec:
         instances: 1
-        image: '{{ keycloak_image | default("ghcr.io/washu-tag/keycloak:1.1.0") }}'
+        image: '{{ keycloak_image_repository }}:{{ keycloak_image_tag }}'
         bootstrapAdmin:
           user:
             secret: keycloak-admin-secret
