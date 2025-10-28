@@ -195,45 +195,5 @@
       data:
         scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | b64encode }}"
 
-# Workaround for broken helm repo: https://github.com/adorsys/keycloak-config-cli/issues/1287
-# TODO: Once issue is resolved, migrate to scout_common deploy_helm_chart task
-- name: Create temporary directory for Helm chart
-  delegate_to: localhost
-  ansible.builtin.tempfile:
-    state: directory
-    suffix: _keycloak_helm
-  register: helm_temp_dir
-
-- name: Download Keycloak Config CLI Helm chart
-  delegate_to: localhost
-  ansible.builtin.get_url:
-    url: 'https://adorsys.github.io/keycloak-config-cli/helm-charts/keycloak-config-cli-{{ keycloak_config_cli_helm_chart_version }}.tgz'
-    dest: '{{ helm_temp_dir.path }}/keycloak-config-cli.tgz'
-    mode: '0644'
-
-- name: Run Keycloak Config CLI to Configure Keycloak
-  delegate_to: localhost
-  kubernetes.core.helm:
-    name: keycloak-config-cli
-    release_namespace: '{{ keycloak_namespace }}'
-    create_namespace: true
-    chart_ref: '{{ helm_temp_dir.path }}/keycloak-config-cli.tgz'
-    state: present
-    wait: true
-    wait_timeout: 5m
-    atomic: true
-    values:
-      image:
-        repository: '{{ keycloak_config_cli_image }}'
-        tag: '{{ keycloak_config_cli_image_tag }}'
-      existingConfigSecret: 'keycloak-config'
-      env:
-        KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
-        KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
-      existingSecret: keycloak-admin-secret
-
-- name: Clean up temporary directory
-  delegate_to: localhost
-  ansible.builtin.file:
-    path: '{{ helm_temp_dir.path }}'
-    state: absent
+- name: Configure Keycloak with keycloak-config-cli
+  ansible.builtin.include_tasks: configure.yaml
