@@ -62,6 +62,10 @@
       ansible.builtin.include_tasks: download_selinux_rpms.yaml
       when: k3s_selinux_enabled | bool
 
+    - name: Download GPU packages using Kubernetes Job
+      ansible.builtin.include_tasks: download_gpu_packages.yaml
+      when: groups['gpu_workers'] | default([]) | length > 0
+
     - name: Verify k3s binary was downloaded
       ansible.builtin.stat:
         path: '{{ k3s_temp_dir.path }}/k3s'
@@ -103,6 +107,22 @@
           ansible.builtin.fail:
             msg: 'No SELinux RPM files found in {{ k3s_temp_dir.path }}'
           when: selinux_rpm_files.files | length == 0
+
+    - name: Verify GPU RPMs were downloaded
+      when: groups['gpu_workers'] | default([]) | length > 0
+      delegate_to: localhost
+      run_once: true
+      block:
+        - name: Find GPU RPM files
+          ansible.builtin.find:
+            paths: '{{ k3s_temp_dir.path }}'
+            patterns: '*nvidia*.rpm,*libnvidia*.rpm'
+          register: gpu_rpm_files
+
+        - name: Fail if no GPU RPMs found
+          ansible.builtin.fail:
+            msg: 'No GPU RPM files found in {{ k3s_temp_dir.path }}'
+          when: gpu_rpm_files.files | length == 0
 
     - name: Set fact with temp directory path
       ansible.builtin.set_fact:

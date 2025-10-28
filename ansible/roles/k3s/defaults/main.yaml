@@ -72,7 +72,14 @@ k3s_selinux_rpm_site: rpm.rancher.io
 k3s_selinux_rpm_staging_dir: /tmp/k3s-selinux-rpms
 
 ################################################################################
-# Kubernetes Job Configuration (for SELinux package download in air-gapped mode)
+# GPU Configuration
+################################################################################
+
+# Where to stage GPU RPMs on target nodes (temporary directory)
+k3s_gpu_rpm_staging_dir: /tmp/k3s-gpu-rpms
+
+################################################################################
+# Kubernetes Job Configuration (for package downloads in air-gapped mode)
 ################################################################################
 
 # Namespace where the SELinux downloader Job will run on the staging cluster
