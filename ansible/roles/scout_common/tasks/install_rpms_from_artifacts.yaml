@@ -51,6 +51,8 @@
         # Disable all repos to prevent metadata refresh in air-gapped environment
         # All dependencies are already included in the downloaded RPM files
       register: rpm_install_result
+      async: '{{ package_install_timeout }}'
+      poll: 5
 
   always:
     - name: Clean up staging directory

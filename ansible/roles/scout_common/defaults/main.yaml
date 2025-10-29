@@ -26,6 +26,10 @@ package_download_namespace: default
 package_download_timeout: 300
 package_download_image: rockylinux/rockylinux:9.6
 
+# Package installation timeout (seconds) - applies to dnf/yum install operations
+# Set to 0 to disable timeout
+package_install_timeout: 300
+
 # Default namespaces
 cnpg_operator_namespace: cnpg-operator
 postgres_cluster_namespace: cnpg
