@@ -148,7 +148,7 @@ keycloak_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_strin
 ```
 
 **Keycloak Identity Provider**:
-Select and configure an identity provider for Keycloak to authenticate against. Scout currently provides configuration support for GitHub and Microsoft. Other Keycloak-supported identity providers could be added in the future if needed.
+Select and configure an identity provider for Keycloak to authenticate against. Scout currently provides configuration support for GitHub and Microsoft.
 
 ```yaml
 # GitHub
@@ -165,6 +165,8 @@ keycloak_microsoft_tenant_id: 'your-tenant-id'
 
 For development deployments, you can create a new OAuth app in in Github for Keycloak to use:
 https://github.com/organizations/your-org-here/settings/applications
+
+Other Keycloak-supported identity providers can be added in the future. Each provider has different required configuration fields (e.g., Microsoft requires a `tenant_id` beyond the standard `client_id` and `client_secret`), so adding new providers could require additional inventory variables.
 
 **Keycloak Client Secrets** (one for each Scout service):
 ```yaml
