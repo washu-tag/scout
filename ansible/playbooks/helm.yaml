@@ -17,7 +17,6 @@
         name: helm
       vars:
         helm_script_dir: /root/bin
-        helm_version: '{{ helm_version | default("") }}'
 
 - name: Install Helm on Ansible control node (air-gapped mode)
   hosts: localhost
@@ -30,4 +29,3 @@
         name: helm
       vars:
         helm_script_dir: '{{ ansible_env.HOME }}/.local/bin'
-        helm_version: '{{ helm_version | default("") }}'
