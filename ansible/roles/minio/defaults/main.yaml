@@ -30,7 +30,7 @@ minio_storage_definitions: '{{ minio_storage_definitions_raw if not (minio_stora
 # Resource configuration (dev defaults - CI friendly)
 minio_resources:
   requests:
-    cpu: 250m
+    cpu: 100m
     memory: 1Gi
   limits:
     cpu: 2

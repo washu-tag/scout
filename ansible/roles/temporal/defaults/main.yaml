@@ -7,7 +7,7 @@ temporal_server_replica_count: 1
 # Resource configuration (dev defaults - CI friendly)
 temporal_resources:
   requests:
-    cpu: 250m
+    cpu: 100m
     memory: 1Gi
   limits:
     cpu: 2
