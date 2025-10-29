@@ -15,25 +15,32 @@
         state: directory
         mode: '0755'
 
-    - name: Find all RPM files in artifact directory
-      ansible.builtin.find:
-        paths: '{{ rpm_artifact_dir }}'
-        patterns: '*.rpm'
-      delegate_to: localhost
-      register: rpm_files_to_copy
-
-    - name: Copy all {{ rpm_package_type }} RPMs to node
+    - name: Copy {{ rpm_package_type }} RPM archive to node
       ansible.builtin.copy:
-        src: '{{ item.path }}'
-        dest: '{{ rpm_staging_dir }}/{{ item.path | basename }}'
+        src: '{{ rpm_artifact_dir }}/rpms.tar.gz'
+        dest: '{{ rpm_staging_dir }}/rpms.tar.gz'
         mode: '0644'
-      loop: '{{ rpm_files_to_copy.files }}'
+
+    - name: Extract {{ rpm_package_type }} RPM archive on node
+      ansible.builtin.unarchive:
+        src: '{{ rpm_staging_dir }}/rpms.tar.gz'
+        dest: '{{ rpm_staging_dir }}/'
+        remote_src: true
 
     - name: Find all RPM files on node
       ansible.builtin.find:
         paths: '{{ rpm_staging_dir }}'
         patterns: '*.rpm'
       register: rpm_files_on_node
+
+    - name: Verify RPMs were extracted
+      ansible.builtin.fail:
+        msg: 'No RPM files found after extracting {{ rpm_package_type }} archive'
+      when: rpm_files_on_node.files | length == 0
+
+    - name: Display extracted RPM count
+      ansible.builtin.debug:
+        msg: 'Extracted {{ rpm_files_on_node.files | length }} {{ rpm_package_type }} RPM packages'
 
     - name: Install all {{ rpm_package_type }} packages
       ansible.builtin.dnf:
