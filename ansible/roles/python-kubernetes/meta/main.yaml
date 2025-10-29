@@ -1,18 +1,3 @@
 ---
-galaxy_info:
-  role_name: python-kubernetes
-  author: Washington University in St. Louis
-  description: Install python3-kubernetes library for Ansible kubernetes.core modules
-  company: Washington University in St. Louis
-  license: MIT
-  min_ansible_version: '2.9'
-  platforms:
-    - name: EL
-      versions:
-        - '9'
-  galaxy_tags:
-    - python
-    - kubernetes
-    - ansible
-
-dependencies: []
+dependencies:
+  - role: scout_common
