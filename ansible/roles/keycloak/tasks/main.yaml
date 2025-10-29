@@ -1,3 +1,6 @@
 ---
+- name: Prepare Keycloak artifacts
+  ansible.builtin.include_tasks: artifacts.yaml
+
 - name: Deploy Keycloak
   ansible.builtin.include_tasks: deploy.yaml

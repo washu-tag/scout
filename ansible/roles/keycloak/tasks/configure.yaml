@@ -1,20 +1,11 @@
 ---
 # Workaround for broken keycloak-config-cli Helm repository
 # Reference: https://github.com/adorsys/keycloak-config-cli/issues/1287
+# Uses pre-downloaded chart in air-gapped mode, direct URL in online mode
 
-- name: Create temporary directory for Helm chart
-  delegate_to: localhost
-  ansible.builtin.tempfile:
-    state: directory
-    suffix: _keycloak_helm
-  register: helm_temp_dir
-
-- name: Download Keycloak Config CLI Helm chart
-  delegate_to: localhost
-  ansible.builtin.get_url:
-    url: 'https://adorsys.github.io/keycloak-config-cli/helm-charts/keycloak-config-cli-{{ keycloak_config_cli_helm_chart_version }}.tgz'
-    dest: '{{ helm_temp_dir.path }}/keycloak-config-cli.tgz'
-    mode: '0644'
+- name: Set Helm chart reference
+  ansible.builtin.set_fact:
+    keycloak_config_cli_chart_ref: "{{ keycloak_artifact_temp_dir + '/keycloak-config-cli.tgz' if air_gapped | default(false) | bool else 'https://adorsys.github.io/keycloak-config-cli/helm-charts/keycloak-config-cli-' + keycloak_config_cli_helm_chart_version + '.tgz' }}"
 
 - name: Run Keycloak Config CLI to Configure Keycloak
   delegate_to: localhost
@@ -22,7 +13,7 @@
     name: keycloak-config-cli
     release_namespace: '{{ keycloak_namespace }}'
     create_namespace: true
-    chart_ref: '{{ helm_temp_dir.path }}/keycloak-config-cli.tgz'
+    chart_ref: '{{ keycloak_config_cli_chart_ref }}'
     state: present
     wait: true
     wait_timeout: 5m
@@ -36,9 +27,6 @@
         KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
         KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
       existingSecret: keycloak-admin-secret
-
-- name: Clean up temporary directory
-  delegate_to: localhost
-  ansible.builtin.file:
-    path: '{{ helm_temp_dir.path }}'
-    state: absent
+  environment:
+    KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
