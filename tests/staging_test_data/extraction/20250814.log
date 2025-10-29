@@ -1,0 +1,1647 @@
+2025-08-14 07:03:41.1419|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814070341|TBD|ORU^R01|2.25.66092044680927012484208907663249350495|P|2.7<R>
+PID|1||ABC1234331^^^ABC^MR~EPIC2603472^^^EPIC^MRN||ROBERTS^MELISSA^GENEVIEVE^^^^D||19450207|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458839^PROCTOR^ERIN^R.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132280|||||||||||||||||||||||||20250814070341|||||||V<R>
+ORC|RE|4590921^SYS|620943129||Final||^^^20250814070340^20250814070341^O||20250814070341|||D1458830^REYNOLDS^JEREMY^B.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4590921^SYS|620943129|BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM|O|20250814060753|||||Hosp Perf||||^^^BREAST|D1458830^REYNOLDS^JEREMY^B.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814070341||MG|Final||^^^20250814070340^20250814070341^O||||^Chest pain||D1458836^WRIGHT^MELISSA^V.^^^^^ABC^^^^HOSP|||20250814070341||||||||BHC76140^76140 Outside Exam^UNKDEV^^OUTSIDE MAMMOGRAM<R>
+ZPF|1|17^IMG MAMMO PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammographic imaging of the left breast||||||Final<R>
+OBX|3|ST|&GDT|1|utilizing standard mediolateral oblique projection.||||||Final<R>
+OBX|4|ST|&GDT|1|FINDINGS:||||||Final<R>
+OBX|5|ST|&GDT|1|The mammogram demonstrates heterogeneously dense fibroglandular||||||Final<R>
+OBX|6|ST|&GDT|1|tissue distributed throughout the left breast. There is no definitive||||||Final<R>
+OBX|7|ST|&GDT|1|presence of malignant-appearing masses or focal asymmetries. A few||||||Final<R>
+OBX|8|ST|&GDT|1|benign-appearing cystic structures are noted in the upper outer||||||Final<R>
+OBX|9|ST|&GDT|1|quadrant, characterized by round, well-circumscribed radiolucencies||||||Final<R>
+OBX|10|ST|&GDT|1|without associated suspicious calcifications. Microcalcifications||||||Final<R>
+OBX|11|ST|&GDT|1|present are predominantly coarse and scattered, consistent with||||||Final<R>
+OBX|12|ST|&GDT|1|benign etiology. Skin and nipple contours appear intact without||||||Final<R>
+OBX|13|ST|&GDT|1|retraction or distortion. No evidence of architectural distortion or||||||Final<R>
+OBX|14|ST|&GDT|1|suspicious spiculations is observed. The axillary tail was partially||||||Final<R>
+OBX|15|ST|&GDT|1|visualized with no abnormal lymphadenopathy discernible.||||||Final<R>
+OBX|16|ST|&GDT|1|||||||Final<R>
+OBX|17|ST|&GDT|1|||||||Final<R>
+OBX|18|ST|&IMP|2|IMPRESSION:||||||Final<R>
+OBX|19|ST|&IMP|2|Findings are consistent with benign fibroglandular changes with||||||Final<R>
+OBX|20|ST|&IMP|2|multiple simple cysts and no suspicious features warranting biopsy at||||||Final<R>
+OBX|21|ST|&IMP|2|this time. Given the heterogeneously dense breast parenchyma, subtle||||||Final<R>
+OBX|22|ST|&IMP|2|lesions may be obscured; correlation with clinical findings and||||||Final<R>
+OBX|23|ST|&IMP|2|continued routine screening recommended. No interval imaging||||||Final<R>
+OBX|24|ST|&IMP|2|available for direct comparison with this study. Recommend follow-up||||||Final<R>
+OBX|25|ST|&IMP|2|mammogram in one year unless clinical changes arise.||||||Final<R>
+OBX|26|ST|&IMP|2|Dictated by: Melissa Wright Interpreter, M.D.||||||Final<R>
+OBX|27|ST|&TCM|3|Patient mentioned slight tenderness during compression but tolerated||||||Final<R>
+OBX|28|ST|&TCM|3|the procedure well overall. Advised gentle communication to minimize||||||Final<R>
+OBX|29|ST|&TCM|3|discomfort in future scans.||||||Final<R>
+ZDS|2.25.20533611345843065107189075526576070772^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 07:08:13.2322|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814070813|TBD|ORU^R01|2.25.187281872098869030616322876238203083538|P|2.4<R>
+PID|1||ABC1234345^^^ABC^MR~EPIC2603486^^^EPIC^MRN||JOHNSON^ANTON^MATTHEW^^^^D||19980121000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234345^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458839^PROCTOR^ERIN^R.^^^M.D.|^^|^^|RAD|||||||||V37851556^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||9304014^SYS|620943170|IMG2816^US ABDOMEN LIMITED^UNKDEV|URGENT||20250814060352|||PSCRIB|||||^^^^ |D1458836^WRIGHT^MELISSA^VANESSA^^^M.D.^^ABC|||||2816^Ultrasound|20250814070813||IMG|||1^^^20250814070813^^U^^URGENT|       ||{}|^Chest pain|D1458835^MAY^TONY^F.^^^M.D.|D1458831^HARRIS^MICHAEL^A.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|6983936||TONY MAY, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6983936||ACC#  Date Time  Exam~~~620943170 Aug 14 2025 07:08AM IMG2816 US ABDOMEN LIMITED~EXAMINATION: Abdominal ultrasound examination.~~FINDINGS:~Ultrasound demonstrates a heterogeneous hypoechoic mass measuring~approximately 3.5 cm in the region of the left adnexa. Doppler~interrogation shows moderate internal vascularity. No free pelvic~fluid identified. Liver, gallbladder, pancreas, and kidneys appear~normal. Common bile duct measuring within normal limits.~~~IMPRESSION:~Suspicious left adnexal mass requiring further evaluation for~possible neoplasm. Recommend correlation with clinical and tumor~markers and consideration of pelvic MRI or surgical consultation.||||||F<R>
+OBX|3|TX|6983936||Requested By: Wright,Melissa V. M.D.~~Dictated By: Tony May, M.D. on Aug 14 2025 07:08AM~~This document has been electronically signed by: Tony May, M.D. on~Aug 14 2025 07:08AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6983936|4|620943170^UK^ZB||||||F<R>
+<EB><R>
+
+2025-08-14 07:15:58.4077|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814071558|TBD|ORU^R01|2.25.235106677769133677247000356584285809348|P|2.7<R>
+PID|1||ABC1234348^^^ABC^MR~EPIC2603489^^^EPIC^MRN||KOCH^APRIL^JANICE^^^^D||19550304|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458828^WILLIAMS^ANDREW^J.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132312|||||||||||||||||||||||||20250814071558|||||||V<R>
+ORC|RE|470133^SYS|620943181||Prelim||^^^20250814071557^20250814071558^O||20250814071558|T1067303^LIU^JULIE||D1458838^LONG^LATASHA^T.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|470133^SYS|620943181|IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC|O|20250814063005|||||Hosp Perf||||^^^BRAIN|D1458838^LONG^LATASHA^T.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814071558||CT|Prelim||^^^20250814071557^20250814071558^O||||^Chest pain||D1458834^WILLIAMS^TARA^L.^^^^^ABC^^^^HOSP|T1067303^LIU^JULIE||20250814071558||||||||IMG5021^PET/CT FDG BRAIN TUMOR METABOLIC EVALUATION^UNKDEV^^BRAIN PETCT AC NAC<R>
+ZPF|1|24^IMG PET PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Brain PET-CT scan assessing metabolic activity and||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|3|ST|&GDT|1|structural integrity.||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|4|ST|&GDT|1|FINDINGS:||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|5|ST|&GDT|1|The FDG-PET component reveals symmetric cortical uptake with normal||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|6|ST|&GDT|1|distribution consistent with age-related metabolic patterns. No focal||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|7|ST|&GDT|1|areas of hypermetabolism suggestive of neoplastic activity or focal||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|8|ST|&GDT|1|inflammation are observed. Mild hypometabolism is noted in the||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|9|ST|&GDT|1|bilateral parietotemporal regions, which may correlate with early||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|10|ST|&GDT|1|neurodegenerative changes. The CT images show no acute intracranial||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|11|ST|&GDT|1|hemorrhage, mass effect, or midline shift. Mild cerebral atrophy is||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|12|ST|&GDT|1|evident, predominantly in the frontotemporal lobes, consistent with||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|13|ST|&GDT|1|age-related changes. No evidence of hydrocephalus or extra-axial||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|14|ST|&GDT|1|fluid collections is identified. Vascular calcifications are minimal||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|15|ST|&GDT|1|and within expected limits for age.||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|16|ST|&GDT|1|||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|17|ST|&GDT|1|||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|18|ST|&IMP|2|IMPRESSION:||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|19|ST|&IMP|2|PET-CT findings do not demonstrate metabolically active neoplasm or||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|20|ST|&IMP|2|acute intracranial pathology. Mild bilateral parietotemporal||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|21|ST|&IMP|2|hypometabolism may indicate early neurodegenerative process; clinical||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|22|ST|&IMP|2|correlation for cognitive function is recommended. Structural changes||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|23|ST|&IMP|2|on CT are consistent with mild cerebral atrophy for patient's age||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|24|ST|&IMP|2|without acute abnormalities. No signs of stroke or other intra-axial||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|25|ST|&IMP|2|lesions detected.||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|26|ST|&IMP|2|Dictated by: Tara Williams Interpreter, M.D.||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|27|ST|&TCM|3|Patient was cooperative throughout the scan but experienced slight||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|28|ST|&TCM|3|discomfort due to the extended duration of imaging acquisition.||||||Prelim|||||T1067303^LIU^JULIE<R>
+ZDS|2.25.318672185260027303815661750696872427585^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 07:47:50.4936|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814074750|TBD|ORU^R01|2.25.27294531846963388481947318112461449032|P|2.4<R>
+PID|1||ABC1234331^^^ABC^MR~EPIC2603472^^^EPIC^MRN||ROBERTS^MELISSA^GENEVIEVE^^^^D||19450207000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234331^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458835^MAY^TONY^F.^^^M.D.|^^|^^|RAD|||||||||V37851546^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2660821^SYS|620943128|IMG1259^XR CHEST 1 VIEW^UNKDEV|URGENT||20250814063644|||PSCRIB|||||^^^^ |D1458835^MAY^TONY^FRANK^^^M.D.^^ABC|||||1259^Chest 1 View Xray|20250814074750||IMG|||1^^^20250814074750^^U^^URGENT|       ||PORTABLE|^Chest pain|D1458831^HARRIS^MICHAEL^A.^^^M.D.|D1458832^TAYLOR^CRAIG^S.^^^M.D.||PSCRIB|||||||||1259<R>
+OBX|1|TX|7837066||MICHAEL HARRIS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|7837066||ACC#  Date Time  Exam~~~620943128 Aug 14 2025 07:47AM IMG1259 XR CHEST 1 VIEW~EXAMINATION: Posteroanterior and lateral chest radiographs.~~FINDINGS:~The lungs are well inflated without evidence of focal consolidation,~pleural effusion, or pneumothorax. The pulmonary vascular markings~are within normal limits without signs of pulmonary edema or vascular~congestion. The cardiac silhouette appears borderline enlarged with a~cardiothoracic ratio of approximately 0.55. The aortic knob and~mediastinal contours are unremarkable, showing no widening or~abnormal mass. The bony thorax demonstrates age-appropriate~degenerative changes, including mild osteopenia and subtle anterior~vertebral body osteophytes. The diaphragms are well positioned with~normal costophrenic angles. No acute osseous abnormalities are~identified. Endotracheal and central venous lines are absent. There~is no evidence of prior thoracic surgical clips. Soft tissues show no~abnormal masses or subcutaneous emphysema.~~~IMPRESSION:~Borderline cardiomegaly with a mildly enlarged cardiac silhouette;~requires clinical correlation to exclude early cardiomyopathic~changes. No radiographic evidence of acute pulmonary pathology such~as consolidation or effusion. Age-related mild degenerative bony~changes noted without fracture or destructive lesions. Normal~pulmonary vascularity consistent with absence of congestive heart~failure.~ADDENDUM: Update to impression: mild cardiomegaly is suggested rather~than unequivocal enlargement to better reflect degree of cardiac~silhouette prominence.||||||F<R>
+OBX|3|TX|7837066||Requested By: May,Tony F. M.D.~~Dictated By: Michael Harris, M.D. on Aug 14 2025 07:47AM~~This document has been electronically signed by: Michael Harris, M.D.~on Aug 14 2025 07:47AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|7837066|4|620943128^UK^ZB||||||F<R>
+<EB><R>
+
+2025-08-14 07:59:51.5219|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814075951|TBD|ORU^R01|2.25.58701665495564908341872274795068200344|P|2.3<R>
+PID||7209362|9566029^9^2^^^UN||HARDIN^JOHN^LARRY^^^||20000604|M|||123 STREET^^CITY CITY^MO^61111^||(111) 111-1111 x|(111) 111-1111 x||||M72093623R|111-11-1111|||||||||||N<R>
+PV1||O|^123^^^^^^^ABC RM 123||||D1458935^HOBBS^TIMOTHY^R.^^^M.D.|||||||||||||||||||||||||||||||||||||20250814075951<R>
+ORC|RE||||||||20250814075951|^UnkPERSON^UnkPERSON^^^^||D1458944^DRAKE^CHRISTOPHER^N.^^^M.D.<R>
+OBR|1|5546766|620943156|IMG2347^MRI BRAIN WO CONTRAST|||20250814071324|||||||||||||||20250814075951|||Wet Read|||||STRETCHER^STRETCHER|Chest pain\S\Chest pain|D1458931^GONZALEZ^JENNIFER^M.^^^M.D.|~|^BROWN^PAMELA^^^^|^UnkPERSON^UnkPERSON^^^^<R>
+OBX|1|FT|IMG2347&GDT||EXAMINATION: Brain MRI scan including sequences sensitive to both||||||Wet Read<R>
+OBX|2|FT|IMG2347&GDT||parenchymal and vascular pathology.||||||Wet Read<R>
+OBX|3|FT|IMG2347&GDT||FINDINGS:||||||Wet Read<R>
+OBX|4|FT|IMG2347&GDT||Multiplanar brain MRI reveals no evidence of acute ischemic or||||||Wet Read<R>
+OBX|5|FT|IMG2347&GDT||hemorrhagic stroke. Ventricular size is within normal limits. No||||||Wet Read<R>
+OBX|6|FT|IMG2347&GDT||abnormal enhancement or masses identified. Mild age-appropriate white||||||Wet Read<R>
+OBX|7|FT|IMG2347&GDT||matter changes are present. No significant midline shift or||||||Wet Read<R>
+OBX|8|FT|IMG2347&GDT||extra-axial collections.||||||Wet Read<R>
+OBX|9|FT|IMG2347&GDT||||||||Wet Read<R>
+OBX|10|FT|IMG2347&GDT||||||||Wet Read<R>
+OBX|11|FT|IMG2347&IMP||IMPRESSION:||||||Wet Read<R>
+OBX|12|FT|IMG2347&IMP||Unremarkable brain MRI with no acute intracranial pathology observed.||||||Wet Read<R>
+<EB><R>
+
+2025-08-14 08:05:58.6992|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814080558|TBD|ORU^R01|2.25.338503419107449463704505260997993941596|P|2.7<R>
+PID|1||ABC1234332^^^ABC^MR~EPIC2603473^^^EPIC^MRN||JOHNSON^JOHN^DANIEL^Sr.^^^D||19440501|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458828^WILLIAMS^ANDREW^J.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132283|||||||||||||||||||||||||20250814080558|||||||V<R>
+ORC|RE|4079633^SYS|620943132||Wet Read||^^^20250814080557^20250814080558^O||20250814080558|T1067307^HOLLAND^WALTER||D1458828^WILLIAMS^ANDREW^J.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4079633^SYS|620943132|IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND|O|20250814065722|||||Hosp Perf|||||D1458828^WILLIAMS^ANDREW^J.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814080558||US|Wet Read||^^^20250814080557^20250814080558^O||||^Chest pain||D1458829^DAVIS^CANDICE^A.^^^^^ABC^^^^HOSP|T1067307^HOLLAND^WALTER||20250814080558||||||||IMG2816^US ABDOMEN LIMITED^UNKDEV^^ULTRASOUND<R>
+ZPF|1|14^IMG US PROCEDURES<R>
+DG1|1|I10|I25.10^Atherosclerotic heart disease of native coronary artery without angina pectoris^I10|Atherosclerotic heart disease of native coronary artery without angina pectoris<R>
+DG1|2|I10|E78.5^Hyperlipidemia, unspecified^I10|Hyperlipidemia, unspecified<R>
+DG1|3|I10|I10^Essential (primary) hypertension^I10|Essential (primary) hypertension<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdominal ultrasound focusing on hepatobiliary system||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|3|ST|&GDT|1|and abdominal vasculature.||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|4|ST|&GDT|1|FINDINGS:||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|5|ST|&GDT|1|The liver demonstrates mild coarse echotexture with no focal hepatic||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|6|ST|&GDT|1|lesions identified. The gallbladder is distended without evidence of||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|7|ST|&GDT|1|intraluminal calculi or wall thickening. No pericholecystic fluid is||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|8|ST|&GDT|1|noted. Intrahepatic and extrahepatic bile ducts are not dilated. The||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|9|ST|&GDT|1|pancreas appears normal in size and echogenicity with no masses. The||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|10|ST|&GDT|1|aorta is mildly tortuous with evidence of calcified atherosclerotic||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|11|ST|&GDT|1|plaques along the anterior wall, measuring anteroposterior diameter||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|12|ST|&GDT|1|of 3.2 cm, consistent with mild aneurysmal dilatation. The kidneys||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|13|ST|&GDT|1|are symmetrical with preserved corticomedullary differentiation and||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|14|ST|&GDT|1|no hydronephrosis or calculi. The portal vein demonstrates normal||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|15|ST|&GDT|1|hepatopetal flow on Doppler assessment without evidence of||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|16|ST|&GDT|1|thrombosis. No significant ascites is identified.||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|17|ST|&GDT|1|||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|18|ST|&GDT|1|||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|19|ST|&IMP|2|IMPRESSION:||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|20|ST|&IMP|2|Findings indicate diffuse hepatic parenchymal changes suggestive of||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|21|ST|&IMP|2|chronic liver disease, though no discrete masses or cirrhotic||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|22|ST|&IMP|2|nodularity are evident. Gallbladder is unremarkable without signs of||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|23|ST|&IMP|2|cholelithiasis or acute cholecystitis. Mild abdominal aortic aneurysm||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|24|ST|&IMP|2|measuring approximately 3.2 cm is noted with calcific||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|25|ST|&IMP|2|atherosclerosis; recommend continued surveillance for aneurysm||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|26|ST|&IMP|2|progression. No sonographic evidence of portal hypertension or||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|27|ST|&IMP|2|biliary obstruction. Renal morphology and vascular flow remain within||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|28|ST|&IMP|2|normal limits. Overall, ultrasound features correlate with underlying||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|29|ST|&IMP|2|ischemic heart disease and hyperlipidemia as clinical context,||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|30|ST|&IMP|2|recommending correlation with liver function tests and vascular||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|31|ST|&IMP|2|evaluation.||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+OBX|32|ST|&IMP|2|Dictated by: Candice Davis Interpreter, M.D.||||||Wet Read|||||T1067307^HOLLAND^WALTER<R>
+ZDS|2.25.158175888343695426601672337517616562519^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 08:06:29.8678|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814080629|TBD|ORU^R01|2.25.43302349082502289018480343649713432823|P|2.4<R>
+PID|1||ABC1234335^^^ABC^MR~EPIC2603476^^^EPIC^MRN||TURNER^WHITNEY^KARLA^^^^D||19411130000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234335^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458833^MARTIN^JENNIFER^L.^^^M.D.|^^|^^|RAD|||||||||V37851550^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||7971794^SYS|620943140|CTABD^PETCT AC+NAC ABDOMEN^UNKDEV|URGENT||20250814062635|||PSCRIB|||||^^^^ |D1458828^WILLIAMS^ANDREW^JAMES^^^M.D.^^ABC|||||^Abdomen Petct AC NAC|20250814080629||CTABD|||1^^^20250814080629^^U^^URGENT|       |||^Chest pain|D1458829^DAVIS^CANDICE^A.^^^M.D.|D1458835^MAY^TONY^F.^^^M.D.||PSCRIB<R>
+OBX|1|TX|6279729||CANDICE DAVIS, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|6279729||ACC#  Date Time  Exam~~~620943140 Aug 14 2025 08:06AM CTABD PETCT AC+NAC ABDOMEN~EXAMINATION: Abdomen PET-CT evaluating metabolic activity and~anatomical structures.~~HISTORY:~Female patient born 1941-11-30, undergoing PET-CT for evaluation of~abdominal pathology.~~IMPRESSION: ~PET-CT of the abdomen demonstrates a heterogeneous area of increased~18F-FDG uptake localized to the right hepatic lobe measuring~approximately 3.5 cm in greatest dimension, with a maximum~standardized uptake value (SUVmax) of 8.2, suggestive of~metabolically active neoplastic lesion. No evidence of extrahepatic~hypermetabolic lymphadenopathy or distant metastasis is observed. The~background liver parenchyma exhibits normal physiological uptake with~no diffuse infiltrative changes. The bowel and mesenteric fat show no~abnormal FDG avidity. There is mild physiologic urinary activity in~the collecting systems and bladder as expected. Comparative review~with previous imaging dated 2022-08-15 reveals interval enlargement~and increased metabolic activity of the hepatic lesion. These~findings raise concern for a primary hepatic malignancy, likely~hepatocellular carcinoma, necessitating correlation with serum~alpha-fetoprotein levels and recommendation for biopsy or further~imaging with contrast-enhanced MRI for characterization and staging~purposes.||||||F<R>
+OBX|3|TX|6279729||Requested By: Williams,Andrew J. M.D.~~Dictated By: Candice Davis, M.D. on Aug 14 2025 08:06AM~~This document has been electronically signed by: Candice Davis, M.D.~on Aug 14 2025 08:06AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|6279729|4|620943140^UK^ZB||||||F<R>
+<EB><R>
+
+2025-08-14 08:19:13.7146|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814081913|TBD|ORU^R01|2.25.266984705232328790140888407473630380717|P|2.7<R>
+PID|1||ABC1234347^^^ABC^MR~EPIC2603488^^^EPIC^MRN~7209369^^^EMPI^MR||MORGAN^GENEVIEVE^MISTY^^^^D||19490613|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458828^WILLIAMS^ANDREW^J.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132309|||||||||||||||||||||||||20250814081913|||||||V<R>
+ORC|RE|3664728^SYS|620943174||Wet Read||^^^20250814081912^20250814081913^O||20250814081913|T1067309^LUNA^JENNIFER||D1458827^OLSON^ANA^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3664728^SYS|620943174|IMG5017^PET/CT FDG WHOLE BODY^UNKDEV^^WHOLEBODY PETCT AC NAC|O|20250814065536|||||Hosp Perf||||^^^WHOLEBODY|D1458827^OLSON^ANA^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814081913||CT|Wet Read||^^^20250814081912^20250814081913^O||||^Chest pain||D1458837^HANSON^TROY^C.^^^^^ABC^^^^HOSP|T1067309^LUNA^JENNIFER||20250814081913||||||||IMG5017^PET/CT FDG WHOLE BODY^UNKDEV^^WHOLEBODY PETCT AC NAC<R>
+ZPF|1|24^IMG PET PROCEDURES<R>
+DG1|1|I10|C78.7^Secondary malignant neoplasm of liver and intrahepatic bile duct^I10|Secondary malignant neoplasm of liver and intrahepatic bile duct<R>
+DG1|2|I10|Z85.118^Personal history of other malignant neoplasm of bronchus and lung^I10|Personal history of other malignant neoplasm of bronchus and lung<R>
+DG1|3|I10|E66.9^Obesity, unspecified^I10|Obesity, unspecified<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Whole-body PET-CT scan for oncologic staging.||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|4|ST|&GDT|1|Increased 18F-FDG uptake noted in multiple mediastinal and hilar||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|5|ST|&GDT|1|lymph nodes with SUV max of 8.2. Several hypermetabolic pulmonary||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|6|ST|&GDT|1|nodules ranging 0.5 to 1.2 cm seen bilaterally. No abnormal uptake in||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|7|ST|&GDT|1|abdominal organs except mild activity in right hepatic lobe||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|8|ST|&GDT|1|consistent with benign etiology. No skeletal lesions detected.||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|9|ST|&GDT|1|||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|10|ST|&GDT|1|||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|11|ST|&IMP|2|IMPRESSION:||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|12|ST|&IMP|2|PET-CT demonstrates metabolically active mediastinal lymphadenopathy||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|13|ST|&IMP|2|and pulmonary nodules suspicious for metastatic dissemination.||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|14|ST|&IMP|2|Further tissue diagnosis and oncologic work-up recommended.||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+OBX|15|ST|&IMP|2|Dictated by: Troy Hanson Interpreter, M.D.||||||Wet Read|||||T1067309^LUNA^JENNIFER<R>
+ZDS|2.25.202728196328937884524598454933709759508^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 08:44:25.0567|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814084425|TBD|ORU^R01|2.25.35454460148330927789483803248147077658|P|2.7<R>
+PID|1||ABC1234342^^^ABC^MR~EPIC2603483^^^EPIC^MRN||PALMER^WILLIAM^MICHAEL^^^^D||19930606|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458839^PROCTOR^ERIN^R.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132300|||||||||||||||||||||||||20250814084425|||||||V<R>
+ORC|RE|3727275^SYS|620943159||Final||^^^20250814084424^20250814084425^O||20250814084425|T1067308^MORENO^ASHLEY||D1458832^TAYLOR^CRAIG^S.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3727275^SYS|620943159|BED70250^70250 Skull < 4 views^UNKDEV^^SKULL 1 VIEW DX XRAY|O|20250814072314|||||Hosp Perf||||^^^SKULL|D1458832^TAYLOR^CRAIG^S.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814084425||DX|Final||^^^20250814084424^20250814084425^O||||^Chest pain||D1458830^REYNOLDS^JEREMY^B.^^^^^ABC^^^^HOSP|T1067308^MORENO^ASHLEY||20250814084425||||||||BED70250^70250 Skull < 4 views^UNKDEV^^SKULL 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|S02.91XA^Unspecified fracture of skull, initial encounter for closed fracture^I10|Unspecified fracture of skull, initial encounter for closed fracture<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Skull X-ray with standard anteroposterior and lateral||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|3|ST|&GDT|1|projections.||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|4|ST|&GDT|1|FINDINGS:||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|5|ST|&GDT|1|The radiographic images reveal the cranial vault and base of skull in||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|6|ST|&GDT|1|multiple projections. The calvarium demonstrates no obvious fractures||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|7|ST|&GDT|1|or depressed segments. The cortical bone margins are intact, with no||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|8|ST|&GDT|1|evidence of acute osseous disruption. The sella turcica appears||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|9|ST|&GDT|1|normal in size and shape without any expansile lesions or||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|10|ST|&GDT|1|calcifications. The paranasal sinuses are aerated with no signs of||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|11|ST|&GDT|1|fluid levels or mucosal thickening. The mastoid air cells are well||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|12|ST|&GDT|1|pneumatized and symmetrical. No foreign bodies or intracranial||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|13|ST|&GDT|1|calcifications are identified. Soft tissue shadows overlying the||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|14|ST|&GDT|1|cranial bones are unremarkable. The visualized cervical spine||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|15|ST|&GDT|1|vertebral bodies are aligned and demonstrate normal bone density||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|16|ST|&GDT|1|without signs of acute injury. Overall preservation of normal anatomy||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|17|ST|&GDT|1|is noted, without evidence of acute traumatic findings or significant||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|18|ST|&GDT|1|pathological alteration.||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|19|ST|&GDT|1|||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|20|ST|&GDT|1|||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|21|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|22|ST|&IMP|2|Normal skull radiographic study with no radiographic evidence of||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|23|ST|&IMP|2|fractures, intracranial calcifications, or sinus pathology. The||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|24|ST|&IMP|2|absence of acute bony injury suggests no recent traumatic insult to||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|25|ST|&IMP|2|the cranial vault. Given clinical context, the findings do not||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|26|ST|&IMP|2|explain headaches or localized cranial pain. Consider further||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|27|ST|&IMP|2|evaluation with advanced imaging modalities if clinically indicated.||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|28|ST|&IMP|2|No signs of intracranial mass effect or osseous lesions identified.||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|29|ST|&IMP|2|Dictated by: Jeremy Reynolds Interpreter, M.D.||||||Final|||||T1067308^MORENO^ASHLEY<R>
+ZDS|2.25.30909134824277834543686323841824722711^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 09:00:38.4068|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814090038|TBD|ORU^R01|2.25.46922071367648385371960750069272638650|P|2.4<R>
+PID|1||ABC1234332^^^ABC^MR~EPIC2603473^^^EPIC^MRN||JOHNSON^JOHN^DANIEL^Sr.^^^D||19440501000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234332^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458826^CERVANTES^ERIN^P.^^^M.D.|^^|^^|RAD|||||||||V37851547^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||4137404^SYS|620943133|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV|URGENT||20250814060414|||PSCRIB|||||^^^^ |D1458838^LONG^LATASHA^TIFFANY^^^M.D.^^ABC|||||154^Abdomen 1 View Xray|20250814090038||IMG|||1^^^20250814090038^^U^^URGENT|       ||PORTABLE|^Chest pain|D1458835^MAY^TONY^F.^^^M.D.|D1458834^WILLIAMS^TARA^L.^^^M.D.||PSCRIB|||||||||154<R>
+OBX|1|TX|5299049||TONY MAY, M.D.~~~~********Preliminary Report********~~~ ||||||P<R>
+OBX|2|TX|5299049||ACC#  Date Time  Exam~~~620943133 Aug 14 2025 09:00AM IMG154 XR ABDOMEN AP 1 VIEW~EXAMINATION: Abdominal radiography utilizing standard anteroposterior~projection.~~FINDINGS:~The abdominal X-ray demonstrates a mild dilatation of the small bowel~loops with air-fluid levels present in the central abdomen. The large~bowel appears normal in caliber without evidence of obstruction or~significant stool retention. There is diffuse, mild haziness of the~mesenteric fat planes, but no free intraperitoneal air is detected.~Calcific densities are noted in the right lower quadrant suggestive~of cholelithiasis. Cardiomegaly is apparent with a prominent cardiac~silhouette. Skeletal structures reveal mild degenerative changes~consistent with the patient's age. No abnormal calcifications or~masses are visualized in the region of the kidneys or liver. Overall~bowel gas pattern appears slightly increased, indicative of early~ileus or mild bowel dysmotility.~~~IMPRESSION:~Findings indicate mild small bowel dilatation with air-fluid levels~suggesting early ileus. No definite mechanical bowel obstruction is~identified. Presence of cholelithiasis without acute complications~visible on this study. Cardiomegaly noted, possibly correlating with~underlying cardiac disease. No evidence of pneumoperitoneum or acute~intra-abdominal pathology. The mild diffuse mesenteric haziness may~represent edema or early inflammation; clinical correlation~recommended. Recommend close clinical monitoring and possible further~imaging if symptoms persist or worsen.~ADDENDUM: Revised impression to emphasize the presence of mild bowel~gas pattern consistent with early ileus, previously underreported.||||||P<R>
+OBX|3|TX|5299049||Requested By: Long,Latasha T. M.D.~~Dictated By: Tony May, M.D. on Aug 14 2025 09:00AM~~Pending review by: Tara Williams, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5299049|4|620943133^UK^ZB||||||P<R>
+<EB><R>
+
+2025-08-14 09:18:53.4714|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814091853|TBD|ORU^R01|2.25.127224212738010575979308106797780351009|P|2.7<R>
+PID|1||ABC1234337^^^ABC^MR~EPIC2603478^^^EPIC^MRN~7209359^^^EMPI^MR||BERRY^HAROLD^JOSEPH^^^^D||19491030|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458835^MAY^TONY^F.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132290|||||||||||||||||||||||||20250814091853|||||||V<R>
+ORC|RE|7093967^SYS|620943145||Prelim||^^^20250814091852^20250814091853^O||20250814091853|||D1458834^WILLIAMS^TARA^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7093967^SYS|620943145|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20250814063341|||||Hosp Perf|||||D1458834^WILLIAMS^TARA^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814091853||CR|Prelim||^^^20250814091852^20250814091853^O||||^Chest pain||D1458838^LONG^LATASHA^T.^^^^^ABC^^^^HOSP|||20250814091853||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|M47.26^Other spondylosis with radiculopathy, lumbar region^I10|Other spondylosis with radiculopathy, lumbar region<R>
+DG1|2|I10|M50.20^Other cervical disc displacement, unspecified cervical region^I10|Other cervical disc displacement, unspecified cervical region<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view cervical spine X-ray||||||Prelim<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Prelim<R>
+OBX|4|ST|&GDT|1|The lateral single-view X-ray of the cervical spine reveals||||||Prelim<R>
+OBX|5|ST|&GDT|1|multi-level degenerative changes characterized by pronounced||||||Prelim<R>
+OBX|6|ST|&GDT|1|intervertebral disc space narrowing at C5-C6 and C6-C7 levels.||||||Prelim<R>
+OBX|7|ST|&GDT|1|Anterior osteophytic proliferation is observed along the vertebral||||||Prelim<R>
+OBX|8|ST|&GDT|1|bodies from C4 through C7, suggestive of spondylosis. There is no||||||Prelim<R>
+OBX|9|ST|&GDT|1|evidence of acute fracture or subluxation. The alignment maintains||||||Prelim<R>
+OBX|10|ST|&GDT|1|normal lordotic curvature without pathological kyphosis. The facet||||||Prelim<R>
+OBX|11|ST|&GDT|1|joints at multiple levels demonstrate hypertrophic changes, and there||||||Prelim<R>
+OBX|12|ST|&GDT|1|is mild narrowing of the neural foramina bilaterally at C5-C6,||||||Prelim<R>
+OBX|13|ST|&GDT|1|potentially impinging on exiting nerve roots. No soft tissue swelling||||||Prelim<R>
+OBX|14|ST|&GDT|1|is noted anterior to the cervical vertebrae. The prevertebral soft||||||Prelim<R>
+OBX|15|ST|&GDT|1|tissue thickness remains within normal limits. The odontoid process||||||Prelim<R>
+OBX|16|ST|&GDT|1|is intact and well visualized.||||||Prelim<R>
+OBX|17|ST|&GDT|1|||||||Prelim<R>
+OBX|18|ST|&GDT|1|||||||Prelim<R>
+OBX|19|ST|&IMP|2|IMPRESSION:||||||Prelim<R>
+OBX|20|ST|&IMP|2|Significant cervical spondylosis with marked degenerative disc||||||Prelim<R>
+OBX|21|ST|&IMP|2|disease predominantly at C5-C6 and C6-C7 levels, accompanied by||||||Prelim<R>
+OBX|22|ST|&IMP|2|anterior osteophytosis and facet joint hypertrophy producing mild||||||Prelim<R>
+OBX|23|ST|&IMP|2|foraminal narrowing bilaterally. These degenerative alterations align||||||Prelim<R>
+OBX|24|ST|&IMP|2|with chronic cervical spine degenerative pathology, consistent with||||||Prelim<R>
+OBX|25|ST|&IMP|2|clinical symptoms such as radiculopathy or neck pain. The lack of||||||Prelim<R>
+OBX|26|ST|&IMP|2|acute bony injury or alignment abnormality excludes recent trauma.||||||Prelim<R>
+OBX|27|ST|&IMP|2|Continued clinical correlation and consideration of advanced imaging||||||Prelim<R>
+OBX|28|ST|&IMP|2|may be warranted depending on symptomatology.||||||Prelim<R>
+OBX|29|ST|&IMP|2|Dictated by: Latasha Long Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.199788407067779274877517445005132616007^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 09:25:02.7562|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814092502|TBD|ORU^R01|2.25.132547006484729036098656933390581015689|P|2.7<R>
+PID|1||ABC1234339^^^ABC^MR~EPIC2603480^^^EPIC^MRN||FERNANDEZ^HEATHER^GINA^^^^D||19660130|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458828^WILLIAMS^ANDREW^J.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132293|||||||||||||||||||||||||20250814092502|||||||V<R>
+ORC|RE|3673877^SYS|620943149||Final||^^^20250814092501^20250814092502^O||20250814092502|T1067309^LUNA^JENNIFER||D1458834^WILLIAMS^TARA^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3673877^SYS|620943149|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20250814081712|||||Hosp Perf||||^^^ABDOMEN|D1458834^WILLIAMS^TARA^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814092502||CR|Final||^^^20250814092501^20250814092502^O||||^Chest pain||D1458832^TAYLOR^CRAIG^S.^^^^^ABC^^^^HOSP|T1067309^LUNA^JENNIFER||20250814092502||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single view abdominal radiograph obtained.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|3|ST|&GDT|1|HISTORY: Female patient born on 1966-01-30, presenting for abdominal||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|4|ST|&GDT|1|radiography.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|5|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|6|ST|&GDT|1|TECHNIQUE: Anteroposterior projection abdominal radiograph was||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|7|ST|&GDT|1|performed with standard exposure parameters to optimize visualization||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|8|ST|&GDT|1|of abdominal viscera and osseous anatomy.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|9|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|10|ST|&GDT|1|COMPARISON: No prior imaging available for comparison.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|11|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|12|ST|&GDT|1|FINDINGS ABDOMEN: The abdominal X-ray demonstrates normal bowel gas||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|13|ST|&GDT|1|pattern without evidence of obstruction or abnormal air-fluid levels.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|14|ST|&GDT|1|There is no radiopaque calculus visualized within the expected||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|15|ST|&GDT|1|regions of the urinary tract or gallbladder. Soft tissues are||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|16|ST|&GDT|1|unremarkable with no abnormal calcifications or masses. The||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|17|ST|&GDT|1|visualized osseous structures show no acute fracture or destructive||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|18|ST|&GDT|1|lesions. No free intra-abdominal air is identified under the||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|19|ST|&GDT|1|diaphragms. Overall, the radiograph is within normal limits for the||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|20|ST|&GDT|1|patient's age and clinical context.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|21|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|22|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|23|ST|&IMP|2|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|24|ST|&IMP|2|Abdominal radiograph reveals no acute pathology. No signs of bowel||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|25|ST|&IMP|2|obstruction, perforation, or intra-abdominal calcifications. Normal||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|26|ST|&IMP|2|gas pattern and soft tissue structures. No abnormal osseous findings.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|27|ST|&IMP|2|Dictated by: Craig Taylor Interpreter, M.D.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+ZDS|2.25.237057652841232027583555303235757988930^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 09:35:11.1478|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814093511|TBD|ORU^R01|2.25.133402730387636165075994368481147899594|P|2.7<R>
+PID|1||ABC1234344^^^ABC^MR~EPIC2603485^^^EPIC^MRN~7209366^^^EMPI^MR||ARNOLD^CURTIS^JOSHUA^^^^D||19250101|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458836^WRIGHT^MELISSA^V.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132306|||||||||||||||||||||||||20250814093511|||||||V<R>
+ORC|RE|5143138^SYS|620943167||Final||^^^20250814093510^20250814093511^O||20250814093511|T1067305^WALTON^MELISSA||D1458830^REYNOLDS^JEREMY^B.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5143138^SYS|620943167|BED70250^70250 Skull < 4 views^UNKDEV^^SKULL 1 VIEW DX XRAY|O|20250814091635|||||Hosp Perf||||^^^SKULL|D1458830^REYNOLDS^JEREMY^B.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814093511||DX|Final||^^^20250814093510^20250814093511^O||||^Chest pain||D1458833^MARTIN^JENNIFER^L.^^^^^ABC^^^^HOSP|T1067305^WALTON^MELISSA||20250814093511||||||||BED70250^70250 Skull < 4 views^UNKDEV^^SKULL 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|S02.91XA^Unspecified fracture of skull, initial encounter for closed fracture^I10|Unspecified fracture of skull, initial encounter for closed fracture<R>
+DG1|2|I10|G43.909^Migraine, unspecified, not intractable, without status migrainosus^I10|Migraine, unspecified, not intractable, without status migrainosus<R>
+DG1|3|I10|R41.9^Unspecified symptoms and signs involving cognitive functions and awareness^I10|Unspecified symptoms and signs involving cognitive functions and awareness<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Skull X-ray imaging study including frontal and lateral||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|3|ST|&GDT|1|views.||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|4|ST|&GDT|1|FINDINGS:||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|5|ST|&GDT|1|No fractures or calvarial deformities observed. Normal cranial vault||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|6|ST|&GDT|1|contours preserved. No evidence of intracranial calcifications or||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|7|ST|&GDT|1|abnormal lucencies. Sinuses are well-aerated. Mild diffuse prominence||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|8|ST|&GDT|1|of vascular markings noted.||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|9|ST|&GDT|1|||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|10|ST|&GDT|1|||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|11|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|12|ST|&IMP|2|Normal skull radiographs without acute fractures or abnormal lesions.||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|13|ST|&IMP|2|Dictated by: Jennifer Martin Interpreter, M.D.||||||Final|||||T1067305^WALTON^MELISSA<R>
+ZDS|2.25.51537841128305430756940561277148958044^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 09:50:29.9104|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814095029|TBD|ORU^R01|2.25.71294309763276414322491961219383553453|P|2.7<R>
+PID|1||ABC1234343^^^ABC^MR~EPIC2603484^^^EPIC^MRN||MCMAHON^JENNIFER^BROOKE^^^^D||19241209|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458836^WRIGHT^MELISSA^V.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132305|||||||||||||||||||||||||20250814095029|||||||V<R>
+ORC|RE|6309849^SYS|620943164||Final||^^^20250814095028^20250814095029^O||20250814095029|T1067309^LUNA^JENNIFER||D1458832^TAYLOR^CRAIG^S.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6309849^SYS|620943164|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20250814074113|||||Hosp Perf||||^^^BREAST|D1458832^TAYLOR^CRAIG^S.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814095029||MG|Final||^^^20250814095028^20250814095029^O||||^Chest pain||D1458830^REYNOLDS^JEREMY^B.^^^^^ABC^^^^HOSP|T1067309^LUNA^JENNIFER||20250814095029||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|17^IMG MAMMO PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram of the left breast.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|3|ST|&GDT|1|HISTORY: Female patient born 1924-12-09, presenting for routine||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|4|ST|&GDT|1|breast cancer screening mammography.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|5|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|6|ST|&GDT|1|TECHNIQUE: Single mediolateral oblique (MLO) projection mammographic||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|7|ST|&GDT|1|image obtained using digital full-field mammography system with||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|8|ST|&GDT|1|automatic exposure control tailored to breast thickness and||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|9|ST|&GDT|1|composition.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|10|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|11|ST|&GDT|1|COMPARISON: No prior mammographic studies available for comparison.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|12|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|13|ST|&GDT|1|FINDINGS:||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|14|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|15|ST|&GDT|1|BREAST: The mammographic evaluation reveals a heterogeneous breast||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|16|ST|&GDT|1|parenchymal pattern consistent with dense fibroglandular tissue,||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|17|ST|&GDT|1|which may obscure small masses. No suspicious masses, architectural||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|18|ST|&GDT|1|distortions, or microcalcification clusters are identified. Mild||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|19|ST|&GDT|1|prominence of subcutaneous fat is noted, reflective of patient's||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|20|ST|&GDT|1|advanced age. There is no evidence of skin thickening or nipple||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|21|ST|&GDT|1|retraction. Vascular structures appear unremarkable, with no signs of||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|22|ST|&GDT|1|abnormal calcifications or regional lymphadenopathy.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|23|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|24|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|25|ST|&IMP|2|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|26|ST|&IMP|2|The mammogram demonstrates dense breast tissue without overtly||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|27|ST|&IMP|2|suspicious findings. The absence of discrete masses or suspicious||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|28|ST|&IMP|2|calcifications suggests no radiographic evidence of malignancy at||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|29|ST|&IMP|2|this time. Given the dense tissue pattern, clinical correlation and||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|30|ST|&IMP|2|consideration for adjunctive imaging may be appropriate if clinically||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|31|ST|&IMP|2|indicated. Recommend routine follow-up per screening guidelines.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|32|ST|&IMP|2|Dictated by: Jeremy Reynolds Interpreter, M.D.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+ZDS|2.25.236037714237299983323419274545393810720^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 10:01:11.5422|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814100111|TBD|ORU^R01|2.25.109344624706767992550154252298212577675|P|2.4<R>
+PID|1||ABC1234340^^^ABC^MR~EPIC2603481^^^EPIC^MRN||HARDIN^JOHN^LARRY^^^^D||20000604000000|M||U|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234340^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458840^PEREZ^GREGORY^K.^Ph.D.^^M.D.|^^|^^|RAD|||||||||V37851552^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1828287^SYS|620943155|BED72020^72020 Spine Single View^UNKDEV|URGENT||20250814081920|||PSCRIB|||||^^^^ |D1458840^PEREZ^GREGORY^KEVIN^Ph.D.^^M.D.^^ABC|||||72020^Spine 1 View Dx Xray|20250814100111||BED|||1^^^20250814100111^^U^^URGENT|       ||PORTABLE|^Chest pain|D1458835^MAY^TONY^F.^^^M.D.|D1458836^WRIGHT^MELISSA^V.^^^M.D.||PSCRIB|||||||||72020<R>
+OBX|1|TX|4964364||TONY MAY, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|4964364||ACC#  Date Time  Exam~~~620943155 Aug 14 2025 10:01AM BED72020 72020 Spine Single View~EXAMINATION: Spine X-ray imaging study focused on cervical region.~~FINDINGS:~Lateral cervical spine radiograph shows multilevel degenerative disc~disease with decreased intervertebral disc height at C5-C6 and C6-C7.~Mild anterior osteophyte formation is noted. Cervical lordosis is~reduced, consistent with early spondylosis. No evidence of fracture~or subluxation.~~~IMPRESSION:~Degenerative cervical spondylosis with multilevel disc space~narrowing and osteophyte formation. No acute osseous abnormality.||||||F<R>
+OBX|3|TX|4964364||Requested By: Perez,Gregory K. M.D.~~Dictated By: Tony May, M.D. on Aug 14 2025 10:01AM~~This document has been electronically signed by: Tony May, M.D. on~Aug 14 2025 10:01AM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4964364|4|620943155^UK^ZB||||||F<R>
+<EB><R>
+
+2025-08-14 10:35:56.4518|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814103556|TBD|ORU^R01|2.25.86899981389877124331959961341372081161|P|2.7<R>
+PID|1||ABC1234336^^^ABC^MR~EPIC2603477^^^EPIC^MRN||LEACH^LINDA^CHRISTINA^^^^D||19980211|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458840^PEREZ^GREGORY^K.^Ph.D.^^^^ABC^^^^HOSP|||RAD|||||||||V85132288|||||||||||||||||||||||||20250814103556|||||||V<R>
+ORC|RE|7061774^SYS|620943142||Prelim||^^^20250814103555^20250814103556^O||20250814103556|||D1458830^REYNOLDS^JEREMY^B.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|7061774^SYS|620943142|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20250814085453|||||Hosp Perf|||||D1458830^REYNOLDS^JEREMY^B.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814103556||CR|Prelim||^^^20250814103555^20250814103556^O||||^Chest pain||D1458840^PEREZ^GREGORY^K.^^^^^ABC^^^^HOSP|||20250814103556||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|M25.561^Pain in right knee^I10|Pain in right knee<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view extremity X-ray study.||||||Prelim<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Prelim<R>
+OBX|4|ST|&GDT|1|Radiograph of the left ankle reveals an oblique fracture of the||||||Prelim<R>
+OBX|5|ST|&GDT|1|distal fibula at the lateral malleolus with mild displacement.||||||Prelim<R>
+OBX|6|ST|&GDT|1|Associated soft tissue swelling is present. No joint effusion or||||||Prelim<R>
+OBX|7|ST|&GDT|1|dislocation observed. Adjacent bone cortex is intact.||||||Prelim<R>
+OBX|8|ST|&GDT|1|||||||Prelim<R>
+OBX|9|ST|&GDT|1|||||||Prelim<R>
+OBX|10|ST|&IMP|2|IMPRESSION:||||||Prelim<R>
+OBX|11|ST|&IMP|2|Oblique lateral malleolar fracture with mild displacement. Recommend||||||Prelim<R>
+OBX|12|ST|&IMP|2|orthopedic evaluation for stabilization.||||||Prelim<R>
+OBX|13|ST|&IMP|2|Dictated by: Gregory Perez Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.189423190098880103897687068838903920366^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 10:43:13.4106|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814104313|TBD|ORU^R01|2.25.23271084440907712766760230667494230640|P|2.7<R>
+PID|1||ABC1234340^^^ABC^MR~EPIC2603481^^^EPIC^MRN~7209362^^^EMPI^MR||HARDIN^JOHN^LARRY^^^^D||20000604|M||PCFIS|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458826^CERVANTES^ERIN^P.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132298|||||||||||||||||||||||||20250814104313|||||||V<R>
+ORC|RE|838732^SYS|620943154||Prelim||^^^20250814104312^20250814104313^O||20250814104313|||D1458840^PEREZ^GREGORY^K.^Ph.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|838732^SYS|620943154|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20250814085948|||||Hosp Perf|||||D1458840^PEREZ^GREGORY^K.^Ph.D.^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814104313||DX|Prelim||^^^20250814104312^20250814104313^O||||^Chest pain||D1458837^HANSON^TROY^C.^^^^^ABC^^^^HOSP|||20250814104313||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|S62.501A^Fracture of unspecified phalanx of right thumb, initial encounter for closed fracture^I10|Fracture of unspecified phalanx of right thumb, initial encounter for closed fracture<R>
+DG1|2|I10|M79.671^Pain in right foot^I10|Pain in right foot<R>
+DG1|3|I10|Z98.890^Other specified postprocedural states^I10|Other specified postprocedural states<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view extremity X-ray imaging study.||||||Prelim<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Prelim<R>
+OBX|4|ST|&GDT|1|X-ray of left wrist reveals no acute fracture or dislocation. Soft||||||Prelim<R>
+OBX|5|ST|&GDT|1|tissues unremarkable. Joint spaces preserved. Old healed fracture||||||Prelim<R>
+OBX|6|ST|&GDT|1|deformity of the distal radius noted with residual callus formation||||||Prelim<R>
+OBX|7|ST|&GDT|1|anteriorly.||||||Prelim<R>
+OBX|8|ST|&GDT|1|||||||Prelim<R>
+OBX|9|ST|&GDT|1|||||||Prelim<R>
+OBX|10|ST|&IMP|2|IMPRESSION:||||||Prelim<R>
+OBX|11|ST|&IMP|2|No acute osseous injury. Old healed distal radius fracture evident||||||Prelim<R>
+OBX|12|ST|&IMP|2|without current complications.||||||Prelim<R>
+OBX|13|ST|&IMP|2|Dictated by: Troy Hanson Interpreter, M.D.||||||Prelim<R>
+ZDS|2.25.46483569726888819093620161180875280691^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 10:47:01.2187|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814104701|TBD|ORU^R01|2.25.296476389772545408330432299707949012627|P|2.7<R>
+PID|1||ABC1234330^^^ABC^MR~EPIC2603471^^^EPIC^MRN~7209352^^^EMPI^MR||WHITE^JAMIL^CHARLES^^^^D||19420103|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458827^OLSON^ANA^L.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132279|||||||||||||||||||||||||20250814104701|||||||V<R>
+ORC|RE|8989586^SYS|620943127||Prelim||^^^20250814104700^20250814104701^O||20250814104701|T1067309^LUNA^JENNIFER||D1458827^OLSON^ANA^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8989586^SYS|620943127|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20250814083306|||||Hosp Perf||||^^^ABDOMEN|D1458827^OLSON^ANA^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814104701||CR|Prelim||^^^20250814104700^20250814104701^O||||^Chest pain||D1458832^TAYLOR^CRAIG^S.^^^^^ABC^^^^HOSP|T1067309^LUNA^JENNIFER||20250814104701||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|R10.9^Unspecified abdominal pain^I10|Unspecified abdominal pain<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdomen X-ray imaging study.||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|4|ST|&GDT|1|Radiographs demonstrate diffuse abdominal soft tissue gas shadows||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|5|ST|&GDT|1|with no evidence of free intraperitoneal air or abnormal||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|6|ST|&GDT|1|calcifications. No bowel obstruction signs are visualized. Abdominal||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|7|ST|&GDT|1|organs including liver and spleen appear within normal size limits||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|8|ST|&GDT|1|but superimposition limits detailed assessment. No notable renal or||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|9|ST|&GDT|1|bladder silhouette abnormalities.||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|10|ST|&GDT|1|||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|11|ST|&GDT|1|||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|12|ST|&IMP|2|IMPRESSION:||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|13|ST|&IMP|2|Unremarkable abdominal X-ray with no radiographic signs of bowel||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|14|ST|&IMP|2|obstruction or free air. Findings are nonspecific but do not suggest||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|15|ST|&IMP|2|acute abdominal pathology at this time.||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|16|ST|&IMP|2|Dictated by: Craig Taylor Interpreter, M.D.||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+ZDS|2.25.45082695915432443522339748305965022803^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 11:14:34.0877|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814111434|TBD|ORU^R01|2.25.86894298082825883439238171253269619380|P|2.3<R>
+PID||7209352|9566019^1^5^^^UN||WHITE^JAMIL^CHARLES^^^||19420103|M|||123 STREET^^CITY CITY^MO^61111^||(111) 111-1111 x|(111) 111-1111 x||||M72093523R|111-11-1111|||||||||||N<R>
+PV1||O|^123^^^^^^^ABC RM 123||||D1458837^HANSON^TROY^C.^^^M.D.|||||||||||||||||||||||||||||||||||||20250814111434<R>
+ORC|RE||||||||20250814111434|^UnkPERSON^UnkPERSON^^^^||D1458832^TAYLOR^CRAIG^S.^^^M.D.<R>
+OBR|1|96932|620943126|IMG154^XR ABDOMEN AP 1 VIEW|||20250814090840|||||||||||||||20250814111434|||Wet Read|||||PORTABLE^PORTABLE|Chest pain\S\Chest pain|D1458827^OLSON^ANA^L.^^^M.D.|~|^HOLLAND^WALTER^^^^|^UnkPERSON^UnkPERSON^^^^<R>
+OBX|1|FT|IMG154&GDT||EXAMINATION: Repeat abdomen X-ray imaging study on the same date to||||||Wet Read<R>
+OBX|2|FT|IMG154&GDT||compare with prior.||||||Wet Read<R>
+OBX|3|FT|IMG154&GDT||FINDINGS:||||||Wet Read<R>
+OBX|4|FT|IMG154&GDT||Images confirm stable appearance compared to initial study conducted||||||Wet Read<R>
+OBX|5|FT|IMG154&GDT||earlier on August 14, 2025. No interval development of free air,||||||Wet Read<R>
+OBX|6|FT|IMG154&GDT||obstruction, or abnormal calcifications. Soft tissues and bony||||||Wet Read<R>
+OBX|7|FT|IMG154&GDT||structures remain unchanged.||||||Wet Read<R>
+OBX|8|FT|IMG154&GDT||||||||Wet Read<R>
+OBX|9|FT|IMG154&GDT||||||||Wet Read<R>
+OBX|10|FT|IMG154&IMP||IMPRESSION:||||||Wet Read<R>
+OBX|11|FT|IMG154&IMP||No changes noted relative to prior abdominal X-ray dated August 14,||||||Wet Read<R>
+OBX|12|FT|IMG154&IMP||2025. No evidence of acute abdominal pathology.||||||Wet Read<R>
+<EB><R>
+
+2025-08-14 11:54:10.9900|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814115410|TBD|ORU^R01|2.25.296178717141651566495466184955661956860|P|2.3<R>
+PID||7209359|9566026^5^1^^^UN||BERRY^HAROLD^JOSEPH^^^||19491030|M|||123 STREET^^CITY CITY^MO^61111^||(111) 111-1111 x|(111) 111-1111 x||||M72093593R|111-11-1111|||||||||||N<R>
+PV1||O|^123^^^^^^^ABC RM 123||||D1458833^MARTIN^JENNIFER^L.^^^M.D.|||||||||||||||||||||||||||||||||||||20250814115410<R>
+ORC|RE||||||||20250814115410|^UnkPERSON^UnkPERSON^^^^||D1458838^LONG^LATASHA^T.^^^M.D.<R>
+OBR|1|6065349|620943146|MDXREVNT^Radiology Event|||20250814103119|||||||||||||||20250814115410|||Final|||||PORTABLE^PORTABLE|Chest pain\S\Chest pain|D1458834^WILLIAMS^TARA^L.^^^M.D.|~|^^^^^^|^UnkPERSON^UnkPERSON^^^^<R>
+OBX|1|FT|MDXREVNT&ADN||ADDENDUM: Revised the impression to reflect progression in||||||Final<R>
+OBX|2|FT|MDXREVNT&ADN||degenerative changes noted since previous study on 2025-08-14.||||||Final<R>
+OBX|3|FT|MDXREVNT&GDT||EXAMINATION: Lateral single-view X-ray imaging of the cervical spine.||||||Final<R>
+OBX|4|FT|MDXREVNT&GDT||||||||Final<R>
+OBX|5|FT|MDXREVNT&GDT||FINDINGS:||||||Final<R>
+OBX|6|FT|MDXREVNT&GDT||The lateral cervical spine X-ray demonstrates progression of||||||Final<R>
+OBX|7|FT|MDXREVNT&GDT||multi-level degenerative spondylotic disease compared to the prior||||||Final<R>
+OBX|8|FT|MDXREVNT&GDT||exam dated 2025-08-14. Intervertebral disc space narrowing is now||||||Final<R>
+OBX|9|FT|MDXREVNT&GDT||more pronounced at both C5-C6 and C6-C7 levels. There is an increase||||||Final<R>
+OBX|10|FT|MDXREVNT&GDT||in osteophytic proliferation along the anterior vertebral margins||||||Final<R>
+OBX|11|FT|MDXREVNT&GDT||extending from C4 to C7, consistent with advancing spondylosis. The||||||Final<R>
+OBX|12|FT|MDXREVNT&GDT||vertebral alignment retains normal lordosis without evidence of||||||Final<R>
+OBX|13|FT|MDXREVNT&GDT||kyphotic deformity or acute subluxation. Facet joint hypertrophy||||||Final<R>
+OBX|14|FT|MDXREVNT&GDT||persists at multiple levels with worsening hypertrophic changes.||||||Final<R>
+OBX|15|FT|MDXREVNT&GDT||Neural foraminal narrowing at C5-C6 is more conspicuous bilaterally,||||||Final<R>
+OBX|16|FT|MDXREVNT&GDT||potentially increasing impingement on the exiting nerve roots. No||||||Final<R>
+OBX|17|FT|MDXREVNT&GDT||acute fractures or subluxations are detected. Prevertebral soft||||||Final<R>
+OBX|18|FT|MDXREVNT&GDT||tissues are unremarkable without signs of edema or swelling. The||||||Final<R>
+OBX|19|FT|MDXREVNT&GDT||odontoid process remains intact and well visualized.||||||Final<R>
+OBX|20|FT|MDXREVNT&GDT||||||||Final<R>
+OBX|21|FT|MDXREVNT&GDT||||||||Final<R>
+OBX|22|FT|MDXREVNT&IMP||IMPRESSION:||||||Final<R>
+OBX|23|FT|MDXREVNT&IMP||Marked progression of cervical spondylosis compared to 2025-08-14,||||||Final<R>
+OBX|24|FT|MDXREVNT&IMP||with exacerbated degenerative disc disease at C5-C6 and C6-C7||||||Final<R>
+OBX|25|FT|MDXREVNT&IMP||manifested by intensified intervertebral disc space narrowing and||||||Final<R>
+OBX|26|FT|MDXREVNT&IMP||expanded anterior osteophytosis from C4 through C7. Facet joint||||||Final<R>
+OBX|27|FT|MDXREVNT&IMP||hypertrophy and bilateral foraminal stenosis have worsened,||||||Final<R>
+OBX|28|FT|MDXREVNT&IMP||increasing the risk of nerve root impingement which may correlate||||||Final<R>
+OBX|29|FT|MDXREVNT&IMP||clinically with exacerbated radiculopathy or cervical pain. Vertebral||||||Final<R>
+OBX|30|FT|MDXREVNT&IMP||alignment is preserved with no acute osseous injury or malalignment.||||||Final<R>
+OBX|31|FT|MDXREVNT&IMP||Continued clinical monitoring is advised, with consideration for||||||Final<R>
+OBX|32|FT|MDXREVNT&IMP||advanced imaging such as MRI to further evaluate neural element||||||Final<R>
+OBX|33|FT|MDXREVNT&IMP||involvement if symptoms progress.||||||Final<R>
+<EB><R>
+
+2025-08-14 11:58:26.3845|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814115826|TBD|ORU^R01|2.25.296750342531641850427239772296772676108|P|2.7<R>
+PID|1||ABC1234338^^^ABC^MR~EPIC2603479^^^EPIC^MRN||LYNN^AMANDA^VANESSA^^^^D||19470205|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458832^TAYLOR^CRAIG^S.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132292|||||||||||||||||||||||||20250814115826|||||||V<R>
+ORC|RE|4010974^SYS|620943148||Prelim||^^^20250814115825^20250814115826^O||20250814115826|T1067305^WALTON^MELISSA||D1458840^PEREZ^GREGORY^K.^Ph.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4010974^SYS|620943148|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20250814113352|||||Hosp Perf||||^^^CHEST|D1458840^PEREZ^GREGORY^K.^Ph.D.^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814115826||CR|Prelim||^^^20250814115825^20250814115826^O||||^Chest pain||D1458834^WILLIAMS^TARA^L.^^^^^ABC^^^^HOSP|T1067305^WALTON^MELISSA||20250814115826||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|J44.9^Chronic obstructive pulmonary disease, unspecified^I10|Chronic obstructive pulmonary disease, unspecified<R>
+DG1|2|I10|I25.10^Atherosclerotic heart disease of native coronary artery without angina pectoris^I10|Atherosclerotic heart disease of native coronary artery without angina pectoris<R>
+DG1|3|I10|R91.8^Other nonspecific abnormal finding of lung field^I10|Other nonspecific abnormal finding of lung field<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Posteroanterior and lateral chest radiographs||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|4|ST|&GDT|1|The posteroanterior and lateral chest X-ray images reveal clear||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|5|ST|&GDT|1|visualization of the bony thorax and soft tissues. The||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|6|ST|&GDT|1|cardiomediastinal silhouette is within normal limits but demonstrates||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|7|ST|&GDT|1|mild cardiomegaly with a cardiothoracic ratio slightly above 0.5.||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|8|ST|&GDT|1|Pulmonary vasculature appears somewhat prominent consistent with||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|9|ST|&GDT|1|chronic pulmonary congestion. There is evidence of increased||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|10|ST|&GDT|1|interstitial markings bilaterally, suggestive of chronic interstitial||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|11|ST|&GDT|1|lung disease. No acute consolidation, pleural effusions, or||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|12|ST|&GDT|1|pneumothorax are identified. The lung volumes are preserved, and||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|13|ST|&GDT|1|diaphragmatic contours are smooth with normal costophrenic angles. A||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|14|ST|&GDT|1|few scattered, ill-defined nodular opacities are noted in the right||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|15|ST|&GDT|1|upper lobe region, measuring less than 1 cm in diameter, which could||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|16|ST|&GDT|1|represent granulomatous disease or early neoplastic changes. The||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|17|ST|&GDT|1|trachea is midline and patent. Comparison to prior imaging is not||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|18|ST|&GDT|1|available at this time.||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|19|ST|&GDT|1|||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|20|ST|&GDT|1|||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|21|ST|&IMP|2|IMPRESSION:||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|22|ST|&IMP|2|Findings consistent with chronic obstructive pulmonary disease||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|23|ST|&IMP|2|demonstrated by increased interstitial markings and chronic pulmonary||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|24|ST|&IMP|2|vascular congestion. Mild cardiomegaly noted which may correlate with||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|25|ST|&IMP|2|underlying ischemic heart disease or cardiomyopathy. Scattered small||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|26|ST|&IMP|2|nodular opacities, particularly in the right upper lobe, warrant||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|27|ST|&IMP|2|further evaluation with CT imaging to characterize and exclude early||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|28|ST|&IMP|2|neoplastic processes or granulomatous disease. No acute pulmonary||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|29|ST|&IMP|2|pathology identified. Recommend clinical correlation and follow-up||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|30|ST|&IMP|2|imaging as appropriate.||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|31|ST|&IMP|2|Dictated by: Tara Williams Interpreter, M.D.||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+ZDS|2.25.216854563534650059786849515916699906735^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 12:04:28.9007|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814120428|TBD|ORU^R01|2.25.192382514103371439758989336479470595681|P|2.7<R>
+PID|1||ABC1234345^^^ABC^MR~EPIC2603486^^^EPIC^MRN||JOHNSON^ANTON^MATTHEW^^^^D||19980121|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458827^OLSON^ANA^L.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132307|||||||||||||||||||||||||20250814120428|||||||V<R>
+ORC|RE|8028263^SYS|620943169||Prelim||^^^20250814120427^20250814120428^O||20250814120428|T1067305^WALTON^MELISSA||D1458833^MARTIN^JENNIFER^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8028263^SYS|620943169|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20250814104331|||||Hosp Perf||||^^^ABDOMEN|D1458833^MARTIN^JENNIFER^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814120428||CR|Prelim||^^^20250814120427^20250814120428^O||||^Chest pain||D1458830^REYNOLDS^JEREMY^B.^^^^^ABC^^^^HOSP|T1067305^WALTON^MELISSA||20250814120428||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|R93.6^Abnormal findings on diagnostic imaging of limbs^I10|Abnormal findings on diagnostic imaging of limbs<R>
+DG1|2|I10|K83.1^Obstruction of bile duct^I10|Obstruction of bile duct<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view abdomen X-ray study.||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|4|ST|&GDT|1|Abdominal radiograph shows no evidence of bowel obstruction or||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|5|ST|&GDT|1|abnormal calcifications. Gas pattern is normal. No radiopaque foreign||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|6|ST|&GDT|1|bodies or large masses identified. Soft tissues appear unremarkable.||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|7|ST|&GDT|1|Bony structures intact.||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|8|ST|&GDT|1|||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|9|ST|&GDT|1|||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|10|ST|&IMP|2|IMPRESSION:||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|11|ST|&IMP|2|Normal abdominal X-ray. Radiograph does not visualize the adnexal||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|12|ST|&IMP|2|mass seen on ultrasound.||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+OBX|13|ST|&IMP|2|Dictated by: Jeremy Reynolds Interpreter, M.D.||||||Prelim|||||T1067305^WALTON^MELISSA<R>
+ZDS|2.25.13177866664391290886701240151622474071^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 12:06:10.2747|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814120610|TBD|ORU^R01|2.25.219030242254076796773456242659735134587|P|2.7<R>
+PID|1||ABC1234348^^^ABC^MR~EPIC2603489^^^EPIC^MRN||KOCH^APRIL^JANICE^^^^D||19550304|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458835^MAY^TONY^F.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132310|||||||||||||||||||||||||20250814120610|||||||V<R>
+ORC|RE|2800214^SYS|620943177||Final||^^^20250814120609^20250814120610^O||20250814120610|T1067306^JAMES^ANTHONY||D1458832^TAYLOR^CRAIG^S.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2800214^SYS|620943177|CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI|O|20250814114248|||||Hosp Perf||||^^^BRAIN|D1458832^TAYLOR^CRAIG^S.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814120610||MR|Final||^^^20250814120609^20250814120610^O||||^Chest pain||D1458838^LONG^LATASHA^T.^^^^^ABC^^^^HOSP|T1067306^JAMES^ANTHONY||20250814120610||||||||CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV^^BRAIN DMRI<R>
+ZPF|1|12^IMG MRI PROCEDURES<R>
+OBX|2|ST|&ADT|1|ADDENDUM: Amendment to impression: There is a subtle T2 hyperintense||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|3|ST|&ADT|1|lesion in the periventricular white matter of the left frontal lobe||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|4|ST|&ADT|1|suggestive of a small demyelinating plaque, previously unreported.||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|5|ST|&GDT|2|EXAMINATION: MRI of the brain without contrast.||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|6|ST|&GDT|2|||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|7|ST|&GDT|2|FINDINGS:||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|8|ST|&GDT|2|Axial, sagittal, and coronal sequences of the brain were evaluated.||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|9|ST|&GDT|2|The cerebral hemispheres demonstrate symmetric gyral pattern without||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|10|ST|&GDT|2|evidence of mass effect or midline shift. The ventricular system is||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|11|ST|&GDT|2|normal in size and configuration, with no signs of hydrocephalus.||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|12|ST|&GDT|2|White matter shows patchy foci of increased T2/FLAIR signal||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|13|ST|&GDT|2|predominantly in the periventricular regions, some extending into the||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|14|ST|&GDT|2|subcortical white matter bilaterally, which may represent chronic||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|15|ST|&GDT|2|microvascular ischemic changes. Notably, a faint hyperintense focus||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|16|ST|&GDT|2|on T2-weighted images is present in the periventricular white matter||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|17|ST|&GDT|2|of the left frontal lobe, measuring approximately 4 mm in diameter,||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|18|ST|&GDT|2|consistent with a demyelinating plaque. No diffusion restriction||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|19|ST|&GDT|2|suggesting acute infarct is seen. The brainstem and cerebellum appear||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|20|ST|&GDT|2|unremarkable. No abnormal enhancement noted on post-contrast images.||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|21|ST|&GDT|2|Vascular flow voids are preserved, and major intracranial vessels||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|22|ST|&GDT|2|appear patent. No extra-axial fluid collections or masses identified.||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|23|ST|&GDT|2|The calvarium and skull base show no abnormal marrow signal or||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|24|ST|&GDT|2|lesions.||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|25|ST|&GDT|2|||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|26|ST|&GDT|2|||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|27|ST|&IMP|3|IMPRESSION:||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|28|ST|&IMP|3|Mild diffuse periventricular and subcortical small vessel ischemic||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|29|ST|&IMP|3|changes, consistent with chronic microangiopathy. Identification of a||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|30|ST|&IMP|3|subtle demyelinating plaque in the left frontal periventricular white||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|31|ST|&IMP|3|matter may indicate an early or evolving demyelinating process such||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|32|ST|&IMP|3|as multiple sclerosis. No acute intracranial pathology revealed.||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|33|ST|&IMP|3|Correlation with clinical findings and further neurologic evaluation||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|34|ST|&IMP|3|recommended. No evidence of mass lesion, hemorrhage, or||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|35|ST|&IMP|3|hydrocephalus.||||||Final|||||T1067306^JAMES^ANTHONY<R>
+OBX|36|ST|&IMP|3|Dictated by: Latasha Long Interpreter, M.D.||||||Final|||||T1067306^JAMES^ANTHONY<R>
+ZDS|2.25.294907481242086090937208324724781073257^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 12:11:56.2066|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814121156|TBD|ORU^R01|2.25.274305477702732679987307195323269208292|P|2.4<R>
+PID|1||ABC1234348^^^ABC^MR~EPIC2603489^^^EPIC^MRN||KOCH^APRIL^JANICE^^^^D||19550304000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234348^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458830^REYNOLDS^JEREMY^B.^^^M.D.|^^|^^|RAD|||||||||V37851559^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3820621^SYS|620943178|EDXETSP1V^XR Thoracic Spine 1 View^UNKDEV|URGENT||20250814110424|||PSCRIB|||||^^^^ |D1458833^MARTIN^JENNIFER^LINDSAY^^^M.D.^^ABC|||||1^Thoracic spine 1 View Dx Xray|20250814121156||EDXETSPV|||1^^^20250814121156^^U^^URGENT|       ||PORTABLE|^Chest pain|D1458828^WILLIAMS^ANDREW^J.^^^M.D.|D1458834^WILLIAMS^TARA^L.^^^M.D.||PSCRIB|||||||||1<R>
+OBX|1|TX|5439138||ANDREW WILLIAMS, M.D.~~~~********PRELIMINARY REPORT********~~~ ||||||P<R>
+OBX|2|TX|5439138||ACC#  Date Time  Exam~~~620943178 Aug 14 2025 12:11PM EDXETSP1V XR Thoracic Spine 1 View~EXAMINATION: Frontal and lateral radiographs of the thoracic spine~were obtained.~~FINDINGS:~The thoracic spine demonstrates normal vertebral body heights without~significant compression deformities initially noted. The~intervertebral disc spaces are preserved throughout the visualized~levels. Alignment is maintained with no evidence of subluxation or~retrolisthesis. No acute fractures or destructive osseous lesions are~seen. Degenerative changes including mild endplate osteophytes are~present, most prominently at T8-T9 and T10-T11 levels, consistent~with spondylotic changes. Soft tissues adjacent to the spine are~unremarkable, and lung apices partially visualized show no acute~infiltrates or masses.~~~IMPRESSION:~Mild thoracic spondylosis with osteophytic spurring at mid and lower~thoracic levels without significant compromise of vertebral body~height or disc spaces. No acute fracture or malalignment of the~thoracic spine. Findings are consistent with age-related degenerative~changes. Addendum notes newly identified mild compression deformity~at T7 requiring clinical correlation and possible follow-up.~ADDENDUM: Correction to findings: Mild anterior wedging noted at T7~vertebral body, consistent with a compression fracture not previously~described. No abnormal paraspinal soft tissue swelling is present. No~evidence of spondylolisthesis or abnormal alignment was appreciated.||||||P<R>
+OBX|3|TX|5439138||Requested By: Martin,Jennifer L. M.D.~~Dictated By: Andrew Williams, M.D. on Aug 14 2025 12:11PM~~Pending review by: Tara Williams, M.D.~ ~~~ ~~~ ||||||P<R>
+OBX||RP|5439138|4|620943178^UK^ZB||||||P<R>
+<EB><R>
+
+2025-08-14 12:20:13.2964|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814122013|TBD|ORU^R01|2.25.21388969831817791802458593886082909614|P|2.7<R>
+PID|1||ABC1234342^^^ABC^MR~EPIC2603483^^^EPIC^MRN||PALMER^WILLIAM^MICHAEL^^^^D||19930606|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458830^REYNOLDS^JEREMY^B.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132301|||||||||||||||||||||||||20250814122013|||||||V<R>
+ORC|RE|6053225^SYS|620943160||Prelim||^^^20250814122012^20250814122013^O||20250814122013|T1067307^HOLLAND^WALTER||D1458837^HANSON^TROY^C.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6053225^SYS|620943160|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20250814114854|||||Hosp Perf||||^^^CHEST|D1458837^HANSON^TROY^C.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814122013||CR|Prelim||^^^20250814122012^20250814122013^O||||^Chest pain||D1458831^HARRIS^MICHAEL^A.^^^^^ABC^^^^HOSP|T1067307^HOLLAND^WALTER||20250814122013||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|J18.9^Pneumonia, unspecified organism^I10|Pneumonia, unspecified organism<R>
+DG1|2|I10|I10^Essential (primary) hypertension^I10|Essential (primary) hypertension<R>
+DG1|3|I10|R09.89^Other specified symptoms and signs involving the circulatory and respiratory systems^I10|Other specified symptoms and signs involving the circulatory and respiratory systems<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Posteroanterior and lateral chest radiographs||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|4|ST|&GDT|1|The chest X-ray demonstrates clear lung fields with no radiographic||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|5|ST|&GDT|1|evidence of consolidation, mass lesion, or pleural effusion. Cardiac||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|6|ST|&GDT|1|silhouette is within normal limits, and the mediastinal contours are||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|7|ST|&GDT|1|unremarkable. The bony thorax is intact without fractures or focal||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|8|ST|&GDT|1|osseous abnormalities. No pneumothorax is noted. Pulmonary||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|9|ST|&GDT|1|vasculature appears normal, and there is no evidence of interstitial||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|10|ST|&GDT|1|or alveolar infiltrates. The diaphragm and costophrenic angles are||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|11|ST|&GDT|1|sharp and free of blunting. There is mild cardiomegaly consistent||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|12|ST|&GDT|1|with a diagnosis of hypertension. No acute cardiopulmonary||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|13|ST|&GDT|1|abnormality is identified.||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|14|ST|&GDT|1|||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|15|ST|&GDT|1|||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|16|ST|&IMP|2|IMPRESSION:||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|17|ST|&IMP|2|Normal chest radiograph with no acute pulmonary or pleural disease.||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|18|ST|&IMP|2|Mild cardiomegaly reflective of underlying hypertension. No||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|19|ST|&IMP|2|radiographic signs of pneumonia or other acute infection. Continued||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|20|ST|&IMP|2|clinical correlation is advised.||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+OBX|21|ST|&IMP|2|Dictated by: Michael Harris Interpreter, M.D.||||||Prelim|||||T1067307^HOLLAND^WALTER<R>
+ZDS|2.25.54531372563012811968785570036829444742^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 12:32:27.1144|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814123227|TBD|ORU^R01|2.25.150506849774659380073607494612578270598|P|2.4<R>
+PID|1||ABC1234345^^^ABC^MR~EPIC2603486^^^EPIC^MRN||JOHNSON^ANTON^MATTHEW^^^^D||19980121000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234345^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458839^PROCTOR^ERIN^R.^^^M.D.|^^|^^|RAD|||||||||V37851555^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1583092^SYS|620943168|IMG2816^US ABDOMEN LIMITED^UNKDEV|URGENT||20250814103344|||PSCRIB|||||^^^^ |D1458834^WILLIAMS^TARA^LAUREN^^^M.D.^^ABC|||||2816^Ultrasound|20250814123227||IMG|||1^^^20250814123227^^U^^URGENT|       ||WHEELCHA|^Chest pain|D1458838^LONG^LATASHA^T.^^^M.D.|D1458827^OLSON^ANA^L.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|6471884||LATASHA LONG, M.D.~~~~********null Report********~~~ <R>
+OBX|2|TX|6471884||ACC#  Date Time  Exam~~~620943168 Aug 14 2025 12:32PM IMG2816 US ABDOMEN LIMITED~EXAMINATION: Follow-up abdominal ultrasound.~~FINDINGS:~No significant interval change compared to prior ultrasound on August~14, 2025. Hypoechoic left adnexal mass persists with stable size and~vascular flow pattern. No emergence of free fluid or new masses~detected.~~~IMPRESSION:~Stable adnexal mass compared to previous imaging dated August 14,~2025. Continued surveillance or further diagnostic work-up~recommended.<R>
+OBX|3|TX|6471884||Requested By: Williams,Tara L. M.D.~~Dictated By: Latasha Long, M.D. on Aug 14 2025 12:32PM~~Pending review by: Ana Olson, M.D.~ ~~~ ~~~ <R>
+OBX||RP|6471884|4|620943168^UK^ZB<R>
+<EB><R>
+
+2025-08-14 12:38:01.6188|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814123801|TBD|ORU^R01|2.25.324679436397523499270135504970517599740|P|2.7<R>
+PID|1||ABC1234348^^^ABC^MR~EPIC2603489^^^EPIC^MRN||KOCH^APRIL^JANICE^^^^D||19550304|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458835^MAY^TONY^F.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132311|||||||||||||||||||||||||20250814123801|||||||V<R>
+ORC|RE|3208030^SYS|620943179||Final||^^^20250814123800^20250814123801^O||20250814123801|T1067309^LUNA^JENNIFER||D1458839^PROCTOR^ERIN^R.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3208030^SYS|620943179|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20250814113340|||||Hosp Perf||||^^^BREAST|D1458839^PROCTOR^ERIN^R.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814123801||MG|Final||^^^20250814123800^20250814123801^O||||^Chest pain||D1458828^WILLIAMS^ANDREW^J.^^^^^ABC^^^^HOSP|T1067309^LUNA^JENNIFER||20250814123801||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|17^IMG MAMMO PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mediolateral oblique (MLO) mammogram of the||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|3|ST|&GDT|1|left breast.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|4|ST|&GDT|1|HISTORY: Female patient, born 1955-03-04, undergoing routine breast||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|5|ST|&GDT|1|cancer screening mammography.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|6|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|7|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|8|ST|&IMP|2|FINDINGS AND IMPRESSION:||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|9|ST|&IMP|2|The single-view MLO mammogram of the left breast demonstrates||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|10|ST|&IMP|2|heterogeneously dense fibroglandular parenchyma, which may obscure||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|11|ST|&IMP|2|small masses. No new suspicious masses, architectural distortions, or||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|12|ST|&IMP|2|microcalcification clusters are identified. There is no evidence of||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|13|ST|&IMP|2|skin thickening or nipple retraction. Prominent Cooper's ligaments||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|14|ST|&IMP|2|are visualized with no asymmetric density compared to prior imaging||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|15|ST|&IMP|2|from 2023-01-15. A few scattered benign appearing cysts are noted,||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|16|ST|&IMP|2|consistent with fibrocystic changes. The imaged axillary region||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|17|ST|&IMP|2|appears unremarkable without lymphadenopathy. Overall, no findings||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|18|ST|&IMP|2|are suggestive of malignancy on this limited single-view exam, though||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|19|ST|&IMP|2|a two-view bilateral mammogram is recommended for comprehensive||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|20|ST|&IMP|2|evaluation given breast density.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|21|ST|&IMP|2|Dictated by: Andrew Williams Interpreter, M.D.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+ZDS|2.25.151219234872270961227218320389396467186^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 12:39:33.7618|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814123933|TBD|ORU^R01|2.25.42963736603043323149340140233960145224|P|2.4<R>
+PID|1||ABC1234347^^^ABC^MR~EPIC2603488^^^EPIC^MRN||MORGAN^GENEVIEVE^MISTY^^^^D||19490613000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234347^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458832^TAYLOR^CRAIG^S.^^^M.D.|^^|^^|RAD|||||||||V37851558^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||2649265^SYS|620943175|BED74000^74000 Abdomen single view AP^UNKDEV|URGENT||20250814094826|||PSCRIB|||||^^^^ |D1458834^WILLIAMS^TARA^LAUREN^^^M.D.^^ABC|||||74000^Abdomen 1 View Dx Xray|20250814123933||BED|||1^^^20250814123933^^U^^URGENT|       ||PORTABLE|^Chest pain|D1458836^WRIGHT^MELISSA^V.^^^M.D.|D1458830^REYNOLDS^JEREMY^B.^^^M.D.||PSCRIB|||||||||74000<R>
+<EB><R>
+
+2025-08-14 13:03:10.8192|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814130310|TBD|ORU^R01|2.25.48933133317510490799410617137537740554|P|2.7<R>
+PID|1||ABC1234339^^^ABC^MR~EPIC2603480^^^EPIC^MRN||FERNANDEZ^HEATHER^GINA^^^^D||19660130|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458840^PEREZ^GREGORY^K.^Ph.D.^^^^ABC^^^^HOSP|||RAD|||||||||V85132294|||||||||||||||||||||||||20250814130310|||||||V<R>
+ORC|RE|4906479^SYS|620943150||Wet Read||^^^20250814130309^20250814130310^O||20250814130310|T1067311^WOLF^JED||D1458831^HARRIS^MICHAEL^A.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4906479^SYS|620943150|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20250814120253|||||Hosp Perf||||^^^CHEST|D1458831^HARRIS^MICHAEL^A.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814130310||CR|Wet Read||^^^20250814130309^20250814130310^O||||^Chest pain||D1458826^CERVANTES^ERIN^P.^^^^^ABC^^^^HOSP|T1067311^WOLF^JED||20250814130310||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Posteroanterior and lateral chest radiographs were||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|3|ST|&GDT|1|obtained.||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|4|ST|&GDT|1|FINDINGS:||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|5|ST|&GDT|1|The lungs are well expanded without evidence of focal consolidation,||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|6|ST|&GDT|1|pneumothorax, or pleural effusion. No interstitial markings or||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|7|ST|&GDT|1|reticulonodular patterns are appreciated to suggest interstitial lung||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|8|ST|&GDT|1|disease. The cardiac silhouette is within normal limits for size and||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|9|ST|&GDT|1|contour, and no cardiomegaly is present. The mediastinum is midline,||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|10|ST|&GDT|1|and the aortic arch appears unremarkable without signs of dilation or||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|11|ST|&GDT|1|tortuosity. Bony thorax demonstrates no acute osseous abnormalities.||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|12|ST|&GDT|1|No hilar adenopathy is identified. Diaphragmatic contours are smooth||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|13|ST|&GDT|1|and normal in position. Soft tissues are unremarkable.||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|14|ST|&GDT|1|||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|15|ST|&GDT|1|||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|16|ST|&IMP|2|IMPRESSION:||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|17|ST|&IMP|2|Normal chest X-ray without radiographic evidence of pneumonia,||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|18|ST|&IMP|2|pleural effusion, or other acute cardiopulmonary abnormality. The||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|19|ST|&IMP|2|heart size is normal. No skeletal abnormalities detected. Continued||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|20|ST|&IMP|2|clinical correlation is recommended.||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|21|ST|&IMP|2|Dictated by: Erin Cervantes Interpreter, M.D.||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|22|ST|&TCM|3|Patient reported mild chest discomfort during the procedure but was||||||Wet Read|||||T1067311^WOLF^JED<R>
+OBX|23|ST|&TCM|3|able to remain still for image acquisition.||||||Wet Read|||||T1067311^WOLF^JED<R>
+ZDS|2.25.242330248664992847581707341424691985864^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 13:23:05.7280|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814132305|TBD|ORU^R01|2.25.213732642005146782981422416471503084231|P|2.3<R>
+PID||7209355|9566022^5^6^^^UN||HOUSE^JOHN^DUSTIN^^^||19991010|M|||123 STREET^^CITY CITY^MO^61111^||(111) 111-1111 x|(111) 111-1111 x||||M72093553R|111-11-1111|||||||||||N<R>
+PV1||O|^123^^^^^^^ABC RM 123||||D1458837^HANSON^TROY^C.^^^M.D.|||||||||||||||||||||||||||||||||||||20250814132305<R>
+ORC|RE||||||||20250814132305|^UnkPERSON^UnkPERSON^^^^||D1458826^CERVANTES^ERIN^P.^^^M.D.<R>
+OBR|1|8006793|620943136|IMG1259^XR CHEST 1 VIEW|||20250814112814|||||||||||||||20250814132305|||Prelim|||||PORTABLE^PORTABLE|Chest pain\S\Chest pain|D1458827^OLSON^ANA^L.^^^M.D.|~|^ROBINSON^MELINDA^^^^|^UnkPERSON^UnkPERSON^^^^<R>
+OBX|1|FT|IMG1259&GDT||EXAMINATION: Chest X-ray imaging study.||||||Prelim<R>
+OBX|2|FT|IMG1259&GDT||FINDINGS:||||||Prelim<R>
+OBX|3|FT|IMG1259&GDT||Posteroanterior and lateral chest radiographs show patchy bibasilar||||||Prelim<R>
+OBX|4|FT|IMG1259&GDT||opacities predominantly in the lower lobes with associated mild||||||Prelim<R>
+OBX|5|FT|IMG1259&GDT||bronchial wall thickening. No cavitation or pleural effusion||||||Prelim<R>
+OBX|6|FT|IMG1259&GDT||identified. Cardiac silhouette is within normal limits. No evident||||||Prelim<R>
+OBX|7|FT|IMG1259&GDT||pneumothorax or rib fractures.||||||Prelim<R>
+OBX|8|FT|IMG1259&GDT||||||||Prelim<R>
+OBX|9|FT|IMG1259&GDT||||||||Prelim<R>
+OBX|10|FT|IMG1259&IMP||IMPRESSION:||||||Prelim<R>
+OBX|11|FT|IMG1259&IMP||Findings suggest bibasilar pneumonia or pneumonitis. Clinical||||||Prelim<R>
+OBX|12|FT|IMG1259&IMP||correlation with infectious symptoms recommended.||||||Prelim<R>
+<EB><R>
+
+2025-08-14 13:47:16.1682|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814134716|TBD|ORU^R01|2.25.158836753797896288794215889777432536539|P|2.7<R>
+PID|1||ABC1234339^^^ABC^MR~EPIC2603480^^^EPIC^MRN||FERNANDEZ^HEATHER^GINA^^^^D||19660130|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458831^HARRIS^MICHAEL^A.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132296|||||||||||||||||||||||||20250814134716|||||||V<R>
+ORC|RE|8816222^SYS|620943152||Final||^^^20250814134715^20250814134716^O||20250814134716|T1067309^LUNA^JENNIFER||D1458835^MAY^TONY^F.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8816222^SYS|620943152|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20250814120209|||||Hosp Perf||||^^^BREAST|D1458835^MAY^TONY^F.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814134716||MG|Final||^^^20250814134715^20250814134716^O||||^Chest pain||D1458839^PROCTOR^ERIN^R.^^^^^ABC^^^^HOSP|T1067309^LUNA^JENNIFER||20250814134716||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|17^IMG MAMMO PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram of the left breast.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|3|ST|&GDT|1|HISTORY: Female patient born on 1966-01-30, referred for routine||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|4|ST|&GDT|1|breast cancer screening.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|5|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|6|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|7|ST|&IMP|2|FINDINGS AND IMPRESSION:||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|8|ST|&IMP|2|The mammographic study reveals predominantly fatty breast parenchyma||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|9|ST|&IMP|2|with no evidence of suspicious masses, architectural distortion, or||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|10|ST|&IMP|2|microcalcifications. The skin and nipple-areolar complex appear||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|11|ST|&IMP|2|intact without thickening or retraction. No evidence of axillary||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|12|ST|&IMP|2|lymphadenopathy is seen in the visualized regions. The Cooper's||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|13|ST|&IMP|2|ligaments are preserved. These findings are consistent with a benign||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|14|ST|&IMP|2|mammographic appearance. I recommend routine screening per standard||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|15|ST|&IMP|2|guidelines. Comparison with any prior mammograms is advised to||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|16|ST|&IMP|2|evaluate for interval changes. Should any new clinical symptoms||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|17|ST|&IMP|2|arise, further diagnostic imaging, including additional views or||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|18|ST|&IMP|2|ultrasound, may be warranted.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|19|ST|&IMP|2|Dictated by: Erin Proctor Interpreter, M.D.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+ZDS|2.25.321320562964393003665249014798209813868^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 14:07:22.0299|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814140722|TBD|ORU^R01|2.25.61389158381300851609207305839453063632|P|2.7<R>
+PID|1||ABC1234337^^^ABC^MR~EPIC2603478^^^EPIC^MRN~7209359^^^EMPI^MR||BERRY^HAROLD^JOSEPH^^^^D||19491030|M||ASIAN|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458819^WILLIAMS^PATRICK^K.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132291|||||||||||||||||||||||||20250814140722|||||||V<R>
+ORC|RE|4510376^SYS|620943147||Final||^^^20250814140721^20250814140722^O||20250814140722|T1067299^SIMPSON^AARON||D1458812^RICHARDS^GARY^R.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|4510376^SYS|620943147|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20250814112653|||||Hosp Perf|||||D1458812^RICHARDS^GARY^R.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814140722||XA|Final||^^^20250814140721^20250814140722^O||||^Chest pain||D1458821^RAMIREZ^TROY^C.^^^^^ABC^^^^HOSP|T1067299^SIMPSON^AARON||20250814140722||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|18^IMG IR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography of the coronary arteries was||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|3|ST|&GDT|1|performed.||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|4|ST|&GDT|1|HISTORY: Male patient, born 1949-10-30, with history of exertional||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|5|ST|&GDT|1|chest pain and suspected coronary artery disease.||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|6|ST|&GDT|1|||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|7|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|8|ST|&IMP|2|FINDINGS \T\ IMPRESSION:||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|9|ST|&IMP|2|The angiographic examination reveals atherosclerotic changes||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|10|ST|&IMP|2|involving the left anterior descending (LAD) artery with moderate||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|11|ST|&IMP|2|luminal stenosis at the proximal segment, approximately 50-60%. The||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|12|ST|&IMP|2|right coronary artery (RCA) is patent without significant stenosis||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|13|ST|&IMP|2|but shows mild irregularity of the vessel wall consistent with early||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|14|ST|&IMP|2|atheroma. The left circumflex artery (LCx) is diffusely narrowed but||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|15|ST|&IMP|2|without critical obstruction. Collateral circulation is noted between||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|16|ST|&IMP|2|branches of the LAD and LCx, suggesting chronic ischemia. No evidence||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|17|ST|&IMP|2|of aneurysmal dilatation or dissection is present. Left ventricular||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|18|ST|&IMP|2|function appears preserved based on ventriculogram imaging.||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|19|ST|&IMP|2|Comparison with previous angiogram dated 2021-08-15 shows progression||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|20|ST|&IMP|2|of stenosis in the LAD by approximately 10%. These findings correlate||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|21|ST|&IMP|2|with the patient's clinical presentation and suggest the need for||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|22|ST|&IMP|2|optimized medical management and reassessment for possible||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|23|ST|&IMP|2|revascularization intervention.||||||Final|||||T1067299^SIMPSON^AARON<R>
+OBX|24|ST|&IMP|2|Dictated by: Troy Ramirez Interpreter, M.D.||||||Final|||||T1067299^SIMPSON^AARON<R>
+ZDS|2.25.149240807491571156196743523494440958776^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 14:14:09.3884|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814141409|TBD|ORU^R01|2.25.71233052529382111053413502968847375501|P|2.7<R>
+PID|1||ABC1234341^^^ABC^MR~EPIC2603482^^^EPIC^MRN||MEDINA^LAUREN^TRISHA^^^^D||19421113|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458839^PROCTOR^ERIN^R.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132299|||||||||||||||||||||||||20250814141409|||||||V<R>
+ORC|RE|3818451^SYS|620943157||Prelim||^^^20250814141408^20250814141409^O||20250814141409|T1067303^LIU^JULIE||D1458835^MAY^TONY^F.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3818451^SYS|620943157|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20250814134448|||||Hosp Perf|||||D1458835^MAY^TONY^F.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814141409||XA|Prelim||^^^20250814141408^20250814141409^O||||^Chest pain||D1458837^HANSON^TROY^C.^^^^^ABC^^^^HOSP|T1067303^LIU^JULIE||20250814141409||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|18^IMG IR PROCEDURES<R>
+DG1|1|I10|I25.10^Atherosclerotic heart disease of native coronary artery without angina pectoris^I10|Atherosclerotic heart disease of native coronary artery without angina pectoris<R>
+DG1|2|I10|I20.9^Angina pectoris, unspecified^I10|Angina pectoris, unspecified<R>
+DG1|3|I10|I73.9^Peripheral vascular disease, unspecified^I10|Peripheral vascular disease, unspecified<R>
+OBX|2|ST|&GDT|1|EXAMINATION: X-ray angiography focused on coronary vasculature.||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|4|ST|&GDT|1|Digital subtraction angiography of the coronary arteries reveals||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|5|ST|&GDT|1|moderate luminal irregularities with 50-60% stenosis in the proximal||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|6|ST|&GDT|1|left anterior descending artery. No complete occlusions identified.||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|7|ST|&GDT|1|Collateral vessels not significantly developed. Contrast flow is||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|8|ST|&GDT|1|mildly delayed distal to the stenotic segment. Left ventricular||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|9|ST|&GDT|1|ejection appears preserved by fluoroscopic assessment.||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|10|ST|&GDT|1|||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|11|ST|&GDT|1|||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|12|ST|&IMP|2|IMPRESSION:||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|13|ST|&IMP|2|Moderate proximal LAD coronary artery stenosis consistent with||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|14|ST|&IMP|2|atherosclerotic coronary artery disease. Recommend cardiology||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|15|ST|&IMP|2|consultation for further management and risk stratification.||||||Prelim|||||T1067303^LIU^JULIE<R>
+OBX|16|ST|&IMP|2|Dictated by: Troy Hanson Interpreter, M.D.||||||Prelim|||||T1067303^LIU^JULIE<R>
+ZDS|2.25.297060181388638226616861690014899624653^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 14:32:43.7567|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814143243|TBD|ORU^R01|2.25.270526533515245906439417308718870666553|P|2.7<R>
+PID|1||ABC1234343^^^ABC^MR~EPIC2603484^^^EPIC^MRN||MCMAHON^JENNIFER^BROOKE^^^^D||19241209|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458828^WILLIAMS^ANDREW^J.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132303|||||||||||||||||||||||||20250814143243|||||||V<R>
+ORC|RE|5196446^SYS|620943162||Wet Read||^^^20250814143242^20250814143243^O||20250814143243|T1067310^ROBINSON^MELINDA||D1458833^MARTIN^JENNIFER^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5196446^SYS|620943162|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20250814122129|||||Hosp Perf||||^^^BREAST|D1458833^MARTIN^JENNIFER^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814143243||MG|Wet Read||^^^20250814143242^20250814143243^O||||^Chest pain||D1458828^WILLIAMS^ANDREW^J.^^^^^ABC^^^^HOSP|T1067310^ROBINSON^MELINDA||20250814143243||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|17^IMG MAMMO PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram of the left breast.||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|3|ST|&GDT|1|HISTORY: Female patient born 1924-12-09 undergoing routine screening||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|4|ST|&GDT|1|mammography.||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|5|ST|&GDT|1|||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|6|ST|&IMP|2|IMPRESSION: ||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|7|ST|&IMP|2|Comparison with prior mammographic study dated 2025-08-14 reveals||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|8|ST|&IMP|2|persistent dense fibroglandular parenchyma, consistent with previous||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|9|ST|&IMP|2|observations of heterogeneous tissue composition. There is no new||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|10|ST|&IMP|2|architectural distortion or emergence of suspicious masses.||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|11|ST|&IMP|2|Microcalcification profiles remain stable without interval||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|12|ST|&IMP|2|development of clustered or amorphous morphologies. The subcutaneous||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|13|ST|&IMP|2|fat prominence remains unchanged, reflecting the patient's||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|14|ST|&IMP|2|age-related tissue involution. No skin thickening or nipple||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|15|ST|&IMP|2|retraction is evident. Vascular shadows retain benign configuration||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|16|ST|&IMP|2|without abnormal branching or calcification. Overall, the||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|17|ST|&IMP|2|mammographic findings continue to reflect a dense breast pattern||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|18|ST|&IMP|2|without evidence of malignancy. Given the stability over the interval||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|19|ST|&IMP|2|and absence of radiographic suspicious features, continued routine||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|20|ST|&IMP|2|surveillance mammography is advised according to standard guidelines.||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+OBX|21|ST|&IMP|2|Dictated by: Andrew Williams Interpreter, M.D.||||||Wet Read|||||T1067310^ROBINSON^MELINDA<R>
+ZDS|2.25.172712070779755775642316891996958885548^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 14:50:09.7228|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814145009|TBD|ORU^R01|2.25.84532188950465461549435922932617716265|P|2.7<R>
+PID|1||ABC1234339^^^ABC^MR~EPIC2603480^^^EPIC^MRN||FERNANDEZ^HEATHER^GINA^^^^D||19660130|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458840^PEREZ^GREGORY^K.^Ph.D.^^^^ABC^^^^HOSP|||RAD|||||||||V85132297|||||||||||||||||||||||||20250814145009|||||||V<R>
+ORC|RE|711218^SYS|620943153||Final||^^^20250814145008^20250814145009^O||20250814145009|T1067305^WALTON^MELISSA||D1458838^LONG^LATASHA^T.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|711218^SYS|620943153|IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY|O|20250814125155|||||Hosp Perf||||^^^CHEST|D1458838^LONG^LATASHA^T.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814145009||CR|Final||^^^20250814145008^20250814145009^O||||^Chest pain||D1458837^HANSON^TROY^C.^^^^^ABC^^^^HOSP|T1067305^WALTON^MELISSA||20250814145009||||||||IMG1259^XR CHEST 1 VIEW^UNKDEV^^CHEST 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Posteroanterior and lateral chest radiographs were||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|3|ST|&GDT|1|obtained for evaluation of chest pain.||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|4|ST|&GDT|1|FINDINGS:||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|5|ST|&GDT|1|Compared to the prior chest X-ray dated 2025-08-14, the current||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|6|ST|&GDT|1|images demonstrate stable lung volumes with no new focal||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|7|ST|&GDT|1|consolidations, masses, or cavitary lesions. The pulmonary||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|8|ST|&GDT|1|vasculature remains within normal limits without signs of vascular||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|9|ST|&GDT|1|congestion or edema. No evidence of pneumothorax or pleural effusion||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|10|ST|&GDT|1|is present. The prior noted normal cardiac silhouette persists, with||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|11|ST|&GDT|1|no interval development of cardiomegaly or pericardial effusion. The||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|12|ST|&GDT|1|mediastinal contours remain midline and unchanged, with no new||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|13|ST|&GDT|1|widening or masses. Bony structures show no fractures or lytic||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|14|ST|&GDT|1|lesions and are otherwise preserved. Diaphragmatic domes present with||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|15|ST|&GDT|1|normal configuration and position bilaterally. Soft tissues of the||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|16|ST|&GDT|1|chest wall reveal no abnormalities. Overall, no acute cardiopulmonary||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|17|ST|&GDT|1|features have arisen since the previous exam.||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|18|ST|&GDT|1|||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|19|ST|&GDT|1|||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|20|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|21|ST|&IMP|2|Chest X-ray findings are essentially unchanged from the 2025-08-14||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|22|ST|&IMP|2|study, indicating stable cardiopulmonary status. There is no||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|23|ST|&IMP|2|radiographic evidence of acute infection, pulmonary edema,||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|24|ST|&IMP|2|pneumothorax, or other emergent pathology to account for the||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|25|ST|&IMP|2|patient's chest pain. Clinical correlation advised to further||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|26|ST|&IMP|2|elucidate symptoms. No interval skeletal abnormalities detected.||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|27|ST|&IMP|2|Dictated by: Troy Hanson Interpreter, M.D.||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|28|ST|&TCM|3|Patient reported mild chest pain during the exam but maintained good||||||Final|||||T1067305^WALTON^MELISSA<R>
+OBX|29|ST|&TCM|3|cooperation throughout image acquisition.||||||Final|||||T1067305^WALTON^MELISSA<R>
+ZDS|2.25.320450246317625730033381215657739731949^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 15:24:11.2828|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814152411|TBD|ORU^R01|2.25.41258099665624655163358344119626209265|P|2.7<R>
+PID|1||ABC1234330^^^ABC^MR~EPIC2603471^^^EPIC^MRN~7209352^^^EMPI^MR||WHITE^JAMIL^CHARLES^^^^D||19420103|M||DECLINED|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458835^MAY^TONY^F.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132278|||||||||||||||||||||||||20250814152411|||||||V<R>
+ORC|RE|8259602^SYS|620943124||Prelim||^^^20250814152410^20250814152411^O||20250814152411|T1067303^LIU^JULIE||D1458827^OLSON^ANA^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8259602^SYS|620943124|M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR|O|20250814145023|||||Hosp Perf||||^^^PELVIS|D1458827^OLSON^ANA^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814152411||MR|Prelim||^^^20250814152410^20250814152411^O||||^Chest pain||D1458831^HARRIS^MICHAEL^A.^^^^^ABC^^^^HOSP|T1067303^LIU^JULIE||20250814152411||||||||M72195PEL0^MR PELVIS WO^UNKDEV^^PELVIS PTMR<R>
+ZPF|1|24^IMG PET PROCEDURES<R>
+DG1|1|I10|C79.51^Secondary malignant neoplasm of bone^I10|Secondary malignant neoplasm of bone<R>
+DG1|2|I10|M81.0^Age-related osteoporosis without current pathological fracture^I10|Age-related osteoporosis without current pathological fracture<R>
+DG1|3|I10|E03.9^Hypothyroidism, unspecified^I10|Hypothyroidism, unspecified<R>
+ZDS|2.25.292033105387505026017350455220872460973^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 15:33:30.5514|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814153330|TBD|ORU^R01|2.25.20275466320228940910916613188211423379|P|2.3<R>
+PID||7209369|9566036^7^3^^^UN||MORGAN^GENEVIEVE^MISTY^^^||19490613|F|||123 STREET^^CITY CITY^MO^61111^||(111) 111-1111 x|(111) 111-1111 x||||M72093693R|111-11-1111|||||||||||N<R>
+PV1||O|^123^^^^^^^ABC RM 123||||D1458840^PEREZ^GREGORY^K.^Ph.D.^^M.D.|||||||||||||||||||||||||||||||||||||20250814153330<R>
+ORC|RE||||||||20250814153330|^UnkPERSON^UnkPERSON^^^^||D1458830^REYNOLDS^JEREMY^B.^^^M.D.<R>
+OBR|1|1522727|620943176|MDXREVNT^Radiology Event|||20250814125720|||||||||||||||20250814153330|||Final|||||AMBULATORY^AMBULATORY|Chest pain\S\Chest pain|D1458836^WRIGHT^MELISSA^V.^^^M.D.|~|^^^^^^|^UnkPERSON^UnkPERSON^^^^<R>
+OBX|1|FT|MDXREVNT&GDT||EXAMINATION: Single-view abdominal X-ray imaging.||||||Final<R>
+OBX|2|FT|MDXREVNT&GDT||FINDINGS:||||||Final<R>
+OBX|3|FT|MDXREVNT&GDT||Radiograph shows no abnormalities in bowel gas pattern or signs of||||||Final<R>
+OBX|4|FT|MDXREVNT&GDT||perforation. No radiopaque stones or masses noted. Soft tissues and||||||Final<R>
+OBX|5|FT|MDXREVNT&GDT||bones unremarkable.||||||Final<R>
+OBX|6|FT|MDXREVNT&GDT||||||||Final<R>
+OBX|7|FT|MDXREVNT&GDT||||||||Final<R>
+OBX|8|FT|MDXREVNT&IMP||IMPRESSION:||||||Final<R>
+OBX|9|FT|MDXREVNT&IMP||Normal abdominal X-ray study. No acute findings correlating with||||||Final<R>
+OBX|10|FT|MDXREVNT&IMP||clinical presentation.||||||Final<R>
+<EB><R>
+
+2025-08-14 16:30:01.7187|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814163001|TBD|ORU^R01|2.25.40046963437065208308900368559611431292|P|2.4<R>
+PID|1||ABC1234346^^^ABC^MR~EPIC2603487^^^EPIC^MRN||CARTER^TYLER^JOSEPH^^^^D||19820529000000|M||I|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234346^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458829^DAVIS^CANDICE^A.^^^M.D.|^^|^^|RAD|||||||||V37851557^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||5843983^SYS|620943173|OMHEADWO^MRI BRAIN WITHOUT CONTRAST^UNKDEV|URGENT||20250814133359|||PSCRIB|||||^^^^ |D1458827^OLSON^ANA^LORENA^^^M.D.^^ABC|||||^HEAD MRI Expedited|20250814163001||OMHEADWO|||1^^^20250814163001^^U^^URGENT|       |||^Chest pain|D1458832^TAYLOR^CRAIG^S.^^^M.D.|D1458834^WILLIAMS^TARA^L.^^^M.D.||PSCRIB<R>
+OBX|1|TX|1155992||CRAIG TAYLOR, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|1155992||ACC#  Date Time  Exam~~~620943173 Aug 14 2025 04:30PM OMHEADWO MRI BRAIN WITHOUT CONTRAST~EXAMINATION: High-resolution head MRI including T1, T2, FLAIR, and~diffusion-weighted imaging.~~FINDINGS:~MRI demonstrates punctate FLAIR hyperintensities scattered in~subcortical white matter consistent with microvascular ischemic~changes. No evidence of acute ischemia or hemorrhage. No mass lesions~or midline shift appreciated. Normal ventricular size and~configuration.~~~IMPRESSION:~Chronic microvascular ischemic changes without acute infarction or~mass lesions.||||||F<R>
+OBX|3|TX|1155992||Requested By: Olson,Ana L. M.D.~~Dictated By: Craig Taylor, M.D. on Aug 14 2025 04:30PM~~This document has been electronically signed by: Craig Taylor, M.D.~on Aug 14 2025 04:30PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|1155992|4|620943173^UK^ZB||||||F<R>
+<EB><R>
+
+2025-08-14 16:31:35.7789|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814163135|TBD|ORU^R01|2.25.34839171913981307179979847702002753981|P|2.3<R>
+PID||7209368|9566035^2^6^^^UN||CARTER^TYLER^JOSEPH^^^||19820529|M|||123 STREET^^CITY CITY^MO^61111^||(111) 111-1111 x|(111) 111-1111 x||||M72093683R|111-11-1111|||||||||||N<R>
+PV1||O|^123^^^^^^^ABC RM 123||||D1458819^WILLIAMS^PATRICK^K.^^^M.D.|||||||||||||||||||||||||||||||||||||20250814163135<R>
+ORC|RE||||||||20250814163135|^UnkPERSON^UnkPERSON^^^^||D1458812^RICHARDS^GARY^R.^^^M.D.<R>
+OBR|1|1665330|620943171|H8452^78452 MPI SPECT Multiple|||20250814150336|||||||||||||||20250814163135|||Final|||||AMBULATORY^AMBULATORY|Chest pain\S\Chest pain|D1458820^RICHARDSON^MARLON^B.^^^M.D.|~|^RICE^RICHARD^^^^|^UnkPERSON^UnkPERSON^^^^<R>
+OBX|1|FT|H8452&GDT||EXAMINATION: Cardiac nuclear medicine perfusion study.||||||Final<R>
+OBX|2|FT|H8452&GDT||FINDINGS:||||||Final<R>
+OBX|3|FT|H8452&GDT||Myocardial perfusion imaging reveals reversible perfusion defect in||||||Final<R>
+OBX|4|FT|H8452&GDT||the inferolateral wall consistent with inducible ischemia. Rest||||||Final<R>
+OBX|5|FT|H8452&GDT||images show preserved perfusion in other myocardial segments. Left||||||Final<R>
+OBX|6|FT|H8452&GDT||ventricular ejection fraction moderately reduced. No prior infarct||||||Final<R>
+OBX|7|FT|H8452&GDT||patterns detected.||||||Final<R>
+OBX|8|FT|H8452&GDT||||||||Final<R>
+OBX|9|FT|H8452&GDT||||||||Final<R>
+OBX|10|FT|H8452&IMP||IMPRESSION:||||||Final<R>
+OBX|11|FT|H8452&IMP||Evidence of reversible myocardial ischemia in inferolateral||||||Final<R>
+OBX|12|FT|H8452&IMP||territory. Suggest further cardiology evaluation and optimization of||||||Final<R>
+OBX|13|FT|H8452&IMP||medical therapy.||||||Final<R>
+<EB><R>
+
+2025-08-14 16:40:01.5480|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814164001|TBD|ORU^R01|2.25.255658710301891016529777289538757493970|P|2.4<R>
+PID|1||ABC1234348^^^ABC^MR~EPIC2603489^^^EPIC^MRN||KOCH^APRIL^JANICE^^^^D||19550304000000|F||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234348^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458836^WRIGHT^MELISSA^V.^^^M.D.|^^|^^|RAD|||||||||V37851560^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1704881^SYS|620943180|IMG2816^US ABDOMEN LIMITED^UNKDEV|URGENT||20250814134004|||PSCRIB|||||^^^^ |D1458830^REYNOLDS^JEREMY^BRETT^^^M.D.^^ABC|||||2816^Ultrasound|20250814164001||IMG|||1^^^20250814164001^^U^^URGENT|       |||^Chest pain|D1458827^OLSON^ANA^L.^^^M.D.|D1458837^HANSON^TROY^C.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|9921130||ANA OLSON, M.D.~~~~********null Report********~~~ <R>
+OBX|2|TX|9921130||ACC#  Date Time  Exam~~~620943180 Aug 14 2025 04:40PM IMG2816 US ABDOMEN LIMITED~EXAMINATION: Ultrasound examination of abdominal organs.~~HISTORY:~Female patient born 1955-03-04, referred for evaluation of~intermittent right upper quadrant pain and suspected hepatobiliary~pathology.~~IMPRESSION: ~The ultrasound examination demonstrates normal echotexture of the~hepatic parenchyma without focal lesions, fibrosis, or steatosis. The~intrahepatic and common bile ducts are not dilated, measuring within~normal limits, and no gallstones are identified within the~gallbladder lumen. The gallbladder wall thickness is normal, and no~pericholecystic fluid or sonographic Murphy's sign is observed,~suggesting absence of acute cholecystitis. The pancreas is partially~visualized and appears unremarkable without evidence of mass, ductal~dilatation, or calcifications. The right kidney is normal in size and~echogenicity without hydronephrosis or nephrolithiasis. Compared to~the prior ultrasound dated 2022-08-15, there is no interval change.~Overall, the study reveals no sonographic evidence of hepatobiliary~or upper abdominal abnormalities correlating with the patient's~symptoms. Further clinical correlation and laboratory evaluation~recommended as needed.<R>
+OBX|3|TX|9921130||Requested By: Reynolds,Jeremy B. M.D.~~Dictated By: Ana Olson, M.D. on Aug 14 2025 04:40PM~~Pending review by: Troy Hanson, M.D.~ ~~~ ~~~ <R>
+OBX||RP|9921130|4|620943180^UK^ZB<R>
+<EB><R>
+
+2025-08-14 16:59:51.8250|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814165951|TBD|ORU^R01|2.25.16259610630858561657161920694337533362|P|2.4<R>
+PID|1||ABC1234344^^^ABC^MR~EPIC2603485^^^EPIC^MRN||ARNOLD^CURTIS^JOSHUA^^^^D||19250101000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234344^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458839^PROCTOR^ERIN^R.^^^M.D.|^^|^^|RAD|||||||||V37851554^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3903597^SYS|620943165|MRI1133^MRI W WO ABDOMEN^UNKDEV|URGENT||20250814162010|||PSCRIB|||||^^^^ |D1458840^PEREZ^GREGORY^KEVIN^Ph.D.^^M.D.^^ABC|||||1133^ABDOMEN MRI|20250814165951||MRI|||1^^^20250814165951^^U^^URGENT|       ||STRETCHE|^Chest pain|D1458838^LONG^LATASHA^T.^^^M.D.|D1458839^PROCTOR^ERIN^R.^^^M.D.||PSCRIB|||||||||1133<R>
+OBX|1|TX|4621903||LATASHA LONG, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|4621903||ACC#  Date Time  Exam~~~620943165 Aug 14 2025 04:59PM MRI1133 MRI W WO ABDOMEN~EXAMINATION: Abdomen MRI with contrast sequences.~~FINDINGS:~MRI of the abdomen demonstrates multiple jejunal and ileal loops with~segmental wall thickening and luminal narrowing consistent with small~bowel involvement of Crohn's disease. Mesenteric fat stranding and~mild reactive lymphadenopathy are present. Liver morphology is normal~without focal lesions. No biliary duct dilatation identified.~~~IMPRESSION:~MRI findings support active Crohn's disease affecting the small~intestine. No complications such as abscess or fistula seen at this~time.||||||F<R>
+OBX|3|TX|4621903||Requested By: Perez,Gregory K. M.D.~~Dictated By: Latasha Long, M.D. on Aug 14 2025 04:59PM~~This document has been electronically signed by: Latasha Long, M.D.~on Aug 14 2025 04:59PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|4621903|4|620943165^UK^ZB||||||F<R>
+<EB><R>
+
+2025-08-14 17:01:57.6298|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814170157|TBD|ORU^R01|2.25.8517564923695072524410339422472128015|P|2.7<R>
+PID|1||ABC1234332^^^ABC^MR~EPIC2603473^^^EPIC^MRN||JOHNSON^JOHN^DANIEL^Sr.^^^D||19440501|M||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458829^DAVIS^CANDICE^A.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132282|||||||||||||||||||||||||20250814170157|||||||V<R>
+ORC|RE|1639781^SYS|620943131||Final||^^^20250814170156^20250814170157^O||20250814170157|T1067308^MORENO^ASHLEY||D1458833^MARTIN^JENNIFER^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1639781^SYS|620943131|BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY|O|20250814163845|||||Hosp Perf||||^^^ABDOMEN|D1458833^MARTIN^JENNIFER^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814170157||DX|Final||^^^20250814170156^20250814170157^O||||^Chest pain||D1458830^REYNOLDS^JEREMY^B.^^^^^ABC^^^^HOSP|T1067308^MORENO^ASHLEY||20250814170157||||||||BED74000^74000 Abdomen single view AP^UNKDEV^^ABDOMEN 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Standard anteroposterior abdominal radiograph obtained.||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|4|ST|&GDT|1|The abdominal X-ray exhibits persistent mild dilatation of small||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|5|ST|&GDT|1|bowel loops with retention of air-fluid levels centralized within the||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|6|ST|&GDT|1|mid-abdomen. The caliber of the large bowel remains within normal||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|7|ST|&GDT|1|limits without signs indicative of obstructive pathology. Compared to||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|8|ST|&GDT|1|the prior imaging dated 2025-08-14, there is no significant||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|9|ST|&GDT|1|progression of bowel gas pattern or fluid levels, suggesting||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|10|ST|&GDT|1|stability of previously noted early ileus. Mesenteric fat haziness||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|11|ST|&GDT|1|appears subtly diminished, which may correspond to slight improvement||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|12|ST|&GDT|1|in associated mesenteric inflammation or edema. Calcific densities||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|13|ST|&GDT|1|consistent with cholelithiasis persist in the right lower quadrant||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|14|ST|&GDT|1|without interval change or complication. Cardiac silhouette remains||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|15|ST|&GDT|1|enlarged, confirming ongoing cardiomegaly noted previously. No free||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|16|ST|&GDT|1|intraperitoneal air detected, excluding perforation. Skeletal||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|17|ST|&GDT|1|structures reveal degenerative changes typical for age, without new||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|18|ST|&GDT|1|osseous abnormalities. No abnormal masses or renal calculi||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|19|ST|&GDT|1|identified. Overall, these findings are largely unchanged compared to||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|20|ST|&GDT|1|the prior examination.||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|21|ST|&GDT|1|||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|22|ST|&GDT|1|||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|23|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|24|ST|&IMP|2|Stable mild small bowel dilatation and air-fluid levels consistent||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|25|ST|&IMP|2|with previously observed early ileus, with no evidence of mechanical||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|26|ST|&IMP|2|obstruction or worsening bowel dysmotility. Persistent cholelithiasis||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|27|ST|&IMP|2|remains without acute manifestations. Cardiomegaly remains prominent,||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|28|ST|&IMP|2|correlating with known cardiac condition. Diminution of mesenteric||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|29|ST|&IMP|2|fat haziness may suggest resolution of prior mild mesenteric||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|30|ST|&IMP|2|inflammation or edema. No signs of pneumoperitoneum or acute||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|31|ST|&IMP|2|intra-abdominal process. Continued clinical correlation is||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|32|ST|&IMP|2|recommended, and further imaging should be considered if new symptoms||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|33|ST|&IMP|2|develop or existing symptoms exacerbate.||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|34|ST|&IMP|2|Dictated by: Jeremy Reynolds Interpreter, M.D.||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|35|ST|&TCM|3|Patient reported some mild abdominal discomfort during positioning||||||Final|||||T1067308^MORENO^ASHLEY<R>
+OBX|36|ST|&TCM|3|but remained cooperative throughout the radiographic acquisition.||||||Final|||||T1067308^MORENO^ASHLEY<R>
+ZDS|2.25.145600323597292279705049149334987119423^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 17:14:24.1163|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814171424|TBD|ORU^R01|2.25.204310474482794041567619032273688214567|P|2.7<R>
+PID|1||ABC1234335^^^ABC^MR~EPIC2603476^^^EPIC^MRN||TURNER^WHITNEY^KARLA^^^^D||19411130|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458826^CERVANTES^ERIN^P.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132286|||||||||||||||||||||||||20250814171424|||||||V<R>
+ORC|RE|2344765^SYS|620943139||Prelim||^^^20250814171423^20250814171424^O||20250814171424|T1067309^LUNA^JENNIFER||D1458829^DAVIS^CANDICE^A.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|2344765^SYS|620943139|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20250814163448|||||Hosp Perf||||^^^BREAST|D1458829^DAVIS^CANDICE^A.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814171424||MG|Prelim||^^^20250814171423^20250814171424^O||||^Chest pain||D1458826^CERVANTES^ERIN^P.^^^^^ABC^^^^HOSP|T1067309^LUNA^JENNIFER||20250814171424||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|17^IMG MAMMO PROCEDURES<R>
+OBX|2|ST|&ADT|1|ADDENDUM: Correction to the report: The initial assessment||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|3|ST|&ADT|1|underestimated the extent of the architectural distortion seen in the||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|4|ST|&ADT|1|lower outer quadrant. Additional magnification views and ultrasound||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|5|ST|&ADT|1|correlation are recommended for further evaluation.||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|6|ST|&GDT|2|EXAMINATION: Single-view mammogram of the left breast.||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|7|ST|&GDT|2|||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|8|ST|&GDT|2|FINDINGS:||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|9|ST|&GDT|2|The mammogram demonstrates heterogeneous breast parenchyma with||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|10|ST|&GDT|2|scattered areas of fibroglandular density. Notably, there is a focal||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|11|ST|&GDT|2|architectural distortion measuring approximately 1.2 cm located in||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|12|ST|&GDT|2|the lower outer quadrant of the left breast, without overt||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|13|ST|&GDT|2|calcifications. No discrete masses are identified within the imaging||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|14|ST|&GDT|2|field. The nipple-areolar complexes are symmetric, and skin contours||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|15|ST|&GDT|2|are unremarkable. No axillary lymphadenopathy is visualized on this||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|16|ST|&GDT|2|limited single-view study.||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|17|ST|&GDT|2|||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|18|ST|&GDT|2|||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|19|ST|&IMP|3|IMPRESSION:||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|20|ST|&IMP|3|Heterogeneous breast density with a focal architectural distortion in||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|21|ST|&IMP|3|the lower outer quadrant of the left breast suspicious for an||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|22|ST|&IMP|3|underlying malignancy. Absence of discrete mass or||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|23|ST|&IMP|3|microcalcifications on the single view warrants further imaging with||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|24|ST|&IMP|3|targeted mammographic views and ultrasonography to characterize this||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|25|ST|&IMP|3|finding. Recommend tissue sampling if correlating sonographic||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|26|ST|&IMP|3|abnormality is found.||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+OBX|27|ST|&IMP|3|Dictated by: Erin Cervantes Interpreter, M.D.||||||Prelim|||||T1067309^LUNA^JENNIFER<R>
+ZDS|2.25.63814614957956778299760288848853650247^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 17:41:00.1886|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814174100|TBD|ORU^R01|2.25.321143900170002769580938977751464101569|P|2.7<R>
+PID|1||ABC1234336^^^ABC^MR~EPIC2603477^^^EPIC^MRN||LEACH^LINDA^CHRISTINA^^^^D||19980211|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458838^LONG^LATASHA^T.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132289|||||||||||||||||||||||||20250814174100|||||||V<R>
+ORC|RE|8885467^SYS|620943144||Wet Read||^^^20250814174059^20250814174100^O||20250814174100|||D1458840^PEREZ^GREGORY^K.^Ph.D.^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8885467^SYS|620943144|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20250814163524|||||Hosp Perf|||||D1458840^PEREZ^GREGORY^K.^Ph.D.^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814174100||CR|Wet Read||^^^20250814174059^20250814174100^O||||^Chest pain||D1458829^DAVIS^CANDICE^A.^^^^^ABC^^^^HOSP|||20250814174100||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|M25.561^Pain in right knee^I10|Pain in right knee<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Repeat single-view ankle X-ray to assess prior study.||||||Wet Read<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Wet Read<R>
+OBX|4|ST|&GDT|1|Compared to previous X-ray of August 14, 2025, the fracture alignment||||||Wet Read<R>
+OBX|5|ST|&GDT|1|is unchanged without evidence of displacement progression. Mild soft||||||Wet Read<R>
+OBX|6|ST|&GDT|1|tissue swelling persists. No new fractures detected.||||||Wet Read<R>
+OBX|7|ST|&GDT|1|||||||Wet Read<R>
+OBX|8|ST|&GDT|1|||||||Wet Read<R>
+OBX|9|ST|&IMP|2|IMPRESSION:||||||Wet Read<R>
+OBX|10|ST|&IMP|2|Stable lateral malleolus fracture with no interval displacement||||||Wet Read<R>
+OBX|11|ST|&IMP|2|compared to prior study dated August 14, 2025.||||||Wet Read<R>
+OBX|12|ST|&IMP|2|Dictated by: Candice Davis Interpreter, M.D.||||||Wet Read<R>
+ZDS|2.25.40892572687503429680489866944215976170^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 18:02:49.2799|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814180249|TBD|ORU^R01|2.25.72756099571087589399340186312311126974|P|2.7<R>
+PID|1||ABC1234331^^^ABC^MR~EPIC2603472^^^EPIC^MRN||ROBERTS^MELISSA^GENEVIEVE^^^^D||19450207|F||BLACK|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458812^RICHARDS^GARY^R.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132281|||||||||||||||||||||||||20250814180249|||||||V<R>
+ORC|RE|9020561^SYS|620943130||Prelim||^^^20250814180248^20250814180249^O||20250814180249|T1067293^BYRD^LLOYD||D1458823^COCHRAN^ANDREW^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|9020561^SYS|620943130|IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY|O|20250814163858|||||Hosp Perf|||||D1458823^COCHRAN^ANDREW^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814180249||XA|Prelim||^^^20250814180248^20250814180249^O||||^Chest pain||D1458820^RICHARDSON^MARLON^B.^^^^^ABC^^^^HOSP|T1067293^BYRD^LLOYD||20250814180249||||||||IMG4185^IR INTRO CATHETER AORTA BILATERAL^UNKDEV^^XRAY ANGIOGRAPHY<R>
+ZPF|1|18^IMG IR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Digital subtraction X-ray angiography of the abdominal||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|3|ST|&GDT|1|vasculature performed.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|4|ST|&GDT|1|CLINICAL INDICATION:||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|5|ST|&GDT|1|The patient presents with intermittent claudication and diminished||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|6|ST|&GDT|1|peripheral pulses, warranting evaluation of abdominal vasculature to||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|7|ST|&GDT|1|assess for atherosclerotic disease and potential vascular stenosis.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|8|ST|&GDT|1|||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|9|ST|&GDT|1|PROCEDURE:||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|10|ST|&GDT|1|Percutaneous transluminal abdominal angiography via femoral artery||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|11|ST|&GDT|1|access to evaluate abdominal aortic and visceral arterial anatomy and||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|12|ST|&GDT|1|pathology.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|13|ST|&GDT|1|||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|14|ST|&GDT|1|ANESTHESIA:||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|15|ST|&GDT|1|Local anesthesia was administered via percutaneous injection at the||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|16|ST|&GDT|1|right femoral artery access site to facilitate catheter insertion and||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|17|ST|&GDT|1|patient comfort during the procedure.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|18|ST|&GDT|1|||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|19|ST|&GDT|1|MEDICATIONS:||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|20|ST|&GDT|1|Local anesthetic (1% lidocaine) administered at puncture site; no||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|21|ST|&GDT|1|systemic sedatives or analgesics given.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|22|ST|&GDT|1|||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|23|ST|&GDT|1|MATERIALS:||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|24|ST|&GDT|1|4-French vascular sheath||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|25|ST|&GDT|1|5-French angiographic catheter||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|26|ST|&GDT|1|Non-ionic iodinated contrast||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|27|ST|&GDT|1|Manual compression device||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|28|ST|&GDT|1|Sterile drapes and gowns||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|29|ST|&GDT|1|Local anesthetic agent (lidocaine)||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|30|ST|&GDT|1|||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|31|ST|&GDT|1|CONTRAST:||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|32|ST|&GDT|1|Non-ionic iodinated contrast medium was utilized, with a total volume||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|33|ST|&GDT|1|of 50 mL administered in incremental boluses directly into the||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|34|ST|&GDT|1|abdominal aorta to allow optimal visualization of the arterial tree.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|35|ST|&GDT|1|||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|36|ST|&GDT|1|TECHNIQUE:||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|37|ST|&GDT|1|After obtaining informed consent and verifying patient identity and||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|38|ST|&GDT|1|allergies, the right femoral artery was accessed under sterile||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|39|ST|&GDT|1|conditions using the Seldinger technique. Local anesthesia (1%||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|40|ST|&GDT|1|lidocaine) was infiltrated at the puncture site. A 4-French vascular||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|41|ST|&GDT|1|sheath was introduced, followed by insertion of a 5-French||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|42|ST|&GDT|1|angiographic catheter advanced under fluoroscopic guidance into the||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|43|ST|&GDT|1|abdominal aorta at the level of the diaphragm. Digital subtraction||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|44|ST|&GDT|1|angiography was performed to acquire high-contrast images of the||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|45|ST|&GDT|1|abdominal vascular tree. Iodinated contrast medium was injected in||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|46|ST|&GDT|1|incremental boluses at pressure settings standardized to avoid vessel||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|47|ST|&GDT|1|trauma while ensuring adequate opacification. Multiple projections||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|48|ST|&GDT|1|including anteroposterior and oblique views were obtained to||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|49|ST|&GDT|1|visualize the origins and branches of the celiac trunk, superior||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|50|ST|&GDT|1|mesenteric artery, renal arteries, and iliac vessels. The catheter||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|51|ST|&GDT|1|was selectively manipulated to evaluate each major branch||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|52|ST|&GDT|1|selectively, with continuous real-time monitoring for any procedural||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|53|ST|&GDT|1|complications such as vessel dissection or contrast extravasation.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|54|ST|&GDT|1|The procedure duration totaled approximately 45 minutes. Following||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|55|ST|&GDT|1|image acquisition, the catheter and sheath were removed, and||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|56|ST|&GDT|1|hemostasis achieved with manual compression. The patient was||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|57|ST|&GDT|1|monitored in the recovery area for two hours to assess for access||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|58|ST|&GDT|1|site bleeding or hematoma formation before discharge instructions||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|59|ST|&GDT|1|were provided.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|60|ST|&GDT|1|||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|61|ST|&GDT|1|ESTIMATED BLOOD LOSS:||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|62|ST|&GDT|1|Minimal blood loss at catheter insertion site, estimated less than 5||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|63|ST|&GDT|1|mL, controlled with manual compression post-procedure.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|64|ST|&GDT|1|||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|65|ST|&GDT|1|COMPLICATIONS:||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|66|ST|&GDT|1|None observed during or after the procedure; the patient tolerated||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|67|ST|&GDT|1|the angiography well without evidence of vascular injury or contrast||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|68|ST|&GDT|1|extravasation.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|69|ST|&GDT|1|||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|70|ST|&GDT|1|FINDINGS:||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|71|ST|&GDT|1|Selective catheterization of the abdominal aorta and its principal||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|72|ST|&GDT|1|branches reveals atherosclerotic plaque formation localized||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|73|ST|&GDT|1|predominantly at the origins of the renal arteries and the proximal||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|74|ST|&GDT|1|segments of the superior mesenteric artery. The celiac axis||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|75|ST|&GDT|1|demonstrates mild luminal irregularities without significant||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|76|ST|&GDT|1|stenosis. The inferior mesenteric artery is patent with no evidence||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|77|ST|&GDT|1|of occlusion. Bilateral renal arteries exhibit focal areas of 50-60%||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|78|ST|&GDT|1|stenosis, with post-stenotic dilatation more prominent on the left||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|79|ST|&GDT|1|side. Collateral circulation through lumbar arteries appears||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|80|ST|&GDT|1|preserved. No evidence of aneurysmal dilatation or dissection is||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|81|ST|&GDT|1|identified in the abdominal aorta. The iliac arteries are mildly||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|82|ST|&GDT|1|tortuous but without critical narrowing.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|83|ST|&GDT|1|||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|84|ST|&GDT|1|||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|85|ST|&IMP|2|IMPRESSION:||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|86|ST|&IMP|2|Findings are consistent with moderate atherosclerotic disease||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|87|ST|&IMP|2|involving the abdominal aorta and major visceral arteries,||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|88|ST|&IMP|2|particularly bilateral renal artery stenosis which may contribute to||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|89|ST|&IMP|2|the patient's hypertension and claudication symptoms. No||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|90|ST|&IMP|2|contraindications for potential endovascular intervention noted.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|91|ST|&IMP|2|Continued surveillance and medical management recommended, with||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|92|ST|&IMP|2|possible angioplasty indicated if clinical progression occurs.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|93|ST|&IMP|2|PLAN:||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|94|ST|&IMP|2|Recommend correlating angiographic findings with clinical and||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|95|ST|&IMP|2|laboratory data; monitor renal function closely. Consider duplex||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|96|ST|&IMP|2|ultrasound follow-up in 6 months or earlier if symptoms worsen.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|97|ST|&IMP|2|Hypertension management should be optimized. Evaluate candidacy for||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|98|ST|&IMP|2|percutaneous transluminal angioplasty of renal arteries based on||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|99|ST|&IMP|2|blood pressure control and symptomatology.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|100|ST|&IMP|2|||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+OBX|101|ST|&IMP|2|Dictated by: Marlon Richardson Interpreter, M.D.||||||Prelim|||||T1067293^BYRD^LLOYD<R>
+ZDS|2.25.179904466327941574566696969640715147214^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 18:06:22.9171|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814180622|TBD|ORU^R01|2.25.196686564799230509190796819536967807312|P|2.7<R>
+PID|1||ABC1234339^^^ABC^MR~EPIC2603480^^^EPIC^MRN||FERNANDEZ^HEATHER^GINA^^^^D||19660130|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458837^HANSON^TROY^C.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132295|||||||||||||||||||||||||20250814180622|||||||V<R>
+ORC|RE|3742445^SYS|620943151||Prelim||^^^20250814180621^20250814180622^O||20250814180622|T1067311^WOLF^JED||D1458833^MARTIN^JENNIFER^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|3742445^SYS|620943151|BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY|O|20250814161456|||||Hosp Perf||||^^^CSPINE|D1458833^MARTIN^JENNIFER^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814180622||DX|Prelim||^^^20250814180621^20250814180622^O||||^Chest pain||D1458830^REYNOLDS^JEREMY^B.^^^^^ABC^^^^HOSP|T1067311^WOLF^JED||20250814180622||||||||BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Anteroposterior and lateral cervical spine radiographs.||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|4|ST|&GDT|1|The alignment of the cervical vertebral bodies is maintained with||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|5|ST|&GDT|1|normal anterior vertebral body height and no evidence of subluxation||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|6|ST|&GDT|1|or dislocation. The normal lordotic curvature of the cervical spine||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|7|ST|&GDT|1|is preserved. Vertebral body margins are smooth without evidence of||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|8|ST|&GDT|1|osteophyte formation or lytic lesions. The intervertebral disc spaces||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|9|ST|&GDT|1|from C2-C3 through C6-C7 remain within normal limits in height. The||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|10|ST|&GDT|1|facet joints and uncovertebral joints demonstrate no radiographic||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|11|ST|&GDT|1|signs of degenerative changes. Prevertebral soft tissues are within||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|12|ST|&GDT|1|normal limits with no evidence of swelling suggestive of hematoma or||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|13|ST|&GDT|1|abscess. No acute fracture lines are identified throughout the||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|14|ST|&GDT|1|cervical spine. The ossification centers and bony contours are||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|15|ST|&GDT|1|consistent with patient age with mild degenerative changes noted at||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|16|ST|&GDT|1|the C5-C6 level, including minor anterior osteophytic spurring, which||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|17|ST|&GDT|1|may correlate with early spondylosis. No gross abnormalities in the||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|18|ST|&GDT|1|visualized paraspinal soft tissues or tracheal air column deviation.||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|19|ST|&GDT|1|||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|20|ST|&GDT|1|||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|21|ST|&IMP|2|IMPRESSION:||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|22|ST|&IMP|2|No acute cervical spine fracture or dislocation identified. Mild||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|23|ST|&IMP|2|spondylotic changes at C5-C6 with minor anterior osteophyte||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|24|ST|&IMP|2|formation, consistent with early degenerative disc disease. Cervical||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|25|ST|&IMP|2|lordosis is anatomically maintained without evidence of cervical||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|26|ST|&IMP|2|kyphosis or significant structural deformity. Findings are consistent||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|27|ST|&IMP|2|with chronic cervical spine changes, potentially correlated with||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|28|ST|&IMP|2|clinical symptoms such as cervical spine pain. Further clinical||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|29|ST|&IMP|2|correlation recommended to evaluate symptomatology.||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|30|ST|&IMP|2|Dictated by: Jeremy Reynolds Interpreter, M.D.||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|31|ST|&TCM|3|Patient reported cervical spine pain and was cooperative throughout||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|32|ST|&TCM|3|the examination. Cspine positioning was achieved without||||||Prelim|||||T1067311^WOLF^JED<R>
+OBX|33|ST|&TCM|3|complications.||||||Prelim|||||T1067311^WOLF^JED<R>
+ZDS|2.25.169031132340071585962543648220970376330^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 18:20:46.2402|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814182046|TBD|ORU^R01|2.25.327425374876170339901671453607744855628|P|2.7<R>
+PID|1||ABC1234335^^^ABC^MR~EPIC2603476^^^EPIC^MRN||TURNER^WHITNEY^KARLA^^^^D||19411130|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458837^HANSON^TROY^C.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132287|||||||||||||||||||||||||20250814182046|||||||V<R>
+ORC|RE|8907696^SYS|620943141||Final||^^^20250814182045^20250814182046^O||20250814182046|T1067312^BROWN^PHILLIP||D1458830^REYNOLDS^JEREMY^B.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|8907696^SYS|620943141|BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY|O|20250814160301|||||Hosp Perf||||^^^CSPINE|D1458830^REYNOLDS^JEREMY^B.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814182046||DX|Final||^^^20250814182045^20250814182046^O||||^Chest pain||D1458827^OLSON^ANA^L.^^^^^ABC^^^^HOSP|T1067312^BROWN^PHILLIP||20250814182046||||||||BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+ZDS|2.25.207346352255707896955926108481065787156^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 18:22:13.8848|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814182213|TBD|ORU^R01|2.25.279562864306182853939133746784869784459|P|2.4<R>
+PID|1||ABC1234334^^^ABC^MR~EPIC2603475^^^EPIC^MRN||WALTERS^SANDY^CHRYSTAL^^^^D||19571026000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234334^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458831^HARRIS^MICHAEL^A.^^^M.D.|^^|^^|RAD|||||||||V37851549^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3819279^SYS|620943138|IMG2816^US ABDOMEN LIMITED^UNKDEV|URGENT||20250814152927|||PSCRIB|||||^^^^ |D1458826^CERVANTES^ERIN^PAIGE^^^M.D.^^ABC|||||2816^Ultrasound|20250814182213||IMG|||1^^^20250814182213^^U^^URGENT|       |||^Chest pain|D1458836^WRIGHT^MELISSA^V.^^^M.D.|D1458839^PROCTOR^ERIN^R.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|336687||MELISSA WRIGHT, M.D.~~~~********null Report********~~~ <R>
+OBX|2|TX|336687||ACC#  Date Time  Exam~~~620943138 Aug 14 2025 06:22PM IMG2816 US ABDOMEN LIMITED~EXAMINATION: Pelvic ultrasound evaluation focusing on the uterus and~adnexa.~~FINDINGS:~The uterus is anteverted and measures approximately 7.5 x 4.0 x 3.5~cm, demonstrating heterogeneous myometrial echotexture without~discrete focal masses. The endometrial stripe is 6 mm in thickness,~smooth, and uniform without evidence of polyps or hyperplasia. Both~ovaries are visualized; the right ovary measures 3.2 x 2.0 x 1.5 cm,~appearing unremarkable with multiple small peripheral follicles. The~left ovary is slightly enlarged at 3.8 x 2.1 x 1.8 cm and exhibits a~single dominant follicular cyst measuring 2.5 cm in diameter with~thin walls and anechoic contents. No complex adnexal masses or~internal septations are seen. Mild, increased vascular flow is noted~in the left adnexal region on Doppler interrogation, which raises the~possibility of a subtle inflammatory or reactive process. The free~fluid in the pelvic cul-de-sac is minimal and physiologic in nature.~The urinary bladder is partially distended and shows normal wall~thickness without intraluminal lesions. There is no sonographic~evidence of uterine fibroids, adnexal torsion, or abnormal ascites.~~~IMPRESSION:~Pelvic ultrasound reveals a normal anteverted uterus with~unremarkable endometrium. The right ovary is within normal limits.~The left ovary is mildly enlarged due to a simple follicular cyst~measuring 2.5 cm. Mildly increased vascularity in the left adnexal~region suggests a possible low-grade inflammatory process, which is a~new finding compared to the study from 2023-09-15. No~malignant-appearing masses or complex cystic structures are~identified. Continued clinical correlation is advised, with follow-up~imaging if symptoms persist or worsen.~ADDENDUM: The initial impression did not include a note on mild~increased vascularity observed in the left adnexal region, suggesting~possible low-grade inflammatory process not seen in prior imaging~dated 2023-09-15.<R>
+OBX|3|TX|336687||Requested By: Cervantes,Erin P. M.D.~~Dictated By: Melissa Wright, M.D. on Aug 14 2025 06:22PM~~Pending review by: Erin Proctor, M.D.~ ~~~ ~~~ <R>
+OBX||RP|336687|4|620943138^UK^ZB<R>
+<EB><R>
+
+2025-08-14 19:22:02.2132|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814192202|TBD|ORU^R01|2.25.197365870426899597391176430487463010915|P|2.7<R>
+PID|1||ABC1234349^^^ABC^MR~EPIC2603490^^^EPIC^MRN||MEJIA^CARINA^TAMMY^^^^D||19991022|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458832^TAYLOR^CRAIG^S.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132314|||||||||||||||||||||||||20250814192202|||||||V<R>
+ORC|RE|6676784^SYS|620943183||Final||^^^20250814192201^20250814192202^O||20250814192202|T1067310^ROBINSON^MELINDA||D1458832^TAYLOR^CRAIG^S.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6676784^SYS|620943183|BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY|O|20250814175833|||||Hosp Perf||||^^^CSPINE|D1458832^TAYLOR^CRAIG^S.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814192202||DX|Final||^^^20250814192201^20250814192202^O||||^Chest pain||D1458838^LONG^LATASHA^T.^^^^^ABC^^^^HOSP|T1067310^ROBINSON^MELINDA||20250814192202||||||||BED72040^72040 Spine Cerv 3views or less^UNKDEV^^CERVICAL SPINE 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|M50.20^Other cervical disc displacement, unspecified cervical region^I10|Other cervical disc displacement, unspecified cervical region<R>
+DG1|2|I10|M48.02^Spinal stenosis, cervical region^I10|Spinal stenosis, cervical region<R>
+DG1|3|I10|S13.4XXA^Sprain of ligaments of cervical spine, initial encounter^I10|Sprain of ligaments of cervical spine, initial encounter<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Frontal and lateral cervical spine X-ray||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|4|ST|&GDT|1|The cervical spine exhibits normal alignment with preserved||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|5|ST|&GDT|1|physiological lordosis. Vertebral body heights are maintained without||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|6|ST|&GDT|1|evidence of compression fractures. Intervertebral disc spaces from||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|7|ST|&GDT|1|C2-C3 through C7-T1 are generally well preserved, though there is||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|8|ST|&GDT|1|mild narrowing at C5-C6, suggestive of early degenerative disc||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|9|ST|&GDT|1|disease. No osteophytes or facet joint hypertrophy are appreciable.||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|10|ST|&GDT|1|The odontoid process is intact and well visualized, with no signs of||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|11|ST|&GDT|1|fracture or malalignment. Prevertebral soft tissues are unremarkable||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|12|ST|&GDT|1|in size, with no evidence of swelling or hematoma. The cervical||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|13|ST|&GDT|1|spinal canal appears patent without stenosis. There is mild||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|14|ST|&GDT|1|degenerative change at the uncovertebral joints of C5-C6 and C6-C7,||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|15|ST|&GDT|1|without significant foraminal narrowing. No acute osseous||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|16|ST|&GDT|1|abnormalities or dislocations are identified. No evidence of prior||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|17|ST|&GDT|1|surgical instrumentation or hardware.||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|18|ST|&GDT|1|||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|19|ST|&GDT|1|||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|20|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|21|ST|&IMP|2|Cervical spine radiographs demonstrate mild spondylotic changes||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|22|ST|&IMP|2|predominantly at C5-C6 with slight disc space narrowing and||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|23|ST|&IMP|2|uncovertebral joint osteoarthritic changes, consistent with early||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|24|ST|&IMP|2|degenerative disc disease. No acute traumatic findings such as||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|25|ST|&IMP|2|fractures or dislocations are present. The alignment is preserved||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|26|ST|&IMP|2|without evidence of instability or subluxation. Soft tissues appear||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|27|ST|&IMP|2|normal. Correlation with clinical symptoms is recommended, and if||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|28|ST|&IMP|2|radiculopathy is suspected, further evaluation with MRI may be||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|29|ST|&IMP|2|warranted. No urgent intervention is indicated based on the imaging||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|30|ST|&IMP|2|findings.||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|31|ST|&IMP|2|Dictated by: Latasha Long Interpreter, M.D.||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+ZDS|2.25.274224505824460216137228164578372040401^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 19:28:54.5379|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814192854|TBD|ORU^R01|2.25.213157585164545955023828365447872598986|P|2.3<R>
+PID||7209366|9566033^7^9^^^UN||ARNOLD^CURTIS^JOSHUA^^^||19250101|M|||123 STREET^^CITY CITY^MO^61111^||(111) 111-1111 x|(111) 111-1111 x||||M72093663R|111-11-1111|||||||||||N<R>
+PV1||O|^123^^^^^^^ABC RM 123||||D1458828^WILLIAMS^ANDREW^J.^^^M.D.|||||||||||||||||||||||||||||||||||||20250814192854<R>
+ORC|RE||||||||20250814192854|^UnkPERSON^UnkPERSON^^^^||D1458838^LONG^LATASHA^T.^^^M.D.<R>
+OBR|1|5159047|620943166|BED72040^72040 Spine Cerv 3views or less|||20250814164758|||||||||||||||20250814192854|||Prelim|||||PORTABLE^PORTABLE|Chest pain\S\Chest pain|D1458836^WRIGHT^MELISSA^V.^^^M.D.|~|^HOLLAND^WALTER^^^^|^UnkPERSON^UnkPERSON^^^^<R>
+OBX|1|FT|BED72040&GDT||EXAMINATION: Cervical spine X-ray study.||||||Prelim<R>
+OBX|2|FT|BED72040&GDT||FINDINGS:||||||Prelim<R>
+OBX|3|FT|BED72040&GDT||Lateral cervical spine view reveals decreased intervertebral disc||||||Prelim<R>
+OBX|4|FT|BED72040&GDT||height at C5-C6 with anterior osteophyte formation. Spinal alignment||||||Prelim<R>
+OBX|5|FT|BED72040&GDT||is maintained without acute injury. Mild degenerative changes noted||||||Prelim<R>
+OBX|6|FT|BED72040&GDT||consistent with cervical spondylosis. No evidence of cervical||||||Prelim<R>
+OBX|7|FT|BED72040&GDT||instability.||||||Prelim<R>
+OBX|8|FT|BED72040&GDT||||||||Prelim<R>
+OBX|9|FT|BED72040&GDT||||||||Prelim<R>
+OBX|10|FT|BED72040&IMP||IMPRESSION:||||||Prelim<R>
+OBX|11|FT|BED72040&IMP||Degenerative changes in cervical spine at C5-C6 consistent with||||||Prelim<R>
+OBX|12|FT|BED72040&IMP||spondylosis. No acute traumatic abnormality detected.||||||Prelim<R>
+<EB><R>
+
+2025-08-14 19:31:57.3398|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814193157|TBD|ORU^R01|2.25.16492288933534114308398717331567612787|P|2.7<R>
+PID|1||ABC1234349^^^ABC^MR~EPIC2603490^^^EPIC^MRN||MEJIA^CARINA^TAMMY^^^^D||19991022|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458840^PEREZ^GREGORY^K.^Ph.D.^^^^ABC^^^^HOSP|||RAD|||||||||V85132313|||||||||||||||||||||||||20250814193157|||||||V<R>
+ORC|RE|5224207^SYS|620943182||Final||^^^20250814193156^20250814193157^O||20250814193157|T1067304^PEREZ^THOMAS||D1458835^MAY^TONY^F.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|5224207^SYS|620943182|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20250814185706|||||Hosp Perf||||^^^BREAST|D1458835^MAY^TONY^F.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814193157||MG|Final||^^^20250814193156^20250814193157^O||||^Chest pain||D1458836^WRIGHT^MELISSA^V.^^^^^ABC^^^^HOSP|T1067304^PEREZ^THOMAS||20250814193157||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|17^IMG MAMMO PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram of the right breast.||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|4|ST|&GDT|1|The mammographic images reveal heterogeneously dense fibroglandular||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|5|ST|&GDT|1|tissue scattered throughout the right breast. No suspicious masses or||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|6|ST|&GDT|1|architectural distortions are observed. There are a few punctate and||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|7|ST|&GDT|1|amorphous calcifications distributed in the upper outer quadrant;||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|8|ST|&GDT|1|these appear benign in morphology and are stable compared to previous||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|9|ST|&GDT|1|imaging conducted on 2023-02-15. No skin thickening or nipple||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|10|ST|&GDT|1|retraction is evident. The axillary region is unremarkable with no||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|11|ST|&GDT|1|enlarged lymph nodes visualized.||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|12|ST|&GDT|1|||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|13|ST|&GDT|1|||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|14|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|15|ST|&IMP|2|Heterogeneously dense breast parenchyma consistent with previous||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|16|ST|&IMP|2|imaging, containing benign-appearing calcifications without interval||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|17|ST|&IMP|2|change. No evidence of suspicious masses or malignancy is detected on||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|18|ST|&IMP|2|the current mammogram. Continued routine screening is recommended.||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|19|ST|&IMP|2|Correlation with clinical findings is advised given patient history.||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|20|ST|&IMP|2|Dictated by: Melissa Wright Interpreter, M.D.||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|21|ST|&TCM|3|Patient tolerated the mammogram well but reported mild tenderness in||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|22|ST|&TCM|3|the breast prior to imaging, which did not affect positioning or||||||Final|||||T1067304^PEREZ^THOMAS<R>
+OBX|23|ST|&TCM|3|image acquisition.||||||Final|||||T1067304^PEREZ^THOMAS<R>
+ZDS|2.25.157906447028430426534520056573516414425^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 19:38:40.7761|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814193840|TBD|ORU^R01|2.25.209518007095785260615917265844163878634|P|2.7<R>
+PID|1||ABC1234334^^^ABC^MR~EPIC2603475^^^EPIC^MRN||WALTERS^SANDY^CHRYSTAL^^^^D||19571026|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458828^WILLIAMS^ANDREW^J.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132285|||||||||||||||||||||||||20250814193840|||||||V<R>
+ORC|RE|6440657^SYS|620943137||Final||^^^20250814193839^20250814193840^O||20250814193840|T1067310^ROBINSON^MELINDA||D1458834^WILLIAMS^TARA^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|6440657^SYS|620943137|BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL|O|20250814164250|||||Hosp Perf||||^^^BREAST|D1458834^WILLIAMS^TARA^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814193840||MG|Final||^^^20250814193839^20250814193840^O||||^Chest pain||D1458838^LONG^LATASHA^T.^^^^^ABC^^^^HOSP|T1067310^ROBINSON^MELINDA||20250814193840||||||||BHC77055^77055 Diag Mammogram Unilateral^UNKDEV^^DIAGNOSTIC MAMMOGRAM UNILATERAL<R>
+ZPF|1|17^IMG MAMMO PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view mammogram imaging of the right breast.||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|3|ST|&GDT|1|HISTORY: Female patient born on 1957-10-26, undergoing routine breast||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|4|ST|&GDT|1|cancer screening.||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|5|ST|&GDT|1|||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|6|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|7|ST|&IMP|2|FINDINGS/IMPRESSION:||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|8|ST|&IMP|2|The mammographic examination reveals heterogeneously dense||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|9|ST|&IMP|2|fibroglandular tissue, which may obscure small masses. No suspicious||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|10|ST|&IMP|2|microcalcifications or architectural distortions are identified in||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|11|ST|&IMP|2|the right breast. There is an absence of palpable masses||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|12|ST|&IMP|2|corresponding to the region imaged. The skin contour appears intact||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|13|ST|&IMP|2|without focal thickening or retraction. No axillary lymphadenopathy||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|14|ST|&IMP|2|is visualized. Given the tissue density, adjunctive imaging with||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|15|ST|&IMP|2|ultrasound or tomosynthesis could be considered if clinical concern||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|16|ST|&IMP|2|persists. Comparison with prior studies was not available at this||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|17|ST|&IMP|2|time, precluding temporal assessment for interval change.||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+OBX|18|ST|&IMP|2|Dictated by: Latasha Long Interpreter, M.D.||||||Final|||||T1067310^ROBINSON^MELINDA<R>
+ZDS|2.25.41683420432229838983551049277797587115^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 19:53:19.4383|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814195319|TBD|ORU^R01|2.25.137848733644981865581156124982221917438|P|2.7<R>
+PID|1||ABC1234346^^^ABC^MR~EPIC2603487^^^EPIC^MRN~7209368^^^EMPI^MR||CARTER^TYLER^JOSEPH^^^^D||19820529|M||AMIND|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458835^MAY^TONY^F.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132308|||||||||||||||||||||||||20250814195319|||||||V<R>
+ORC|RE|1245830^SYS|620943172||Prelim||^^^20250814195318^20250814195319^O||20250814195319|T1067312^BROWN^PHILLIP||D1458834^WILLIAMS^TARA^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1245830^SYS|620943172|IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY|O|20250814184335|||||Hosp Perf||||^^^ABDOMEN|D1458834^WILLIAMS^TARA^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814195319||CR|Prelim||^^^20250814195318^20250814195319^O||||^Chest pain||D1458831^HARRIS^MICHAEL^A.^^^^^ABC^^^^HOSP|T1067312^BROWN^PHILLIP||20250814195319||||||||IMG154^XR ABDOMEN AP 1 VIEW^UNKDEV^^ABDOMEN 1 VIEW XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|R93.6^Abnormal findings on diagnostic imaging of limbs^I10|Abnormal findings on diagnostic imaging of limbs<R>
+DG1|2|I10|K35.80^Unspecified acute appendicitis^I10|Unspecified acute appendicitis<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Abdominal X-ray imaging study.||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+OBX|4|ST|&GDT|1|Radiograph reveals mildly dilated small bowel loops with air-fluid||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+OBX|5|ST|&GDT|1|levels suggestive of early partial small bowel obstruction. No free||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+OBX|6|ST|&GDT|1|intraperitoneal air identified. Soft tissues unremarkable. No||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+OBX|7|ST|&GDT|1|evidence of radiopaque calculi or masses.||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+OBX|8|ST|&GDT|1|||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+OBX|9|ST|&GDT|1|||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+OBX|10|ST|&IMP|2|IMPRESSION:||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+OBX|11|ST|&IMP|2|Findings may represent early or partial small bowel obstruction.||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+OBX|12|ST|&IMP|2|Recommend clinical correlation and possible further imaging if||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+OBX|13|ST|&IMP|2|symptoms worsen.||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+OBX|14|ST|&IMP|2|Dictated by: Michael Harris Interpreter, M.D.||||||Prelim|||||T1067312^BROWN^PHILLIP<R>
+ZDS|2.25.255991380297905193413558527941235440642^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 20:40:08.4937|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814204008|TBD|ORU^R01|2.25.255447108864050578016103835923469143730|P|2.7<R>
+PID|1||ABC1234333^^^ABC^MR~EPIC2603474^^^EPIC^MRN~7209355^^^EMPI^MR||HOUSE^JOHN^DUSTIN^^^^D||19991010|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||(555)555-5555^P^H~(555)555-5555^P^M|||S|||111-11-1111<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458835^MAY^TONY^F.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132284|||||||||||||||||||||||||20250814204008|||||||V<R>
+ORC|RE|742652^SYS|620943134||Final||^^^20250814204007^20250814204008^O||20250814204008|T1067309^LUNA^JENNIFER||D1458830^REYNOLDS^JEREMY^B.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|742652^SYS|620943134|BED71010^71010 Chest 1 view Frontal^UNKDEV^^CHEST 1 VIEW DX XRAY|O|20250814195623|||||Hosp Perf||||^^^CHEST|D1458830^REYNOLDS^JEREMY^B.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814204008||DX|Final||^^^20250814204007^20250814204008^O||||^Chest pain||D1458834^WILLIAMS^TARA^L.^^^^^ABC^^^^HOSP|T1067309^LUNA^JENNIFER||20250814204008||||||||BED71010^71010 Chest 1 view Frontal^UNKDEV^^CHEST 1 VIEW DX XRAY<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+DG1|1|I10|J18.9^Pneumonia, unspecified organism^I10|Pneumonia, unspecified organism<R>
+DG1|2|I10|R04.2^Hemoptysis^I10|Hemoptysis<R>
+DG1|3|I10|R91.8^Other nonspecific abnormal finding of lung field^I10|Other nonspecific abnormal finding of lung field<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Repeat chest X-ray for interval comparison.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|4|ST|&GDT|1|No significant interval change compared to previous chest X-ray dated||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|5|ST|&GDT|1|August 14, 2025. Bibasilar opacities persist with no increase in||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|6|ST|&GDT|1|extent or density. No new consolidations or effusions identified.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|7|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|8|ST|&GDT|1|||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|9|ST|&IMP|2|IMPRESSION:||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|10|ST|&IMP|2|Stable bibasilar infiltrates compared to prior imaging on August 14,||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|11|ST|&IMP|2|2025. Continued clinical monitoring advised.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+OBX|12|ST|&IMP|2|Dictated by: Tara Williams Interpreter, M.D.||||||Final|||||T1067309^LUNA^JENNIFER<R>
+ZDS|2.25.228984218058048111296498447730566882803^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 21:06:45.1376|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814210645|TBD|ORU^R01|2.25.83733773296604060316231433263389742135|P|2.4<R>
+PID|1||ABC1234330^^^ABC^MR~EPIC2603471^^^EPIC^MRN||WHITE^JAMIL^CHARLES^^^^D||19420103000000|M||B|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234330^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458835^MAY^TONY^F.^^^M.D.|^^|^^|RAD|||||||||V37851545^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||1804679^SYS|620943125|IMG2816^US ABDOMEN LIMITED^UNKDEV|URGENT||20250814182834|||PSCRIB|||||^^^^ |D1458839^PROCTOR^ERIN^RACHEL^^^M.D.^^ABC|||||2816^Ultrasound|20250814210645||IMG|||1^^^20250814210645^^U^^URGENT|       |||^Chest pain|D1458835^MAY^TONY^F.^^^M.D.|D1458839^PROCTOR^ERIN^R.^^^M.D.||PSCRIB|||||||||2816<R>
+OBX|1|TX|3185934||TONY MAY, M.D.~~~~********FINAL REPORT********~~~ ||||||F<R>
+OBX|2|TX|3185934||ACC#  Date Time  Exam~~~620943125 Aug 14 2025 09:06PM IMG2816 US ABDOMEN LIMITED~EXAMINATION: Ultrasound study of the abdomen and pelvis.~~FINDINGS:~Inserted statement for testing with special chars: ±60%÷~Ultrasound interrogation reveals multiple hyperechoic foci with~posterior acoustic shadowing within the gallbladder consistent with~cholelithiasis. No gallbladder wall thickening or pericholecystic~fluid noted, suggesting absence of acute cholecystitis. Kidneys show~normal echogenicity without stones or hydronephrosis. Bladder appears~normal.~~~IMPRESSION:~Cholelithiasis without sonographic evidence of acute cholecystitis.~Recommend clinical correlation and follow-up if symptomatic.||||||F<R>
+OBX|3|TX|3185934||Requested By: Proctor,Erin R. M.D.~~Dictated By: Tony May, M.D. on Aug 14 2025 09:06PM~~This document has been electronically signed by: Tony May, M.D. on~Aug 14 2025 09:06PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3185934|4|620943125^UK^ZB||||||F<R>
+<EB><R>
+
+2025-08-14 21:23:43.4823|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814212343|TBD|ORU^R01|2.25.12878780762940486555145080828873991999|P|2.4<R>
+PID|1||ABC1234336^^^ABC^MR~EPIC2603477^^^EPIC^MRN||LEACH^LINDA^CHRISTINA^^^^D||19980211000000|F||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234336^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458827^OLSON^ANA^L.^^^M.D.|^^|^^|RAD|||||||||V37851551^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||65322^SYS|620943143|CMR70553P^70553P MR HEAD PERFUSION WWO^UNKDEV|URGENT||20250814183844|||PSCRIB|||||^^^^ |D1458830^REYNOLDS^JEREMY^BRETT^^^M.D.^^ABC|||||70553^Brain dMRI|20250814212343||CMRP|||1^^^20250814212343^^U^^URGENT|       |||^Chest pain|D1458834^WILLIAMS^TARA^L.^^^M.D.|D1458839^PROCTOR^ERIN^R.^^^M.D.||PSCRIB|||||||||70553<R>
+OBX|1|TX|3338786||TARA WILLIAMS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|3338786||ACC#  Date Time  Exam~~~620943143 Aug 14 2025 09:23PM CMR70553P 70553P MR HEAD PERFUSION WWO~EXAMINATION: Brain MRI examination including T1, T2, FLAIR, and~diffusion sequences.~~FINDINGS:~MRI reveals asymmetric hyperintense signal on FLAIR and T2 sequences~involving the left temporal lobe cortex with mild sulcal effacement.~No acute diffusion restriction noted. Mild chronic microvascular~ischemic changes are visualized in periventricular regions. No mass~lesion or hemorrhage identified.~~~IMPRESSION:~Findings may correlate with recent migrainous or inflammatory process~affecting left temporal lobe. No evidence of acute infarct or~space-occupying lesion. Clinical correlation advised.||||||F<R>
+OBX|3|TX|3338786||Requested By: Reynolds,Jeremy B. M.D.~~Dictated By: Tara Williams, M.D. on Aug 14 2025 09:23PM~~This document has been electronically signed by: Tara Williams, M.D.~on Aug 14 2025 09:23PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|3338786|4|620943143^UK^ZB||||||F<R>
+<EB><R>
+
+2025-08-14 21:28:24.5201|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814212824|TBD|ORU^R01|2.25.269543980460923814767645637194759190589|P|2.4<R>
+PID|1||ABC1234333^^^ABC^MR~EPIC2603474^^^EPIC^MRN||HOUSE^JOHN^DUSTIN^^^^D||19991010000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234333^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458839^PROCTOR^ERIN^R.^^^M.D.|^^|^^|RAD|||||||||V37851548^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||3883^SYS|620943135|MDXREVNT^Radiology Event^UNKDEV|URGENT||20250814201631|||PSCRIB|||||^^^^ |D1458840^PEREZ^GREGORY^KEVIN^Ph.D.^^M.D.^^ABC|||||^Xr Sing View|20250814212824||MDXREVNT|||1^^^20250814212824^^U^^URGENT|       |||^Chest pain|D1458829^DAVIS^CANDICE^A.^^^M.D.|D1458832^TAYLOR^CRAIG^S.^^^M.D.||PSCRIB<R>
+OBX|1|TX|9092959||CANDICE DAVIS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|9092959||ACC#  Date Time  Exam~~~620943135 Aug 14 2025 09:28PM MDXREVNT Radiology Event~EXAMINATION: Single-view X-ray including chest region.~~FINDINGS:~Frontal X-ray demonstrates no acute fractures or dislocations of the~ribs or clavicles. Mild cardiomegaly is noted. Lung fields show faint~opacity in the right lower zone consistent with mild atelectasis but~no acute infiltrate. Diaphragmatic contours are intact.~~~IMPRESSION:~No acute osseous abnormalities. Mild cardiomegaly and faint~atelectatic changes. Recommend clinical assessment and correlation~with prior chest X-rays.||||||F<R>
+OBX|3|TX|9092959||Requested By: Perez,Gregory K. M.D.~~Dictated By: Candice Davis, M.D. on Aug 14 2025 09:28PM~~This document has been electronically signed by: Candice Davis, M.D.~on Aug 14 2025 09:28PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|9092959|4|620943135^UK^ZB||||||F<R>
+<EB><R>
+
+2025-08-14 21:45:12.9746|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814214512|TBD|ORU^R01|2.25.156204645978221734568785009608828218471|P|2.7<R>
+PID|1||ABC1234342^^^ABC^MR~EPIC2603483^^^EPIC^MRN||PALMER^WILLIAM^MICHAEL^^^^D||19930606|M||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458826^CERVANTES^ERIN^P.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132302|||||||||||||||||||||||||20250814214512|||||||V<R>
+ORC|RE|807245^SYS|620943161||Final||^^^20250814214511^20250814214512^O||20250814214512|||D1458834^WILLIAMS^TARA^L.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|807245^SYS|620943161|MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW|O|20250814194808|||||Hosp Perf|||||D1458834^WILLIAMS^TARA^L.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814214512||CR|Final||^^^20250814214511^20250814214512^O||||^Chest pain||D1458831^HARRIS^MICHAEL^A.^^^^^ABC^^^^HOSP|||20250814214512||||||||MDXREVNT^Radiology Event^UNKDEV^^XR SING VIEW<R>
+ZPF|1|10^IMG XR PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Single-view chest X-ray in anteroposterior projection.||||||Final<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Final<R>
+OBX|4|ST|&GDT|1|The thoracic cavity demonstrates normal bony thorax configuration||||||Final<R>
+OBX|5|ST|&GDT|1|without evidence of acute fracture or deformity. Cardiac silhouette||||||Final<R>
+OBX|6|ST|&GDT|1|is within normal limits for size and contour. Pulmonary vasculature||||||Final<R>
+OBX|7|ST|&GDT|1|appears appropriately vascularized without signs of congestion or||||||Final<R>
+OBX|8|ST|&GDT|1|edema. Lung parenchyma is clear bilaterally with no observable||||||Final<R>
+OBX|9|ST|&GDT|1|consolidations, nodules, or effusions. The diaphragm is dome-shaped||||||Final<R>
+OBX|10|ST|&GDT|1|with preserved costophrenic angles. Soft tissues surrounding the||||||Final<R>
+OBX|11|ST|&GDT|1|thorax show no abnormal masses or subcutaneous emphysema. The trachea||||||Final<R>
+OBX|12|ST|&GDT|1|is midline without deviation or external compression.||||||Final<R>
+OBX|13|ST|&GDT|1|||||||Final<R>
+OBX|14|ST|&GDT|1|||||||Final<R>
+OBX|15|ST|&IMP|2|IMPRESSION:||||||Final<R>
+OBX|16|ST|&IMP|2|Unremarkable chest X-ray demonstrating no evidence of acute||||||Final<R>
+OBX|17|ST|&IMP|2|cardiopulmonary pathology. No signs of infiltrates, pneumothorax,||||||Final<R>
+OBX|18|ST|&IMP|2|pleural effusion, or mediastinal abnormality. Findings consistent||||||Final<R>
+OBX|19|ST|&IMP|2|with a normal thoracic study in this 30-year-old male patient.||||||Final<R>
+OBX|20|ST|&IMP|2|Dictated by: Michael Harris Interpreter, M.D.||||||Final<R>
+OBX|21|ST|&TCM|3|Patient was cooperative and held still during the entire imaging||||||Final<R>
+OBX|22|ST|&TCM|3|process, no issues encountered during image acquisition.||||||Final<R>
+ZDS|2.25.293842616256096641118251655623437169975^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 22:16:22.6493|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814221622|TBD|ORU^R01|2.25.232208116732226784183680646129715951984|P|2.7<R>
+PID|1||ABC1234343^^^ABC^MR~EPIC2603484^^^EPIC^MRN||MCMAHON^JENNIFER^BROOKE^^^^D||19241209|F||WHITE|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458830^REYNOLDS^JEREMY^B.^^^^^ABC^^^^HOSP|||RAD|||||||||V85132304|||||||||||||||||||||||||20250814221622|||||||V<R>
+ORC|RE|1344243^SYS|620943163||Prelim||^^^20250814221621^20250814221622^O||20250814221622|T1067310^ROBINSON^MELINDA||D1458829^DAVIS^CANDICE^A.^^^^^ABC^^^^HOSP|ABC_R^^^RS50^^^^^RAD5|(555)555-5555|||||||||||||||O|Electr<R>
+OBR|1|1344243^SYS|620943163|BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL|O|20250814193356|||||Hosp Perf||||^^^BREAST|D1458829^DAVIS^CANDICE^A.^^^M.D.^^ABC^^^^HOSP|(555)555-5555|CHEST|ABC RAD DX^^^ABC|GEXR5||20250814221622||MG|Prelim||^^^20250814221621^20250814221622^O||||^Chest pain||D1458833^MARTIN^JENNIFER^L.^^^^^ABC^^^^HOSP|T1067310^ROBINSON^MELINDA||20250814221622||||||||BHC77057^77057 Screening Mamm Bilat^UNKDEV^^SCREENING MAMMOGRAM BILATERAL<R>
+ZPF|1|17^IMG MAMMO PROCEDURES<R>
+OBX|2|ST|&GDT|1|EXAMINATION: Bilateral four-view mammographic examination.||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|3|ST|&GDT|1|FINDINGS:||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|4|ST|&GDT|1|The mammographic views include craniocaudal (CC) and mediolateral||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|5|ST|&GDT|1|oblique (MLO) projections of both breasts. The breast parenchyma||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|6|ST|&GDT|1|demonstrates heterogeneous fibroglandular density, which may obscure||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|7|ST|&GDT|1|small masses. There is an absence of suspicious masses, architectural||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|8|ST|&GDT|1|distortions, or spiculated lesions. No microcalcifications cluster||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|9|ST|&GDT|1|suspicious for malignancy are identified; scattered benign-appearing||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|10|ST|&GDT|1|punctate calcifications are present bilaterally. The skin and nipple||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|11|ST|&GDT|1|contours are unremarkable. No axillary lymphadenopathy is seen on the||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|12|ST|&GDT|1|MLO views. Comparison with prior mammograms from 2022-09-15||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|13|ST|&GDT|1|demonstrates stable fibroglandular density with no interval||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|14|ST|&GDT|1|development of suspicious features or changes in known benign||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|15|ST|&GDT|1|entities.||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|16|ST|&GDT|1|||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|17|ST|&GDT|1|||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|18|ST|&IMP|2|IMPRESSION:||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|19|ST|&IMP|2|No mammographic evidence of malignancy in either breast. The dense||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|20|ST|&IMP|2|fibroglandular tissue warrants routine screening mammography with||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|21|ST|&IMP|2|clinical correlation as needed. No findings to suggest interval||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|22|ST|&IMP|2|development of breast carcinoma compared to the prior study dated||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|23|ST|&IMP|2|2022-09-15. Continued surveillance recommended.||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|24|ST|&IMP|2|Dictated by: Jennifer Martin Interpreter, M.D.||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|25|ST|&TCM|3|Patient reported slight breast tenderness during the imaging, but was||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+OBX|26|ST|&TCM|3|cooperative throughout the procedure.||||||Prelim|||||T1067310^ROBINSON^MELINDA<R>
+ZDS|2.25.192725162487924612419968033875902871348^EPIC^APPLICATION^DICOM<R>
+<EB><R>
+
+2025-08-14 22:25:18.5407|INFO|Raw.Application.TcpServer.TcpServer|
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20250814222518|TBD|ORU^R01|2.25.46258432494826269567172981571388805472|P|2.4<R>
+PID|1||ABC1234342^^^ABC^MR~EPIC2603483^^^EPIC^MRN||PALMER^WILLIAM^MICHAEL^^^^D||19930606000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC1234342^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D1458837^HANSON^TROY^C.^^^M.D.|^^|^^|RAD|||||||||V37851553^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||30310^SYS|620943158|IMG2816^US ABDOMEN LIMITED^UNKDEV|URGENT||20250814201624|||PSCRIB|||||^^^^ |D1458836^WRIGHT^MELISSA^VANESSA^^^M.D.^^ABC|||||2816^Ultrasound|20250814222518||IMG|||1^^^20250814222518^^U^^URGENT|       ||STRETCHE|^Chest pain|D1458828^WILLIAMS^ANDREW^J.^^^M.D.|D1458833^MARTIN^JENNIFER^L.^^^M.D.||PSCRIB|||||||||2816<R>
+<EB>
