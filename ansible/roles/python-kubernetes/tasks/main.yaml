@@ -1,0 +1,84 @@
+---
+# Python Kubernetes Library Installation
+# Installs python3-kubernetes package required by Ansible kubernetes.core modules
+# Handles both online and air-gapped installation modes automatically
+
+- name: Display Python kubernetes installation mode
+  ansible.builtin.debug:
+    msg: "Installing python3-kubernetes via {{ 'downloaded RPMs (air-gapped)' if air_gapped | default(false) | bool else 'system package manager (online)' }}"
+
+################################################################################
+# Air-Gapped Mode: Download and install if artifact_dir not provided
+################################################################################
+
+- name: Create temporary directory for Python RPMs (air-gapped mode)
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: 'python_kubernetes_'
+  register: python_temp_dir
+  delegate_to: localhost
+  run_once: true
+  when:
+    - air_gapped | default(false) | bool
+    - python_kubernetes_artifact_dir is not defined
+
+- name: Set artifact directory fact
+  ansible.builtin.set_fact:
+    python_kubernetes_artifact_dir: '{{ python_temp_dir.path if python_temp_dir is defined else python_kubernetes_artifact_dir }}'
+  when: air_gapped | default(false) | bool
+
+################################################################################
+# Install packages using scout_common
+################################################################################
+
+- name: Ensure python3-kubernetes is installed
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: ensure_packages
+  vars:
+    package_names:
+      - python3-kubernetes
+    package_type: 'Python'
+    download_script: |
+      set -e
+      set -x
+      echo "Installing dnf-plugins-core for dnf download..."
+      dnf install -y dnf-plugins-core
+      echo "Downloading python3-kubernetes and ALL dependencies..."
+      mkdir -p /downloads
+      dnf download --resolve --destdir=/downloads python3-kubernetes
+      echo "All downloaded packages (including dependencies):"
+      ls -lh /downloads/
+      rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
+      echo "Package count: $rpm_count"
+      if [ "$rpm_count" -eq 0 ]; then
+        echo "ERROR: No RPM files were downloaded!"
+        exit 1
+      fi
+      echo "Download completed successfully with $rpm_count packages"
+    artifact_temp_dir: '{{ python_kubernetes_artifact_dir | default(omit) }}'
+    staging_dir: '{{ python_kubernetes_rpm_staging_dir }}'
+    verify_command: python3 -c "import kubernetes; print(kubernetes.__version__)"
+
+################################################################################
+# Display results
+################################################################################
+
+- name: Display python3-kubernetes installation success
+  ansible.builtin.debug:
+    msg: 'python3-kubernetes installed successfully'
+
+################################################################################
+# Cleanup temporary directory (air-gapped mode only)
+################################################################################
+
+- name: Clean up temporary Python artifacts directory
+  ansible.builtin.file:
+    path: '{{ python_temp_dir.path }}'
+    state: absent
+  delegate_to: localhost
+  run_once: true
+  when:
+    - air_gapped | default(false) | bool
+    - python_temp_dir is defined
+    - python_temp_dir.path is defined

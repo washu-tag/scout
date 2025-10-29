@@ -1,0 +1,8 @@
+---
+# Python Kubernetes Library Role Defaults
+
+# Installation staging directory on target nodes
+python_kubernetes_rpm_staging_dir: /tmp/python-kubernetes-rpms
+# Artifact directory (will be set by caller in air-gapped mode when using pre-downloaded RPMs)
+# If not provided, the role will download RPMs on-demand
+# python_kubernetes_artifact_dir: /tmp/python_rpms_XXXX
