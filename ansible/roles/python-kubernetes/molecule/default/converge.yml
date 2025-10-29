@@ -1,7 +1,0 @@
----
-- name: Converge
-  hosts: all
-  tasks:
-    - name: Include python-kubernetes role
-      ansible.builtin.include_role:
-        name: python-kubernetes
