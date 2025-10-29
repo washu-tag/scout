@@ -14,9 +14,11 @@
 
 - name: Install Python kubernetes library on staging node
   hosts: staging
-  roles:
-    - python-kubernetes
-  when: air_gapped | default(false) | bool
+  tasks:
+    - name: Include python-kubernetes role
+      ansible.builtin.include_role:
+        name: python-kubernetes
+      when: air_gapped | default(false) | bool
 
 ################################################################################
 # Phase 2: Install Python on Cluster Nodes (Online mode only)
@@ -24,9 +26,11 @@
 
 - name: Install Python kubernetes library on cluster nodes (online mode)
   hosts: k3s_cluster
-  roles:
-    - python-kubernetes
-  when: not (air_gapped | default(false) | bool)
+  tasks:
+    - name: Include python-kubernetes role
+      ansible.builtin.include_role:
+        name: python-kubernetes
+      when: not (air_gapped | default(false) | bool)
 
 ################################################################################
 # Phase 3: Install k3s cluster
@@ -46,6 +50,8 @@
 
 - name: Install Python kubernetes library on cluster nodes (air-gapped mode)
   hosts: k3s_cluster
-  roles:
-    - python-kubernetes
-  when: air_gapped | default(false) | bool
+  tasks:
+    - name: Include python-kubernetes role
+      ansible.builtin.include_role:
+        name: python-kubernetes
+      when: air_gapped | default(false) | bool
