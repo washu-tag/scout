@@ -193,15 +193,6 @@
       delegate_to: localhost
       run_once: true
 
-  always:
-    - name: Clean up RPM directory on staging node
-      ansible.builtin.file:
-        path: '{{ rpm_staging_dir }}'
-        state: absent
-      delegate_to: "{{ groups['staging'][0] }}"
-      run_once: true
-      when: rpm_staging_dir is defined
-
     - name: Delete {{ rpm_package_type }} downloader Job
       kubernetes.core.k8s:
         state: absent
@@ -213,3 +204,12 @@
       delegate_to: "{{ groups['staging'][0] }}"
       run_once: true
       when: job_created is defined and job_created is changed
+
+  always:
+    - name: Clean up RPM directory on staging node
+      ansible.builtin.file:
+        path: '{{ rpm_staging_dir }}'
+        state: absent
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      when: rpm_staging_dir is defined
