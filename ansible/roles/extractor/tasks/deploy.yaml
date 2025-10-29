@@ -71,6 +71,7 @@
     spark_defaults_configmap_name: spark-defaults
     spark_defaults_configmap_namespace: '{{ extractor_namespace }}'
     spark_memory: '{{ hl7_transformer_spark_memory }}'
+    spark_hive_metastore_uri: '{{ hive_metastore_endpoint }}'
     spark_s3_username: '{{ s3_lake_writer }}'
     spark_s3_password: '{{ s3_lake_writer_secret }}'
 
