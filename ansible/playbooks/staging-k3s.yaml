@@ -12,6 +12,9 @@
   hosts: staging
   roles:
     - python-kubernetes
+  vars:
+    # Staging node has internet access, use online installation mode
+    air_gapped: false
 
 ################################################################################
 # Staging K3s Prerequisites
