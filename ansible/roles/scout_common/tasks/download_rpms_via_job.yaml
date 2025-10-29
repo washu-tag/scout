@@ -20,9 +20,9 @@
           kind: Job
           metadata:
             name: '{{ rpm_job_name }}'
-            namespace: '{{ k3s_package_download_namespace }}'
+            namespace: '{{ package_download_namespace }}'
             labels:
-              app: 'k3s-{{ rpm_package_type | lower }}-downloader'
+              app: '{{ rpm_package_type | lower }}-downloader'
               managed-by: ansible
           spec:
             ttlSecondsAfterFinished: 300
@@ -30,7 +30,7 @@
             template:
               metadata:
                 labels:
-                  app: 'k3s-{{ rpm_package_type | lower }}-downloader'
+                  app: '{{ rpm_package_type | lower }}-downloader'
               spec:
                 restartPolicy: Never
                 volumes:
@@ -38,7 +38,7 @@
                     emptyDir: {}
                 initContainers:
                   - name: downloader
-                    image: '{{ k3s_package_download_image }}'
+                    image: '{{ package_download_image }}'
                     volumeMounts:
                       - name: rpm-storage
                         mountPath: /downloads
@@ -48,7 +48,7 @@
                       - '{{ rpm_download_script }}'
                 containers:
                   - name: sleeper
-                    image: '{{ k3s_package_download_image }}'
+                    image: '{{ package_download_image }}'
                     command: ['sleep', '300']
                     volumeMounts:
                       - name: rpm-storage
@@ -70,7 +70,7 @@
       kubernetes.core.k8s_info:
         api_version: v1
         kind: Pod
-        namespace: '{{ k3s_package_download_namespace }}'
+        namespace: '{{ package_download_namespace }}'
         label_selectors:
           - 'job-name={{ rpm_job_name }}'
         kubeconfig: '{{ kubeconfig_yaml }}'
@@ -92,7 +92,7 @@
         api_version: v1
         kind: Pod
         name: '{{ rpm_downloader_pod }}'
-        namespace: '{{ k3s_package_download_namespace }}'
+        namespace: '{{ package_download_namespace }}'
         kubeconfig: '{{ kubeconfig_yaml }}'
       delegate_to: "{{ groups['staging'][0] }}"
       run_once: true
@@ -102,13 +102,13 @@
         pod_status.resources[0].status.initContainerStatuses is defined and
         pod_status.resources[0].status.initContainerStatuses | length > 0 and
         pod_status.resources[0].status.initContainerStatuses[0].state.terminated is defined
-      retries: '{{ (k3s_package_download_timeout / 10) | int }}'
+      retries: '{{ (package_download_timeout / 10) | int }}'
       delay: 10
       failed_when: false
 
     - name: Check if init container failed
       ansible.builtin.fail:
-        msg: '{{ rpm_package_type }} package download failed. Init container exit code: {{ pod_status.resources[0].status.initContainerStatuses[0].state.terminated.exitCode }}. Check logs with: kubectl logs {{ rpm_downloader_pod }} -n {{ k3s_package_download_namespace }} -c downloader'
+        msg: '{{ rpm_package_type }} package download failed. Init container exit code: {{ pod_status.resources[0].status.initContainerStatuses[0].state.terminated.exitCode }}. Check logs with: kubectl logs {{ rpm_downloader_pod }} -n {{ package_download_namespace }} -c downloader'
       when: >
         pod_status.resources | length == 0 or
         pod_status.resources[0].status.initContainerStatuses[0].state.terminated.exitCode != 0
@@ -133,7 +133,7 @@
       ansible.builtin.command:
         cmd: >
           kubectl cp
-          {{ k3s_package_download_namespace }}/{{ rpm_downloader_pod }}:/downloads/
+          {{ package_download_namespace }}/{{ rpm_downloader_pod }}:/downloads/
           {{ rpm_staging_dir }}/
           -c sleeper
           --kubeconfig={{ kubeconfig_yaml }}
@@ -208,7 +208,7 @@
         api_version: batch/v1
         kind: Job
         name: '{{ rpm_job_name }}'
-        namespace: '{{ k3s_package_download_namespace }}'
+        namespace: '{{ package_download_namespace }}'
         kubeconfig: '{{ kubeconfig_yaml }}'
       delegate_to: "{{ groups['staging'][0] }}"
       run_once: true

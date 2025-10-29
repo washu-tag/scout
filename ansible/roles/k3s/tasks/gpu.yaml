@@ -18,7 +18,9 @@
 
 - name: Install NVIDIA container toolkit packages (air-gapped mode)
   when: air_gapped | default(false) | bool
-  ansible.builtin.include_tasks: install_rpms_from_artifacts.yaml
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: install_rpms_from_artifacts
   vars:
     rpm_artifact_dir: '{{ k3s_gpu_artifact_dir }}'
     rpm_staging_dir: '{{ k3s_gpu_rpm_staging_dir }}'

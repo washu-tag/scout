@@ -85,15 +85,107 @@
       run_once: true
 
     - name: Download SELinux RPMs using Kubernetes Job
-      ansible.builtin.include_tasks: download_selinux_rpms.yaml
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: download_rpms_via_job
+      vars:
+        rpm_job_name: 'k3s-selinux-downloader-{{ ansible_date_time.epoch }}'
+        rpm_staging_dir: '/tmp/k3s-selinux-rpms-{{ ansible_date_time.epoch }}'
+        rpm_package_type: 'SELinux'
+        rpm_download_script: |
+          set -e
+          set -x
+          echo "Installing dnf-plugins-core for dnf download..."
+          dnf install -y dnf-plugins-core
+          echo "Configuring Rancher k3s repository..."
+          cat > /etc/yum.repos.d/rancher-k3s-common.repo <<EOF
+          [rancher-k3s-common-{{ k3s_selinux_channel }}]
+          name=Rancher K3s Common ({{ k3s_selinux_channel }})
+          baseurl=https://{{ k3s_selinux_rpm_site }}/k3s/{{ k3s_selinux_channel }}/common/centos/9/noarch
+          enabled=1
+          gpgcheck=1
+          repo_gpgcheck=0
+          gpgkey=https://{{ k3s_selinux_rpm_site }}/public.key
+          EOF
+          echo "Repository configuration:"
+          cat /etc/yum.repos.d/rancher-k3s-common.repo
+          echo "Downloading k3s-selinux and ALL dependencies..."
+          mkdir -p /downloads
+          dnf download --resolve --destdir=/downloads k3s-selinux
+          echo "All downloaded packages (including dependencies):"
+          ls -lh /downloads/
+          rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
+          echo "Package count: $rpm_count"
+          if [ "$rpm_count" -eq 0 ]; then
+            echo "ERROR: No RPM files were downloaded!"
+            exit 1
+          fi
+          echo "Download completed successfully with $rpm_count packages"
+        rpm_artifact_dir: '{{ k3s_selinux_temp_dir.path }}'
       when: k3s_selinux_enabled | bool
 
     - name: Download GPU packages using Kubernetes Job
-      ansible.builtin.include_tasks: download_gpu_packages.yaml
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: download_rpms_via_job
+      vars:
+        rpm_job_name: 'k3s-gpu-downloader-{{ ansible_date_time.epoch }}'
+        rpm_staging_dir: '/tmp/k3s-gpu-rpms-{{ ansible_date_time.epoch }}'
+        rpm_package_type: 'GPU'
+        rpm_download_script: |
+          set -e
+          set -x
+          echo "Installing dnf-plugins-core for dnf download..."
+          dnf install -y dnf-plugins-core
+          echo "Adding NVIDIA container toolkit repository..."
+          dnf config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+          echo "Repository configuration:"
+          cat /etc/yum.repos.d/nvidia-container-toolkit.repo
+          echo "Downloading NVIDIA container toolkit packages and ALL dependencies..."
+          mkdir -p /downloads
+          dnf download --resolve --destdir=/downloads \
+            nvidia-container-toolkit \
+            nvidia-container-toolkit-base \
+            libnvidia-container-tools \
+            libnvidia-container1
+          echo "All downloaded packages (including dependencies):"
+          ls -lh /downloads/
+          rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
+          echo "Package count: $rpm_count"
+          if [ "$rpm_count" -eq 0 ]; then
+            echo "ERROR: No RPM files were downloaded!"
+            exit 1
+          fi
+          echo "Download completed successfully with $rpm_count packages"
+        rpm_artifact_dir: '{{ k3s_gpu_temp_dir.path }}'
       when: groups['gpu_workers'] | default([]) | length > 0
 
     - name: Download Python packages using Kubernetes Job
-      ansible.builtin.include_tasks: download_python_packages.yaml
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: download_rpms_via_job
+      vars:
+        rpm_job_name: 'k3s-python-downloader-{{ ansible_date_time.epoch }}'
+        rpm_staging_dir: '/tmp/k3s-python-rpms-{{ ansible_date_time.epoch }}'
+        rpm_package_type: 'Python'
+        rpm_download_script: |
+          set -e
+          set -x
+          echo "Installing dnf-plugins-core for dnf download..."
+          dnf install -y dnf-plugins-core
+          echo "Downloading python3-kubernetes and ALL dependencies..."
+          mkdir -p /downloads
+          dnf download --resolve --destdir=/downloads python3-kubernetes
+          echo "All downloaded packages (including dependencies):"
+          ls -lh /downloads/
+          rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
+          echo "Package count: $rpm_count"
+          if [ "$rpm_count" -eq 0 ]; then
+            echo "ERROR: No RPM files were downloaded!"
+            exit 1
+          fi
+          echo "Download completed successfully with $rpm_count packages"
+        rpm_artifact_dir: '{{ k3s_python_temp_dir.path }}'
 
     - name: Verify k3s binary was downloaded
       ansible.builtin.stat:
