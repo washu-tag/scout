@@ -7,7 +7,6 @@
   import_playbook: staging-k3s.yaml
   when:
     - groups.get('staging', []) | length > 0
-    - air_gapped | default(false) | bool
 
 - name: Deploy Harbor on staging node
   import_playbook: harbor.yaml
