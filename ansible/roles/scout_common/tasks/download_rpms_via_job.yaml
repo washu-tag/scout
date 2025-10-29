@@ -45,7 +45,18 @@
                     command:
                       - /bin/bash
                       - -c
-                      - '{{ rpm_download_script }}'
+                      - |
+                        {{ rpm_download_script }}
+
+                        echo "Creating RPM archive..."
+                        cd /downloads
+                        if [ ! -f *.rpm ]; then
+                          echo "ERROR: No RPM files found to archive!"
+                          exit 1
+                        fi
+                        tar czf rpms.tar.gz *.rpm
+                        echo "Archive created: $(ls -lh rpms.tar.gz)"
+                        echo "Archive contains $(tar tzf rpms.tar.gz | wc -l) files"
                 containers:
                   - name: sleeper
                     image: '{{ package_download_image }}'
@@ -129,12 +140,12 @@
       delegate_to: "{{ groups['staging'][0] }}"
       run_once: true
 
-    - name: Copy RPMs from sleeper container to staging node
+    - name: Copy RPM archive from sleeper container to staging node
       ansible.builtin.command:
         cmd: >
           kubectl cp
-          {{ package_download_namespace }}/{{ rpm_downloader_pod }}:/downloads/
-          {{ rpm_staging_dir }}/
+          {{ package_download_namespace }}/{{ rpm_downloader_pod }}:/downloads/rpms.tar.gz
+          {{ rpm_staging_dir }}/rpms.tar.gz
           -c sleeper
           --kubeconfig={{ kubeconfig_yaml }}
       delegate_to: "{{ groups['staging'][0] }}"
@@ -142,54 +153,74 @@
       register: kubectl_cp_result
       changed_when: kubectl_cp_result.rc == 0
 
-    - name: Find RPM files on staging node
-      ansible.builtin.find:
-        paths: '{{ rpm_staging_dir }}'
-        patterns: '*.rpm'
+    - name: Verify RPM archive exists on staging node
+      ansible.builtin.stat:
+        path: '{{ rpm_staging_dir }}/rpms.tar.gz'
       delegate_to: "{{ groups['staging'][0] }}"
       run_once: true
-      register: staging_rpm_files
+      register: staging_archive
 
-    - name: Display found RPMs on staging node
-      ansible.builtin.debug:
-        msg: 'Found {{ staging_rpm_files.files | length }} RPM files on staging node: {{ staging_rpm_files.files | map(attribute="path") | map("basename") | list }}'
-      delegate_to: localhost
-      run_once: true
-
-    - name: Fail if no RPMs found on staging node
+    - name: Fail if archive not found on staging node
       ansible.builtin.fail:
-        msg: 'No RPM files found in {{ rpm_staging_dir }} on staging node'
-      when: staging_rpm_files.files | length == 0
+        msg: 'RPM archive not found: {{ rpm_staging_dir }}/rpms.tar.gz'
+      when: not staging_archive.stat.exists
       delegate_to: localhost
       run_once: true
 
-    - name: Fetch RPMs from staging node to Ansible control node
+    - name: Verify RPM archive integrity on staging node
+      ansible.builtin.command:
+        cmd: tar tzf {{ rpm_staging_dir }}/rpms.tar.gz
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      register: archive_contents
+      changed_when: false
+
+    - name: Display archive contents on staging node
+      ansible.builtin.debug:
+        msg: 'RPM archive on staging node contains {{ archive_contents.stdout_lines | length }} files ({{ (staging_archive.stat.size / 1024 / 1024) | round(2) }} MB)'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail if archive is empty
+      ansible.builtin.fail:
+        msg: 'RPM archive contains no files'
+      when: archive_contents.stdout_lines | length == 0
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch RPM archive from staging node to Ansible control node
       ansible.builtin.fetch:
-        src: '{{ item.path }}'
-        dest: '{{ rpm_artifact_dir }}/{{ item.path | basename }}'
+        src: '{{ rpm_staging_dir }}/rpms.tar.gz'
+        dest: '{{ rpm_artifact_dir }}/rpms.tar.gz'
         flat: true
       delegate_to: "{{ groups['staging'][0] }}"
       run_once: true
-      loop: '{{ staging_rpm_files.files }}'
 
-    - name: Verify RPMs were copied successfully
-      ansible.builtin.find:
-        paths: '{{ rpm_artifact_dir }}'
-        patterns: '*.rpm'
+    - name: Verify RPM archive was copied to control node
+      ansible.builtin.stat:
+        path: '{{ rpm_artifact_dir }}/rpms.tar.gz'
       delegate_to: localhost
       run_once: true
-      register: downloaded_rpms
+      register: downloaded_archive
 
-    - name: Display downloaded RPMs
-      ansible.builtin.debug:
-        msg: "Downloaded {{ downloaded_rpms.files | length }} RPM files ({{ rpm_package_type }} + all dependencies): {{ downloaded_rpms.files | map(attribute='path') | map('basename') | list }}"
-      delegate_to: localhost
-      run_once: true
-
-    - name: Fail if no RPMs were downloaded
+    - name: Fail if archive was not downloaded
       ansible.builtin.fail:
-        msg: 'No RPM files found in {{ rpm_artifact_dir }}'
-      when: downloaded_rpms.files | length == 0
+        msg: 'RPM archive not found: {{ rpm_artifact_dir }}/rpms.tar.gz'
+      when: not downloaded_archive.stat.exists
+      delegate_to: localhost
+      run_once: true
+
+    - name: Inspect archive contents on control node
+      ansible.builtin.command:
+        cmd: tar tzf {{ rpm_artifact_dir }}/rpms.tar.gz
+      delegate_to: localhost
+      run_once: true
+      register: control_archive_contents
+      changed_when: false
+
+    - name: Display downloaded RPM archive details
+      ansible.builtin.debug:
+        msg: 'Downloaded {{ rpm_package_type }} RPM archive: {{ (downloaded_archive.stat.size / 1024 / 1024) | round(2) }} MB containing {{ control_archive_contents.stdout_lines | length }} packages (including all dependencies)'
       delegate_to: localhost
       run_once: true
 
