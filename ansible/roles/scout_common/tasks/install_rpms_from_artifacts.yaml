@@ -38,9 +38,10 @@
         msg: 'No RPM files found after extracting {{ rpm_package_type }} archive'
       when: rpm_files_on_node.files | length == 0
 
-    - name: Display extracted RPM count
+    - name: Display list of RPM files to be installed
       ansible.builtin.debug:
-        msg: 'Extracted {{ rpm_files_on_node.files | length }} {{ rpm_package_type }} RPM packages'
+        msg: '{{ rpm_files_on_node.files | map(attribute="path") | map("basename") | list }}'
+        verbosity: 1
 
     - name: Install all {{ rpm_package_type }} packages
       ansible.builtin.dnf:
