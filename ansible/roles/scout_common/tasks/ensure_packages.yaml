@@ -54,8 +54,6 @@
 
     - name: Download {{ package_type }} packages via Kubernetes Job
       ansible.builtin.include_tasks: download_rpms_via_job.yaml
-      delegate_to: localhost
-      run_once: true
 
     - name: Install {{ package_type }} packages from downloaded RPMs
       ansible.builtin.include_tasks: install_rpms_from_artifacts.yaml
