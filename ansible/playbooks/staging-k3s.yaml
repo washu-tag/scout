@@ -17,27 +17,6 @@
     air_gapped: false
 
 ################################################################################
-# Staging K3s Prerequisites
-################################################################################
-
-- name: Shared pre-requisites for staging K3s
-  hosts: staging
-  vars:
-    uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
-  tasks:
-    - name: Create /root/bin directory
-      ansible.builtin.file:
-        path: /root/bin
-        state: directory
-        mode: '0700'
-
-    - name: Download K3s installation script
-      ansible.builtin.get_url:
-        url: https://get.k3s.io
-        dest: /root/bin/get.k3s.io.sh
-        mode: '0755'
-
-################################################################################
 # Install K3s
 ################################################################################
 
