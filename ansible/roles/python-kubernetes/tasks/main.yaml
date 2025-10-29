@@ -44,6 +44,8 @@
       set -x
       echo "Installing dnf-plugins-core for dnf download..."
       dnf install -y dnf-plugins-core
+      echo "Installing EPEL repository..."
+      dnf install -y epel-release
       echo "Downloading python3-kubernetes and ALL dependencies..."
       mkdir -p /downloads
       dnf download --resolve --destdir=/downloads python3-kubernetes
