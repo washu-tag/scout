@@ -34,7 +34,7 @@ Scout's authentication system uses a multi-layered approach combining Keycloak (
 1. **User Access**: User requests a Scout service through Traefik ingress
 2. **OAuth2 Proxy Check**: Traefik middleware redirects unauthenticated requests to OAuth2 Proxy
 3. **Keycloak Authentication**: OAuth2 Proxy redirects to Keycloak for login
-4. **Identity Provider**: Keycloak authenticates against configured IDP (GitHub, Microsoft)
+4. **Identity Provider**: Keycloak authenticates against configured institutional identity provider
 5. **User Registration Check**: OAuth2 Proxy verifies user has been assigned the `scout-user` role
 6. **Service Access**: OAuth2 Proxy forwards the request to the target service
 7. **Service Authentication**: Service validates user identity and roles with Keycloak OAuth/OIDC
@@ -82,7 +82,7 @@ Add this middleware stack to any new service ingress to enable authentication wi
 
 **Key Features**:
 - Single Sign-On (SSO) across all Scout services
-- Integration with external identity providers (GitHub, Microsoft)
+- Integration with external institutional identity providers
 - Role-based access control (RBAC)
 - User approval workflow via email notifications
 - Custom Scout realm configuration
@@ -92,9 +92,6 @@ Add this middleware stack to any new service ingress to enable authentication wi
 - PostgreSQL backend for persistence
 - Custom Scout email event listener for user approval notifications
 - [Keycloak Config CLI](https://github.com/adorsys/keycloak-config-cli) for realm import and configuration
-
-**Identity Providers**:
-Keycloak supports multiple identity providers (GitHub, Microsoft). See [Configuration](#configuration) section for setup details.
 
 ### OAuth2 Proxy
 
@@ -128,7 +125,7 @@ Keycloak groups automatically assign roles:
 
 New users must be approved by an admin before accessing Scout services:
 
-1. **New User Login**: User authenticates via IDP (GitHub, Microsoft, Institutional SSO)
+1. **New User Login**: User authenticates via institutional identity provider
 2. **Account Creation**: Keycloak creates user account
 3. **Pending State**: User has no roles assigned and cannot access services
 4. **Admin Notification**: Email sent to admins (via custom event listener)
@@ -139,24 +136,19 @@ See [Post-Deployment Configuration](#post-deployment-configuration) for first-ti
 
 ## Configuration
 
-### Required Inventory Variables
+### Inventory Variables
 
 All secrets must be defined in your inventory file and should be vault-encrypted for production deployments.
 
-**Keycloak Admin**:
+**Keycloak Admin Console Credentials**:
 ```yaml
 keycloak_bootstrap_admin_user: admin
 keycloak_bootstrap_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 keycloak_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 ```
 
-**OAuth2 Proxy**:
-```yaml
-oauth2_proxy_cookie_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-```
-
-**Identity Provider**:
-Select and configure one IDP for Keycloak to authenticate against.
+**Keycloak Identity Provider**:
+Select and configure an identity provider for Keycloak to authenticate against. Scout currently provides configuration support for GitHub and Microsoft. Other Keycloak-supported identity providers could be added in the future if needed.
 
 ```yaml
 # GitHub
@@ -171,10 +163,10 @@ keycloak_microsoft_client_secret: 'your-microsoft-secret'
 keycloak_microsoft_tenant_id: 'your-tenant-id'
 ```
 
-For GitHub, create a new OAuth app in your organization settings:
+For development deployments, you can create a new OAuth app in in Github for Keycloak to use:
 https://github.com/organizations/your-org-here/settings/applications
 
-**Client Secrets** (one for each service):
+**Keycloak Client Secrets** (one for each Scout service):
 ```yaml
 keycloak_oauth2_proxy_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 keycloak_superset_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -185,14 +177,18 @@ keycloak_minio_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_str
 keycloak_launchpad_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 ```
 
-**Launchpad NextAuth**:
+**OAuth2 Proxy Cookie Secret**:
+```yaml
+oauth2_proxy_cookie_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+```
+
+**Launchpad NextAuth Cookie Secret**:
 ```yaml
 launchpad_nextauth_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 ```
 
-### Optional Configuration
-
 **SMTP for Email Notifications**:
+For production deployments, configure SMTP settings for Keycloak to send email notifications:
 ```yaml
 keycloak_smtp_host: 'smtp.example.com'
 keycloak_smtp_port: '587'
@@ -203,40 +199,25 @@ keycloak_smtp_ssl: 'false'
 keycloak_smtp_starttls: 'true'
 ```
 
-*Dev: Omit for mailhog defaults. Run `make install-mailhog` for email notifications in development.*
-
-### Client IDs
-
-Default client IDs are defined in [`ansible/roles/scout_common/defaults/main.yaml`](../../ansible/roles/scout_common/defaults/main.yaml):
-```yaml
-keycloak_oauth2_proxy_client_id: oauth2-proxy
-keycloak_superset_client_id: superset
-keycloak_jupyterhub_client_id: jupyterhub
-keycloak_grafana_client_id: grafana
-keycloak_temporal_client_id: temporal
-keycloak_minio_client_id: minio
-keycloak_launchpad_client_id: launchpad
-```
-
-These can be overridden in `inventory.yaml` if needed but typically do not need to be changed.
+In development environments, omit these settings to use the defaults configured for MailHog and run `make install-mailhog`.
 
 ### Post-Deployment Configuration
 
-**1. Login to Scout/Keycloak**:
-- Access Launchpad at `https://{server_hostname}` and login through your institutional IDP
+**1. Login to Scout**:
+- Access Launchpad at `https://{server_hostname}` and login through your institutional identity provider
 - This will create your Keycloak user account
 
 **2. Access Keycloak Admin Realm Console**:
-- URL: `https://keycloak.{server_hostname}`
+- Access the Keycloak admin console at `https://keycloak.{server_hostname}`
 - Login with `keycloak_bootstrap_admin_user` and `keycloak_bootstrap_admin_password`
 
-**3. Create Scout Realm Admin Users**:
+**3. Enable Scout Realm Admin Users**:
 - Navigate to "Scout" realm
 - Add your user to `scout-user` **group** for standard access (required for all users)
 - Add your user to `scout-admin` **group** for elevated admin access
-- Logout of the Keycloak Admin Realm Console
+- Logout of the Keycloak admin console
 
 **4. Login to Scout**:
-- Return to Launchpad at `https://{server_hostname}` and login again through your institutional IDP
+- Return to Launchpad at `https://{server_hostname}` and login again through your institutional identity provider
 - You should now have access to all Scout services
 - Admin services will appear on the Launchpad only if you were added to the `scout-admin` group
