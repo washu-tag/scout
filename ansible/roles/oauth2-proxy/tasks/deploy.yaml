@@ -1,0 +1,89 @@
+---
+- name: Create ConfigMap with OAuth2 Proxy html templates
+  block:
+    - name: Find all html files in oauth2-proxy templates directory
+      find:
+        paths: '{{ role_path }}/files'
+        patterns: '*.html'
+      register: oauth2_proxy_templates
+      delegate_to: localhost
+
+    - name: Create ConfigMap for OAuth2 Proxy templates
+      delegate_to: localhost
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        definition: |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: oauth2-proxy-templates
+            namespace: kube-system
+          data:
+            '{{ item.path | basename }}': |-
+              {{ lookup("file", item.path) | indent(4) }}
+      loop: '{{ oauth2_proxy_templates.files }}'
+      loop_control:
+        label: '{{ item.path | basename }}'
+
+- name: Create Secret with Logo for OAuth2 Proxy
+  delegate_to: localhost
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: oauth2-proxy-logo
+        namespace: kube-system
+      type: Opaque
+      data:
+        logo.png: '{{ lookup("file", role_path + "/files/scout.jpg") | b64encode }}'
+
+- name: Deploy OAuth2 Proxy
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: oauth2-proxy
+    helm_chart_ref: oauth2-proxy/oauth2-proxy
+    helm_chart_namespace: kube-system
+    helm_repo_name: oauth2-proxy
+    helm_repo_url: '{{ oauth2_proxy_chart_repo }}'
+    helm_chart_version: '{{ oauth2_proxy_chart_version }}'
+    helm_chart_values: '{{ lookup("template", "values.yaml.j2") | from_yaml }}'
+
+- name: Install OAuth2 Proxy Auth Middleware
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: oauth2-proxy-auth
+        namespace: kube-system
+      spec:
+        forwardAuth:
+          address: '{{ oauth2_proxy_auth_url }}'
+          trustForwardHeader: true
+          authResponseHeaders:
+            - X-Auth-Request-Access-Token
+
+- name: Install OAuth2 Proxy Error Middleware
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: oauth2-proxy-error
+        namespace: kube-system
+      spec:
+        errors:
+          status:
+            - '401'
+          service:
+            name: oauth2-proxy
+            port: 80
+          query: '/oauth2/sign_in?rd={url}'

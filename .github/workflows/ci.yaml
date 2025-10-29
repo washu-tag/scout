@@ -24,8 +24,9 @@ jobs:
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
       pyspark-notebook: ${{ steps.filter.outputs.pyspark-notebook }}
-      explorer: ${{ steps.filter.outputs.explorer }}
+      launchpad: ${{ steps.filter.outputs.launchpad }}
       superset: ${{ steps.filter.outputs.superset }}
+      keycloak: ${{ steps.filter.outputs.keycloak }}
     steps:
       - uses: actions/checkout@v4.2.1
       - uses: dorny/paths-filter@v3
@@ -39,10 +40,12 @@ jobs:
               - 'extractor/hl7-transformer/**'
             pyspark-notebook:
               - 'helm/jupyter/notebook/**'
-            explorer:
-              - 'explorer/**'
+            launchpad:
+              - 'launchpad/**'
             superset:
               - 'helm/superset/**'
+            keycloak:
+              - 'keycloak/**'
   lint:
     runs-on: ubuntu-latest
     permissions:
@@ -122,7 +125,7 @@ jobs:
         with:
           subproject: helm/jupyter/notebook
           image-name: pyspark-notebook
-  build-and-upload-explorer:
+  build-and-upload-launchpad:
     runs-on: ubuntu-latest
     needs: changes
     permissions:
@@ -135,14 +138,14 @@ jobs:
         id: check-image
         uses: ./.github/actions/check-image-exists
         with:
-          subproject: explorer
-          image-name: explorer
-      - name: 'Build/Cache Image - explorer'
-        if: needs.changes.outputs.explorer == 'true' || steps.check-image.outputs.exists == 'false'
+          subproject: launchpad
+          image-name: launchpad
+      - name: 'Build/Cache Image - launchpad'
+        if: needs.changes.outputs.launchpad == 'true' || steps.check-image.outputs.exists == 'false'
         uses: ./.github/actions/docker-build-cache
         with:
-          subproject: explorer
-          image-name: explorer
+          subproject: launchpad
+          image-name: launchpad
   build-and-upload-superset:
     runs-on: ubuntu-latest
     needs: changes
@@ -164,6 +167,27 @@ jobs:
         with:
           subproject: helm/superset
           image-name: superset
+  build-and-upload-keycloak:
+    runs-on: ubuntu-latest
+    needs: changes
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4.2.1
+      - name: 'Check if image exists'
+        id: check-image
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: keycloak
+          image-name: keycloak
+      - name: 'Build/Cache Image - keycloak'
+        if: needs.changes.outputs.keycloak == 'true' || steps.check-image.outputs.exists == 'false'
+        uses: ./.github/actions/docker-build-cache
+        with:
+          subproject: keycloak
+          image-name: keycloak
   unit-test:
     runs-on: ubuntu-latest
     permissions:
@@ -206,8 +230,9 @@ jobs:
       - build-and-upload-hl7log-extractor
       - build-and-upload-hl7-transformer
       - build-and-upload-pyspark-notebook
-      - build-and-upload-explorer
+      - build-and-upload-launchpad
       - build-and-upload-superset
+      - build-and-upload-keycloak
       - unit-test
       - ansible-test
     permissions:
@@ -338,16 +363,21 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: pyspark-notebook
-      - name: 'Push Image - explorer'
-        if: needs.changes.outputs.explorer == 'true'
+      - name: 'Push Image - launchpad'
+        if: needs.changes.outputs.launchpad == 'true'
         uses: ./.github/actions/docker-push
         with:
-          image-name: explorer
+          image-name: launchpad
       - name: 'Push Image - superset'
         if: needs.changes.outputs.superset == 'true'
         uses: ./.github/actions/docker-push
         with:
           image-name: superset
+      - name: 'Push Image - keycloak'
+        if: needs.changes.outputs.keycloak == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: keycloak
   publish-demo:
     if: startsWith(github.ref_name, 'demo')
     runs-on: ubuntu-latest

@@ -59,58 +59,7 @@
     helm_repo_name: temporal
     helm_repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
     helm_chart_timeout: 15m
-    helm_chart_values:
-      prometheus:
-        enabled: false
-      grafana:
-        enabled: false
-      cassandra:
-        enabled: false
-      elasticsearch:
-        enabled: false
-        external: true
-        version: 'v7' # All ES versions (7/8/9) use v7 template format
-        scheme: 'http' # TLS disabled on Elasticsearch for simplicity
-        host: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-http.{{ elasticsearch_namespace }}'
-        port: 9200
-        username: 'elastic'
-        password: '{{ elasticsearch_password }}'
-        visibilityIndex: 'temporal_visibility_v1'
-        logLevel: 'error'
-      server:
-        replicaCount: '{{ temporal_server_replica_count | default(1) }}'
-        resources: '{{ temporal_resources }}'
-        config:
-          namespaces:
-            create: true
-          persistence:
-            default:
-              driver: 'cassandra'
-              cassandra:
-                hosts:
-                  [
-                    '{{ cassandra_cluster_name | default("cassandra-cluster") }}-{{ cassandra_datacenter_name | default("dc1") }}-service.{{ cassandra_namespace }}',
-                  ]
-                port: 9042
-                keyspace: temporal
-                existingSecret: '{{ cassandra_cluster_name | default("cassandra-cluster") }}-superuser'
-                replicationFactor: 1
-                consistency:
-                  default:
-                    consistency: 'local_quorum'
-                    serialConsistency: 'local_serial'
-        env:
-          - name: ELASTICSEARCH_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-elastic-user'
-                key: elastic
-      web:
-        ingress:
-          enabled: true
-          ingressClassName: traefik
-          hosts:
-            - 'temporal.{{ server_hostname }}'
+    helm_chart_values: '{{ lookup("template", "values.yaml.j2") | from_yaml }}'
 
 - name: Wait for Temporal schema job to complete
   shell: >-
@@ -154,7 +103,7 @@
                 image: temporalio/admin-tools
                 env:
                   - name: TEMPORAL_ADDRESS
-                    value: 'temporal-frontend.{{ temporal_namespace }}:7233'
+                    value: 'temporal-internal-frontend.{{ temporal_namespace }}:7236'
                 command:
                   - temporal
                   - schedule

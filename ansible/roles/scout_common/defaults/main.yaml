@@ -12,7 +12,7 @@ helm_chart_values: {}
 helm_chart_values_files: []
 
 # Custom images (override from inventory for CI/CD)
-# Explorer: explorer_image_repository and explorer_image_tag (see roles/explorer/defaults/main.yaml)
+# Launchpad: launchpad_image_repository and launchpad_image_tag (see roles/launchpad/defaults/main.yaml)
 # Superset: superset_image_repository and superset_image_tag (see roles/superset/defaults/main.yaml)
 # Jupyter: jupyter_singleuser_image_name and jupyter_singleuser_image_tag (see roles/jupyter/defaults/main.yaml)
 # Extractors: hl7log_extractor_image_repository/tag and hl7_transformer_image_repository/tag (see roles/extractor/defaults/main.yaml)
@@ -43,7 +43,17 @@ trino_namespace: trino
 harbor_namespace: harbor
 orthanc_namespace: orthanc
 dcm4chee_namespace: dcm4chee
-explorer_namespace: explorer
+launchpad_namespace: launchpad
+keycloak_namespace: keycloak
+
+# Keycloak OAuth client IDs and secrets (client secrets must be defined in inventory)
+keycloak_oauth2_proxy_client_id: oauth2-proxy
+keycloak_superset_client_id: superset
+keycloak_jupyterhub_client_id: jupyterhub
+keycloak_grafana_client_id: grafana
+keycloak_temporal_client_id: temporal
+keycloak_minio_client_id: minio
+keycloak_launchpad_client_id: launchpad
 
 # S3/MinIO configuration (passwords defined in inventory)
 s3_region: us-east-1
@@ -65,6 +75,7 @@ postgres_user: scout
 hive_postgres_user: hive
 hive_readonly_postgres_user: hive_readonly
 superset_postgres_user: superset
+keycloak_postgres_user: keycloak
 
 # Database names
 hive_database_name: hive
@@ -88,6 +99,15 @@ modality_map_path: /data/modality_mapping_codes.csv
 scratch_path: 's3://{{ scratch_bucket }}'
 delta_lake_path: 's3a://{{ lake_bucket }}/delta' # Hadoop requires the s3a prefix
 
+# OAuth2 Proxy configuration
+oauth2_proxy_subdomain: auth
+
+# Keycloak configuration (DO NOT CHANGE)
+# The realm and subdomain values are hardcoded in Launchpad.
+# These variables are used for constructing the authentication URLs below.
+keycloak_realm_name: scout
+keycloak_subdomain: keycloak
+
 # Computed values (DO NOT CHANGE)
 s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
 hive_metastore_endpoint: 'thrift://{{ hive_metastore_instance }}.{{ hive_namespace }}:9083'
@@ -99,3 +119,15 @@ db_host_ro: '{{ postgres_cluster_name }}-r.{{ postgres_cluster_namespace }}'
 db_port: 5432
 jdbc_url: 'jdbc:postgresql://{{ db_host }}:{{ db_port }}'
 use_custom_storage_classes: '{{ not aws_deployment }}'
+keycloak_base_url: 'https://{{ keycloak_subdomain }}.{{ server_hostname }}'
+keycloak_realm_url: '{{ keycloak_base_url }}/realms/{{ keycloak_realm_name }}'
+keycloak_oidc_auth_url: '{{ keycloak_realm_url }}/protocol/openid-connect/auth'
+keycloak_oidc_token_url: '{{ keycloak_realm_url }}/protocol/openid-connect/token'
+keycloak_oidc_userinfo_url: '{{ keycloak_realm_url }}/protocol/openid-connect/userinfo'
+keycloak_oidc_certs_url: '{{ keycloak_realm_url }}/protocol/openid-connect/certs'
+keycloak_oidc_logout_url: '{{ keycloak_realm_url }}/protocol/openid-connect/logout'
+keycloak_wellknown_url: '{{ keycloak_realm_url }}/.well-known/openid-configuration'
+oauth2_proxy_base_url: 'https://{{ oauth2_proxy_subdomain }}.{{ server_hostname }}'
+oauth2_proxy_callback_url: '{{ oauth2_proxy_base_url }}/oauth2/callback'
+oauth2_proxy_signout_url: '{{ oauth2_proxy_base_url }}/oauth2/sign_out'
+oauth2_proxy_auth_url: '{{ oauth2_proxy_base_url }}/oauth2/auth'

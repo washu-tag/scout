@@ -19,6 +19,14 @@ cassandra_server_version: 5.0.3
 # Databases & Data Storage - PostgreSQL
 cnpg_version: ~0.26.0
 
+# OAuth2 Proxy
+oauth2_proxy_chart_version: ~7.12.0
+
+# Keycloak Config CLI
+keycloak_config_cli_helm_chart_version: 6.4.1-SNAPSHOT
+keycloak_config_cli_image: docker.io/adorsys/keycloak-config-cli
+keycloak_config_cli_image_tag: 6.4.0-26
+
 # Databases & Data Storage - MinIO
 minio_version: ~7.1.0
 minio_client_image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z

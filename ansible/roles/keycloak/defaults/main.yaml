@@ -1,0 +1,29 @@
+---
+# Defaults for keycloak role
+# User-configurable settings are in inventory.yaml
+
+# Keycloak image
+keycloak_image_repository: ghcr.io/washu-tag/keycloak
+keycloak_image_tag: 26.4.2
+
+# Keycloak admin console credentials (password must be defined in inventory)
+keycloak_bootstrap_admin_user: admin
+
+# Keycloak database credentials (password must be defined in inventory)
+keycloak_postgres_user: keycloak
+
+# SMTP configuration for email notifications
+keycloak_smtp_host: mailhog-service.mailhog
+keycloak_smtp_port: '1025'
+keycloak_smtp_from: example@example.com
+keycloak_smtp_from_display_name: Scout
+keycloak_smtp_reply_to: ''
+keycloak_smtp_reply_to_display_name: ''
+keycloak_smtp_envelope_from: ''
+keycloak_smtp_auth: ''
+keycloak_smtp_ssl: 'false'
+keycloak_smtp_starttls: 'false'
+keycloak_smtp_debug: 'false'
+
+# Identity Provider configuration
+keycloak_default_provider: github

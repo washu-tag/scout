@@ -547,22 +547,6 @@ tls_key_path: '/path/to/key.pem'    # Optional TLS key
 minio_volumes_per_server: 2  # Must be >= 2 if minio_hosts has > 1 node
 ```
 
-#### JupyterHub Authentication
-
-Choose between dummy authentication (for testing) or GitHub OAuth:
-
-```
-jupyter_auth_class: dummy  # or 'github'
-
-# For dummy auth:
-jupyter_dummy_password: !vault |...
-
-# For GitHub auth:
-github_client_id: !vault |...
-github_client_secret: !vault |...
-github_organization: your-org-name
-```
-
 #### Grafana Alerting
 
 Configure alert notifications via Slack or email:

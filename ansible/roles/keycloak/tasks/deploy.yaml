@@ -1,0 +1,172 @@
+---
+- name: Apply Keycloak CRD
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    src: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.4.2/kubernetes/keycloaks.k8s.keycloak.org-v1.yml
+
+- name: Apply Keycloak KeycloakRealmImport CRD
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    src: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.4.2/kubernetes/keycloakrealmimports.k8s.keycloak.org-v1.yml
+
+- name: Create Keycloak CR namespace
+  kubernetes.core.k8s:
+    name: '{{ keycloak_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Apply Keycloak Operator
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    src: https://raw.githubusercontent.com/keycloak/keycloak-k8s-resources/26.4.2/kubernetes/kubernetes.yml
+    namespace: '{{ keycloak_namespace }}'
+
+- name: Wait for Keycloak Operator to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: keycloak-operator
+    namespace: '{{ keycloak_namespace }}'
+    wait: true
+    wait_condition:
+      type: Progressing
+      status: 'True'
+      reason: NewReplicaSetAvailable
+    wait_timeout: 300
+
+- name: Initialize Keycloak database
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_db_with_owner
+  vars:
+    db_name: keycloak
+    db_owner: '{{ keycloak_postgres_user }}'
+    db_owner_pass: '{{ keycloak_postgres_password }}'
+
+- name: Create Keycloak DB secret
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: keycloak-db-secret
+      type: Opaque
+      stringData:
+        username: '{{ keycloak_postgres_user }}'
+        password: '{{ keycloak_postgres_password }}'
+
+- name: Create Keycloak Admin secret
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: keycloak-admin-secret
+      type: Opaque
+      stringData:
+        username: '{{ keycloak_bootstrap_admin_user }}'
+        password: '{{ keycloak_bootstrap_admin_password }}'
+
+- name: Create Keycloak CR
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: k8s.keycloak.org/v2alpha1
+      kind: Keycloak
+      metadata:
+        name: keycloak
+      spec:
+        instances: 1
+        image: '{{ keycloak_image_repository }}:{{ keycloak_image_tag }}'
+        bootstrapAdmin:
+          user:
+            secret: keycloak-admin-secret
+        db:
+          vendor: postgres
+          usernameSecret:
+            name: keycloak-db-secret
+            key: username
+          passwordSecret:
+            name: keycloak-db-secret
+            key: password
+          host: '{{ db_host }}'
+          database: keycloak
+          port: '{{ db_port}}'
+        http:
+          httpEnabled: true
+        hostname:
+          hostname: 'keycloak.{{ server_hostname }}'
+        ingress:
+          enabled: false
+        proxy:
+          headers: xforwarded
+        additionalOptions:
+          - name: metrics-enabled
+            value: 'true'
+          - name: event-metrics-user-enabled
+            value: 'true'
+          - name: event-metrics-user-tags
+            value: 'realm,idp,clientId'
+          - name: spi-events-listener-jboss-logging-success-level
+            value: info
+            # Hacky way to get an env variable into the Keycloak pod until the operator supports it natively
+          - name: scout-url
+            value: '{{ server_hostname }}'
+
+# The operator wants to use a subdomain and does not appear to support a path-based ingress
+- name: Create Keycloak Ingress
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: keycloak-ingress
+        namespace: '{{ keycloak_namespace }}'
+      spec:
+        ingressClassName: traefik
+        rules:
+          - host: 'keycloak.{{ server_hostname }}'
+            http:
+              paths:
+                - backend:
+                    service:
+                      name: keycloak-service
+                      port:
+                        name: http
+                  path: /
+                  pathType: Prefix
+
+- name: Wait for Keycloak to be ready
+  shell: >-
+    kubectl wait --for=condition=Ready --timeout=5m keycloak/keycloak -n {{ keycloak_namespace }}
+  register: keycloak_ready
+  changed_when: false
+  until: keycloak_ready is succeeded
+
+- name: Create Keycloak Config as a Secret
+  delegate_to: localhost
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: keycloak-config
+      data:
+        scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | b64encode }}"
+
+- name: Configure Keycloak with keycloak-config-cli
+  ansible.builtin.include_tasks: configure.yaml

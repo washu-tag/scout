@@ -33,7 +33,7 @@ superset_database: superset
 superset_analytics_dir: '{{ scout_repo_dir }}/analytics'
 
 # Scout logo path
-superset_logo_path: '{{ scout_repo_dir }}/explorer/public/scout.png'
+superset_logo_path: '{{ scout_repo_dir }}/launchpad/public/scout.png'
 
 # Resource configuration (dev defaults - CI friendly)
 superset_resources:

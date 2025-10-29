@@ -7,7 +7,7 @@ temporal_server_replica_count: 1
 # Resource configuration (dev defaults - CI friendly)
 temporal_resources:
   requests:
-    cpu: 250m
+    cpu: 100m
     memory: 1Gi
   limits:
     cpu: 2
@@ -15,3 +15,6 @@ temporal_resources:
 
 # Scheduled workflow configuration
 scheduled_ingest_hour: 6 # Alternatively, full schedule can be specified with scheduled_ingest_cron
+
+# OIDC configuration
+temporal_oidc_enabled: true

@@ -42,6 +42,15 @@
           export MINIO_ROOT_PASSWORD={{ s3_password }}
           export MINIO_REGION_NAME={{ s3_region }}
           export MINIO_REGION={{ s3_region }}
+          {% if minio_oidc_enabled %}
+          export MINIO_IDENTITY_OPENID_CONFIG_URL_PRIMARY_IAM="{{ keycloak_wellknown_url }}"
+          export MINIO_IDENTITY_OPENID_CLIENT_ID_PRIMARY_IAM="{{ keycloak_minio_client_id }}"
+          export MINIO_IDENTITY_OPENID_CLIENT_SECRET_PRIMARY_IAM="{{ keycloak_minio_client_secret }}"
+          export MINIO_IDENTITY_OPENID_DISPLAY_NAME_PRIMARY_IAM="Keycloak SSO"
+          export MINIO_IDENTITY_OPENID_SCOPES_PRIMARY_IAM="openid,microprofile-jwt"
+          export MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC_PRIMARY_IAM="on"
+          export MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC="on"
+          {% endif %}
 
 - name: Create MinIO user credential secrets
   kubernetes.core.k8s:

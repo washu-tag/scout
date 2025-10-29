@@ -23,5 +23,5 @@ cassandra_max_heap: 2G
 # Resource configuration (dev defaults - CI friendly)
 # Memory: requests = max_heap, limits = 2x max_heap to account for off-heap memory and OS cache
 # Memory is computed in tasks using jvm_memory_to_k8s filter (not computable here in defaults)
-cassandra_cpu_request: 250m
+cassandra_cpu_request: 100m
 cassandra_cpu_limit: 2

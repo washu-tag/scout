@@ -175,6 +175,47 @@ k3s_cluster:
     tls_key_path: ''
 
     #---------------------------------------------------------------------------
+    # OAuth2 Proxy
+    #---------------------------------------------------------------------------
+    oauth2_proxy_cookie_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    #---------------------------------------------------------------------------
+    # Keycloak
+    #---------------------------------------------------------------------------
+    keycloak_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # Keycloak admin console
+    keycloak_bootstrap_admin_user: admin
+    keycloak_bootstrap_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # IDP configuration (pick at least one)
+    keycloak_default_provider: github # 'github' or 'microsoft'
+    keycloak_gh_client_id: 'your-github-client'
+    keycloak_gh_client_secret: 'your-github-secret'
+    keycloak_microsoft_client_id: 'your-microsoft-client'
+    keycloak_microsoft_client_secret: 'your-microsoft-secret'
+    keycloak_microsoft_tenant_id: 'your-microsoft-tenant-id'
+    # Client secrets for Scout services
+    keycloak_oauth2_proxy_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    keycloak_superset_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    keycloak_jupyterhub_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    keycloak_grafana_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    keycloak_temporal_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    keycloak_minio_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    keycloak_launchpad_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # SMTP configuration (optional)
+    keycloak_smtp_host: ''
+    keycloak_smtp_port: ''
+    keycloak_smtp_from: ''
+    keycloak_smtp_from_display_name: ''
+    keycloak_smtp_auth: ''
+    keycloak_smtp_ssl: ''
+    keycloak_smtp_starttls: ''
+
+    #---------------------------------------------------------------------------
+    # Launchpad
+    #---------------------------------------------------------------------------
+    launchpad_nextauth_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+
+    #---------------------------------------------------------------------------
     # PostgreSQL
     #---------------------------------------------------------------------------
     postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)

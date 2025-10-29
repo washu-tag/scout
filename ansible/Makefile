@@ -1,6 +1,6 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
-    install-postgres install-lake install-analytics install-orchestrator install-extractor \
-    install-monitor install-jupyter install-explorer echo
+    install-postgres install-auth install-lake install-analytics install-orchestrator install-extractor \
+    install-monitor install-jupyter install-launchpad echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -55,6 +55,9 @@ setup-k3s: install-k3s config-traefik install-gpu-op
 install-postgres:
 	$(ANSIBLE_CMD) playbooks/postgres.yaml
 
+install-auth:
+	$(ANSIBLE_CMD) playbooks/auth.yaml
+
 install-lake:
 	$(ANSIBLE_CMD) playbooks/lake.yaml
 
@@ -73,8 +76,8 @@ install-jupyter:
 install-monitor:
 	$(ANSIBLE_CMD) playbooks/monitor.yaml
 
-install-explorer:
-	$(ANSIBLE_CMD) playbooks/explorer.yaml
+install-launchpad:
+	$(ANSIBLE_CMD) playbooks/launchpad.yaml
 
 # For tests
 install-orthanc:

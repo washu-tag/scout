@@ -1,0 +1,546 @@
+{
+    "enabled": true,
+    "realm": "{{ keycloak_realm_name }}",
+    "displayName": "{{ keycloak_realm_name | capitalize }}",
+    "eventsEnabled": true,
+    "adminEventsEnabled": true,
+    "adminEventsDetailsEnabled": true,
+    "emailTheme": "scout",
+    "eventsListeners": [
+      "user-approval-email",
+      "jboss-logging"
+    ],
+    "smtpServer": {
+      "debug": "{{ keycloak_smtp_debug }}",
+      "replyToDisplayName": "{{ keycloak_smtp_reply_to_display_name }}",
+      "starttls": "{{ keycloak_smtp_starttls }}",
+      "auth": "{{ keycloak_smtp_auth }}",
+      "port": "{{ keycloak_smtp_port }}",
+      "host": "{{ keycloak_smtp_host }}",
+      "replyTo": "{{ keycloak_smtp_reply_to }}",
+      "from": "{{ keycloak_smtp_from }}",
+      "fromDisplayName": "{{ keycloak_smtp_from_display_name }}",
+      "envelopeFrom": "{{ keycloak_smtp_envelope_from }}",
+      "ssl": "{{ keycloak_smtp_ssl }}"
+    },
+    "roles": {
+      "realm": [
+        {
+          "name": "scout-admin",
+          "description": "Scout Admin Role",
+          "composite": false,
+          "clientRole": false,
+          "attributes": {}
+        },
+        {
+          "name": "scout-user",
+          "description": "Scout User Role",
+          "composite": false,
+          "clientRole": false,
+          "attributes": {}
+        }
+      ],
+      "client": {
+        "{{ keycloak_jupyterhub_client_id }}": [
+          {
+            "name": "jupyterhub-admin",
+            "description": "Scout Admin Role for JupyterHub Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "jupyterhub-user",
+            "description": "Scout User Role for JupyterHub Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ],
+        "{{ keycloak_superset_client_id }}": [
+          {
+            "name": "superset_admin",
+            "description": "Superset Admin role",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "superset_alpha",
+            "description": "Superset Alpha role",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "superset_gamma",
+            "description": "Superset Gamma role",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "superset_sql_lab",
+            "description": "Superset sql_lab role",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ],
+        "{{ keycloak_grafana_client_id }}": [
+          {
+            "name": "grafana-admin",
+            "description": "Scout Admin Role for Grafana Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "grafana-editor",
+            "description": "Scout Editor Role for Grafana Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "grafana-viewer",
+            "description": "Scout Viewer Role for Grafana Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ],
+        "{{ keycloak_temporal_client_id }}": [
+          {
+            "name": "temporal-system:admin",
+            "description": "Scout Admin Role for Temporal System",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "default:admin",
+            "description": "Scout Admin Role for Temporal Default Namespace",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
+        ]
+      }
+    },
+    "groups": [
+      {
+        "name": "scout-admin",
+        "attributes": {
+          "policy": [
+            "consoleAdmin"
+          ]
+        },
+        "realmRoles": [
+          "scout-admin"
+        ],
+        "clientRoles": {
+          "{{ keycloak_jupyterhub_client_id }}": [
+            "jupyterhub-admin"
+          ],
+          "{{ keycloak_superset_client_id }}": [
+            "superset_admin"
+          ],
+          "{{ keycloak_grafana_client_id }}": [
+            "grafana-admin"
+          ],
+          "{{ keycloak_temporal_client_id }}": [
+            "temporal-system:admin",
+            "default:admin"
+          ],
+            "realm-management": [
+              "realm-admin"
+            ]
+        }
+      },
+      {
+        "name": "scout-user",
+        "realmRoles": [
+          "scout-user"
+        ],
+        "clientRoles": {
+          "{{ keycloak_jupyterhub_client_id }}": [
+            "jupyterhub-user"
+          ],
+          "{{ keycloak_superset_client_id }}": [
+            "superset_alpha",
+            "superset_sql_lab",
+          ]
+        }
+      }
+    ],
+    "clients": [
+      {
+        "name": "{{ keycloak_oauth2_proxy_client_id }}",
+        "description": "OAuth2 Proxy Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_oauth2_proxy_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_oauth2_proxy_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access",
+        ]
+      },
+      {
+        "name": "{{ keycloak_jupyterhub_client_id }}",
+        "description": "JupyterHub Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_jupyterhub_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_jupyterhub_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access",
+        ]
+      },
+      {
+        "name": "{{ keycloak_grafana_client_id }}",
+        "description": "Grafana Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_grafana_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_grafana_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access",
+        ]
+      },
+      {
+        "name": "{{ keycloak_temporal_client_id }}",
+        "description": "Temporal Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_temporal_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_temporal_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access",
+        ]
+      },
+      {
+        "name": "{{ keycloak_superset_client_id }}",
+        "description": "Superset Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_superset_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_superset_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access",
+        ]
+      },
+      {
+        "name": "{{ keycloak_minio_client_id }}",
+        "description": "Minio Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_minio_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_minio_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "minio-authorization",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access",
+        ]
+      },
+      {
+        "name": "{{ keycloak_launchpad_client_id }}",
+        "description": "Launchpad Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_launchpad_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_launchpad_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ]
+      }
+    ],
+    "identityProviders": [
+        {% if keycloak_gh_client_id is defined and keycloak_gh_client_id %}
+        {
+          "alias": "github",
+          "providerId": "github",
+          "displayName": "GitHub",
+          "enabled": true,
+          "trustEmail": true,
+          "config": {
+            "clientId": "{{ keycloak_gh_client_id }}",
+            "clientSecret": "{{ keycloak_gh_client_secret }}",
+          }
+        },
+        {% endif %}
+        {% if keycloak_microsoft_client_id is defined and keycloak_microsoft_client_id %}
+        {
+          "alias": "microsoft",
+          "providerId": "microsoft",
+          "displayName": "Microsoft",
+          "enabled": true,
+          "trustEmail": true,
+          "config": {
+            "clientId": "{{ keycloak_microsoft_client_id }}",
+            "clientSecret": "{{ keycloak_microsoft_client_secret }}",
+            "tenantId": "{{ keycloak_microsoft_tenant_id }}",
+          }
+        },
+        {% endif %}
+    ],
+    "authenticationFlows": [
+      {
+        "alias": "browser",
+        "description": "Browser based authentication",
+        "providerId": "basic-flow",
+        "topLevel": true,
+        "builtIn": true,
+        "authenticationExecutions": [
+          {
+            "authenticator": "auth-cookie",
+            "authenticatorFlow": false,
+            "requirement": "ALTERNATIVE",
+            "priority": 10,
+            "autheticatorFlow": false,
+            "userSetupAllowed": false
+          },
+          {
+            "authenticator": "auth-spnego",
+            "authenticatorFlow": false,
+            "requirement": "DISABLED",
+            "priority": 20,
+            "autheticatorFlow": false,
+            "userSetupAllowed": false
+          },
+          {
+            "authenticatorConfig": "default-provider",
+            "authenticator": "identity-provider-redirector",
+            "authenticatorFlow": false,
+            "requirement": "ALTERNATIVE",
+            "priority": 25,
+            "autheticatorFlow": false,
+            "userSetupAllowed": false
+          },
+          {
+            "authenticatorFlow": true,
+            "requirement": "ALTERNATIVE",
+            "priority": 26,
+            "autheticatorFlow": true,
+            "flowAlias": "Organization",
+            "userSetupAllowed": false
+          },
+          {
+            "authenticatorFlow": true,
+            "requirement": "ALTERNATIVE",
+            "priority": 30,
+            "autheticatorFlow": true,
+            "flowAlias": "forms",
+            "userSetupAllowed": false
+          }
+        ]
+      }
+    ],
+    "authenticatorConfig": [
+      {
+        "alias": "default-provider",
+        "config": {
+          "defaultProvider": "{{ keycloak_default_provider }}"
+        }
+      }
+    ],
+    "clientScopes": [
+      {
+        "name": "minio-authorization",
+        "description": "Minio Authorization Scope",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "true",
+          "display.on.consent.screen": "true",
+        },
+        "protocolMappers": [
+          {
+            "name": "minio-policy-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-attribute-mapper",
+            "consentRequired": false,
+            "config": {
+              "aggregate.attrs": "true",
+              "introspection.token.claim": "true",
+              "multivalued": "true",
+              "userinfo.token.claim": "true",
+              "user.attribute": "policy",
+              "id.token.claim": "true",
+              "lightweight.claim": "false",
+              "access.token.claim": "true",
+              "claim.name": "policy",
+              "jsonType.label": "String"
+            }
+          }
+        ]
+      },
+      {
+        "name": "microprofile-jwt",
+        "description": "Microprofile - JWT built-in scope",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "true",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "client roles",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-client-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "introspection.token.claim": "true",
+              "multivalued": "true",
+              "userinfo.token.claim": "true",
+              "user.attribute": "foo",
+              "lightweight.claim": "false",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "claim.name": "groups",
+              "jsonType.label": "String"
+            }
+          },
+          {
+            "name": "upn",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-attribute-mapper",
+            "consentRequired": false,
+            "config": {
+              "introspection.token.claim": "true",
+              "userinfo.token.claim": "true",
+              "user.attribute": "username",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "claim.name": "upn",
+              "jsonType.label": "String"
+            }
+          },
+          {
+            "name": "groups",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-realm-role-mapper",
+            "consentRequired": false,
+            "config": {
+              "introspection.token.claim": "true",
+              "multivalued": "true",
+              "user.attribute": "foo",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "claim.name": "groups",
+              "jsonType.label": "String"
+            }
+          }
+        ]
+      }
+    ]
+  }

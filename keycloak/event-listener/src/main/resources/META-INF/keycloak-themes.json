@@ -1,0 +1,8 @@
+{
+  "themes": [
+    {
+      "name": "scout",
+      "types": ["email"]
+    }
+  ]
+}

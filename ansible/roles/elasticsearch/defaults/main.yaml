@@ -26,5 +26,5 @@ elasticsearch_max_heap: 512M
 # Resource configuration (dev defaults - CI friendly)
 # Memory: requests = 2x heap (guarantees minimum per Elastic guidelines), limits = 4x heap (allows burst)
 # Memory is computed in tasks using jvm_memory_to_k8s filter (not computable here in defaults)
-elasticsearch_cpu_request: 250m
+elasticsearch_cpu_request: 100m
 elasticsearch_cpu_limit: 2
