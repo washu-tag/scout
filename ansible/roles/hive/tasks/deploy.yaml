@@ -7,17 +7,30 @@
     db_owner: '{{ hive_postgres_user }}'
     db_owner_pass: '{{ hive_postgres_password }}'
 
-- name: Deploy Hive Metastore Service
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: deploy_helm_chart
+# Deploy write metastore (for Trino, data ingestion)
+- name: Deploy write metastore
+  ansible.builtin.include_tasks: deploy_metastore.yaml
   vars:
-    helm_chart_name: hive-metastore
-    helm_chart_ref: '{{ scout_repo_dir }}/helm/lake/hive-metastore'
-    helm_chart_namespace: '{{ hive_namespace }}'
-    helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+    hive_deployment_name: '{{ hive_metastore_instance }}'
+    hive_template_vars:
+      hive_fullname_override: '{{ hive_metastore_instance }}'
+      hive_metastore_db_user: '{{ hive_postgres_user }}'
+      hive_metastore_db_password: '{{ hive_postgres_password }}'
+      hive_s3_access_key: '{{ s3_lake_writer }}'
+      hive_s3_secret_key: '{{ s3_lake_writer_secret }}'
 
-- name: Wait for Hive to be ready
-  command: 'kubectl -n {{ hive_namespace }} wait --for=condition=Available --timeout=300s deployments/hive-metastore'
-  register: hive_ready
-  changed_when: false
+# Create readonly PostgreSQL user for readonly metastore
+- name: Setup readonly PostgreSQL user
+  ansible.builtin.include_tasks: create_readonly_user.yaml
+
+# Deploy readonly metastore (for Jupyter/PySpark)
+- name: Deploy readonly metastore
+  ansible.builtin.include_tasks: deploy_metastore.yaml
+  vars:
+    hive_deployment_name: '{{ hive_metastore_instance_readonly }}'
+    hive_template_vars:
+      hive_fullname_override: '{{ hive_metastore_instance_readonly }}'
+      hive_metastore_db_user: '{{ hive_readonly_postgres_user }}'
+      hive_metastore_db_password: '{{ hive_readonly_postgres_password }}'
+      hive_s3_access_key: '{{ s3_lake_reader }}'
+      hive_s3_secret_key: '{{ s3_lake_reader_secret }}'
