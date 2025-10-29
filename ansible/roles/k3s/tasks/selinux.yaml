@@ -13,7 +13,9 @@
   when: not k3s_selinux_enabled | bool
 
 - name: Install SELinux RPMs from artifacts
-  ansible.builtin.include_tasks: install_rpms_from_artifacts.yaml
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: install_rpms_from_artifacts
   vars:
     rpm_artifact_dir: '{{ k3s_selinux_artifact_dir }}'
     rpm_staging_dir: '{{ k3s_selinux_rpm_staging_dir }}'

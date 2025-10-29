@@ -1,0 +1,73 @@
+---
+# Generic Package Installation - Online and Air-Gapped Modes
+# High-level wrapper that handles package installation for both online and air-gapped environments
+#
+# Required parameters:
+#   - package_names: List of package names to install (e.g., ["python3-kubernetes"])
+#   - package_type: Description for logging (e.g., "Python", "SELinux", "GPU")
+#
+# Required for air-gapped mode:
+#   - download_script: Bash script to download packages in Rocky Linux container
+#   - artifact_temp_dir: Path to temp directory on control node for storing downloaded RPMs
+#
+# Optional parameters:
+#   - staging_dir: Where to stage RPMs on target nodes (default: /tmp/{{ package_type | lower }}-rpms)
+#   - verify_command: Command to verify installation (optional)
+#   - online_repo_setup: List of tasks for online mode repo setup (optional)
+
+- name: Display package installation mode
+  ansible.builtin.debug:
+    msg: "Installing {{ package_type }} packages via {{ 'downloaded RPMs (air-gapped)' if air_gapped | default(false) | bool else 'system package manager (online)' }}"
+
+################################################################################
+# Online Mode: Install directly via package manager
+################################################################################
+
+- name: Install packages (online mode)
+  when: not (air_gapped | default(false) | bool)
+  block:
+    - name: Run online repository setup tasks
+      ansible.builtin.include_tasks: '{{ online_repo_setup }}'
+      when: online_repo_setup is defined
+
+    - name: Install {{ package_type }} packages from system package manager
+      ansible.builtin.package:
+        name: '{{ package_names }}'
+        state: present
+
+################################################################################
+# Air-Gapped Mode: Download via K8s Job, then install from RPMs
+################################################################################
+
+- name: Install packages (air-gapped mode)
+  when: air_gapped | default(false) | bool
+  block:
+    - name: Generate unique Job name and staging directory with timestamp
+      ansible.builtin.set_fact:
+        rpm_job_name: '{{ package_type | lower }}-downloader-{{ ansible_date_time.epoch }}'
+        rpm_staging_dir: '/tmp/{{ package_type | lower }}-rpms-{{ ansible_date_time.epoch }}'
+        rpm_package_type: '{{ package_type }}'
+        rpm_download_script: '{{ download_script }}'
+        rpm_artifact_dir: '{{ artifact_temp_dir }}'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Download {{ package_type }} packages via Kubernetes Job
+      ansible.builtin.include_tasks: download_rpms_via_job.yaml
+      delegate_to: localhost
+      run_once: true
+
+    - name: Install {{ package_type }} packages from downloaded RPMs
+      ansible.builtin.include_tasks: install_rpms_from_artifacts.yaml
+      vars:
+        rpm_staging_dir: '{{ staging_dir | default("/tmp/" + package_type | lower + "-rpms") }}'
+
+################################################################################
+# Verification (Optional)
+################################################################################
+
+- name: Verify {{ package_type }} package installation
+  ansible.builtin.command: '{{ verify_command }}'
+  register: package_verify_result
+  changed_when: false
+  when: verify_command is defined
