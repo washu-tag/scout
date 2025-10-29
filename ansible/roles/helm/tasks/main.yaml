@@ -19,6 +19,7 @@
   ansible.builtin.command:
     cmd: '{{ helm_script_dir }}/get-helm-3.sh'
     creates: /usr/local/bin/helm
+  become: true
   environment:
     DESIRED_VERSION: '{{ helm_version }}'
 
