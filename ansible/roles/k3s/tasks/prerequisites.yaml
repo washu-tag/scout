@@ -32,6 +32,3 @@
   when:
     - not (air_gapped | default(false) | bool)
     - not (k3s_install_script_stat.stat.exists | default(false))
-
-- name: Install python kubernetes library
-  ansible.builtin.include_tasks: python_packages.yaml

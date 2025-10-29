@@ -58,14 +58,6 @@
       run_once: true
       when: groups['gpu_workers'] | default([]) | length > 0
 
-    - name: Create temporary directory for Python RPMs
-      ansible.builtin.tempfile:
-        state: directory
-        prefix: 'k3s_python_'
-      register: k3s_python_temp_dir
-      delegate_to: localhost
-      run_once: true
-
     - name: Download k3s binary
       ansible.builtin.get_url:
         url: '{{ k3s_binary_base_url }}/{{ k3s_version }}/k3s'
@@ -160,33 +152,6 @@
         rpm_artifact_dir: '{{ k3s_gpu_temp_dir.path }}'
       when: groups['gpu_workers'] | default([]) | length > 0
 
-    - name: Download Python packages using Kubernetes Job
-      ansible.builtin.include_role:
-        name: scout_common
-        tasks_from: download_rpms_via_job
-      vars:
-        rpm_job_name: 'k3s-python-downloader-{{ ansible_date_time.epoch }}'
-        rpm_staging_dir: '/tmp/k3s-python-rpms-{{ ansible_date_time.epoch }}'
-        rpm_package_type: 'Python'
-        rpm_download_script: |
-          set -e
-          set -x
-          echo "Installing dnf-plugins-core for dnf download..."
-          dnf install -y dnf-plugins-core
-          echo "Downloading python3-kubernetes and ALL dependencies..."
-          mkdir -p /downloads
-          dnf download --resolve --destdir=/downloads python3-kubernetes
-          echo "All downloaded packages (including dependencies):"
-          ls -lh /downloads/
-          rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
-          echo "Package count: $rpm_count"
-          if [ "$rpm_count" -eq 0 ]; then
-            echo "ERROR: No RPM files were downloaded!"
-            exit 1
-          fi
-          echo "Download completed successfully with $rpm_count packages"
-        rpm_artifact_dir: '{{ k3s_python_temp_dir.path }}'
-
     - name: Verify k3s binary was downloaded
       ansible.builtin.stat:
         path: '{{ k3s_temp_dir.path }}/k3s'
@@ -245,27 +210,11 @@
             msg: 'No GPU RPM files found in {{ k3s_gpu_temp_dir.path }}'
           when: gpu_rpm_files.files | length == 0
 
-    - name: Verify Python RPMs were downloaded
-      delegate_to: localhost
-      run_once: true
-      block:
-        - name: Find Python RPM files
-          ansible.builtin.find:
-            paths: '{{ k3s_python_temp_dir.path }}'
-            patterns: 'python3-kubernetes*.rpm'
-          register: python_rpm_files
-
-        - name: Fail if no Python RPMs found
-          ansible.builtin.fail:
-            msg: 'No Python RPM files found in {{ k3s_python_temp_dir.path }}'
-          when: python_rpm_files.files | length == 0
-
     - name: Set facts with temp directory paths
       ansible.builtin.set_fact:
         k3s_artifact_temp_dir: '{{ k3s_temp_dir.path }}'
         k3s_selinux_artifact_dir: '{{ k3s_selinux_temp_dir.path | default("") }}'
         k3s_gpu_artifact_dir: '{{ k3s_gpu_temp_dir.path | default("") }}'
-        k3s_python_artifact_dir: '{{ k3s_python_temp_dir.path }}'
       # Note: NO delegate_facts, NO delegate_to
       # This allows the facts to be shared with all hosts
 

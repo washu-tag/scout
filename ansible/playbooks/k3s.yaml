@@ -9,6 +9,29 @@
 #   - Role details: ansible/roles/k3s/README.md
 
 ################################################################################
+# Phase 1: Install Python on Staging Node (Air-gapped mode only)
+################################################################################
+
+- name: Install Python kubernetes library on staging node
+  hosts: staging
+  roles:
+    - python-kubernetes
+  when: air_gapped | default(false) | bool
+
+################################################################################
+# Phase 2: Install Python on Cluster Nodes (Online mode only)
+################################################################################
+
+- name: Install Python kubernetes library on cluster nodes (online mode)
+  hosts: k3s_cluster
+  roles:
+    - python-kubernetes
+  when: not (air_gapped | default(false) | bool)
+
+################################################################################
+# Phase 3: Install k3s cluster
+################################################################################
+
 - name: Install k3s cluster
   hosts: k3s_cluster
   roles:
@@ -16,3 +39,13 @@
     - k3s
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
+
+################################################################################
+# Phase 4: Install Python on Cluster Nodes (Air-gapped mode only)
+################################################################################
+
+- name: Install Python kubernetes library on cluster nodes (air-gapped mode)
+  hosts: k3s_cluster
+  roles:
+    - python-kubernetes
+  when: air_gapped | default(false) | bool
