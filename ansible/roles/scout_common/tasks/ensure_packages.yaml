@@ -58,10 +58,9 @@
         prefix: '{{ package_type | lower }}_staging_'
       register: target_node_staging_dir
 
-    - name: Generate unique Job name and staging cluster temp directory
+    - name: Set variables for download job
       ansible.builtin.set_fact:
         rpm_job_name: '{{ package_type | lower }}-downloader-{{ ansible_date_time.epoch }}'
-        staging_cluster_temp_dir: '/tmp/{{ package_type | lower }}-rpms-{{ ansible_date_time.epoch }}'
         rpm_package_type: '{{ package_type }}'
         rpm_download_script: '{{ download_script }}'
         control_node_rpm_archive_dir: '{{ control_node_artifact_dir.path }}'
@@ -71,7 +70,6 @@
     - name: Download {{ package_type }} packages via Kubernetes Job
       ansible.builtin.include_tasks: download_rpms_via_job.yaml
       vars:
-        rpm_staging_dir: '{{ staging_cluster_temp_dir }}'
         rpm_artifact_dir: '{{ control_node_rpm_archive_dir }}'
 
     - name: Install {{ package_type }} packages from downloaded RPMs

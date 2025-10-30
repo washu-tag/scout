@@ -4,15 +4,29 @@
 # and ALL their dependencies. All dependency RPMs are included to ensure
 # air-gapped installation can succeed without external repository access.
 # Only runs in air-gapped mode
+# Manages its own temporary directory on the staging cluster node.
 #
 # Required parameters:
 #   - rpm_job_name: Unique name for the Kubernetes Job
-#   - rpm_staging_dir: Temporary directory path on staging node
 #   - rpm_download_script: Bash script to run in init container for downloading
 #   - rpm_package_type: Description of package type (e.g., "SELinux", "GPU")
 #   - rpm_artifact_dir: Directory path on control node to store downloaded RPMs
 
 - block:
+    - name: Create temporary directory on staging cluster node
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: '{{ rpm_package_type | lower }}_staging_cluster_'
+      register: staging_cluster_temp_dir
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+
+    - name: Set staging directory path for use in tasks
+      ansible.builtin.set_fact:
+        rpm_staging_dir: '{{ staging_cluster_temp_dir.path }}'
+      delegate_to: localhost
+      run_once: true
+
     - name: Create Kubernetes Job manifest for RPM package download
       ansible.builtin.set_fact:
         rpm_downloader_job:
@@ -130,14 +144,6 @@
       ansible.builtin.debug:
         msg: 'Extracting RPMs from Pod: {{ rpm_downloader_pod }}'
       delegate_to: localhost
-      run_once: true
-
-    - name: Create staging directory on staging node
-      ansible.builtin.file:
-        path: '{{ rpm_staging_dir }}'
-        state: directory
-        mode: '0755'
-      delegate_to: "{{ groups['staging'][0] }}"
       run_once: true
 
     - name: Copy RPM archive from sleeper container to staging node
