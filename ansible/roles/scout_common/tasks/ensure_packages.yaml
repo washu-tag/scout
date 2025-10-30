@@ -65,7 +65,7 @@
 ################################################################################
 
 - name: Verify {{ package_type }} package installation
-  ansible.builtin.command: '{{ verify_command }}'
+  ansible.builtin.shell: '{{ verify_command }}'
   register: package_verify_result
   changed_when: false
   when: verify_command is defined
