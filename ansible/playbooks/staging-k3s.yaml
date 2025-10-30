@@ -4,10 +4,6 @@
 #
 # Documentation: docs/source/technical/air-gapped.md
 
-################################################################################
-# Install Python kubernetes library first (required for kubernetes.core modules)
-################################################################################
-
 - name: Install Python kubernetes library on staging node
   hosts: staging
   roles:
@@ -15,10 +11,6 @@
   vars:
     # Staging node has internet access, use online installation mode
     air_gapped: false
-
-################################################################################
-# Install K3s
-################################################################################
 
 - name: Install k3s on staging node
   hosts: staging
