@@ -8,7 +8,7 @@
     msg: "Installing python3-kubernetes via {{ 'downloaded RPMs (air-gapped)' if air_gapped | default(false) | bool else 'system package manager (online)' }}"
 
 ################################################################################
-# Air-Gapped Mode: Download and install if artifact_dir not provided
+# Air-Gapped Mode: Create temporary directory for package downloads
 ################################################################################
 
 - name: Create temporary directory for Python RPMs (air-gapped mode)
@@ -18,13 +18,6 @@
   register: python_temp_dir
   delegate_to: localhost
   run_once: true
-  when:
-    - air_gapped | default(false) | bool
-    - python_kubernetes_artifact_dir is not defined
-
-- name: Set artifact directory fact
-  ansible.builtin.set_fact:
-    python_kubernetes_artifact_dir: '{{ python_temp_dir.path if python_temp_dir is defined else python_kubernetes_artifact_dir }}'
   when: air_gapped | default(false) | bool
 
 ################################################################################
@@ -58,7 +51,7 @@
         exit 1
       fi
       echo "Download completed successfully with $rpm_count packages"
-    artifact_temp_dir: '{{ python_kubernetes_artifact_dir | default(omit) }}'
+    artifact_temp_dir: '{{ python_temp_dir.path }}'
     staging_dir: '{{ python_kubernetes_rpm_staging_dir }}'
     verify_command: python3 -c "import kubernetes; print(kubernetes.__version__)"
 
