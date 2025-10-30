@@ -40,24 +40,6 @@
       delegate_to: localhost
       run_once: true
 
-    - name: Create temporary directory for SELinux RPMs
-      ansible.builtin.tempfile:
-        state: directory
-        prefix: 'k3s_selinux_'
-      register: k3s_selinux_temp_dir
-      delegate_to: localhost
-      run_once: true
-      when: k3s_selinux_enabled | bool
-
-    - name: Create temporary directory for GPU RPMs
-      ansible.builtin.tempfile:
-        state: directory
-        prefix: 'k3s_gpu_'
-      register: k3s_gpu_temp_dir
-      delegate_to: localhost
-      run_once: true
-      when: groups['gpu_workers'] | default([]) | length > 0
-
     - name: Download k3s binary
       ansible.builtin.get_url:
         url: '{{ k3s_binary_base_url }}/{{ k3s_version }}/k3s'
@@ -105,8 +87,6 @@
     - name: Set facts with temp directory paths
       ansible.builtin.set_fact:
         k3s_artifact_temp_dir: '{{ k3s_temp_dir.path }}'
-        k3s_selinux_artifact_dir: '{{ k3s_selinux_temp_dir.path | default("") }}'
-        k3s_gpu_artifact_dir: '{{ k3s_gpu_temp_dir.path | default("") }}'
       # Note: NO delegate_facts, NO delegate_to
       # This allows the facts to be shared with all hosts
 
