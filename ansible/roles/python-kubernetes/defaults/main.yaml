@@ -1,5 +1,3 @@
 ---
 # Python Kubernetes Library Role Defaults
-
-# Installation staging directory on target nodes
-python_kubernetes_rpm_staging_dir: /tmp/python-kubernetes-rpms
+# (No defaults currently defined - all directories created dynamically)

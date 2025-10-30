@@ -27,6 +27,12 @@
       run_once: true
       when: air_gapped | default(false) | bool
 
+    - name: Create temporary staging directory on target nodes
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: 'k3s_gpu_staging_'
+      register: k3s_gpu_staging_dir
+
     - name: Install NVIDIA container toolkit packages
       ansible.builtin.include_role:
         name: scout_common
@@ -64,7 +70,7 @@
           fi
           echo "Download completed successfully with $rpm_count packages"
         artifact_temp_dir: '{{ k3s_gpu_temp_dir.path }}'
-        staging_dir: '{{ k3s_gpu_rpm_staging_dir }}'
+        staging_dir: '{{ k3s_gpu_staging_dir.path }}'
         verify_command: 'nvidia-ctk --version'
         online_repo_setup_tasks:
           - name: Add NVIDIA container toolkit repository
@@ -74,6 +80,14 @@
               mode: '0644'
 
   always:
+    - name: Clean up staging directory on target nodes
+      ansible.builtin.file:
+        path: '{{ k3s_gpu_staging_dir.path }}'
+        state: absent
+      when:
+        - k3s_gpu_staging_dir is defined
+        - k3s_gpu_staging_dir.path is defined
+
     - name: Clean up GPU artifact temporary directory
       ansible.builtin.file:
         path: '{{ k3s_gpu_temp_dir.path }}'

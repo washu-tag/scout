@@ -24,6 +24,12 @@
       run_once: true
       when: air_gapped | default(false) | bool
 
+    - name: Create temporary staging directory on target nodes
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: 'k3s_selinux_staging_'
+      register: k3s_selinux_staging_dir
+
     - name: Install k3s SELinux packages
       ansible.builtin.include_role:
         name: scout_common
@@ -62,10 +68,18 @@
           fi
           echo "Download completed successfully with $rpm_count packages"
         artifact_temp_dir: '{{ k3s_selinux_temp_dir.path }}'
-        staging_dir: '{{ k3s_selinux_rpm_staging_dir }}'
+        staging_dir: '{{ k3s_selinux_staging_dir.path }}'
         verify_command: 'semodule -l | grep -q "^k3s"'
 
   always:
+    - name: Clean up staging directory on target nodes
+      ansible.builtin.file:
+        path: '{{ k3s_selinux_staging_dir.path }}'
+        state: absent
+      when:
+        - k3s_selinux_staging_dir is defined
+        - k3s_selinux_staging_dir.path is defined
+
     - name: Clean up SELinux artifact temporary directory
       ansible.builtin.file:
         path: '{{ k3s_selinux_temp_dir.path }}'

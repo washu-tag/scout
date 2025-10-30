@@ -68,15 +68,11 @@ k3s_selinux_channel: stable
 # Rancher RPM repository site
 k3s_selinux_rpm_site: rpm.rancher.io
 
-# Where to stage SELinux RPMs on target nodes (temporary directory)
-k3s_selinux_rpm_staging_dir: /tmp/k3s-selinux-rpms
-
 ################################################################################
 # GPU Configuration
 ################################################################################
 
-# Where to stage GPU RPMs on target nodes (temporary directory)
-k3s_gpu_rpm_staging_dir: /tmp/k3s-gpu-rpms
+# (GPU configuration variables - staging directories created dynamically)
 
 ################################################################################
 # Kubernetes Job Configuration (for package downloads in air-gapped mode)
