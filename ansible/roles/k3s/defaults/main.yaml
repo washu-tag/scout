@@ -69,12 +69,6 @@ k3s_selinux_channel: stable
 k3s_selinux_rpm_site: rpm.rancher.io
 
 ################################################################################
-# GPU Configuration
-################################################################################
-
-# (GPU configuration variables - staging directories created dynamically)
-
-################################################################################
 # Kubernetes Job Configuration (for package downloads in air-gapped mode)
 ################################################################################
 

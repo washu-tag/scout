@@ -13,9 +13,6 @@
 # Optional parameters:
 #   - verify_command: Command to verify installation (optional)
 #   - online_repo_setup: List of tasks for online mode repo setup (optional)
-#
-# Note: This task creates and manages all temp directories internally. Callers do not need to
-# create or pass any temp directory parameters.
 
 - name: Display package installation mode
   ansible.builtin.debug:
