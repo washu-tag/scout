@@ -11,73 +11,34 @@
 # Air-Gapped Mode: Create temporary directory for package downloads
 ################################################################################
 
-- name: Install and verify Python packages
-  block:
-    - name: Create temporary directory for Python RPMs (air-gapped mode)
-      ansible.builtin.tempfile:
-        state: directory
-        prefix: 'python_kubernetes_'
-      register: python_temp_dir
-      delegate_to: localhost
-      run_once: true
-      when: air_gapped | default(false) | bool
-
-    - name: Create temporary staging directory on target nodes
-      ansible.builtin.tempfile:
-        state: directory
-        prefix: 'python_kubernetes_staging_'
-      register: python_staging_dir
-
-    - name: Ensure python3-kubernetes is installed
-      ansible.builtin.include_role:
-        name: scout_common
-        tasks_from: ensure_packages
-      vars:
-        package_names:
-          - python3-kubernetes
-        package_type: 'Python'
-        download_script: |
-          set -e
-          set -x
-          echo "Installing dnf-plugins-core for dnf download..."
-          dnf install -y dnf-plugins-core
-          echo "Installing EPEL repository..."
-          dnf install -y epel-release
-          echo "Downloading python3-kubernetes and ALL dependencies..."
-          mkdir -p /downloads
-          dnf download --resolve --destdir=/downloads python3-kubernetes
-          echo "All downloaded packages (including dependencies):"
-          ls -lh /downloads/
-          rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
-          echo "Package count: $rpm_count"
-          if [ "$rpm_count" -eq 0 ]; then
-            echo "ERROR: No RPM files were downloaded!"
-            exit 1
-          fi
-          echo "Download completed successfully with $rpm_count packages"
-        artifact_temp_dir: '{{ python_temp_dir.path }}'
-        staging_dir: '{{ python_staging_dir.path }}'
-        verify_command: python3 -c "import kubernetes; print(kubernetes.__version__)"
-
-  always:
-    - name: Clean up staging directory on target nodes
-      ansible.builtin.file:
-        path: '{{ python_staging_dir.path }}'
-        state: absent
-      when:
-        - python_staging_dir is defined
-        - python_staging_dir.path is defined
-
-    - name: Clean up temporary Python artifacts directory
-      ansible.builtin.file:
-        path: '{{ python_temp_dir.path }}'
-        state: absent
-      delegate_to: localhost
-      run_once: true
-      when:
-        - air_gapped | default(false) | bool
-        - python_temp_dir is defined
-        - python_temp_dir.path is defined
+- name: Ensure python3-kubernetes is installed
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: ensure_packages
+  vars:
+    package_names:
+      - python3-kubernetes
+    package_type: 'Python'
+    download_script: |
+      set -e
+      set -x
+      echo "Installing dnf-plugins-core for dnf download..."
+      dnf install -y dnf-plugins-core
+      echo "Installing EPEL repository..."
+      dnf install -y epel-release
+      echo "Downloading python3-kubernetes and ALL dependencies..."
+      mkdir -p /downloads
+      dnf download --resolve --destdir=/downloads python3-kubernetes
+      echo "All downloaded packages (including dependencies):"
+      ls -lh /downloads/
+      rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
+      echo "Package count: $rpm_count"
+      if [ "$rpm_count" -eq 0 ]; then
+        echo "ERROR: No RPM files were downloaded!"
+        exit 1
+      fi
+      echo "Download completed successfully with $rpm_count packages"
+    verify_command: python3 -c "import kubernetes; print(kubernetes.__version__)"
 
 ################################################################################
 # Display results

@@ -1,6 +1,7 @@
 ---
 # Generic Package Installation - Online and Air-Gapped Modes
 # High-level wrapper that handles package installation for both online and air-gapped environments
+# Automatically creates and cleans up all temporary directories required for package staging
 #
 # Required parameters:
 #   - package_names: List of package names to install (e.g., ["python3-kubernetes"])
@@ -8,12 +9,13 @@
 #
 # Required for air-gapped mode:
 #   - download_script: Bash script to download packages in Rocky Linux container
-#   - artifact_temp_dir: Path to temp directory on control node for storing downloaded RPMs
 #
 # Optional parameters:
-#   - staging_dir: Where to stage RPMs on target nodes (default: /tmp/{{ package_type | lower }}-rpms)
 #   - verify_command: Command to verify installation (optional)
 #   - online_repo_setup: List of tasks for online mode repo setup (optional)
+#
+# Note: This task creates and manages all temp directories internally. Callers do not need to
+# create or pass any temp directory parameters.
 
 - name: Display package installation mode
   ansible.builtin.debug:
@@ -42,23 +44,60 @@
 - name: Install packages (air-gapped mode)
   when: air_gapped | default(false) | bool
   block:
-    - name: Generate unique Job name and staging directory with timestamp
+    - name: Create temp directory on control node for RPM artifacts
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: '{{ package_type | lower }}_artifacts_'
+      register: control_node_artifact_dir
+      delegate_to: localhost
+      run_once: true
+
+    - name: Create temp directory on target nodes for RPM staging
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: '{{ package_type | lower }}_staging_'
+      register: target_node_staging_dir
+
+    - name: Generate unique Job name and staging cluster temp directory
       ansible.builtin.set_fact:
         rpm_job_name: '{{ package_type | lower }}-downloader-{{ ansible_date_time.epoch }}'
-        rpm_staging_dir: '/tmp/{{ package_type | lower }}-rpms-{{ ansible_date_time.epoch }}'
+        staging_cluster_temp_dir: '/tmp/{{ package_type | lower }}-rpms-{{ ansible_date_time.epoch }}'
         rpm_package_type: '{{ package_type }}'
         rpm_download_script: '{{ download_script }}'
-        rpm_artifact_dir: '{{ artifact_temp_dir }}'
+        control_node_rpm_archive_dir: '{{ control_node_artifact_dir.path }}'
       delegate_to: localhost
       run_once: true
 
     - name: Download {{ package_type }} packages via Kubernetes Job
       ansible.builtin.include_tasks: download_rpms_via_job.yaml
+      vars:
+        rpm_staging_dir: '{{ staging_cluster_temp_dir }}'
+        rpm_artifact_dir: '{{ control_node_rpm_archive_dir }}'
 
     - name: Install {{ package_type }} packages from downloaded RPMs
       ansible.builtin.include_tasks: install_rpms_from_artifacts.yaml
       vars:
-        rpm_staging_dir: '{{ staging_dir | default("/tmp/" + package_type | lower + "-rpms") }}'
+        rpm_staging_dir: '{{ target_node_staging_dir.path }}'
+        rpm_artifact_dir: '{{ control_node_rpm_archive_dir }}'
+
+  always:
+    - name: Clean up target node staging directory
+      ansible.builtin.file:
+        path: '{{ target_node_staging_dir.path }}'
+        state: absent
+      when:
+        - target_node_staging_dir is defined
+        - target_node_staging_dir.path is defined
+
+    - name: Clean up control node artifact directory
+      ansible.builtin.file:
+        path: '{{ control_node_artifact_dir.path }}'
+        state: absent
+      delegate_to: localhost
+      run_once: true
+      when:
+        - control_node_artifact_dir is defined
+        - control_node_artifact_dir.path is defined
 
 ################################################################################
 # Verification (Optional)

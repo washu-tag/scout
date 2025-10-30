@@ -16,85 +16,46 @@
       default-runtime: nvidia
     mode: '0644'
 
-- name: Install and verify GPU packages
-  block:
-    - name: Create temporary directory for GPU RPMs (air-gapped mode)
-      ansible.builtin.tempfile:
-        state: directory
-        prefix: 'k3s_gpu_'
-      register: k3s_gpu_temp_dir
-      delegate_to: localhost
-      run_once: true
-      when: air_gapped | default(false) | bool
-
-    - name: Create temporary staging directory on target nodes
-      ansible.builtin.tempfile:
-        state: directory
-        prefix: 'k3s_gpu_staging_'
-      register: k3s_gpu_staging_dir
-
-    - name: Install NVIDIA container toolkit packages
-      ansible.builtin.include_role:
-        name: scout_common
-        tasks_from: ensure_packages
-      vars:
-        package_names:
-          - nvidia-container-toolkit
-          - nvidia-container-toolkit-base
-          - libnvidia-container-tools
-          - libnvidia-container1
-        package_type: 'GPU'
-        download_script: |
-          set -e
-          set -x
-          echo "Installing dnf-plugins-core for dnf download..."
-          dnf install -y dnf-plugins-core
-          echo "Adding NVIDIA container toolkit repository..."
-          dnf config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
-          echo "Repository configuration:"
-          cat /etc/yum.repos.d/nvidia-container-toolkit.repo
-          echo "Downloading NVIDIA container toolkit packages and ALL dependencies..."
-          mkdir -p /downloads
-          dnf download --resolve --destdir=/downloads \
-            nvidia-container-toolkit \
-            nvidia-container-toolkit-base \
-            libnvidia-container-tools \
-            libnvidia-container1
-          echo "All downloaded packages (including dependencies):"
-          ls -lh /downloads/
-          rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
-          echo "Package count: $rpm_count"
-          if [ "$rpm_count" -eq 0 ]; then
-            echo "ERROR: No RPM files were downloaded!"
-            exit 1
-          fi
-          echo "Download completed successfully with $rpm_count packages"
-        artifact_temp_dir: '{{ k3s_gpu_temp_dir.path }}'
-        staging_dir: '{{ k3s_gpu_staging_dir.path }}'
-        verify_command: 'nvidia-ctk --version'
-        online_repo_setup_tasks:
-          - name: Add NVIDIA container toolkit repository
-            ansible.builtin.get_url:
-              url: https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
-              dest: /etc/yum.repos.d/nvidia-container-toolkit.repo
-              mode: '0644'
-
-  always:
-    - name: Clean up staging directory on target nodes
-      ansible.builtin.file:
-        path: '{{ k3s_gpu_staging_dir.path }}'
-        state: absent
-      when:
-        - k3s_gpu_staging_dir is defined
-        - k3s_gpu_staging_dir.path is defined
-
-    - name: Clean up GPU artifact temporary directory
-      ansible.builtin.file:
-        path: '{{ k3s_gpu_temp_dir.path }}'
-        state: absent
-      delegate_to: localhost
-      run_once: true
-      when:
-        - air_gapped | default(false) | bool
-        - k3s_gpu_temp_dir is defined
-        - k3s_gpu_temp_dir.path is defined
+- name: Install NVIDIA container toolkit packages
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: ensure_packages
+  vars:
+    package_names:
+      - nvidia-container-toolkit
+      - nvidia-container-toolkit-base
+      - libnvidia-container-tools
+      - libnvidia-container1
+    package_type: 'GPU'
+    download_script: |
+      set -e
+      set -x
+      echo "Installing dnf-plugins-core for dnf download..."
+      dnf install -y dnf-plugins-core
+      echo "Adding NVIDIA container toolkit repository..."
+      dnf config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+      echo "Repository configuration:"
+      cat /etc/yum.repos.d/nvidia-container-toolkit.repo
+      echo "Downloading NVIDIA container toolkit packages and ALL dependencies..."
+      mkdir -p /downloads
+      dnf download --resolve --destdir=/downloads \
+        nvidia-container-toolkit \
+        nvidia-container-toolkit-base \
+        libnvidia-container-tools \
+        libnvidia-container1
+      echo "All downloaded packages (including dependencies):"
+      ls -lh /downloads/
+      rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
+      echo "Package count: $rpm_count"
+      if [ "$rpm_count" -eq 0 ]; then
+        echo "ERROR: No RPM files were downloaded!"
+        exit 1
+      fi
+      echo "Download completed successfully with $rpm_count packages"
+    verify_command: 'nvidia-ctk --version'
+    online_repo_setup_tasks:
+      - name: Add NVIDIA container toolkit repository
+        ansible.builtin.get_url:
+          url: https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+          dest: /etc/yum.repos.d/nvidia-container-toolkit.repo
+          mode: '0644'

@@ -9,12 +9,6 @@
 #   - rpm_package_type: Description of package type for logging (e.g., "SELinux", "GPU")
 
 - block:
-    - name: Create staging directory for {{ rpm_package_type }} RPMs
-      ansible.builtin.file:
-        path: '{{ rpm_staging_dir }}'
-        state: directory
-        mode: '0755'
-
     - name: Copy {{ rpm_package_type }} RPM archive to node
       ansible.builtin.copy:
         src: '{{ rpm_artifact_dir }}/rpms.tar.gz'
