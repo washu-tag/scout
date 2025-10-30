@@ -12,21 +12,44 @@
     msg: 'SELinux is not enabled, skipping SELinux package installation'
   when: not k3s_selinux_enabled | bool
 
-- name: Install SELinux RPMs from artifacts
+- name: Install k3s SELinux packages
   ansible.builtin.include_role:
     name: scout_common
-    tasks_from: install_rpms_from_artifacts
+    tasks_from: ensure_packages
   vars:
-    rpm_artifact_dir: '{{ k3s_selinux_artifact_dir }}'
-    rpm_staging_dir: '{{ k3s_selinux_rpm_staging_dir }}'
-    rpm_package_type: 'SELinux'
-  when: k3s_selinux_enabled | bool
-
-- name: Verify k3s SELinux policy module is loaded
-  ansible.builtin.command: semodule -l
-  register: semodule_list
-  changed_when: false
-  retries: 3
-  delay: 2
-  until: "'k3s' in semodule_list.stdout"
+    package_names:
+      - k3s-selinux
+    package_type: 'SELinux'
+    download_script: |
+      set -e
+      set -x
+      echo "Installing dnf-plugins-core for dnf download..."
+      dnf install -y dnf-plugins-core
+      echo "Creating Rancher k3s repository configuration..."
+      cat > /etc/yum.repos.d/rancher-k3s-common.repo <<EOF
+      [rancher-k3s-common-{{ k3s_selinux_channel }}]
+      name=Rancher K3s Common ({{ k3s_selinux_channel }})
+      baseurl=https://{{ k3s_selinux_rpm_site }}/k3s/{{ k3s_selinux_channel }}/common/centos/9/noarch
+      enabled=1
+      gpgcheck=1
+      repo_gpgcheck=0
+      gpgkey=https://{{ k3s_selinux_rpm_site }}/public.key
+      EOF
+      echo "Repository configuration:"
+      cat /etc/yum.repos.d/rancher-k3s-common.repo
+      echo "Downloading k3s-selinux package and dependencies..."
+      mkdir -p /downloads
+      dnf download --resolve --destdir=/downloads k3s-selinux
+      echo "Downloaded packages:"
+      ls -lh /downloads/
+      rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
+      echo "Package count: $rpm_count"
+      if [ "$rpm_count" -eq 0 ]; then
+        echo "ERROR: No RPM files were downloaded!"
+        exit 1
+      fi
+      echo "Download completed successfully with $rpm_count packages"
+    artifact_temp_dir: '{{ k3s_selinux_artifact_dir }}'
+    staging_dir: '{{ k3s_selinux_rpm_staging_dir }}'
+    verify_command: 'semodule -l | grep -q "^k3s"'
   when: k3s_selinux_enabled | bool
