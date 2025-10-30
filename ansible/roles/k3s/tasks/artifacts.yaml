@@ -84,12 +84,6 @@
       delegate_to: localhost
       run_once: true
 
-    - name: Set facts with temp directory paths
-      ansible.builtin.set_fact:
-        k3s_artifact_temp_dir: '{{ k3s_temp_dir.path }}'
-      # Note: NO delegate_facts, NO delegate_to
-      # This allows the facts to be shared with all hosts
-
 ################################################################################
 # Air-Gapped Mode: Copy artifacts to target nodes
 ################################################################################
@@ -99,15 +93,26 @@
   block:
     - name: Copy k3s binary to node
       ansible.builtin.copy:
-        src: '{{ k3s_artifact_temp_dir }}/k3s'
+        src: '{{ k3s_temp_dir.path }}/k3s'
         dest: '{{ k3s_binary_path }}'
         mode: '0755'
 
     - name: Copy k3s install script to node
       ansible.builtin.copy:
-        src: '{{ k3s_artifact_temp_dir }}/install-k3s.sh'
+        src: '{{ k3s_temp_dir.path }}/install-k3s.sh'
         dest: '{{ k3s_install_script_path }}'
         mode: '0755'
+
+  always:
+    - name: Clean up k3s artifact temporary directory
+      ansible.builtin.file:
+        path: '{{ k3s_temp_dir.path }}'
+        state: absent
+      delegate_to: localhost
+      run_once: true
+      when:
+        - k3s_temp_dir is defined
+        - k3s_temp_dir.path is defined
 
 ################################################################################
 # Online Mode: No artifact preparation needed
