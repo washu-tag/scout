@@ -4,8 +4,12 @@
 # In air-gapped mode, downloads k3s binary and install script to control node, then copies to target nodes
 
 ################################################################################
-# Common: Create bin directory for install script
+# Common: Set computed paths and create bin directory
 ################################################################################
+
+- name: Set k3s install script path
+  ansible.builtin.set_fact:
+    k3s_install_script_path: '{{ k3s_bin_dir }}/get.k3s.io.sh'
 
 - name: Create k3s bin directory
   ansible.builtin.file:
