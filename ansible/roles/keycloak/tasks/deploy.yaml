@@ -2,6 +2,8 @@
 - name: Apply Keycloak CRD
   no_log: true
   delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
   kubernetes.core.k8s:
     state: present
     src: "{{ keycloak_artifact_temp_dir + '/keycloak-crd.yml' if air_gapped | default(false) | bool else keycloak_crd_url }}"
@@ -9,6 +11,8 @@
 - name: Apply Keycloak KeycloakRealmImport CRD
   no_log: true
   delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
   kubernetes.core.k8s:
     state: present
     src: "{{ keycloak_artifact_temp_dir + '/keycloak-realmimport-crd.yml' if air_gapped | default(false) | bool else keycloak_realmimport_crd_url }}"
@@ -23,6 +27,8 @@
 - name: Apply Keycloak Operator
   no_log: true
   delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
   kubernetes.core.k8s:
     state: present
     src: "{{ keycloak_artifact_temp_dir + '/keycloak-operator.yml' if air_gapped | default(false) | bool else keycloak_operator_url }}"
@@ -151,15 +157,22 @@
                   pathType: Prefix
 
 - name: Wait for Keycloak to be ready
-  shell: >-
-    kubectl wait --for=condition=Ready --timeout=5m keycloak/keycloak -n {{ keycloak_namespace }}
-  register: keycloak_ready
-  changed_when: false
-  until: keycloak_ready is succeeded
+  kubernetes.core.k8s_info:
+    api_version: k8s.keycloak.org/v2alpha1
+    kind: Keycloak
+    name: keycloak
+    namespace: '{{ keycloak_namespace }}'
+    wait: true
+    wait_condition:
+      type: Ready
+      status: 'True'
+    wait_timeout: 300
 
 - name: Create Keycloak Config as a Secret
   delegate_to: localhost
   no_log: true
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
   kubernetes.core.k8s:
     state: present
     namespace: '{{ keycloak_namespace }}'
