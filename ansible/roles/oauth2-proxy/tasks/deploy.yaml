@@ -11,6 +11,8 @@
     - name: Create ConfigMap for OAuth2 Proxy templates
       delegate_to: localhost
       no_log: true
+      environment:
+        K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
       kubernetes.core.k8s:
         state: present
         definition: |
@@ -29,6 +31,8 @@
 - name: Create Secret with Logo for OAuth2 Proxy
   delegate_to: localhost
   no_log: true
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
   kubernetes.core.k8s:
     state: present
     definition:

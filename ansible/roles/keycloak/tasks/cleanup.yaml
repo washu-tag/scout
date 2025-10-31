@@ -1,0 +1,13 @@
+---
+# Cleanup Keycloak artifacts after deployment
+# Removes temporary directory created during air-gapped artifact preparation
+
+- name: Remove temporary artifact directory
+  ansible.builtin.file:
+    path: '{{ keycloak_artifact_temp_dir }}'
+    state: absent
+  delegate_to: localhost
+  run_once: true
+  when:
+    - air_gapped | default(false) | bool
+    - keycloak_artifact_temp_dir is defined
