@@ -48,7 +48,7 @@
                     set -x
 
                     echo "Installing dnf-plugins-core for yumdownloader..."
-                    dnf install -y yum-utils
+                    dnf install -y dnf-plugins-core
 
                     echo "Configuring Rancher k3s repository..."
                     cat > /etc/yum.repos.d/rancher-k3s-common.repo <<EOF
