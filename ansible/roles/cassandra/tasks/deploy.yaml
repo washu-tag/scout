@@ -77,13 +77,6 @@
             max_heap_size: '{{ cassandra_max_heap }}'
 
 - name: Wait for Cassandra to be ready
-  kubernetes.core.k8s_info:
-    api_version: cassandra.datastax.com/v1beta1
-    kind: CassandraDatacenter
-    name: '{{ cassandra_datacenter_name }}'
-    namespace: '{{ cassandra_namespace }}'
-    wait: yes
-    wait_condition:
-      type: Ready
-      status: 'True'
-    wait_timeout: 600
+  command: 'kubectl -n {{ cassandra_namespace }} wait --for=condition=Ready --timeout=600s cassandradatacenter/{{ cassandra_datacenter_name }}'
+  register: cassandra_ready
+  changed_when: false

@@ -36,28 +36,14 @@
             tls.key: '{{ key_file.content }}'
 
     - name: Wait for helm-install-traefik job to complete
-      kubernetes.core.k8s_info:
-        api_version: batch/v1
-        kind: Job
-        name: helm-install-traefik
-        namespace: kube-system
-        wait: yes
-        wait_condition:
-          type: Complete
-          status: 'True'
-        wait_timeout: 300
+      command: kubectl -n kube-system wait --for=condition=complete --timeout=300s job/helm-install-traefik
+      register: traefik_install
+      changed_when: false
 
     - name: Wait for helm-install-traefik-crd job to complete
-      kubernetes.core.k8s_info:
-        api_version: batch/v1
-        kind: Job
-        name: helm-install-traefik-crd
-        namespace: kube-system
-        wait: yes
-        wait_condition:
-          type: Complete
-          status: 'True'
-        wait_timeout: 300
+      command: kubectl -n kube-system wait --for=condition=complete --timeout=300s job/helm-install-traefik-crd
+      register: traefik_crd_install
+      changed_when: false
 
     - name: Apply Traefik TLSStore configuration
       kubernetes.core.k8s:
