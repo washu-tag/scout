@@ -5,6 +5,7 @@
   kubernetes.core.helm_repository:
     name: harbor
     repo_url: https://helm.goharbor.io
+    binary_path: /usr/local/bin/helm
 
 - name: Create namespace
   ansible.builtin.include_role:
@@ -112,6 +113,7 @@
   kubernetes.core.helm:
     name: harbor
     chart_ref: harbor/harbor
+    binary_path: /usr/local/bin/helm
     chart_version: '{{ harbor_version }}'
     release_namespace: '{{ harbor_namespace }}'
     create_namespace: true
