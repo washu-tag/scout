@@ -95,6 +95,13 @@
             targetPort: metrics
 
 - name: Wait for Postgres to be ready
-  ansible.builtin.command: 'kubectl -n {{ postgres_cluster_namespace }} wait --for=condition=Ready --timeout=300s cluster/{{ postgres_cluster_name }}'
-  register: postgres_ready
-  changed_when: false
+  kubernetes.core.k8s_info:
+    api_version: postgresql.cnpg.io/v1
+    kind: Cluster
+    name: '{{ postgres_cluster_name }}'
+    namespace: '{{ postgres_cluster_namespace }}'
+    wait: yes
+    wait_condition:
+      type: Ready
+      status: 'True'
+    wait_timeout: 300

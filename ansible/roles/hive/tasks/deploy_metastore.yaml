@@ -31,5 +31,13 @@
     helm_chart_values: "{{ lookup('template', 'values.yaml.j2', template_vars=hive_template_vars | default({})) | from_yaml }}"
 
 - name: Wait for {{ hive_deployment_name }} to be ready
-  command: 'kubectl -n {{ hive_namespace }} wait --for=condition=Available --timeout=300s deployments/{{ hive_deployment_name }}'
-  changed_when: false
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: '{{ hive_deployment_name }}'
+    namespace: '{{ hive_namespace }}'
+    wait: yes
+    wait_condition:
+      type: Available
+      status: 'True'
+    wait_timeout: 300

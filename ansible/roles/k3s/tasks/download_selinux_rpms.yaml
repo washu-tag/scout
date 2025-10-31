@@ -171,17 +171,16 @@
   run_once: true
 
 - name: Copy RPMs from sleeper container to staging node
-  ansible.builtin.command:
-    cmd: >
-      kubectl cp
-      {{ k3s_package_download_namespace }}/{{ selinux_downloader_pod }}:/downloads/
-      {{ selinux_staging_dir }}/
-      -c sleeper
-      --kubeconfig={{ kubeconfig_yaml }}
+  kubernetes.core.k8s_cp:
+    namespace: '{{ k3s_package_download_namespace }}'
+    pod: '{{ selinux_downloader_pod }}'
+    container: sleeper
+    remote_path: /downloads/
+    local_path: '{{ selinux_staging_dir }}/'
+    state: from_pod
+    kubeconfig: '{{ kubeconfig_yaml }}'
   delegate_to: "{{ groups['staging'][0] }}"
   run_once: true
-  register: kubectl_cp_result
-  changed_when: kubectl_cp_result.rc == 0
 
 - name: Find RPM files on staging node
   ansible.builtin.find:

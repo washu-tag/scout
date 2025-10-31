@@ -117,20 +117,18 @@
   changed_when: false
 
 - name: Check that server is ready
-  ansible.builtin.command:
-    cmd: kubectl get nodes
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-  changed_when: false
-  failed_when: >-
-    kubectl_get_nodes_result.stdout.find("was refused") != -1 or
-    kubectl_get_nodes_result.stdout.find("ServiceUnavailable") != -1
-  register: kubectl_get_nodes_result
+  register: k8s_nodes_result
   until:
-    - kubectl_get_nodes_result.rc == 0
-    - kubectl_get_nodes_result.stdout.find("NotReady") == -1
+    - k8s_nodes_result.resources | length > 0
+    - k8s_nodes_result.resources | selectattr('status.conditions', 'defined') | map(attribute='status.conditions') | flatten | selectattr('type', 'equalto', 'Ready') | selectattr('status', 'equalto', 'True') | list | length == k8s_nodes_result.resources | length
   retries: 30
   delay: 5
+  changed_when: false
 
 - name: Apply taint to control plane node
   kubernetes.core.k8s_taint:

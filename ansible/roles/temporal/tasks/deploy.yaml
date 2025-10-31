@@ -61,16 +61,27 @@
     helm_chart_timeout: 15m
     helm_chart_values: '{{ lookup("template", "values.yaml.j2") | from_yaml }}'
 
+- name: Get Temporal schema jobs
+  kubernetes.core.k8s_info:
+    api_version: batch/v1
+    kind: Job
+    namespace: '{{ temporal_namespace }}'
+    label_selectors:
+      - app.kubernetes.io/component=schema
+  register: temporal_schema_jobs
+
 - name: Wait for Temporal schema job to complete
-  shell: >-
-    JOB_NAME=$(kubectl -n {{ temporal_namespace }} get jobs -l app.kubernetes.io/component=schema
-    --sort-by='.metadata.creationTimestamp'
-    -o jsonpath='{.items[-1].metadata.name}' 2>/dev/null || echo "");
-    if [ -n "$JOB_NAME" ]; then
-      kubectl -n {{ temporal_namespace }} wait --for=condition=complete --timeout=300s job/$JOB_NAME;
-    fi
-  register: temporal_schema
-  changed_when: false
+  when: temporal_schema_jobs.resources | length > 0
+  kubernetes.core.k8s_info:
+    api_version: batch/v1
+    kind: Job
+    name: '{{ (temporal_schema_jobs.resources | sort(attribute="metadata.creationTimestamp") | last).metadata.name }}'
+    namespace: '{{ temporal_namespace }}'
+    wait: yes
+    wait_condition:
+      type: Complete
+      status: 'True'
+    wait_timeout: 300
 
 # Set up scheduled tasks
 - name: Construct cron schedule
