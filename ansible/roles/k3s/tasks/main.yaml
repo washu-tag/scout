@@ -15,11 +15,11 @@
   ansible.builtin.include_tasks: prerequisites.yaml
 
 ################################################################################
-# Artifact Preparation - Online or Air-Gapped
+# Binary Preparation - Online or Air-Gapped
 ################################################################################
 
-- name: Prepare k3s artifacts
-  ansible.builtin.include_tasks: artifacts.yaml
+- name: Prepare k3s binaries
+  ansible.builtin.include_tasks: prepare_k3s_binaries.yaml
 
 ################################################################################
 # SELinux Package Installation - Air-Gapped Only
