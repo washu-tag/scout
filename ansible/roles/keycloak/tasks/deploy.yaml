@@ -167,6 +167,7 @@
         name: keycloak-config
       data:
         scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | b64encode }}"
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Configure Keycloak with keycloak-config-cli
   ansible.builtin.include_tasks: configure.yaml
