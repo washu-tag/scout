@@ -4,6 +4,35 @@
 # In air-gapped mode, downloads k3s binary and install script to control node, then copies to target nodes
 
 ################################################################################
+# Common: Create bin directory for install script
+################################################################################
+
+- name: Create k3s bin directory
+  ansible.builtin.file:
+    path: '{{ k3s_bin_dir }}'
+    state: directory
+    mode: '0700'
+
+################################################################################
+# Online Mode: Download install script if needed
+################################################################################
+
+- name: Check if install script already exists
+  ansible.builtin.stat:
+    path: '{{ k3s_install_script_path }}'
+  register: k3s_install_script_stat
+  when: not (air_gapped | default(false) | bool)
+
+- name: Download K3s installation script (online mode)
+  ansible.builtin.get_url:
+    url: '{{ k3s_install_script_url }}'
+    dest: '{{ k3s_install_script_path }}'
+    mode: '0755'
+  when:
+    - not (air_gapped | default(false) | bool)
+    - not (k3s_install_script_stat.stat.exists | default(false))
+
+################################################################################
 # Air-Gapped Mode: Download binaries to Ansible control node
 ################################################################################
 

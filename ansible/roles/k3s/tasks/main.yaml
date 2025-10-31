@@ -8,13 +8,6 @@
     msg: "k3s installation mode: {{ 'AIR-GAPPED' if air_gapped | default(false) | bool else 'ONLINE' }}"
 
 ################################################################################
-# Prerequisites - Common setup for all nodes
-################################################################################
-
-- name: Run prerequisite tasks
-  ansible.builtin.include_tasks: prerequisites.yaml
-
-################################################################################
 # Binary Preparation - Online or Air-Gapped
 ################################################################################
 
