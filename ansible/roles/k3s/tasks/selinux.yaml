@@ -3,6 +3,11 @@
 # Installs container-selinux and k3s-selinux packages when SELinux is enabled
 # Only runs in air-gapped mode (online mode handles SELinux via get.k3s.io script)
 
+- name: Auto-detect SELinux status if not explicitly set
+  ansible.builtin.set_fact:
+    k3s_selinux_enabled: "{{ ansible_selinux.status == 'enabled' if ansible_selinux is defined else false }}"
+  when: k3s_selinux_enabled is not defined
+
 - name: Display SELinux installation status
   ansible.builtin.debug:
     msg: "SELinux package installation: {{ 'ENABLED' if k3s_selinux_enabled | bool else 'DISABLED' }}"

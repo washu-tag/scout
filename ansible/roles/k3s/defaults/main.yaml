@@ -49,8 +49,8 @@ k3s_bin_dir: /root/bin
 # Where to install k3s binary on target nodes
 k3s_binary_path: /usr/local/bin/k3s
 
-# Note: k3s_install_script_path is computed dynamically as {{ k3s_bin_dir }}/get.k3s.io.sh
-# Override k3s_bin_dir to change the install script path
+# Path to k3s install script (computed from k3s_bin_dir)
+k3s_install_script_path: '{{ k3s_bin_dir }}/get.k3s.io.sh'
 
 ################################################################################
 # SELinux Configuration
