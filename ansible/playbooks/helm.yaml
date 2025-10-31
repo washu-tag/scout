@@ -1,32 +1,31 @@
 ---
-- name: Install Helm
+# Install Helm and helm-diff plugin
+# Behavior depends on air_gapped variable:
+# - Non-air-gapped: Install on server nodes (standard deployment)
+# - Air-gapped: Install on Ansible control node (localhost)
+#
+# In air-gapped mode, Helm charts are deployed from localhost using
+# delegate_to: localhost with remote kubeconfig access
+
+- name: Install Helm on server nodes (non-air-gapped mode)
   hosts: server
+  gather_facts: false
   tasks:
-    - name: Install Helm
-      block:
-        - name: Create /root/bin directory
-          ansible.builtin.file:
-            path: /root/bin
-            state: directory
-            mode: '0700'
+    - name: Install Helm on server node
+      when: not (air_gapped | default(false) | bool)
+      ansible.builtin.include_role:
+        name: helm
+      vars:
+        helm_script_dir: /root/bin
 
-        - name: Download Helm command line tool
-          ansible.builtin.get_url:
-            url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-            dest: /root/bin/get-helm-3.sh
-            mode: '0755'
-
-        - name: Install Helm
-          ansible.builtin.command:
-            cmd: /root/bin/get-helm-3.sh
-            creates: /usr/local/bin/helm
-          environment:
-            DESIRED_VERSION: '{{ helm_version | default("") }}'
-
-      when: install_helm | default(true)
-
-    - name: Install Helm Diff
-      kubernetes.core.helm_plugin:
-        plugin_path: 'https://github.com/databus23/helm-diff'
-        state: present
-      become: false
+- name: Install Helm on Ansible control node (air-gapped mode)
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  tasks:
+    - name: Install Helm on control node
+      when: air_gapped | default(false) | bool
+      ansible.builtin.include_role:
+        name: helm
+      vars:
+        helm_script_dir: '{{ ansible_env.HOME }}/.local/bin'

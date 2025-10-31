@@ -1,13 +1,46 @@
 ---
-# k3s Artifact Preparation
-# Handles both online mode (minimal preparation) and air-gapped mode (download all artifacts)
-# In air-gapped mode, downloads k3s binary, install script, and SELinux RPMs to control node
+# k3s Binary Preparation
+# Handles both online mode (minimal preparation) and air-gapped mode (download binaries)
+# In air-gapped mode, downloads k3s binary and install script to control node, then copies to target nodes
 
 ################################################################################
-# Air-Gapped Mode: Download artifacts to Ansible control node
+# Common: Set computed paths and create bin directory
 ################################################################################
 
-- name: Prepare artifacts for air-gapped installation
+- name: Set k3s install script path
+  ansible.builtin.set_fact:
+    k3s_install_script_path: '{{ k3s_bin_dir }}/get.k3s.io.sh'
+
+- name: Create k3s bin directory
+  ansible.builtin.file:
+    path: '{{ k3s_bin_dir }}'
+    state: directory
+    mode: '0700'
+
+################################################################################
+# Online Mode: Download install script if needed
+################################################################################
+
+- name: Check if install script already exists
+  ansible.builtin.stat:
+    path: '{{ k3s_install_script_path }}'
+  register: k3s_install_script_stat
+  when: not (air_gapped | default(false) | bool)
+
+- name: Download K3s installation script (online mode)
+  ansible.builtin.get_url:
+    url: '{{ k3s_install_script_url }}'
+    dest: '{{ k3s_install_script_path }}'
+    mode: '0755'
+  when:
+    - not (air_gapped | default(false) | bool)
+    - not (k3s_install_script_stat.stat.exists | default(false))
+
+################################################################################
+# Air-Gapped Mode: Download binaries to Ansible control node
+################################################################################
+
+- name: Prepare binaries for air-gapped installation
   when: air_gapped | default(false) | bool
   block:
     - name: Detect latest stable k3s version if not specified
@@ -58,10 +91,6 @@
       delegate_to: localhost
       run_once: true
 
-    - name: Download SELinux RPMs using Kubernetes Job
-      ansible.builtin.include_tasks: download_selinux_rpms.yaml
-      when: k3s_selinux_enabled | bool
-
     - name: Verify k3s binary was downloaded
       ansible.builtin.stat:
         path: '{{ k3s_temp_dir.path }}/k3s'
@@ -88,52 +117,41 @@
       delegate_to: localhost
       run_once: true
 
-    - name: Verify SELinux RPMs were downloaded
-      when: k3s_selinux_enabled | bool
-      delegate_to: localhost
-      run_once: true
-      block:
-        - name: Find SELinux RPM files
-          ansible.builtin.find:
-            paths: '{{ k3s_temp_dir.path }}'
-            patterns: '*-selinux*.rpm'
-          register: selinux_rpm_files
-
-        - name: Fail if no SELinux RPMs found
-          ansible.builtin.fail:
-            msg: 'No SELinux RPM files found in {{ k3s_temp_dir.path }}'
-          when: selinux_rpm_files.files | length == 0
-
-    - name: Set fact with temp directory path
-      ansible.builtin.set_fact:
-        k3s_artifact_temp_dir: '{{ k3s_temp_dir.path }}'
-      # Note: NO delegate_facts, NO delegate_to
-      # This allows the fact to be shared with all hosts
-
 ################################################################################
-# Air-Gapped Mode: Copy artifacts to target nodes
+# Air-Gapped Mode: Copy binaries to target nodes
 ################################################################################
 
-- name: Copy artifacts to target nodes (air-gapped mode)
+- name: Copy binaries to target nodes (air-gapped mode)
   when: air_gapped | default(false) | bool
   block:
     - name: Copy k3s binary to node
       ansible.builtin.copy:
-        src: '{{ k3s_artifact_temp_dir }}/k3s'
+        src: '{{ k3s_temp_dir.path }}/k3s'
         dest: '{{ k3s_binary_path }}'
         mode: '0755'
 
     - name: Copy k3s install script to node
       ansible.builtin.copy:
-        src: '{{ k3s_artifact_temp_dir }}/install-k3s.sh'
+        src: '{{ k3s_temp_dir.path }}/install-k3s.sh'
         dest: '{{ k3s_install_script_path }}'
         mode: '0755'
 
+  always:
+    - name: Clean up k3s artifact temporary directory
+      ansible.builtin.file:
+        path: '{{ k3s_temp_dir.path }}'
+        state: absent
+      delegate_to: localhost
+      run_once: true
+      when:
+        - k3s_temp_dir is defined
+        - k3s_temp_dir.path is defined
+
 ################################################################################
-# Online Mode: No artifact preparation needed
+# Online Mode: No binary preparation needed
 ################################################################################
 
-- name: Online mode artifact preparation complete
+- name: Online mode binary preparation complete
   ansible.builtin.debug:
-    msg: 'Online mode: artifacts will be downloaded during installation by get.k3s.io script'
+    msg: 'Online mode: k3s binary and install script will be downloaded during installation by get.k3s.io script'
   when: not (air_gapped | default(false) | bool)

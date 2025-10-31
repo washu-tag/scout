@@ -4,29 +4,14 @@
 #
 # Documentation: docs/source/technical/air-gapped.md
 
-- name: Shared pre-requisites for staging K3s
+- name: Install Python kubernetes library on staging node
   hosts: staging
+  roles:
+    - python-kubernetes
   vars:
-    uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
-  tasks:
-    - name: Create /root/bin directory
-      ansible.builtin.file:
-        path: /root/bin
-        state: directory
-        mode: '0700'
+    # Staging node has internet access, use online installation mode
+    air_gapped: false
 
-    - name: Download K3s installation script
-      ansible.builtin.get_url:
-        url: https://get.k3s.io
-        dest: /root/bin/get.k3s.io.sh
-        mode: '0755'
-
-    - name: Add python kubernetes library from system package
-      ansible.builtin.package:
-        name: python3-kubernetes
-        state: present
-
-################################################################################
 - name: Install k3s on staging node
   hosts: staging
   vars:

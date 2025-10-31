@@ -1,0 +1,31 @@
+---
+# Helm installation tasks
+# This role installs Helm and optionally the helm-diff plugin
+# Can be used on remote nodes or localhost with appropriate variables
+
+- name: Create Helm script directory
+  ansible.builtin.file:
+    path: '{{ helm_script_dir }}'
+    state: directory
+    mode: '0700'
+
+- name: Download Helm installation script
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+    dest: '{{ helm_script_dir }}/get-helm-3.sh'
+    mode: '0755'
+
+- name: Install Helm
+  ansible.builtin.command:
+    cmd: '{{ helm_script_dir }}/get-helm-3.sh'
+    creates: /usr/local/bin/helm
+  become: true
+  environment:
+    DESIRED_VERSION: '{{ helm_version }}'
+
+- name: Install Helm Diff plugin
+  kubernetes.core.helm_plugin:
+    plugin_path: '{{ helm_diff_plugin_url }}'
+    state: present
+  become: false
+  when: helm_install_diff_plugin | bool

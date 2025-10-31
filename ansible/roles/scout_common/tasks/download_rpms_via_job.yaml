@@ -1,0 +1,252 @@
+---
+# Generic RPM Download Using Kubernetes Job on Staging Cluster
+# This task runs a container that executes a custom bash script to download RPMs
+# and ALL their dependencies. All dependency RPMs are included to ensure
+# air-gapped installation can succeed without external repository access.
+# Only runs in air-gapped mode
+# Manages its own temporary directory on the staging cluster node.
+#
+# Required parameters:
+#   - rpm_job_name: Unique name for the Kubernetes Job
+#   - rpm_download_script: Bash script to run in init container for downloading
+#   - rpm_package_type: Description of package type (e.g., "SELinux", "GPU")
+#   - rpm_artifact_dir: Directory path on control node to store downloaded RPMs
+
+- block:
+    - name: Create temporary directory on staging cluster node
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: '{{ rpm_package_type | lower }}_staging_cluster_'
+      register: staging_cluster_temp_dir
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+
+    - name: Set staging directory path for use in tasks
+      ansible.builtin.set_fact:
+        rpm_staging_dir: '{{ staging_cluster_temp_dir.path }}'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Create Kubernetes Job manifest for RPM package download
+      ansible.builtin.set_fact:
+        rpm_downloader_job:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: '{{ rpm_job_name }}'
+            namespace: '{{ package_download_namespace }}'
+            labels:
+              app: '{{ rpm_package_type | lower }}-downloader'
+              managed-by: ansible
+          spec:
+            ttlSecondsAfterFinished: 300
+            backoffLimit: 5
+            template:
+              metadata:
+                labels:
+                  app: '{{ rpm_package_type | lower }}-downloader'
+              spec:
+                restartPolicy: Never
+                volumes:
+                  - name: rpm-storage
+                    emptyDir: {}
+                initContainers:
+                  - name: downloader
+                    image: '{{ package_download_image }}'
+                    volumeMounts:
+                      - name: rpm-storage
+                        mountPath: /downloads
+                    command:
+                      - /bin/bash
+                      - -c
+                      - |
+                        {{ rpm_download_script }}
+
+                        echo "Creating RPM archive..."
+                        cd /downloads
+                        if [ ! -f *.rpm ]; then
+                          echo "ERROR: No RPM files found to archive!"
+                          exit 1
+                        fi
+                        tar czf rpms.tar.gz *.rpm
+                        echo "Archive created: $(ls -lh rpms.tar.gz)"
+                        echo "Archive contains $(tar tzf rpms.tar.gz | wc -l) files"
+                containers:
+                  - name: sleeper
+                    image: '{{ package_download_image }}'
+                    command: ['sleep', '300']
+                    volumeMounts:
+                      - name: rpm-storage
+                        mountPath: /downloads
+                        readOnly: true
+      delegate_to: localhost
+      run_once: true
+
+    - name: Deploy {{ rpm_package_type }} downloader Job to staging cluster
+      kubernetes.core.k8s:
+        state: present
+        definition: '{{ rpm_downloader_job }}'
+        kubeconfig: '{{ kubeconfig_yaml }}'
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      register: job_created
+
+    - name: Wait for Pod to be created
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: '{{ package_download_namespace }}'
+        label_selectors:
+          - 'job-name={{ rpm_job_name }}'
+        kubeconfig: '{{ kubeconfig_yaml }}'
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      register: job_pods
+      until: job_pods.resources | length > 0
+      retries: 30
+      delay: 2
+
+    - name: Set Pod name fact
+      ansible.builtin.set_fact:
+        rpm_downloader_pod: '{{ job_pods.resources[0].metadata.name }}'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Wait for init container (downloader) to complete
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        name: '{{ rpm_downloader_pod }}'
+        namespace: '{{ package_download_namespace }}'
+        kubeconfig: '{{ kubeconfig_yaml }}'
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      register: pod_status
+      until: >
+        pod_status.resources | length > 0 and
+        pod_status.resources[0].status.initContainerStatuses is defined and
+        pod_status.resources[0].status.initContainerStatuses | length > 0 and
+        pod_status.resources[0].status.initContainerStatuses[0].state.terminated is defined
+      retries: '{{ (package_download_timeout / 10) | int }}'
+      delay: 10
+      failed_when: false
+
+    - name: Check if init container failed
+      ansible.builtin.fail:
+        msg: '{{ rpm_package_type }} package download failed. Init container exit code: {{ pod_status.resources[0].status.initContainerStatuses[0].state.terminated.exitCode }}. Check logs with: kubectl logs {{ rpm_downloader_pod }} -n {{ package_download_namespace }} -c downloader'
+      when: >
+        pod_status.resources | length == 0 or
+        pod_status.resources[0].status.initContainerStatuses[0].state.terminated.exitCode != 0
+      delegate_to: localhost
+      run_once: true
+
+    - name: Display Pod name for kubectl cp
+      ansible.builtin.debug:
+        msg: 'Extracting RPMs from Pod: {{ rpm_downloader_pod }}'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Copy RPM archive from sleeper container to staging node
+      ansible.builtin.command:
+        cmd: >
+          kubectl cp
+          {{ package_download_namespace }}/{{ rpm_downloader_pod }}:/downloads/rpms.tar.gz
+          {{ rpm_staging_dir }}/rpms.tar.gz
+          -c sleeper
+          --kubeconfig={{ kubeconfig_yaml }}
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      register: kubectl_cp_result
+      changed_when: kubectl_cp_result.rc == 0
+
+    - name: Verify RPM archive exists on staging node
+      ansible.builtin.stat:
+        path: '{{ rpm_staging_dir }}/rpms.tar.gz'
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      register: staging_archive
+
+    - name: Fail if archive not found on staging node
+      ansible.builtin.fail:
+        msg: 'RPM archive not found: {{ rpm_staging_dir }}/rpms.tar.gz'
+      when: not staging_archive.stat.exists
+      delegate_to: localhost
+      run_once: true
+
+    - name: Verify RPM archive integrity on staging node
+      ansible.builtin.command:
+        cmd: tar tzf {{ rpm_staging_dir }}/rpms.tar.gz
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      register: archive_contents
+      changed_when: false
+
+    - name: Display archive contents on staging node
+      ansible.builtin.debug:
+        msg: 'RPM archive on staging node contains {{ archive_contents.stdout_lines | length }} files ({{ (staging_archive.stat.size / 1024 / 1024) | round(2) }} MB)'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail if archive is empty
+      ansible.builtin.fail:
+        msg: 'RPM archive contains no files'
+      when: archive_contents.stdout_lines | length == 0
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch RPM archive from staging node to Ansible control node
+      ansible.builtin.fetch:
+        src: '{{ rpm_staging_dir }}/rpms.tar.gz'
+        dest: '{{ rpm_artifact_dir }}/rpms.tar.gz'
+        flat: true
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+
+    - name: Verify RPM archive was copied to control node
+      ansible.builtin.stat:
+        path: '{{ rpm_artifact_dir }}/rpms.tar.gz'
+      delegate_to: localhost
+      run_once: true
+      register: downloaded_archive
+
+    - name: Fail if archive was not downloaded
+      ansible.builtin.fail:
+        msg: 'RPM archive not found: {{ rpm_artifact_dir }}/rpms.tar.gz'
+      when: not downloaded_archive.stat.exists
+      delegate_to: localhost
+      run_once: true
+
+    - name: Inspect archive contents on control node
+      ansible.builtin.command:
+        cmd: tar tzf {{ rpm_artifact_dir }}/rpms.tar.gz
+      delegate_to: localhost
+      run_once: true
+      register: control_archive_contents
+      changed_when: false
+
+    - name: Display downloaded RPM archive details
+      ansible.builtin.debug:
+        msg: 'Downloaded {{ rpm_package_type }} RPM archive: {{ (downloaded_archive.stat.size / 1024 / 1024) | round(2) }} MB containing {{ control_archive_contents.stdout_lines | length }} packages (including all dependencies)'
+      delegate_to: localhost
+      run_once: true
+
+    - name: Delete {{ rpm_package_type }} downloader Job
+      kubernetes.core.k8s:
+        state: absent
+        api_version: batch/v1
+        kind: Job
+        name: '{{ rpm_job_name }}'
+        namespace: '{{ package_download_namespace }}'
+        kubeconfig: '{{ kubeconfig_yaml }}'
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      when: job_created is defined and job_created is changed
+
+  always:
+    - name: Clean up RPM directory on staging node
+      ansible.builtin.file:
+        path: '{{ rpm_staging_dir }}'
+        state: absent
+      delegate_to: "{{ groups['staging'][0] }}"
+      run_once: true
+      when: rpm_staging_dir is defined
