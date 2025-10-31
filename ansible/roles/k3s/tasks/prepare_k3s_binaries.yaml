@@ -1,13 +1,13 @@
 ---
-# k3s Artifact Preparation
-# Handles both online mode (minimal preparation) and air-gapped mode (download all artifacts)
-# In air-gapped mode, downloads k3s binary, install script, and SELinux RPMs to control node
+# k3s Binary Preparation
+# Handles both online mode (minimal preparation) and air-gapped mode (download binaries)
+# In air-gapped mode, downloads k3s binary and install script to control node, then copies to target nodes
 
 ################################################################################
-# Air-Gapped Mode: Download artifacts to Ansible control node
+# Air-Gapped Mode: Download binaries to Ansible control node
 ################################################################################
 
-- name: Prepare artifacts for air-gapped installation
+- name: Prepare binaries for air-gapped installation
   when: air_gapped | default(false) | bool
   block:
     - name: Detect latest stable k3s version if not specified
@@ -85,10 +85,10 @@
       run_once: true
 
 ################################################################################
-# Air-Gapped Mode: Copy artifacts to target nodes
+# Air-Gapped Mode: Copy binaries to target nodes
 ################################################################################
 
-- name: Copy artifacts to target nodes (air-gapped mode)
+- name: Copy binaries to target nodes (air-gapped mode)
   when: air_gapped | default(false) | bool
   block:
     - name: Copy k3s binary to node
@@ -115,10 +115,10 @@
         - k3s_temp_dir.path is defined
 
 ################################################################################
-# Online Mode: No artifact preparation needed
+# Online Mode: No binary preparation needed
 ################################################################################
 
-- name: Online mode artifact preparation complete
+- name: Online mode binary preparation complete
   ansible.builtin.debug:
-    msg: 'Online mode: artifacts will be downloaded during installation by get.k3s.io script'
+    msg: 'Online mode: k3s binary and install script will be downloaded during installation by get.k3s.io script'
   when: not (air_gapped | default(false) | bool)
