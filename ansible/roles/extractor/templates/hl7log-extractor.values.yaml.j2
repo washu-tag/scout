@@ -1,6 +1,11 @@
 image:
   repository: '{{ hl7log_extractor_image_repository }}'
   tag: '{{ hl7log_extractor_image_tag }}'
+  args:
+    - -XX:MaxRAMPercentage={{ hl7log_extractor_jvm_heap_max_ram_percentage }}
+    - -XX:+UseContainerSupport
+    - -jar
+    - app.jar
 envFrom:
   - secretRef:
       name: s3-secret

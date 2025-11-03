@@ -229,7 +229,7 @@ k3s_cluster:
         cpu: 6
         memory: 96Gi
     postgres_parameters: # Production tuning (defaults in role are for dev)
-      max_connections: '100'
+      max_connections: '120'
       shared_buffers: '16GB'
       effective_cache_size: '48GB'
       maintenance_work_mem: '2GB'
@@ -442,7 +442,8 @@ k3s_cluster:
         memory: 4Gi
       limits:
         cpu: 4
-        memory: 8Gi
+        memory: 75Gi
+    hl7log_extractor_jvm_heap_max_ram_percentage: 80
     hl7_transformer_spark_memory: 16G
     # Memory computed from spark_memory (requests = 1x = 16Gi, limits = 2x = 32Gi)
     # Override CPU if needed (defaults: 250m request, 4 limit):
