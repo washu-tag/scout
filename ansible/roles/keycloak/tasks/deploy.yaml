@@ -1,35 +1,34 @@
 ---
-- name: Apply Keycloak CRD
-  no_log: true
-  delegate_to: localhost
-  kubernetes.core.k8s:
-    state: present
-    src: "{{ keycloak_artifact_temp_dir + '/keycloak-crd.yml' if air_gapped | default(false) | bool else keycloak_crd_url }}"
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
-
-- name: Apply Keycloak KeycloakRealmImport CRD
-  no_log: true
-  delegate_to: localhost
-  kubernetes.core.k8s:
-    state: present
-    src: "{{ keycloak_artifact_temp_dir + '/keycloak-realmimport-crd.yml' if air_gapped | default(false) | bool else keycloak_realmimport_crd_url }}"
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
-
-- name: Create Keycloak CR namespace
+- name: Create Keycloak namespace
   kubernetes.core.k8s:
     name: '{{ keycloak_namespace }}'
     api_version: v1
     kind: Namespace
     state: present
 
-- name: Apply Keycloak Operator
-  no_log: true
-  delegate_to: localhost
-  kubernetes.core.k8s:
-    state: present
-    src: "{{ keycloak_artifact_temp_dir + '/keycloak-operator.yml' if air_gapped | default(false) | bool else keycloak_operator_url }}"
-    namespace: '{{ keycloak_namespace }}'
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
+- name: Deploy Keycloak Operator and CRDs
+  delegate_to: '{{ (air_gapped | default(false) | bool) | ternary("localhost", omit) }}'
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ (air_gapped | default(false) | bool) | ternary(local_kubeconfig_yaml, kubeconfig_yaml) }}'
+  block:
+    - name: Apply Keycloak CRD
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        src: '{{ keycloak_crd_url }}'
+
+    - name: Apply Keycloak KeycloakRealmImport CRD
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        src: '{{ keycloak_realmimport_crd_url }}'
+
+    - name: Apply Keycloak Operator
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        src: '{{ keycloak_operator_url }}'
+        namespace: '{{ keycloak_namespace }}'
 
 - name: Wait for Keycloak Operator to be ready
   kubernetes.core.k8s_info:

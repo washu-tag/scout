@@ -1,8 +1,4 @@
 ---
-# Workaround for broken keycloak-config-cli Helm repository
-# Reference: https://github.com/adorsys/keycloak-config-cli/issues/1287
-# Uses pre-downloaded chart in air-gapped mode, direct URL in online mode
-
 - name: Create Keycloak Config as a Secret
   delegate_to: localhost
   no_log: true
@@ -18,22 +14,18 @@
         scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | b64encode }}"
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
-- name: Set Helm chart reference
-  ansible.builtin.set_fact:
-    keycloak_config_cli_chart_ref: "{{ keycloak_artifact_temp_dir + '/keycloak-config-cli.tgz' if air_gapped | default(false) | bool else 'https://adorsys.github.io/keycloak-config-cli/helm-charts/keycloak-config-cli-' + keycloak_config_cli_helm_chart_version + '.tgz' }}"
-
-- name: Run Keycloak Config CLI to Configure Keycloak
-  delegate_to: localhost
-  kubernetes.core.helm:
-    name: keycloak-config-cli
-    release_namespace: '{{ keycloak_namespace }}'
-    create_namespace: true
-    chart_ref: '{{ keycloak_config_cli_chart_ref }}'
-    state: present
-    wait: true
-    wait_timeout: 5m
-    atomic: true
-    values:
+- name: Deploy Keycloak Config CLI
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: keycloak-config-cli
+    helm_chart_ref: '{{ keycloak_config_cli_helm_chart_url }}'
+    helm_chart_namespace: '{{ keycloak_namespace }}'
+    helm_chart_create_namespace: true
+    helm_chart_wait: true
+    helm_chart_timeout: '5m'
+    helm_chart_values:
       image:
         repository: '{{ keycloak_config_cli_image }}'
         tag: '{{ keycloak_config_cli_image_tag }}'
@@ -42,4 +34,3 @@
         KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
         KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
       existingSecret: keycloak-admin-secret
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
