@@ -125,6 +125,22 @@
             "clientRole": true,
             "attributes": {}
           }
+        ],
+        "{{ keycloak_open_webui_client_id }}": [
+          {
+            "name": "open-webui-admin",
+            "description": "Scout Admin Role for Open WebUI Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "open-webui-user",
+            "description": "Scout User Role for Open WebUI Client",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
         ]
       }
     },
@@ -153,6 +169,9 @@
             "temporal-system:admin",
             "default:admin"
           ],
+          "{{ keycloak_open_webui_client_id }}": [
+            "open-webui-admin"
+          ],
             "realm-management": [
               "realm-admin"
             ]
@@ -170,6 +189,9 @@
           "{{ keycloak_superset_client_id }}": [
             "superset_alpha",
             "superset_sql_lab",
+          ],
+          "{{ keycloak_open_webui_client_id }}": [
+            "open-webui-user"
           ]
         }
       }
@@ -368,6 +390,35 @@
         ],
         "webOrigins": [
           "*"
+        ]
+      },
+      {
+        "name": "{{ keycloak_open_webui_client_id }}",
+        "description": "Open WebUI Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_open_webui_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_open_webui_client_secret }}",
+        "redirectUris": [
+          "*"
+        ],
+        "webOrigins": [
+          "*"
+        ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access",
         ]
       }
     ],
