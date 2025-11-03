@@ -70,6 +70,7 @@ keycloak_grafana_client_id: grafana
 keycloak_temporal_client_id: temporal
 keycloak_minio_client_id: minio
 keycloak_launchpad_client_id: launchpad
+keycloak_open_webui_client_id: open-webui
 
 # S3/MinIO configuration (passwords defined in inventory)
 s3_region: us-east-1

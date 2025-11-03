@@ -23,6 +23,10 @@ pipelines:
 ingress:
   enabled: true
   class: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      kube-system-oauth2-proxy-error@kubernetescrd,
+      kube-system-oauth2-proxy-auth@kubernetescrd
   host: chat.{{ server_hostname }}
 
 persistence:
@@ -39,3 +43,60 @@ enableOpenaiApi: false
 websocket:
   # -- Enables websocket support in Open WebUI with env `ENABLE_WEBSOCKET_SUPPORT`
   enabled: true
+
+# OAuth/OIDC Configuration for Keycloak integration
+extraEnvVars:
+  # Enable OAuth signup and authentication
+  - name: ENABLE_OAUTH_SIGNUP
+    value: 'true'
+
+  # OAuth provider configuration
+  - name: OAUTH_PROVIDER_NAME
+    value: 'Keycloak'
+
+  # OAuth client credentials
+  - name: OAUTH_CLIENT_ID
+    value: '{{ keycloak_open_webui_client_id }}'
+
+  - name: OAUTH_CLIENT_SECRET
+    value: '{{ keycloak_open_webui_client_secret }}'
+
+  # OIDC endpoints (uses Keycloak well-known configuration)
+  - name: OPENID_PROVIDER_URL
+    value: '{{ keycloak_wellknown_url }}'
+
+  # OAuth redirect URI
+  - name: OPENID_REDIRECT_URI
+    value: 'https://chat.{{ server_hostname }}/oauth/oidc/callback'
+
+  # OAuth scopes
+  - name: OAUTH_SCOPES
+    value: 'openid email profile microprofile-jwt'
+
+  # Merge accounts by email
+  - name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL
+    value: 'true'
+
+  # Web UI URL (required for OAuth in clustered environments)
+  - name: WEBUI_URL
+    value: 'https://chat.{{ server_hostname }}'
+
+  # Enable role management
+  - name: ENABLE_OAUTH_ROLE_MANAGEMENT
+    value: 'true'
+
+  # Role claim path (Keycloak client roles)
+  - name: OAUTH_ROLES_CLAIM
+    value: 'resource_access.{{ keycloak_open_webui_client_id }}.roles'
+
+  # Allowed roles (users with these roles can log in)
+  - name: OAUTH_ALLOWED_ROLES
+    value: 'open-webui-user,open-webui-admin'
+
+  # Admin roles
+  - name: OAUTH_ADMIN_ROLES
+    value: 'open-webui-admin'
+
+  # Allow OAuth config updates via env vars (not persistent in DB)
+  - name: ENABLE_OAUTH_PERSISTENT_CONFIG
+    value: 'false'
