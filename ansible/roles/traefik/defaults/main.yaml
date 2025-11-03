@@ -1,0 +1,20 @@
+---
+# Default configuration for traefik role
+# Configures Traefik ingress controller with TLS termination
+
+# Traefik namespace (where k3s deploys Traefik by default)
+traefik_namespace: kube-system
+
+# TLS secret configuration
+traefik_tls_secret_name: tls-secret
+
+# Timeout for waiting on Traefik Helm jobs (in seconds)
+traefik_helm_job_timeout: 300
+# Required variables (must be defined in inventory):
+# - tls_cert_path: Path to TLS certificate file on remote server (e.g., /path/to/fullchain.pem)
+# - tls_key_path: Path to TLS private key file on remote server (e.g., /path/to/privkey.pem)
+#
+# These certificates should be:
+# - In PEM format
+# - Wildcard certificates for your domain (e.g., *.example.com)
+# - Already present on the target k3s server filesystem

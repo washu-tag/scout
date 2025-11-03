@@ -14,6 +14,12 @@
     - groups.get('staging', []) | length > 0
     - air_gapped | default(false) | bool
 
+- name: Configure Traefik on staging node
+  import_playbook: staging-traefik.yaml
+  when:
+    - groups.get('staging', []) | length > 0
+    - air_gapped | default(false) | bool
+
 - name: Install K3s
   import_playbook: k3s.yaml
 

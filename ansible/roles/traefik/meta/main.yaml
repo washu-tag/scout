@@ -1,0 +1,25 @@
+---
+galaxy_info:
+  author: Scout Team
+  description: Configure Traefik ingress controller with TLS termination for k3s clusters
+  company: WashU TAG
+  license: MIT
+  min_ansible_version: '2.9'
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: EL
+      versions:
+        - '8'
+        - '9'
+  galaxy_tags:
+    - kubernetes
+    - k3s
+    - traefik
+    - ingress
+    - tls
+
+dependencies:
+  - role: scout_common
