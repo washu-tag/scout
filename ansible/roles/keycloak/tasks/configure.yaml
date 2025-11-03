@@ -36,6 +36,7 @@
         KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
         KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
       existingSecret: keycloak-admin-secret
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Clean up temporary directory
   delegate_to: localhost
