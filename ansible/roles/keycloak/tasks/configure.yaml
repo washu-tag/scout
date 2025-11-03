@@ -1,5 +1,5 @@
 ---
-- name: Create Keycloak Config as a Secret
+- name: Create Secret for Scout Keycloak Realm
   delegate_to: localhost
   no_log: true
   kubernetes.core.k8s:
@@ -14,7 +14,7 @@
         scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | b64encode }}"
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
-- name: Deploy Keycloak Config CLI
+- name: Run Keycloak Config CLI
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart
