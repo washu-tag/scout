@@ -34,6 +34,10 @@
       dnf install -y dnf-plugins-core
       echo "Adding NVIDIA container toolkit repository..."
       dnf config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+      # Disable repo_gpgcheck due to Rocky Linux 9.5 GPG signature verification errors
+      # See: https://github.com/NVIDIA/nvidia-container-toolkit/issues/836
+      echo "Disabling repo_gpgcheck due to Rocky Linux 9.5 GPG signature issues..."
+      dnf config-manager --save --setopt=nvidia-container-toolkit.repo_gpgcheck=0
       echo "Repository configuration:"
       cat /etc/yum.repos.d/nvidia-container-toolkit.repo
       echo "Downloading NVIDIA container toolkit packages and ALL dependencies..."
