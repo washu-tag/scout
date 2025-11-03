@@ -28,4 +28,5 @@ numpy
 matplotlib
 requests
 trino
+plotly
 jupyter-server-proxy

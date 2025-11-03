@@ -130,6 +130,10 @@ oauth2_proxy_subdomain: auth
 keycloak_realm_name: scout
 keycloak_subdomain: keycloak
 
+# Feature flags (override from inventory to enable/disable features)
+enable_chat: false
+show_playbooks: false
+
 # Computed values (DO NOT CHANGE)
 s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
 hive_metastore_endpoint: 'thrift://{{ hive_metastore_instance }}.{{ hive_namespace }}:9083'

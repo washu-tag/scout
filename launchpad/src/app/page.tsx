@@ -2,26 +2,26 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
-import { FaPython } from 'react-icons/fa';
+import { FaPython, FaFlask } from 'react-icons/fa';
 import { SiMinio, SiTemporal, SiGrafana, SiKeycloak, SiReadthedocs } from 'react-icons/si';
-import { BiLineChart } from 'react-icons/bi';
-import { HiArrowRight, HiCube, HiCog } from 'react-icons/hi';
+import { BiLineChart, BiMessageSquareDetail } from 'react-icons/bi';
+import { HiSparkles, HiArrowRight, HiCube, HiCog, HiChartBar, HiUserGroup } from 'react-icons/hi';
 import TopBar from '@/components/TopBar';
 import AdminSection from '@/components/AdminSection';
 
-interface ToolCardProps {
+interface ServiceCardProps {
   href: string;
   icon: React.ReactNode;
   title: string;
   description: string;
-  color: 'blue' | 'yellow' | 'green';
+  color: 'blue' | 'amber' | 'green';
   external?: boolean;
 }
 
-const ToolCard = ({ href, icon, title, description, color, external = true }: ToolCardProps) => {
+const ServiceCard = ({ href, icon, title, description, color, external = false }: ServiceCardProps) => {
   const colorClasses = {
     blue: 'bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-200/50 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/20 hover:from-blue-100 hover:to-blue-200/50 dark:from-blue-900/20 dark:to-blue-800/10 dark:border-blue-800/50 dark:hover:border-blue-500 dark:hover:shadow-2xl dark:hover:shadow-blue-500/40 dark:hover:from-blue-800/30 dark:hover:to-blue-700/20',
-    yellow:
+    amber:
       'bg-gradient-to-br from-amber-50 to-yellow-100/50 border-2 border-amber-200/50 hover:border-amber-400 hover:shadow-xl hover:shadow-amber-500/20 hover:from-amber-100 hover:to-amber-200/50 dark:from-amber-900/20 dark:to-amber-800/10 dark:border-amber-800/50 dark:hover:border-amber-500 dark:hover:shadow-2xl dark:hover:shadow-amber-500/40 dark:hover:from-amber-800/30 dark:hover:to-amber-700/20',
     green:
       'bg-gradient-to-br from-emerald-50 to-green-100/50 border-2 border-green-200/50 hover:border-green-400 hover:shadow-xl hover:shadow-green-500/20 hover:from-emerald-100 hover:to-green-200/50 dark:from-emerald-900/20 dark:to-emerald-800/10 dark:border-emerald-800/50 dark:hover:border-emerald-500 dark:hover:shadow-2xl dark:hover:shadow-emerald-500/40 dark:hover:from-emerald-800/30 dark:hover:to-emerald-700/20',
@@ -29,13 +29,13 @@ const ToolCard = ({ href, icon, title, description, color, external = true }: To
 
   const iconColorClasses = {
     blue: 'text-blue-600 dark:text-blue-400',
-    yellow: 'text-amber-600 dark:text-amber-400',
+    amber: 'text-amber-600 dark:text-amber-400',
     green: 'text-emerald-600 dark:text-emerald-400',
   };
 
   const arrowColorClasses = {
     blue: 'text-blue-600 dark:text-blue-400',
-    yellow: 'text-amber-600 dark:text-amber-400',
+    amber: 'text-amber-600 dark:text-amber-400',
     green: 'text-emerald-600 dark:text-emerald-400',
   };
 
@@ -47,7 +47,7 @@ const ToolCard = ({ href, icon, title, description, color, external = true }: To
     >
       <div className="flex items-center gap-3 mb-4">
         <div className="w-12 h-12 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center group-hover:scale-125 transition-all duration-300">
-          <div className={iconColorClasses[color]}>{icon}</div>
+          <div className={`text-2xl ${iconColorClasses[color]}`}>{icon}</div>
         </div>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:translate-x-1 transition-transform duration-300">
           {title}
@@ -66,43 +66,48 @@ const ToolCard = ({ href, icon, title, description, color, external = true }: To
 
 interface ToolsGridProps {
   subdomainUrls: Record<string, string>;
+  enableChat: boolean;
 }
 
-const ToolsGrid = ({ subdomainUrls }: ToolsGridProps) => {
+const ToolsGrid = ({ subdomainUrls, enableChat }: ToolsGridProps) => {
   return (
-    <>
-      {/* Core Tools Grid - Ready for Chat as third tool */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <ToolCard
-          href={subdomainUrls.superset}
-          icon={<BiLineChart className="text-2xl" />}
-          title="Analytics"
-          description="Visual dashboards, business intelligence, and SQL queries"
-          color="yellow"
-        />
+    <div className={`grid grid-cols-1 gap-8 ${enableChat ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
+      <ServiceCard
+        href={subdomainUrls.superset}
+        icon={<BiLineChart />}
+        title="Analytics"
+        description="Visual dashboards, business intelligence, and SQL queries"
+        color="amber"
+        external={true}
+      />
 
-        <ToolCard
-          href={subdomainUrls.jupyter}
-          icon={<FaPython className="text-2xl" />}
-          title="Notebooks"
-          description="Interactive data analysis and coding with Jupyter"
-          color="blue"
+      {enableChat && (
+        <ServiceCard
+          href={subdomainUrls.chat}
+          icon={<BiMessageSquareDetail />}
+          title="Chat"
+          description="AI-powered assistance for Q & A style data queries"
+          color="green"
+          external={true}
         />
+      )}
 
-        {/* Future: Add Chat here with color="green" */}
-      </div>
-    </>
+      <ServiceCard
+        href={subdomainUrls.jupyter}
+        icon={<FaPython />}
+        title="Notebooks"
+        description="Interactive data analysis and coding with Jupyter"
+        color="blue"
+        external={true}
+      />
+    </div>
   );
 };
 
-export default function Home() {
-  const [mounted, setMounted] = useState(false);
+const ContentGrid = () => {
   const [subdomainUrls, setSubdomainUrls] = useState<Record<string, string>>({});
-  const { data: session, status } = useSession();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [enableChat, setEnableChat] = useState(false);
+  const [showPlaybooks, setShowPlaybooks] = useState(false);
 
   useEffect(() => {
     // Generate all subdomain URLs once on client side where window is available
@@ -117,13 +122,228 @@ export default function Home() {
     setSubdomainUrls({
       jupyter: getUrl('jupyter'),
       superset: getUrl('superset'),
+      chat: getUrl('chat'),
       minio: getUrl('minio'),
       temporal: getUrl('temporal', '/auth/sso'),
       grafana: getUrl('grafana'),
       keycloak: getUrl('keycloak', '/admin/scout/console'),
     });
 
+    // Check feature flags from window config
+    if (typeof window !== 'undefined' && window.scoutConfig) {
+      setEnableChat(window.scoutConfig.enableChat ?? false);
+      setShowPlaybooks(window.scoutConfig.showPlaybooks ?? false);
+    }
+
     console.debug('[Scout] Subdomain URLs generated', { protocol, host });
+  }, []);
+
+  // Don't render until subdomain URLs are set on client side
+  if (Object.keys(subdomainUrls).length === 0) {
+    return (
+      <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg mb-6">
+        <div className="animate-pulse">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="h-32 bg-gray-100 dark:bg-gray-700 rounded-2xl"></div>
+            <div className="h-32 bg-gray-100 dark:bg-gray-700 rounded-2xl"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Core Services */}
+      <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
+              <HiCube className="text-base text-white" />
+            </div>
+            <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">
+              Core Services
+            </h2>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
+            Essential tools for data exploration and analysis
+          </p>
+        </div>
+
+        <ToolsGrid subdomainUrls={subdomainUrls} enableChat={enableChat} />
+      </div>
+
+      {/* Playbooks & Admin Side-by-Side */}
+      <div className={`grid ${showPlaybooks ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-6`}>
+        {/* Playbooks */}
+        {showPlaybooks && (
+          <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
+                  <FaFlask className="text-base text-white" />
+                </div>
+                <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">
+                  Playbooks
+                </h2>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
+                Pluggable workflows and dashboards
+              </p>
+            </div>
+            <div className="space-y-3">
+              <a
+                href={subdomainUrls.jupyter + '/user/scout/voila/render/Followup.ipynb'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center gap-3 p-4 bg-gradient-to-r from-cyan-50 to-sky-50 dark:from-cyan-900/20 dark:to-sky-900/20 border border-cyan-200/50 dark:border-cyan-800/50 rounded-xl hover:shadow-xl hover:shadow-cyan-200/50 dark:hover:shadow-cyan-900/30 hover:-translate-y-1 transition-all duration-300 no-underline overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/0 to-sky-600/0 group-hover:from-cyan-400/5 group-hover:to-sky-600/10 transition-all duration-300"></div>
+                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
+                  <HiSparkles className="text-xl text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <div className="relative flex-1 min-w-0">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                    Clinical Follow-up Monitoring
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                    Review algorithmically-detected follow-up recommendations
+                  </p>
+                </div>
+                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+              </a>
+
+              <a
+                href={subdomainUrls.jupyter + '/user/scout/voila/render/Cohort.ipynb'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center gap-3 p-4 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 border border-violet-200/50 dark:border-violet-800/50 rounded-xl hover:shadow-xl hover:shadow-violet-200/50 dark:hover:shadow-violet-900/30 hover:-translate-y-1 transition-all duration-300 no-underline overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-400/0 to-purple-600/0 group-hover:from-violet-400/5 group-hover:to-purple-600/10 transition-all duration-300"></div>
+                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
+                  <HiUserGroup className="text-xl text-violet-600 dark:text-violet-400" />
+                </div>
+                <div className="relative flex-1 min-w-0">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">Research Cohorting</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                    Build and manage patient cohorts for research studies
+                  </p>
+                </div>
+                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+              </a>
+
+              <a
+                href={subdomainUrls.jupyter + '/user/scout/voila/render/RADS.ipynb'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center gap-3 p-4 bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 border border-rose-200/50 dark:border-rose-800/50 rounded-xl hover:shadow-xl hover:shadow-rose-200/50 dark:hover:shadow-rose-900/30 hover:-translate-y-1 transition-all duration-300 no-underline overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-rose-400/0 to-pink-600/0 group-hover:from-rose-400/5 group-hover:to-pink-600/10 transition-all duration-300"></div>
+                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
+                  <HiChartBar className="text-xl text-rose-600 dark:text-rose-400" />
+                </div>
+                <div className="relative flex-1 min-w-0">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">LI-RADS Dashboard</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                    Explore and monitor LI-RADS reporting trends over time
+                  </p>
+                </div>
+                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-rose-600 dark:group-hover:text-rose-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Admin Tools */}
+        <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                <HiCog className="text-base text-white" />
+              </div>
+              <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">
+                Admin Tools
+              </h2>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
+              Infrastructure management and monitoring
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <a
+              href="https://washu-scout.readthedocs.io/en/latest/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-indigo-50 hover:to-blue-50 dark:hover:from-indigo-900/20 dark:hover:to-blue-900/20 border border-slate-200/50 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-xl hover:shadow-indigo-200/30 dark:hover:shadow-indigo-900/30 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
+            >
+              <div className="relative w-10 h-10 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                <SiReadthedocs className="text-xl text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div className="relative text-sm font-bold text-gray-900 dark:text-white">Documentation</div>
+            </a>
+
+            <AdminSection requireAdmin={true} fallback={<div className="hidden"></div>}>
+              <a
+                href={subdomainUrls.minio}
+                className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-red-50 hover:to-rose-50 dark:hover:from-red-900/20 dark:hover:to-rose-900/20 border border-slate-200/50 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-xl hover:shadow-red-200/30 dark:hover:shadow-red-900/30 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
+              >
+                <div className="relative w-10 h-10 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                  <SiMinio className="text-xl text-red-600 dark:text-red-400" />
+                </div>
+                <div className="relative text-sm font-bold text-gray-900 dark:text-white">Lake</div>
+              </a>
+            </AdminSection>
+
+            <AdminSection requireAdmin={true} fallback={<div className="hidden"></div>}>
+              <a
+                href={subdomainUrls.temporal}
+                className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-cyan-50 hover:to-sky-50 dark:hover:from-cyan-900/20 dark:hover:to-sky-900/20 border border-slate-200/50 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-600 hover:shadow-xl hover:shadow-cyan-200/30 dark:hover:shadow-cyan-900/30 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
+              >
+                <div className="relative w-10 h-10 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                  <SiTemporal className="text-xl text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <div className="relative text-sm font-bold text-gray-900 dark:text-white">Orchestrator</div>
+              </a>
+            </AdminSection>
+
+            <AdminSection requireAdmin={true} fallback={<div className="hidden"></div>}>
+              <a
+                href={subdomainUrls.grafana}
+                className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-orange-50 hover:to-amber-50 dark:hover:from-orange-900/20 dark:hover:to-amber-900/20 border border-slate-200/50 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-xl hover:shadow-orange-200/30 dark:hover:shadow-orange-900/30 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
+              >
+                <div className="relative w-10 h-10 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                  <SiGrafana className="text-xl text-orange-500 dark:text-orange-400" />
+                </div>
+                <div className="relative text-sm font-bold text-gray-900 dark:text-white">Monitor</div>
+              </a>
+            </AdminSection>
+
+            <AdminSection requireAdmin={true} fallback={<div className="hidden"></div>}>
+              <a
+                href={subdomainUrls.keycloak}
+                className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-purple-50 hover:to-violet-50 dark:hover:from-purple-900/20 dark:hover:to-violet-900/20 border border-slate-200/50 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-xl hover:shadow-purple-200/30 dark:hover:shadow-purple-900/30 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
+              >
+                <div className="relative w-10 h-10 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                  <SiKeycloak className="text-xl text-purple-600 dark:text-purple-400" />
+                </div>
+                <div className="relative text-sm font-bold text-gray-900 dark:text-white">
+                  User Management
+                </div>
+              </a>
+            </AdminSection>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function Home() {
+  const [mounted, setMounted] = useState(false);
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   // Auto-login: redirect to sign in if not authenticated
@@ -153,7 +373,7 @@ export default function Home() {
           </h1>
           <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed font-light">
             A data exploration and clinical insights platform brought to you by the <br />{' '}
-            Mallinckrodt Institute of Radiology’s{' '}
+            Mallinckrodt Institute of Radiology's{' '}
             <span className="font-semibold text-gray-800 dark:text-gray-100">
               Translational AI Group
             </span>{' '}
@@ -161,145 +381,8 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Core Services Section */}
-        <div className="space-y-6">
-          {Object.keys(subdomainUrls).length === 0 ? (
-            <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg mb-6">
-              <div className="animate-pulse">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="h-32 bg-gray-100 dark:bg-gray-700 rounded-2xl"></div>
-                  <div className="h-32 bg-gray-100 dark:bg-gray-700 rounded-2xl"></div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
-                    <HiCube className="text-base text-white" />
-                  </div>
-                  <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">
-                    Core Services
-                  </h2>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
-                  Essential tools for data exploration and analysis
-                </p>
-              </div>
-
-              <ToolsGrid subdomainUrls={subdomainUrls} />
-
-              {/* Documentation Link */}
-              <div className="mt-6 text-center">
-                <a
-                  href="https://washu-scout.readthedocs.io/en/latest/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200 no-underline"
-                >
-                  <SiReadthedocs className="text-base" />
-                  <span>New to Scout? Check out our documentation</span>
-                  <HiArrowRight className="text-base" />
-                </a>
-              </div>
-            </div>
-          )}
-
-          {/* Admin Tools Section - Only visible to admins */}
-          {Object.keys(subdomainUrls).length > 0 && (
-            <AdminSection requireAdmin={true}>
-              <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
-                <div className="text-center mb-6">
-                  <div className="flex items-center justify-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                      <HiCog className="text-base text-white" />
-                    </div>
-                    <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">
-                      Admin Tools
-                    </h2>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
-                    Infrastructure management and monitoring
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <a
-                    href={subdomainUrls.minio}
-                    target="_blank"
-                    className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-xl hover:shadow-red-500/20 dark:hover:shadow-2xl dark:hover:shadow-red-500/30 hover:from-red-50 hover:to-slate-50 dark:hover:from-red-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
-                  >
-                    <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                      <SiMinio className="text-xl text-red-600 dark:text-red-400" />
-                    </div>
-                    <div className="relative flex-1 min-w-0">
-                      <h3 className="text-sm font-bold text-gray-900 dark:text-white">Lake</h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                        Object storage and data lake
-                      </p>
-                    </div>
-                    <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-red-600 dark:group-hover:text-red-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
-                  </a>
-
-                  <a
-                    href={subdomainUrls.temporal}
-                    target="_blank"
-                    className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-600 hover:shadow-xl hover:shadow-cyan-500/20 dark:hover:shadow-2xl dark:hover:shadow-cyan-500/30 hover:from-cyan-50 hover:to-slate-50 dark:hover:from-cyan-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
-                  >
-                    <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                      <SiTemporal className="text-xl text-cyan-600 dark:text-cyan-400" />
-                    </div>
-                    <div className="relative flex-1 min-w-0">
-                      <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                        Orchestrator
-                      </h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                        Workflow and task automation
-                      </p>
-                    </div>
-                    <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
-                  </a>
-
-                  <a
-                    href={subdomainUrls.grafana}
-                    target="_blank"
-                    className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-xl hover:shadow-orange-500/20 dark:hover:shadow-2xl dark:hover:shadow-orange-500/30 hover:from-orange-50 hover:to-slate-50 dark:hover:from-orange-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
-                  >
-                    <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                      <SiGrafana className="text-xl text-orange-500 dark:text-orange-400" />
-                    </div>
-                    <div className="relative flex-1 min-w-0">
-                      <h3 className="text-sm font-bold text-gray-900 dark:text-white">Monitor</h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                        System metrics and dashboards
-                      </p>
-                    </div>
-                    <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-orange-500 dark:group-hover:text-orange-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
-                  </a>
-
-                  <a
-                    href={subdomainUrls.keycloak}
-                    target="_blank"
-                    className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-xl hover:shadow-purple-500/20 dark:hover:shadow-2xl dark:hover:shadow-purple-500/30 hover:from-purple-50 hover:to-slate-50 dark:hover:from-purple-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
-                  >
-                    <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                      <SiKeycloak className="text-xl text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <div className="relative flex-1 min-w-0">
-                      <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                        User Management
-                      </h3>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                        Identity and access control
-                      </p>
-                    </div>
-                    <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-purple-600 dark:group-hover:text-purple-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
-                  </a>
-                </div>
-              </div>
-            </AdminSection>
-          )}
-        </div>
+        {/* Content Grid */}
+        <ContentGrid />
 
         {/* Footer */}
         <div className="text-center mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
