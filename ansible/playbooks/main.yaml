@@ -3,22 +3,10 @@
   import_playbook: scout.yaml
   when: clone_scout_repo | default(true)
 
-- name: Install K3s on staging node
-  import_playbook: staging-k3s.yaml
+- name: Deploy staging node (k3s, Traefik, Harbor)
+  import_playbook: staging.yaml
   when:
     - groups.get('staging', []) | length > 0
-
-- name: Deploy Harbor on staging node
-  import_playbook: harbor.yaml
-  when:
-    - groups.get('staging', []) | length > 0
-    - air_gapped | default(false) | bool
-
-- name: Configure Traefik on staging node
-  import_playbook: staging-traefik.yaml
-  when:
-    - groups.get('staging', []) | length > 0
-    - air_gapped | default(false) | bool
 
 - name: Install K3s
   import_playbook: k3s.yaml

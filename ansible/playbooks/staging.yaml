@@ -1,0 +1,69 @@
+---
+# Staging Node Deployment Playbook
+# Installs k3s, configures Traefik, and deploys Harbor on the staging node
+# Used for air-gapped deployments with Harbor registry
+#
+# Documentation: docs/source/technical/air-gapped.md
+
+- name: Shared pre-requisites for staging K3s
+  hosts: staging
+  vars:
+    uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
+  tasks:
+    - name: Create /root/bin directory
+      ansible.builtin.file:
+        path: /root/bin
+        state: directory
+        mode: '0700'
+
+    - name: Download K3s installation script
+      ansible.builtin.get_url:
+        url: https://get.k3s.io
+        dest: /root/bin/get.k3s.io.sh
+        mode: '0755'
+
+    - name: Add python kubernetes library from system package
+      ansible.builtin.package:
+        name: python3-kubernetes
+        state: present
+
+################################################################################
+- name: Install k3s on staging node
+  hosts: staging
+  vars:
+    # Map staging_k3s_token to k3s_token expected by k3s role
+    k3s_token: '{{ staging_k3s_token }}'
+    # Staging node has internet access, use online installation mode
+    air_gapped: false
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
+  roles:
+    # This role handles installation, service management, and verification
+    # It will use online installation mode (air_gapped=false)
+    # It will NOT configure registry mirrors (staging IS the registry)
+    - role: k3s
+
+  post_tasks:
+    - name: Display staging k3s cluster status
+      ansible.builtin.debug:
+        msg: 'Staging k3s cluster is ready for Traefik and Harbor deployment'
+
+################################################################################
+- name: Configure Traefik on staging node
+  hosts: staging
+  gather_facts: false
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  roles:
+    - traefik
+
+################################################################################
+- name: Deploy Harbor on staging node
+  hosts: staging
+  gather_facts: false
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
+  roles:
+    - harbor

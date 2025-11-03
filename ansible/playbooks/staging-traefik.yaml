@@ -1,8 +1,0 @@
----
-- name: Configure Traefik on Staging Node
-  hosts: staging
-  gather_facts: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-  roles:
-    - traefik
