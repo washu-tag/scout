@@ -5,5 +5,8 @@
 - name: Deploy Keycloak
   ansible.builtin.include_tasks: deploy.yaml
 
+- name: Configure Keycloak
+  ansible.builtin.include_tasks: configure.yaml
+
 - name: Cleanup Keycloak artifacts
   ansible.builtin.include_tasks: cleanup.yaml

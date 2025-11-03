@@ -3,6 +3,22 @@
 # Reference: https://github.com/adorsys/keycloak-config-cli/issues/1287
 # Uses pre-downloaded chart in air-gapped mode, direct URL in online mode
 
+- name: Create Keycloak Config as a Secret
+  delegate_to: localhost
+  no_log: true
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: keycloak-config
+      data:
+        scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | b64encode }}"
+
 - name: Set Helm chart reference
   ansible.builtin.set_fact:
     keycloak_config_cli_chart_ref: "{{ keycloak_artifact_temp_dir + '/keycloak-config-cli.tgz' if air_gapped | default(false) | bool else 'https://adorsys.github.io/keycloak-config-cli/helm-charts/keycloak-config-cli-' + keycloak_config_cli_helm_chart_version + '.tgz' }}"

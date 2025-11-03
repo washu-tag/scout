@@ -167,22 +167,3 @@
       type: Ready
       status: 'True'
     wait_timeout: 300
-
-- name: Create Keycloak Config as a Secret
-  delegate_to: localhost
-  no_log: true
-  environment:
-    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
-  kubernetes.core.k8s:
-    state: present
-    namespace: '{{ keycloak_namespace }}'
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: keycloak-config
-      data:
-        scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | b64encode }}"
-
-- name: Configure Keycloak with keycloak-config-cli
-  ansible.builtin.include_tasks: configure.yaml
