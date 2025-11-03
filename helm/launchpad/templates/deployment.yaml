@@ -82,7 +82,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "explorer.fullname" . }}-config
+            name: {{ include "launchpad.fullname" . }}-config
       {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
       {{- end }}

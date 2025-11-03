@@ -12,9 +12,9 @@ interface ProtectedSectionProps {
 export default function AdminSection({ children, fallback = null }: ProtectedSectionProps) {
   const { data: session, status } = useSession();
 
-  // Show loading state
+  // Show loading state - render children with opacity 0 to maintain layout
   if (status === 'loading') {
-    return fallback;
+    return <div className="opacity-0 pointer-events-none">{children}</div>;
   }
 
   // Must be authenticated
