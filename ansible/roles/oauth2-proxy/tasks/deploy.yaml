@@ -11,8 +11,6 @@
     - name: Create ConfigMap for OAuth2 Proxy templates
       delegate_to: localhost
       no_log: true
-      environment:
-        K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
       kubernetes.core.k8s:
         state: present
         definition: |
@@ -24,6 +22,7 @@
           data:
             '{{ item.path | basename }}': |-
               {{ lookup("file", item.path) | indent(4) }}
+        kubeconfig: '{{ local_kubeconfig_yaml }}'
       loop: '{{ oauth2_proxy_templates.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
@@ -31,8 +30,6 @@
 - name: Create Secret with Logo for OAuth2 Proxy
   delegate_to: localhost
   no_log: true
-  environment:
-    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
   kubernetes.core.k8s:
     state: present
     definition:
@@ -44,6 +41,7 @@
       type: Opaque
       data:
         logo.png: '{{ lookup("file", role_path + "/files/scout.jpg") | b64encode }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Deploy OAuth2 Proxy
   ansible.builtin.include_role:

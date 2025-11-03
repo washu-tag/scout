@@ -6,8 +6,6 @@
 - name: Create Keycloak Config as a Secret
   delegate_to: localhost
   no_log: true
-  environment:
-    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
   kubernetes.core.k8s:
     state: present
     namespace: '{{ keycloak_namespace }}'
@@ -18,6 +16,7 @@
         name: keycloak-config
       data:
         scout-realm.json: "{{ lookup('template', 'scout-realm.json.j2') | b64encode }}"
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Set Helm chart reference
   ansible.builtin.set_fact:
@@ -43,6 +42,4 @@
         KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
         KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
       existingSecret: keycloak-admin-secret
-  environment:
-    KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
-    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'

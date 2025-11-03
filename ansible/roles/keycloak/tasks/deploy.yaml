@@ -2,20 +2,18 @@
 - name: Apply Keycloak CRD
   no_log: true
   delegate_to: localhost
-  environment:
-    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
   kubernetes.core.k8s:
     state: present
     src: "{{ keycloak_artifact_temp_dir + '/keycloak-crd.yml' if air_gapped | default(false) | bool else keycloak_crd_url }}"
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Apply Keycloak KeycloakRealmImport CRD
   no_log: true
   delegate_to: localhost
-  environment:
-    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
   kubernetes.core.k8s:
     state: present
     src: "{{ keycloak_artifact_temp_dir + '/keycloak-realmimport-crd.yml' if air_gapped | default(false) | bool else keycloak_realmimport_crd_url }}"
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Create Keycloak CR namespace
   kubernetes.core.k8s:
@@ -27,12 +25,11 @@
 - name: Apply Keycloak Operator
   no_log: true
   delegate_to: localhost
-  environment:
-    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
   kubernetes.core.k8s:
     state: present
     src: "{{ keycloak_artifact_temp_dir + '/keycloak-operator.yml' if air_gapped | default(false) | bool else keycloak_operator_url }}"
     namespace: '{{ keycloak_namespace }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Wait for Keycloak Operator to be ready
   kubernetes.core.k8s_info:
