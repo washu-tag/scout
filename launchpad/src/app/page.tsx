@@ -18,7 +18,7 @@ interface ToolCardProps {
   external?: boolean;
 }
 
-const ToolCard = ({ href, icon, title, description, color, external = false }: ToolCardProps) => {
+const ToolCard = ({ href, icon, title, description, color, external = true }: ToolCardProps) => {
   const colorClasses = {
     blue: 'bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-200/50 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/20 hover:from-blue-100 hover:to-blue-200/50 dark:from-blue-900/20 dark:to-blue-800/10 dark:border-blue-800/50 dark:hover:border-blue-500 dark:hover:shadow-2xl dark:hover:shadow-blue-500/40 dark:hover:from-blue-800/30 dark:hover:to-blue-700/20',
     yellow:
@@ -42,7 +42,7 @@ const ToolCard = ({ href, icon, title, description, color, external = false }: T
   return (
     <a
       href={href}
-      {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
+      {...(external && { target: '_blank' })}
       className={`group block p-6 ${colorClasses[color]} rounded-2xl transition-all duration-300 no-underline hover:scale-[1.02] hover:-translate-y-1`}
     >
       <div className="flex items-center gap-3 mb-4">
@@ -226,6 +226,7 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-4">
                   <a
                     href={subdomainUrls.minio}
+                    target="_blank"
                     className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-xl hover:shadow-red-500/20 dark:hover:shadow-2xl dark:hover:shadow-red-500/30 hover:from-red-50 hover:to-slate-50 dark:hover:from-red-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
                   >
                     <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
@@ -242,6 +243,7 @@ export default function Home() {
 
                   <a
                     href={subdomainUrls.temporal}
+                    target="_blank"
                     className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-600 hover:shadow-xl hover:shadow-cyan-500/20 dark:hover:shadow-2xl dark:hover:shadow-cyan-500/30 hover:from-cyan-50 hover:to-slate-50 dark:hover:from-cyan-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
                   >
                     <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
@@ -260,6 +262,7 @@ export default function Home() {
 
                   <a
                     href={subdomainUrls.grafana}
+                    target="_blank"
                     className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-xl hover:shadow-orange-500/20 dark:hover:shadow-2xl dark:hover:shadow-orange-500/30 hover:from-orange-50 hover:to-slate-50 dark:hover:from-orange-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
                   >
                     <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
@@ -276,6 +279,7 @@ export default function Home() {
 
                   <a
                     href={subdomainUrls.keycloak}
+                    target="_blank"
                     className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-xl hover:shadow-purple-500/20 dark:hover:shadow-2xl dark:hover:shadow-purple-500/30 hover:from-purple-50 hover:to-slate-50 dark:hover:from-purple-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
                   >
                     <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
