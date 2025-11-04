@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { FaUser, FaGithub, FaMoon, FaSun } from 'react-icons/fa';
+import { SiReadthedocs } from 'react-icons/si';
 import UserDropdown from './UserDropdown';
 
 export default function TopBar() {
@@ -38,6 +39,17 @@ export default function TopBar() {
 
   return (
     <div className="flex items-center gap-2">
+      {/* Documentation Link */}
+      <a
+        href="https://washu-scout.readthedocs.io/en/latest/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200 cursor-pointer"
+        title="Scout Documentation"
+      >
+        <SiReadthedocs className="text-xl" />
+      </a>
+
       {/* GitHub Link */}
       <a
         href="https://github.com/washu-tag/scout"
