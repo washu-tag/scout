@@ -3,78 +3,106 @@
 import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { FaPython } from 'react-icons/fa';
-import { SiMinio, SiTemporal, SiGrafana, SiReadthedocs, SiKeycloak } from 'react-icons/si';
+import { SiMinio, SiTemporal, SiGrafana, SiKeycloak, SiReadthedocs } from 'react-icons/si';
 import { BiLineChart } from 'react-icons/bi';
+import { HiArrowRight, HiCube, HiCog } from 'react-icons/hi';
 import TopBar from '@/components/TopBar';
 import AdminSection from '@/components/AdminSection';
-import Link from 'next/link';
 
 interface ToolCardProps {
   href: string;
   icon: React.ReactNode;
   title: string;
   description: string;
-  color: 'blue' | 'amber' | 'indigo';
+  color: 'blue' | 'yellow' | 'green';
   external?: boolean;
 }
 
 const ToolCard = ({ href, icon, title, description, color, external = false }: ToolCardProps) => {
   const colorClasses = {
-    blue: 'border-blue-200 hover:border-blue-400 bg-blue-50 hover:bg-blue-100',
-    amber: 'border-amber-200 hover:border-amber-400 bg-amber-50 hover:bg-amber-100',
-    indigo: 'border-indigo-200 hover:border-indigo-400 bg-indigo-50 hover:bg-indigo-100',
+    blue: 'bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-200/50 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/20 hover:from-blue-100 hover:to-blue-200/50 dark:from-blue-900/20 dark:to-blue-800/10 dark:border-blue-800/50 dark:hover:border-blue-500 dark:hover:shadow-2xl dark:hover:shadow-blue-500/40 dark:hover:from-blue-800/30 dark:hover:to-blue-700/20',
+    yellow:
+      'bg-gradient-to-br from-amber-50 to-yellow-100/50 border-2 border-amber-200/50 hover:border-amber-400 hover:shadow-xl hover:shadow-amber-500/20 hover:from-amber-100 hover:to-amber-200/50 dark:from-amber-900/20 dark:to-amber-800/10 dark:border-amber-800/50 dark:hover:border-amber-500 dark:hover:shadow-2xl dark:hover:shadow-amber-500/40 dark:hover:from-amber-800/30 dark:hover:to-amber-700/20',
+    green:
+      'bg-gradient-to-br from-emerald-50 to-green-100/50 border-2 border-green-200/50 hover:border-green-400 hover:shadow-xl hover:shadow-green-500/20 hover:from-emerald-100 hover:to-green-200/50 dark:from-emerald-900/20 dark:to-emerald-800/10 dark:border-emerald-800/50 dark:hover:border-emerald-500 dark:hover:shadow-2xl dark:hover:shadow-emerald-500/40 dark:hover:from-emerald-800/30 dark:hover:to-emerald-700/20',
   };
 
   const iconColorClasses = {
-    blue: 'bg-blue-500',
-    amber: 'bg-amber-500',
-    indigo: 'bg-indigo-500',
+    blue: 'text-blue-600 dark:text-blue-400',
+    yellow: 'text-amber-600 dark:text-amber-400',
+    green: 'text-emerald-600 dark:text-emerald-400',
+  };
+
+  const arrowColorClasses = {
+    blue: 'text-blue-600 dark:text-blue-400',
+    yellow: 'text-amber-600 dark:text-amber-400',
+    green: 'text-emerald-600 dark:text-emerald-400',
   };
 
   return (
     <a
       href={href}
       {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
-      className={`group relative p-6 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl no-underline ${colorClasses[color]} dark:bg-gray-800 dark:border-gray-700 dark:hover:border-gray-600 dark:hover:bg-gray-750`}
+      className={`group block p-6 ${colorClasses[color]} rounded-2xl transition-all duration-300 no-underline hover:scale-[1.02] hover:-translate-y-1`}
     >
-      <div className="flex items-start gap-6">
-        <div
-          className={`p-4 rounded-2xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 text-white ${iconColorClasses[color]}`}
-        >
-          {icon}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-12 h-12 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center group-hover:scale-125 transition-all duration-300">
+          <div className={iconColorClasses[color]}>{icon}</div>
         </div>
-        <div className="flex-1">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white group-hover:text-gray-800 dark:group-hover:text-gray-100">
-              {title}
-            </h3>
-            {external && (
-              <svg
-                className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                />
-              </svg>
-            )}
-          </div>
-          <p className="text-gray-600 dark:text-gray-300 group-hover:text-gray-700 dark:group-hover:text-gray-200">
-            {description}
-          </p>
-        </div>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:translate-x-1 transition-transform duration-300">
+          {title}
+        </h3>
+      </div>
+      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">{description}</p>
+      <div
+        className={`flex items-center gap-1 ${arrowColorClasses[color]} font-bold text-sm transition-all duration-300`}
+      >
+        <span className="group-hover:translate-x-1 transition-transform duration-300">Launch</span>
+        <HiArrowRight className="transform group-hover:translate-x-3 transition-all duration-300 ease-out" />
       </div>
     </a>
   );
 };
 
-const ToolsGrid = () => {
+interface ToolsGridProps {
+  subdomainUrls: Record<string, string>;
+}
+
+const ToolsGrid = ({ subdomainUrls }: ToolsGridProps) => {
+  return (
+    <>
+      {/* Core Tools Grid - Ready for Chat as third tool */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <ToolCard
+          href={subdomainUrls.superset}
+          icon={<BiLineChart className="text-2xl" />}
+          title="Analytics"
+          description="Visual dashboards, business intelligence, and SQL queries"
+          color="yellow"
+        />
+
+        <ToolCard
+          href={subdomainUrls.jupyter}
+          icon={<FaPython className="text-2xl" />}
+          title="Notebooks"
+          description="Interactive data analysis and coding with Jupyter"
+          color="blue"
+        />
+
+        {/* Future: Add Chat here with color="green" */}
+      </div>
+    </>
+  );
+};
+
+export default function Home() {
+  const [mounted, setMounted] = useState(false);
   const [subdomainUrls, setSubdomainUrls] = useState<Record<string, string>>({});
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     // Generate all subdomain URLs once on client side where window is available
@@ -98,133 +126,6 @@ const ToolsGrid = () => {
     console.debug('[Scout] Subdomain URLs generated', { protocol, host });
   }, []);
 
-  // Don't render until subdomain URLs are set on client side
-  if (Object.keys(subdomainUrls).length === 0) {
-    return (
-      <div className="animate-pulse">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          <div className="h-32 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
-          <div className="h-32 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
-        </div>
-        <div className="h-32 bg-gray-100 dark:bg-gray-800 rounded-2xl mb-12"></div>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      {/* Main Tools Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-        <ToolCard
-          href={subdomainUrls.jupyter}
-          icon={<FaPython className="text-4xl" />}
-          title="Notebooks"
-          description="Interactive data analysis and exploration with JupyterHub"
-          color="blue"
-        />
-
-        <ToolCard
-          href={subdomainUrls.superset}
-          icon={<BiLineChart className="text-4xl" />}
-          title="Analytics"
-          description="Visualize data and create dashboards with Apache Superset"
-          color="amber"
-        />
-      </div>
-
-      {/* Documentation */}
-      <div className="grid mb-12">
-        <ToolCard
-          href="https://washu-scout.readthedocs.io/en/latest/"
-          icon={<SiReadthedocs className="text-3xl" />}
-          title="Documentation"
-          description="Learn how to use Scout effectively"
-          color="indigo"
-          external={true}
-        />
-      </div>
-
-      {/* Admin Tools Section - Only visible to admins */}
-      <AdminSection requireAdmin={true}>
-        <div className="mb-12">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wide flex items-center">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-            Admin Tools
-          </h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <a
-              href={subdomainUrls.minio}
-              className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-800 hover:shadow-md transition-all duration-300 no-underline"
-            >
-              <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                <SiMinio className="text-xl text-red-600 dark:text-red-400" />
-              </div>
-              <div>
-                <span className="font-medium text-gray-900 dark:text-white">Lake</span>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Object storage</p>
-              </div>
-            </a>
-
-            <a
-              href={subdomainUrls.temporal}
-              className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800 hover:shadow-md transition-all duration-300 no-underline"
-            >
-              <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                <SiTemporal className="text-xl text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <span className="font-medium text-gray-900 dark:text-white">Orchestrator</span>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Workflows</p>
-              </div>
-            </a>
-
-            <a
-              href={subdomainUrls.grafana}
-              className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-orange-200 dark:hover:border-orange-800 hover:shadow-md transition-all duration-300 no-underline"
-            >
-              <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                <SiGrafana className="text-xl text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <span className="font-medium text-gray-900 dark:text-white">Monitor</span>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Metrics & logs</p>
-              </div>
-            </a>
-
-            <a
-              href={subdomainUrls.keycloak}
-              className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-800 hover:shadow-md transition-all duration-300 no-underline"
-            >
-              <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                <SiKeycloak className="text-xl text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <span className="font-medium text-gray-900 dark:text-white">User Management</span>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Users & permissions</p>
-              </div>
-            </a>
-          </div>
-        </div>
-      </AdminSection>
-    </>
-  );
-};
-
-export default function Home() {
-  const [mounted, setMounted] = useState(false);
-  const { data: session, status } = useSession();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // Auto-login: redirect to sign in if not authenticated
   useEffect(() => {
     if (status !== 'loading' && !session) {
@@ -233,34 +134,177 @@ export default function Home() {
   }, [status, session]);
 
   return (
-    <div className="min-h-screen w-full bg-white dark:bg-gray-900 transition-colors duration-500">
-      {/* Header */}
-      <div className="w-full px-8 py-6 border-b border-gray-100 dark:border-gray-800">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href={'/'} className="flex items-center gap-3">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Scout</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 pt-2">
-                Radiology Report Explorer
-              </p>
-            </div>
-          </Link>
-          <TopBar />
-        </div>
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 transition-colors duration-500 flex items-center justify-center py-12">
+      {/* Floating TopBar */}
+      <div className="absolute top-0 right-0 p-6 z-10">
+        <TopBar />
       </div>
 
       <div
-        className={`max-w-5xl mx-auto px-8 py-12 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+        className={`w-full max-w-6xl px-6 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
-        {/* Tools Grid */}
-        <ToolsGrid />
-
-        {/* Compact Footer */}
-        <footer className="text-center py-6 mt-8 border-t border-gray-100 dark:border-gray-800">
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            © {new Date().getFullYear()} Translational AI Group, Washington University in St. Louis
+        {/* Hero Section */}
+        <div className="text-center mb-12">
+          <div className="inline-block p-1 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 mb-2 shadow-lg shadow-blue-200 dark:shadow-blue-900/50">
+            <img src="/scout.png" alt="Scout" className="h-16 rounded-xl bg-white p-2" />
+          </div>
+          <h1 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:text-white mb-4 tracking-tight leading-tight">
+            Welcome to Scout
+          </h1>
+          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed font-light">
+            A data exploration and clinical insights platform brought to you by the <br />{' '}
+            Mallinckrodt Institute of Radiology’s{' '}
+            <span className="font-semibold text-gray-800 dark:text-gray-100">
+              Translational AI Group
+            </span>{' '}
+            <br /> at Washington University in St. Louis.
           </p>
-        </footer>
+        </div>
+
+        {/* Core Services Section */}
+        <div className="space-y-6">
+          {Object.keys(subdomainUrls).length === 0 ? (
+            <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg mb-6">
+              <div className="animate-pulse">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="h-32 bg-gray-100 dark:bg-gray-700 rounded-2xl"></div>
+                  <div className="h-32 bg-gray-100 dark:bg-gray-700 rounded-2xl"></div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
+              <div className="text-center mb-6">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
+                    <HiCube className="text-base text-white" />
+                  </div>
+                  <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">
+                    Core Services
+                  </h2>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
+                  Essential tools for data exploration and analysis
+                </p>
+              </div>
+
+              <ToolsGrid subdomainUrls={subdomainUrls} />
+
+              {/* Documentation Link */}
+              <div className="mt-6 text-center">
+                <a
+                  href="https://washu-scout.readthedocs.io/en/latest/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200 no-underline"
+                >
+                  <SiReadthedocs className="text-base" />
+                  <span>New to Scout? Check out our documentation</span>
+                  <HiArrowRight className="text-base" />
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Admin Tools Section - Only visible to admins */}
+          {Object.keys(subdomainUrls).length > 0 && (
+            <AdminSection requireAdmin={true}>
+              <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
+                <div className="text-center mb-6">
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                      <HiCog className="text-base text-white" />
+                    </div>
+                    <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">
+                      Admin Tools
+                    </h2>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
+                    Infrastructure management and monitoring
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <a
+                    href={subdomainUrls.minio}
+                    className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-xl hover:shadow-red-500/20 dark:hover:shadow-2xl dark:hover:shadow-red-500/30 hover:from-red-50 hover:to-slate-50 dark:hover:from-red-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
+                  >
+                    <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                      <SiMinio className="text-xl text-red-600 dark:text-red-400" />
+                    </div>
+                    <div className="relative flex-1 min-w-0">
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white">Lake</h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                        Object storage and data lake
+                      </p>
+                    </div>
+                    <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-red-600 dark:group-hover:text-red-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+                  </a>
+
+                  <a
+                    href={subdomainUrls.temporal}
+                    className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-600 hover:shadow-xl hover:shadow-cyan-500/20 dark:hover:shadow-2xl dark:hover:shadow-cyan-500/30 hover:from-cyan-50 hover:to-slate-50 dark:hover:from-cyan-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
+                  >
+                    <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                      <SiTemporal className="text-xl text-cyan-600 dark:text-cyan-400" />
+                    </div>
+                    <div className="relative flex-1 min-w-0">
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                        Orchestrator
+                      </h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                        Workflow and task automation
+                      </p>
+                    </div>
+                    <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+                  </a>
+
+                  <a
+                    href={subdomainUrls.grafana}
+                    className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-xl hover:shadow-orange-500/20 dark:hover:shadow-2xl dark:hover:shadow-orange-500/30 hover:from-orange-50 hover:to-slate-50 dark:hover:from-orange-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
+                  >
+                    <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                      <SiGrafana className="text-xl text-orange-500 dark:text-orange-400" />
+                    </div>
+                    <div className="relative flex-1 min-w-0">
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white">Monitor</h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                        System metrics and dashboards
+                      </p>
+                    </div>
+                    <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-orange-500 dark:group-hover:text-orange-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+                  </a>
+
+                  <a
+                    href={subdomainUrls.keycloak}
+                    className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-xl hover:shadow-purple-500/20 dark:hover:shadow-2xl dark:hover:shadow-purple-500/30 hover:from-purple-50 hover:to-slate-50 dark:hover:from-purple-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
+                  >
+                    <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                      <SiKeycloak className="text-xl text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div className="relative flex-1 min-w-0">
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                        User Management
+                      </h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                        Identity and access control
+                      </p>
+                    </div>
+                    <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-purple-600 dark:group-hover:text-purple-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+                  </a>
+                </div>
+              </div>
+            </AdminSection>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="text-center mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-light">
+            © {new Date().getFullYear()}{' '}
+            <span className="font-medium">Translational AI Group</span> • Mallinckrodt Institute of
+            Radiology • Washington University in St. Louis
+          </p>
+        </div>
       </div>
     </div>
   );
