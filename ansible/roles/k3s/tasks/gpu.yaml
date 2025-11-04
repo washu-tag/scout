@@ -16,22 +16,50 @@
       default-runtime: nvidia
     mode: '0644'
 
-- name: Add NVIDIA container toolkit repository
-  ansible.builtin.get_url:
-    url: https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
-    dest: /etc/yum.repos.d/nvidia-container-toolkit.repo
-    mode: '0644'
-
 - name: Install NVIDIA container toolkit packages
-  ansible.builtin.package:
-    name:
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: ensure_packages
+  vars:
+    package_names:
       - nvidia-container-toolkit
       - nvidia-container-toolkit-base
       - libnvidia-container-tools
       - libnvidia-container1
-    state: present
-
-- name: Verify NVIDIA container toolkit installation
-  ansible.builtin.command: nvidia-ctk --version
-  register: nvidia_ctk_version
-  changed_when: false
+    package_type: 'GPU'
+    download_script: |
+      set -e
+      set -x
+      echo "Installing dnf-plugins-core for dnf download..."
+      dnf install -y dnf-plugins-core
+      echo "Adding NVIDIA container toolkit repository..."
+      dnf config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+      # Disable repo_gpgcheck due to Rocky Linux 9.5 GPG signature verification errors
+      # See: https://github.com/NVIDIA/nvidia-container-toolkit/issues/836
+      echo "Disabling repo_gpgcheck due to Rocky Linux 9.5 GPG signature issues..."
+      dnf config-manager --save --setopt=nvidia-container-toolkit.repo_gpgcheck=0
+      echo "Repository configuration:"
+      cat /etc/yum.repos.d/nvidia-container-toolkit.repo
+      echo "Downloading NVIDIA container toolkit packages and ALL dependencies..."
+      mkdir -p /downloads
+      dnf download --resolve --destdir=/downloads \
+        nvidia-container-toolkit \
+        nvidia-container-toolkit-base \
+        libnvidia-container-tools \
+        libnvidia-container1
+      echo "All downloaded packages (including dependencies):"
+      ls -lh /downloads/
+      rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
+      echo "Package count: $rpm_count"
+      if [ "$rpm_count" -eq 0 ]; then
+        echo "ERROR: No RPM files were downloaded!"
+        exit 1
+      fi
+      echo "Download completed successfully with $rpm_count packages"
+    verify_command: 'nvidia-ctk --version'
+    online_repo_setup_tasks:
+      - name: Add NVIDIA container toolkit repository
+        ansible.builtin.get_url:
+          url: https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+          dest: /etc/yum.repos.d/nvidia-container-toolkit.repo
+          mode: '0644'

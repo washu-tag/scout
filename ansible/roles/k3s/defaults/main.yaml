@@ -49,9 +49,6 @@ k3s_bin_dir: /root/bin
 # Where to install k3s binary on target nodes
 k3s_binary_path: /usr/local/bin/k3s
 
-# Note: k3s_install_script_path is computed dynamically as {{ k3s_bin_dir }}/get.k3s.io.sh
-# Override k3s_bin_dir to change the install script path
-
 ################################################################################
 # SELinux Configuration
 ################################################################################
@@ -68,11 +65,8 @@ k3s_selinux_channel: stable
 # Rancher RPM repository site
 k3s_selinux_rpm_site: rpm.rancher.io
 
-# Where to stage SELinux RPMs on target nodes (temporary directory)
-k3s_selinux_rpm_staging_dir: /tmp/k3s-selinux-rpms
-
 ################################################################################
-# Kubernetes Job Configuration (for SELinux package download in air-gapped mode)
+# Kubernetes Job Configuration (for package downloads in air-gapped mode)
 ################################################################################
 
 # Namespace where the SELinux downloader Job will run on the staging cluster
@@ -80,6 +74,9 @@ k3s_package_download_namespace: default
 
 # Timeout in seconds to wait for the SELinux package download Job to complete
 k3s_package_download_timeout: 300
+
+# Rocky Linux container image used for package download jobs
+k3s_package_download_image: rockylinux/rockylinux:9.6
 ################################################################################
 # Internal Variables (set at runtime)
 ################################################################################
@@ -90,6 +87,9 @@ k3s_package_download_timeout: 300
 # Temporary directory for storing artifacts on Ansible control node
 # Set by download_artifacts.yaml task
 # k3s_artifact_temp_dir: /tmp/k3s_airgap_XXXXXX
+
+# Path to k3s install script (computed at runtime from k3s_bin_dir)
+# k3s_install_script_path: {{ k3s_bin_dir }}/get.k3s.io.sh
 
 # Harbor registry configuration
 # Computed from harbor role defaults and inventory variables

@@ -13,68 +13,74 @@
   vars:
     ns: '{{ harbor_namespace }}'
 
-- name: Check if TLS secret already exists
-  kubernetes.core.k8s_info:
-    kind: Secret
-    namespace: '{{ harbor_namespace }}'
-    name: '{{ harbor_tls_secret_name }}'
-  register: existing_tls_secret
-
-- name: Generate and create TLS secret if it doesn't exist
-  when: existing_tls_secret.resources | length == 0
+- name: Generate self-signed TLS certificate for nodePort mode
+  when: harbor_expose_type == 'nodePort'
   block:
-    - name: Generate self-signed certificate
-      ansible.builtin.shell: |
-        # Build SAN list so cert is valid for multiple DNS names
-        SAN="DNS:{{ inventory_hostname }}"
-        {% if external_url is defined and external_url | length > 0 %}
-        SAN="${SAN},DNS:{{ external_url }}"
-        {% endif %}
-        {% if ansible_host is defined and ansible_host | length > 0 %}
-        SAN="${SAN},DNS:{{ ansible_host }}"
-        {% endif %}
+    - name: Check if TLS secret already exists
+      kubernetes.core.k8s_info:
+        kind: Secret
+        namespace: '{{ harbor_namespace }}'
+        name: '{{ harbor_tls_secret_name }}'
+      register: existing_tls_secret
 
-        # Generate certificate with SANs
-        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-          -keyout /tmp/harbor-tls.key \
-          -out /tmp/harbor-tls.crt \
-          -subj "/CN={{ inventory_hostname }}/O=Scout Harbor" \
-          -addext "subjectAltName=${SAN}"
-      changed_when: true
+    - name: Generate and create TLS secret if it doesn't exist
+      when: existing_tls_secret.resources | length == 0
+      block:
+        - name: Generate self-signed certificate
+          ansible.builtin.shell: |
+            # Build SAN list so cert is valid for multiple DNS names
+            SAN="DNS:{{ harbor_hostname }}"
+            {% if inventory_hostname != harbor_hostname %}
+            SAN="${SAN},DNS:{{ inventory_hostname }}"
+            {% endif %}
+            {% if external_url is defined and external_url | length > 0 and external_url != harbor_hostname %}
+            SAN="${SAN},DNS:{{ external_url }}"
+            {% endif %}
+            {% if ansible_host is defined and ansible_host | length > 0 %}
+            SAN="${SAN},DNS:{{ ansible_host }}"
+            {% endif %}
 
-    - name: Read certificate file
-      ansible.builtin.slurp:
-        src: /tmp/harbor-tls.crt
-      register: harbor_tls_crt
+            # Generate certificate with SANs
+            openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+              -keyout /tmp/harbor-tls.key \
+              -out /tmp/harbor-tls.crt \
+              -subj "/CN={{ harbor_hostname }}/O=Scout Harbor" \
+              -addext "subjectAltName=${SAN}"
+          changed_when: true
 
-    - name: Read key file
-      ansible.builtin.slurp:
-        src: /tmp/harbor-tls.key
-      register: harbor_tls_key
+        - name: Read certificate file
+          ansible.builtin.slurp:
+            src: /tmp/harbor-tls.crt
+          register: harbor_tls_crt
 
-    - name: Create TLS secret
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: '{{ harbor_tls_secret_name }}'
-            namespace: '{{ harbor_namespace }}'
-          type: kubernetes.io/tls
-          data:
-            tls.crt: '{{ harbor_tls_crt.content }}'
-            tls.key: '{{ harbor_tls_key.content }}'
+        - name: Read key file
+          ansible.builtin.slurp:
+            src: /tmp/harbor-tls.key
+          register: harbor_tls_key
 
-    - name: Clean up temp cert
-      ansible.builtin.file:
-        name: /tmp/harbor-tls.crt
-        state: absent
+        - name: Create TLS secret
+          kubernetes.core.k8s:
+            state: present
+            definition:
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: '{{ harbor_tls_secret_name }}'
+                namespace: '{{ harbor_namespace }}'
+              type: kubernetes.io/tls
+              data:
+                tls.crt: '{{ harbor_tls_crt.content }}'
+                tls.key: '{{ harbor_tls_key.content }}'
 
-    - name: Clean up temp key
-      ansible.builtin.file:
-        name: /tmp/harbor-tls.key
-        state: absent
+        - name: Clean up temp cert
+          ansible.builtin.file:
+            name: /tmp/harbor-tls.crt
+            state: absent
+
+        - name: Clean up temp key
+          ansible.builtin.file:
+            name: /tmp/harbor-tls.key
+            state: absent
 
 - name: Set Harbor expose configuration for ingress mode
   ansible.builtin.set_fact:
@@ -82,12 +88,11 @@
       type: '{{ harbor_expose_type }}'
       tls:
         enabled: true
-        certSource: secret
-        secret:
-          secretName: '{{ harbor_tls_secret_name }}'
+        # Traefik handles TLS termination with its own wildcard cert
+        certSource: none
       ingress:
         hosts:
-          core: '{{ inventory_hostname }}'
+          core: '{{ harbor_hostname }}'
         className: traefik
         annotations:
           traefik.ingress.kubernetes.io/router.entrypoints: websecure

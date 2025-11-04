@@ -1,0 +1,56 @@
+---
+# Generic RPM Installation from Artifacts
+# Installs RPM packages from the artifact directory to target nodes
+# Used for air-gapped installation of packages that were downloaded via Kubernetes Job
+#
+# Required parameters:
+#   - rpm_artifact_dir: Directory path on control node containing RPMs to install
+#   - rpm_staging_dir: Directory path on target node where RPMs will be staged
+#   - rpm_package_type: Description of package type for logging (e.g., "SELinux", "GPU")
+
+- block:
+    - name: Copy {{ rpm_package_type }} RPM archive to node
+      ansible.builtin.copy:
+        src: '{{ rpm_artifact_dir }}/rpms.tar.gz'
+        dest: '{{ rpm_staging_dir }}/rpms.tar.gz'
+        mode: '0644'
+
+    - name: Extract {{ rpm_package_type }} RPM archive on node
+      ansible.builtin.unarchive:
+        src: '{{ rpm_staging_dir }}/rpms.tar.gz'
+        dest: '{{ rpm_staging_dir }}/'
+        remote_src: true
+
+    - name: Find all RPM files on node
+      ansible.builtin.find:
+        paths: '{{ rpm_staging_dir }}'
+        patterns: '*.rpm'
+      register: rpm_files_on_node
+
+    - name: Verify RPMs were extracted
+      ansible.builtin.fail:
+        msg: 'No RPM files found after extracting {{ rpm_package_type }} archive'
+      when: rpm_files_on_node.files | length == 0
+
+    - name: Display list of RPM files to be installed
+      ansible.builtin.debug:
+        msg: '{{ rpm_files_on_node.files | map(attribute="path") | map("basename") | list }}'
+        verbosity: 1
+
+    - name: Install all {{ rpm_package_type }} packages
+      ansible.builtin.dnf:
+        name: '{{ rpm_files_on_node.files | map(attribute="path") | list }}'
+        state: present
+        disable_gpg_check: true
+        disablerepo: '*'
+        # Disable all repos to prevent metadata refresh in air-gapped environment
+        # All dependencies are already included in the downloaded RPM files
+      register: rpm_install_result
+      async: '{{ package_install_timeout }}'
+      poll: 5
+
+  always:
+    - name: Clean up staging directory
+      ansible.builtin.file:
+        path: '{{ rpm_staging_dir }}'
+        state: absent

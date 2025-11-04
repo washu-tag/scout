@@ -3,6 +3,11 @@
 # Installs container-selinux and k3s-selinux packages when SELinux is enabled
 # Only runs in air-gapped mode (online mode handles SELinux via get.k3s.io script)
 
+- name: Auto-detect SELinux status if not explicitly set
+  ansible.builtin.set_fact:
+    k3s_selinux_enabled: "{{ ansible_selinux.status == 'enabled' if ansible_selinux is defined else false }}"
+  when: k3s_selinux_enabled is not defined
+
 - name: Display SELinux installation status
   ansible.builtin.debug:
     msg: "SELinux package installation: {{ 'ENABLED' if k3s_selinux_enabled | bool else 'DISABLED' }}"
@@ -12,52 +17,42 @@
     msg: 'SELinux is not enabled, skipping SELinux package installation'
   when: not k3s_selinux_enabled | bool
 
-- name: Install SELinux packages
-  when: k3s_selinux_enabled | bool
-  block:
-    - name: Create staging directory for SELinux RPMs
-      ansible.builtin.file:
-        path: '{{ k3s_selinux_rpm_staging_dir }}'
-        state: directory
-        mode: '0755'
-
-    - name: Find all RPM files in artifact directory
-      ansible.builtin.find:
-        paths: '{{ k3s_artifact_temp_dir }}'
-        patterns: '*.rpm'
-      delegate_to: localhost
-      register: rpm_files_to_copy
-
-    - name: Copy all SELinux RPMs to node
-      ansible.builtin.copy:
-        src: '{{ item.path }}'
-        dest: '{{ k3s_selinux_rpm_staging_dir }}/{{ item.path | basename }}'
-        mode: '0644'
-      loop: '{{ rpm_files_to_copy.files }}'
-
-    - name: Find all RPM files on node
-      ansible.builtin.find:
-        paths: '{{ k3s_selinux_rpm_staging_dir }}'
-        patterns: '*.rpm'
-      register: rpm_files_on_node
-
-    - name: Install all SELinux packages
-      ansible.builtin.dnf:
-        name: '{{ rpm_files_on_node.files | map(attribute="path") | list }}'
-        state: present
-        disable_gpg_check: true
-      register: selinux_install
-
-    - name: Verify k3s SELinux policy module is loaded
-      ansible.builtin.command: semodule -l
-      register: semodule_list
-      changed_when: false
-      retries: 3
-      delay: 2
-      until: "'k3s' in semodule_list.stdout"
-
-  always:
-    - name: Clean up staging directory
-      ansible.builtin.file:
-        path: '{{ k3s_selinux_rpm_staging_dir }}'
-        state: absent
+- name: Install k3s SELinux packages
+  when: k3s_selinux_enabled | default(false) | bool
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: ensure_packages
+  vars:
+    package_names:
+      - k3s-selinux
+    package_type: 'SELinux'
+    download_script: |
+      set -e
+      set -x
+      echo "Installing dnf-plugins-core for dnf download..."
+      dnf install -y dnf-plugins-core
+      echo "Creating Rancher k3s repository configuration..."
+      cat > /etc/yum.repos.d/rancher-k3s-common.repo <<EOF
+      [rancher-k3s-common-{{ k3s_selinux_channel }}]
+      name=Rancher K3s Common ({{ k3s_selinux_channel }})
+      baseurl=https://{{ k3s_selinux_rpm_site }}/k3s/{{ k3s_selinux_channel }}/common/centos/9/noarch
+      enabled=1
+      gpgcheck=1
+      repo_gpgcheck=0
+      gpgkey=https://{{ k3s_selinux_rpm_site }}/public.key
+      EOF
+      echo "Repository configuration:"
+      cat /etc/yum.repos.d/rancher-k3s-common.repo
+      echo "Downloading k3s-selinux package and dependencies..."
+      mkdir -p /downloads
+      dnf download --resolve --destdir=/downloads k3s-selinux
+      echo "Downloaded packages:"
+      ls -lh /downloads/
+      rpm_count=$(ls /downloads/*.rpm 2>/dev/null | wc -l)
+      echo "Package count: $rpm_count"
+      if [ "$rpm_count" -eq 0 ]; then
+        echo "ERROR: No RPM files were downloaded!"
+        exit 1
+      fi
+      echo "Download completed successfully with $rpm_count packages"
+    verify_command: 'semodule -l | grep -q "^k3s"'

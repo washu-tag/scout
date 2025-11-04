@@ -1,0 +1,82 @@
+---
+# Main tasks for traefik role
+# Configures Traefik ingress controller with TLS termination
+
+- name: Verify required variables are defined
+  ansible.builtin.assert:
+    that:
+      - tls_cert_path is defined
+      - tls_key_path is defined
+    fail_msg: 'Required variables tls_cert_path and tls_key_path must be defined in inventory'
+
+- name: Read TLS cert from remote
+  no_log: true
+  ansible.builtin.slurp:
+    src: '{{ tls_cert_path }}'
+  register: cert_file
+
+- name: Read TLS key from remote
+  no_log: true
+  ansible.builtin.slurp:
+    src: '{{ tls_key_path }}'
+  register: key_file
+
+- name: Create TLS secret
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ traefik_tls_secret_name }}'
+        namespace: '{{ traefik_namespace }}'
+      type: kubernetes.io/tls
+      data:
+        tls.crt: '{{ cert_file.content }}'
+        tls.key: '{{ key_file.content }}'
+
+- name: Wait for helm-install-traefik job to complete
+  ansible.builtin.command: kubectl -n {{ traefik_namespace }} wait --for=condition=complete --timeout={{ traefik_helm_job_timeout }}s job/helm-install-traefik
+  register: traefik_install
+  changed_when: false
+
+- name: Wait for helm-install-traefik-crd job to complete
+  ansible.builtin.command: kubectl -n {{ traefik_namespace }} wait --for=condition=complete --timeout={{ traefik_helm_job_timeout }}s job/helm-install-traefik-crd
+  register: traefik_crd_install
+  changed_when: false
+
+- name: Apply Traefik TLSStore configuration
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: TLSStore
+      metadata:
+        name: default
+        namespace: '{{ traefik_namespace }}'
+      spec:
+        defaultCertificate:
+          secretName: '{{ traefik_tls_secret_name }}'
+
+- name: Apply Traefik configuration to enforce TLS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: helm.cattle.io/v1
+      kind: HelmChartConfig
+      metadata:
+        name: traefik
+        namespace: '{{ traefik_namespace }}'
+      spec:
+        valuesContent: |-
+          ports:
+            websecure:
+              tls:
+                enabled: true
+            web:
+              redirections:
+                entryPoint:
+                  to: websecure
+                  scheme: https
+                  permanent: true

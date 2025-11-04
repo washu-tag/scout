@@ -29,10 +29,8 @@ See [Creating the Ansible Inventory File](../../../docs/source/technical/invento
 The role is organized into focused task files:
 
 - `main.yaml`: Orchestration - coordinates all installation steps
-- `prerequisites.yaml`: Common setup for all nodes
-- `artifacts.yaml`: Handles artifact download for air-gapped mode
-- `download_selinux_rpms.yaml`: Kubernetes Job for SELinux package download
-- `selinux.yaml`: SELinux package installation
+- `prepare_k3s_binaries.yaml`: Prepares k3s binaries and install script (online and air-gapped modes)
+- `selinux.yaml`: SELinux auto-detection and package installation
 - `registry.yaml`: Harbor registry mirror configuration
 - `server.yaml`: k3s server (control plane) installation
 - `agent.yaml`: k3s agent (worker) installation
