@@ -11,3 +11,4 @@ docs/build
 build/
 .aider*
 .kube/
+.vscode/
