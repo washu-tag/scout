@@ -44,11 +44,6 @@
     # It will NOT configure registry mirrors (staging IS the registry)
     - role: k3s
 
-  post_tasks:
-    - name: Display staging k3s cluster status
-      ansible.builtin.debug:
-        msg: 'Staging k3s cluster is ready for Traefik and Harbor deployment'
-
 ################################################################################
 - name: Configure Traefik on staging node
   hosts: staging

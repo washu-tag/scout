@@ -3,10 +3,19 @@
   import_playbook: scout.yaml
   when: clone_scout_repo | default(true)
 
+- name: Capture global air_gapped value
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Capture air_gapped state
+      ansible.builtin.set_fact:
+        global_air_gapped: '{{ air_gapped | default(false) }}'
+
 - name: Deploy staging node (k3s, Traefik, Harbor)
   import_playbook: staging.yaml
   when:
     - groups.get('staging', []) | length > 0
+    - hostvars['localhost']['global_air_gapped'] | default(false) | bool
 
 - name: Install K3s
   import_playbook: k3s.yaml
