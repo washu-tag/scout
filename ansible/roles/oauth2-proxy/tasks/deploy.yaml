@@ -22,7 +22,7 @@
           data:
             '{{ item.path | basename }}': |-
               {{ lookup("file", item.path) | indent(4) }}
-        kubeconfig: '{{ local_kubeconfig_yaml }}'
+        kubeconfig: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
       loop: '{{ oauth2_proxy_templates.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
@@ -41,7 +41,7 @@
       type: Opaque
       data:
         logo.png: '{{ lookup("file", role_path + "/files/scout.jpg") | b64encode }}'
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
+    kubeconfig: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
 
 - name: Deploy OAuth2 Proxy
   ansible.builtin.include_role:

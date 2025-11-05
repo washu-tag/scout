@@ -7,9 +7,9 @@
     state: present
 
 - name: Deploy Keycloak Operator and CRDs
-  delegate_to: '{{ (air_gapped | default(false) | bool) | ternary("localhost", omit) }}'
+  delegate_to: localhost
   environment:
-    K8S_AUTH_KUBECONFIG: '{{ (air_gapped | default(false) | bool) | ternary(local_kubeconfig_yaml, kubeconfig_yaml) }}'
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
   block:
     - name: Apply Keycloak CRD
       no_log: true
