@@ -71,7 +71,24 @@ singleuser:
     name: '{{ jupyter_singleuser_image_name }}'
     tag: '{{ jupyter_singleuser_image_tag }}'
     pullPolicy: IfNotPresent
+  profileList: {{ jupyter_profiles | to_json }}
   cmd: null
+  initContainers:
+    - name: spark-config-setup
+      image: '{{ jupyter_singleuser_image_name }}:{{ jupyter_singleuser_image_tag }}'
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          # Copy original ConfigMap to writable location
+          # The initContainer does not have the necessary env vars to make the needed updates,
+          # so we just copy the original file here and make updates in the postStart hook
+          cp /mnt/spark-config-original/spark-defaults.conf /mnt/spark-config/spark-defaults.conf
+      volumeMounts:
+        - name: spark-defaults
+          mountPath: /mnt/spark-config-original
+          readOnly: true
+        - name: spark-config-writable
+          mountPath: /mnt/spark-config
   lifecycleHooks:
     postStart:
       exec:
@@ -79,6 +96,15 @@ singleuser:
           - '/bin/sh'
           - '-c'
           - |
+            # Append Spark memory settings based on profile environment variables
+            if [ -n "$SPARK_DRIVER_MEMORY" ]; then
+              echo "spark.driver.memory $SPARK_DRIVER_MEMORY" >> /usr/local/spark/conf/spark-defaults.conf
+            fi
+            if [ -n "$SPARK_EXECUTOR_MEMORY" ]; then
+              echo "spark.executor.memory $SPARK_EXECUTOR_MEMORY" >> /usr/local/spark/conf/spark-defaults.conf
+            fi
+
+            # Copy Scout quickstart samples on first login
             FLAG_FILE=/home/$NB_USER/.scout_quickstart
             if [ ! -f $FLAG_FILE ]; then
               mkdir -p /home/$NB_USER/Scout &&
@@ -97,13 +123,6 @@ singleuser:
             }
         }
 
-  cpu:
-    guarantee: {{ jupyter_singleuser_cpu_request }}
-    limit: {{ jupyter_singleuser_cpu_limit }}
-  memory:
-    guarantee: '{{ jupyter_singleuser_memory_request if jupyter_singleuser_memory_request else jupyter_spark_memory }}'
-    limit: '{{ jupyter_singleuser_memory_limit if jupyter_singleuser_memory_limit else (jupyter_spark_memory | multiply_memory(2)) }}'
-  extraResource: {{ jupyter_singleuser_extra_resource | default({}) | to_json }}
   storage:
     type: static
     static:
@@ -115,9 +134,12 @@ singleuser:
         name: spark-defaults
         configMap:
           name: spark-defaults
+      spark-config-writable:
+        name: spark-config-writable
+        emptyDir: {}
     extraVolumeMounts:
       spark-defaults:
-        name: spark-defaults
+        name: spark-config-writable
         mountPath: /usr/local/spark/conf/spark-defaults.conf
         subPath: spark-defaults.conf
   networkPolicy:

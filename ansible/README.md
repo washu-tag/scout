@@ -289,14 +289,9 @@ postgres_resources:
     memory: 128Gi
 ```
 
-**Jupyter GPU resources** (in `inventory.yaml`):
-```yaml
-jupyter_singleuser_extra_resource:
-  guarantees:
-    nvidia.com/gpu: '1'
-  limits:
-    nvidia.com/gpu: '1'
-```
+**Jupyter profiles** (in `inventory.yaml`):
+
+See [Customizing JupyterHub Profiles](#customizing-jupyterhub-profiles) for profile configuration including GPU support.
 
 ### Namespaces
 
@@ -359,11 +354,11 @@ Multiplies a memory specification by a factor while preserving the unit. Used fo
 **Usage:**
 ```yaml
 # Double the memory (for limits)
-memory: "{{ jupyter_spark_memory | multiply_memory(2) }}"
+memory: "{{ hl7_transformer_spark_memory | multiply_memory(2) }}"
 # Input: "8G" → Output: "16G"
 
 # Triple the memory
-memory: "{{ jupyter_spark_memory | multiply_memory(3) }}"
+memory: "{{ hl7_transformer_spark_memory | multiply_memory(3) }}"
 # Input: "8G" → Output: "24G"
 ```
 
@@ -374,10 +369,10 @@ memory: "{{ jupyter_spark_memory | multiply_memory(3) }}"
 - `T`/`t` → `T` (terabytes)
 
 **Use cases:**
-- JupyterHub (requires decimal suffixes, not Kubernetes binary format)
+- Services that require decimal suffixes, not Kubernetes binary format
 
 **Services using this filter:**
-- JupyterHub (Spark memory → singleuser container limits)
+- HL7 Transformer (Spark memory → container limits)
 
 ### Creating Custom Filters
 
@@ -499,16 +494,35 @@ Scout supports NVIDIA GPUs for accelerated workloads (JupyterHub, AI models).
    make install-k3s  # Includes GPU operator
    ```
 
-3. **Configure Jupyter** for GPU access (in `inventory.yaml`):
-   ```yaml
-   jupyter_singleuser_extra_resource:
-     guarantees:
-       nvidia.com/gpu: '1'
-     limits:
-       nvidia.com/gpu: '1'
-   ```
+3. **GPU profile configuration**:
+
+   By default, a GPU profile is NOT included in the dev configuration. For production deployments with GPU nodes, override `jupyter_profiles` in `inventory.yaml` to add GPU support. See [Customizing JupyterHub Profiles](#customizing-jupyterhub-profiles) for complete examples including GPU profiles with custom resource allocations.
 
 The NVIDIA GPU Operator handles driver installation and device plugin configuration.
+
+## Customizing JupyterHub Profiles
+
+Scout provides a default "CPU Only" profile with size options (Small, Medium, Large). To add GPU support or customize profiles, override `jupyter_profiles` in your inventory:
+
+```yaml
+jupyter_profiles:
+  - "{{ jupyter_cpu_profile }}"  # Include default CPU profile
+  - display_name: "GPU"
+    slug: "gpu"
+    description: "GPU environment for ML/AI workloads"
+    kubespawner_override:
+      cpu_guarantee: 2
+      cpu_limit: 8
+      mem_guarantee: '8G'
+      mem_limit: '32G'
+      environment:
+        SPARK_DRIVER_MEMORY: "24g"
+        SPARK_EXECUTOR_MEMORY: "24g"
+      extra_resource_guarantees:
+        nvidia.com/gpu: '1'
+      extra_resource_limits:
+        nvidia.com/gpu: '1'
+```
 
 ## Accessing Services
 

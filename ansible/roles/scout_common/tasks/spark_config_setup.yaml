@@ -33,5 +33,7 @@
           spark.hadoop.hive.metastore.uris {{ spark_hive_metastore_uri }}
           spark.sql.warehouse.dir {{ delta_lake_path }}
           spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
+          {% if spark_memory is defined and spark_memory != "" %}
           spark.executor.memory {{ spark_memory | default("1G") }}
           spark.driver.memory {{ spark_memory | default("1G") }}
+          {% endif %}

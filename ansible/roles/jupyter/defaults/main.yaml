@@ -40,10 +40,7 @@ jupyter_singleuser_image_tag: 1.1.0
 # PrePuller configuration
 jupyter_prepuller_continuous: false
 
-# Spark configuration
-jupyter_spark_memory: 1G
-
-# Resource configuration (dev defaults - CI friendly)
+# Jupyter resources
 jupyter_hub_resources:
   requests:
     cpu: 100m
@@ -51,13 +48,45 @@ jupyter_hub_resources:
   limits:
     cpu: 500m
     memory: 512M
-
-# Single-user pod resources
-# Memory defaults to jupyter_spark_memory (JupyterHub format: K, M, G, T)
-# Override jupyter_singleuser_memory_* to set explicit values for non-Spark workloads
-# Note: JupyterHub Helm chart 4.3.x requires numeric values (not strings like "250m")
-# Use fractional cores (0.25 = 250 millicores) or whole numbers
-jupyter_singleuser_cpu_request: 0.25
-jupyter_singleuser_cpu_limit: 1
-jupyter_singleuser_memory_request: '' # Default: jupyter_spark_memory
-jupyter_singleuser_memory_limit: '' # Default: jupyter_spark_memory * 2
+jupyter_cpu_profile:
+  display_name: 'CPU Only'
+  slug: 'cpu'
+  description: 'CPU only environment for data analysis'
+  default: true
+  profile_options:
+    resource_allocation:
+      display_name: 'Size'
+      choices:
+        small:
+          display_name: 'Small (1 CPU, 4Gi RAM)'
+          kubespawner_override:
+            cpu_guarantee: 0.5
+            cpu_limit: 1
+            mem_guarantee: '1G'
+            mem_limit: '4G'
+            environment:
+              SPARK_DRIVER_MEMORY: '3g'
+              SPARK_EXECUTOR_MEMORY: '3g'
+        medium:
+          display_name: 'Medium (2 CPU, 8Gi RAM)'
+          kubespawner_override:
+            cpu_guarantee: 1
+            cpu_limit: 2
+            mem_guarantee: '2G'
+            mem_limit: '8G'
+            environment:
+              SPARK_DRIVER_MEMORY: '6g'
+              SPARK_EXECUTOR_MEMORY: '6g'
+        large:
+          display_name: 'Large (4 CPU, 16Gi RAM)'
+          default: true
+          kubespawner_override:
+            cpu_guarantee: 2
+            cpu_limit: 4
+            mem_guarantee: '4G'
+            mem_limit: '16G'
+            environment:
+              SPARK_DRIVER_MEMORY: '12g'
+              SPARK_EXECUTOR_MEMORY: '12g'
+jupyter_profiles:
+  - '{{ jupyter_cpu_profile }}'

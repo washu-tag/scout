@@ -410,21 +410,49 @@ minio_resources:
 #### JupyterHub
 
 ```yaml
-# Spark memory for notebook containers
-# Note: Use JupyterHub format (K, M, G, T) not Kubernetes format (Ki, Mi, Gi, Ti)
-jupyter_spark_memory: 8G
+# JupyterHub profiles for user-selectable resource configurations
+# Default provides "CPU Only" profile with Small/Medium/Large options
+# See ansible/README.md "Customizing JupyterHub Profiles" for details
 
-# CPU resources
-# Note: JupyterHub Helm chart 4.3.x requires numeric values (not strings like "250m")
-# Use fractional cores (0.25 = 250 millicores) or whole numbers
-jupyter_singleuser_cpu_request: 2
-jupyter_singleuser_cpu_limit: 8
-
-# Optional: Override memory for non-Spark workloads
-# By default, memory is computed from spark_memory (1x request, 2x limit)
-# Note: JupyterHub requires decimal suffixes (K, M, G, T), not binary (Ki, Mi, Gi, Ti)
-# jupyter_singleuser_memory_request: 16G
-# jupyter_singleuser_memory_limit: 32G
+# Example: Add GPU profile alongside default CPU profile
+jupyter_profiles:
+  - "{{ jupyter_cpu_profile }}"  # Include default CPU profile
+  - display_name: "GPU"
+    slug: "gpu"
+    description: "GPU environment for ML/AI workloads"
+    profile_options:
+      resource_allocation:
+        display_name: "Resource Size"
+        choices:
+          medium:
+            display_name: "Medium (8 CPU, 32Gi RAM, 1 GPU)"
+            default: true
+            kubespawner_override:
+              cpu_guarantee: 4
+              cpu_limit: 8
+              mem_guarantee: '16G'
+              mem_limit: '32G'
+              environment:
+                SPARK_DRIVER_MEMORY: "8g"
+                SPARK_EXECUTOR_MEMORY: "8g"
+              extra_resource_guarantees:
+                nvidia.com/gpu: '1'
+              extra_resource_limits:
+                nvidia.com/gpu: '1'
+          large:
+            display_name: "Large (16 CPU, 64Gi RAM, 1 GPU)"
+            kubespawner_override:
+              cpu_guarantee: 8
+              cpu_limit: 16
+              mem_guarantee: '32G'
+              mem_limit: '64G'
+              environment:
+                SPARK_DRIVER_MEMORY: "16g"
+                SPARK_EXECUTOR_MEMORY: "16g"
+              extra_resource_guarantees:
+                nvidia.com/gpu: '1'
+              extra_resource_limits:
+                nvidia.com/gpu: '1'
 
 # Hub resources
 jupyter_hub_resources:
@@ -434,13 +462,6 @@ jupyter_hub_resources:
   limits:
     cpu: 2
     memory: 2G
-
-# GPU resources (if using gpu_workers)
-jupyter_singleuser_extra_resource:
-  guarantees:
-    nvidia.com/gpu: '1'
-  limits:
-    nvidia.com/gpu: '1'
 ```
 
 #### Other Services
