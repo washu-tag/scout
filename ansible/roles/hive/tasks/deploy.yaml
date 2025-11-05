@@ -7,6 +7,21 @@
     db_owner: '{{ hive_postgres_user }}'
     db_owner_pass: '{{ hive_postgres_password }}'
 
+# Create Kubernetes secret for write metastore
+- name: Create write metastore secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ hive_metastore_instance }}-secret'
+        namespace: '{{ hive_namespace }}'
+      type: Opaque
+      stringData:
+        HIVE_METASTORE_PASSWORD: '{{ hive_postgres_password }}'
+        S3_SECRET_KEY: '{{ s3_lake_writer_secret }}'
+
 # Deploy write metastore (for Trino, data ingestion)
 - name: Deploy write metastore
   ansible.builtin.include_tasks: deploy_metastore.yaml
@@ -15,13 +30,26 @@
     hive_template_vars:
       hive_fullname_override: '{{ hive_metastore_instance }}'
       hive_metastore_db_user: '{{ hive_postgres_user }}'
-      hive_metastore_db_password: '{{ hive_postgres_password }}'
       hive_s3_access_key: '{{ s3_lake_writer }}'
-      hive_s3_secret_key: '{{ s3_lake_writer_secret }}'
 
 # Create readonly PostgreSQL user for readonly metastore
 - name: Setup readonly PostgreSQL user
   ansible.builtin.include_tasks: create_readonly_user.yaml
+
+# Create Kubernetes secret for readonly metastore
+- name: Create readonly metastore secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ hive_metastore_instance_readonly }}-secret'
+        namespace: '{{ hive_namespace }}'
+      type: Opaque
+      stringData:
+        HIVE_METASTORE_PASSWORD: '{{ hive_readonly_postgres_password }}'
+        S3_SECRET_KEY: '{{ s3_lake_reader_secret }}'
 
 # Deploy readonly metastore (for Jupyter/PySpark)
 - name: Deploy readonly metastore
@@ -31,6 +59,4 @@
     hive_template_vars:
       hive_fullname_override: '{{ hive_metastore_instance_readonly }}'
       hive_metastore_db_user: '{{ hive_readonly_postgres_user }}'
-      hive_metastore_db_password: '{{ hive_readonly_postgres_password }}'
       hive_s3_access_key: '{{ s3_lake_reader }}'
-      hive_s3_secret_key: '{{ s3_lake_reader_secret }}'

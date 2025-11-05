@@ -150,3 +150,11 @@ env:
     value: ''
   - name: AZURE_WASB_ACCESS_KEY
     value: ''
+
+# Environment variables from secrets or configmaps
+# Use this to load sensitive data from Kubernetes secrets
+# Example:
+# envFrom:
+#   - secretRef:
+#       name: hive-metastore-secret
+envFrom: []
