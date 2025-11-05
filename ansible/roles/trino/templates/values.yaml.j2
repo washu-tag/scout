@@ -39,8 +39,7 @@ catalogs:
   delta: |
     connector.name=delta_lake
     hive.metastore.uri={{ hive_metastore_endpoint }}
-    delta.security=ALLOW_ALL
-    delta.enable-non-concurrent-writes=true
+    delta.security=READ_ONLY
     fs.native-s3.enabled=true
     s3.aws-access-key={{ s3_lake_writer }}
     s3.aws-secret-key={{ s3_lake_writer_secret }}
