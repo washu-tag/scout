@@ -52,6 +52,13 @@ extraEnvVars:
   - name: WEBUI_SECRET_KEY
     value: '{{ open_webui_secret_key }}'
 
+  # Disable local authentication (email/password)
+  - name: ENABLE_SIGNUP
+    value: 'false'
+
+  - name: ENABLE_LOGIN_FORM
+    value: 'false'
+
   # Enable OAuth signup and authentication
   - name: ENABLE_OAUTH_SIGNUP
     value: 'true'
