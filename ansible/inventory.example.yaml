@@ -205,6 +205,7 @@ k3s_cluster:
     keycloak_temporal_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_minio_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     keycloak_launchpad_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    keycloak_open_webui_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # SMTP configuration (optional)
     keycloak_smtp_host: ''
     keycloak_smtp_port: ''
@@ -450,6 +451,7 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     enable_chat: true
     open_webui_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    open_webui_secret_key: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # List of Ollama models to pull automatically (see https://ollama.com/library)
     ollama_models:
       - gpt-oss:120b
