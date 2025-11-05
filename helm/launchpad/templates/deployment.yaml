@@ -67,23 +67,21 @@ spec:
               value: {{ .Values.auth.oauth2ProxySignOutUrl | quote }}
             {{- end }}
             {{- end }}
+            - name: NEXT_PUBLIC_ENABLE_CHAT
+              value: {{ .Values.enableChat | quote }}
+            - name: NEXT_PUBLIC_SHOW_PLAYBOOKS
+              value: {{ .Values.showPlaybooks | quote }}
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          volumeMounts:
-            - name: config
-              mountPath: /app/dist/config.js
-              subPath: config.js
           {{- with .Values.volumeMounts }}
+          volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      volumes:
-        - name: config
-          configMap:
-            name: {{ include "launchpad.fullname" . }}-config
       {{- with .Values.volumes }}
+      volumes:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.nodeSelector }}
