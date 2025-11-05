@@ -45,7 +45,13 @@ websocket:
   enabled: true
 
 # OAuth/OIDC Configuration for Keycloak integration
+# OAuth2 Proxy provides initial authentication gate (checks scout-user group)
+# Open WebUI's OIDC handles login and role mapping to admin/user roles
 extraEnvVars:
+  # WebUI secret key for session management and OAuth security
+  - name: WEBUI_SECRET_KEY
+    value: '{{ open_webui_secret_key }}'
+
   # Enable OAuth signup and authentication
   - name: ENABLE_OAUTH_SIGNUP
     value: 'true'
@@ -71,7 +77,7 @@ extraEnvVars:
 
   # OAuth scopes
   - name: OAUTH_SCOPES
-    value: 'openid email profile microprofile-jwt'
+    value: 'openid email profile'
 
   # Merge accounts by email
   - name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL
