@@ -27,6 +27,11 @@ open_webui_postgres_user: openwebui
 # Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
 open_webui_postgres_password: ''
 
+# WebUI Secret Key for session management and OAuth security
+# REQUIRED: Must be set in inventory.yaml (use vault encryption)
+# Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+open_webui_secret_key: ''
+
 # Storage definitions
 chatbot_storage_definitions:
   - name: '{{ ollama_name }}'
