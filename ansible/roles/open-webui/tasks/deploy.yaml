@@ -75,6 +75,21 @@
     helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
     helm_chart_timeout: '10m'
 
+- name: Install OAuth auto-redirect middleware
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: open-webui-oauth-redirect
+        namespace: '{{ chatbot_namespace }}'
+      spec:
+        redirectRegex:
+          regex: '^/auth(.*)$'
+          replacement: '/oauth/oidc/login$1'
+          permanent: false
+
 - name: Wait for Open WebUI to be ready
   ansible.builtin.command: 'kubectl -n {{ chatbot_namespace }} wait --for=condition=Ready --timeout=300s pod -l app.kubernetes.io/name=open-webui'
   register: open_webui_ready
