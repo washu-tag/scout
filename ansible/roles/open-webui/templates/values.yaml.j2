@@ -26,7 +26,8 @@ ingress:
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
-      kube-system-oauth2-proxy-auth@kubernetescrd
+      kube-system-oauth2-proxy-auth@kubernetescrd,
+      {{ chatbot_namespace }}-open-webui-oauth-redirect@kubernetescrd
   host: chat.{{ server_hostname }}
 
 persistence:
