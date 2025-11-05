@@ -339,9 +339,11 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const { data: session, status } = useSession();
 
-  // Read feature flags from environment variables
+  // Read feature flags from environment variables (build-time)
   const enableChat = process.env.NEXT_PUBLIC_ENABLE_CHAT === 'true';
   const showPlaybooks = process.env.NEXT_PUBLIC_SHOW_PLAYBOOKS === 'true';
+
+  console.log('[Scout] Feature flags:', { enableChat, showPlaybooks });
 
   useEffect(() => {
     setMounted(true);
