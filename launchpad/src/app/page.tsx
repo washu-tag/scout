@@ -104,10 +104,13 @@ const ToolsGrid = ({ subdomainUrls, enableChat }: ToolsGridProps) => {
   );
 };
 
-const ContentGrid = () => {
+interface ContentGridProps {
+  enableChat: boolean;
+  showPlaybooks: boolean;
+}
+
+const ContentGrid = ({ enableChat, showPlaybooks }: ContentGridProps) => {
   const [subdomainUrls, setSubdomainUrls] = useState<Record<string, string>>({});
-  const [enableChat, setEnableChat] = useState(false);
-  const [showPlaybooks, setShowPlaybooks] = useState(false);
 
   useEffect(() => {
     // Generate all subdomain URLs once on client side where window is available
@@ -128,12 +131,6 @@ const ContentGrid = () => {
       grafana: getUrl('grafana'),
       keycloak: getUrl('keycloak', '/admin/scout/console'),
     });
-
-    // Check feature flags from window config
-    if (typeof window !== 'undefined' && window.scoutConfig) {
-      setEnableChat(window.scoutConfig.enableChat ?? false);
-      setShowPlaybooks(window.scoutConfig.showPlaybooks ?? false);
-    }
 
     console.debug('[Scout] Subdomain URLs generated', { protocol, host });
   }, []);
@@ -342,6 +339,10 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const { data: session, status } = useSession();
 
+  // Read feature flags from environment variables
+  const enableChat = process.env.NEXT_PUBLIC_ENABLE_CHAT === 'true';
+  const showPlaybooks = process.env.NEXT_PUBLIC_SHOW_PLAYBOOKS === 'true';
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -382,7 +383,7 @@ export default function Home() {
         </div>
 
         {/* Content Grid */}
-        <ContentGrid />
+        <ContentGrid enableChat={enableChat} showPlaybooks={showPlaybooks} />
 
         {/* Footer */}
         <div className="text-center mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
