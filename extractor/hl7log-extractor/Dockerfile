@@ -29,5 +29,5 @@ WORKDIR /app
 # Copy the built JAR file from the build stage
 COPY --from=build /app/build/libs/*.jar app.jar
 
-# Run the jar file
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Run the jar file, with arguments passed in
+ENTRYPOINT ["java"]
