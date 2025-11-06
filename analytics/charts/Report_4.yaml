@@ -1,0 +1,62 @@
+slice_name: Report
+description: null
+certified_by: null
+certification_details: null
+viz_type: table
+params:
+  datasource: 1__table
+  viz_type: table
+  slice_id: 4
+  query_mode: aggregate
+  groupby:
+  - report_text
+  temporal_columns_lookup:
+    birth_date: true
+    message_dt: true
+    requested_dt: true
+    observation_dt: true
+    observation_end_dt: true
+    results_report_status_change_dt: true
+    updated: true
+  all_columns: []
+  percent_metrics: []
+  adhoc_filters:
+  - expressionType: SIMPLE
+    subject: report_text
+    operator: IS NOT NULL
+    operatorId: IS_NOT_NULL
+    clause: WHERE
+    sqlExpression: null
+    isExtra: false
+    isNew: false
+    datasourceWarning: false
+    filterOptionName: filter_zfcsi3ipbfm_afsidoj7p3v
+  - expressionType: SIMPLE
+    subject: message_dt
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    clause: WHERE
+    sqlExpression: null
+    isExtra: true
+    isNew: false
+    datasourceWarning: false
+    filterOptionName: filter_mfig20d0lt_w5tc983rq3f
+  order_by_cols: []
+  row_limit: 50
+  table_timestamp_format: smart_date
+  allow_render_html: true
+  show_cell_bars: true
+  color_pn: true
+  comparison_color_scheme: Green
+  comparison_type: values
+  extra_form_data: {}
+  dashboards:
+  - 1
+query_context: '{"datasource":{"id":1,"type":"table"},"force":false,"queries":[{"filters":[{"col":"report_text","op":"IS
+  NOT NULL"},{"col":"message_dt","op":"TEMPORAL_RANGE","val":"No filter"}],"extras":{"having":"","where":""},"applied_time_extras":{},"columns":["report_text"],"metrics":[],"orderby":[],"annotation_layers":[],"row_limit":50,"series_limit":0,"order_desc":true,"url_params":{},"custom_params":{},"custom_form_data":{},"post_processing":[],"time_offsets":[]}],"form_data":{"datasource":"1__table","viz_type":"table","slice_id":4,"query_mode":"aggregate","groupby":["report_text"],"temporal_columns_lookup":{"birth_date":true,"message_dt":true,"requested_dt":true,"observation_dt":true,"observation_end_dt":true,"results_report_status_change_dt":true,"updated":true},"all_columns":[],"percent_metrics":[],"adhoc_filters":[{"expressionType":"SIMPLE","subject":"report_text","operator":"IS
+  NOT NULL","operatorId":"IS_NOT_NULL","clause":"WHERE","sqlExpression":null,"isExtra":false,"isNew":false,"datasourceWarning":false,"filterOptionName":"filter_zfcsi3ipbfm_afsidoj7p3v"},{"expressionType":"SIMPLE","subject":"message_dt","operator":"TEMPORAL_RANGE","comparator":"No
+  filter","clause":"WHERE","sqlExpression":null,"isExtra":true,"isNew":false,"datasourceWarning":false,"filterOptionName":"filter_mfig20d0lt_w5tc983rq3f"}],"order_by_cols":[],"row_limit":50,"table_timestamp_format":"smart_date","allow_render_html":true,"show_cell_bars":true,"color_pn":true,"comparison_color_scheme":"Green","comparison_type":"values","extra_form_data":{},"dashboards":[1],"force":false,"result_format":"json","result_type":"full"},"result_format":"json","result_type":"full"}'
+cache_timeout: null
+uuid: 530e4ec8-8b09-4576-be3f-35f9e0936600
+version: 1.0.0
+dataset_uuid: 14cdaed5-905e-499a-b020-13e1b54097c8

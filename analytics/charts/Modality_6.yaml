@@ -1,0 +1,60 @@
+slice_name: Modality
+description: null
+certified_by: null
+certification_details: null
+viz_type: pie
+params:
+  datasource: 1__table
+  viz_type: pie
+  slice_id: 2
+  groupby:
+  - modality
+  metric: count
+  adhoc_filters:
+  - clause: WHERE
+    comparator: No filter
+    expressionType: SIMPLE
+    operator: TEMPORAL_RANGE
+    subject: message_dt
+  row_limit: 100
+  sort_by_metric: true
+  color_scheme: supersetColors
+  show_labels_threshold: 5
+  show_legend: true
+  legendType: scroll
+  legendOrientation: top
+  legendMargin: null
+  label_type: key
+  number_format: SMART_NUMBER
+  date_format: smart_date
+  show_labels: true
+  labels_outside: true
+  label_line: true
+  show_total: false
+  outerRadius: 65
+  donut: true
+  innerRadius: 30
+  extra_form_data: {}
+  dashboards:
+  - 1
+  annotation_layers: []
+query_context: '{"datasource": {"id": 1, "type": "table"}, "force": false, "queries":
+  [{"filters": [{"col": "message_dt", "op": "TEMPORAL_RANGE", "val": "No filter"}],
+  "extras": {"having": "", "where": ""}, "applied_time_extras": {}, "columns": ["modality"],
+  "metrics": ["count"], "orderby": [["count", false]], "annotation_layers": [], "row_limit":
+  100, "series_limit": 0, "order_desc": true, "url_params": {}, "custom_params": {},
+  "custom_form_data": {}}], "form_data": {"datasource": "1__table", "viz_type": "pie",
+  "slice_id": 2, "groupby": ["modality"], "metric": "count", "adhoc_filters": [{"clause":
+  "WHERE", "comparator": "No filter", "expressionType": "SIMPLE", "operator": "TEMPORAL_RANGE",
+  "subject": "message_dt"}], "row_limit": 100, "sort_by_metric": true, "color_scheme":
+  "supersetColors", "show_labels_threshold": 5, "show_legend": true, "legendType":
+  "scroll", "legendOrientation": "top", "legendMargin": null, "label_type": "key",
+  "number_format": "SMART_NUMBER", "date_format": "smart_date", "show_labels": true,
+  "labels_outside": true, "label_line": true, "show_total": false, "outerRadius":
+  65, "donut": true, "innerRadius": 30, "extra_form_data": {}, "dashboards": [1],
+  "force": false, "result_format": "json", "result_type": "full"}, "result_format":
+  "json", "result_type": "full"}'
+cache_timeout: null
+uuid: 36bebe6c-ca5d-4c7f-90f8-d048e7dae6af
+version: 1.0.0
+dataset_uuid: 14cdaed5-905e-499a-b020-13e1b54097c8
