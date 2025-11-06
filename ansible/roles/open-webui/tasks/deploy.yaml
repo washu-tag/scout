@@ -44,6 +44,10 @@
     sql_script: 'ALTER SCHEMA public OWNER TO {{ open_webui_postgres_user }};'
     sql_dbname: '{{ open_webui_database }}'
 
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
 - name: Deploy Open WebUI using Helm
   ansible.builtin.include_role:
     name: scout_common
@@ -55,7 +59,7 @@
     helm_chart_version: '{{ open_webui_helm_chart_version }}'
     helm_repo_name: '{{ open_webui_helm_repo_name }}'
     helm_repo_url: '{{ open_webui_helm_repo_url }}'
-    helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+    helm_chart_values: '{{ owui_helm_chart_values }}'
     helm_chart_timeout: '10m'
 
 - name: Install OAuth auto-redirect middleware

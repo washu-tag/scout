@@ -14,11 +14,11 @@ open_webui_name: open-webui
 
 # Storage configuration
 ollama_storage_class: '{{ ollama_name }}-storage'
-ollama_storage_size: 200Gi
+ollama_storage_size: 5Gi
 ollama_models: []
 
 open_webui_storage_class: '{{ open_webui_name }}-storage'
-open_webui_storage_size: 100Gi
+open_webui_storage_size: 2Gi
 
 # PostgreSQL configuration
 open_webui_database: openwebui
