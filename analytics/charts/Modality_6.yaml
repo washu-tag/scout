@@ -8,14 +8,14 @@ params:
   viz_type: pie
   slice_id: 2
   groupby:
-  - modality
+    - modality
   metric: count
   adhoc_filters:
-  - clause: WHERE
-    comparator: No filter
-    expressionType: SIMPLE
-    operator: TEMPORAL_RANGE
-    subject: message_dt
+    - clause: WHERE
+      comparator: No filter
+      expressionType: SIMPLE
+      operator: TEMPORAL_RANGE
+      subject: message_dt
   row_limit: 100
   sort_by_metric: true
   color_scheme: supersetColors
@@ -36,7 +36,7 @@ params:
   innerRadius: 30
   extra_form_data: {}
   dashboards:
-  - 1
+    - 1
   annotation_layers: []
 query_context: '{"datasource": {"id": 1, "type": "table"}, "force": false, "queries":
   [{"filters": [{"col": "message_dt", "op": "TEMPORAL_RANGE", "val": "No filter"}],

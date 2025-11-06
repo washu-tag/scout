@@ -8,7 +8,7 @@ params:
   viz_type: table
   query_mode: aggregate
   groupby:
-  - study_instance_uid
+    - study_instance_uid
   time_grain_sqla: P1D
   temporal_columns_lookup:
     message_dt: true
@@ -21,11 +21,11 @@ params:
   all_columns: []
   percent_metrics: []
   adhoc_filters:
-  - clause: WHERE
-    subject: message_dt
-    operator: TEMPORAL_RANGE
-    comparator: No filter
-    expressionType: SIMPLE
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
   order_by_cols: []
   row_limit: 10000
   server_page_length: 10
@@ -38,7 +38,7 @@ params:
   comparison_type: values
   extra_form_data: {}
   dashboards:
-  - 1
+    - 1
   annotation_layers: []
 query_context: '{"datasource": {"id": 1, "type": "table"}, "force": false, "queries":
   [{"filters": [{"col": "message_dt", "op": "TEMPORAL_RANGE", "val": "No filter"}],

@@ -10,11 +10,11 @@ params:
   series: service_name
   metric: count
   adhoc_filters:
-  - clause: WHERE
-    comparator: No filter
-    expressionType: SIMPLE
-    operator: TEMPORAL_RANGE
-    subject: message_dt
+    - clause: WHERE
+      comparator: No filter
+      expressionType: SIMPLE
+      operator: TEMPORAL_RANGE
+      subject: message_dt
   row_limit: 250
   sort_by_metric: true
   size_from: 10
@@ -23,8 +23,9 @@ params:
   color_scheme: presetColors
   extra_form_data: {}
   dashboards:
-  - 1
-query_context: '{"datasource":{"id":1,"type":"table"},"force":false,"queries":[{"filters":[{"col":"message_dt","op":"TEMPORAL_RANGE","val":"No
+    - 1
+query_context:
+  '{"datasource":{"id":1,"type":"table"},"force":false,"queries":[{"filters":[{"col":"message_dt","op":"TEMPORAL_RANGE","val":"No
   filter"}],"extras":{"having":"","where":""},"applied_time_extras":{},"columns":["service_name"],"metrics":["count"],"orderby":[["count",false]],"annotation_layers":[],"row_limit":250,"series_limit":0,"order_desc":true,"url_params":{},"custom_params":{},"custom_form_data":{}}],"form_data":{"datasource":"1__table","viz_type":"word_cloud","slice_id":5,"series":"service_name","metric":"count","adhoc_filters":[{"clause":"WHERE","comparator":"No
   filter","expressionType":"SIMPLE","operator":"TEMPORAL_RANGE","subject":"message_dt"}],"row_limit":250,"sort_by_metric":true,"size_from":10,"size_to":70,"rotation":"flat","color_scheme":"presetColors","extra_form_data":{},"dashboards":[1],"force":false,"result_format":"json","result_type":"full"},"result_format":"json","result_type":"full"}'
 cache_timeout: null

@@ -8,11 +8,11 @@ params:
   viz_type: big_number_total
   metric: count
   adhoc_filters:
-  - clause: WHERE
-    subject: message_dt
-    operator: TEMPORAL_RANGE
-    comparator: No filter
-    expressionType: SIMPLE
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
   subheader: Radiology Reports
   header_font_size: 0.4
   subheader_font_size: 0.15
@@ -20,7 +20,7 @@ params:
   time_format: smart_date
   extra_form_data: {}
   dashboards:
-  - 1
+    - 1
   annotation_layers: []
 query_context: '{"datasource": {"id": 1, "type": "table"}, "force": false, "queries":
   [{"filters": [{"col": "message_dt", "op": "TEMPORAL_RANGE", "val": "No filter"}],
