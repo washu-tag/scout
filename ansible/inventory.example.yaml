@@ -220,7 +220,6 @@ k3s_cluster:
 
     # Feature flags for Scout services
     # enable_chat: true  # Uncomment to enable Chat service in launchpad
-    # show_playbooks: true  # Uncomment to show Playbooks section in launchpad
 
     #---------------------------------------------------------------------------
     # PostgreSQL
