@@ -16,6 +16,7 @@ ollama:
   persistentVolume:
     enabled: true
     storageClass: {{ ollama_storage_class }}
+    size: {{ ollama_storage_size }}
 
 pipelines:
   enabled: false
@@ -33,6 +34,7 @@ ingress:
 persistence:
   enabled: true
   storageClass: {{ open_webui_storage_class }}
+  size: {{ open_webui_storage_size }}
 
 resources: {{ open_webui_resources | to_json }}
 

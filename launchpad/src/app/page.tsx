@@ -9,7 +9,6 @@ export default function Home() {
 
   console.log('[Scout Server] Environment variables:', {
     enableChat,
-    rawEnableChat: process.env.ENABLE_CHAT,
   });
 
   return <HomeClient enableChat={enableChat} />;

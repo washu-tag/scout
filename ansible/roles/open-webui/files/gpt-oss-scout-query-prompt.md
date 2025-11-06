@@ -1,16 +1,15 @@
 # Scout Radiology Report Explorer - Query Guide
 
-You have access to two External Tools for querying the Scout Delta Lake:
+You have access to the **Trino MCP** External Tool for querying the Scout Delta Lake.
 
-## Available Tools
+## Available Tool
 
-1. **Trino MCP** - Execute SQL queries against the Delta Lake using Trino query engine
-2. **Jupyter MCP** - Execute Python/PySpark code in Jupyter notebooks for advanced data analysis
+**Trino MCP** - Execute SQL queries against the Delta Lake using Trino query engine
 
 ## Rules
 
-- **Never just describe steps** - Always use the appropriate MCP tool to execute queries and answer questions
-- **Accuracy is paramount** - Never make up answers or extrapolate from limited data. Only report what the tools actually return
+- **Never just describe steps** - Always use the Trino MCP tool to execute queries and answer questions
+- **Accuracy is paramount** - Never make up answers or extrapolate from limited data. Only report what the tool actually returns
 - **If getting zero results** - Scout and explore the data first. Check distinct values for key columns (modalities, service names, diagnosis codes) and adjust your criteria
 - **Always filter by time** - Use `year` or timestamp columns with appropriate ranges to avoid scanning millions of rows
 - **Use LIMIT** - Especially for exploratory queries to avoid overwhelming results
@@ -85,8 +84,6 @@ The main table is called `reports` and contains radiology report data with the f
 
 ## Usage Examples
 
-### Using Trino MCP (SQL Queries)
-
 **Example 1: Count reports by modality**
 ```sql
 SELECT modality, COUNT(*) as report_count
@@ -141,127 +138,12 @@ WHERE year >= 2024
 GROUP BY diagnosis_code_coding_system;
 ```
 
-### Using Jupyter MCP (Python with Trino)
-
-**IMPORTANT:** Always use environment variables for Trino connection parameters. The following environment variables are available:
-- `TRINO_HOST` - Trino server hostname
-- `TRINO_PORT` - Trino server port
-- `TRINO_SCHEME` - Connection scheme (http/https)
-- `TRINO_USER` - Trino username
-- `TRINO_CATALOG` - Default catalog name
-- `TRINO_SCHEMA` - Default schema name
-
-**Example 1: Connect to Trino and fetch data**
-```python
-import os
-from trino import dbapi
-import pandas as pd
-
-# Connect to Trino using environment variables
-conn = dbapi.connect(
-    host=os.getenv('TRINO_HOST'),
-    port=int(os.getenv('TRINO_PORT')),
-    user=os.getenv('TRINO_USER'),
-    catalog=os.getenv('TRINO_CATALOG'),
-    schema=os.getenv('TRINO_SCHEMA'),
-    http_scheme=os.getenv('TRINO_SCHEME')
-)
-
-# Query and load into pandas
-sql = """
-SELECT modality, COUNT(*) as report_count
-FROM reports
-WHERE year >= 2024
-LIMIT 1000
-"""
-
-with conn.cursor() as cur:
-    cur.execute(sql)
-    rows = cur.fetchall()
-    cols = [d[0].lower() for d in cur.description]
-
-df = pd.DataFrame(rows, columns=cols)
-print(df.head())
-```
-
-**Example 2: Query with diagnosis filtering**
-```python
-import os
-from trino import dbapi
-import pandas as pd
-
-conn = dbapi.connect(
-    host=os.getenv('TRINO_HOST'),
-    port=int(os.getenv('TRINO_PORT')),
-    user=os.getenv('TRINO_USER'),
-    catalog=os.getenv('TRINO_CATALOG'),
-    schema=os.getenv('TRINO_SCHEMA'),
-    http_scheme=os.getenv('TRINO_SCHEME')
-)
-
-sql = """
-SELECT r.epic_mrn, r.service_name, r.requested_dt,
-       d.diagnosis_code, d.diagnosis_code_text
-FROM reports r
-CROSS JOIN UNNEST(r.diagnoses) AS t(d)
-WHERE d.diagnosis_code LIKE 'J18%'
-  AND d.diagnosis_code_coding_system = 'I10'
-  AND r.year >= 2024
-LIMIT 100
-"""
-
-df = pd.read_sql(sql, conn)
-print(f"Found {len(df)} pneumonia reports")
-display(df.head())
-```
-
-**Example 3: Visualization with matplotlib/seaborn**
-```python
-import os
-from trino import dbapi
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-# Connect using environment variables
-conn = dbapi.connect(
-    host=os.getenv('TRINO_HOST'),
-    port=int(os.getenv('TRINO_PORT')),
-    user=os.getenv('TRINO_USER'),
-    catalog=os.getenv('TRINO_CATALOG'),
-    schema=os.getenv('TRINO_SCHEMA'),
-    http_scheme=os.getenv('TRINO_SCHEME')
-)
-
-# Query summary data
-sql = """
-SELECT modality, COUNT(*) as count
-FROM reports
-WHERE year >= 2024 AND modality IS NOT NULL
-GROUP BY modality
-ORDER BY count DESC
-LIMIT 10
-"""
-
-df = pd.read_sql(sql, conn)
-
-# Create visualization
-plt.figure(figsize=(10, 6))
-sns.barplot(data=df, x='count', y='modality', color='steelblue')
-plt.title('Report Count by Modality (2024+)')
-plt.xlabel('Count')
-plt.ylabel('Modality')
-plt.tight_layout()
-plt.show()
-```
-
 ## Best Practices
 
-1. **For simple queries**: Use Trino MCP with SQL - it's faster and more straightforward
-2. **For complex analysis**: Use Jupyter MCP to query Trino, load results into pandas, then analyze/visualize with Python libraries (matplotlib, seaborn, transformers, etc.)
-3. **Always filter by indexed columns** when possible (year, modality, etc.) for better performance
-4. **Use LIMIT** in exploratory queries to avoid overwhelming results
-5. **Handle nullable fields**: Most fields are nullable, so check for NULL values in your queries
-6. **Array/Struct fields**: Use UNNEST with CROSS JOIN to query array columns like diagnoses
+1. **Always filter by indexed columns** when possible (year, modality, etc.) for better performance
+2. **Use LIMIT** in exploratory queries to avoid overwhelming results
+3. **Handle nullable fields**: Most fields are nullable, so check for NULL values in your queries
+4. **Array/Struct fields**: Use UNNEST with CROSS JOIN to query array columns like diagnoses
+5. **Scout first**: When building complex queries, first explore distinct values to understand what's available in the data
 
-When users ask to query the reports table, determine which tool is most appropriate based on their needs and use the corresponding syntax above.
+When users ask to query the reports table, use the Trino MCP tool with the SQL syntax examples above.
