@@ -50,23 +50,17 @@ mcp_trino_repo_version: 'v{{ mcp_trino_version }}'
 mcp_trino_chart_path: /tmp/mcp-trino-chart
 mcp_trino_release_name: mcp-trino
 
-# Trino connection settings for MCP (uses read-only user)
-mcp_trino_host: trino
-mcp_trino_port: 8080
-mcp_trino_scheme: http
-mcp_trino_user: '{{ trino_readonly_user }}'
-
 # Trino MCP Helm values
 mcp_trino_values:
   replicaCount: 1
   image:
     tag: '{{ mcp_trino_version }}'
   trino:
-    host: '{{ mcp_trino_host }}'
-    port: '{{ mcp_trino_port }}'
-    scheme: '{{ mcp_trino_scheme }}'
+    host: trino
+    port: 8080
+    scheme: http
     ssl: false
-    user: '{{ mcp_trino_user }}'
+    user: '{{ trino_user }}'
     catalog: delta
     schema: default
     allowWriteQueries: false

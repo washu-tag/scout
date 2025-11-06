@@ -6,38 +6,6 @@ server:
       # Cluster-wide max memory = workers × worker_heap × per_node_fraction
       maxMemory: "{{ trino_worker_max_heap | multiply_memory(trino_worker_count * trino_per_node_query_memory_fraction) }}B"
 
-# Access control configuration using Helm chart's built-in support
-accessControl:
-  type: configmap
-  refreshPeriod: 60s
-  configFile: "rules.json"
-  rules:
-    rules.json: |-
-      {
-        "catalogs": [
-          {
-            "user": "{{ trino_readonly_user }}",
-            "catalog": "delta",
-            "allow": "read-only"
-          },
-          {
-            "user": "{{ trino_admin_user }}",
-            "catalog": "delta",
-            "allow": "all"
-          },
-          {
-            "group": ".*",
-            "catalog": "system",
-            "allow": "read-only"
-          },
-          {
-            "user": ".*",
-            "catalog": "delta",
-            "allow": "none"
-          }
-        ]
-      }
-
 # Coordinator configuration
 # JVM heap = trino_coordinator_max_heap, pod memory limit = 2x heap for off-heap overhead
 coordinator:
