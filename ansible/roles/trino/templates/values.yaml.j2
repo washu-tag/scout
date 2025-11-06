@@ -70,11 +70,11 @@ worker:
 catalogs:
   delta: |
     connector.name=delta_lake
-    hive.metastore.uri={{ hive_metastore_endpoint }}
+    hive.metastore.uri={{ hive_metastore_readonly_endpoint }}
     delta.security=READ_ONLY
     fs.native-s3.enabled=true
-    s3.aws-access-key={{ s3_lake_writer }}
-    s3.aws-secret-key={{ s3_lake_writer_secret }}
+    s3.aws-access-key={{ s3_lake_reader }}
+    s3.aws-secret-key={{ s3_lake_reader_secret }}
     s3.region={{ s3_region }}
     s3.endpoint={{ s3_endpoint }}
     s3.path-style-access=true
