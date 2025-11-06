@@ -27,39 +27,22 @@
   vars:
     storage_definitions: '{{ chatbot_storage_definitions }}'
 
-- name: Setup PostgreSQL database and user
-  block:
-    - name: Create user (ignore if exists)
-      kubernetes.core.k8s_exec:
-        namespace: '{{ postgres_cluster_namespace }}'
-        pod: '{{ postgres_cluster_name }}-1'
-        command: |
-          psql --dbname=postgres -c "CREATE USER {{ open_webui_postgres_user }} WITH PASSWORD '{{ open_webui_postgres_password }}';"
-      register: user_result
-      failed_when:
-        - user_result.rc != 0
-        - '"already exists" not in user_result.stderr'
+- name: Initialize Open WebUI database
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_db_with_owner
+  vars:
+    db_name: '{{ open_webui_database }}'
+    db_owner: '{{ open_webui_postgres_user }}'
+    db_owner_pass: '{{ open_webui_postgres_password }}'
 
-    - name: Create database (ignore if exists)
-      kubernetes.core.k8s_exec:
-        namespace: '{{ postgres_cluster_namespace }}'
-        pod: '{{ postgres_cluster_name }}-1'
-        command: |
-          psql --dbname=postgres -c "CREATE DATABASE {{ open_webui_database }} OWNER {{ open_webui_postgres_user }};"
-      register: db_result
-      failed_when:
-        - db_result.rc != 0
-        - '"already exists" not in db_result.stderr'
-
-    - name: Grant schema ownership to user
-      kubernetes.core.k8s_exec:
-        namespace: '{{ postgres_cluster_namespace }}'
-        pod: '{{ postgres_cluster_name }}-1'
-        command: |
-          psql --dbname={{ open_webui_database }} -c "ALTER SCHEMA public OWNER TO {{ open_webui_postgres_user }};"
-      register: schema_privileges_result
-      failed_when:
-        - schema_privileges_result.rc != 0
+- name: Grant schema ownership to user
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: execute_sql
+  vars:
+    sql_script: 'ALTER SCHEMA public OWNER TO {{ open_webui_postgres_user }};'
+    sql_dbname: '{{ open_webui_database }}'
 
 - name: Deploy Open WebUI using Helm
   ansible.builtin.include_role:
