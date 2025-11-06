@@ -18,7 +18,14 @@ interface ServiceCardProps {
   external?: boolean;
 }
 
-const ServiceCard = ({ href, icon, title, description, color, external = false }: ServiceCardProps) => {
+const ServiceCard = ({
+  href,
+  icon,
+  title,
+  description,
+  color,
+  external = false,
+}: ServiceCardProps) => {
   const colorClasses = {
     blue: 'bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-200/50 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/20 hover:from-blue-100 hover:to-blue-200/50 dark:from-blue-900/20 dark:to-blue-800/10 dark:border-blue-800/50 dark:hover:border-blue-500 dark:hover:shadow-2xl dark:hover:shadow-blue-500/40 dark:hover:from-blue-800/30 dark:hover:to-blue-700/20',
     amber:
@@ -186,96 +193,98 @@ const ContentGrid = ({ enableChat }: ContentGridProps) => {
 
       {/* Admin Tools Section - Only visible to admins */}
       {Object.keys(subdomainUrls).length > 0 && (
-          <AdminSection requireAdmin={true}>
-            <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                    <HiCog className="text-base text-white" />
-                  </div>
-                  <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">
-                    Admin Tools
-                  </h2>
+        <AdminSection requireAdmin={true}>
+          <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                  <HiCog className="text-base text-white" />
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
-                  Infrastructure management and monitoring
-                </p>
+                <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">
+                  Admin Tools
+                </h2>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <a
-                  href={subdomainUrls.minio}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-xl hover:shadow-red-500/20 dark:hover:shadow-2xl dark:hover:shadow-red-500/30 hover:from-red-50 hover:to-slate-50 dark:hover:from-red-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
-                >
-                  <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                    <SiMinio className="text-xl text-red-600 dark:text-red-400" />
-                  </div>
-                  <div className="relative flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">Lake</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                      Object storage and data lake
-                    </p>
-                  </div>
-                  <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-red-600 dark:group-hover:text-red-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
-                </a>
-
-                <a
-                  href={subdomainUrls.temporal}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-600 hover:shadow-xl hover:shadow-cyan-500/20 dark:hover:shadow-2xl dark:hover:shadow-cyan-500/30 hover:from-cyan-50 hover:to-slate-50 dark:hover:from-cyan-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
-                >
-                  <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                    <SiTemporal className="text-xl text-cyan-600 dark:text-cyan-400" />
-                  </div>
-                  <div className="relative flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">Orchestrator</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                      Workflow and task automation
-                    </p>
-                  </div>
-                  <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
-                </a>
-
-                <a
-                  href={subdomainUrls.grafana}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-xl hover:shadow-orange-500/20 dark:hover:shadow-2xl dark:hover:shadow-orange-500/30 hover:from-orange-50 hover:to-slate-50 dark:hover:from-orange-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
-                >
-                  <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                    <SiGrafana className="text-xl text-orange-500 dark:text-orange-400" />
-                  </div>
-                  <div className="relative flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">Monitor</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                      System metrics and dashboards
-                    </p>
-                  </div>
-                  <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-orange-500 dark:group-hover:text-orange-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
-                </a>
-
-                <a
-                  href={subdomainUrls.keycloak}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-xl hover:shadow-purple-500/20 dark:hover:shadow-2xl dark:hover:shadow-purple-500/30 hover:from-purple-50 hover:to-slate-50 dark:hover:from-purple-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
-                >
-                  <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                    <SiKeycloak className="text-xl text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <div className="relative flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">User Management</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                      Identity and access control
-                    </p>
-                  </div>
-                  <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-purple-600 dark:group-hover:text-purple-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
-                </a>
-              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
+                Infrastructure management and monitoring
+              </p>
             </div>
-          </AdminSection>
+            <div className="grid grid-cols-2 gap-4">
+              <a
+                href={subdomainUrls.minio}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-xl hover:shadow-red-500/20 dark:hover:shadow-2xl dark:hover:shadow-red-500/30 hover:from-red-50 hover:to-slate-50 dark:hover:from-red-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
+              >
+                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                  <SiMinio className="text-xl text-red-600 dark:text-red-400" />
+                </div>
+                <div className="relative flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Lake</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                    Object storage and data lake
+                  </p>
+                </div>
+                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-red-600 dark:group-hover:text-red-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+              </a>
+
+              <a
+                href={subdomainUrls.temporal}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-600 hover:shadow-xl hover:shadow-cyan-500/20 dark:hover:shadow-2xl dark:hover:shadow-cyan-500/30 hover:from-cyan-50 hover:to-slate-50 dark:hover:from-cyan-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
+              >
+                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                  <SiTemporal className="text-xl text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <div className="relative flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Orchestrator</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                    Workflow and task automation
+                  </p>
+                </div>
+                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+              </a>
+
+              <a
+                href={subdomainUrls.grafana}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-xl hover:shadow-orange-500/20 dark:hover:shadow-2xl dark:hover:shadow-orange-500/30 hover:from-orange-50 hover:to-slate-50 dark:hover:from-orange-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
+              >
+                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                  <SiGrafana className="text-xl text-orange-500 dark:text-orange-400" />
+                </div>
+                <div className="relative flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Monitor</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                    System metrics and dashboards
+                  </p>
+                </div>
+                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-orange-500 dark:group-hover:text-orange-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+              </a>
+
+              <a
+                href={subdomainUrls.keycloak}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-xl hover:shadow-purple-500/20 dark:hover:shadow-2xl dark:hover:shadow-purple-500/30 hover:from-purple-50 hover:to-slate-50 dark:hover:from-purple-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
+              >
+                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                  <SiKeycloak className="text-xl text-purple-600 dark:text-purple-400" />
+                </div>
+                <div className="relative flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                    User Management
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                    Identity and access control
+                  </p>
+                </div>
+                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-purple-600 dark:group-hover:text-purple-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+              </a>
+            </div>
+          </div>
+        </AdminSection>
       )}
     </div>
   );
@@ -321,7 +330,7 @@ export default function HomeClient({ enableChat }: HomeClientProps) {
           </h1>
           <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed font-light">
             A data exploration and clinical insights platform brought to you by the <br />{' '}
-            Mallinckrodt Institute of Radiology's{' '}
+            Mallinckrodt Institute of Radiology&apos;s{' '}
             <span className="font-semibold text-gray-800 dark:text-gray-100">
               Translational AI Group
             </span>{' '}

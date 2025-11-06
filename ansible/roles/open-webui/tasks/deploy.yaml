@@ -84,7 +84,7 @@
 # Ensure Scout base model is in ollama_models list if Scout model creation is enabled
 - name: Add Scout base model to ollama_models if needed
   ansible.builtin.set_fact:
-    ollama_models: "{{ (ollama_models | default([])) | union([scout_base_model]) }}"
+    ollama_models: '{{ (ollama_models | default([])) | union([scout_base_model]) }}'
   when:
     - scout_model_create | default(true) | bool
     - scout_base_model not in (ollama_models | default([]))
