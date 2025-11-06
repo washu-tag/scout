@@ -68,10 +68,9 @@
         name: open-webui-oauth-redirect
         namespace: '{{ chatbot_namespace }}'
       spec:
-        redirectRegex:
+        replacePathRegex:
           regex: '^/auth(.*)$'
           replacement: '/oauth/oidc/login$1'
-          permanent: false
 
 - name: Wait for Open WebUI to be ready
   ansible.builtin.command: 'kubectl -n {{ chatbot_namespace }} wait --for=condition=Ready --timeout=300s pod -l app.kubernetes.io/name=open-webui'
