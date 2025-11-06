@@ -7,6 +7,15 @@
     db_owner: '{{ hive_postgres_user }}'
     db_owner_pass: '{{ hive_postgres_password }}'
 
+- name: Create Hive namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: '{{ hive_namespace }}'
+
 # Create Kubernetes secret for write metastore
 - name: Create write metastore secret
   kubernetes.core.k8s:
