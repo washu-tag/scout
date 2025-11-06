@@ -38,7 +38,7 @@ worker:
 catalogs:
   delta: |
     connector.name=delta_lake
-    hive.metastore.uri={{ hive_metastore_readonly_endpoint }}
+    hive.metastore.uri={{ hive_metastore_endpoint_readonly }}
     delta.security=READ_ONLY
     fs.native-s3.enabled=true
     s3.aws-access-key={{ s3_lake_reader }}

@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
-import { FaPython, FaFlask } from 'react-icons/fa';
+import { FaPython } from 'react-icons/fa';
 import { SiMinio, SiTemporal, SiGrafana, SiKeycloak, SiReadthedocs } from 'react-icons/si';
 import { BiLineChart, BiMessageSquareDetail } from 'react-icons/bi';
-import { HiSparkles, HiArrowRight, HiCube, HiCog, HiChartBar, HiUserGroup } from 'react-icons/hi';
+import { HiArrowRight, HiCube, HiCog } from 'react-icons/hi';
 import TopBar from '@/components/TopBar';
 import AdminSection from '@/components/AdminSection';
 
@@ -106,10 +106,9 @@ const ToolsGrid = ({ subdomainUrls, enableChat }: ToolsGridProps) => {
 
 interface ContentGridProps {
   enableChat: boolean;
-  showPlaybooks: boolean;
 }
 
-const ContentGrid = ({ enableChat, showPlaybooks }: ContentGridProps) => {
+const ContentGrid = ({ enableChat }: ContentGridProps) => {
   const [subdomainUrls, setSubdomainUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -133,8 +132,8 @@ const ContentGrid = ({ enableChat, showPlaybooks }: ContentGridProps) => {
     });
 
     console.debug('[Scout] Subdomain URLs generated', { protocol, host });
-    console.debug('[Scout] Feature flags:', { enableChat, showPlaybooks });
-  }, [enableChat, showPlaybooks]);
+    console.debug('[Scout] Feature flags:', { enableChat });
+  }, [enableChat]);
 
   // Don't render until subdomain URLs are set on client side
   if (Object.keys(subdomainUrls).length === 0) {
@@ -185,89 +184,8 @@ const ContentGrid = ({ enableChat, showPlaybooks }: ContentGridProps) => {
         </div>
       </div>
 
-      {/* Playbooks & Admin Side-by-Side */}
-      <div className={`grid ${showPlaybooks ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-6`}>
-        {/* Playbooks */}
-        {showPlaybooks && (
-          <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
-            <div className="text-center mb-6">
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
-                  <FaFlask className="text-base text-white" />
-                </div>
-                <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">
-                  Playbooks
-                </h2>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
-                Pluggable workflows and dashboards
-              </p>
-            </div>
-            <div className="space-y-3">
-              <a
-                href={subdomainUrls.jupyter + '/user/scout/voila/render/Followup.ipynb'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative flex items-center gap-3 p-4 bg-gradient-to-r from-cyan-50 to-sky-50 dark:from-cyan-900/20 dark:to-sky-900/20 border border-cyan-200/50 dark:border-cyan-800/50 rounded-xl hover:shadow-xl hover:shadow-cyan-200/50 dark:hover:shadow-cyan-900/30 hover:-translate-y-1 transition-all duration-300 no-underline overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/0 to-sky-600/0 group-hover:from-cyan-400/5 group-hover:to-sky-600/10 transition-all duration-300"></div>
-                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
-                  <HiSparkles className="text-xl text-cyan-600 dark:text-cyan-400" />
-                </div>
-                <div className="relative flex-1 min-w-0">
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                    Clinical Follow-up Monitoring
-                  </h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                    Review algorithmically-detected follow-up recommendations
-                  </p>
-                </div>
-                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
-              </a>
-
-              <a
-                href={subdomainUrls.jupyter + '/user/scout/voila/render/Cohort.ipynb'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative flex items-center gap-3 p-4 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 border border-violet-200/50 dark:border-violet-800/50 rounded-xl hover:shadow-xl hover:shadow-violet-200/50 dark:hover:shadow-violet-900/30 hover:-translate-y-1 transition-all duration-300 no-underline overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-400/0 to-purple-600/0 group-hover:from-violet-400/5 group-hover:to-purple-600/10 transition-all duration-300"></div>
-                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
-                  <HiUserGroup className="text-xl text-violet-600 dark:text-violet-400" />
-                </div>
-                <div className="relative flex-1 min-w-0">
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white">Research Cohorting</h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                    Build and manage patient cohorts for research studies
-                  </p>
-                </div>
-                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-violet-600 dark:group-hover:text-violet-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
-              </a>
-
-              <a
-                href={subdomainUrls.jupyter + '/user/scout/voila/render/RADS.ipynb'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative flex items-center gap-3 p-4 bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 border border-rose-200/50 dark:border-rose-800/50 rounded-xl hover:shadow-xl hover:shadow-rose-200/50 dark:hover:shadow-rose-900/30 hover:-translate-y-1 transition-all duration-300 no-underline overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-rose-400/0 to-pink-600/0 group-hover:from-rose-400/5 group-hover:to-pink-600/10 transition-all duration-300"></div>
-                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
-                  <HiChartBar className="text-xl text-rose-600 dark:text-rose-400" />
-                </div>
-                <div className="relative flex-1 min-w-0">
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white">LI-RADS Dashboard</h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                    Explore and monitor LI-RADS reporting trends over time
-                  </p>
-                </div>
-                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-rose-600 dark:group-hover:text-rose-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
-              </a>
-            </div>
-          </div>
-        )}
-
-        {/* Admin Tools Section - Only visible to admins */}
-        {Object.keys(subdomainUrls).length > 0 && (
+      {/* Admin Tools Section - Only visible to admins */}
+      {Object.keys(subdomainUrls).length > 0 && (
           <AdminSection requireAdmin={true}>
             <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
               <div className="text-center mb-6">
@@ -358,25 +276,23 @@ const ContentGrid = ({ enableChat, showPlaybooks }: ContentGridProps) => {
               </div>
             </div>
           </AdminSection>
-        )}
-      </div>
+      )}
     </div>
   );
 };
 
 interface HomeClientProps {
   enableChat: boolean;
-  showPlaybooks: boolean;
 }
 
-export default function HomeClient({ enableChat, showPlaybooks }: HomeClientProps) {
+export default function HomeClient({ enableChat }: HomeClientProps) {
   const [mounted, setMounted] = useState(false);
   const { data: session, status } = useSession();
 
   useEffect(() => {
     setMounted(true);
-    console.log('[Scout Client] Props received:', { enableChat, showPlaybooks });
-  }, [enableChat, showPlaybooks]);
+    console.log('[Scout Client] Props received:', { enableChat });
+  }, [enableChat]);
 
   // Auto-login: redirect to sign in if not authenticated
   useEffect(() => {
@@ -414,7 +330,7 @@ export default function HomeClient({ enableChat, showPlaybooks }: HomeClientProp
         </div>
 
         {/* Content Grid */}
-        <ContentGrid enableChat={enableChat} showPlaybooks={showPlaybooks} />
+        <ContentGrid enableChat={enableChat} />
 
         {/* Footer */}
         <div className="text-center mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
