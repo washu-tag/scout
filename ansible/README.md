@@ -289,14 +289,9 @@ postgres_resources:
     memory: 128Gi
 ```
 
-**Jupyter GPU resources** (in `inventory.yaml`):
-```yaml
-jupyter_singleuser_extra_resource:
-  guarantees:
-    nvidia.com/gpu: '1'
-  limits:
-    nvidia.com/gpu: '1'
-```
+**Jupyter profiles** (in `inventory.yaml`):
+
+See [Customizing JupyterHub Profiles](#customizing-jupyterhub-profiles) for profile configuration including GPU support.
 
 ### Namespaces
 
@@ -359,11 +354,11 @@ Multiplies a memory specification by a factor while preserving the unit. Used fo
 **Usage:**
 ```yaml
 # Double the memory (for limits)
-memory: "{{ jupyter_spark_memory | multiply_memory(2) }}"
+memory: "{{ hl7_transformer_spark_memory | multiply_memory(2) }}"
 # Input: "8G" → Output: "16G"
 
 # Triple the memory
-memory: "{{ jupyter_spark_memory | multiply_memory(3) }}"
+memory: "{{ hl7_transformer_spark_memory | multiply_memory(3) }}"
 # Input: "8G" → Output: "24G"
 ```
 
@@ -374,10 +369,10 @@ memory: "{{ jupyter_spark_memory | multiply_memory(3) }}"
 - `T`/`t` → `T` (terabytes)
 
 **Use cases:**
-- JupyterHub (requires decimal suffixes, not Kubernetes binary format)
+- Services that require decimal suffixes, not Kubernetes binary format
 
 **Services using this filter:**
-- JupyterHub (Spark memory → singleuser container limits)
+- HL7 Transformer (Spark memory → container limits)
 
 ### Creating Custom Filters
 
@@ -499,16 +494,162 @@ Scout supports NVIDIA GPUs for accelerated workloads (JupyterHub, AI models).
    make install-k3s  # Includes GPU operator
    ```
 
-3. **Configure Jupyter** for GPU access (in `inventory.yaml`):
-   ```yaml
-   jupyter_singleuser_extra_resource:
-     guarantees:
-       nvidia.com/gpu: '1'
-     limits:
-       nvidia.com/gpu: '1'
-   ```
+3. **GPU profile configuration**:
+
+   By default, a GPU profile is NOT included in the dev configuration. For production deployments with GPU nodes, override `jupyter_profiles` in `inventory.yaml` to add GPU support. See [Customizing JupyterHub Profiles](#customizing-jupyterhub-profiles) for complete examples including GPU profiles with custom resource allocations.
 
 The NVIDIA GPU Operator handles driver installation and device plugin configuration.
+
+## Customizing JupyterHub Profiles
+
+Scout provides a default "CPU Only" profile with size options (Small, Medium, Large):
+
+- **Small**: 0.5 CPU guarantee, 1 CPU limit, 1G memory guarantee, 4G memory limit
+- **Medium**: 1 CPU guarantee, 2 CPU limit, 2G memory guarantee, 8G memory limit
+- **Large**: 2 CPU guarantee, 4 CPU limit, 4G memory guarantee, 16G memory limit
+
+These default profiles can be overridden by defining your own custom profiles in `inventory.yaml`.
+
+### Adding to Default Profiles
+
+To add GPU support while keeping the default CPU profile:
+
+```yaml
+jupyter_profiles:
+  - "{{ jupyter_cpu_profile }}"  # Include default CPU profile
+  - display_name: "GPU"
+    slug: "gpu"
+    description: "GPU environment for ML/AI workloads"
+    default: false
+    kubespawner_override:
+      cpu_guarantee: 2
+      cpu_limit: 8
+      mem_guarantee: '8G'
+      mem_limit: '32G'
+      environment:
+        SPARK_DRIVER_MEMORY: "24g"
+        SPARK_EXECUTOR_MEMORY: "24g"
+      extra_resource_guarantees:
+        nvidia.com/gpu: '1'
+      extra_resource_limits:
+        nvidia.com/gpu: '1'
+```
+
+### Completely Replacing Default Profiles
+
+To completely replace the default profiles with your own custom profiles, define `jupyter_profiles` without including `jupyter_cpu_profile`:
+
+**Example 1: Simple profiles with profile-level `kubespawner_override`**
+
+Each profile has fixed resources defined at the profile level:
+
+```yaml
+jupyter_profiles:
+  - display_name: "Development"
+    slug: "dev"
+    description: "Lightweight environment for development"
+    default: true
+    kubespawner_override:  # Profile-level override
+      cpu_guarantee: 0.5
+      cpu_limit: 2
+      mem_guarantee: '1G'
+      mem_limit: '4G'
+      environment:
+        SPARK_DRIVER_MEMORY: "3g"
+        SPARK_EXECUTOR_MEMORY: "3g"
+
+  - display_name: "Production"
+    slug: "prod"
+    description: "High-performance environment for production workloads"
+    kubespawner_override:  # Profile-level override
+      cpu_guarantee: 4
+      cpu_limit: 8
+      mem_guarantee: '8G'
+      mem_limit: '32G'
+      environment:
+        SPARK_DRIVER_MEMORY: "24g"
+        SPARK_EXECUTOR_MEMORY: "24g"
+```
+
+**Example 2: Profiles with size options using profile_option-level `kubespawner_override`**
+
+Each profile has multiple size choices, with resources defined at the profile_option level:
+
+```yaml
+jupyter_profiles:
+  - display_name: "Standard Compute"
+    slug: "standard"
+    description: "Standard CPU-based environment"
+    default: true
+    profile_options:
+      resource_allocation:
+        display_name: "Resource Size"
+        choices:
+          small:
+            display_name: "Small (2 CPU, 8Gi RAM)"
+            default: true
+            kubespawner_override:  # Option-level override
+              cpu_guarantee: 1
+              cpu_limit: 2
+              mem_guarantee: '2G'
+              mem_limit: '8G'
+              environment:
+                SPARK_DRIVER_MEMORY: "6g"
+                SPARK_EXECUTOR_MEMORY: "6g"
+          large:
+            display_name: "Large (8 CPU, 32Gi RAM)"
+            kubespawner_override:  # Option-level override
+              cpu_guarantee: 4
+              cpu_limit: 8
+              mem_guarantee: '8G'
+              mem_limit: '32G'
+              environment:
+                SPARK_DRIVER_MEMORY: "24g"
+                SPARK_EXECUTOR_MEMORY: "24g"
+
+  - display_name: "GPU Accelerated"
+    slug: "gpu"
+    description: "GPU-enabled environment for ML/AI"
+    profile_options:
+      gpu_allocation:
+        display_name: "GPU Count"
+        choices:
+          single:
+            display_name: "1 GPU"
+            default: true
+            kubespawner_override:  # Option-level override
+              cpu_guarantee: 4
+              cpu_limit: 8
+              mem_guarantee: '16G'
+              mem_limit: '64G'
+              environment:
+                SPARK_DRIVER_MEMORY: "48g"
+                SPARK_EXECUTOR_MEMORY: "48g"
+              extra_resource_guarantees:
+                nvidia.com/gpu: '1'
+              extra_resource_limits:
+                nvidia.com/gpu: '1'
+          multi:
+            display_name: "2 GPUs"
+            kubespawner_override:  # Option-level override
+              cpu_guarantee: 8
+              cpu_limit: 16
+              mem_guarantee: '32G'
+              mem_limit: '128G'
+              environment:
+                SPARK_DRIVER_MEMORY: "96g"
+                SPARK_EXECUTOR_MEMORY: "96g"
+              extra_resource_guarantees:
+                nvidia.com/gpu: '2'
+              extra_resource_limits:
+                nvidia.com/gpu: '2'
+```
+
+**Key Points:**
+
+- **Profile-level `kubespawner_override`**: Use when a profile has fixed resources (no size options). All spawned notebooks from this profile get the same resources.
+- **Profile_option-level `kubespawner_override`**: Use when users should choose from multiple resource configurations. The `kubespawner_override` within each choice determines the resources.
+- **Mixing approaches**: You can have some profiles with fixed resources (profile-level override) and others with size options (profile_option-level override) in the same configuration.
 
 ## Accessing Services
 

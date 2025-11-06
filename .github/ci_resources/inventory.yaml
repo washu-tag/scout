@@ -82,6 +82,5 @@ k3s_cluster:
 
     # Resources
     hl7_transformer_spark_memory: 1G
-    jupyter_spark_memory: 1G
     cassandra_init_heap: 1G
     cassandra_max_heap: 1G
