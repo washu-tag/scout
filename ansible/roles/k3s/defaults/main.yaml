@@ -33,8 +33,8 @@ base_dir: /var/lib/rancher/k3s/storage
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 kubeconfig_group: root
 
-# If we are deploying locally this will be overwritten with a path to a local copy of the remote kubeconfig
-local_kubeconfig_yaml: '{{ kubeconfig_yaml }}'
+# Note: local_kubeconfig_yaml is defined in scout_common/defaults/main.yaml
+# The k3s role sets it via set_fact during remote deployment setup
 
 ################################################################################
 # Air-Gapped Artifact Configuration
