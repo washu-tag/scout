@@ -55,16 +55,12 @@ env:
     value: '{{ jdbc_url }}/{{ hive_database_name }}'
   - name: HIVE_METASTORE_USER
     value: '{{ hive_metastore_db_user }}'
-  - name: HIVE_METASTORE_PASSWORD
-    value: '{{ hive_metastore_db_password }}'
   - name: HIVE_METASTORE_WAREHOUSE_DIR
     value: '{{ delta_lake_path }}'
   - name: S3_ENDPOINT
     value: '{{ s3_endpoint }}'
   - name: S3_ACCESS_KEY
     value: '{{ hive_s3_access_key }}'
-  - name: S3_SECRET_KEY
-    value: '{{ hive_s3_secret_key }}'
   - name: S3_PATH_STYLE_ACCESS
     value: 'true'
   - name: REGION
@@ -98,3 +94,7 @@ env:
     value: ''
   - name: AZURE_WASB_ACCESS_KEY
     value: ''
+
+envFrom:
+  - secretRef:
+      name: '{{ hive_fullname_override }}-secret'
