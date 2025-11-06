@@ -56,6 +56,10 @@ chatbot_storage_definitions:
     storage_class_name: '{{ open_webui_storage_class }}'
 
 # Resource configuration (dev defaults)
+# WARNING: These are minimal defaults suitable for small models only.
+# For production LLMs (especially large models like gpt-oss:120b), you MUST
+# override these in inventory.yaml with significantly more resources.
+# Recommended production values: 32Gi+ memory for requests, 64Gi+ for limits.
 ollama_resources:
   requests:
     cpu: 2

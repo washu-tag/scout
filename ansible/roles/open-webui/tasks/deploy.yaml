@@ -63,6 +63,8 @@
     helm_chart_timeout: '10m'
 
 - name: Install OAuth auto-redirect middleware
+  # This middleware rewrites the /auth endpoint to /oauth/oidc/login
+  # to work around https://github.com/open-webui/open-webui/discussions/7337
   kubernetes.core.k8s:
     state: present
     definition:

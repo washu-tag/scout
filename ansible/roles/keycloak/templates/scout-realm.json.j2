@@ -400,10 +400,10 @@
         "clientAuthenticatorType": "client-secret",
         "secret": "{{ keycloak_open_webui_client_secret }}",
         "redirectUris": [
-          "*"
+          "https://chat.{{ server_hostname }}/oauth/oidc/callback"
         ],
         "webOrigins": [
-          "*"
+          "https://chat.{{ server_hostname }}"
         ],
         "defaultClientScopes": [
           "web-origins",
