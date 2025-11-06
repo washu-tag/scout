@@ -29,4 +29,6 @@ matplotlib
 requests
 trino
 plotly
+s3fs
+boto3
 jupyter-server-proxy
