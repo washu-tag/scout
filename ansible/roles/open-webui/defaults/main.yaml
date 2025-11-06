@@ -15,6 +15,16 @@ open_webui_name: open-webui
 # Storage configuration
 ollama_storage_class: '{{ ollama_name }}-storage'
 ollama_storage_size: 5Gi
+
+# Scout custom model configuration
+scout_base_model: gpt-oss:120b
+scout_model_name: gpt-oss-120b-long:latest
+scout_model_num_predict: -1 # Unlimited token generation
+scout_model_num_ctx: 131072 # 128K context window
+scout_model_num_keep: 32768 # Keep 32K tokens in memory
+scout_model_create: true # Set to false to skip Scout model creation
+# List of Ollama models to pull automatically (see https://ollama.com/library)
+# `scout_base_model` will be included by default
 ollama_models: []
 
 open_webui_storage_class: '{{ open_webui_name }}-storage'
