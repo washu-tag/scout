@@ -67,9 +67,9 @@ spec:
               value: {{ .Values.auth.oauth2ProxySignOutUrl | quote }}
             {{- end }}
             {{- end }}
-            - name: NEXT_PUBLIC_ENABLE_CHAT
+            - name: ENABLE_CHAT
               value: {{ .Values.enableChat | quote }}
-            - name: NEXT_PUBLIC_SHOW_PLAYBOOKS
+            - name: SHOW_PLAYBOOKS
               value: {{ .Values.showPlaybooks | quote }}
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
