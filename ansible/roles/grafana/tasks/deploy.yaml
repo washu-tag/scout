@@ -30,10 +30,10 @@
         password: '{{ grafana_smtp_password }}'
   when: grafana_alert_contact_point == 'email'
 
-- name: Configure and install Grafana
+- name: Configure Grafana resources
   delegate_to: localhost
   environment:
-    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}'
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml }}'
   block:
     - name: Find all Grafana dashboards
       ansible.builtin.find:
@@ -154,16 +154,16 @@
           stringData:
             pg-db.yaml: "{{ lookup('template', 'datasources/postgres-datasource.yaml.j2') }}"
 
-    - name: Deploy Grafana
-      ansible.builtin.include_role:
-        name: scout_common
-        tasks_from: deploy_helm_chart
-      vars:
-        helm_chart_name: '{{ grafana_helm_chart_name }}'
-        helm_chart_ref: '{{ grafana_helm_repo_name }}/{{ grafana_helm_chart_name }}'
-        helm_chart_namespace: '{{ grafana_namespace }}'
-        helm_repo_name: '{{ grafana_helm_repo_name }}'
-        helm_repo_url: '{{ grafana_helm_repo_url }}'
-        helm_chart_version: '{{ grafana_helm_chart_version }}'
-        helm_chart_create_namespace: false
-        helm_chart_values: "{{ lookup('template', 'grafana.values.yaml.j2') | from_yaml }}"
+- name: Deploy Grafana
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ grafana_helm_chart_name }}'
+    helm_chart_ref: '{{ grafana_helm_repo_name }}/{{ grafana_helm_chart_name }}'
+    helm_chart_namespace: '{{ grafana_namespace }}'
+    helm_repo_name: '{{ grafana_helm_repo_name }}'
+    helm_repo_url: '{{ grafana_helm_repo_url }}'
+    helm_chart_version: '{{ grafana_helm_chart_version }}'
+    helm_chart_create_namespace: false
+    helm_chart_values: "{{ lookup('template', 'grafana.values.yaml.j2') | from_yaml }}"
