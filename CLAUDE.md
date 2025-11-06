@@ -13,7 +13,7 @@ Scout is a microservices platform deployed on Kubernetes (K3s) with the followin
 ### User Services
 - **Analytics**: Apache Superset for no-code visualizations and SQL queries (powered by Trino)
 - **Notebooks**: JupyterHub with PySpark for programmatic data analysis
-- **Explorer**: Web-based landing page to access all Scout services
+- **Launchpad**: Web-based landing page to access all Scout services
 - **Chat** (optional): Open WebUI with Ollama for AI-powered assistance
 
 ### Data Layer (Lake)
@@ -59,7 +59,7 @@ scout/
 │   │   ├── extractor.yaml     # HL7 processors
 │   │   ├── jupyter.yaml       # JupyterHub
 │   │   ├── monitor.yaml       # Prometheus + Loki + Grafana
-│   │   ├── explorer.yaml      # Landing page
+│   │   ├── launchpad.yaml     # Landing page
 │   │   └── chatbot.yaml       # Open WebUI + Ollama
 │   ├── roles/                 # Ansible roles (one per component)
 │   │   ├── scout_common/      # Shared defaults, tasks, filters
@@ -77,7 +77,7 @@ scout/
 │   │   ├── prometheus/
 │   │   ├── loki/
 │   │   ├── grafana/
-│   │   ├── explorer/
+│   │   ├── launchpad/
 │   │   └── gpu-operator/
 │   ├── filter_plugins/        # Custom Jinja2 filters (jvm_memory_to_k8s, etc.)
 │   ├── group_vars/all/        # Centralized version management
@@ -91,7 +91,7 @@ scout/
 │   │   ├── ingest.md          # Ingestion workflow
 │   │   └── tips.md            # Usage tips
 │   └── internal/              # Developer documentation
-├── explorer/                  # React landing page (TypeScript/Node.js)
+├── launchpad/                 # React landing page (TypeScript/Node.js)
 ├── extractor/                 # HL7 processing services
 │   ├── hl7log-extractor/      # Splits logs, uploads HL7 (TypeScript/Node.js)
 │   └── hl7-transformer/       # Transforms HL7 to Delta (Python/PySpark)
@@ -114,7 +114,7 @@ scout/
 - **Databases**: PostgreSQL (CloudNativePG operator), Cassandra (K8ssandra), Elasticsearch (ECK)
 - **Monitoring**: Prometheus, Loki, Grafana
 - **Deployment**: Ansible, Helm
-- **Languages**: Python (transformers), TypeScript (orchestrator, extractors, explorer), Ansible (deployment)
+- **Languages**: Python (transformers), TypeScript (orchestrator, extractors, launchpad), Ansible (deployment)
 
 ## Data Schema
 
@@ -168,7 +168,7 @@ make install-extractor        # HL7 extractors and transformers
 
 # User services
 make install-jupyter          # JupyterHub with PySpark
-make install-explorer         # Landing page web UI
+make install-launchpad        # Landing page web UI
 make install-chat             # Open WebUI + Ollama (optional)
 
 # Monitoring
@@ -185,11 +185,23 @@ make install-mailhog          # Email testing
 1. **Create inventory**: `cp ansible/inventory.example.yaml ansible/inventory.yaml`
 2. **Configure**: Edit `inventory.yaml` for your environment:
    - Hosts (server, workers, GPU nodes, staging)
-   - Storage paths (MinIO, PostgreSQL, Cassandra, etc.)
+   - Storage paths (MinIO, PostgreSQL, Cassandra, Ollama, Open WebUI, etc.)
    - Secrets (use Ansible Vault for passwords/tokens)
    - Resources (CPU, memory, storage allocations)
+   - Feature flags (e.g., `enable_chat` for optional Chat service)
    - Namespaces (optional overrides)
 3. **Deploy**: Run `make all` or individual `make install-*` targets
+
+### Feature Flags
+
+Scout supports optional features that can be enabled via feature flags in `inventory.yaml`:
+
+- **`enable_chat`**: Enable AI-powered chat interface (Open WebUI + Ollama)
+  - Default: `false` (disabled)
+  - Set to `true` in inventory to enable
+  - Requires storage paths: `ollama_dir`, `open_webui_dir`
+  - Requires secrets: `open_webui_postgres_password`, `open_webui_secret_key`, `keycloak_open_webui_client_secret`
+  - Recommended: GPU node for optimal performance
 
 ### Variable Precedence
 
@@ -205,7 +217,7 @@ Configuration hierarchy (lowest to highest precedence):
 ### Local Development
 
 Each service directory has its own development setup:
-- **explorer/**: React app (`npm install`, `npm start`)
+- **launchpad/**: React app (`npm install`, `npm start`)
 - **orchestrator/**: Temporal workflows (`npm install`, deploy to cluster)
 - **extractor/hl7log-extractor/**: TypeScript service
 - **extractor/hl7-transformer/**: Python package `hl7scout` (PySpark)
@@ -301,11 +313,11 @@ Scout services are accessible within the Kubernetes cluster. Access methods:
 
 ### Via Ingress (Production)
 If configured with `external_url` in `inventory.yaml` and DNS/TLS setup:
-- **Explorer** (landing page): `https://<external_url>/`
-- **Superset**: Via Explorer or `https://<external_url>/superset`
-- **JupyterHub**: Via Explorer or `https://<external_url>/jupyter`
-- **Grafana**: Via Explorer or `https://<external_url>/grafana`
-- **Temporal UI**: Via Explorer or `https://<external_url>/temporal`
+- **Launchpad** (landing page): `https://<external_url>/`
+- **Superset**: Via Launchpad or `https://<external_url>/superset`
+- **JupyterHub**: Via Launchpad or `https://<external_url>/jupyter`
+- **Grafana**: Via Launchpad or `https://<external_url>/grafana`
+- **Temporal UI**: Via Launchpad or `https://<external_url>/temporal`
 
 ### From Within Cluster
 Services communicate via Kubernetes service names:
@@ -481,6 +493,7 @@ See `ansible/filter_plugins/` and `ansible/README.md` for details and testing.
 - **Add dashboard**: Create in Grafana UI, export JSON to `ansible/roles/grafana/files/dashboards/`
 - **Update versions**: Edit `ansible/group_vars/all/versions.yaml`, redeploy component
 - **Configure namespaces**: Override namespace variables in `inventory.yaml`
+- **Enable optional features**: Set feature flags in `inventory.yaml` (e.g., `enable_chat: true`), configure required paths and secrets
 
 ### Debugging Strategy
 1. Check pod status: `kubectl get pods -n <namespace>`
