@@ -18,6 +18,7 @@ hub:
   db:
     pvc:
       storageClassName: '{{ use_custom_storage_classes | ternary(jupyter_hub_storage_class, omit) }}'
+      storage: '{{ jupyter_hub_storage_size }}'
   config:
     Authenticator:
       auto_login: true
