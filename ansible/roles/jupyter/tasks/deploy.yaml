@@ -6,10 +6,8 @@
     that:
       - jupyter_metrics_api_token is defined
       - jupyter_metrics_api_token | length > 0
-      - jupyter_mcp_api_token is defined
-      - jupyter_mcp_api_token | length > 0
     fail_msg: >
-      Required API tokens (jupyter_metrics_api_token and jupyter_mcp_api_token) must be set in inventory.yaml.
+      Required API token (jupyter_metrics_api_token) must be set in inventory.yaml.
       Use vault encryption. Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 
@@ -55,6 +53,10 @@
     spark_s3_username: '{{ s3_lake_reader }}'
     spark_s3_password: '{{ s3_lake_reader_secret }}'
 
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    jh_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
 - name: Deploy JupyterHub
   ansible.builtin.include_role:
     name: scout_common
@@ -67,4 +69,4 @@
     helm_repo_name: '{{ jupyter_helm_repo_name }}'
     helm_repo_url: '{{ jupyter_helm_repo_url }}'
     helm_chart_timeout: 15m
-    helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+    helm_chart_values: '{{ jh_helm_chart_values }}'

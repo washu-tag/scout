@@ -69,8 +69,6 @@ spec:
             {{- end }}
             - name: ENABLE_CHAT
               value: {{ .Values.enableChat | quote }}
-            - name: SHOW_PLAYBOOKS
-              value: {{ .Values.showPlaybooks | quote }}
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
