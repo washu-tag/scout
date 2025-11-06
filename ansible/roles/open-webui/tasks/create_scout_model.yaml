@@ -1,0 +1,64 @@
+---
+# Create custom Scout Ollama model via Kubernetes Job
+# This creates gpt-oss-120b-long:latest with extended context settings
+
+- name: Create Scout model creation Job
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        generateName: 'ollama-create-scout-model-'
+        namespace: '{{ chatbot_namespace }}'
+        labels:
+          app: ollama-create-scout-model
+      spec:
+        ttlSecondsAfterFinished: 600 # Clean up 10 minutes after completion
+        backoffLimit: 3
+        template:
+          metadata:
+            labels:
+              app: ollama-create-scout-model
+          spec:
+            restartPolicy: OnFailure
+            containers:
+              - name: ollama-create
+                image: ollama/ollama:latest
+                env:
+                  - name: OLLAMA_HOST
+                    value: 'http://{{ ollama_name }}.{{ chatbot_namespace }}:11434'
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    set -e
+                    echo "Waiting for Ollama to be ready..."
+                    until ollama list > /dev/null 2>&1; do
+                      echo "Ollama not ready, waiting..."
+                      sleep 5
+                    done
+
+                    echo "Checking if base model {{ scout_base_model }} exists..."
+                    if ! ollama list | grep -q "{{ scout_base_model }}"; then
+                      echo "Base model {{ scout_base_model }} not found. Please ensure it is pulled first."
+                      exit 1
+                    fi
+
+                    echo "Creating Scout custom model {{ scout_model_name }}..."
+                    cat > /tmp/Modelfile <<EOF
+                    FROM {{ scout_base_model }}
+                    PARAMETER num_predict {{ scout_model_num_predict }}
+                    PARAMETER num_ctx {{ scout_model_num_ctx }}
+                    PARAMETER num_keep {{ scout_model_num_keep }}
+                    EOF
+
+                    ollama create {{ scout_model_name }} -f /tmp/Modelfile
+
+                    echo "Verifying model creation..."
+                    if ollama list | grep -q "{{ scout_model_name }}"; then
+                      echo "Scout model {{ scout_model_name }} created successfully"
+                    else
+                      echo "Failed to verify Scout model creation"
+                      exit 1
+                    fi
