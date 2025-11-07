@@ -1,0 +1,89 @@
+slice_name: Age
+description: null
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_bar
+params:
+  datasource: 1__table
+  viz_type: echarts_timeseries_bar
+  slice_id: 21
+  x_axis: patient_age
+  metrics:
+    - count
+  groupby:
+    - sex
+  adhoc_filters:
+    - clause: WHERE
+      comparator: No filter
+      datasourceWarning: false
+      expressionType: SIMPLE
+      filterOptionName: filter_jow6pyq4h4_lbof4cjzz5
+      isExtra: false
+      isNew: false
+      operator: TEMPORAL_RANGE
+      sqlExpression: null
+      subject: message_dt
+    - clause: WHERE
+      comparator: 100
+      datasourceWarning: false
+      expressionType: SIMPLE
+      filterOptionName: filter_yggjkep1rb_p6dt6j2n7dl
+      isExtra: false
+      isNew: false
+      operator: <
+      operatorId: LESS_THAN
+      sqlExpression: null
+      subject: patient_age
+    - clause: WHERE
+      comparator:
+        - null
+        - ''
+      datasourceWarning: false
+      expressionType: SIMPLE
+      filterOptionName: filter_o4k8f2ain2i_bv4uwn7l3q
+      isExtra: false
+      isNew: false
+      operator: NOT IN
+      operatorId: NOT_IN
+      sqlExpression: null
+      subject: sex
+  row_limit: 10000
+  truncate_metric: true
+  show_empty_columns: true
+  annotation_layers: []
+  orientation: vertical
+  x_axis_title: Patient Age
+  x_axis_title_margin: 30
+  y_axis_title: Count
+  y_axis_title_margin: 30
+  y_axis_title_position: Left
+  sort_series_type: sum
+  color_scheme: presetColors
+  time_shift_color: true
+  stack: Stack
+  only_total: true
+  show_legend: true
+  legendType: scroll
+  legendOrientation: top
+  x_axis_time_format: smart_date
+  y_axis_format: SMART_NUMBER
+  y_axis_bounds:
+    - null
+    - null
+  truncateXAxis: true
+  rich_tooltip: true
+  showTooltipTotal: true
+  tooltipTimeFormat: smart_date
+  extra_form_data: {}
+  dashboards:
+    - 1
+query_context:
+  '{"datasource":{"id":1,"type":"table"},"force":false,"queries":[{"filters":[{"col":"message_dt","op":"TEMPORAL_RANGE","val":"No
+  filter"},{"col":"patient_age","op":"<","val":100},{"col":"sex","op":"NOT IN","val":[null,""]}],"extras":{"having":"","where":""},"applied_time_extras":{},"columns":[{"columnType":"BASE_AXIS","sqlExpression":"patient_age","label":"patient_age","expressionType":"SQL"},"sex"],"metrics":["count"],"orderby":[["count",false]],"annotation_layers":[],"row_limit":10000,"series_columns":["sex"],"series_limit":0,"order_desc":true,"url_params":{},"custom_params":{},"custom_form_data":{},"time_offsets":[],"post_processing":[{"operation":"pivot","options":{"index":["patient_age"],"columns":["sex"],"aggregates":{"count":{"operator":"mean"}},"drop_missing_columns":false}},{"operation":"rename","options":{"columns":{"count":null},"level":0,"inplace":true}},{"operation":"flatten"}]}],"form_data":{"datasource":"1__table","viz_type":"echarts_timeseries_bar","slice_id":21,"x_axis":"patient_age","metrics":["count"],"groupby":["sex"],"adhoc_filters":[{"clause":"WHERE","comparator":"No
+  filter","datasourceWarning":false,"expressionType":"SIMPLE","filterOptionName":"filter_jow6pyq4h4_lbof4cjzz5","isExtra":false,"isNew":false,"operator":"TEMPORAL_RANGE","sqlExpression":null,"subject":"message_dt"},{"clause":"WHERE","comparator":100,"datasourceWarning":false,"expressionType":"SIMPLE","filterOptionName":"filter_yggjkep1rb_p6dt6j2n7dl","isExtra":false,"isNew":false,"operator":"<","operatorId":"LESS_THAN","sqlExpression":null,"subject":"patient_age"},{"clause":"WHERE","comparator":[null,""],"datasourceWarning":false,"expressionType":"SIMPLE","filterOptionName":"filter_o4k8f2ain2i_bv4uwn7l3q","isExtra":false,"isNew":false,"operator":"NOT
+  IN","operatorId":"NOT_IN","sqlExpression":null,"subject":"sex"}],"row_limit":10000,"truncate_metric":true,"show_empty_columns":true,"annotation_layers":[],"orientation":"vertical","x_axis_title":"Patient
+  Age","x_axis_title_margin":30,"y_axis_title":"Count","y_axis_title_margin":30,"y_axis_title_position":"Left","sort_series_type":"sum","color_scheme":"presetColors","time_shift_color":true,"stack":"Stack","only_total":true,"show_legend":true,"legendType":"scroll","legendOrientation":"top","x_axis_time_format":"smart_date","y_axis_format":"SMART_NUMBER","y_axis_bounds":[null,null],"truncateXAxis":true,"rich_tooltip":true,"showTooltipTotal":true,"tooltipTimeFormat":"smart_date","extra_form_data":{},"dashboards":[1],"force":false,"result_format":"json","result_type":"full"},"result_format":"json","result_type":"full"}'
+cache_timeout: null
+uuid: 34a53ef0-f667-4d8a-aacf-32dcd50617dc
+version: 1.0.0
+dataset_uuid: 14cdaed5-905e-499a-b020-13e1b54097c8

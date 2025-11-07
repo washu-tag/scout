@@ -104,6 +104,9 @@ ingest_postgres_table_name: ingest
 hive_metastore_instance: hive-metastore
 hive_metastore_instance_readonly: hive-metastore-readonly
 
+# Trino - this is a dummy username since all Trino access is RO
+trino_user: trino
+
 # Helm configuration
 helm_plugins_dir: /root/.local/share/helm/plugins
 
