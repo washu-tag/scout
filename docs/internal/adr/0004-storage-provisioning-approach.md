@@ -45,7 +45,8 @@ As documented in `docs/internal/persistent-volume-research.md`, modern Kubernete
 This means:
 - Remove all static PV and StorageClass creation code (~220 lines)
 - Remove all directory creation tasks for persistent volumes
-- Add a single `scout_storage_class` variable that can be set per platform or left empty to use the cluster default
+- Add a single `storage_class` variable that can be set per platform or left empty to use the cluster default
+- Use `omit` in Helm templates when `storage_class` is empty (per Kubernetes best practice: omitted field uses default, empty string disables provisioning)
 - Rely on platform-native dynamic provisioners (local-path for k3s, EBS CSI for AWS EKS, etc.)
 - Let Kubernetes automatically manage node affinity for locally-attached volumes
 
@@ -112,7 +113,7 @@ This means:
 - Platform-native provisioners already provide needed functionality
 - Adds dependency that may not be required for Scout's use case
 
-**Decision**: Reject for initial implementation. Can be added later by simply changing the `scout_storage_class` variable to a Longhorn storage class if needed.
+**Decision**: Reject for initial implementation. Can be added later by simply changing the `storage_class` variable to a Longhorn storage class if needed.
 
 ## Comparison Matrix
 
@@ -168,19 +169,24 @@ The primary trade-off (loss of custom directory paths) is acceptable because:
 
 This is a **breaking change** for existing Scout deployments:
 - No automatic migration path from static to dynamic PVs
-- Existing deployments will continue to work with static PVs until manually migrated
-- Fresh deployments will use dynamic provisioning
+- All static PV code will be removed in one clean step
+- Existing deployments must back up data, redeploy with new code, and restore data
 - Manual data backup/restore required to migrate existing clusters (out of scope for this ADR)
+
+**Migration approach for existing deployments:**
+1. Back up data from existing PVs
+2. Deploy Scout using new dynamic provisioning approach
+3. Restore data to new dynamically-provisioned PVs
 
 ## Platform-Specific Configuration
 
 ### k3s (Local Development, On-Premise)
 ```yaml
 # Use cluster default (local-path)
-scout_storage_class: ""
+storage_class: ""
 
 # Or explicitly set
-scout_storage_class: "local-path"
+storage_class: "local-path"
 ```
 
 **Provisioner**: Rancher local-path-provisioner (built-in)
@@ -189,7 +195,7 @@ scout_storage_class: "local-path"
 
 ### AWS EKS (Cloud Production)
 ```yaml
-scout_storage_class: "gp3"
+storage_class: "gp3"
 ```
 
 **Provisioner**: EBS CSI driver (requires addon installation)
@@ -201,10 +207,10 @@ scout_storage_class: "gp3"
 ### Google GKE (Cloud Production)
 ```yaml
 # Use cluster default
-scout_storage_class: ""
+storage_class: ""
 
 # Or explicitly set
-scout_storage_class: "standard-rwo"  # Or "premium-rwo" for SSD
+storage_class: "standard-rwo"  # Or "premium-rwo" for SSD
 ```
 
 **Provisioner**: GCE PD CSI driver (built-in)
@@ -213,10 +219,10 @@ scout_storage_class: "standard-rwo"  # Or "premium-rwo" for SSD
 ### Azure AKS (Cloud Production)
 ```yaml
 # Use cluster default
-scout_storage_class: ""
+storage_class: ""
 
 # Or explicitly set
-scout_storage_class: "managed-csi"
+storage_class: "managed-csi"
 ```
 
 **Provisioner**: Azure Disk CSI driver (built-in)
