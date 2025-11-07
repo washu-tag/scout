@@ -62,22 +62,6 @@
     helm_chart_values: '{{ owui_helm_chart_values }}'
     helm_chart_timeout: '10m'
 
-- name: Install OAuth auto-redirect middleware
-  # This middleware rewrites the /auth endpoint to /oauth/oidc/login
-  # to work around https://github.com/open-webui/open-webui/discussions/7337
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: traefik.io/v1alpha1
-      kind: Middleware
-      metadata:
-        name: open-webui-oauth-redirect
-        namespace: '{{ chatbot_namespace }}'
-      spec:
-        replacePathRegex:
-          regex: '^/auth(.*)$'
-          replacement: '/oauth/oidc/login$1'
-
 - name: Wait for Open WebUI to be ready
   ansible.builtin.command: 'kubectl -n {{ chatbot_namespace }} wait --for=condition=Ready --timeout=300s pod -l app.kubernetes.io/name=open-webui'
   register: open_webui_ready

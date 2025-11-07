@@ -131,7 +131,7 @@ const ContentGrid = ({ enableChat }: ContentGridProps) => {
     setSubdomainUrls({
       jupyter: getUrl('jupyter'),
       superset: getUrl('superset'),
-      chat: getUrl('chat'),
+      chat: getUrl('chat', '/oauth/oidc/login'),
       minio: getUrl('minio'),
       temporal: getUrl('temporal', '/auth/sso'),
       grafana: getUrl('grafana'),
