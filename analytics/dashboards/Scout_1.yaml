@@ -11,7 +11,7 @@ position:
     children: []
     id: CHART-explore-1-1
     meta:
-      chartId: 1
+      chartId: 2
       height: 50
       sliceName: Count
       uuid: 1773eb3a-1525-4116-843c-921e3431b292
@@ -25,7 +25,7 @@ position:
     children: []
     id: CHART-explore-2-1
     meta:
-      chartId: 2
+      chartId: 6
       height: 50
       sliceName: Modality
       uuid: 36bebe6c-ca5d-4c7f-90f8-d048e7dae6af
@@ -33,13 +33,13 @@ position:
     parents:
       - ROOT_ID
       - GRID_ID
-      - ROW-zi8CO3tw0mUEjxP4JEHdZ
+      - ROW-b1bRsaicW__1lBGZ-5EqP
     type: CHART
   CHART-explore-3-1:
     children: []
     id: CHART-explore-3-1
     meta:
-      chartId: 3
+      chartId: 1
       height: 50
       sliceName: Sex
       uuid: 3124770b-a500-4b7f-8d15-2762aec1e511
@@ -53,7 +53,7 @@ position:
     children: []
     id: CHART-explore-4-1
     meta:
-      chartId: 4
+      chartId: 7
       height: 50
       sliceName: Race
       uuid: a2b4a702-3484-4939-ae87-1421e9721917
@@ -67,8 +67,8 @@ position:
     children: []
     id: CHART-explore-5-1
     meta:
-      chartId: 5
-      height: 50
+      chartId: 4
+      height: 74
       sliceName: Report
       uuid: 530e4ec8-8b09-4576-be3f-35f9e0936600
       width: 9
@@ -81,22 +81,22 @@ position:
     children: []
     id: CHART-explore-6-1
     meta:
-      chartId: 6
+      chartId: 5
       height: 50
       sliceName: Service Name
       uuid: 9cfca38a-5ddf-424c-a078-e653fb2cd270
-      width: 4
+      width: 8
     parents:
       - ROOT_ID
       - GRID_ID
-      - ROW-I9XV1xbdaofN3nsCygooy
+      - ROW-b1bRsaicW__1lBGZ-5EqP
     type: CHART
   CHART-explore-7-1:
     children: []
     id: CHART-explore-7-1
     meta:
-      chartId: 7
-      height: 50
+      chartId: 8
+      height: 74
       sliceName: Study Instance UID
       uuid: 6121f340-c0cc-4204-b27f-88694c031327
       width: 3
@@ -109,20 +109,35 @@ position:
     children: []
     id: CHART-explore-8-1
     meta:
-      chartId: 8
+      chartId: 3
       height: 50
       sliceName: Facility by date
       uuid: 31a6c707-617e-4f59-acde-4cb272280ca1
+      width: 8
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - ROW-zi8CO3tw0mUEjxP4JEHdZ
+    type: CHART
+  CHART-wLHEDRo32A91jZ0p-TVjh:
+    children: []
+    id: CHART-wLHEDRo32A91jZ0p-TVjh
+    meta:
+      chartId: 21
+      height: 50
+      sliceName: Age
+      uuid: 34a53ef0-f667-4d8a-aacf-32dcd50617dc
       width: 4
     parents:
       - ROOT_ID
       - GRID_ID
-      - ROW-nFsic3P3iA1Sck8iiSQFQ
+      - ROW-I9XV1xbdaofN3nsCygooy
     type: CHART
   DASHBOARD_VERSION_KEY: v2
   GRID_ID:
     children:
       - ROW-zi8CO3tw0mUEjxP4JEHdZ
+      - ROW-b1bRsaicW__1lBGZ-5EqP
       - ROW-I9XV1xbdaofN3nsCygooy
       - ROW-mXRI5NFejrZ9v32hZRlel
     id: GRID_ID
@@ -143,7 +158,7 @@ position:
     children:
       - CHART-explore-4-1
       - CHART-explore-3-1
-      - CHART-explore-6-1
+      - CHART-wLHEDRo32A91jZ0p-TVjh
     id: ROW-I9XV1xbdaofN3nsCygooy
     meta:
       '0': ROOT_ID
@@ -152,10 +167,21 @@ position:
       - ROOT_ID
       - GRID_ID
     type: ROW
+  ROW-b1bRsaicW__1lBGZ-5EqP:
+    children:
+      - CHART-explore-2-1
+      - CHART-explore-6-1
+    id: ROW-b1bRsaicW__1lBGZ-5EqP
+    meta:
+      background: BACKGROUND_TRANSPARENT
+    parents:
+      - ROOT_ID
+      - GRID_ID
+    type: ROW
   ROW-mXRI5NFejrZ9v32hZRlel:
     children:
-      - CHART-explore-7-1
       - CHART-explore-5-1
+      - CHART-explore-7-1
     id: ROW-mXRI5NFejrZ9v32hZRlel
     meta:
       '0': ROOT_ID
@@ -167,7 +193,6 @@ position:
   ROW-zi8CO3tw0mUEjxP4JEHdZ:
     children:
       - CHART-explore-1-1
-      - CHART-explore-2-1
       - CHART-explore-8-1
     id: ROW-zi8CO3tw0mUEjxP4JEHdZ
     meta:
@@ -179,18 +204,19 @@ position:
     type: ROW
 metadata:
   chart_configuration:
-    '2':
-      id: 2
+    '1':
+      id: 1
       crossFilters:
         scope: global
         chartsInScope:
-          - 1
+          - 2
           - 3
           - 4
           - 5
           - 6
           - 7
           - 8
+          - 21
     '3':
       id: 3
       crossFilters:
@@ -203,6 +229,7 @@ metadata:
           - 6
           - 7
           - 8
+          - 21
     '4':
       id: 4
       crossFilters:
@@ -215,8 +242,9 @@ metadata:
           - 6
           - 7
           - 8
-    '5':
-      id: 5
+          - 21
+    '6':
+      id: 6
       crossFilters:
         scope: global
         chartsInScope:
@@ -224,9 +252,10 @@ metadata:
           - 2
           - 3
           - 4
-          - 6
+          - 5
           - 7
           - 8
+          - 21
     '7':
       id: 8
       crossFilters:
@@ -239,6 +268,7 @@ metadata:
           - 5
           - 6
           - 8
+          - 21
     '8':
       id: 8
       crossFilters:
@@ -251,6 +281,20 @@ metadata:
           - 5
           - 6
           - 7
+          - 21
+    '21':
+      id: 21
+      crossFilters:
+        scope: global
+        chartsInScope:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
   global_chart_configuration:
     scope:
       rootPath:
@@ -265,13 +309,374 @@ metadata:
       - 6
       - 7
       - 8
-  color_scheme: ''
+      - 21
+  color_scheme: presetColors
   refresh_frequency: 0
-  color_scheme_domain: []
   expanded_slices: {}
   label_colors: {}
-  shared_label_colors: []
   timed_refresh_immune_slices: []
   cross_filters_enabled: true
+  native_filter_configuration:
+    - id: NATIVE_FILTER-o08u0q1Zc3fbZ5X98dY6v
+      controlValues:
+        enableEmptyFilter: false
+      name: Date
+      filterType: filter_time
+      targets:
+        - {}
+      defaultDataMask:
+        extraFormData: {}
+        filterState: {}
+        ownState: {}
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: ''
+      chartsInScope:
+        - 3
+        - 8
+        - 6
+        - 1
+        - 7
+        - 2
+        - 4
+        - 5
+      tabsInScope: []
+    - id: NATIVE_FILTER-ie1rZ_G0ycH9rUzx93_Z2
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: false
+        inverseSelection: false
+      name: Modality
+      filterType: filter_select
+      targets:
+        - column:
+            name: modality
+          datasetUuid: 14cdaed5-905e-499a-b020-13e1b54097c8
+      defaultDataMask:
+        extraFormData: {}
+        filterState: {}
+        ownState: {}
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: ''
+      chartsInScope:
+        - 3
+        - 8
+        - 6
+        - 1
+        - 7
+        - 2
+        - 4
+        - 5
+      tabsInScope: []
+    - id: NATIVE_FILTER-P9Oiirax3nYJgUfF1j-7s
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: false
+      name: Exam Code
+      filterType: filter_select
+      targets:
+        - column:
+            name: service_identifier
+          datasetUuid: 14cdaed5-905e-499a-b020-13e1b54097c8
+      defaultDataMask:
+        extraFormData: {}
+        filterState: {}
+        ownState: {}
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: ''
+    - id: NATIVE_FILTER-nlZe6sEKop75U-1tYKugV
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: false
+      name: Exam Description
+      filterType: filter_select
+      targets:
+        - column:
+            name: service_name
+          datasetUuid: 14cdaed5-905e-499a-b020-13e1b54097c8
+      defaultDataMask:
+        extraFormData: {}
+        filterState: {}
+        ownState: {}
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: ''
+    - id: NATIVE_FILTER-U4oQ-9ms4YUNZdkJ8Pihv
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: false
+        inverseSelection: false
+      name: Facility
+      filterType: filter_select
+      targets:
+        - column:
+            name: sending_facility
+          datasetUuid: 14cdaed5-905e-499a-b020-13e1b54097c8
+      defaultDataMask:
+        extraFormData: {}
+        filterState: {}
+        ownState: {}
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: ''
+      chartsInScope:
+        - 3
+        - 8
+        - 6
+        - 1
+        - 7
+        - 2
+        - 4
+        - 5
+      tabsInScope: []
+  shared_label_colors:
+    - <NULL>
+    - F
+    - M
+    - U
+  map_label_colors:
+    '0': '#E4DDD5'
+    '1': '#81B9C6'
+    '2': '#FCC550'
+    '3': '#D9BDD5'
+    BJH: '#6BD3B3'
+    XR: '#6BD3B3'
+    CT: '#FCC550'
+    US: '#408184'
+    MR: '#66CBE2'
+    MG: '#EE5960'
+    IR: '#484E5A'
+    <NULL>: '#FF874E'
+    FL: '#03748E'
+    NM: '#C9BBAB'
+    PET: '#B17BAA'
+    CTA: '#B5E9D9'
+    3D: '#FDE2A7'
+    DXA: '#9FC0C1'
+    MRA: '#B2E5F0'
+    ECH: '#F6ACAF'
+    F: '#408184'
+    M: '#EE5960'
+    U: '#484E5A'
+    WHITE: '#6BD3B3'
+    BLACK: '#FCC550'
+    C: '#408184'
+    B: '#66CBE2'
+    '': '#408184'
+    UNABLE: '#EE5960'
+    ASIAN: '#FF874E'
+    O: '#03748E'
+    OTHER: '#C9BBAB'
+    DECLINED: '#B17BAA'
+    R: '#B5E9D9'
+    AMIND: '#FDE2A7'
+    PCFIS: '#9FC0C1'
+    Black: '#B2E5F0'
+    A: '#F6ACAF'
+    Other: '#A4A6AC'
+    Z: '#FFC3A6'
+    S: '#E4DDD5'
+    White: '#66CBE2'
+    N: '#484E5A'
+    T: '#FF874E'
+    I: '#03748E'
+    G: '#C9BBAB'
+    V: '#B17BAA'
+    H: '#B5E9D9'
+    L: '#FDE2A7'
+    E: '#9FC0C1'
+    W: '#B2E5F0'
+    Asian: '#F6ACAF'
+    P: '#A4A6AC'
+    K: '#FFC3A6'
+    Q: '#81B9C6'
+    D: '#E4DDD5'
+    J: '#D9BDD5'
+    X: '#D9BDD5'
+    Y: '#FCC550'
+    XR CHEST 1 VIEW: '#6BD3B3'
+    XR CHEST PA LATERAL 2 VIEWS: '#FCC550'
+    SCREENING MAMMOGRAM BILATERAL W TOMO: '#408184'
+    CT HEAD WO CONTRAST: '#66CBE2'
+    CT ABDOMEN PELVIS W CONTRAST: '#EE5960'
+    XR ABDOMEN AP 1 VIEW: '#484E5A'
+    71010 Chest 1 view Frontal: '#FF874E'
+    CT CHEST ABDOMEN PELVIS W CONTRAST: '#03748E'
+    XR OUTSIDE REFERENCE: '#C9BBAB'
+    MRI BRAIN W WO CONTRAST: '#B17BAA'
+    71020 Chest 2 views Frontl \T\ Lat: '#B5E9D9'
+    DEXA AXIAL SKELETON BONE DENSITY 1 OR MORE SITES: '#FDE2A7'
+    PET/CT FDG SKULL TO THIGH: '#9FC0C1'
+    XR FOOT RIGHT 3 OR MORE VIEWS: '#B2E5F0'
+    CT CHEST WO CONTRAST: '#F6ACAF'
+    XR SHOULDER RIGHT 2 OR MORE VIEWS: '#A4A6AC'
+    70450 CT Head or Brain w/o cont: '#FFC3A6'
+    XR FOOT LEFT 3 OR MORE VIEWS: '#81B9C6'
+    XR PELVIS 1 OR 2 VIEWS: '#E4DDD5'
+    71260 CT Chest with contrast: '#D9BDD5'
+    FL FLUOROSCOPY < 1 HOUR: '#FCC550'
+    XR SPINE LUMBAR 2 OR 3 VIEWS: '#408184'
+    74177 CT Abd \T\ Pelvis with cont: '#66CBE2'
+    XR SHOULDER LEFT 2 OR MORE VIEWS: '#EE5960'
+    CT ABDOMEN PELVIS WO CONTRAST: '#484E5A'
+    CT BODY OUTSIDE REFERENCE: '#FF874E'
+    NEURO CT MR OUTSIDE REFERENCE: '#03748E'
+    XR ANKLE RIGHT 3 OR MORE VIEWS: '#C9BBAB'
+    CT HEAD AND CERVICAL SPINE WO CONTRAST: '#B17BAA'
+    CT BODY OUTSIDE CONSULT: '#B5E9D9'
+    CT CHEST W CONTRAST: '#FDE2A7'
+    XR ANKLE LEFT 3 OR MORE VIEWS: '#9FC0C1'
+    CT SOFT TISSUE NECK W CONTRAST: '#B2E5F0'
+    DIAGNOSTIC MAMMOGRAM BILATERAL W TOMO: '#F6ACAF'
+    XR KNEE RIGHT 3 VIEWS: '#A4A6AC'
+    CT CHEST PE (CTA) W CONTRAST: '#FFC3A6'
+    XR KNEE LEFT 3 VIEWS: '#81B9C6'
+    74000 Abdomen single view AP: '#E4DDD5'
+    US KIDNEY COMPLETE: '#D9BDD5'
+    MRI BRAIN WO CONTRAST: '#D9BDD5'
+    XR HAND RIGHT 3 OR MORE VIEWS: '#FCC550'
+    BREAST IMAGING MG SCREENING OUTSIDE REFERENCE: '#408184'
+    US VEIN DUPLEX LOWER EXTREMITY BILATERAL COMPLETE: '#66CBE2'
+    XR KUB: '#EE5960'
+    70553 MRI Brain wo\T\with contrast: '#484E5A'
+    XR SCOLIOSIS AP AND LATERAL: '#FF874E'
+    US RUQ: '#FF874E'
+    XR SPINE CERVICAL 2 OR 3 VIEWS: '#03748E'
+    MRI LUMBAR SPINE WO CONTRAST: '#C9BBAB'
+    CT CERVICAL SPINE WO CONTRAST: '#B17BAA'
+    XR KNEE RIGHT 4 OR MORE VIEWS: '#B5E9D9'
+    BREAST IMAGING OUTSIDE REFERENCE: '#FDE2A7'
+    71010 CHEST 1 VIEW: '#9FC0C1'
+    XR KNEE LEFT 4 OR MORE VIEWS: '#B2E5F0'
+    NEURO MR OUTSIDE REFERENCE: '#F6ACAF'
+    XR HAND LEFT 3 OR MORE VIEWS: '#A4A6AC'
+    XR KNEE RIGHT 1 OR 2 VIEWS: '#FFC3A6'
+    US THYROID: '#B2E5F0'
+    XR KNEE LEFT 1 OR 2 VIEWS: '#F6ACAF'
+    XR WRIST LEFT 3 OR MORE VIEWS: '#81B9C6'
+    71045 Chest 1 view Frontal: '#A4A6AC'
+    XR WRIST RIGHT 3 OR MORE VIEWS: '#E4DDD5'
+    XR SPINE LUMBAR 4 OR MORE VIEWS: '#03748E'
+    XR CHEST AND ABDOMEN 1 VIEW: '#C9BBAB'
+    NEURO CT MR OUTSIDE CONSULT: '#B17BAA'
+    US OUTSIDE REFERENCE: '#FFC3A6'
+    US BREAST LEFT LIMITED: '#81B9C6'
+    US BREAST RIGHT LIMITED: '#E4DDD5'
+    XR TIBIA FIBULA RIGHT2 VIEWS: '#E4DDD5'
+    XR TIBIA FIBULA LEFT 2 VIEWS: '#B5E9D9'
+    CTA HEAD NECK W WO CONTRAST: '#FDE2A7'
+    US RETROPERITONEAL COMPLETE: '#FCC550'
+    US INTRACRANIAL: '#D9BDD5'
+    CT LUNG CANCER SCREENING: '#FCC550'
+    XR CHEST 2 VIEWS: '#FCC550'
+    US ABDOMEN LIMITED: '#66CBE2'
+    XR CHEST PORTABLE: '#D9BDD5'
+    76140P BJH Neuro Reference: '#EE5960'
+    72100 Spine Lumbar 2 or 3 views: '#484E5A'
+    76705 Sono Abd Lmtd: '#FF874E'
+    XR SPINE THORACIC 3 VIEWS: '#03748E'
+    XR SCOLIOSIS  6 OR MORE VIEWS: '#C9BBAB'
+    XR SPINE THORACIC 2 VIEWS: '#408184'
+    XR WRIST LEFT 2 VIEWS: '#9FC0C1'
+    US OB LIMITED: '#484E5A'
+    PET OUTSIDE CONSULT: '#FF874E'
+    US LIVER: '#03748E'
+    CT HEAD WO: '#C9BBAB'
+    76942 US Needle guide: '#B5E9D9'
+    CT TAVR: '#B17BAA'
+    TOMO POST CLIP PLACEMENT RIGHT: '#408184'
+    US ABI: '#B5E9D9'
+    SLCH: '#FCC550'
+    MBMC: '#408184'
+    BJWCH: '#66CBE2'
+    CH: '#EE5960'
+    BJSPH: '#484E5A'
+    PWH: '#FF874E'
+    PHCF: '#03748E'
+    SP: '#C9BBAB'
+    BJWC: '#B17BAA'
+    MBSH: '#B5E9D9'
+    PW: '#FDE2A7'
+    BJCMG: '#9FC0C1'
+    WUSM: '#B2E5F0'
+    MHB: '#F6ACAF'
+    MHE: '#A4A6AC'
+    AMH: '#FFC3A6'
+    WUCA: '#81B9C6'
+    BHC: '#E4DDD5'
+    CC: '#D9BDD5'
+    HOME CARE SERVICES: '#FCC550'
+    MCC: '#66CBE2'
+    GDT: '#EE5960'
+    IMP: '#484E5A'
+    71020 Chest 2 views Front\T\Lat: '#B5E9D9'
+    78815 PET/CT Sk-Thigh: '#FFC3A6'
+    73562 Knee 3 views: '#66CBE2'
+    XR HIP RIGHT 2 OR 3 VIEWS: '#FDE2A7'
+    76770 US Retroper cmp: '#A4A6AC'
+    77001 Fluoro Ven Accs: '#B2E5F0'
+    76536 Neck Ultrasound: '#FDE2A7'
+    CTA ABDOMEN PELVIS: '#81B9C6'
+    US GALLBLADDER: '#9FC0C1'
+    XR FOOT LEFT 2 VIEWS: '#408184'
+    US OB FOLLOW UP: '#F6ACAF'
+    NEURO MR OUTSIDE CONSULT: '#FCC550'
+    MRI THORACIC SPINE WO CONTRAST: '#9FC0C1'
+    XR ELBOW RIGHT 3 OR MORE VIEWS: '#408184'
+    XR ELBOW LEFT 3 OR MORE VIEWS: '#9FC0C1'
+    74020 ABD OBS SERIES 2V: '#A4A6AC'
+  color_scheme_domain:
+    - '#6BD3B3'
+    - '#FCC550'
+    - '#408184'
+    - '#66CBE2'
+    - '#EE5960'
+    - '#484E5A'
+    - '#FF874E'
+    - '#03748E'
+    - '#C9BBAB'
+    - '#B17BAA'
+    - '#B5E9D9'
+    - '#FDE2A7'
+    - '#9FC0C1'
+    - '#B2E5F0'
+    - '#F6ACAF'
+    - '#A4A6AC'
+    - '#FFC3A6'
+    - '#81B9C6'
+    - '#E4DDD5'
+    - '#D9BDD5'
   default_filters: '{}'
 version: 1.0.0

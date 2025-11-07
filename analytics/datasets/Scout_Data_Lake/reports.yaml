@@ -3,7 +3,7 @@ main_dttm_col: message_dt
 description: null
 default_endpoint: null
 offset: 0
-cache_timeout: null
+cache_timeout: 7200
 catalog: delta
 schema: default
 sql: null
@@ -23,9 +23,37 @@ metrics:
     description: null
     d3format: null
     currency: null
-    extra: null
+    extra:
+      warning_markdown: ''
     warning_text: null
 columns:
+  - column_name: patient_ids
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: ARRAY(ROW(ID_NUMBER VARCHAR, ASSIGNING_AUTHORITY VARCHAR, IDENTIFIER_TYPE_CODE
+      VARCHAR, ASSIGNING_FACILITY VARCHAR))
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: diagnoses
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type:
+      ARRAY(ROW(DIAGNOSIS_CODE VARCHAR, DIAGNOSIS_CODE_TEXT VARCHAR, DIAGNOSIS_CODE_CODING_SYSTEM
+      VARCHAR))
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
   - column_name: results_report_status_change_dt
     verbose_name: null
     is_dttm: true
@@ -37,7 +65,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: observation_end_dt
     verbose_name: null
     is_dttm: true
@@ -49,7 +77,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: observation_dt
     verbose_name: null
     is_dttm: true
@@ -61,7 +89,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: message_dt
     verbose_name: null
     is_dttm: true
@@ -73,7 +101,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: requested_dt
     verbose_name: null
     is_dttm: true
@@ -85,7 +113,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: updated
     verbose_name: null
     is_dttm: true
@@ -97,7 +125,31 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
+  - column_name: assistant_result_interpreter
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: ARRAY(VARCHAR)
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: technician
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: ARRAY(VARCHAR)
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
   - column_name: obr_2_placer_order_number
     verbose_name: null
     is_dttm: false
@@ -109,7 +161,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: orc_2_placer_order_number
     verbose_name: null
     is_dttm: false
@@ -121,7 +173,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: obr_3_filler_order_number
     verbose_name: null
     is_dttm: false
@@ -133,7 +185,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: orc_3_filler_order_number
     verbose_name: null
     is_dttm: false
@@ -145,8 +197,8 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
-  - column_name: diagnosis_code_coding_system
+    extra: {}
+  - column_name: legacy_patient_id_sp
     verbose_name: null
     is_dttm: false
     is_active: true
@@ -157,7 +209,31 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
+  - column_name: legacy_patient_id_pw
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: report_section_technician_note
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
   - column_name: zip_or_postal_code
     verbose_name: null
     is_dttm: false
@@ -169,7 +245,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: diagnostic_service_id
     verbose_name: null
     is_dttm: false
@@ -181,8 +257,8 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
-  - column_name: diagnosis_code_text
+    extra: {}
+  - column_name: report_section_addendum
     verbose_name: null
     is_dttm: false
     is_active: true
@@ -193,7 +269,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: study_instance_uid
     verbose_name: null
     is_dttm: false
@@ -205,7 +281,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: message_control_id
     verbose_name: null
     is_dttm: false
@@ -217,8 +293,8 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
-  - column_name: patient_id_json
+    extra: {}
+  - column_name: principal_result_interpreter
     verbose_name: null
     is_dttm: false
     is_active: true
@@ -229,7 +305,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: service_coding_system
     verbose_name: null
     is_dttm: false
@@ -241,8 +317,8 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
-  - column_name: abc_mr
+    extra: {}
+  - column_name: report_section_findings
     verbose_name: null
     is_dttm: false
     is_active: true
@@ -253,8 +329,8 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
-  - column_name: diagnosis_code
+    extra: {}
+  - column_name: report_section_impression
     verbose_name: null
     is_dttm: false
     is_active: true
@@ -265,7 +341,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: sending_facility
     verbose_name: null
     is_dttm: false
@@ -277,7 +353,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: service_name
     verbose_name: null
     is_dttm: false
@@ -289,7 +365,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: report_status
     verbose_name: null
     is_dttm: false
@@ -301,7 +377,115 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
+  - column_name: bjwc_ee
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: gecb_mr
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: bjwc_mr
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: bjc_mr
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: bjwc_ss
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: mbmc_mr
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: bjh_ee
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: bjh_mr
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: bjh_ss
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
   - column_name: service_identifier
     verbose_name: null
     is_dttm: false
@@ -313,7 +497,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: source_file
     verbose_name: null
     is_dttm: false
@@ -325,7 +509,19 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
+  - column_name: slch_ee
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
   - column_name: ethnic_group
     verbose_name: null
     is_dttm: false
@@ -337,7 +533,19 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
+  - column_name: mtech_mrn
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
   - column_name: epic_mrn
     verbose_name: null
     is_dttm: false
@@ -349,7 +557,31 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
+  - column_name: slch_mr
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: slch_ss
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
   - column_name: version_id
     verbose_name: null
     is_dttm: false
@@ -361,7 +593,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: report_text
     verbose_name: null
     is_dttm: false
@@ -373,7 +605,19 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
+  - column_name: empi_mr
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
   - column_name: race
     verbose_name: null
     is_dttm: false
@@ -385,7 +629,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: modality
     verbose_name: null
     is_dttm: false
@@ -397,7 +641,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: country
     verbose_name: null
     is_dttm: false
@@ -409,7 +653,7 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
   - column_name: sex
     verbose_name: null
     is_dttm: false
@@ -421,7 +665,19 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
+  - column_name: mpi
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
   - column_name: birth_date
     verbose_name: null
     is_dttm: true
@@ -433,7 +689,19 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
+  - column_name: patient_age
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
   - column_name: year
     verbose_name: null
     is_dttm: false
@@ -445,6 +713,6 @@ columns:
     expression: null
     description: null
     python_date_format: null
-    extra: null
+    extra: {}
 version: 1.0.0
 database_uuid: 9ed918e7-ef5a-4aa4-9574-f1946b58d520
