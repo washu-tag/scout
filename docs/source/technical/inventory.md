@@ -252,30 +252,41 @@ ollama_storage_size: 200Gi
 open_webui_storage_size: 100Gi
 ```
 
-#### Local Paths
+#### Storage Class
 
-Define where data will be stored on your nodes:
+Scout uses Kubernetes dynamic volume provisioning to automatically create persistent volumes for services. You can configure which storage class to use, or leave it empty to use your cluster's default storage class.
 
 ```yaml
-base_dir: /var/lib/rancher/k3s/storage  # K3s container images
-scout_repo_dir: /scout/data/scout       # Scout repository
-minio_dir: /scout/data/minio            # MinIO data
-cassandra_dir: /scout/persistence/cassandra
-elasticsearch_dir: /scout/persistence/elasticsearch
-postgres_dir: /scout/persistence/postgres
-prometheus_dir: /scout/monitoring/prometheus
-loki_dir: /scout/monitoring/loki
-grafana_dir: /scout/monitoring/grafana
-jupyter_dir: /scout/data/jupyter
-ollama_dir: /scout/persistence/ollama
-open_webui_dir: /scout/persistence/openwebui
-extractor_data_dir: /ceph/input/data    # HL7 log input directory
+# Storage class for dynamic provisioning of persistent volumes
+# If empty, the storageClassName field is omitted and Kubernetes uses the cluster's default storage class
+# Setting to empty string explicitly disables dynamic provisioning (not recommended)
+storage_class: ""
 ```
 
-**Best practice:** Organize paths by purpose:
-- `/scout/data/*` - Application data
-- `/scout/persistence/*` - Database persistence
-- `/scout/monitoring/*` - Monitoring and logs
+**Platform-specific storage classes:**
+
+- **k3s** (local development, on-premise):
+  - Default: `local-path` (Rancher local-path-provisioner, built-in)
+  - Recommendation: Leave `storage_class: ""` to use cluster default
+
+- **AWS EKS** (cloud production):
+  - Recommended: `gp3` (requires EBS CSI driver addon)
+  - Alternative: `gp2` (legacy, also requires EBS CSI driver)
+  - Set `storage_class: "gp3"` in inventory
+
+- **Google GKE** (cloud production):
+  - Default: `standard-rwo` (Google Persistent Disk, HDD)
+  - Alternative: `premium-rwo` (SSD)
+  - Recommendation: Leave `storage_class: ""` to use cluster default
+
+- **Azure AKS** (cloud production):
+  - Default: `managed-csi` (Azure Managed Disks)
+  - Recommendation: Leave `storage_class: ""` to use cluster default
+
+**Most platforms work with empty `storage_class` value**, which uses the cluster's default storage class. Only override this if you need a specific storage class for performance or compliance requirements.
+
+**Note:** Dynamic provisioning automatically manages node affinity for local volumes and creates storage in provisioner-managed locations. Custom directory paths are not supported with dynamic provisioning.  
+**Note:** `extractor_data_dir` is still used for the HL7 log input directory (not managed by Kubernetes persistent volumes).
 
 (configuring-secrets)=
 ### Configuring Secrets

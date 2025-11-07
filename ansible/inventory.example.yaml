@@ -128,10 +128,21 @@ k3s_cluster:
     # Example: prometheus_namespace: my-custom-prometheus-namespace
 
     #############################################################################
-    ### On-prem storage                                                       ###
+    ### Storage Configuration                                                 ###
     #############################################################################
 
-    # Storage disk space
+    # Storage class for dynamic provisioning of persistent volumes
+    # When empty, the storageClassName field is omitted from PVCs, allowing Kubernetes
+    # to use the cluster's default storage class.
+    # Platform-specific values:
+    #   k3s:       "local-path" (this is also the k3s default, so empty string works)
+    #   AWS EKS:   "gp3" (requires EBS CSI driver addon to be enabled)
+    #   GKE:       "standard-rwo" or "premium-rwo" (standard-rwo is default)
+    #   AKS:       "managed-csi" (this is also the default)
+    # Leave empty to use cluster default (recommended for most deployments)
+    storage_class: ''
+
+    # Storage disk space - Size of persistent volume claims for each service
     postgres_storage_size: 100Gi
     redis_storage_size: 100Gi
     cassandra_storage_size: 300Gi
@@ -143,24 +154,8 @@ k3s_cluster:
     grafana_storage_size: 50Gi
     minio_storage_size: 750Gi
 
-    # Local paths
-    base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
-    scout_repo_dir: /scout/data/scout
-    minio_dir: /scout/data/minio
-    cassandra_dir: /scout/persistence/cassandra
-    elasticsearch_dir: /scout/persistence/elasticsearch
-    postgres_dir: /scout/persistence/postgres
-    prometheus_dir: /scout/monitoring/prometheus
-    loki_dir: /scout/monitoring/loki
-    grafana_dir: /scout/monitoring/grafana
-    jupyter_dir: /scout/data/jupyter
+    # HL7 extractor input directory (not managed by Kubernetes persistent volumes)
     extractor_data_dir: /ceph/input/data
-    # Parameters for optional chatbot services
-    ollama_dir: /scout/persistence/ollama
-    open_webui_dir: /scout/persistence/open-webui
-    # Parameters for optional PACS instances, only intended for use in development
-    orthanc_dir: /scout/data/orthanc
-    dcm4chee_dir: /scout/data/dcm4chee
 
     #############################################################################
     ### Service-specific secrets and resources                                ###
