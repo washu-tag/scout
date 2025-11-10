@@ -181,7 +181,7 @@ This is a **breaking change** for existing Scout deployments:
 2. Deploy Scout using new dynamic provisioning approach
 3. Restore data to new dynamically-provisioned PVs
 
-## Support for Multiple Storage Classes (I/O Isolation)
+## Support for Multiple Storage Classes
 
 While the primary approach uses a single default storage class per platform, Scout will support **optional configuration of multiple storage classes** for on-premise deployments requiring I/O isolation.
 
@@ -346,7 +346,7 @@ minio_storage_class: ""
 
 **Multi-Disk Configuration (Optional):**
 
-For on-premise deployments with multiple physical disks requiring I/O isolation, see the "Support for Multiple Storage Classes" section below.
+For on-premise deployments with multiple physical disks requiring I/O isolation, see the [Support for Multiple Storage Classes](#Support for Multiple Storage Classes) section.
 
 ### AWS EKS (Cloud Production)
 ```yaml
