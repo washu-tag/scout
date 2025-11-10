@@ -96,7 +96,7 @@ This means:
 
 **Disadvantages**:
 - Loss of custom directory path organization for cloud deployments (paths chosen by provisioner)
-- On-premise deployments can still organize storage across multiple disks using optional multiple storage class configuration
+- Slightly less explicit control over exact data placement for on-premise deployments (though deployments can still organize storage across multiple disks using optional multiple storage class configuration)
 
 ### Option 3: Dynamic Provisioning with Unified Storage Layer (Longhorn/Rook)
 
