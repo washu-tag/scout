@@ -228,6 +228,44 @@ storage_class: "managed-csi"
 **Provisioner**: Azure Disk CSI driver (built-in)
 **Backend**: Azure Managed Disks
 
+## Persistent Volume Reclaim Policies
+
+StorageClasses define a `reclaimPolicy` that determines what happens to a PersistentVolume when its associated PersistentVolumeClaim is deleted. All platform-native storage classes used by Scout default to the `Delete` policy.
+
+### Reclaim Policy Options
+
+- **`Delete`** (default): PV and underlying storage are automatically deleted when PVC is deleted
+- **`Retain`**: PV remains after PVC deletion and must be manually cleaned up
+
+### Platform Defaults
+
+All platform-native storage classes use `Delete` as the default reclaim policy:
+
+- **k3s local-path**: `Delete`
+- **AWS EBS CSI** (`gp3`, `gp2`): `Delete`
+- **GKE** (`standard-rwo`, `premium-rwo`): `Delete`
+- **AKS** (`managed-csi`): `Delete`
+
+This default is appropriate for Scout because:
+- **Development**: Deleting a PVC cleanly removes all associated data (useful for reinstalls)
+- **Production**: Data protection relies on backup/restore procedures, not PV retention
+
+### Custom StorageClass (Optional)
+
+If different reclaim behavior is needed, create a custom StorageClass:
+
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: scout-storage-retain
+provisioner: rancher.io/local-path  # Use platform provisioner
+reclaimPolicy: Retain  # Override default
+volumeBindingMode: WaitForFirstConsumer
+```
+
+Then set `storage_class: "scout-storage-retain"` in inventory. However, this is not recommended as it requires manual PV cleanup and does not replace proper backup procedures.
+
 ## References
 
 - Kubernetes documentation: [Dynamic Volume Provisioning](https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/)
