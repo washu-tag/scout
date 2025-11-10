@@ -120,13 +120,14 @@ This means:
 
 | Criteria | Static PV (Current) | Dynamic (Platform-Native) | Dynamic (Longhorn) |
 |----------|---------------------|---------------------------|-------------------|
-| **Ansible Code Lines** | ~220 lines | ~0 lines | ~50 lines (deploy Longhorn) |
+| **Ansible Code Lines** | ~220 lines | ~70 lines (optional, multi-disk only) | ~50 lines (deploy Longhorn) |
 | **Manual Directory Creation** | Required (every service) | Not required | Not required |
 | **Manual PV Creation** | Required (every service) | Not required | Not required |
 | **Node Affinity Management** | Manual configuration | Automatic | Automatic |
 | **Portability (k3s/EKS/GKE/AKS)** | Platform-specific code | Single codebase | Single codebase |
-| **Custom Path Control** | Full control | Provisioner-managed | Provisioner-managed |
-| **Operational Complexity** | High | Low | Medium |
+| **Custom Path Control** | Full control | Optional (multi-disk config) | Provisioner-managed |
+| **I/O Isolation (Multi-Disk)** | Manual PV placement | Optional storage class config | Built-in features |
+| **Operational Complexity** | High | Low (cloud/single-disk)<br>Medium (multi-disk) | Medium |
 | **Deployment Steps** | 2-play structure | 1-play structure | 1-play + Longhorn setup |
 | **Industry Standard Pattern** | Legacy approach | Standard practice | Advanced (optional) |
 
@@ -134,7 +135,7 @@ This means:
 
 The decision to use dynamic provisioning with platform-native storage classes is based on:
 
-1. **Significant code reduction**: Eliminating ~220 lines of Ansible code reduces maintenance burden and cognitive complexity
+1. **Significant code reduction**: Eliminating ~220 lines of static PV code; optional multi-disk configuration adds ~70 lines but only for deployments that require I/O isolation
 2. **Operational simplicity**: Automatic node affinity and PV creation removes error-prone manual configuration
 3. **Platform portability**: Scout can deploy to any Kubernetes platform with minimal configuration changes
 4. **Industry alignment**: Dynamic provisioning is the recommended Kubernetes pattern since v1.6+
@@ -151,7 +152,7 @@ The approach balances simplicity and flexibility:
 
 ### Positive
 
-1. **Reduced maintenance burden**: ~220 fewer lines of Ansible code to maintain, test, and document
+1. **Reduced maintenance burden**: Eliminates ~220 lines of static PV code; optional multi-disk support adds ~70 lines but simplifies I/O isolation management
 2. **Simplified deployment process**: Single-play playbooks, no directory setup required
 3. **Automatic node scheduling**: No manual node affinity configuration, provisioners handle it correctly
 4. **Better portability**: Same Ansible codebase deploys to k3s, AWS EKS, GKE, AKS, RKE
