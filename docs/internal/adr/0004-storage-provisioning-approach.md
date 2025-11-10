@@ -45,8 +45,9 @@ Modern Kubernetes platforms provide dynamic volume provisioning as a standard fe
 This means:
 - Remove all static PV and StorageClass creation code (~220 lines)
 - Remove all directory creation tasks for persistent volumes
-- Add a single `storage_class` variable that can be set per platform or left empty to use the cluster default
-- Use `omit` in Helm templates when `storage_class` is empty (per Kubernetes best practice: omitted field uses default, empty string disables provisioning)
+- Add per-service storage class variables that default to empty (use cluster default)
+- For on-premise k3s deployments with multiple disks, support optional configuration of multiple storage classes mapped to different filesystem paths
+- Use `omit` in Helm templates when storage class variables are empty (per Kubernetes best practice: omitted field uses default, empty string disables provisioning)
 - Rely on platform-native dynamic provisioners (local-path for k3s, EBS CSI for AWS EKS, etc.)
 - Let Kubernetes automatically manage node affinity for locally-attached volumes
 
@@ -94,8 +95,8 @@ This means:
 - RKE/RKE2: `local-path` (built-in)
 
 **Disadvantages**:
-- Loss of custom directory path organization (paths chosen by provisioner)
-- Slightly less explicit control over exact data placement (though node affinity is still enforced automatically for local volumes)
+- Loss of custom directory path organization for cloud deployments (paths chosen by provisioner)
+- On-premise deployments can still organize storage across multiple disks using optional multiple storage class configuration
 
 ### Option 3: Dynamic Provisioning with Unified Storage Layer (Longhorn/Rook)
 
@@ -113,7 +114,7 @@ This means:
 - Platform-native provisioners already provide needed functionality
 - Adds dependency that may not be required for Scout's use case
 
-**Decision**: Reject for initial implementation. Can be added later by simply changing the `storage_class` variable to a Longhorn storage class if needed.
+**Decision**: Reject for initial implementation. Can be added later by configuring Longhorn storage classes if needed.
 
 ## Comparison Matrix
 
@@ -135,15 +136,16 @@ The decision to use dynamic provisioning with platform-native storage classes is
 
 1. **Significant code reduction**: Eliminating ~220 lines of Ansible code reduces maintenance burden and cognitive complexity
 2. **Operational simplicity**: Automatic node affinity and PV creation removes error-prone manual configuration
-3. **Platform portability**: Scout can deploy to any Kubernetes platform with minimal configuration changes (just set `scout_storage_class` variable)
+3. **Platform portability**: Scout can deploy to any Kubernetes platform with minimal configuration changes
 4. **Industry alignment**: Dynamic provisioning is the recommended Kubernetes pattern since v1.6+
 5. **Sufficient for Scout's needs**: Platform-native provisioners meet all current requirements (local volumes, persistence, node affinity)
 6. **Future flexibility**: Can migrate to Longhorn/Rook later if advanced features (replication, migration) are needed
+7. **I/O isolation capability**: On-premise deployments can configure multiple storage classes for workload isolation across physical disks
 
-The primary trade-off (loss of custom directory paths) is acceptable because:
-- Scout's current directory organization (`/scout/data/*`, `/scout/persistence/*`, `/scout/monitoring/*`) is primarily for human readability
-- Kubernetes tooling (kubectl, k9s) provides service-to-volume mapping regardless of directory paths
-- Provisioner-managed paths still provide data persistence and isolation
+The approach balances simplicity and flexibility:
+- Cloud deployments: Use platform default storage class (zero configuration)
+- Single-disk on-premise: Use k3s default storage class (zero configuration)
+- Multi-disk on-premise: Configure multiple storage classes mapped to different disks (optional, for I/O isolation)
 
 ## Consequences
 
@@ -160,8 +162,8 @@ The primary trade-off (loss of custom directory paths) is acceptable because:
 
 ### Negative
 
-1. **Loss of custom directory organization**: Data stored in provisioner-managed paths (e.g., `/var/lib/rancher/k3s/storage/pvc-*` on k3s)
-2. **Less explicit path visibility**: Operators can't rely on known directory paths, must use `kubectl get pv` to find paths
+1. **Loss of explicit directory organization for cloud deployments**: Data stored in provisioner-managed paths (e.g., AWS EBS volumes, GCP persistent disks)
+2. **Less explicit path visibility for single-disk deployments**: Operators must use `kubectl get pv` to find paths (multi-disk deployments can organize via storage classes)
 3. **Breaking change**: Existing deployments with static PVs cannot automatically migrate (manual migration required, out of scope)
 4. **Platform provisioner dependency**: Requires functional storage provisioner on each platform (k3s: local-path, AWS: EBS CSI addon)
 
@@ -328,21 +330,29 @@ This design maintains full portability across platforms:
 ## Platform-Specific Configuration
 
 ### k3s (Local Development, On-Premise)
-```yaml
-# Use cluster default (local-path)
-storage_class: ""
 
-# Or explicitly set
-storage_class: "local-path"
+**Single-Disk Configuration (Default):**
+```yaml
+# All per-service storage class variables empty (use cluster default)
+postgres_storage_class: ""
+minio_storage_class: ""
+# ... all services use empty string
 ```
 
 **Provisioner**: Rancher local-path-provisioner (built-in)
-**Backend**: Local directories on node filesystem
+**Backend**: Local directories on node filesystem (`/var/lib/rancher/k3s/storage/pvc-*`)
 **Node Affinity**: Automatic (volumes bound to node where first mounted)
+
+**Multi-Disk Configuration (Optional):**
+
+For on-premise deployments with multiple physical disks requiring I/O isolation, see the "Support for Multiple Storage Classes" section below.
 
 ### AWS EKS (Cloud Production)
 ```yaml
-storage_class: "gp3"
+# All per-service storage class variables empty (use cluster default: gp3)
+postgres_storage_class: ""
+minio_storage_class: ""
+# ... all services use empty string
 ```
 
 **Provisioner**: EBS CSI driver (requires addon installation)
@@ -353,23 +363,21 @@ storage_class: "gp3"
 
 ### Google GKE (Cloud Production)
 ```yaml
-# Use cluster default
-storage_class: ""
-
-# Or explicitly set
-storage_class: "standard-rwo"  # Or "premium-rwo" for SSD
+# All per-service storage class variables empty (use cluster default)
+postgres_storage_class: ""
+minio_storage_class: ""
+# ... all services use empty string
 ```
 
 **Provisioner**: GCE PD CSI driver (built-in)
-**Backend**: Google Persistent Disks
+**Backend**: Google Persistent Disks (standard or SSD based on cluster default)
 
 ### Azure AKS (Cloud Production)
 ```yaml
-# Use cluster default
-storage_class: ""
-
-# Or explicitly set
-storage_class: "managed-csi"
+# All per-service storage class variables empty (use cluster default)
+postgres_storage_class: ""
+minio_storage_class: ""
+# ... all services use empty string
 ```
 
 **Provisioner**: Azure Disk CSI driver (built-in)
@@ -411,7 +419,7 @@ reclaimPolicy: Retain  # Override default
 volumeBindingMode: WaitForFirstConsumer
 ```
 
-Then set `storage_class: "scout-storage-retain"` in inventory. However, this is not recommended as it requires manual PV cleanup and does not replace proper backup procedures.
+Then assign services to use this storage class in inventory (e.g., `postgres_storage_class: "scout-storage-retain"`). However, this is not recommended as it requires manual PV cleanup and does not replace proper backup procedures.
 
 ## References
 
