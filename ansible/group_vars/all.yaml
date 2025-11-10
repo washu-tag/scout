@@ -1,11 +1,31 @@
 ---
-# Storage class for dynamic provisioning of persistent volumes
-# When empty, the storageClassName field is omitted from PVCs, allowing Kubernetes
-# to use the cluster's default storage class
-# Platform-specific values:
-#   k3s: "local-path" (this is also the k3s default)
-#   AWS EKS: "gp3" (requires EBS CSI driver addon)
-#   GKE: "standard-rwo" or "premium-rwo"
-#   AKS: "managed-csi"
-# Leave empty to use cluster default
-storage_class: ''
+# Optional: Define custom storage classes for on-premise multi-disk deployments
+# Default: empty list (use cluster default storage class for all services)
+# When configured, Ansible will modify the local-path-provisioner ConfigMap
+# and create corresponding StorageClass resources
+# NOTE: This feature is k3s-specific and only applies to on-premise deployments
+storage_classes_to_create: []
+# Example for on-premise multi-disk:
+# storage_classes_to_create:
+#   - name: "local-database"
+#     path: "/mnt/disk1/k3s-storage"
+#   - name: "local-objectstorage"
+#     path: "/mnt/disk2/k3s-storage"
+#   - name: "local-monitoring"
+#     path: "/mnt/disk3/k3s-storage"
+
+# Per-service storage class assignments
+# Default: empty string (use cluster default)
+# Override in inventory for multi-disk deployments
+# Cloud deployments: leave all empty to use platform default (gp3, pd-ssd, etc.)
+postgres_storage_class: ''
+temporal_storage_class: ''
+cassandra_storage_class: ''
+elasticsearch_storage_class: ''
+minio_storage_class: ''
+jupyter_storage_class: ''
+prometheus_storage_class: ''
+loki_storage_class: ''
+grafana_storage_class: ''
+orthanc_storage_class: ''
+dcm4chee_storage_class: ''

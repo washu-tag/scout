@@ -15,10 +15,12 @@ hub:
       description: 'Read JupyterHub metrics'
       scopes: [read:metrics]
       services: [prometheus]
+{% if jupyter_storage_class is defined and jupyter_storage_class %}
   db:
     pvc:
-      storageClassName: '{{ storage_class if storage_class else omit }}'
+      storageClassName: '{{ jupyter_storage_class }}'
       storage: '{{ jupyter_hub_storage_size }}'
+{% endif %}
   config:
     Authenticator:
       auto_login: true

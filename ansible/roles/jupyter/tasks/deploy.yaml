@@ -33,7 +33,7 @@
         resources:
           requests:
             storage: '{{ jupyter_singleuser_storage_size }}'
-        storageClassName: '{{ storage_class if storage_class else omit }}'
+        storageClassName: '{{ jupyter_storage_class if jupyter_storage_class else omit }}'
 
 - name: Setup Spark Defaults ConfigMap
   ansible.builtin.include_role:

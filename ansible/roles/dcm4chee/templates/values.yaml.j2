@@ -34,7 +34,9 @@ autoscaling:
 
 # Storage configuration for PVCs
 storage:
-  storageClass: '{{ storage_class if storage_class else omit }}'
+{% if dcm4chee_storage_class is defined and dcm4chee_storage_class %}
+  storageClass: '{{ dcm4chee_storage_class }}'
+{% endif %}
   wildfly:
     size: '{{ dcm4chee_wildfly_storage_size }}'
   storage:

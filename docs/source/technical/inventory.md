@@ -252,40 +252,86 @@ ollama_storage_size: 200Gi
 open_webui_storage_size: 100Gi
 ```
 
-#### Storage Class
+#### Storage Classes
 
-Scout uses Kubernetes dynamic volume provisioning to automatically create persistent volumes for services. You can configure which storage class to use, or leave it empty to use your cluster's default storage class.
+Scout uses Kubernetes dynamic volume provisioning to automatically create persistent volumes for services. There are two configuration approaches:
+
+1. **Default (recommended for most deployments):** All services use the cluster's default storage class
+2. **Multi-disk on-premise:** Configure multiple storage classes mapped to different filesystem paths for I/O isolation
+
+##### Default Configuration (Cloud and Single-Disk On-Premise)
+
+For cloud deployments and single-disk on-premise servers, leave all storage class variables empty to use the cluster's default storage class:
 
 ```yaml
-# Storage class for dynamic provisioning of persistent volumes
-# If empty, the storageClassName field is omitted and Kubernetes uses the cluster's default storage class
-# Setting to empty string explicitly disables dynamic provisioning (not recommended)
-storage_class: ""
+# All per-service storage class variables empty (use cluster default)
+postgres_storage_class: ""
+temporal_storage_class: ""
+cassandra_storage_class: ""
+elasticsearch_storage_class: ""
+minio_storage_class: ""
+jupyter_storage_class: ""
+prometheus_storage_class: ""
+loki_storage_class: ""
+grafana_storage_class: ""
+orthanc_storage_class: ""
+dcm4chee_storage_class: ""
+
+# No custom storage classes defined
+storage_classes_to_create: []
 ```
 
-**Platform-specific storage classes:**
+**Platform-specific default storage classes:**
 
-- **k3s** (local development, on-premise):
-  - Default: `local-path` (Rancher local-path-provisioner, built-in)
-  - Recommendation: Leave `storage_class: ""` to use cluster default
+- **k3s** (local development, on-premise): `local-path` (Rancher local-path-provisioner, built-in)
+- **AWS EKS**: cluster default (typically `gp3`, requires EBS CSI driver addon)
+- **Google GKE**: `standard-rwo` (Google Persistent Disk, HDD) or `premium-rwo` (SSD)
+- **Azure AKS**: `managed-csi` (Azure Managed Disks)
 
-- **AWS EKS** (cloud production):
-  - Recommended: `gp3` (requires EBS CSI driver addon)
-  - Alternative: `gp2` (legacy, also requires EBS CSI driver)
-  - Set `storage_class: "gp3"` in inventory
+##### Multi-Disk Configuration (On-Premise I/O Isolation)
 
-- **Google GKE** (cloud production):
-  - Default: `standard-rwo` (Google Persistent Disk, HDD)
-  - Alternative: `premium-rwo` (SSD)
-  - Recommendation: Leave `storage_class: ""` to use cluster default
+For on-premise deployments with multiple physical disks, you can configure custom storage classes to isolate I/O-intensive workloads across different disks:
 
-- **Azure AKS** (cloud production):
-  - Default: `managed-csi` (Azure Managed Disks)
-  - Recommendation: Leave `storage_class: ""` to use cluster default
+```yaml
+# Define custom storage classes (k3s only)
+storage_classes_to_create:
+  - name: "local-database"
+    path: "/mnt/disk1/k3s-storage"
+  - name: "local-objectstorage"
+    path: "/mnt/disk2/k3s-storage"
+  - name: "local-monitoring"
+    path: "/mnt/disk3/k3s-storage"
 
-**Most platforms work with empty `storage_class` value**, which uses the cluster's default storage class. Only override this if you need a specific storage class for performance or compliance requirements.
+# Assign services to storage classes
+# Database services
+postgres_storage_class: "local-database"
+cassandra_storage_class: "local-database"
+elasticsearch_storage_class: "local-database"
 
-**Note:** Dynamic provisioning automatically manages node affinity for local volumes and creates storage in provisioner-managed locations. Custom directory paths are not supported with dynamic provisioning.  
+# Object storage and data processing
+minio_storage_class: "local-objectstorage"
+jupyter_storage_class: "local-objectstorage"
+
+# Monitoring and logging
+prometheus_storage_class: "local-monitoring"
+loki_storage_class: "local-monitoring"
+grafana_storage_class: "local-monitoring"
+
+# Other services
+orthanc_storage_class: "local-database"
+dcm4chee_storage_class: "local-database"
+temporal_storage_class: ""  # Uses Cassandra for persistence
+```
+
+**When to use multiple storage classes:**
+- On-premise deployment with 2+ separate physical disks
+- Observing I/O contention or high iowait times
+- Performance-critical databases need isolation from bulk storage operations
+- Different storage tiers (NVMe for databases, HDD for bulk storage)
+
+**Note:** The `storage_classes_to_create` feature is k3s-specific and only applies to on-premise deployments. Cloud deployments should use empty storage class variables to leverage platform-native block storage.
+
+**Note:** Dynamic provisioning automatically manages node affinity for local volumes and creates storage in provisioner-managed locations.
 **Note:** `extractor_data_dir` is still used for the HL7 log input directory (not managed by Kubernetes persistent volumes).
 
 (configuring-secrets)=

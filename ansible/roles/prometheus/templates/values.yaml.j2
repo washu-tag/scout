@@ -16,7 +16,9 @@ server:
     servicePort: 9090
   persistentVolume:
     enabled: true
-    storageClass: '{{ storage_class if storage_class else omit }}'
+{% if prometheus_storage_class is defined and prometheus_storage_class %}
+    storageClass: '{{ prometheus_storage_class }}'
+{% endif %}
   retention: 15d
   resources: {{ prometheus_resources | to_json }}
   extraSecretMounts:

@@ -40,7 +40,9 @@ singleBinary:
   replicas: 1
   persistence:
     enabled: true
-    storageClass: '{{ storage_class if storage_class else omit }}'
+{% if loki_storage_class is defined and loki_storage_class %}
+    storageClass: '{{ loki_storage_class }}'
+{% endif %}
   resources: {{ loki_resources | to_json }}
   extraEnv:
     - name: AWS_ACCESS_KEY_ID
