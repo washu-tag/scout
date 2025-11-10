@@ -36,7 +36,7 @@ The current approach works reliably **only on single-node clusters** where pod r
 - **Directory creation overhead**: Two-play playbook structure required for each service (first play creates directories on nodes, second play deploys to Kubernetes)
 - **Maintenance complexity**: ~220 lines of Ansible code to create directories, PVs, and storage classes
 
-As documented in `docs/internal/persistent-volume-research.md`, modern Kubernetes platforms provide dynamic volume provisioning as a standard feature, eliminating the need for manual PV creation while providing proper node affinity automatically.
+Modern Kubernetes platforms provide dynamic volume provisioning as a standard feature, eliminating the need for manual PV creation while providing proper node affinity automatically.
 
 ## Decision
 
