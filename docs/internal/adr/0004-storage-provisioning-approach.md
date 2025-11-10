@@ -178,6 +178,153 @@ This is a **breaking change** for existing Scout deployments:
 2. Deploy Scout using new dynamic provisioning approach
 3. Restore data to new dynamically-provisioned PVs
 
+## Support for Multiple Storage Classes (I/O Isolation)
+
+While the primary approach uses a single default storage class per platform, Scout will support **optional configuration of multiple storage classes** for on-premise deployments requiring I/O isolation.
+
+### Use Case
+
+On-premise deployments with multiple physical disks may experience I/O contention when all services share a single storage location:
+
+- Database writes compete with object storage operations
+- Monitoring log ingestion causes iowait spikes affecting database performance
+- Bulk data processing interferes with real-time query workloads
+
+Multiple storage classes allow operators to distribute workloads across separate physical disks, isolating I/O-intensive services from each other.
+
+### Design
+
+Scout will support an **optional inventory variable** that defines custom storage classes:
+
+```yaml
+# Default (most deployments): empty list
+storage_classes_to_create: []
+
+# On-premise multi-disk deployments: define custom classes
+storage_classes_to_create:
+  - name: "local-database"
+    path: "/mnt/disk1/k3s-storage"
+  - name: "local-objectstorage"
+    path: "/mnt/disk2/k3s-storage"
+  - name: "local-monitoring"
+    path: "/mnt/disk3/k3s-storage"
+```
+
+Each storage class definition maps a name to a filesystem path. The path applies uniformly to all nodes in the cluster (per-node path customization is not supported).
+
+### Per-Service Storage Class Assignment
+
+Each Scout service will have a storage class variable that defaults to empty string:
+
+```yaml
+# Defaults (use cluster default storage class)
+postgres_storage_class: ""
+minio_storage_class: ""
+prometheus_storage_class: ""
+
+# On-premise multi-disk override
+postgres_storage_class: "local-database"
+minio_storage_class: "local-objectstorage"
+prometheus_storage_class: "local-monitoring"
+```
+
+When a service's storage class variable is empty (`""`), the Helm chart will omit the `storageClassName` field from PersistentVolumeClaim definitions, causing Kubernetes to use the cluster's default storage class.
+
+### Implementation Mechanism (k3s)
+
+For k3s deployments, Ansible will configure the local-path-provisioner using its `storageClassConfigs` feature:
+
+1. Generate a ConfigMap (`local-path-config`) with `storageClassConfigs` entries mapping each custom storage class to its path
+2. Create corresponding Kubernetes StorageClass resources
+3. The local-path-provisioner automatically reloads configuration changes after a brief delay
+
+Example ConfigMap structure:
+
+```json
+{
+  "nodePathMap": [],
+  "storageClassConfigs": {
+    "local-database": {
+      "nodePathMap": [
+        {
+          "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES",
+          "paths": ["/mnt/disk1/k3s-storage"]
+        }
+      ]
+    },
+    "local-objectstorage": {
+      "nodePathMap": [
+        {
+          "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES",
+          "paths": ["/mnt/disk2/k3s-storage"]
+        }
+      ]
+    }
+  }
+}
+```
+
+When `storage_classes_to_create` is empty (default), Ansible skips ConfigMap modification and StorageClass creation entirely.
+
+### Platform Portability
+
+This design maintains full portability across platforms:
+
+**Cloud deployments (AWS EKS, GKE, AKS):**
+- `storage_classes_to_create: []` (default)
+- All service storage class variables: `""` (empty)
+- PVCs omit `storageClassName`, use platform default (gp3, pd-ssd, managed-csi)
+- Zero configuration required
+
+**On-premise single-disk k3s:**
+- `storage_classes_to_create: []` (default)
+- All service storage class variables: `""` (empty)
+- PVCs use k3s default `local-path` storage class
+- All volumes created under `/var/lib/rancher/k3s/storage/`
+
+**On-premise multi-disk k3s:**
+- `storage_classes_to_create: [...]` (explicitly configured)
+- Service storage class variables assigned to workload types
+- PVCs reference specific storage classes
+- Volumes distributed across configured disk paths
+
+### Benefits
+
+**Compared to single default storage class:**
+- Eliminates I/O contention between database, object storage, and monitoring workloads
+- Enables performance tuning (NVMe for databases, HDD for bulk storage)
+- Provides capacity management per workload type
+
+**Compared to static PVs:**
+- Still fully dynamic: provisioner handles node affinity and PV creation
+- Simplified configuration: 3-5 storage classes vs 10+ static PVs
+- Automatic scaling: new PVCs provision to appropriate disk without manual intervention
+
+**Maintains portability:**
+- Cloud deployments ignore custom storage classes (use platform defaults)
+- Single codebase works across all platforms
+- Opt-in complexity only for deployments that require I/O isolation
+
+### Limitations
+
+- **k3s-specific**: Multiple storage class configuration only applies to k3s deployments using local-path-provisioner
+- **Cloud deployments**: Custom storage classes are ignored; cloud platforms already provide I/O isolation through managed block storage
+- **Uniform paths**: Each storage class uses the same path on all nodes (no per-node customization)
+
+### When to Use Multiple Storage Classes
+
+**Use custom storage classes when:**
+- On-premise deployment with multiple physical disks
+- Observing I/O contention or high iowait times
+- Performance-critical databases require isolation from bulk storage operations
+- Different storage tiers needed (NVMe, SSD, HDD)
+
+**Use default storage class when:**
+- Cloud deployment (block storage already isolated per volume)
+- On-premise single-disk deployment
+- Small-scale deployment where I/O contention is not a concern
+- Development or testing environments
+
 ## Platform-Specific Configuration
 
 ### k3s (Local Development, On-Premise)
