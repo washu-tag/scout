@@ -1,7 +1,7 @@
 # ADR 0004: Storage Provisioning Approach
 
-**Status**: Proposed
-**Date**: 2025-11-07
+**Status**: Proposed  
+**Date**: 2025-11-07  
 **Decision Owner/Deciders**: TAG Team
 
 ## Context
@@ -340,8 +340,8 @@ minio_storage_class: ""
 # ... all services use empty string
 ```
 
-**Provisioner**: Rancher local-path-provisioner (built-in)
-**Backend**: Local directories on node filesystem (`/var/lib/rancher/k3s/storage/pvc-*`)
+**Provisioner**: Rancher local-path-provisioner (built-in)  
+**Backend**: Local directories on node filesystem (`/var/lib/rancher/k3s/storage/pvc-*`)  
 **Node Affinity**: Automatic (volumes bound to node where first mounted)
 
 **Multi-Disk Configuration (Optional):**
@@ -356,8 +356,8 @@ minio_storage_class: ""
 # ... all services use empty string
 ```
 
-**Provisioner**: EBS CSI driver (requires addon installation)
-**Backend**: AWS EBS volumes (gp3 SSD)
+**Provisioner**: EBS CSI driver (requires addon installation)  
+**Backend**: AWS EBS volumes (gp3 SSD)  
 **Node Affinity**: Automatic (EBS volumes attached to correct EC2 instance)
 
 **Prerequisite**: EBS CSI driver addon must be enabled on EKS cluster
@@ -370,7 +370,7 @@ minio_storage_class: ""
 # ... all services use empty string
 ```
 
-**Provisioner**: GCE PD CSI driver (built-in)
+**Provisioner**: GCE PD CSI driver (built-in)  
 **Backend**: Google Persistent Disks (standard or SSD based on cluster default)
 
 ### Azure AKS (Cloud Production)
