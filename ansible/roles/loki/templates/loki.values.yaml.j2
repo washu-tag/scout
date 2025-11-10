@@ -39,8 +39,8 @@ deploymentMode: SingleBinary
 singleBinary:
   replicas: 1
   persistence:
-    enabled: true 
-    storageClass: '{{ use_custom_storage_classes | ternary(loki_storage_class, omit) }}'
+    enabled: true
+    storageClass: '{{ storage_class if storage_class else omit }}'
   resources: {{ loki_resources | to_json }}
   extraEnv:
     - name: AWS_ACCESS_KEY_ID

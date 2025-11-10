@@ -1,18 +1,8 @@
 ---
 # Default values for Cassandra deployment
 
-# Storage naming
-cassandra_name: cassandra
-cassandra_storage_class: '{{ cassandra_name }}-storage'
+# Storage configuration
 cassandra_storage_size: 10Gi
-
-# Storage definitions for persistent volumes
-cassandra_storage_definitions:
-  - name: '{{ cassandra_name }}'
-    size: '{{ cassandra_storage_size }}'
-    path: '{{ cassandra_dir }}'
-    pv_name: '{{ cassandra_name }}-pv'
-    storage_class_name: '{{ cassandra_storage_class }}'
 
 # Cassandra configuration
 cassandra_datacenter_name: dc1

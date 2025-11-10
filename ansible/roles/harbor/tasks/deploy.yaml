@@ -129,6 +129,11 @@
       expose: '{{ harbor_expose_config }}'
       externalURL: '{{ harbor_registry_url }}'
       harborAdminPassword: '{{ harbor_admin_password }}'
+      persistence:
+        persistentVolumeClaim:
+          registry:
+            storageClass: '{{ storage_class if storage_class else omit }}'
+            size: '{{ harbor_storage_size }}'
       chartmuseum:
         enabled: false # Cannot proxy Helm charts
 

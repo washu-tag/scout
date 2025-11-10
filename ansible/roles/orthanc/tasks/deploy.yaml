@@ -2,20 +2,29 @@
 # Kubernetes deployment tasks for Orthanc
 # These tasks run on the server host (which has access to k3s_cluster inventory variables)
 
-# Storage setup (StorageClass and PersistentVolumes)
-- name: Set up storage
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: storage_setup
-  vars:
-    storage_definitions: '{{ orthanc_storage_definitions }}'
-
 - name: Create Orthanc namespace
   kubernetes.core.k8s:
     name: '{{ orthanc_namespace }}'
     api_version: v1
     kind: Namespace
     state: present
+
+- name: Create PersistentVolumeClaim for Orthanc data
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: orthanc-data-pvc
+        namespace: '{{ orthanc_namespace }}'
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: '{{ orthanc_storage_size }}'
+        storageClassName: '{{ storage_class if storage_class else omit }}'
 
 - name: Create Orthanc conf secret
   kubernetes.core.k8s:

@@ -1,0 +1,11 @@
+---
+# Storage class for dynamic provisioning of persistent volumes
+# When empty, the storageClassName field is omitted from PVCs, allowing Kubernetes
+# to use the cluster's default storage class
+# Platform-specific values:
+#   k3s: "local-path" (this is also the k3s default)
+#   AWS EKS: "gp3" (requires EBS CSI driver addon)
+#   GKE: "standard-rwo" or "premium-rwo"
+#   AKS: "managed-csi"
+# Leave empty to use cluster default
+storage_class: ''

@@ -6,13 +6,6 @@
   vars:
     ns: '{{ prometheus_namespace }}'
 
-- name: Set up storage
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: storage_setup
-  vars:
-    storage_definitions: '{{ prometheus_storage_definitions }}'
-
 - name: Create JupyterHub metrics API token secret
   kubernetes.core.k8s:
     state: present

@@ -2,14 +2,6 @@
 # Kubernetes deployment tasks for Cassandra cluster
 # These tasks run on the server host (which has access to k3s_cluster inventory variables)
 
-# Storage setup (StorageClass and PersistentVolumes)
-- name: Set up storage
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: storage_setup
-  vars:
-    storage_definitions: '{{ cassandra_storage_definitions }}'
-
 # Deploy cert-manager (required by cass-operator)
 - name: Deploy cert-manager
   ansible.builtin.include_role:
@@ -56,7 +48,7 @@
         size: 1
         storageConfig:
           cassandraDataVolumeClaimSpec:
-            storageClassName: '{{ use_custom_storage_classes | ternary(cassandra_storage_class, omit) }}'
+            storageClassName: '{{ storage_class if storage_class else omit }}'
             accessModes:
               - ReadWriteOnce
             resources:
