@@ -19,6 +19,7 @@
     name: scout_common
     tasks_from: deploy_helm_chart
   vars:
+    realm_config_hash: "{{ lookup('template', 'scout-realm.json.j2') | hash('sha256') | truncate(8, True, '') }}"
     helm_chart_name: keycloak-config-cli
     helm_chart_ref: '{{ keycloak_config_cli_helm_chart_url }}'
     helm_chart_namespace: '{{ keycloak_namespace }}'
@@ -30,6 +31,8 @@
         repository: '{{ keycloak_config_cli_image }}'
         tag: '{{ keycloak_config_cli_image_tag }}'
       existingConfigSecret: 'keycloak-config'
+      annotations: # Hash the realm config to force re-deploy on changes
+        config-hash: '{{ realm_config_hash }}'
       env:
         KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
         KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
