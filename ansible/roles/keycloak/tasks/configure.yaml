@@ -30,6 +30,8 @@
         repository: '{{ keycloak_config_cli_image }}'
         tag: '{{ keycloak_config_cli_image_tag }}'
       existingConfigSecret: 'keycloak-config'
+      annotations: # Hash the realm config to force re-deploy on changes
+        config-hash: '{{ lookup("template", "scout-realm.json.j2") | hash("sha256") | truncate(8, True, "") }}'
       env:
         KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
         KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
