@@ -30,4 +30,4 @@ WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
 
 # Run the jar file, with arguments passed in
-ENTRYPOINT ["java"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
