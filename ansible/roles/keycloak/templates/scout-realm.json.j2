@@ -275,6 +275,12 @@
         "webOrigins": [
           "*"
         ],
+        "attributes": {
+          "access.token.lifespan": "{{ keycloak_temporal_token_lifespan }}",
+          "client.session.idle.timeout": "{{ keycloak_temporal_token_lifespan }}",
+          "client.session.max.lifespan": "{{ keycloak_temporal_token_lifespan }}",
+          "client.offline.session.idle.timeout": "{{ keycloak_temporal_token_lifespan }}"
+        },
         "defaultClientScopes": [
           "web-origins",
           "acr",
