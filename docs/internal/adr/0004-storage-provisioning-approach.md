@@ -422,6 +422,52 @@ volumeBindingMode: WaitForFirstConsumer
 
 Then assign services to use this storage class in inventory (e.g., `postgres_storage_class: "scout-storage-retain"`). However, this is not recommended as it requires manual PV cleanup and does not replace proper backup procedures.
 
+### Jupyter Single User Storage Requirements
+
+Jupyter Notebooks requires ReadWriteMany storage to support multi-node GPU scheduling: users must be able to start pods on 
+CPU-only nodes and later restart on GPU nodes while accessing the same data.
+
+**Challenge with local storage provisioners:**
+- Local-path provisioner creates PVs with nodeAffinity binding them to specific nodes
+- This prevents pods from rescheduling to different nodes (e.g., moving from CPU node to GPU node)
+
+**Alternative Considered: Dynamic Per-User PVCs:**
+
+The JupyterHub helm chart supports dynamic provisioning where each Jupyter user pod gets their own PVC.
+However, this approach does not solve the multi-node GPU scheduling requirement because standard dynamic provisioners 
+(local-path, EBS CSI, GCE PD) create ReadWriteOnce volumes with node affinity. Per-user PVCs would pin each user to a single node, 
+preventing rescheduling from CPU nodes to GPU nodes. ReadWriteMany storage is required, which necessitates either network storage 
+(NFS/Ceph) or cloud RWX storage classes (EFS, Filestore, Azure Files).
+
+#### Solution: Static hostPath PV with Network Mount
+
+**On-Premise (Ceph/NFS):**
+- Create static hostPath PV pointing to network mount path (e.g., `/mnt/ceph/jupyter`)
+- Use empty storageClassName (`""`) for manual PVC→PV binding
+- Set `accessModes: [ReadWriteMany]` on both PV and PVC
+- No nodeAffinity constraint (static PV created manually by Ansible)
+- No provisioner involved - direct binding via PVC's `volumeName` field
+
+**Cloud (AWS/GCP/Azure):**
+- Use dynamic provisioning with RWX-capable storage classes (EFS, Filestore, Azure Files)
+- Set `jupyter_notebook_storage_class` to appropriate cloud RWX storage class
+- Provisioner handles PV creation and scheduling
+
+**Implementation:**
+- New variables:
+  - `jupyterhub_storage_class`: Storage class for JupyterHub database (RWO sufficient, defaults to `""`)
+  - `jupyter_notebook_storage_class`: Storage class for Jupyter notebooks (RWX required, defaults to `""`)
+  - `jupyter_notebook_hostpath`: Path to network mount on all nodes (on-prem only)
+- When `jupyter_notebook_hostpath` is set: Creates static PV with manual binding (on-prem)
+- When `jupyter_notebook_hostpath` is empty: Uses dynamic provisioning via `jupyter_notebook_storage_class` (cloud)
+- Change Jupyter notebook PVC from `ReadWriteOnce` to `ReadWriteMany`
+
+**Hub vs Notebook Storage:**
+- Hub database uses `jupyterhub_storage_class` (RWO storage sufficient, single pod, no multi-node requirement)
+- Notebook storage uses `jupyter_notebook_storage_class` or static PV (RWX required for multi-node GPU scheduling)
+- Static notebook PV uses Retain reclaim policy to protect user data
+- Separate variables allow different storage classes for hub vs notebooks
+
 ## References
 
 - Kubernetes documentation: [Dynamic Volume Provisioning](https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/)
