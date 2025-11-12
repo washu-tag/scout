@@ -23,7 +23,10 @@ config:
     # Redis session storage - stores sessions server-side instead of in cookies
     # This prevents large cookie issues with WebSocket connections
     session_store_type = "redis"
-    redis_connection_url = "redis://default:{{ oauth2_proxy_redis_password | urlencode }}@{{ oauth2_proxy_redis_database_name }}.{{ redis_namespace }}:{{ oauth2_proxy_redis_database_port }}"
+# Store Redis connection URL with password in a Secret instead of ConfigMap
+extraSecretEnv:
+  - name: OAUTH2_PROXY_REDIS_CONNECTION_URL
+    value: "redis://default:{{ oauth2_proxy_redis_password | urlencode }}@{{ oauth2_proxy_redis_database_name }}.{{ redis_namespace }}:{{ oauth2_proxy_redis_database_port }}"
 ingress:
   enabled: true
   className: traefik
