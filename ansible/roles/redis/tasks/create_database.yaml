@@ -1,0 +1,77 @@
+---
+# Task file to create a Redis Enterprise Database
+# This should be called from other roles (e.g., oauth2-proxy, superset, open-webui)
+#
+# Required variables:
+#   redis_db_name: Name of the database (e.g., "oauth2-proxy-sessions")
+#   redis_db_port: Port for the database (e.g., 6379)
+#   redis_db_memory_size: Memory size (e.g., "512MB")
+#   redis_db_password: Password for the database
+#
+# Optional variables:
+#   redis_db_persistence_enabled: Enable persistence (default: true)
+#   redis_db_replication: Enable replication (default: false)
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - redis_db_name is defined
+      - redis_db_port is defined
+      - redis_db_memory_size is defined
+      - redis_db_password is defined
+    fail_msg: "Required variables redis_db_name, redis_db_port, redis_db_memory_size, and redis_db_password must be defined"
+
+- name: Create Redis password secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ redis_db_name }}-password'
+        namespace: '{{ redis_namespace }}'
+      type: Opaque
+      stringData:
+        password: '{{ redis_db_password }}'
+  no_log: true
+
+- name: Create Redis Enterprise Database CR
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: app.redislabs.com/v1alpha1
+      kind: RedisEnterpriseDatabase
+      metadata:
+        name: '{{ redis_db_name }}'
+        namespace: '{{ redis_namespace }}'
+      spec:
+        redisEnterpriseCluster:
+          name: rec
+        memorySize: '{{ redis_db_memory_size }}'
+        persistence: "{{ 'aofEverySecond' if (redis_db_persistence_enabled | default(true)) else 'disabled' }}"
+        replication: "{{ redis_db_replication | default(false) }}"
+        databasePort: "{{ redis_db_port }}"
+        databaseSecretName: "{{ redis_db_name }}-password"
+  register: redb_created
+
+- name: Wait for Redis Enterprise Database to be ready
+  kubernetes.core.k8s_info:
+    api_version: app.redislabs.com/v1alpha1
+    kind: RedisEnterpriseDatabase
+    name: '{{ redis_db_name }}'
+    namespace: '{{ redis_namespace }}'
+  register: database_status
+  until:
+    - database_status.resources | length > 0
+    - database_status.resources[0].status.status is defined
+    - database_status.resources[0].status.status == "active"
+  retries: 30
+  delay: 10
+  changed_when: false
+  when: redb_created.changed
+
+- name: Display database connection information
+  ansible.builtin.debug:
+    msg: |
+      Redis database '{{ redis_db_name }}' is ready!
+      Connection URL: redis://default:***@{{ redis_db_name }}.{{ redis_namespace }}:{{ redis_db_port }}

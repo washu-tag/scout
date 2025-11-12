@@ -178,6 +178,7 @@ k3s_cluster:
     # OAuth2 Proxy
     #---------------------------------------------------------------------------
     oauth2_proxy_cookie_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    oauth2_proxy_redis_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
     #---------------------------------------------------------------------------
     # Keycloak

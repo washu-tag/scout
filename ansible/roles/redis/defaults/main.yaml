@@ -1,0 +1,41 @@
+---
+# Defaults for redis role
+# User-configurable settings are in inventory.yaml
+
+# Redis Enterprise Operator Helm chart configuration
+redis_helm_repo: https://helm.redis.io
+redis_helm_repo_name: redis-enterprise
+redis_helm_chart_name: redis-enterprise-operator
+redis_helm_release_name: redis-enterprise-operator
+
+# General database settings (used for all Redis databases)
+redis_database_port: 6379
+redis_database_persistence_size: 8Gi
+redis_database_persistence_storage_class: ''  # Use default storage class
+
+# Redis authentication
+# redis_password: defined in inventory.yaml (use vault encryption)
+
+# Operator resources
+redis_operator_resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+# Redis Enterprise Cluster node resources
+redis_cluster_node_resources:
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 500m
+    memory: 4Gi
+
+# Number of Redis Enterprise nodes (minimum 3 for HA)
+redis_cluster_nodes: 3
+
+# Redis Enterprise Cluster persistence
+redis_cluster_persistence_enabled: true
