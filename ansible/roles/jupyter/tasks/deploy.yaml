@@ -18,6 +18,26 @@
   vars:
     ns: '{{ jupyter_namespace }}'
 
+- name: Create static PV for Jupyter notebook storage (on-prem)
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        name: '{{ jupyter_singleuser_pv_name }}'
+      spec:
+        capacity:
+          storage: '{{ jupyter_singleuser_storage_size }}'
+        accessModes:
+          - ReadWriteMany
+        persistentVolumeReclaimPolicy: Retain
+        storageClassName: '{{ jupyter_singleuser_storage_class }}'
+        hostPath:
+          path: '{{ jupyter_singleuser_hostpath }}'
+          type: DirectoryOrCreate
+  when: jupyter_singleuser_hostpath | length > 0
+
 - name: Create PersistentVolumeClaim for Jupyter single-user storage
   kubernetes.core.k8s:
     state: present
@@ -29,11 +49,12 @@
         namespace: '{{ jupyter_namespace }}'
       spec:
         accessModes:
-          - ReadWriteOnce
+          - ReadWriteMany
         resources:
           requests:
             storage: '{{ jupyter_singleuser_storage_size }}'
-        storageClassName: '{{ jupyter_storage_class if jupyter_storage_class else omit }}'
+        storageClassName: '{{ jupyter_singleuser_storage_class }}'
+        volumeName: '{{ jupyter_singleuser_pv_name if jupyter_singleuser_hostpath else omit }}'
 
 - name: Setup Spark Defaults ConfigMap
   ansible.builtin.include_role:
