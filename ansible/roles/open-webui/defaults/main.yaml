@@ -42,6 +42,17 @@ open_webui_postgres_password: ''
 # Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
 open_webui_secret_key: ''
 
+# Redis configuration for Open WebUI
+# Redis is used for websocket coordination and distributed state management
+open_webui_redis_database_name: open-webui
+open_webui_redis_database_memory_size: 512MB  # Redis Enterprise uses MB/GB, not Mi/Gi
+open_webui_redis_database_persistence_enabled: true
+# OPTIONAL: Set redis password in inventory.yaml (use vault encryption)
+# open_webui_redis_password: ''
+
+# Redis connection URL (computed from above settings)
+open_webui_redis_url: 'redis://{% if open_webui_redis_password is defined and open_webui_redis_password %}default:{{ open_webui_redis_password }}@{% endif %}{{ open_webui_redis_database_name }}.{{ redis_namespace }}.svc.cluster.local:{{ redis_database_port }}'
+
 # Storage definitions
 chatbot_storage_definitions:
   - name: '{{ ollama_name }}'

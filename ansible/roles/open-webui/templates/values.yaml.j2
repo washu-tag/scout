@@ -45,6 +45,12 @@ enableOpenaiApi: false
 websocket:
   # -- Enables websocket support in Open WebUI with env `ENABLE_WEBSOCKET_SUPPORT`
   enabled: true
+  # Use external Redis for websocket coordination
+  manager: redis
+  url: '{{ open_webui_redis_url }}'
+  redis:
+    # Disable embedded Redis - using external Redis Enterprise Database
+    enabled: false
 
 # OAuth/OIDC Configuration for Keycloak integration
 # OAuth2 Proxy provides initial authentication gate (checks scout-user group)
@@ -115,3 +121,8 @@ extraEnvVars:
   # Allow OAuth config updates via env vars (not persistent in DB)
   - name: ENABLE_OAUTH_PERSISTENT_CONFIG
     value: 'false'
+
+  # Redis for distributed state management (shares same Redis as websockets)
+  # Required for multi-replica deployments to share config and state
+  - name: REDIS_URL
+    value: '{{ open_webui_redis_url }}'
