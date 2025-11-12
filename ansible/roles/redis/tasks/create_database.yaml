@@ -60,9 +60,3 @@
   delay: 10
   changed_when: false
   when: redb_created.changed
-
-- name: Display database connection information
-  ansible.builtin.debug:
-    msg: |
-      Redis database '{{ redis_db_name }}' is ready!
-      Connection URL: redis://default:***@{{ redis_db_name }}.{{ redis_namespace }}:{{ redis_db_port }}
