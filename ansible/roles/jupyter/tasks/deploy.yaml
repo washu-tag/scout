@@ -76,6 +76,11 @@
     state: present
     template: backchannel-service.yaml.j2
 
+- name: Deploy backchannel logout Deployment
+  kubernetes.core.k8s:
+    state: present
+    template: backchannel-deployment.yaml.j2
+
 - name: Deploy JupyterHub
   ansible.builtin.include_role:
     name: scout_common
