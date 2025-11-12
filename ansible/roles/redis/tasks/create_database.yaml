@@ -35,23 +35,14 @@
         password: '{{ redis_db_password }}'
   no_log: true
 
+- name: Parse Redis database definition
+  ansible.builtin.set_fact:
+    redis_database_definition: "{{ lookup('template', 'redis-database.yaml.j2') | from_yaml }}"
+
 - name: Create Redis Enterprise Database CR
   kubernetes.core.k8s:
     state: present
-    definition:
-      apiVersion: app.redislabs.com/v1alpha1
-      kind: RedisEnterpriseDatabase
-      metadata:
-        name: '{{ redis_db_name }}'
-        namespace: '{{ redis_namespace }}'
-      spec:
-        redisEnterpriseCluster:
-          name: rec
-        memorySize: '{{ redis_db_memory_size }}'
-        persistence: "{{ 'aofEverySecond' if (redis_db_persistence_enabled | default(true)) else 'disabled' }}"
-        replication: {{ redis_db_replication | default(false) }}
-        databasePort: {{ redis_db_port }}
-        databaseSecretName: '{{ redis_db_name }}-password'
+    definition: '{{ redis_database_definition }}'
   register: redb_created
 
 - name: Wait for Redis Enterprise Database to be ready
