@@ -8,10 +8,21 @@ redis_helm_repo_name: redis-enterprise
 redis_helm_chart_name: redis-enterprise-operator
 redis_helm_release_name: redis-enterprise-operator
 
+# Storage naming
+redis_name: redis
+redis_storage_class: '{{ redis_name }}-storage'
+redis_storage_size: 8Gi
+
+# Storage definitions for persistent volumes
+redis_storage_definitions:
+  - name: '{{ redis_name }}'
+    size: '{{ redis_storage_size }}'
+    path: '{{ redis_dir }}'
+    pv_name: '{{ redis_name }}-pv'
+    storage_class_name: '{{ redis_storage_class }}'
+
 # General database settings (used for all Redis databases)
 redis_database_port: 6379
-redis_database_persistence_size: 8Gi
-redis_database_persistence_storage_class: ''  # Use default storage class
 
 # Redis authentication
 # redis_password: defined in inventory.yaml (use vault encryption)

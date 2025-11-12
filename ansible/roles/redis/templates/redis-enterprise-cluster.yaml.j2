@@ -8,10 +8,10 @@ spec:
   nodes: {{ redis_cluster_nodes }}
   persistentSpec:
     enabled: {{ redis_cluster_persistence_enabled | lower }}
-{% if redis_database_persistence_storage_class %}
-    storageClassName: {{ redis_database_persistence_storage_class }}
+{% if use_custom_storage_classes %}
+    storageClassName: {{ redis_storage_class }}
 {% endif %}
-    volumeSize: {{ redis_database_persistence_size }}
+    volumeSize: {{ redis_storage_size }}
   redisEnterpriseNodeResources: {{ redis_cluster_node_resources | to_json }}
   # Use preferred anti-affinity to allow pods to co-locate if needed
   # This is more flexible than required anti-affinity

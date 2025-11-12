@@ -3,6 +3,14 @@
 # These tasks run on the server host
 # Individual services should create their own databases using create_database.yaml
 
+# Storage setup (StorageClass and PersistentVolumes)
+- name: Set up storage
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_setup
+  vars:
+    storage_definitions: '{{ redis_storage_definitions }}'
+
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common
