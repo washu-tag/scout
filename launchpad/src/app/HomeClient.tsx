@@ -131,6 +131,7 @@ const ContentGrid = ({ enableChat }: ContentGridProps) => {
     setSubdomainUrls({
       jupyter: getUrl('jupyter'),
       superset: getUrl('superset'),
+      // Cannot redirect without a js modification, see https://github.com/open-webui/open-webui/discussions/7337
       chat: getUrl('chat', '/oauth/oidc/login'),
       minio: getUrl('minio'),
       temporal: getUrl('temporal', '/auth/sso'),

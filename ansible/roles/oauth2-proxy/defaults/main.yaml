@@ -13,7 +13,7 @@ oauth2_proxy_chart_repo: https://oauth2-proxy.github.io/manifests
 oauth2_proxy_cookie_expire: 8h
 
 # OAuth2 Proxy UI customization
-oauth2_proxy_banner: Continue with WashU Key
+oauth2_proxy_banner: 'Continue with {{ oauth_provider_name }}'
 
 # Redis session storage configuration
 oauth2_proxy_redis_database_name: oauth2-proxy-sessions

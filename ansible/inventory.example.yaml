@@ -187,6 +187,9 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     # Keycloak
     #---------------------------------------------------------------------------
+    # User-facing name for OAuth provider shown in login interfaces
+    oauth_provider_name: WashU Key  # or 'Keycloak', 'GitHub', etc.
+    # Keycloak Postgres
     keycloak_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # Keycloak admin console
     keycloak_bootstrap_admin_user: admin
@@ -462,6 +465,7 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     # Uncomment the following line to enable the Chat service
     # enable_chat: true
+    open_webui_redis_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     open_webui_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     open_webui_secret_key: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     ollama_resources:
