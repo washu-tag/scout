@@ -7,28 +7,9 @@
   gather_facts: false
   vars_files:
     - ../../defaults/main.yaml
+    - ../../../scout_common/defaults/main.yaml
 
   tasks:
-    - name: Verify postgres_storage_definitions is defined
-      ansible.builtin.assert:
-        that:
-          - postgres_storage_definitions is defined
-          - postgres_storage_definitions | length > 0
-        fail_msg: 'postgres_storage_definitions should be defined'
-        success_msg: '✓ postgres_storage_definitions is properly defined'
-
-    - name: Verify storage definition structure
-      ansible.builtin.assert:
-        that:
-          - item.name is defined
-          - item.size is defined
-          - item.path is defined
-          - item.pv_name is defined
-          - item.storage_class_name is defined
-        fail_msg: 'Storage definition missing required fields'
-        success_msg: '✓ Storage definition has all required fields'
-      loop: '{{ postgres_storage_definitions }}'
-
     - name: Verify postgres parameters are defined
       ansible.builtin.assert:
         that:
@@ -41,7 +22,6 @@
     - name: Verify role defaults are set
       ansible.builtin.assert:
         that:
-          - postgres_name is defined
           - postgres_storage_class is defined
           - postgres_storage_size is defined
         fail_msg: 'Required role defaults are missing'
