@@ -345,7 +345,7 @@ postgres_resources:
     memory: 96Gi
 
 postgres_parameters:
-  max_connections: '100'
+  max_connections: '120'
   shared_buffers: '16GB'
   effective_cache_size: '48GB'
   maintenance_work_mem: '2GB'
@@ -604,6 +604,13 @@ See [Ollama model library](https://ollama.com/library) for available models.
 
 #### HL7 Extractor
 
+As stated in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#how-pods-with-resource-limits-are-run),
+"The memory request is mainly used during (Kubernetes) Pod scheduling", so we recommend setting it to a small but viable value where the extractor could run
+such as the one below to allow it to be scheduled. `hl7log_extractor_jvm_heap_max_ram_percentage` is passed into the container via `-XX:MaxRAMPercentage`. When in
+a production setting with ample resources, there is more memory that can be allocated to the heap proportionally. The `75Gi` limit below was chosen by noting that
+a large scale production instance took around 60GB of memory for the pod. If we make the assumption to be safe that all of that would go to the heap, that gives us
+`60/0.8 = 75` to derive an appropriate limit.
+
 ```yaml
 extractor_data_dir: /ceph/input/data  # Input directory for HL7 logs
 
@@ -613,7 +620,8 @@ hl7log_extractor_resources:
     memory: 4Gi
   limits:
     cpu: 4
-    memory: 8Gi
+    memory: 75Gi
+hl7log_extractor_jvm_heap_max_ram_percentage: 80
 
 hl7_transformer_spark_memory: 16G
 hl7_transformer_cpu_request: 2
