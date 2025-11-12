@@ -19,7 +19,7 @@
       - redis_db_port is defined
       - redis_db_memory_size is defined
       - redis_db_password is defined
-    fail_msg: "Required variables redis_db_name, redis_db_port, redis_db_memory_size, and redis_db_password must be defined"
+    fail_msg: 'Required variables redis_db_name, redis_db_port, redis_db_memory_size, and redis_db_password must be defined'
 
 - name: Create Redis password secret
   kubernetes.core.k8s:
@@ -49,9 +49,9 @@
           name: rec
         memorySize: '{{ redis_db_memory_size }}'
         persistence: "{{ 'aofEverySecond' if (redis_db_persistence_enabled | default(true)) else 'disabled' }}"
-        replication: "{{ redis_db_replication | default(false) }}"
-        databasePort: "{{ redis_db_port }}"
-        databaseSecretName: "{{ redis_db_name }}-password"
+        replication: { { redis_db_replication | default(false) } }
+        databasePort: { { redis_db_port } }
+        databaseSecretName: '{{ redis_db_name }}-password'
   register: redb_created
 
 - name: Wait for Redis Enterprise Database to be ready
