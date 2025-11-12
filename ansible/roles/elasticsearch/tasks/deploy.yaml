@@ -65,7 +65,7 @@
                 spec:
                   accessModes:
                     - ReadWriteOnce
-                  storageClassName: '{{ elasticsearch_storage_class if elasticsearch_storage_class else omit }}'
+                  storageClassName: '{{ elasticsearch_storage_class | default(omit) }}'
                   resources:
                     requests:
                       storage: '{{ elasticsearch_storage_size }}'

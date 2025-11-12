@@ -48,7 +48,7 @@
         size: 1
         storageConfig:
           cassandraDataVolumeClaimSpec:
-            storageClassName: '{{ cassandra_storage_class if cassandra_storage_class else omit }}'
+            storageClassName: '{{ cassandra_storage_class | default(omit) }}'
             accessModes:
               - ReadWriteOnce
             resources:
