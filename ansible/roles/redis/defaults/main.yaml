@@ -31,7 +31,6 @@ redis_storage_definitions_raw: >-
     {%- endif %}
   {%- endfor %}]
 redis_storage_definitions: '{{ redis_storage_definitions_raw if not (redis_storage_definitions_raw is string) else (redis_storage_definitions_raw | from_yaml) }}'
-
 # Operator resources
 redis_operator_resources:
   limits:
