@@ -24,7 +24,7 @@
         resources:
           requests:
             storage: '{{ orthanc_storage_size }}'
-        storageClassName: '{{ orthanc_storage_class | default(omit) }}'
+        storageClassName: '{{ orthanc_storage_class | default(omit, true) }}'
 
 - name: Create Orthanc conf secret
   kubernetes.core.k8s:

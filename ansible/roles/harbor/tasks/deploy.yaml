@@ -132,7 +132,7 @@
       persistence:
         persistentVolumeClaim:
           registry:
-            storageClass: '{{ harbor_storage_class | default(omit) }}'
+            storageClass: '{{ harbor_storage_class | default(omit, true) }}'
             size: '{{ harbor_storage_size }}'
       chartmuseum:
         enabled: false # Cannot proxy Helm charts

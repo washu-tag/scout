@@ -61,7 +61,7 @@
       spec:
         instances: 1
         storage:
-          storageClass: '{{ postgres_storage_class | default(omit) }}'
+          storageClass: '{{ postgres_storage_class | default(omit, true) }}'
           size: '{{ postgres_storage_size }}'
         resources: '{{ postgres_resources }}'
         enableSuperuserAccess: true

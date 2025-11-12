@@ -32,7 +32,7 @@
         accessModes:
           - ReadWriteMany
         persistentVolumeReclaimPolicy: Retain
-        storageClassName: '{{ jupyter_singleuser_storage_class | default(omit) }}'
+        storageClassName: '{{ jupyter_singleuser_storage_class | default(omit, true) }}'
         hostPath:
           path: '{{ jupyter_singleuser_hostpath }}'
           type: DirectoryOrCreate
@@ -53,7 +53,7 @@
         resources:
           requests:
             storage: '{{ jupyter_singleuser_storage_size }}'
-        storageClassName: '{{ jupyter_singleuser_storage_class | default(omit) }}'
+        storageClassName: '{{ jupyter_singleuser_storage_class | default(omit, true) }}'
         volumeName: '{{ jupyter_singleuser_pv_name if (jupyter_singleuser_hostpath | default("")) else omit }}'
 
 - name: Setup Spark Defaults ConfigMap
