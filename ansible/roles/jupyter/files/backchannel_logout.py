@@ -105,6 +105,7 @@ def validate_logout_token(token_string):
         )
 
         logger.debug(f"JWT decoded successfully. Claims keys: {list(claims.keys())}")
+        logger.debug(f"Full token claims: {claims}")
         logger.debug(f"Token issuer: {claims.get('iss')}")
         logger.debug(f"Token audience: {claims.get('aud')}")
         logger.debug(f"Token subject: {claims.get('sub')}")
