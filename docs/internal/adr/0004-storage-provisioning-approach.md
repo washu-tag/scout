@@ -450,21 +450,21 @@ preventing rescheduling from CPU nodes to GPU nodes. ReadWriteMany storage is re
 
 **Cloud (AWS/GCP/Azure):**
 - Use dynamic provisioning with RWX-capable storage classes (EFS, Filestore, Azure Files)
-- Set `jupyter_notebook_storage_class` to appropriate cloud RWX storage class
+- Set `jupyter_singleuser_storage_class` to appropriate cloud RWX storage class
 - Provisioner handles PV creation and scheduling
 
 **Implementation:**
 - New variables:
   - `jupyterhub_storage_class`: Storage class for JupyterHub database (RWO sufficient, defaults to `""`)
-  - `jupyter_notebook_storage_class`: Storage class for Jupyter notebooks (RWX required, defaults to `""`)
-  - `jupyter_notebook_hostpath`: Path to network mount on all nodes (on-prem only)
-- When `jupyter_notebook_hostpath` is set: Creates static PV with manual binding (on-prem)
-- When `jupyter_notebook_hostpath` is empty: Uses dynamic provisioning via `jupyter_notebook_storage_class` (cloud)
+  - `jupyter_singleuser_storage_class`: Storage class for Jupyter notebooks (RWX required, defaults to `""`)
+  - `jupyter_singleuser_hostpath`: Path to network mount on all nodes (on-prem only)
+- When `jupyter_singleuser_hostpath` is set: Creates static PV with manual binding (on-prem)
+- When `jupyter_singleuser_hostpath` is empty: Uses dynamic provisioning via `jupyter_singleuser_storage_class` (cloud)
 - Change Jupyter notebook PVC from `ReadWriteOnce` to `ReadWriteMany`
 
 **Hub vs Notebook Storage:**
 - Hub database uses `jupyterhub_storage_class` (RWO storage sufficient, single pod, no multi-node requirement)
-- Notebook storage uses `jupyter_notebook_storage_class` or static PV (RWX required for multi-node GPU scheduling)
+- Notebook storage uses `jupyter_singleuser_storage_class` or static PV (RWX required for multi-node GPU scheduling)
 - Static notebook PV uses Retain reclaim policy to protect user data
 - Separate variables allow different storage classes for hub vs notebooks
 
