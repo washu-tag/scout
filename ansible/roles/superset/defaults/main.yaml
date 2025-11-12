@@ -12,8 +12,12 @@ superset_helm_timeout: 15m
 superset_image_repository: ghcr.io/washu-tag/superset
 superset_image_tag: 5.0.0
 
-# Redis image
-superset_redis_image_repository: bitnamilegacy/redis
+# Redis session storage and caching configuration
+superset_redis_database_name: superset-cache
+superset_redis_memory_size: 1GB
+superset_redis_persistence_enabled: true
+# superset_redis_password: defined in inventory.yaml (use vault encryption)
+# Note: redis_database_port is defined in redis role defaults
 
 # Branding
 superset_app_name: Scout Analytics

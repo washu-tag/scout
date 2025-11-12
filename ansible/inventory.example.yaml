@@ -399,6 +399,7 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     superset_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     superset_secret: $(openssl rand -base64 42 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    superset_redis_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     superset_resources:
       requests:
         cpu: 1

@@ -2,8 +2,12 @@ image:
   repository: "{{ superset_image_repository }}"
   tag: "{{ superset_image_tag }}"
 redis:
-  image:
-    repository: "{{ superset_redis_image_repository }}"
+  # Disable embedded Redis - using centralized Redis Enterprise instead
+  enabled: false
+# Configure external Redis connection
+redisHost: "{{ superset_redis_database_name }}.{{ redis_namespace }}"
+redisPort: "{{ redis_database_port }}"
+redisPassword: "{{ superset_redis_password }}"
 extraSecretEnv:
   SUPERSET_SECRET_KEY: "{{ superset_secret }}"
 ingress:
