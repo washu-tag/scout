@@ -2,6 +2,16 @@
 # Playbook to deploy Redis Enterprise for session storage and caching
 # This deploys the Redis Enterprise Operator and Cluster
 # Individual services (oauth2-proxy, superset, open-webui) create their own databases
+
+- name: Create storage directories for Redis
+  hosts: k3s_cluster
+  gather_facts: false
+  tasks:
+    - name: Create storage directories
+      ansible.builtin.include_role:
+        name: redis
+        tasks_from: storage
+
 - name: Deploy Redis Enterprise
   hosts: server
   gather_facts: false
