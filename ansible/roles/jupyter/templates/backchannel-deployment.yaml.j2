@@ -68,11 +68,12 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
           # Health checks for reliability
+          # Note: pip install takes ~60 seconds, so delays are set accordingly
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 10
+            initialDelaySeconds: 90
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
@@ -80,7 +81,7 @@ spec:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 5
+            initialDelaySeconds: 75
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
