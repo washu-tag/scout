@@ -28,7 +28,10 @@ supersetNode:
     redis_host: "{{ superset_redis_database_name }}.{{ redis_namespace }}"
     redis_port: "{{ superset_redis_database_port }}"
     redis_password: "{{ superset_redis_password }}"
-    redis_cache_db: "1"
+    # Redis Enterprise doesn't support logical databases within an existing database and Superset doesn't support
+    # multiple Redis databases
+    # https://redis.io/kb/doc/2d6sxrbhhj/does-redis-enterprise-support-logical-databases-using-the-select-command
+    redis_cache_db: "0"
     redis_celery_db: "0"
   resources: {{ superset_resources | default({}) | to_json }}
 configOverrides:
