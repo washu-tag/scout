@@ -276,6 +276,7 @@ loki_storage_class: ""
 grafana_storage_class: ""
 orthanc_storage_class: ""
 dcm4chee_storage_class: ""
+harbor_storage_class: ""
 
 # No custom storage classes defined
 storage_classes_to_create: []
@@ -321,6 +322,7 @@ grafana_storage_class: "local-monitoring"
 orthanc_storage_class: "local-database"
 dcm4chee_storage_class: "local-database"
 temporal_storage_class: ""  # Uses Cassandra for persistence
+harbor_storage_class: ""  # Only used in air-gapped deployments
 ```
 
 **When to use multiple storage classes:**
