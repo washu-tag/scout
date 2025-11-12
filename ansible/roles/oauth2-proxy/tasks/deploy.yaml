@@ -54,6 +54,10 @@
         logo.png: '{{ lookup("file", role_path + "/files/scout.jpg") | b64encode }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
+- name: Parse OAuth2 Proxy Helm values
+  ansible.builtin.set_fact:
+    oauth2_proxy_helm_values: '{{ lookup("template", "values.yaml.j2") | from_yaml }}'
+
 - name: Deploy OAuth2 Proxy
   ansible.builtin.include_role:
     name: scout_common
@@ -65,7 +69,7 @@
     helm_repo_name: oauth2-proxy
     helm_repo_url: '{{ oauth2_proxy_chart_repo }}'
     helm_chart_version: '{{ oauth2_proxy_chart_version }}'
-    helm_chart_values: '{{ lookup("template", "values.yaml.j2") | from_yaml }}'
+    helm_chart_values: '{{ oauth2_proxy_helm_values }}'
 
 - name: Install OAuth2 Proxy Auth Middleware
   kubernetes.core.k8s:
