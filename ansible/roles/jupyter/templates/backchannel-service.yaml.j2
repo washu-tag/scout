@@ -1,0 +1,23 @@
+---
+# Internal Kubernetes Service for JupyterHub Backchannel Logout
+# This service is NOT exposed via ingress - only accessible within the cluster
+# Keycloak calls: http://backchannel-logout.{{ jupyter_namespace }}.svc.cluster.local:8080/backchannel-logout
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: backchannel-logout
+  namespace: {{ jupyter_namespace }}
+  labels:
+    app: jupyterhub
+    component: backchannel-logout
+spec:
+  type: ClusterIP
+  selector:
+    app: jupyterhub
+    component: hub
+  ports:
+    - port: 8080
+      targetPort: backchannel
+      protocol: TCP
+      name: backchannel

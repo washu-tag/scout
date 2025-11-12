@@ -217,6 +217,11 @@
         "webOrigins": [
           "*"
         ],
+        "attributes": {
+          "backchannel.logout.url": "http://backchannel-logout.{{ jupyter_namespace }}.svc.cluster.local:8080/backchannel-logout",
+          "backchannel.logout.session.required": "true",
+          "backchannel.logout.revoke.offline.tokens": "false"
+        },
         "defaultClientScopes": [
           "web-origins",
           "acr",

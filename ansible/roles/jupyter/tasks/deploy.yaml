@@ -43,6 +43,39 @@
     spark_s3_username: '{{ s3_lake_reader }}'
     spark_s3_password: '{{ s3_lake_reader_secret }}'
 
+- name: Create ConfigMap for backchannel logout service
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: backchannel-logout-code
+        namespace: '{{ jupyter_namespace }}'
+      data:
+        backchannel_logout.py: |
+          {{ lookup('file', role_path + '/files/backchannel_logout.py') }}
+        backchannel_requirements.txt: |
+          {{ lookup('file', role_path + '/files/backchannel_requirements.txt') }}
+
+- name: Create API token Secret for backchannel service
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: backchannel-api-token
+        namespace: '{{ jupyter_namespace }}'
+      type: Opaque
+      stringData:
+        token: '{{ jupyter_backchannel_api_token }}'
+
+- name: Deploy backchannel logout Service
+  kubernetes.core.k8s:
+    state: present
+    template: backchannel-service.yaml.j2
+
 - name: Deploy JupyterHub
   ansible.builtin.include_role:
     name: scout_common
