@@ -13,7 +13,7 @@ oauth2_proxy_banner: Continue with WashU Key
 
 # Redis session storage configuration
 oauth2_proxy_redis_database_name: oauth2-proxy-sessions
+oauth2_proxy_redis_database_port: 10000
 oauth2_proxy_redis_memory_size: 512MB
 oauth2_proxy_redis_persistence_enabled: true
 # oauth2_proxy_redis_password: defined in inventory.yaml (use vault encryption)
-# Note: redis_database_port is defined in redis role defaults

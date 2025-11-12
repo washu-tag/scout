@@ -14,10 +14,10 @@ superset_image_tag: 5.0.0
 
 # Redis session storage and caching configuration
 superset_redis_database_name: superset-cache
+superset_redis_database_port: 10001
 superset_redis_memory_size: 1GB
 superset_redis_persistence_enabled: true
 # superset_redis_password: defined in inventory.yaml (use vault encryption)
-# Note: redis_database_port is defined in redis role defaults
 
 # Branding
 superset_app_name: Scout Analytics
