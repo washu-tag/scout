@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -96,13 +97,18 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             .forEach(status -> meterRegistry.counter(EXTRACTOR_HL7_COUNTER, Tags.of("status", status.getStatus())).increment(0));
     }
 
-    private static LocalDate dateFromLogFilePath(String filePath) {
+    private static String dateStringFromLogFilePath(String filePath) {
         String fileName = Paths.get(filePath).getFileName().toString();
         Matcher m = DATE_PATTERN.matcher(fileName);
         if (m.find()) {
-            return LocalDate.parse(m.group(), DATE_FORMATTER);
+            return m.group();
         }
         return null;
+    }
+
+    private static LocalDate dateFromLogFilePath(String filePath) {
+        String matched = dateStringFromLogFilePath(filePath);
+        return (matched != null) ? LocalDate.parse(matched, DATE_FORMATTER) : null;
     }
 
     /**
@@ -457,7 +463,8 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
             // Upload the zip file to S3
             ctx.heartbeat("Upload zip to S3");
-            String relativePath = getBucketTimestampPath(logFileNameNoExtension).resolve(logFileNameNoExtension + ".zip").toString();
+            String logFileDate = Objects.requireNonNull(dateStringFromLogFilePath(logFileNameNoExtension));
+            String relativePath = getBucketTimestampPath(logFileDate).resolve(logFileNameNoExtension + ".zip").toString();
             String uploadedPath = fileHandler.putWithRetry(byteArrayOutputStream.toByteArray(), relativePath, destination);
 
             // Add successful HL7 files to results
