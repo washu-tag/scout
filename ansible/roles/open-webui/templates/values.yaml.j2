@@ -52,14 +52,17 @@ websocket:
     # Disable embedded Redis - using external Redis Enterprise Database
     enabled: false
 
+# Load sensitive environment variables from Kubernetes Secret
+# Secret contains: WEBUI_SECRET_KEY, OAUTH_CLIENT_SECRET
+extraEnvFrom:
+  - secretRef:
+      name: open-webui-secrets
+
 # OAuth/OIDC Configuration for Keycloak integration
 # OAuth2 Proxy provides initial authentication gate (checks scout-user group)
 # Open WebUI's OIDC handles login and role mapping to admin/user roles
+# Note: WEBUI_SECRET_KEY and OAUTH_CLIENT_SECRET are loaded from secret above
 extraEnvVars:
-  # WebUI secret key for session management and OAuth security
-  - name: WEBUI_SECRET_KEY
-    value: '{{ open_webui_secret_key }}'
-
   # Disable local authentication (email/password)
   - name: ENABLE_SIGNUP
     value: 'false'
@@ -78,9 +81,6 @@ extraEnvVars:
   # OAuth client credentials
   - name: OAUTH_CLIENT_ID
     value: '{{ keycloak_open_webui_client_id }}'
-
-  - name: OAUTH_CLIENT_SECRET
-    value: '{{ keycloak_open_webui_client_secret }}'
 
   # OIDC endpoints (uses Keycloak well-known configuration)
   - name: OPENID_PROVIDER_URL
