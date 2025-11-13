@@ -42,6 +42,10 @@
 - name: Install Lake
   import_playbook: lake.yaml
 
+- name: Install Chat
+  import_playbook: chatbot.yaml
+  when: enable_chat | default(false) | bool
+
 - name: Install Analytics
   import_playbook: analytics.yaml
 

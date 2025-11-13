@@ -37,6 +37,11 @@ jupyter_storage_definitions:
 jupyter_singleuser_image_name: ghcr.io/washu-tag/pyspark-notebook
 jupyter_singleuser_image_tag: 1.1.0
 
+# API tokens for JupyterHub services
+# REQUIRED: Must be set in inventory.yaml (use vault encryption)
+# Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+jupyter_metrics_api_token: ''
+
 # PrePuller configuration
 jupyter_prepuller_continuous: false
 

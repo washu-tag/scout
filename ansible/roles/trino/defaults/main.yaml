@@ -42,3 +42,32 @@ trino_worker_resources:
   limits:
     cpu: '{{ trino_worker_cpu_limit }}'
     memory: '{{ trino_worker_max_heap | jvm_memory_to_k8s(2) }}'
+
+# Trino MCP server configuration
+mcp_trino_repo_url: https://github.com/tuannvm/mcp-trino.git
+mcp_trino_repo_version: 'v{{ mcp_trino_version }}'
+mcp_trino_chart_path: /tmp/mcp-trino-chart
+mcp_trino_release_name: mcp-trino
+
+# Trino MCP Helm values
+mcp_trino_values:
+  replicaCount: 1
+  image:
+    tag: '{{ mcp_trino_version }}'
+  trino:
+    host: trino
+    port: 8080
+    scheme: http
+    ssl: false
+    user: '{{ trino_user }}'
+    catalog: delta
+    schema: default
+    allowWriteQueries: false
+    queryTimeout: 600
+    allowlists:
+      catalogs: [delta]
+      schemas: [delta.default]
+      tables: []
+  service:
+    type: ClusterIP
+    port: 8080

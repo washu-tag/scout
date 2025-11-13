@@ -1,7 +1,9 @@
 ---
 # Deploy Trino using Helm
-# Trino auto-configures query.max-memory-per-node and memory.heap-headroom-per-node
-# as 30% of heap each, so we only need to set JVM heap and pod memory
+
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    trino_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
 
 - name: Deploy Trino
   ansible.builtin.include_role:
@@ -14,4 +16,4 @@
     helm_chart_namespace: '{{ trino_namespace }}'
     helm_repo_name: '{{ trino_helm_repo_name }}'
     helm_repo_url: '{{ trino_helm_repo_url }}'
-    helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+    helm_chart_values: '{{ trino_helm_chart_values }}'

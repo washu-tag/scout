@@ -17,6 +17,7 @@
     helm_chart_values_files:
       - '{{ scout_repo_dir }}/helm/launchpad/values.yaml'
     helm_chart_values:
+      enableChat: '{{ enable_chat }}'
       image:
         repository: '{{ launchpad_image_repository }}'
         tag: '{{ launchpad_image_tag }}'

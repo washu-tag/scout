@@ -1,0 +1,153 @@
+nameOverride: ''
+namespaceOverride: ''
+ollama:
+  # -- Automatically install Ollama Helm chart from https://otwld.github.io/ollama-helm/. Use [Helm Values](https://github.com/otwld/ollama-helm/#helm-values) to configure
+  enabled: true
+  # -- If enabling embedded Ollama, update fullnameOverride to your desired Ollama name value, or else it will use the default ollama.name value from the Ollama chart
+  fullnameOverride: ollama
+  ollama:
+    gpu:
+      enabled: true
+      type: 'nvidia'
+      number: 1
+    models:
+      pull: []  # Models are pulled asynchronously via separate Job to avoid Helm timeout
+  resources: {{ ollama_resources | to_json }}
+{% if ollama_min_gpu_memory_gb | int > 0 %}
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nvidia.com/gpu.memory
+                operator: Gt
+                values:
+                  - '{{ ollama_min_gpu_memory_gb }}'
+{% endif %}
+  persistentVolume:
+    enabled: true
+    storageClass: {{ ollama_storage_class }}
+    size: {{ ollama_storage_size }}
+
+pipelines:
+  enabled: false
+
+ingress:
+  enabled: true
+  class: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      kube-system-oauth2-proxy-error@kubernetescrd,
+      kube-system-oauth2-proxy-auth@kubernetescrd
+  host: chat.{{ server_hostname }}
+
+persistence:
+  enabled: true
+  storageClass: {{ open_webui_storage_class }}
+  size: {{ open_webui_storage_size }}
+
+resources: {{ open_webui_resources | to_json }}
+
+# -- Configure database URL, needed to work with Postgres (example: `postgresql://<user>:<password>@<service>:<port>/<database>`), leave empty to use the default sqlite database
+databaseUrl: 'postgresql://{{ open_webui_postgres_user }}:{{ open_webui_postgres_password }}@{{ db_host }}:{{ db_port }}/{{ open_webui_database }}'
+
+enableOpenaiApi: false
+
+websocket:
+  # -- Enables websocket support in Open WebUI with env `ENABLE_WEBSOCKET_SUPPORT`
+  enabled: true
+  # Use external Redis for websocket coordination
+  manager: redis
+  # Set to empty - will be overridden by extraEnvVars below (which comes last in env list)
+  url: ''
+  redis:
+    # Disable embedded Redis - using external Redis Enterprise Database
+    enabled: false
+
+# Load sensitive environment variables from Kubernetes Secret
+# Secret contains: WEBUI_SECRET_KEY, OAUTH_CLIENT_SECRET, REDIS_URL
+extraEnvFrom:
+  - secretRef:
+      name: open-webui-secrets
+
+# OAuth/OIDC Configuration for Keycloak integration
+# OAuth2 Proxy provides initial authentication gate (checks scout-user group)
+# Open WebUI's OIDC handles login and role mapping to admin/user roles
+# Note: WEBUI_SECRET_KEY and OAUTH_CLIENT_SECRET are loaded from secret above
+# REDIS_URL and WEBSOCKET_REDIS_URL are loaded from secret via valueFrom below
+extraEnvVars:
+  # Disable local authentication (email/password)
+  - name: ENABLE_SIGNUP
+    value: 'false'
+
+  - name: ENABLE_LOGIN_FORM
+    value: 'false'
+
+  # Enable OAuth signup and authentication
+  - name: ENABLE_OAUTH_SIGNUP
+    value: 'true'
+
+  # OAuth provider configuration
+  - name: OAUTH_PROVIDER_NAME
+    value: '{{ oauth_provider_name }}'
+
+  # OAuth client credentials
+  - name: OAUTH_CLIENT_ID
+    value: '{{ keycloak_open_webui_client_id }}'
+
+  # OIDC endpoints (uses Keycloak well-known configuration)
+  - name: OPENID_PROVIDER_URL
+    value: '{{ keycloak_wellknown_url }}'
+
+  # OAuth redirect URI
+  - name: OPENID_REDIRECT_URI
+    value: '{{ open_webui_callback_url }}'
+
+  # OAuth scopes
+  - name: OAUTH_SCOPES
+    value: 'openid email profile'
+
+  # Merge accounts by email
+  - name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL
+    value: 'true'
+
+  # Web UI URL (required for OAuth in clustered environments)
+  - name: WEBUI_URL
+    value: 'https://chat.{{ server_hostname }}'
+
+  # Enable role management
+  - name: ENABLE_OAUTH_ROLE_MANAGEMENT
+    value: 'true'
+
+  # Role claim path (Keycloak client roles)
+  - name: OAUTH_ROLES_CLAIM
+    value: 'resource_access.{{ keycloak_open_webui_client_id }}.roles'
+
+  # Allowed roles (users with these roles can log in)
+  - name: OAUTH_ALLOWED_ROLES
+    value: 'open-webui-user,open-webui-admin'
+
+  # Admin roles
+  - name: OAUTH_ADMIN_ROLES
+    value: 'open-webui-admin'
+
+  # Allow OAuth config updates via env vars (not persistent in DB)
+  - name: ENABLE_OAUTH_PERSISTENT_CONFIG
+    value: 'false'
+
+  # Logout redirect URL (OAuth2 Proxy signout)
+  - name: WEBUI_AUTH_SIGNOUT_REDIRECT_URL
+    value: '{{ oauth2_proxy_signout_url }}'
+
+  # Redis URLs with passwords - loaded from secret
+  # These override the chart's default WEBSOCKET_REDIS_URL (last env wins)
+  - name: WEBSOCKET_REDIS_URL
+    valueFrom:
+      secretKeyRef:
+        name: open-webui-secrets
+        key: REDIS_URL
+  - name: REDIS_URL
+    valueFrom:
+      secretKeyRef:
+        name: open-webui-secrets
+        key: REDIS_URL

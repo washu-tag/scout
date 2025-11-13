@@ -64,6 +64,9 @@ install-auth:
 install-lake:
 	$(ANSIBLE_CMD) playbooks/lake.yaml
 
+install-chat:
+	$(ANSIBLE_CMD) playbooks/chatbot.yaml
+
 install-analytics:
 	$(ANSIBLE_CMD) playbooks/analytics.yaml
 

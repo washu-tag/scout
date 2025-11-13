@@ -1,0 +1,101 @@
+---
+# Kubernetes deployment tasks for Open WebUI with Ollama
+# These tasks run on the server host
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - open_webui_postgres_password is defined
+      - open_webui_postgres_password | length > 0
+    fail_msg: >
+      open_webui_postgres_password is required but not set.
+      Please set it in your inventory.yaml (use vault encryption).
+      Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+    quiet: true
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ chatbot_namespace }}'
+
+- name: Set up storage
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: storage_setup
+  vars:
+    storage_definitions: '{{ chatbot_storage_definitions }}'
+
+- name: Initialize Open WebUI database
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_db_with_owner
+  vars:
+    db_name: '{{ open_webui_database }}'
+    db_owner: '{{ open_webui_postgres_user }}'
+    db_owner_pass: '{{ open_webui_postgres_password }}'
+
+- name: Grant schema ownership to user
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: execute_sql
+  vars:
+    sql_script: 'ALTER SCHEMA public OWNER TO {{ open_webui_postgres_user }};'
+    sql_dbname: '{{ open_webui_database }}'
+
+- name: Create Redis database for Open WebUI
+  ansible.builtin.include_role:
+    name: redis
+    tasks_from: create_database
+  vars:
+    redis_db_name: '{{ open_webui_redis_database_name }}'
+    redis_db_port: '{{ open_webui_redis_database_port }}'
+    redis_db_memory_size: '{{ open_webui_redis_database_memory_size }}'
+    redis_db_password: '{{ open_webui_redis_password }}'
+    redis_db_persistence_enabled: '{{ open_webui_redis_database_persistence_enabled }}'
+    redis_db_replication: false
+
+- name: Create Kubernetes Secret for sensitive env vars
+  ansible.builtin.include_tasks: create_secret.yaml
+
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
+- name: Deploy Open WebUI using Helm
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ open_webui_helm_release_name }}'
+    helm_chart_ref: '{{ open_webui_helm_repo_name }}/{{ open_webui_helm_chart_name }}'
+    helm_chart_namespace: '{{ chatbot_namespace }}'
+    helm_chart_version: '{{ open_webui_helm_chart_version }}'
+    helm_repo_name: '{{ open_webui_helm_repo_name }}'
+    helm_repo_url: '{{ open_webui_helm_repo_url }}'
+    helm_chart_values: '{{ owui_helm_chart_values }}'
+    helm_chart_timeout: '10m'
+
+- name: Wait for Open WebUI to be ready
+  ansible.builtin.command: 'kubectl -n {{ chatbot_namespace }} wait --for=condition=Ready --timeout=300s pod -l app.kubernetes.io/name=open-webui'
+  register: open_webui_ready
+  changed_when: false
+
+# Ensure Scout base model is in ollama_models list if Scout model creation is enabled
+- name: Add Scout base model to ollama_models if needed
+  ansible.builtin.set_fact:
+    ollama_models: '{{ (ollama_models | default([])) | union([scout_base_model]) }}'
+  when:
+    - scout_model_create | default(true) | bool
+    - scout_base_model not in (ollama_models | default([]))
+
+# Pull Ollama models asynchronously
+- name: Pull Ollama models
+  ansible.builtin.include_tasks: pull_models.yaml
+  when: ollama_models is defined and ollama_models | length > 0
+
+# Create Scout custom model
+- name: Create Scout custom model
+  ansible.builtin.include_tasks: create_scout_model.yaml
+  when: scout_model_create | default(true) | bool

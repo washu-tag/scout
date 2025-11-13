@@ -56,6 +56,9 @@ grafana_helm_chart_version: ~10.1.1
 # Notebooks & Interactive Computing
 jupyter_helm_chart_version: ~4.3.0
 
+# AI & ML
+open_webui_helm_chart_version: ~8.14.0
+
 # Monitoring & Observability - Prometheus
 prometheus_helm_chart_version: ~27.41.1
 

@@ -18,6 +18,7 @@ hub:
   db:
     pvc:
       storageClassName: '{{ use_custom_storage_classes | ternary(jupyter_hub_storage_class, omit) }}'
+      storage: '{{ jupyter_hub_storage_size }}'
   config:
     Authenticator:
       auto_login: true
@@ -107,11 +108,24 @@ singleuser:
             # Copy Scout quickstart samples on first login
             FLAG_FILE=/home/$NB_USER/.scout_quickstart
             if [ ! -f $FLAG_FILE ]; then
+              mkdir -p /home/$NB_USER/models
               mkdir -p /home/$NB_USER/Scout &&
               cp -r /opt/scout/samples/* /home/$NB_USER/Scout/ &&
               chown -R $NB_USER:$NB_GID /home/$NB_USER/Scout &&
               touch $FLAG_FILE
             fi
+  extraEnv:
+    # HuggingFace model cache directory - models downloaded from HF Hub are stored here
+    # This directory is created in postStart hook and persists with user's home directory
+    HF_HOME: '/home/jovyan/models'
+    # Trino connection information for read-only access from notebooks
+    # Users can connect with: trino.dbapi.connect(host=os.getenv('TRINO_HOST'), ...)
+    TRINO_HOST: 'trino.{{ trino_namespace }}'
+    TRINO_PORT: '8080'
+    TRINO_SCHEME: 'http'
+    TRINO_USER: '{{ trino_user }}'
+    TRINO_CATALOG: 'delta'
+    TRINO_SCHEMA: 'default'
   extraFiles:
     jupyter-server-config:
       mountPath: /etc/jupyter/jupyter_server_config.py
@@ -152,7 +166,6 @@ singleuser:
         ports:
           - port: 9000
       # Allow access to Hive Metastore (readonly) for metadata queries
-      # Only allow access to readonly metastore, not write metastore
       - to:
           - namespaceSelector:
               matchLabels:
@@ -162,3 +175,17 @@ singleuser:
                 app.kubernetes.io/instance: '{{ hive_metastore_instance_readonly }}'
         ports:
           - port: 9083
+      # Allow access to Ollama for AI model inference
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ chatbot_namespace }}'
+        ports:
+          - port: 11434
+      # Allow access to Trino for SQL queries
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: '{{ trino_namespace }}'
+        ports:
+          - port: 8080

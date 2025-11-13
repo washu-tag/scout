@@ -1,0 +1,99 @@
+---
+# Open WebUI and Ollama role defaults
+# User-configurable settings are in inventory.yaml
+
+# Helm configuration
+open_webui_helm_repo_name: open-webui
+open_webui_helm_repo_url: https://helm.openwebui.com/
+open_webui_helm_chart_name: open-webui
+open_webui_helm_release_name: open-webui
+
+# Component names
+ollama_name: ollama
+open_webui_name: open-webui
+
+# Storage configuration
+ollama_storage_class: '{{ ollama_name }}-storage'
+ollama_storage_size: 5Gi
+
+# Scout custom model configuration
+scout_base_model: gpt-oss:120b
+scout_model_name: gpt-oss-120b-long:latest
+scout_model_num_predict: -1 # Unlimited token generation
+scout_model_num_ctx: 131072 # 128K context window
+scout_model_num_keep: 32768 # Keep 32K tokens in memory
+scout_model_create: true # Set to false to skip Scout model creation
+# List of Ollama models to pull automatically (see https://ollama.com/library)
+# `scout_base_model` will be included by default
+ollama_models: []
+
+open_webui_storage_class: '{{ open_webui_name }}-storage'
+open_webui_storage_size: 2Gi
+
+# PostgreSQL configuration
+open_webui_database: openwebui
+open_webui_postgres_user: openwebui
+# REQUIRED: Must be set in inventory.yaml (use vault encryption)
+# Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+open_webui_postgres_password: ''
+
+# WebUI Secret Key for session management and OAuth security
+# REQUIRED: Must be set in inventory.yaml (use vault encryption)
+# Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+open_webui_secret_key: ''
+
+# Redis configuration for Open WebUI
+# Redis is used for websocket coordination and distributed state management
+open_webui_redis_database_name: open-webui
+open_webui_redis_database_port: 10002
+open_webui_redis_database_memory_size: 512MB # Redis Enterprise uses MB/GB, not Mi/Gi
+open_webui_redis_database_persistence_enabled: true
+# REQUIRED: Set redis password in inventory.yaml (use vault encryption)
+# Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
+open_webui_redis_password: ''
+
+# Redis connection URL (computed from above settings)
+open_webui_redis_url: 'redis://default:{{ open_webui_redis_password | urlencode }}@{{ open_webui_redis_database_name }}.{{ redis_namespace }}.svc.cluster.local:{{ open_webui_redis_database_port }}'
+
+# Storage definitions
+chatbot_storage_definitions:
+  - name: '{{ ollama_name }}'
+    size: '{{ ollama_storage_size }}'
+    path: '{{ ollama_dir }}'
+    pv_name: '{{ ollama_name }}-pv'
+    storage_class_name: '{{ ollama_storage_class }}'
+  - name: '{{ open_webui_name }}'
+    size: '{{ open_webui_storage_size }}'
+    path: '{{ open_webui_dir }}'
+    pv_name: '{{ open_webui_name }}-pv'
+    storage_class_name: '{{ open_webui_storage_class }}'
+
+# Resource configuration (dev defaults)
+# WARNING: These are minimal defaults suitable for small models only.
+# For production LLMs (especially large models like gpt-oss:120b), you MUST
+# override these in inventory.yaml with significantly more resources.
+# Recommended production values: 32Gi+ memory for requests, 64Gi+ for limits.
+ollama_resources:
+  requests:
+    cpu: 2
+    memory: 4Gi
+  limits:
+    cpu: 8
+    memory: 16Gi
+
+# Minimum GPU VRAM required for Ollama (in GB)
+# Used in node affinity to ensure Ollama is scheduled on nodes with sufficient GPU memory
+# Default: 80GB (required for default Scout base model gpt-oss:120b at full precision)
+# For smaller models or quantized versions, override in inventory.yaml:
+#   ollama_min_gpu_memory_gb: 24  # For smaller models (e.g., llama3:70b)
+#   ollama_min_gpu_memory_gb: 60  # For gpt-oss:120b quantized (MXFP4)
+# Set to 0 to disable GPU memory requirement (schedules on any GPU node)
+ollama_min_gpu_memory_gb: 80
+
+open_webui_resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 2
+    memory: 2Gi

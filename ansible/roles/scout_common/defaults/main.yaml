@@ -52,6 +52,7 @@ cassandra_namespace: cassandra
 cert_manager_namespace: cert-manager
 eck_operator_namespace: eck-operator
 elasticsearch_namespace: elastic
+chatbot_namespace: chatbot
 jupyter_namespace: jupyter
 superset_namespace: superset
 trino_namespace: trino
@@ -62,6 +63,9 @@ launchpad_namespace: launchpad
 keycloak_namespace: keycloak
 redis_namespace: redis
 
+# OAuth configuration
+oauth_provider_name: Keycloak # User-facing name for OAuth provider (e.g., 'WashU Key', 'Keycloak')
+
 # Keycloak OAuth client IDs and secrets (client secrets must be defined in inventory)
 keycloak_oauth2_proxy_client_id: oauth2-proxy
 keycloak_superset_client_id: superset
@@ -70,6 +74,10 @@ keycloak_grafana_client_id: grafana
 keycloak_temporal_client_id: temporal
 keycloak_minio_client_id: minio
 keycloak_launchpad_client_id: launchpad
+keycloak_open_webui_client_id: open-webui
+
+# Open WebUI URLs
+open_webui_callback_url: 'https://chat.{{ server_hostname }}/oauth/oidc/callback'
 
 # S3/MinIO configuration (passwords defined in inventory)
 s3_region: us-east-1
@@ -126,6 +134,9 @@ oauth2_proxy_subdomain: auth
 # These variables are used for constructing the authentication URLs below.
 keycloak_realm_name: scout
 keycloak_subdomain: keycloak
+
+# Feature flags (override from inventory to enable/disable features)
+enable_chat: false
 
 # Computed values (DO NOT CHANGE)
 s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
