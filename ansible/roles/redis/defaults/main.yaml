@@ -8,29 +8,11 @@ redis_helm_repo_name: redis-enterprise
 redis_helm_chart_name: redis-enterprise-operator
 redis_helm_release_name: redis-enterprise-operator
 
-# Storage naming
+# Storage configuration
+# Use K3s's built-in local-path-provisioner (default storage class) for dynamic local volume provisioning
+# This allows Redis pods to be scheduled on any node(s) with automatic storage provisioning
 redis_name: redis
-redis_storage_class: '{{ redis_name }}-storage'
 redis_storage_size: 8Gi
-
-# Storage definitions for persistent volumes
-# Dynamically generated based on k3s_cluster inventory group and redis_cluster_nodes
-redis_storage_definitions_raw: >-
-  [{% set ns = namespace(counter=0) -%}
-  {% for node_url in groups["k3s_cluster"] -%}
-    {% if ns.counter < redis_cluster_nodes -%}
-      {
-        "name": "{{ redis_name }}-{{ node_url }}",
-        "size": "{{ redis_storage_size }}",
-        "path": "{{ redis_dir }}",
-        "pv_name": "{{ redis_name }}-pv-{{ node_url }}",
-        "storage_class_name": "{{ redis_storage_class }}",
-        "node_url": "{{ node_url }}"
-      }{% if ns.counter < (redis_cluster_nodes - 1) %},{% endif %}
-      {% set ns.counter = ns.counter + 1 -%}
-    {%- endif %}
-  {%- endfor %}]
-redis_storage_definitions: '{{ redis_storage_definitions_raw if not (redis_storage_definitions_raw is string) else (redis_storage_definitions_raw | from_yaml) }}'
 # Operator resources
 redis_operator_resources:
   limits:
