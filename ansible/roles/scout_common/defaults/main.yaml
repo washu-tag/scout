@@ -76,6 +76,9 @@ keycloak_minio_client_id: minio
 keycloak_launchpad_client_id: launchpad
 keycloak_open_webui_client_id: open-webui
 
+# Open WebUI URLs
+open_webui_callback_url: 'https://chat.{{ server_hostname }}/oauth/oidc/callback'
+
 # S3/MinIO configuration (passwords defined in inventory)
 s3_region: us-east-1
 s3_username: minio

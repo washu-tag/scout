@@ -90,7 +90,7 @@ extraEnvVars:
 
   # OAuth redirect URI
   - name: OPENID_REDIRECT_URI
-    value: 'https://chat.{{ server_hostname }}/oauth/oidc/callback'
+    value: '{{ open_webui_callback_url }}'
 
   # OAuth scopes
   - name: OAUTH_SCOPES
