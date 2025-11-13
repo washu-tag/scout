@@ -52,6 +52,7 @@
     redis_db_name: '{{ open_webui_redis_database_name }}'
     redis_db_port: '{{ open_webui_redis_database_port }}'
     redis_db_memory_size: '{{ open_webui_redis_database_memory_size }}'
+    redis_db_password: '{{ open_webui_redis_password }}'
     redis_db_persistence_enabled: '{{ open_webui_redis_database_persistence_enabled }}'
     redis_db_replication: false
 

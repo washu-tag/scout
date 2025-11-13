@@ -7,4 +7,4 @@
 
 - name: Include Trino MCP deployment
   ansible.builtin.include_tasks: mcp.yaml
-  when: mcp_trino_enabled | default(true) | bool
+  when: enable_chat | default(false) | bool

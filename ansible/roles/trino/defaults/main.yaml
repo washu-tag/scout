@@ -44,7 +44,6 @@ trino_worker_resources:
     memory: '{{ trino_worker_max_heap | jvm_memory_to_k8s(2) }}'
 
 # Trino MCP server configuration
-mcp_trino_enabled: true
 mcp_trino_repo_url: https://github.com/tuannvm/mcp-trino.git
 mcp_trino_repo_version: 'v{{ mcp_trino_version }}'
 mcp_trino_chart_path: /tmp/mcp-trino-chart
