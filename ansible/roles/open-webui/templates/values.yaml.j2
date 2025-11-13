@@ -13,6 +13,17 @@ ollama:
     models:
       pull: []  # Models are pulled asynchronously via separate Job to avoid Helm timeout
   resources: {{ ollama_resources | to_json }}
+  {% if ollama_min_gpu_memory_gb | int > 0 %}
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nvidia.com/gpu.memory
+                operator: Gt
+                values:
+                  - '{{ ollama_min_gpu_memory_gb | string }}'
+  {% endif %}
   persistentVolume:
     enabled: true
     storageClass: {{ ollama_storage_class }}

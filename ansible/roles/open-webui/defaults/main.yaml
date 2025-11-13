@@ -81,6 +81,15 @@ ollama_resources:
     cpu: 8
     memory: 16Gi
 
+# Minimum GPU VRAM required for Ollama (in GB)
+# Used in node affinity to ensure Ollama is scheduled on nodes with sufficient GPU memory
+# Default: 80GB (required for default Scout base model gpt-oss:120b at full precision)
+# For smaller models or quantized versions, override in inventory.yaml:
+#   ollama_min_gpu_memory_gb: 24  # For smaller models (e.g., llama3:70b)
+#   ollama_min_gpu_memory_gb: 60  # For gpt-oss:120b quantized (MXFP4)
+# Set to 0 to disable GPU memory requirement (schedules on any GPU node)
+ollama_min_gpu_memory_gb: 80
+
 open_webui_resources:
   requests:
     cpu: 250m
