@@ -1,0 +1,70 @@
+---
+# Kubernetes deployment tasks for Redis Enterprise Operator
+# These tasks run on the server host
+# Individual services should create their own databases using create_database.yaml
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ redis_namespace }}'
+
+- name: Parse operator Helm values
+  ansible.builtin.set_fact:
+    redis_operator_helm_values: "{{ lookup('template', 'operator-values.yaml.j2') | from_yaml }}"
+
+- name: Deploy Redis Enterprise Operator using Helm
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ redis_helm_release_name }}'
+    helm_chart_ref: '{{ redis_helm_repo_name }}/{{ redis_helm_chart_name }}'
+    helm_chart_namespace: '{{ redis_namespace }}'
+    helm_chart_version: '{{ redis_enterprise_operator_chart_version }}'
+    helm_repo_name: '{{ redis_helm_repo_name }}'
+    helm_repo_url: '{{ redis_helm_repo }}'
+    helm_chart_values: '{{ redis_operator_helm_values }}'
+    helm_chart_timeout: '5m'
+
+- name: Wait for Redis Enterprise Operator to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: '{{ redis_namespace }}'
+    label_selectors:
+      - app=redis-enterprise
+    wait: true
+    wait_condition:
+      type: Available
+      status: 'True'
+    wait_timeout: 300
+
+- name: Create Redis Enterprise Cluster CR
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'redis-enterprise-cluster.yaml.j2') | from_yaml }}"
+  register: rec_created
+
+- name: Wait for Redis Enterprise Cluster to be ready
+  kubernetes.core.k8s_info:
+    api_version: app.redislabs.com/v1
+    kind: RedisEnterpriseCluster
+    name: rec
+    namespace: '{{ redis_namespace }}'
+  register: cluster_status
+  until:
+    - cluster_status.resources | length > 0
+    - cluster_status.resources[0].status.state is defined
+    - cluster_status.resources[0].status.state == "Running"
+  retries: 60
+  delay: 10
+  changed_when: false
+  when: rec_created.changed
+
+- name: Display Redis Enterprise Cluster information
+  ansible.builtin.debug:
+    msg: |
+      Redis Enterprise Cluster deployed successfully!
+      Services can now create their own databases using the create_database.yaml task file.

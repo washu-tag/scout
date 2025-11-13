@@ -1,0 +1,24 @@
+---
+apiVersion: app.redislabs.com/v1
+kind: RedisEnterpriseCluster
+metadata:
+  name: rec
+  namespace: {{ redis_namespace }}
+spec:
+  nodes: {{ redis_cluster_nodes }}
+  persistentSpec:
+    enabled: {{ redis_cluster_persistence_enabled | lower }}
+    volumeSize: {{ redis_storage_size }}
+  redisEnterpriseNodeResources: {{ redis_cluster_node_resources | to_json }}
+  # Use preferred anti-affinity to allow pods to co-locate if needed
+  # This is more flexible than required anti-affinity
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchLabels:
+            app: redis-enterprise
+            redis.io/cluster: rec
+            redis.io/role: node
+        topologyKey: kubernetes.io/hostname

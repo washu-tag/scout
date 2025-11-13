@@ -60,6 +60,7 @@ orthanc_namespace: orthanc
 dcm4chee_namespace: dcm4chee
 launchpad_namespace: launchpad
 keycloak_namespace: keycloak
+redis_namespace: redis
 
 # Keycloak OAuth client IDs and secrets (client secrets must be defined in inventory)
 keycloak_oauth2_proxy_client_id: oauth2-proxy

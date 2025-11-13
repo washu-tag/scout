@@ -1,4 +1,15 @@
 ---
+- name: Create Redis database for OAuth2 Proxy sessions
+  ansible.builtin.include_role:
+    name: redis
+    tasks_from: create_database
+  vars:
+    redis_db_name: '{{ oauth2_proxy_redis_database_name }}'
+    redis_db_port: '{{ oauth2_proxy_redis_database_port }}'
+    redis_db_memory_size: '{{ oauth2_proxy_redis_memory_size }}'
+    redis_db_password: '{{ oauth2_proxy_redis_password }}'
+    redis_db_persistence_enabled: '{{ oauth2_proxy_redis_persistence_enabled }}'
+
 - name: Create ConfigMap with OAuth2 Proxy html templates
   block:
     - name: Find all html files in oauth2-proxy templates directory
@@ -18,7 +29,7 @@
           kind: ConfigMap
           metadata:
             name: oauth2-proxy-templates
-            namespace: kube-system
+            namespace: {{ oauth2_proxy_namespace }}
           data:
             '{{ item.path | basename }}': |-
               {{ lookup("file", item.path) | indent(4) }}
@@ -37,11 +48,31 @@
       kind: Secret
       metadata:
         name: oauth2-proxy-logo
-        namespace: kube-system
+        namespace: '{{ oauth2_proxy_namespace }}'
       type: Opaque
       data:
         logo.png: '{{ lookup("file", role_path + "/files/scout.jpg") | b64encode }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
+
+- name: Create Secret with Redis password for OAuth2 Proxy
+  delegate_to: localhost
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ oauth2_proxy_redis_secret_name }}'
+        namespace: '{{ oauth2_proxy_namespace }}'
+      type: Opaque
+      stringData:
+        redis-password: '{{ oauth2_proxy_redis_password }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+
+- name: Parse OAuth2 Proxy Helm values
+  ansible.builtin.set_fact:
+    oauth2_proxy_helm_values: '{{ lookup("template", "values.yaml.j2") | from_yaml }}'
 
 - name: Deploy OAuth2 Proxy
   ansible.builtin.include_role:
@@ -50,11 +81,11 @@
   vars:
     helm_chart_name: oauth2-proxy
     helm_chart_ref: oauth2-proxy/oauth2-proxy
-    helm_chart_namespace: kube-system
+    helm_chart_namespace: '{{ oauth2_proxy_namespace }}'
     helm_repo_name: oauth2-proxy
     helm_repo_url: '{{ oauth2_proxy_chart_repo }}'
     helm_chart_version: '{{ oauth2_proxy_chart_version }}'
-    helm_chart_values: '{{ lookup("template", "values.yaml.j2") | from_yaml }}'
+    helm_chart_values: '{{ oauth2_proxy_helm_values }}'
 
 - name: Install OAuth2 Proxy Auth Middleware
   kubernetes.core.k8s:
@@ -64,7 +95,7 @@
       kind: Middleware
       metadata:
         name: oauth2-proxy-auth
-        namespace: kube-system
+        namespace: '{{ oauth2_proxy_namespace }}'
       spec:
         forwardAuth:
           address: '{{ oauth2_proxy_auth_url }}'
@@ -80,7 +111,7 @@
       kind: Middleware
       metadata:
         name: oauth2-proxy-error
-        namespace: kube-system
+        namespace: '{{ oauth2_proxy_namespace }}'
       spec:
         errors:
           status:

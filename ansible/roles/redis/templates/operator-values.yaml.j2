@@ -1,0 +1,8 @@
+# Redis Enterprise Operator Helm values
+# Deploys the operator which manages Redis Enterprise clusters
+
+# Resource limits for the operator pod
+resources: {{ redis_operator_resources | to_json }}
+
+# Image pull policy
+imagePullPolicy: IfNotPresent

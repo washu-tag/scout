@@ -20,6 +20,15 @@ config:
     banner = "{{ oauth2_proxy_banner }}"
     footer = "{{ server_hostname }}" # Hacky way to pass server hostname to sign_in template
     upstreams = ["static://200"]
+# Configure Redis session storage
+sessionStorage:
+  type: redis
+  redis:
+    existingSecret: "{{ oauth2_proxy_redis_secret_name }}"
+    passwordKey: redis-password
+    clientType: standalone
+    standalone:
+      connectionUrl: "redis://{{ oauth2_proxy_redis_database_name }}.{{ redis_namespace }}:{{ oauth2_proxy_redis_database_port }}"
 ingress:
   enabled: true
   className: traefik

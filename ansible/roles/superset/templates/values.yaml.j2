@@ -2,8 +2,8 @@ image:
   repository: "{{ superset_image_repository }}"
   tag: "{{ superset_image_tag }}"
 redis:
-  image:
-    repository: "{{ superset_redis_image_repository }}"
+  # Disable embedded Redis - using centralized Redis Enterprise instead
+  enabled: false
 extraSecretEnv:
   SUPERSET_SECRET_KEY: "{{ superset_secret }}"
 ingress:
@@ -25,6 +25,14 @@ supersetNode:
     db_user: "{{ superset_postgres_user }}"
     db_pass: "{{ superset_postgres_password }}"
     db_name: "{{ superset_database }}"
+    redis_host: "{{ superset_redis_database_name }}.{{ redis_namespace }}"
+    redis_port: "{{ superset_redis_database_port }}"
+    redis_password: "{{ superset_redis_password }}"
+    # Redis Enterprise doesn't support logical databases within an existing database and Superset doesn't support
+    # multiple Redis databases
+    # https://redis.io/kb/doc/2d6sxrbhhj/does-redis-enterprise-support-logical-databases-using-the-select-command
+    redis_cache_db: "0"
+    redis_celery_db: "0"
   resources: {{ superset_resources | default({}) | to_json }}
 configOverrides:
   branding: |
