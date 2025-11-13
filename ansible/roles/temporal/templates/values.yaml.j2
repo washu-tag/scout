@@ -69,6 +69,8 @@ web:
   additionalEnv:
     - name: TEMPORAL_AUTH_ENABLED
       value: 'true'
+    - name: TEMPORAL_AUTH_LABEL
+      value: '{{ oauth_provider_name }}'
     - name: TEMPORAL_AUTH_PROVIDER_URL
       value: '{{ keycloak_realm_url }}'
     - name: TEMPORAL_AUTH_CLIENT_ID

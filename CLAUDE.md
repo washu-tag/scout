@@ -14,7 +14,7 @@ Scout is a microservices platform deployed on Kubernetes (K3s) with the followin
 - **Analytics**: Apache Superset for no-code visualizations and SQL queries (powered by Trino)
 - **Notebooks**: JupyterHub with PySpark for programmatic data analysis
 - **Launchpad**: Web-based landing page to access all Scout services
-- **Chat** (optional): Open WebUI with Ollama for AI-powered assistance
+- **Chat** (optional): Open WebUI with Ollama for AI-powered natural language querying
 
 ### Data Layer (Lake)
 - **MinIO**: S3-compatible object storage (data persistence)
@@ -29,7 +29,7 @@ Scout is a microservices platform deployed on Kubernetes (K3s) with the followin
   - `hl7-transformer`: Parses HL7, transforms to structured data, writes to Delta Lake (silver layer)
 
 ### Infrastructure
-- **Databases**: PostgreSQL (apps), Cassandra (Temporal persistence), Elasticsearch (Temporal visibility)
+- **Databases**: PostgreSQL (apps), Cassandra (Temporal persistence), Elasticsearch (Temporal visibility), Redis (caching & websockets)
 - **Monitoring**: Prometheus (metrics), Loki (logs), Grafana (dashboards & visualization)
 - **Ingress**: Traefik (load balancing and routing)
 - **GPU Support** (optional): NVIDIA GPU Operator for accelerated workloads
@@ -200,8 +200,10 @@ Scout supports optional features that can be enabled via feature flags in `inven
   - Default: `false` (disabled)
   - Set to `true` in inventory to enable
   - Requires storage paths: `ollama_dir`, `open_webui_dir`
-  - Requires secrets: `open_webui_postgres_password`, `open_webui_secret_key`, `keycloak_open_webui_client_secret`
+  - Requires secrets: `open_webui_postgres_password`, `open_webui_secret_key`, `open_webui_redis_password`, `keycloak_open_webui_client_secret`
+  - Features: Keycloak OAuth authentication, Trino MCP tool for natural language SQL queries, Redis-based websocket coordination
   - Recommended: GPU node for optimal performance
+  - Post-deployment configuration required (see `ansible/roles/open-webui/README.md`)
 
 ### Variable Precedence
 
@@ -493,7 +495,7 @@ See `ansible/filter_plugins/` and `ansible/README.md` for details and testing.
 - **Add dashboard**: Create in Grafana UI, export JSON to `ansible/roles/grafana/files/dashboards/`
 - **Update versions**: Edit `ansible/group_vars/all/versions.yaml`, redeploy component
 - **Configure namespaces**: Override namespace variables in `inventory.yaml`
-- **Enable optional features**: Set feature flags in `inventory.yaml` (e.g., `enable_chat: true`), configure required paths and secrets
+- **Enable optional features**: Set feature flags in `inventory.yaml` (e.g., `enable_chat: true`), configure required paths and secrets, complete post-deployment setup per role README
 
 ### Debugging Strategy
 1. Check pod status: `kubectl get pods -n <namespace>`

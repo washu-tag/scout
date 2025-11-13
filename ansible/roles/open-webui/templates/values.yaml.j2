@@ -124,6 +124,10 @@ extraEnvVars:
   - name: ENABLE_OAUTH_PERSISTENT_CONFIG
     value: 'false'
 
+  # Logout redirect URL (OAuth2 Proxy signout)
+  - name: WEBUI_AUTH_SIGNOUT_REDIRECT_URL
+    value: '{{ oauth2_proxy_signout_url }}'
+
   # Redis URLs with passwords - loaded from secret
   # These override the chart's default WEBSOCKET_REDIS_URL (last env wins)
   - name: WEBSOCKET_REDIS_URL
