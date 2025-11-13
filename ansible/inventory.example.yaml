@@ -318,8 +318,6 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     # Grafana
     #---------------------------------------------------------------------------
-    # Admin credentials (required even with OAuth-only login)
-    grafana_admin_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     grafana_alert_contact_point: slack # email or slack
     # Slack configuration
     slack_token: $(echo $SLACK_TOKEN | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)

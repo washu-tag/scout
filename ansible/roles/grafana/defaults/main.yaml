@@ -7,10 +7,6 @@ grafana_helm_repo_name: grafana
 grafana_helm_repo_url: https://grafana.github.io/helm-charts
 grafana_helm_chart_name: grafana
 
-# Admin credentials (required even with OAuth-only login to prevent random password generation)
-grafana_admin_user: admin
-# grafana_admin_password: strongpassword  # Override in inventory.yaml with vault-encrypted value
-
 # Storage configuration
 grafana_name: grafana
 grafana_storage_class: '{{ grafana_name }}-storage'
