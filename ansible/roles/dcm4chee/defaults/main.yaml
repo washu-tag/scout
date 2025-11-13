@@ -6,12 +6,22 @@ dcm4chee_timezone: '{{ timezone }}'
 dcm4chee_dicom_port: 11112
 
 # Storage configuration
+# Per-volume storage classes allow different I/O profiles:
+# - wildfly: Application server state
+# - storage: DICOM image storage (large sequential I/O, could use slower/cheaper storage)
+# - db: PostgreSQL database (high IOPS, low latency, needs fast storage)
+# - openldap: LDAP directory data
+# - slapd: LDAP configuration
 dcm4chee_wildfly_storage_size: 10Gi
+dcm4chee_wildfly_storage_class: ''
 dcm4chee_storage_storage_size: 10Gi
+dcm4chee_storage_storage_class: ''
 dcm4chee_db_storage_size: 10Gi
+dcm4chee_db_storage_class: ''
 dcm4chee_openldap_storage_size: 10Gi
+dcm4chee_openldap_storage_class: ''
 dcm4chee_slapd_storage_size: 10Gi
-dcm4chee_storage_class: ''
+dcm4chee_slapd_storage_class: ''
 
 # Database configuration
 dcm4chee_db: pacsdb

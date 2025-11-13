@@ -9,6 +9,39 @@
     kind: Namespace
     state: present
 
+- name: Create PersistentVolumeClaims for DCM4chee volumes
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: 'dcm4chee-{{ item.name }}-pvc'
+        namespace: '{{ dcm4chee_namespace }}'
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: '{{ item.size }}'
+        storageClassName: '{{ item.storage_class | default(omit, true) }}'
+  loop:
+    - name: wildfly
+      size: '{{ dcm4chee_wildfly_storage_size }}'
+      storage_class: '{{ dcm4chee_wildfly_storage_class }}'
+    - name: storage
+      size: '{{ dcm4chee_storage_storage_size }}'
+      storage_class: '{{ dcm4chee_storage_storage_class }}'
+    - name: db
+      size: '{{ dcm4chee_db_storage_size }}'
+      storage_class: '{{ dcm4chee_db_storage_class }}'
+    - name: openldap
+      size: '{{ dcm4chee_openldap_storage_size }}'
+      storage_class: '{{ dcm4chee_openldap_storage_class }}'
+    - name: slapd
+      size: '{{ dcm4chee_slapd_storage_size }}'
+      storage_class: '{{ dcm4chee_slapd_storage_class }}'
+
 - name: Create DB secrets
   kubernetes.core.k8s:
     state: present
