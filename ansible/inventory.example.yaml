@@ -151,6 +151,7 @@ k3s_cluster:
     # Override for multi-disk deployments to assign services to specific storage classes
     # Cloud deployments: leave all empty to use platform default (gp3, pd-ssd, etc.)
     postgres_storage_class: ''
+    redis_storage_class: ''
     temporal_storage_class: ''
     cassandra_storage_class: ''
     elasticsearch_storage_class: ''

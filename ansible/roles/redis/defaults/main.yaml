@@ -12,6 +12,7 @@ redis_helm_release_name: redis-enterprise-operator
 # Use K3s's built-in local-path-provisioner (default storage class) for dynamic local volume provisioning
 # This allows Redis pods to be scheduled on any node(s) with automatic storage provisioning
 redis_name: redis
+redis_storage_class: ''
 redis_storage_size: 8Gi
 # Operator resources
 redis_operator_resources:
