@@ -201,10 +201,10 @@ Scout will support an **optional inventory variable** that defines custom storag
 
 ```yaml
 # Default (most deployments): empty list
-storage_classes_to_create: []
+onprem_local_path_multidisk_storage_classes: []
 
 # On-premise multi-disk deployments: define custom classes
-storage_classes_to_create:
+onprem_local_path_multidisk_storage_classes:
   - name: "local-database"
     path: "/mnt/disk1/k3s-storage"
   - name: "local-objectstorage"
@@ -267,26 +267,26 @@ Example ConfigMap structure:
 }
 ```
 
-When `storage_classes_to_create` is empty (default), Ansible skips ConfigMap modification and StorageClass creation entirely.
+When `onprem_local_path_multidisk_storage_classes` is empty (default), Ansible skips ConfigMap modification and StorageClass creation entirely.
 
 ### Platform Portability
 
 This design maintains full portability across platforms:
 
 **Cloud deployments (AWS EKS, GKE, AKS):**
-- `storage_classes_to_create: []` (default)
+- `onprem_local_path_multidisk_storage_classes: []` (default)
 - All service storage class variables: `""` (empty)
 - PVCs omit `storageClassName`, use platform default (gp3, pd-ssd, managed-csi)
 - Zero configuration required
 
 **On-premise single-disk k3s:**
-- `storage_classes_to_create: []` (default)
+- `onprem_local_path_multidisk_storage_classes: []` (default)
 - All service storage class variables: `""` (empty)
 - PVCs use k3s default `local-path` storage class
 - All volumes created under `/var/lib/rancher/k3s/storage/`
 
 **On-premise multi-disk k3s:**
-- `storage_classes_to_create: [...]` (explicitly configured)
+- `onprem_local_path_multidisk_storage_classes: [...]` (explicitly configured)
 - Service storage class variables assigned to workload types
 - PVCs reference specific storage classes
 - Volumes distributed across configured disk paths
