@@ -2,6 +2,10 @@
 # Defaults for oauth2-proxy role
 # User-configurable settings are in inventory.yaml
 
+# OAuth2 Proxy deployment configuration
+oauth2_proxy_namespace: kube-system
+oauth2_proxy_redis_secret_name: oauth2-proxy-redis
+
 # OAuth2 Proxy Helm chart configuration
 oauth2_proxy_chart_repo: https://oauth2-proxy.github.io/manifests
 
