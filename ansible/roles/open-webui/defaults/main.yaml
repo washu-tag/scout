@@ -46,7 +46,7 @@ open_webui_secret_key: ''
 # Redis is used for websocket coordination and distributed state management
 open_webui_redis_database_name: open-webui
 open_webui_redis_database_port: 10002
-open_webui_redis_database_memory_size: 512MB  # Redis Enterprise uses MB/GB, not Mi/Gi
+open_webui_redis_database_memory_size: 512MB # Redis Enterprise uses MB/GB, not Mi/Gi
 open_webui_redis_database_persistence_enabled: true
 # REQUIRED: Set redis password in inventory.yaml (use vault encryption)
 # Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh

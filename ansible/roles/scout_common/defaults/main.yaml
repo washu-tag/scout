@@ -64,7 +64,7 @@ keycloak_namespace: keycloak
 redis_namespace: redis
 
 # OAuth configuration
-oauth_provider_name: Keycloak  # User-facing name for OAuth provider (e.g., 'WashU Key', 'Keycloak')
+oauth_provider_name: Keycloak # User-facing name for OAuth provider (e.g., 'WashU Key', 'Keycloak')
 
 # Keycloak OAuth client IDs and secrets (client secrets must be defined in inventory)
 keycloak_oauth2_proxy_client_id: oauth2-proxy
