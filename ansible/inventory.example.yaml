@@ -147,7 +147,6 @@ k3s_cluster:
     base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
     scout_repo_dir: /scout/data/scout
     minio_dir: /scout/data/minio
-    redis_dir: /scout/persistence/redis
     cassandra_dir: /scout/persistence/cassandra
     elasticsearch_dir: /scout/persistence/elasticsearch
     postgres_dir: /scout/persistence/postgres
