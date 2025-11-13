@@ -4,6 +4,37 @@
 - name: Configure custom storage classes for k3s on-prem multi-disk deployments
   when: onprem_local_path_multidisk_storage_classes | length > 0
   block:
+    - name: Check for local-path-config in kube-system (k3d default)
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: ConfigMap
+        name: local-path-config
+        namespace: kube-system
+      register: local_path_config_kubesystem
+      ignore_errors: true
+
+    - name: Check for local-path-config in local-path-storage (k3s default)
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: ConfigMap
+        name: local-path-config
+        namespace: local-path-storage
+      register: local_path_config_localpathstorage
+      ignore_errors: true
+
+    - name: Determine local-path-provisioner namespace
+      ansible.builtin.set_fact:
+        local_path_provisioner_namespace: >-
+          {{
+            'kube-system' if (local_path_config_kubesystem.resources | default([]) | length > 0)
+            else 'local-path-storage' if (local_path_config_localpathstorage.resources | default([]) | length > 0)
+            else 'kube-system'
+          }}
+
+    - name: Display detected namespace
+      ansible.builtin.debug:
+        msg: 'local-path-provisioner ConfigMap will be created/updated in namespace: {{ local_path_provisioner_namespace }}'
+
     - name: Update local-path-provisioner ConfigMap with storageClassConfigs
       kubernetes.core.k8s:
         state: present
@@ -12,7 +43,7 @@
           kind: ConfigMap
           metadata:
             name: local-path-config
-            namespace: local-path-storage
+            namespace: '{{ local_path_provisioner_namespace }}'
           data:
             config.json: |
               {
