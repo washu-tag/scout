@@ -47,14 +47,14 @@ websocket:
   enabled: true
   # Use external Redis for websocket coordination
   manager: redis
-  url: '{{ open_webui_redis_url }}'
+  # Set to empty - will be overridden by extraEnvVars below (which comes last in env list)
+  url: ''
   redis:
     # Disable embedded Redis - using external Redis Enterprise Database
     enabled: false
 
 # Load sensitive environment variables from Kubernetes Secret
 # Secret contains: WEBUI_SECRET_KEY, OAUTH_CLIENT_SECRET, REDIS_URL
-# Note: WEBSOCKET_REDIS_URL is set via websocket.url above (chart limitation - env takes precedence over envFrom)
 extraEnvFrom:
   - secretRef:
       name: open-webui-secrets
@@ -62,7 +62,8 @@ extraEnvFrom:
 # OAuth/OIDC Configuration for Keycloak integration
 # OAuth2 Proxy provides initial authentication gate (checks scout-user group)
 # Open WebUI's OIDC handles login and role mapping to admin/user roles
-# Note: WEBUI_SECRET_KEY, OAUTH_CLIENT_SECRET, and REDIS_URL are loaded from secret above
+# Note: WEBUI_SECRET_KEY and OAUTH_CLIENT_SECRET are loaded from secret above
+# REDIS_URL and WEBSOCKET_REDIS_URL are loaded from secret via valueFrom below
 extraEnvVars:
   # Disable local authentication (email/password)
   - name: ENABLE_SIGNUP
@@ -122,3 +123,16 @@ extraEnvVars:
   # Allow OAuth config updates via env vars (not persistent in DB)
   - name: ENABLE_OAUTH_PERSISTENT_CONFIG
     value: 'false'
+
+  # Redis URLs with passwords - loaded from secret
+  # These override the chart's default WEBSOCKET_REDIS_URL (last env wins)
+  - name: WEBSOCKET_REDIS_URL
+    valueFrom:
+      secretKeyRef:
+        name: open-webui-secrets
+        key: REDIS_URL
+  - name: REDIS_URL
+    valueFrom:
+      secretKeyRef:
+        name: open-webui-secrets
+        key: REDIS_URL
