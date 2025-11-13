@@ -8,7 +8,7 @@ spec:
   nodes: {{ redis_cluster_nodes }}
   persistentSpec:
     enabled: {{ redis_cluster_persistence_enabled | lower }}
-    {% if redis_storage_class %}
+    {% if redis_storage_class is defined and redis_storage_class %}
     storageClass: {{ redis_storage_class }}
     {% endif %}
     volumeSize: {{ redis_storage_size }}
