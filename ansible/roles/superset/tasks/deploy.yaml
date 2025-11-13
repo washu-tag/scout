@@ -16,6 +16,7 @@
     redis_db_name: '{{ superset_redis_database_name }}'
     redis_db_port: '{{ superset_redis_database_port }}'
     redis_db_memory_size: '{{ superset_redis_memory_size }}'
+    redis_db_password: '{{ superset_redis_password }}'
     redis_db_persistence_enabled: '{{ superset_redis_persistence_enabled }}'
 
 - name: Create namespace

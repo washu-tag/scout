@@ -7,6 +7,7 @@
     redis_db_name: '{{ oauth2_proxy_redis_database_name }}'
     redis_db_port: '{{ oauth2_proxy_redis_database_port }}'
     redis_db_memory_size: '{{ oauth2_proxy_redis_memory_size }}'
+    redis_db_password: '{{ oauth2_proxy_redis_password }}'
     redis_db_persistence_enabled: '{{ oauth2_proxy_redis_persistence_enabled }}'
 
 - name: Create ConfigMap with OAuth2 Proxy html templates

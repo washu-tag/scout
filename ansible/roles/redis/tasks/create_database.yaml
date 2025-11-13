@@ -6,6 +6,7 @@
 #   redis_db_name: Name of the database (e.g., "oauth2-proxy-sessions")
 #   redis_db_port: Port for the database (e.g., 6379)
 #   redis_db_memory_size: Memory size (e.g., "512MB")
+#   redis_db_password: Password for the database
 #
 # Optional variables:
 #   redis_db_persistence_enabled: Enable persistence (default: true)
@@ -17,7 +18,22 @@
       - redis_db_name is defined
       - redis_db_port is defined
       - redis_db_memory_size is defined
-    fail_msg: 'Required variables redis_db_name, redis_db_port, and redis_db_memory_size must be defined'
+      - redis_db_password is defined
+    fail_msg: 'Required variables redis_db_name, redis_db_port, redis_db_memory_size, and redis_db_password must be defined'
+
+- name: Create Redis password secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ redis_db_name }}-password'
+        namespace: '{{ redis_namespace }}'
+      type: Opaque
+      stringData:
+        password: '{{ redis_db_password }}'
+  no_log: true
 
 - name: Parse Redis database definition
   ansible.builtin.set_fact:
