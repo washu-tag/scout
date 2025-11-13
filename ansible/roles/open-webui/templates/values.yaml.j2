@@ -13,6 +13,10 @@ ollama:
     models:
       pull: []  # Models are pulled asynchronously via separate Job to avoid Helm timeout
   resources: {{ ollama_resources | to_json }}
+{% if ollama_affinity is defined %}
+  affinity: 
+{{ ollama_affinity | to_yaml | indent(4) }}
+{% endif %}
   persistentVolume:
     enabled: true
     storageClass: {{ ollama_storage_class }}

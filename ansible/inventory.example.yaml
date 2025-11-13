@@ -468,6 +468,15 @@ k3s_cluster:
       limits:
         cpu: 16
         memory: 64Gi
+    # Ollama GPU node affinity (optional)
+    ollama_affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nvidia.com/gpu.memory
+                  operator: Gt
+                  values: ['80000'] # >80GB VRAM (in MiB)
     open_webui_resources:
       requests:
         cpu: 1
