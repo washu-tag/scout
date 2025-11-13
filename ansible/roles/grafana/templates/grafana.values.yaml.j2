@@ -1,3 +1,6 @@
+adminUser: '{{ grafana_admin_user }}'
+adminPassword: '{{ grafana_admin_password }}'
+
 grafana.ini:
   auth:
     disable_login_form: true
@@ -98,7 +101,7 @@ sidecar:
 
 persistence:
   enabled: true
-  storageClassName: '{{ use_custom_storage_classes | ternary(grafana_storage_class, omit) }}'
+  storageClassName: '{{ grafana_storage_class }}'
   size: '{{ grafana_storage_size }}'
 
 resources: {{ grafana_resources | to_json }}
