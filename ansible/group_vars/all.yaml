@@ -13,19 +13,3 @@ storage_classes_to_create: []
 #     path: "/mnt/disk2/k3s-storage"
 #   - name: "local-monitoring"
 #     path: "/mnt/disk3/k3s-storage"
-
-# Per-service storage class assignments
-# Default: empty string (use cluster default)
-# Override in inventory for multi-disk deployments
-# Cloud deployments: leave all empty to use platform default (gp3, pd-ssd, etc.)
-postgres_storage_class: ''
-temporal_storage_class: ''
-cassandra_storage_class: ''
-elasticsearch_storage_class: ''
-minio_storage_class: ''
-jupyter_storage_class: ''
-prometheus_storage_class: ''
-loki_storage_class: ''
-grafana_storage_class: ''
-orthanc_storage_class: ''
-dcm4chee_storage_class: ''

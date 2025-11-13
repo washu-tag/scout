@@ -3,6 +3,7 @@
 
 # Storage configuration
 elasticsearch_storage_size: 10Gi
+elasticsearch_storage_class: ''
 
 # Elasticsearch configuration (ECK)
 elasticsearch_cluster_name: elasticsearch

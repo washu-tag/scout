@@ -6,6 +6,7 @@ orthanc_dicom_port: 4242
 
 # Storage configuration
 orthanc_storage_size: 100Gi
+orthanc_storage_class: ''
 
 # Resource configuration (dev defaults)
 orthanc_resources:

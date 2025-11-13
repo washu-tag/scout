@@ -11,6 +11,7 @@ dcm4chee_storage_storage_size: 10Gi
 dcm4chee_db_storage_size: 10Gi
 dcm4chee_openldap_storage_size: 10Gi
 dcm4chee_slapd_storage_size: 10Gi
+dcm4chee_storage_class: ''
 
 # Database configuration
 dcm4chee_db: pacsdb

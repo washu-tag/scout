@@ -9,6 +9,7 @@ loki_helm_timeout: 5m
 
 # Storage configuration
 loki_storage_size: 10Gi
+loki_storage_class: ''
 
 # S3 credentials for Loki storage
 s3_loki_writer: loki-writer

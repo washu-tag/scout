@@ -9,6 +9,7 @@ prometheus_helm_chart_name: prometheus
 
 # Storage configuration
 prometheus_storage_size: 10Gi
+prometheus_storage_class: ''
 
 # Resource configuration (dev defaults - CI friendly)
 prometheus_resources:

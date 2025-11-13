@@ -9,6 +9,7 @@ grafana_helm_chart_name: grafana
 
 # Storage configuration
 grafana_storage_size: 5Gi
+grafana_storage_class: ''
 
 # Alert configuration
 grafana_alert_contact_point: slack # email or slack

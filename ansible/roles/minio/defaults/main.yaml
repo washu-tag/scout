@@ -6,6 +6,7 @@ minio_tenant_name: scout
 
 # Storage configuration
 minio_storage_size: 10Gi
+minio_storage_class: ''
 
 # Resource configuration (dev defaults - CI friendly)
 minio_resources:

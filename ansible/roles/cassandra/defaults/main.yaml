@@ -3,6 +3,7 @@
 
 # Storage configuration
 cassandra_storage_size: 10Gi
+cassandra_storage_class: ''
 
 # Cassandra configuration
 cassandra_datacenter_name: dc1
