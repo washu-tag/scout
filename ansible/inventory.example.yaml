@@ -150,21 +150,10 @@ k3s_cluster:
     # Default: empty string (use cluster default)
     # Override for multi-disk deployments to assign services to specific storage classes
     # Cloud deployments: leave all empty to use platform default (gp3, pd-ssd, etc.)
-    postgres_storage_class: ''
-    redis_storage_class: ''
-    temporal_storage_class: ''
-    cassandra_storage_class: ''
-    elasticsearch_storage_class: ''
-    minio_storage_class: ''
-    jupyter_storage_class: ''
-    prometheus_storage_class: ''
-    loki_storage_class: ''
-    grafana_storage_class: ''
-    orthanc_storage_class: ''
-    dcm4chee_storage_class: ''
-    harbor_storage_class: ''
     # Example for on-premise multi-disk (uncomment and modify):
     # postgres_storage_class: "local-database"
+    # redis_storage_class: "local-database"
+    # temporal_storage_class: "local-database"
     # cassandra_storage_class: "local-database"
     # elasticsearch_storage_class: "local-database"
     # minio_storage_class: "local-objectstorage"
@@ -174,6 +163,7 @@ k3s_cluster:
     # grafana_storage_class: "local-monitoring"
     # orthanc_storage_class: "local-database"
     # dcm4chee_storage_class: "local-database"
+    # harbor_storage_class: "local-database"
 
     # Storage disk space - Size of persistent volume claims for each service
     postgres_storage_size: 100Gi
