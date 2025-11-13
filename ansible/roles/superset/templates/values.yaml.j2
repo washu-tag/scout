@@ -27,7 +27,6 @@ supersetNode:
     db_name: "{{ superset_database }}"
     redis_host: "{{ superset_redis_database_name }}.{{ redis_namespace }}"
     redis_port: "{{ superset_redis_database_port }}"
-    redis_password: "{{ superset_redis_password }}"
     # Redis Enterprise doesn't support logical databases within an existing database and Superset doesn't support
     # multiple Redis databases
     # https://redis.io/kb/doc/2d6sxrbhhj/does-redis-enterprise-support-logical-databases-using-the-select-command

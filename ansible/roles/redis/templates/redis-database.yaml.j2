@@ -11,4 +11,3 @@ spec:
   persistence: {{ 'aofEverySecond' if (redis_db_persistence_enabled | default(true)) else 'disabled' }}
   replication: {{ redis_db_replication | default(false) | lower }}
   databasePort: {{ redis_db_port }}
-  databaseSecretName: {{ redis_db_name }}-password
