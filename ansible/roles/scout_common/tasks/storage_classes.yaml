@@ -1,6 +1,8 @@
 ---
-- name: Configure custom storage classes for on-premise multi-disk deployments
-  when: storage_classes_to_create | length > 0
+# Configure k3s local-path-provisioner for on-prem deployments with multiple disks
+# Only runs when onprem_local_path_multidisk_storage_classes is non-empty
+- name: Configure custom storage classes for k3s on-prem multi-disk deployments
+  when: onprem_local_path_multidisk_storage_classes | length > 0
   block:
     - name: Update local-path-provisioner ConfigMap with storageClassConfigs
       kubernetes.core.k8s:
@@ -16,7 +18,7 @@
               {
                 "nodePathMap": [],
                 "storageClassConfigs": {
-                  {% for sc in storage_classes_to_create %}
+                  {% for sc in onprem_local_path_multidisk_storage_classes %}
                   "{{ sc.name }}": {
                     "nodePathMap": [
                       {
@@ -54,6 +56,6 @@
           provisioner: rancher.io/local-path
           volumeBindingMode: WaitForFirstConsumer
           reclaimPolicy: Delete
-      loop: '{{ storage_classes_to_create }}'
+      loop: '{{ onprem_local_path_multidisk_storage_classes }}'
       loop_control:
         label: '{{ item.name }}'

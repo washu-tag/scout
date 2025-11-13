@@ -1,12 +1,9 @@
 ---
-# Optional: Define custom storage classes for on-premise multi-disk deployments
-# Default: empty list (use cluster default storage class for all services)
-# When configured, Ansible will modify the local-path-provisioner ConfigMap
-# and create corresponding StorageClass resources
-# NOTE: This feature is k3s-specific and only applies to on-premise deployments
-storage_classes_to_create: []
-# Example for on-premise multi-disk:
-# storage_classes_to_create:
+# Custom storage classes for k3s on-prem deployments with multiple disks requiring I/O isolation
+# Leave empty for cloud deployments or single-disk k3s (cluster default will be used)
+onprem_local_path_multidisk_storage_classes: []
+# Example:
+# onprem_local_path_multidisk_storage_classes:
 #   - name: "local-database"
 #     path: "/mnt/disk1/k3s-storage"
 #   - name: "local-objectstorage"

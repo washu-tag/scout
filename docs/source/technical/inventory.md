@@ -279,7 +279,7 @@ dcm4chee_storage_class: ""
 harbor_storage_class: ""
 
 # No custom storage classes defined
-storage_classes_to_create: []
+onprem_local_path_multidisk_storage_classes: []
 ```
 
 **Platform-specific default storage classes:**
@@ -291,11 +291,11 @@ storage_classes_to_create: []
 
 ##### Multi-Disk Configuration (On-Premise I/O Isolation)
 
-For on-premise deployments with multiple physical disks, you can configure custom storage classes to isolate I/O-intensive workloads across different disks:
+For k3s on-premise deployments with multiple physical disks, you can configure custom storage classes to isolate I/O-intensive workloads across different disks:
 
 ```yaml
-# Define custom storage classes (k3s only)
-storage_classes_to_create:
+# Define custom storage classes (k3s on-prem multi-disk only)
+onprem_local_path_multidisk_storage_classes:
   - name: "local-database"
     path: "/mnt/disk1/k3s-storage"
   - name: "local-objectstorage"
@@ -326,12 +326,12 @@ harbor_storage_class: ""  # Only used in air-gapped deployments
 ```
 
 **When to use multiple storage classes:**
-- On-premise deployment with 2+ separate physical disks
+- k3s on-premise deployment with 2+ separate physical disks
 - Observing I/O contention or high iowait times
 - Performance-critical databases need isolation from bulk storage operations
 - Different storage tiers (NVMe for databases, HDD for bulk storage)
 
-**Note:** The `storage_classes_to_create` feature is k3s-specific and only applies to on-premise deployments. Cloud deployments should use empty storage class variables to leverage platform-native block storage.
+**Note:** This feature is k3s-specific for on-premise multi-disk deployments only. Cloud deployments and single-disk k3s installations should leave `onprem_local_path_multidisk_storage_classes` empty to use cluster defaults.
 
 **Note:** Dynamic provisioning automatically manages node affinity for local volumes and creates storage in provisioner-managed locations.
 **Note:** `extractor_data_dir` is still used for the HL7 log input directory (not managed by Kubernetes persistent volumes).

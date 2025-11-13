@@ -5,9 +5,9 @@
 timezone: 'America/Chicago'
 
 # Storage class configuration
-# Optional: Define custom storage classes for on-premise multi-disk deployments
-# Default: empty list (use cluster default storage class for all services)
-storage_classes_to_create: []
+# Custom storage classes for k3s on-prem deployments with multiple disks requiring I/O isolation
+# Leave empty for cloud deployments or single-disk k3s (cluster default will be used)
+onprem_local_path_multidisk_storage_classes: []
 
 # Helm deployment defaults
 helm_chart_create_namespace: true
