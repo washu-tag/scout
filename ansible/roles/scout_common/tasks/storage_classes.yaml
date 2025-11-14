@@ -1,0 +1,136 @@
+---
+# Configure k3s local-path-provisioner for on-prem deployments with multiple disks
+# Only runs when onprem_local_path_multidisk_storage_classes is non-empty
+- name: Configure custom storage classes for k3s on-prem multi-disk deployments
+  when: onprem_local_path_multidisk_storage_classes | length > 0
+  block:
+    - name: Check for local-path-config in kube-system (k3d default)
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: ConfigMap
+        name: local-path-config
+        namespace: kube-system
+      register: local_path_config_kubesystem
+      ignore_errors: true
+
+    - name: Check for local-path-config in local-path-storage (k3s default)
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: ConfigMap
+        name: local-path-config
+        namespace: local-path-storage
+      register: local_path_config_localpathstorage
+      ignore_errors: true
+
+    - name: Determine local-path-provisioner namespace
+      ansible.builtin.set_fact:
+        local_path_provisioner_namespace: >-
+          {{
+            'kube-system' if (local_path_config_kubesystem.resources | default([]) | length > 0)
+            else 'local-path-storage' if (local_path_config_localpathstorage.resources | default([]) | length > 0)
+            else 'kube-system'
+          }}
+
+    - name: Display detected namespace
+      ansible.builtin.debug:
+        msg: 'local-path-provisioner ConfigMap will be created/updated in namespace: {{ local_path_provisioner_namespace }}'
+
+    - name: Get existing local-path-config to extract default path
+      ansible.builtin.set_fact:
+        local_path_existing_config: >-
+          {{
+            (local_path_config_kubesystem.resources[0].data['config.json'] | from_json)
+            if (local_path_config_kubesystem.resources | default([]) | length > 0)
+            else (local_path_config_localpathstorage.resources[0].data['config.json'] | from_json)
+            if (local_path_config_localpathstorage.resources | default([]) | length > 0)
+            else {}
+          }}
+
+    - name: Extract default path from existing config
+      ansible.builtin.set_fact:
+        local_path_default_path: >-
+          {{
+            local_path_existing_config.nodePathMap[0].paths[0]
+            if (local_path_existing_config.nodePathMap | default([]) | length > 0)
+            else '/var/lib/rancher/k3s/storage'
+          }}
+
+    - name: Display default path
+      ansible.builtin.debug:
+        msg: 'Using default local-path storage path: {{ local_path_default_path }}'
+
+    # See https://github.com/rancher/local-path-provisioner#customize-the-configmap
+    # for info on this configmap configuration
+    - name: Update local-path-provisioner ConfigMap with storageClassConfigs
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: local-path-config
+            namespace: '{{ local_path_provisioner_namespace }}'
+          data:
+            config.json: |
+              {
+                "nodePathMap": [],
+                "storageClassConfigs": {
+                  "local-path": {
+                    "nodePathMap": [
+                      {
+                        "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES",
+                        "paths": ["{{ local_path_default_path }}"]
+                      }
+                    ]
+                  }{{ "," if onprem_local_path_multidisk_storage_classes | length > 0 else "" }}
+                  {% for sc in onprem_local_path_multidisk_storage_classes %}
+                  "{{ sc.name }}": {
+                    "nodePathMap": [
+                      {
+                        "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES",
+                        "paths": ["{{ sc.path }}"]
+                      }
+                    ]
+                  }{{ "," if not loop.last else "" }}
+                  {% endfor %}
+                }
+              }
+            setup: |
+              #!/bin/sh
+              set -eu
+              mkdir -m 0777 -p "$VOL_DIR"
+            teardown: |
+              #!/bin/sh
+              set -eu
+              rm -rf "$VOL_DIR"
+      register: configmap_result
+
+    # Despite the docs (https://github.com/rancher/local-path-provisioner#reloading) saying the
+    # provisioner can automatically pick up changes to the configuration, it requires setting an
+    # environment variable on the provisioner pod. That's more invasive than just restarting the thing.
+    - name: Restart local-path-provisioner to reload configuration
+      ansible.builtin.command:
+        cmd: kubectl rollout restart deployment/local-path-provisioner -n {{ local_path_provisioner_namespace }}
+      when: configmap_result.changed
+
+    - name: Wait for local-path-provisioner rollout to complete
+      ansible.builtin.command:
+        cmd: kubectl rollout status deployment/local-path-provisioner -n {{ local_path_provisioner_namespace }} --timeout=60s
+      when: configmap_result.changed
+
+    - name: Create StorageClass resources
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: storage.k8s.io/v1
+          kind: StorageClass
+          metadata:
+            name: '{{ item.name }}'
+            annotations:
+              defaultVolumeType: local
+          provisioner: rancher.io/local-path
+          volumeBindingMode: WaitForFirstConsumer
+          reclaimPolicy: Delete
+      loop: '{{ onprem_local_path_multidisk_storage_classes }}'
+      loop_control:
+        label: '{{ item.name }}'

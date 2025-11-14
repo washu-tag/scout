@@ -1,18 +1,9 @@
 ---
 # Default values for Elasticsearch deployment (using ECK)
 
-# Storage naming
-elasticsearch_name: elasticsearch
-elasticsearch_storage_class: '{{ elasticsearch_name }}-storage'
+# Storage configuration
 elasticsearch_storage_size: 10Gi
-
-# Storage definitions for persistent volumes
-elasticsearch_storage_definitions:
-  - name: '{{ elasticsearch_name }}'
-    size: '{{ elasticsearch_storage_size }}'
-    path: '{{ elasticsearch_dir }}'
-    pv_name: '{{ elasticsearch_name }}-pv'
-    storage_class_name: '{{ elasticsearch_storage_class }}'
+elasticsearch_storage_class: ''
 
 # Elasticsearch configuration (ECK)
 elasticsearch_cluster_name: elasticsearch

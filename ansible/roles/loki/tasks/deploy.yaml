@@ -6,13 +6,6 @@
   vars:
     ns: '{{ loki_namespace }}'
 
-- name: Set up storage
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: storage_setup
-  vars:
-    storage_definitions: '{{ loki_storage_definitions }}'
-
 - name: Create S3 secret for Loki
   kubernetes.core.k8s:
     state: present

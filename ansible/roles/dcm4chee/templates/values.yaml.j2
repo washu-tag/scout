@@ -32,12 +32,13 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-paths:
-  wildfly: '{{ dcm4chee_dir }}/wildfly'
-  storage: '{{ dcm4chee_dir }}/storage'
-  db: '{{ dcm4chee_dir }}/dbdir'
-  openldap: '{{ dcm4chee_dir }}/ldap'
-  slapd: '{{ dcm4chee_dir }}/slapd.d'
+arcVolumes:
+  - name: wildfly
+    persistentVolumeClaim:
+      claimName: dcm4chee-wildfly-pvc
+  - name: storage
+    persistentVolumeClaim:
+      claimName: dcm4chee-storage-pvc
 
 arcVolumeMounts:
   - name: wildfly
@@ -48,6 +49,19 @@ arcVolumeMounts:
     mountPath: /storage
     readOnly: false
     mountPropagation: HostToContainer
+
+dbVolumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: dcm4chee-db-pvc
+
+ldapVolumes:
+  - name: openldap-data
+    persistentVolumeClaim:
+      claimName: dcm4chee-openldap-pvc
+  - name: slapd
+    persistentVolumeClaim:
+      claimName: dcm4chee-slapd-pvc
 
 versions:
   arc: '{{ dcm4chee_arc_version }}'

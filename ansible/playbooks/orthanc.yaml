@@ -1,13 +1,4 @@
 ---
-- name: Create storage directories for Orthanc
-  hosts: k3s_cluster
-  gather_facts: false
-  tasks:
-    - name: Create storage directories
-      ansible.builtin.include_role:
-        name: orthanc
-        tasks_from: storage
-
 - name: Install Orthanc
   hosts: server
   gather_facts: false

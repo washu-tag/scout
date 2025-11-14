@@ -8,10 +8,8 @@ grafana_helm_repo_url: https://grafana.github.io/helm-charts
 grafana_helm_chart_name: grafana
 
 # Storage configuration
-grafana_name: grafana
-grafana_storage_class: '{{ grafana_name }}-storage'
 grafana_storage_size: 5Gi
-grafana_dir: /scout/monitoring/grafana
+grafana_storage_class: ''
 
 # Alert configuration
 grafana_alert_contact_point: slack # email or slack
@@ -27,14 +25,6 @@ grafana_email_recipients: ['']
 grafana_dashboards_path: '{{ role_path }}/files/dashboards'
 grafana_alerts_path: '{{ role_path }}/templates/alerts'
 grafana_contact_points_path: '{{ role_path }}/templates/contact-points'
-
-# Storage definitions
-grafana_storage_definitions:
-  - name: '{{ grafana_name }}'
-    size: '{{ grafana_storage_size }}'
-    path: '{{ grafana_dir }}'
-    pv_name: '{{ grafana_name }}-pv'
-    storage_class_name: '{{ grafana_storage_class }}'
 
 # Resource configuration (dev defaults)
 grafana_resources:

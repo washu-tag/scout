@@ -4,6 +4,7 @@
 
 # Postgres storage configuration
 postgres_storage_size: 1Gi
+postgres_storage_class: ''
 
 # Resource configuration (dev defaults - CI friendly)
 postgres_resources:
@@ -31,16 +32,3 @@ postgres_parameters:
   max_parallel_workers_per_gather: '2'
   max_parallel_workers: '4'
   max_parallel_maintenance_workers: '2'
-
-# Storage naming
-postgres_name: postgres
-postgres_storage_class: '{{ postgres_name }}-storage'
-
-# Storage definitions for persistent volumes
-# Using service-specific name to avoid conflicts when multiple services define storage
-postgres_storage_definitions:
-  - name: '{{ postgres_name }}'
-    size: '{{ postgres_storage_size }}'
-    path: '{{ postgres_dir }}'
-    pv_name: '{{ postgres_name }}-pv'
-    storage_class_name: '{{ postgres_storage_class }}'

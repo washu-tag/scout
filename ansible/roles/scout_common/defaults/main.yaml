@@ -4,6 +4,11 @@
 # All values here can be overridden in inventory.yaml
 timezone: 'America/Chicago'
 
+# Storage class configuration
+# Custom storage classes for k3s on-prem deployments with multiple disks requiring I/O isolation
+# Leave empty for cloud deployments or single-disk k3s (cluster default will be used)
+onprem_local_path_multidisk_storage_classes: []
+
 # Helm deployment defaults
 helm_chart_create_namespace: true
 helm_chart_wait: true
@@ -148,7 +153,6 @@ db_host: '{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}'
 db_host_ro: '{{ postgres_cluster_name }}-r.{{ postgres_cluster_namespace }}'
 db_port: 5432
 jdbc_url: 'jdbc:postgresql://{{ db_host }}:{{ db_port }}'
-use_custom_storage_classes: '{{ not aws_deployment }}'
 keycloak_base_url: 'https://{{ keycloak_subdomain }}.{{ server_hostname }}'
 keycloak_realm_url: '{{ keycloak_base_url }}/realms/{{ keycloak_realm_name }}'
 keycloak_oidc_auth_url: '{{ keycloak_realm_url }}/protocol/openid-connect/auth'

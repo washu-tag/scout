@@ -1,13 +1,4 @@
 ---
-- name: Create storage directories for Lake
-  hosts: minio_hosts
-  gather_facts: false
-  tasks:
-    - name: Create storage directories
-      ansible.builtin.include_role:
-        name: minio
-        tasks_from: storage
-
 - name: Install components for Lake service
   hosts: server
   gather_facts: false

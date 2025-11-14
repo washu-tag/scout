@@ -15,8 +15,10 @@ server:
   service:
     servicePort: 9090
   persistentVolume:
-    enabled: true 
-    storageClass: '{{ use_custom_storage_classes | ternary(prometheus_storage_class, omit) }}'
+    enabled: true
+{% if prometheus_storage_class is defined and prometheus_storage_class %}
+    storageClass: '{{ prometheus_storage_class }}'
+{% endif %}
   retention: 15d
   resources: {{ prometheus_resources | to_json }}
   extraSecretMounts:

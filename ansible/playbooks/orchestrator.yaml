@@ -1,22 +1,4 @@
 ---
-- name: Create storage directories for Cassandra
-  hosts: k3s_cluster
-  gather_facts: false
-  tasks:
-    - name: Create storage directories
-      ansible.builtin.include_role:
-        name: cassandra
-        tasks_from: storage
-
-- name: Create storage directories for Elasticsearch
-  hosts: k3s_cluster
-  gather_facts: false
-  tasks:
-    - name: Create storage directories
-      ansible.builtin.include_role:
-        name: elasticsearch
-        tasks_from: storage
-
 - name: Install Cassandra, Elasticsearch, and Temporal
   hosts: server
   gather_facts: false

@@ -252,30 +252,97 @@ ollama_storage_size: 200Gi
 open_webui_storage_size: 100Gi
 ```
 
-#### Local Paths
+#### Storage Classes
 
-Define where data will be stored on your nodes:
+Scout uses Kubernetes dynamic volume provisioning to automatically create persistent volumes for services. There are two configuration approaches:
+
+1. **Default (recommended for most deployments):** All services use the cluster's default storage class
+2. **Multi-disk on-premise:** Configure multiple storage classes mapped to different filesystem paths for I/O isolation
+
+##### Default Configuration (Cloud and Single-Disk On-Premise)
+
+For cloud deployments and single-disk on-premise servers, leave all storage class variables empty to use the cluster's default storage class:
 
 ```yaml
-base_dir: /var/lib/rancher/k3s/storage  # K3s container images
-scout_repo_dir: /scout/data/scout       # Scout repository
-minio_dir: /scout/data/minio            # MinIO data
-cassandra_dir: /scout/persistence/cassandra
-elasticsearch_dir: /scout/persistence/elasticsearch
-postgres_dir: /scout/persistence/postgres
-prometheus_dir: /scout/monitoring/prometheus
-loki_dir: /scout/monitoring/loki
-grafana_dir: /scout/monitoring/grafana
-jupyter_dir: /scout/data/jupyter
-ollama_dir: /scout/persistence/ollama
-open_webui_dir: /scout/persistence/openwebui
-extractor_data_dir: /ceph/input/data    # HL7 log input directory
+# All per-service storage class variables empty (use cluster default)
+postgres_storage_class: ""
+temporal_storage_class: ""
+cassandra_storage_class: ""
+elasticsearch_storage_class: ""
+minio_storage_class: ""
+jupyterhub_storage_class: ""
+jupyter_singleuser_storage_class: ""
+prometheus_storage_class: ""
+loki_storage_class: ""
+grafana_storage_class: ""
+orthanc_storage_class: ""
+dcm4chee_storage_class: ""
+harbor_storage_class: ""
+ollama_storage_class: ""
+open_webui_storage_class: ""
+
+# No custom storage classes defined
+onprem_local_path_multidisk_storage_classes: []
 ```
 
-**Best practice:** Organize paths by purpose:
-- `/scout/data/*` - Application data
-- `/scout/persistence/*` - Database persistence
-- `/scout/monitoring/*` - Monitoring and logs
+**Platform-specific default storage classes:**
+
+- **k3s** (local development, on-premise): `local-path` (Rancher local-path-provisioner, built-in)
+- **AWS EKS**: cluster default (typically `gp3`, requires EBS CSI driver addon)
+- **Google GKE**: `standard-rwo` (Google Persistent Disk, HDD) or `premium-rwo` (SSD)
+- **Azure AKS**: `managed-csi` (Azure Managed Disks)
+
+##### Multi-Disk Configuration (On-Premise I/O Isolation)
+
+For k3s on-premise deployments with multiple physical disks, you can configure custom storage classes to isolate I/O-intensive workloads across different disks:
+
+```yaml
+# Define custom storage classes (k3s on-prem multi-disk only)
+onprem_local_path_multidisk_storage_classes:
+  - name: "local-database"
+    path: "/mnt/disk1/k3s-storage"
+  - name: "local-objectstorage"
+    path: "/mnt/disk2/k3s-storage"
+  - name: "local-monitoring"
+    path: "/mnt/disk3/k3s-storage"
+
+# Assign services to storage classes
+# Database services
+postgres_storage_class: "local-database"
+cassandra_storage_class: "local-database"
+elasticsearch_storage_class: "local-database"
+
+# Object storage and data processing
+minio_storage_class: "local-objectstorage"
+jupyterhub_storage_class: "local-objectstorage"
+jupyter_singleuser_storage_class: "local-objectstorage"
+
+# Monitoring and logging
+prometheus_storage_class: "local-monitoring"
+loki_storage_class: "local-monitoring"
+grafana_storage_class: "local-monitoring"
+
+# AI/ML services
+ollama_storage_class: "local-objectstorage"  # Large model files
+open_webui_storage_class: "local-database"   # User data and chat history
+
+# Other services
+orthanc_storage_class: "local-database"
+dcm4chee_storage_class: "local-database"
+temporal_storage_class: ""  # Uses Cassandra for persistence
+harbor_storage_class: ""  # Only used in air-gapped deployments
+```
+
+**When to use multiple storage classes:**
+- k3s on-premise deployment with 2+ separate physical disks
+- Observing I/O contention or high iowait times
+- Performance-critical databases need isolation from bulk storage operations
+- Different storage tiers (NVMe for databases, HDD for bulk storage)
+
+**Note:** This feature is k3s-specific for on-premise multi-disk deployments only. Cloud deployments and single-disk k3s installations should leave `onprem_local_path_multidisk_storage_classes` empty to use cluster defaults.
+
+**Note:** Dynamic provisioning automatically manages node affinity for local volumes and creates storage in provisioner-managed locations.
+**Note:** `extractor_data_dir` is still used for the HL7 log input directory (not managed by Kubernetes persistent volumes).
 
 (configuring-secrets)=
 ### Configuring Secrets

@@ -4,29 +4,10 @@
 # Namespace configuration
 minio_tenant_name: scout
 
-# Storage naming
-minio_name: minio
-minio_storage_class: '{{ minio_name }}-storage'
+# Storage configuration
 minio_storage_size: 10Gi
+minio_storage_class: ''
 
-# Storage definitions for persistent volumes
-# Dynamically generated based on minio_hosts inventory group
-minio_storage_definitions_raw: >-
-  [{% set ns = namespace(last_node=false) -%}
-  {% for node_url in groups["minio_hosts"] -%}
-    {% if loop.last %}{% set ns.last_node = true %}{% endif %}
-    {% for i in range(0, minio_volumes_per_server) -%}
-      {
-        "name": "{{ minio_name }}-{{ node_url }}-{{ i }}",
-        "size": "{{ minio_storage_size }}",
-        "path": "{{ minio_dir }}{{ i }}",
-        "pv_name": "{{ minio_name }}-pv-{{ node_url }}-{{ i }}",
-        "storage_class_name": "{{ minio_storage_class }}",
-        "node_url": "{{ node_url }}"
-      }{% if not (loop.last and ns.last_node) %},{% endif %}
-    {%- endfor %}
-  {%- endfor %}]
-minio_storage_definitions: '{{ minio_storage_definitions_raw if not (minio_storage_definitions_raw is string) else (minio_storage_definitions_raw | from_yaml) }}'
 # Resource configuration (dev defaults - CI friendly)
 minio_resources:
   requests:
