@@ -139,19 +139,6 @@
           stringData:
             client-secret: '{{ keycloak_grafana_client_secret }}'
 
-    - name: Create ConfigMap with Scout logo for Grafana branding
-      no_log: true
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: ConfigMap
-          metadata:
-            name: scout-logo
-            namespace: '{{ grafana_namespace }}'
-          binaryData:
-            scout.png: '{{ lookup("file", grafana_logo_path) | b64encode }}'
-
     - name: Create postgres datasource secret
       kubernetes.core.k8s:
         state: present
