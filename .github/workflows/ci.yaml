@@ -242,6 +242,22 @@ jobs:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     steps:
       - uses: actions/checkout@v4.2.1
+      - name: 'Free up disk space'
+        shell: bash
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+
+          echo "Removing unnecessary tools to free up disk space..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf /opt/ghc
+          sudo apt-get clean
+          docker system prune -af --volumes
+
+          echo "Disk space after cleanup:"
+          df -h
       - name: 'Prepare inventory.yaml'
         shell: bash
         run: |
