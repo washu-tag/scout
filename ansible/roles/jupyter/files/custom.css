@@ -2,7 +2,7 @@
 /* Override default Jupyter logo with Scout logo */
 
 #jp-MainLogo {
-  background-image: url('/home/jovyan/.jupyter/custom/scout.png') !important;
+  background-image: url('./scout.png') !important;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -10,5 +10,5 @@
 
 /* Hide the default SVG logo */
 #jp-MainLogo svg {
-  display: none;
+  visibility: hidden;
 }
