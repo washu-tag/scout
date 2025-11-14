@@ -11,6 +11,7 @@ jupyter_helm_repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/r
 jupyter_helm_chart_name: jupyterhub
 
 # Storage configuration
+jupyter_hub_storage_size: 1Gi
 jupyter_singleuser_storage_size: 10Gi
 jupyter_singleuser_pvc: jupyter-singleuser-pvc
 
