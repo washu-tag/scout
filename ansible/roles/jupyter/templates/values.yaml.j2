@@ -119,6 +119,9 @@ singleuser:
               echo "spark.executor.memory $SPARK_EXECUTOR_MEMORY" >> /usr/local/spark/conf/spark-defaults.conf
             fi
 
+            # Ensure JupyterLab custom directory exists (for branding CSS and logo)
+            mkdir -p /home/$NB_USER/.jupyter/custom
+
             # Copy Scout quickstart samples on first login
             FLAG_FILE=/home/$NB_USER/.scout_quickstart
             if [ ! -f $FLAG_FILE ]; then
@@ -150,18 +153,6 @@ singleuser:
                 'Content-Security-Policy': "frame-ancestors 'self'"
             }
         }
-    jupyterlab-custom-css:
-      mountPath: /home/jovyan/.jupyter/custom/custom.css
-      data:
-        custom.css:
-          configMap:
-            name: jupyterlab-custom-css
-    jupyterlab-scout-logo:
-      mountPath: /home/jovyan/.jupyter/custom/scout.png
-      binaryData:
-        scout.png:
-          configMap:
-            name: scout-logo
 
   storage:
     type: static
@@ -177,11 +168,27 @@ singleuser:
       spark-config-writable:
         name: spark-config-writable
         emptyDir: {}
+      jupyterlab-custom-css:
+        name: jupyterlab-custom-css
+        configMap:
+          name: jupyterlab-custom-css
+      jupyterlab-scout-logo:
+        name: jupyterlab-scout-logo
+        configMap:
+          name: scout-logo
     extraVolumeMounts:
       spark-defaults:
         name: spark-config-writable
         mountPath: /usr/local/spark/conf/spark-defaults.conf
         subPath: spark-defaults.conf
+      jupyterlab-custom-css:
+        name: jupyterlab-custom-css
+        mountPath: /home/jovyan/.jupyter/custom/custom.css
+        subPath: custom.css
+      jupyterlab-scout-logo:
+        name: jupyterlab-scout-logo
+        mountPath: /home/jovyan/.jupyter/custom/scout.png
+        subPath: scout.png
   networkPolicy:
     egress:
       # Allow access to MinIO for data lake storage
