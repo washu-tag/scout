@@ -13,6 +13,10 @@ grafana_storage_class: '{{ grafana_name }}-storage'
 grafana_storage_size: 5Gi
 grafana_dir: /scout/monitoring/grafana
 
+# Branding
+grafana_app_name: Scout Monitoring
+grafana_logo_path: '{{ scout_repo_dir }}/launchpad/public/scout.png'
+
 # Alert configuration
 grafana_alert_contact_point: slack # email or slack
 grafana_smtp_host: '' # Include the port in the value

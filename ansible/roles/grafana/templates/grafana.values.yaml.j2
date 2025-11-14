@@ -25,6 +25,13 @@ grafana.ini:
     enabled: true
   dashboards:
     default_home_dashboard_path: /tmp/dashboards/hl7-ingest-dashboard.json
+  branding:
+    app_title: '{{ grafana_app_name }}'
+    header_logo: /usr/share/grafana/public/img/scout.png
+    footer_links: |
+      [
+        {"text": "Scout Launchpad", "href": "https://{{ server_hostname }}", "target": "_blank"}
+      ]
 {% if grafana_alert_contact_point == 'email' %}
   smtp:
     enabled: true
@@ -51,6 +58,13 @@ extraSecretMounts:
     optional: false
     subPath: ""
 {% endif %}
+
+extraConfigmapMounts:
+  - name: scout-logo
+    mountPath: /usr/share/grafana/public/img/scout.png
+    subPath: scout.png
+    configMap: scout-logo
+    readOnly: true
 
 ingress:
   enabled: true

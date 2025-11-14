@@ -19,6 +19,20 @@ hub:
     pvc:
       storageClassName: '{{ use_custom_storage_classes | ternary(jupyter_hub_storage_class, omit) }}'
       storage: '{{ jupyter_hub_storage_size }}'
+  extraVolumes:
+    - name: scout-logo
+      configMap:
+        name: scout-logo
+        defaultMode: 0644
+  extraVolumeMounts:
+    - name: scout-logo
+      mountPath: /usr/local/share/jupyterhub/static/images/scout.png
+      subPath: scout.png
+      readOnly: true
+  extraConfig:
+    branding: |
+      # Set custom Scout logo
+      c.JupyterHub.logo_file = '/usr/local/share/jupyterhub/static/images/scout.png'
   config:
     Authenticator:
       auto_login: true
