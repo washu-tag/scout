@@ -101,7 +101,9 @@ sidecar:
 
 persistence:
   enabled: true
+{% if grafana_storage_class is defined and grafana_storage_class %}
   storageClassName: '{{ grafana_storage_class }}'
+{% endif %}
   size: '{{ grafana_storage_size }}'
 
 resources: {{ grafana_resources | to_json }}
