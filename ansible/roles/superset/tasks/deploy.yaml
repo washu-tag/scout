@@ -78,7 +78,7 @@
         namespace: '{{ superset_namespace }}'
       data: '{{ superset_dashboard_data | default({}) }}'
 
-- name: Create ConfigMap with Scout logo for Superset branding
+- name: Create ConfigMap with Scout logo and favicon for Superset branding
   delegate_to: localhost
   no_log: true
   kubernetes.core.k8s:
@@ -91,6 +91,7 @@
         namespace: '{{ superset_namespace }}'
       binaryData:
         scout.png: '{{ lookup("file", superset_logo_path) | b64encode }}'
+        icon.png: '{{ lookup("file", superset_favicon_path) | b64encode }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Parse Superset Helm values

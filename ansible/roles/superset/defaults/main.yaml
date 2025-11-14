@@ -36,8 +36,9 @@ superset_database: superset
 # Analytics directory path
 superset_analytics_dir: '{{ scout_repo_dir }}/analytics'
 
-# Scout logo path
+# Scout logo and favicon paths
 superset_logo_path: '{{ scout_repo_dir }}/launchpad/public/scout.png'
+superset_favicon_path: '{{ scout_repo_dir }}/launchpad/public/icon.png'
 
 # Resource configuration (dev defaults - CI friendly)
 superset_resources:

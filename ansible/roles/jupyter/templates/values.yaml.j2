@@ -29,10 +29,18 @@ hub:
       mountPath: /usr/local/share/jupyterhub/static/images/scout.png
       subPath: scout.png
       readOnly: true
+    - name: scout-logo
+      mountPath: /usr/local/share/jupyterhub/static/favicon.ico
+      subPath: icon.png
+      readOnly: true
   extraConfig:
     branding: |
-      # Set custom Scout logo
+      # Set custom Scout logo and page title
       c.JupyterHub.logo_file = '/usr/local/share/jupyterhub/static/images/scout.png'
+      c.JupyterHub.template_vars = {
+          'hub_title': '{{ jupyter_app_name }}',
+          'page_title': '{{ jupyter_app_name }}'
+      }
   config:
     Authenticator:
       auto_login: true
@@ -179,6 +187,10 @@ singleuser:
         name: jupyterlab-scout-logo
         configMap:
           name: scout-logo
+      jupyterlab-favicon:
+        name: jupyterlab-favicon
+        configMap:
+          name: scout-logo
     extraVolumeMounts:
       spark-defaults:
         name: spark-config-writable
@@ -192,6 +204,10 @@ singleuser:
         name: jupyterlab-scout-logo
         mountPath: /home/jovyan/.jupyter/custom/scout.png
         subPath: scout.png
+      jupyterlab-favicon:
+        name: jupyterlab-favicon
+        mountPath: /opt/conda/share/jupyter/lab/static/favicon.ico
+        subPath: icon.png
   networkPolicy:
     egress:
       # Allow access to MinIO for data lake storage
