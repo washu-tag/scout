@@ -277,6 +277,8 @@ grafana_storage_class: ""
 orthanc_storage_class: ""
 dcm4chee_storage_class: ""
 harbor_storage_class: ""
+ollama_storage_class: ""
+open_webui_storage_class: ""
 
 # No custom storage classes defined
 onprem_local_path_multidisk_storage_classes: []
@@ -317,6 +319,10 @@ jupyter_storage_class: "local-objectstorage"
 prometheus_storage_class: "local-monitoring"
 loki_storage_class: "local-monitoring"
 grafana_storage_class: "local-monitoring"
+
+# AI/ML services
+ollama_storage_class: "local-objectstorage"  # Large model files
+open_webui_storage_class: "local-database"   # User data and chat history
 
 # Other services
 orthanc_storage_class: "local-database"

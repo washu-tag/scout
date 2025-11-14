@@ -158,6 +158,8 @@ k3s_cluster:
     # prometheus_storage_class: "local-monitoring"
     # loki_storage_class: "local-monitoring"
     # grafana_storage_class: "local-monitoring"
+    # ollama_storage_class: "local-objectstorage"  # Large model files
+    # open_webui_storage_class: "local-database"  # User data and chat history
     # orthanc_storage_class: "local-database"
     # harbor_storage_class: "local-database"
     # DCM4chee has multiple volumes with different I/O profiles:
