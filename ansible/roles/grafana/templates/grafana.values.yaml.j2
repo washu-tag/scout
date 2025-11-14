@@ -115,6 +115,10 @@ persistence:
   storageClassName: '{{ use_custom_storage_classes | ternary(grafana_storage_class, omit) }}'
   size: '{{ grafana_storage_size }}'
 
+# Disable init-chown-data to avoid permission issues with runAsNonRoot
+initChownData:
+  enabled: false
+
 resources: {{ grafana_resources | to_json }}
 
 livenessProbe:
