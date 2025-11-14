@@ -59,6 +59,8 @@
       ansible.builtin.debug:
         msg: 'Using default local-path storage path: {{ local_path_default_path }}'
 
+    # See https://github.com/rancher/local-path-provisioner#customize-the-configmap
+    # for info on this configmap configuration
     - name: Update local-path-provisioner ConfigMap with storageClassConfigs
       kubernetes.core.k8s:
         state: present
