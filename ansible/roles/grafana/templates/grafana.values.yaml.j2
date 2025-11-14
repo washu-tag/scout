@@ -43,6 +43,9 @@ grafana.ini:
     skip_verify: "{{ grafana_smtp_skip_verify | default(false) }}"
 {% endif %}
 
+env:
+  GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION: true
+
 extraSecretMounts:
   - name: keycloak-grafana-client-secret
     mountPath: /etc/secrets/keycloak-grafana
