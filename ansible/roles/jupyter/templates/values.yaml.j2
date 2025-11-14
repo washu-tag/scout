@@ -33,10 +33,6 @@ hub:
     branding: |
       # Set custom Scout logo
       c.JupyterHub.logo_file = '/usr/local/share/jupyterhub/static/images/scout.png'
-      # Add Launchpad link on spawn page
-      c.JupyterHub.template_vars = {
-          'announcement_spawn': 'Welcome to JupyterHub! Launch your notebook server below or visit the <a href="https://{{ server_hostname }}" class="btn btn-primary">Scout Launchpad</a> to access other Scout services.',
-      }
   config:
     Authenticator:
       auto_login: true
