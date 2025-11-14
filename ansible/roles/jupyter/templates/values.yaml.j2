@@ -150,6 +150,18 @@ singleuser:
                 'Content-Security-Policy': "frame-ancestors 'self'"
             }
         }
+    jupyterlab-custom-css:
+      mountPath: /home/jovyan/.jupyter/custom/custom.css
+      data:
+        custom.css:
+          configMap:
+            name: jupyterlab-custom-css
+    jupyterlab-scout-logo:
+      mountPath: /home/jovyan/.jupyter/custom/scout.png
+      binaryData:
+        scout.png:
+          configMap:
+            name: scout-logo
 
   storage:
     type: static
