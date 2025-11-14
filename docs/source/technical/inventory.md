@@ -270,7 +270,8 @@ temporal_storage_class: ""
 cassandra_storage_class: ""
 elasticsearch_storage_class: ""
 minio_storage_class: ""
-jupyter_storage_class: ""
+jupyterhub_storage_class: ""
+jupyter_singleuser_storage_class: ""
 prometheus_storage_class: ""
 loki_storage_class: ""
 grafana_storage_class: ""
@@ -313,7 +314,8 @@ elasticsearch_storage_class: "local-database"
 
 # Object storage and data processing
 minio_storage_class: "local-objectstorage"
-jupyter_storage_class: "local-objectstorage"
+jupyterhub_storage_class: "local-objectstorage"
+jupyter_singleuser_storage_class: "local-objectstorage"
 
 # Monitoring and logging
 prometheus_storage_class: "local-monitoring"
