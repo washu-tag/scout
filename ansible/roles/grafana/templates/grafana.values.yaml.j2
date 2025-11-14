@@ -28,10 +28,7 @@ grafana.ini:
   branding:
     app_title: '{{ grafana_app_name }}'
     header_logo: /usr/share/grafana/public/img/scout.png
-    footer_links: |
-      [
-        {"text": "Scout Launchpad", "href": "https://{{ server_hostname }}", "target": "_blank"}
-      ]
+    footer_links: '[{"text": "Scout Launchpad", "href": "https://{{ server_hostname }}", "target": "_blank"}]'
 {% if grafana_alert_contact_point == 'email' %}
   smtp:
     enabled: true
