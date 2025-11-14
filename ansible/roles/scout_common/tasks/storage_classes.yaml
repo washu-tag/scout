@@ -105,9 +105,17 @@
               rm -rf "$VOL_DIR"
       register: configmap_result
 
-    - name: Note about provisioner auto-reload
-      ansible.builtin.debug:
-        msg: 'ConfigMap updated. local-path-provisioner will automatically reload the configuration after a brief delay.'
+    # Despite the docs (https://github.com/rancher/local-path-provisioner#reloading) saying the
+    # provisioner can automatically pick up changes to the configuration, it requires setting an
+    # environment variable on the provisioner pod. That's more invasive than just restarting the thing.
+    - name: Restart local-path-provisioner to reload configuration
+      ansible.builtin.command:
+        cmd: kubectl rollout restart deployment/local-path-provisioner -n {{ local_path_provisioner_namespace }}
+      when: configmap_result.changed
+
+    - name: Wait for local-path-provisioner rollout to complete
+      ansible.builtin.command:
+        cmd: kubectl rollout status deployment/local-path-provisioner -n {{ local_path_provisioner_namespace }} --timeout=60s
       when: configmap_result.changed
 
     - name: Create StorageClass resources
