@@ -35,6 +35,30 @@
       ansible.builtin.debug:
         msg: 'local-path-provisioner ConfigMap will be created/updated in namespace: {{ local_path_provisioner_namespace }}'
 
+    - name: Get existing local-path-config to extract default path
+      ansible.builtin.set_fact:
+        local_path_existing_config: >-
+          {{
+            (local_path_config_kubesystem.resources[0].data['config.json'] | from_json)
+            if (local_path_config_kubesystem.resources | default([]) | length > 0)
+            else (local_path_config_localpathstorage.resources[0].data['config.json'] | from_json)
+            if (local_path_config_localpathstorage.resources | default([]) | length > 0)
+            else {}
+          }}
+
+    - name: Extract default path from existing config
+      ansible.builtin.set_fact:
+        local_path_default_path: >-
+          {{
+            local_path_existing_config.nodePathMap[0].paths[0]
+            if (local_path_existing_config.nodePathMap | default([]) | length > 0)
+            else '/var/lib/rancher/k3s/storage'
+          }}
+
+    - name: Display default path
+      ansible.builtin.debug:
+        msg: 'Using default local-path storage path: {{ local_path_default_path }}'
+
     - name: Update local-path-provisioner ConfigMap with storageClassConfigs
       kubernetes.core.k8s:
         state: present
@@ -49,6 +73,14 @@
               {
                 "nodePathMap": [],
                 "storageClassConfigs": {
+                  "local-path": {
+                    "nodePathMap": [
+                      {
+                        "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES",
+                        "paths": ["{{ local_path_default_path }}"]
+                      }
+                    ]
+                  }{{ "," if onprem_local_path_multidisk_storage_classes | length > 0 else "" }}
                   {% for sc in onprem_local_path_multidisk_storage_classes %}
                   "{{ sc.name }}": {
                     "nodePathMap": [
