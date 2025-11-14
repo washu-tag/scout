@@ -1,0 +1,73 @@
+---
+# vLLM Deployment Configuration
+# User-configurable settings should be overridden in inventory.yaml
+
+# Model Selection
+# Options: gpt-oss-120b, qwen-qwq-32b
+vllm_model_name: gpt-oss-120b
+
+# Model Configurations
+# Each model has specific settings optimized for its architecture
+vllm_model_configs:
+  gpt-oss-120b:
+    repository: openai/gpt-oss-120b
+    quantization: mxfp4
+    max_model_len: 131072  # 128K context
+    max_num_seqs: 2  # Conservative for 128K on single GPU
+    tool_call_parser: openai
+  qwen-qwq-32b:
+    repository: Qwen/QwQ-32B
+    quantization: awq
+    max_model_len: 32768  # 32K context
+    max_num_seqs: 4  # More concurrent users with smaller model
+    tool_call_parser: hermes
+
+# Component names
+vllm_name: vllm
+vllm_router_service_name: vllm-router
+
+# Namespace (reuse existing chatbot_namespace from scout_common)
+vllm_namespace: '{{ chatbot_namespace }}'
+
+# GPU Configuration (reuse llm_min_gpu_memory_gb from scout_common)
+vllm_gpu_count: 1
+vllm_gpu_type: nvidia.com/gpu
+
+# Resource Requests
+# WARNING: These are defaults. For production, tune based on your cluster capacity.
+vllm_cpu_request: 8
+vllm_memory_request: 16Gi
+vllm_cpu_limit: 16
+vllm_memory_limit: 32Gi
+
+# Storage Configuration (following new dynamic provisioning pattern)
+vllm_storage_size: 100Gi
+vllm_storage_class: ''  # Empty string uses cluster default, override in inventory
+vllm_pvc_access_mode: ReadWriteOnce
+
+# vLLM Engine Settings (common across models)
+vllm_dtype: bfloat16
+vllm_gpu_memory_utilization: 0.90
+vllm_enable_prefix_caching: true
+vllm_enable_chunked_prefill: true
+vllm_kv_cache_dtype: fp8  # 50% memory savings
+vllm_tensor_parallel_size: 1
+
+# Router Configuration
+vllm_router_enabled: true
+vllm_router_replicas: 2
+vllm_service_type: ClusterIP
+vllm_routing_logic: session  # KV cache reuse
+
+# Monitoring
+vllm_metrics_enabled: true
+vllm_metrics_port: 8000
+
+# Helm Chart Configuration
+vllm_helm_repo_url: https://vllm-project.github.io/production-stack
+vllm_helm_repo_name: vllm
+vllm_helm_chart_name: vllm-stack
+vllm_helm_release_name: vllm
+
+# Shared Memory Size
+vllm_shm_size: 20Gi

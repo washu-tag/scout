@@ -143,6 +143,16 @@ keycloak_subdomain: keycloak
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
 
+# LLM GPU Configuration
+# Minimum GPU VRAM required for LLM services (in GB)
+# Used in node affinity to ensure LLM pods are scheduled on nodes with sufficient GPU memory
+# Default: 80GB (required for GPT-OSS-120B at full precision)
+# For smaller models or quantized versions, override in inventory.yaml:
+#   llm_min_gpu_memory_gb: 24  # For smaller models (e.g., llama3:70b)
+#   llm_min_gpu_memory_gb: 60  # For gpt-oss:120b quantized (MXFP4)
+# Set to 0 to disable GPU memory requirement (schedules on any GPU node)
+llm_min_gpu_memory_gb: 80
+
 # Computed values (DO NOT CHANGE)
 s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
 hive_metastore_endpoint: 'thrift://{{ hive_metastore_instance }}.{{ hive_namespace }}:9083'

@@ -2,7 +2,7 @@ nameOverride: ''
 namespaceOverride: ''
 ollama:
   # -- Automatically install Ollama Helm chart from https://otwld.github.io/ollama-helm/. Use [Helm Values](https://github.com/otwld/ollama-helm/#helm-values) to configure
-  enabled: true
+  enabled: {{ (llm_backend == 'ollama') | bool }}
   # -- If enabling embedded Ollama, update fullnameOverride to your desired Ollama name value, or else it will use the default ollama.name value from the Ollama chart
   fullnameOverride: ollama
   ollama:
@@ -13,7 +13,7 @@ ollama:
     models:
       pull: []  # Models are pulled asynchronously via separate Job to avoid Helm timeout
   resources: {{ ollama_resources | to_json }}
-{% if ollama_min_gpu_memory_gb | int > 0 %}
+{% if llm_min_gpu_memory_gb | int > 0 %}
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -22,7 +22,7 @@ ollama:
               - key: nvidia.com/gpu.memory
                 operator: Gt
                 values:
-                  - '{{ ollama_min_gpu_memory_gb }}'
+                  - '{{ llm_min_gpu_memory_gb }}'
 {% endif %}
   persistentVolume:
     enabled: true
@@ -151,3 +151,11 @@ extraEnvVars:
       secretKeyRef:
         name: open-webui-secrets
         key: REDIS_URL
+
+  # LLM Backend Configuration
+{% if llm_backend == 'vllm' %}
+  - name: OPENAI_API_BASE_URLS
+    value: '{{ llm_endpoints.vllm }}'
+  - name: OPENAI_API_KEYS
+    value: 'Empty'
+{% endif %}

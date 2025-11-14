@@ -1,0 +1,54 @@
+---
+# Kubernetes deployment tasks for vLLM Production Stack
+# These tasks run on the server host
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ vllm_namespace }}'
+
+- name: Display deployment information
+  ansible.builtin.debug:
+    msg: >
+      Deploying vLLM with model: {{ vllm_model_name }}
+      ({{ vllm_model_configs[vllm_model_name].repository }})
+      Context: {{ vllm_model_configs[vllm_model_name].max_model_len }} tokens,
+      Max concurrent: {{ vllm_model_configs[vllm_model_name].max_num_seqs }} users
+
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    vllm_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
+- name: Deploy vLLM using Helm
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ vllm_helm_release_name }}'
+    helm_chart_ref: '{{ vllm_helm_repo_name }}/{{ vllm_helm_chart_name }}'
+    helm_chart_namespace: '{{ vllm_namespace }}'
+    helm_chart_version: '{{ vllm_helm_chart_version }}'
+    helm_repo_name: '{{ vllm_helm_repo_name }}'
+    helm_repo_url: '{{ vllm_helm_repo_url }}'
+    helm_chart_values: '{{ vllm_helm_chart_values }}'
+    helm_chart_timeout: '20m'
+
+- name: Wait for vLLM backend to be ready
+  ansible.builtin.command: >
+    kubectl -n {{ vllm_namespace }} wait --for=condition=Ready
+    --timeout=1200s pod -l app=vllm-backend
+  register: vllm_ready
+  changed_when: false
+  failed_when: false
+
+- name: Display vLLM status
+  ansible.builtin.debug:
+    msg: >
+      vLLM deployment {{ 'succeeded' if vllm_ready.rc == 0 else 'may still be initializing' }}.
+      {% if vllm_ready.rc != 0 %}
+      Note: Model download can take 10-20 minutes for GPT-OSS-120B.
+      Check pod logs: kubectl logs -n {{ vllm_namespace }} -l app=vllm-backend -f
+      {% endif %}
+      Endpoint: http://{{ vllm_router_service_name }}.{{ vllm_namespace }}.svc.cluster.local:8000/v1

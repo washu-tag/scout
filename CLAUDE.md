@@ -14,7 +14,7 @@ Scout is a microservices platform deployed on Kubernetes (K3s) with the followin
 - **Analytics**: Apache Superset for no-code visualizations and SQL queries (powered by Trino)
 - **Notebooks**: JupyterHub with PySpark for programmatic data analysis
 - **Launchpad**: Web-based landing page to access all Scout services
-- **Chat** (optional): Open WebUI with Ollama for AI-powered natural language querying
+- **Chat** (optional): Open WebUI with vLLM (default) or Ollama for AI-powered natural language querying
 
 ### Data Layer (Lake)
 - **MinIO**: S3-compatible object storage (data persistence)
@@ -196,14 +196,15 @@ make install-mailhog          # Email testing
 
 Scout supports optional features that can be enabled via feature flags in `inventory.yaml`:
 
-- **`enable_chat`**: Enable AI-powered chat interface (Open WebUI + Ollama)
+- **`enable_chat`**: Enable AI-powered chat interface (Open WebUI + vLLM/Ollama)
   - Default: `false` (disabled)
   - Set to `true` in inventory to enable
-  - Requires storage paths: `ollama_dir`, `open_webui_dir`
+  - LLM Backend: Configure with `llm_backend: vllm` (default) or `llm_backend: ollama`
+  - Models: GPT-OSS-120B (default), Qwen QwQ-32B (configurable via `vllm_model_name`)
   - Requires secrets: `open_webui_postgres_password`, `open_webui_secret_key`, `open_webui_redis_password`, `keycloak_open_webui_client_secret`
   - Features: Keycloak OAuth authentication, Trino MCP tool for natural language SQL queries, Redis-based websocket coordination
-  - Recommended: GPU node for optimal performance
-  - Post-deployment configuration required (see `ansible/roles/open-webui/README.md`)
+  - Recommended: GPU node with 80GB+ VRAM for GPT-OSS-120B
+  - Post-deployment configuration required (see `ansible/roles/open-webui/README.md` and `ansible/roles/vllm/README.md`)
 
 ### Variable Precedence
 

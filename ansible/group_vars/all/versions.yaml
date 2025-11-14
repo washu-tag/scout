@@ -58,6 +58,7 @@ jupyter_helm_chart_version: ~4.3.0
 
 # AI & ML
 open_webui_helm_chart_version: ~8.14.0
+vllm_helm_chart_version: ~0.1.7
 
 # Monitoring & Observability - Prometheus
 prometheus_helm_chart_version: ~27.41.1
