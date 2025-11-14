@@ -39,6 +39,11 @@ grafana.ini:
 env:
   GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION: true
 
+deploymentStrategy: # https://github.com/grafana/helm-charts/issues/752#issuecomment-3248746819
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+
 extraSecretMounts:
   - name: keycloak-grafana-client-secret
     mountPath: /etc/secrets/keycloak-grafana
