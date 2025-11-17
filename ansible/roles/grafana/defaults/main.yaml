@@ -20,6 +20,8 @@ grafana_smtp_from_address: ''
 grafana_smtp_from_name: 'Scout'
 grafana_smtp_skip_verify: false
 grafana_email_recipients: ['']
+slack_token: ''
+slack_channel_id: ''
 
 # Dashboard and alert paths
 grafana_dashboards_path: '{{ role_path }}/files/dashboards'
