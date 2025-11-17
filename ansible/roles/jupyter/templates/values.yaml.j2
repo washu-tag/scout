@@ -21,6 +21,19 @@ hub:
       storageClassName: '{{ jupyterhub_storage_class }}'
       storage: '{{ jupyter_hub_storage_size }}'
 {% endif %}
+  extraVolumes:
+    - name: scout-logo
+      configMap:
+        name: scout-logo
+        defaultMode: 0644
+  extraVolumeMounts:
+    - name: scout-logo
+      mountPath: /usr/local/share/jupyterhub/static/images/scout.png
+      subPath: scout.png
+      readOnly: true
+  extraConfig:
+    branding: |
+      c.JupyterHub.logo_file = '/usr/local/share/jupyterhub/static/images/scout.png'
   config:
     Authenticator:
       auto_login: true
@@ -139,6 +152,9 @@ singleuser:
             }
         }
 
+        # Enable custom CSS loading for Scout branding
+        c.LabApp.custom_css = True
+
   storage:
     type: static
     static:
@@ -153,11 +169,27 @@ singleuser:
       spark-config-writable:
         name: spark-config-writable
         emptyDir: {}
+      jupyterlab-custom-css:
+        name: jupyterlab-custom-css
+        configMap:
+          name: jupyterlab-custom-css
+      jupyterlab-scout-logo:
+        name: jupyterlab-scout-logo
+        configMap:
+          name: scout-logo
     extraVolumeMounts:
       spark-defaults:
         name: spark-config-writable
         mountPath: /usr/local/spark/conf/spark-defaults.conf
         subPath: spark-defaults.conf
+      jupyterlab-custom-css:
+        name: jupyterlab-custom-css
+        mountPath: /home/jovyan/.jupyter/custom/custom.css
+        subPath: custom.css
+      jupyterlab-scout-logo:
+        name: jupyterlab-scout-logo
+        mountPath: /home/jovyan/.jupyter/custom/scout.png
+        subPath: scout.png
   networkPolicy:
     egress:
       # Allow access to MinIO for data lake storage

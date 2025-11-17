@@ -37,6 +37,9 @@ jupyter_metrics_api_token: ''
 # PrePuller configuration
 jupyter_prepuller_continuous: false
 
+# Branding
+jupyter_logo_path: '{{ scout_repo_dir }}/launchpad/public/scout.png'
+
 # Jupyter resources
 jupyter_hub_resources:
   requests:
