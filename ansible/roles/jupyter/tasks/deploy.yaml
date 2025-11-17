@@ -53,7 +53,7 @@
     spark_s3_username: '{{ s3_lake_reader }}'
     spark_s3_password: '{{ s3_lake_reader_secret }}'
 
-- name: Create ConfigMap with Scout logo and favicon for JupyterHub branding
+- name: Create ConfigMap with Scout logo for JupyterHub branding
   delegate_to: localhost
   no_log: true
   kubernetes.core.k8s:
@@ -66,7 +66,6 @@
         namespace: '{{ jupyter_namespace }}'
       binaryData:
         scout.png: '{{ lookup("file", jupyter_logo_path) | b64encode }}'
-        icon.png: '{{ lookup("file", jupyter_favicon_path) | b64encode }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Create ConfigMap with custom CSS for JupyterLab branding

@@ -46,9 +46,7 @@ jupyter_metrics_api_token: ''
 jupyter_prepuller_continuous: false
 
 # Branding
-jupyter_app_name: Scout Notebooks
 jupyter_logo_path: '{{ scout_repo_dir }}/launchpad/public/scout.png'
-jupyter_favicon_path: '{{ scout_repo_dir }}/launchpad/public/icon.png'
 
 # Jupyter resources
 jupyter_hub_resources:

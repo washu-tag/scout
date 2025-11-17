@@ -29,18 +29,9 @@ hub:
       mountPath: /usr/local/share/jupyterhub/static/images/scout.png
       subPath: scout.png
       readOnly: true
-    - name: scout-logo
-      mountPath: /usr/local/share/jupyterhub/static/favicon.ico
-      subPath: icon.png
-      readOnly: true
   extraConfig:
     branding: |
-      # Set custom Scout logo and page title
       c.JupyterHub.logo_file = '/usr/local/share/jupyterhub/static/images/scout.png'
-      c.JupyterHub.template_vars = {
-          'hub_title': '{{ jupyter_app_name }}',
-          'page_title': '{{ jupyter_app_name }}'
-      }
   config:
     Authenticator:
       auto_login: true
