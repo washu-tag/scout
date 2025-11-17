@@ -128,10 +128,49 @@ k3s_cluster:
     # Example: prometheus_namespace: my-custom-prometheus-namespace
 
     #############################################################################
-    ### On-prem storage                                                       ###
+    ### Storage Configuration                                                 ###
     #############################################################################
 
-    # Storage disk space
+    # Custom storage classes for k3s on-prem deployments with multiple disks requiring I/O isolation
+    # Leave empty for cloud deployments or single-disk k3s (cluster default will be used)
+    onprem_local_path_multidisk_storage_classes: []
+    # Example:
+    # onprem_local_path_multidisk_storage_classes:
+    #   - name: "local-database"
+    #     path: "/mnt/disk1/k3s-storage"
+    #   - name: "local-objectstorage"
+    #     path: "/mnt/disk2/k3s-storage"
+    #   - name: "local-monitoring"
+    #     path: "/mnt/disk3/k3s-storage"
+
+    # Per-service storage class assignments
+    # Default: empty string (use cluster default)
+    # Override for multi-disk deployments to assign services to specific storage classes
+    # Cloud deployments: leave all empty to use platform default (gp3, pd-ssd, etc.)
+    # Example for on-premise multi-disk (uncomment and modify):
+    # postgres_storage_class: "local-database"
+    # redis_storage_class: "local-database"
+    # temporal_storage_class: "local-database"
+    # cassandra_storage_class: "local-database"
+    # elasticsearch_storage_class: "local-database"
+    # minio_storage_class: "local-objectstorage"
+    # jupyterhub_storage_class: "local-objectstorage"
+    # jupyter_singleuser_storage_class: "local-objectstorage"
+    # prometheus_storage_class: "local-monitoring"
+    # loki_storage_class: "local-monitoring"
+    # grafana_storage_class: "local-monitoring"
+    # ollama_storage_class: "local-objectstorage"  # Large model files
+    # open_webui_storage_class: "local-database"  # User data and chat history
+    # orthanc_storage_class: "local-database"
+    # harbor_storage_class: "local-database"
+    # DCM4chee has multiple volumes with different I/O profiles:
+    # dcm4chee_wildfly_storage_class: "local-database"  # Application server
+    # dcm4chee_storage_storage_class: "local-objectstorage"  # DICOM images (large files)
+    # dcm4chee_db_storage_class: "local-database"  # PostgreSQL (high IOPS)
+    # dcm4chee_openldap_storage_class: "local-database"  # LDAP data
+    # dcm4chee_slapd_storage_class: "local-database"  # LDAP config
+
+    # Storage disk space - Size of persistent volume claims for each service
     postgres_storage_size: 100Gi
     redis_storage_size: 100Gi
     cassandra_storage_size: 300Gi
@@ -143,24 +182,8 @@ k3s_cluster:
     grafana_storage_size: 50Gi
     minio_storage_size: 750Gi
 
-    # Local paths
-    base_dir: /var/lib/rancher/k3s/storage # Path to directory for container images and sandbox data
-    scout_repo_dir: /scout/data/scout
-    minio_dir: /scout/data/minio
-    cassandra_dir: /scout/persistence/cassandra
-    elasticsearch_dir: /scout/persistence/elasticsearch
-    postgres_dir: /scout/persistence/postgres
-    prometheus_dir: /scout/monitoring/prometheus
-    loki_dir: /scout/monitoring/loki
-    grafana_dir: /scout/monitoring/grafana
-    jupyter_dir: /scout/data/jupyter
+    # HL7 extractor input directory (not managed by Kubernetes persistent volumes)
     extractor_data_dir: /ceph/input/data
-    # Parameters for optional chatbot services
-    ollama_dir: /scout/persistence/ollama
-    open_webui_dir: /scout/persistence/open-webui
-    # Parameters for optional PACS instances, only intended for use in development
-    orthanc_dir: /scout/data/orthanc
-    dcm4chee_dir: /scout/data/dcm4chee
 
     #############################################################################
     ### Service-specific secrets and resources                                ###

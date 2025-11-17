@@ -57,8 +57,8 @@ volumes:
     secret:
       secretName: orthanc-secret
   - name: data
-    hostPath:
-      path: '{{ orthanc_dir }}'
+    persistentVolumeClaim:
+      claimName: orthanc-data-pvc
 
 volumeMounts:
   - mountPath: /etc/orthanc

@@ -21,13 +21,6 @@
   vars:
     ns: '{{ postgres_cluster_namespace }}'
 
-- name: Set up storage
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: storage_setup
-  vars:
-    storage_definitions: '{{ postgres_storage_definitions }}'
-
 - name: Create Postgres user secret
   kubernetes.core.k8s:
     state: present
@@ -68,8 +61,8 @@
       spec:
         instances: 1
         storage:
-          storageClass: '{{ use_custom_storage_classes | ternary(postgres_storage_class, omit) }}'
-          size: 100Mi
+          storageClass: '{{ postgres_storage_class | default(omit, true) }}'
+          size: '{{ postgres_storage_size }}'
         resources: '{{ postgres_resources }}'
         enableSuperuserAccess: true
         superuserSecret:

@@ -20,13 +20,6 @@
   vars:
     ns: '{{ chatbot_namespace }}'
 
-- name: Set up storage
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: storage_setup
-  vars:
-    storage_definitions: '{{ chatbot_storage_definitions }}'
-
 - name: Initialize Open WebUI database
   ansible.builtin.include_role:
     name: scout_common

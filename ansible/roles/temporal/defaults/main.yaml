@@ -4,6 +4,9 @@
 # Temporal server configuration
 temporal_server_replica_count: 1
 
+# Storage configuration
+temporal_storage_class: ''
+
 # Resource configuration (dev defaults - CI friendly)
 temporal_resources:
   requests:

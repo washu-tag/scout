@@ -43,10 +43,7 @@ spec:
               mountPath: /etc/openldap/slapd.d
               readOnly: false
               mountPropagation: HostToContainer
+      {{- with .Values.ldapVolumes }}
       volumes:
-        - name: openldap-data
-          hostPath:
-            path: "{{ .Values.paths.openldap }}"
-        - name: slapd
-          hostPath:
-            path: "{{ .Values.paths.slapd }}"
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

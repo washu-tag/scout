@@ -1,12 +1,5 @@
 ---
 # MinIO Operator and Tenant deployment
-- name: Set up storage
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: storage_setup
-  vars:
-    storage_definitions: '{{ minio_storage_definitions }}'
-
 - name: Deploy MinIO Operator
   ansible.builtin.include_role:
     name: scout_common
@@ -90,7 +83,7 @@
             name: pool-0
             volumesPerServer: '{{ minio_volumes_per_server | default(1) }}'
             size: '{{ minio_storage_size }}'
-            storageClassName: '{{ use_custom_storage_classes | ternary(minio_storage_class, omit) }}'
+            storageClassName: '{{ minio_storage_class | default(omit, true) }}'
             resources: '{{ minio_resources }}'
             tolerations:
               # Ensure MinIO pods can run on control plane nodes

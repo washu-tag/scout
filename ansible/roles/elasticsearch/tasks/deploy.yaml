@@ -2,14 +2,6 @@
 # Kubernetes deployment tasks for Elasticsearch cluster using ECK
 # These tasks run on the server host (which has access to k3s_cluster inventory variables)
 
-# Storage setup (StorageClass and PersistentVolumes)
-- name: Set up storage
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: storage_setup
-  vars:
-    storage_definitions: '{{ elasticsearch_storage_definitions }}'
-
 # Deploy ECK operator (Elastic Cloud on Kubernetes)
 - name: Deploy ECK operator
   ansible.builtin.include_role:
@@ -73,7 +65,7 @@
                 spec:
                   accessModes:
                     - ReadWriteOnce
-                  storageClassName: '{{ use_custom_storage_classes | ternary(elasticsearch_storage_class, omit) }}'
+                  storageClassName: '{{ elasticsearch_storage_class | default(omit, true) }}'
                   resources:
                     requests:
                       storage: '{{ elasticsearch_storage_size }}'

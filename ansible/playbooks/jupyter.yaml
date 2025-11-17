@@ -1,13 +1,4 @@
 ---
-- name: Create storage directories for Jupyter
-  hosts: k3s_cluster
-  gather_facts: false
-  tasks:
-    - name: Create storage directories
-      ansible.builtin.include_role:
-        name: jupyter
-        tasks_from: storage
-
 - name: Deploy JupyterHub
   hosts: server
   gather_facts: false

@@ -38,7 +38,7 @@ spec:
               mountPath: /var/lib/postgresql
               readOnly: false
               mountPropagation: HostToContainer
+      {{- with .Values.dbVolumes }}
       volumes:
-        - name: data
-          hostPath:
-            path: "{{ .Values.paths.db }}"
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
