@@ -27,7 +27,7 @@ jupyter_singleuser_pv_name: 'jupyter-singleuser-pv'
 
 # Single-user image configuration
 jupyter_singleuser_image_name: ghcr.io/washu-tag/pyspark-notebook
-jupyter_singleuser_image_tag: 1.1.0
+jupyter_singleuser_image_tag: 1.1.1
 
 # API tokens for JupyterHub services
 # REQUIRED: Must be set in inventory.yaml (use vault encryption)
