@@ -22,9 +22,9 @@ loki:
   storage:
     type: s3
     bucketNames:
-      chunks: loki-chunks
-      ruler: loki-ruler
-      admin: loki-admin
+      chunks: '{{ loki_chunks_bucket }}'
+      ruler: '{{ loki_ruler_bucket }}'
+      admin: '{{ loki_admin_bucket }}'
     s3:
       endpoint: 'minio.{{ minio_tenant_namespace }}.svc.cluster.local'
       region: '{{ s3_region }}'
