@@ -41,7 +41,7 @@ configOverrides:
     APP_ICON_WIDTH = {{ superset_logo_width }}
     LOGO_TARGET_PATH = "https://{{ server_hostname }}"
     LOGO_TOOLTIP = "Scout Launchpad"
-    FAVICONS = [{"href": "/static/assets/images/icon.png"}]
+    FAVICONS = [{"href": "/static/assets/images/favicon.ico"}]
   custom_routing: |
     from flask import redirect, url_for
     from flask_appbuilder import expose, IndexView
@@ -140,8 +140,8 @@ extraVolumeMounts:
     subPath: scout.png
     readOnly: true
   - name: scout-logo
-    mountPath: /app/superset/static/assets/images/icon.png
-    subPath: icon.png
+    mountPath: /app/superset/static/assets/images/favicon.ico
+    subPath: favicon.ico
     readOnly: true
 init:
   initscript: |

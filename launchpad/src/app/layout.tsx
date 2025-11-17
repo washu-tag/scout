@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description:
     "A clinical insights platform brought to you by the Mallinckrodt Institute of Radiology's Translational AI Group (TAG) at Washington University.",
   icons: {
-    icon: '/icon.png',
+    icon: '/favicon.ico',
     apple: '/scout.png',
   },
 };
