@@ -120,9 +120,6 @@ singleuser:
               echo "spark.executor.memory $SPARK_EXECUTOR_MEMORY" >> /usr/local/spark/conf/spark-defaults.conf
             fi
 
-            # Ensure JupyterLab custom directory exists (for branding CSS and logo)
-            mkdir -p /home/$NB_USER/.jupyter/custom
-
             # Copy Scout quickstart samples on first login
             FLAG_FILE=/home/$NB_USER/.scout_quickstart
             if [ ! -f $FLAG_FILE ]; then
