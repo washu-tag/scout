@@ -92,6 +92,9 @@ s3_lake_writer: lake-writer
 s3_loki_writer: loki-writer
 lake_bucket: lake
 scratch_bucket: scratch
+loki_chunks_bucket: loki-chunks
+loki_ruler_bucket: loki-ruler
+loki_admin_bucket: loki-admin
 
 # Deployment Type
 deployment_type: onprem

@@ -42,9 +42,9 @@ minio_ingress_config:
 
 # Bucket definitions
 minio_buckets:
-  - name: loki-chunks
-  - name: loki-ruler
-  - name: loki-admin
+  - name: '{{ loki_chunks_bucket }}'
+  - name: '{{ loki_ruler_bucket }}'
+  - name: '{{ loki_admin_bucket }}'
   - name: '{{ lake_bucket }}'
   - name: '{{ scratch_bucket }}'
 
@@ -87,8 +87,12 @@ minio_policies:
     actions:
       - s3:*
     resources:
-      - arn:aws:s3:::loki-*
-      - arn:aws:s3:::loki-*/*
+      - 'arn:aws:s3:::{{ loki_chunks_bucket }}'
+      - 'arn:aws:s3:::{{ loki_chunks_bucket }}/*'
+      - 'arn:aws:s3:::{{ loki_ruler_bucket }}'
+      - 'arn:aws:s3:::{{ loki_ruler_bucket }}/*'
+      - 'arn:aws:s3:::{{ loki_admin_bucket }}'
+      - 'arn:aws:s3:::{{ loki_admin_bucket }}/*'
     user: '{{ s3_loki_writer }}'
 
 # OIDC configuration

@@ -90,6 +90,9 @@
               grafana_alert: '1'
           data:
             notification-policy.yaml: "{{ lookup('template', 'notification-policy.yaml.j2') }}"
+      when: >
+        (grafana_alert_contact_point == 'slack' and slack_channel_id != '' and slack_token != '') or
+        (grafana_alert_contact_point == 'email' and grafana_smtp_host != '' and grafana_smtp_user != '')
 
     - name: Find all Grafana contact points
       ansible.builtin.find:
@@ -113,7 +116,12 @@
             '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}':
               '{{ lookup("template", item.path) | to_nice_json }}'
       loop: '{{ contact_point_templates.files }}'
-      when: grafana_alert_contact_point in (item.path | basename)
+      when: >-
+        grafana_alert_contact_point in (item.path | basename) and
+        (
+          ('slack' in (item.path | basename) and slack_channel_id != '' and slack_token != '') or
+          ('email' in (item.path | basename) and grafana_smtp_host != '' and grafana_smtp_user != '')
+        )
       loop_control:
         label: '{{ item.path | basename }}'
 
