@@ -6,7 +6,7 @@ hl7log_extractor_timezone: '{{ timezone }}'
 hl7log_extractor_image_repository: ghcr.io/washu-tag/hl7log-extractor
 hl7log_extractor_image_tag: 1.1.0
 hl7_transformer_image_repository: ghcr.io/washu-tag/hl7-transformer
-hl7_transformer_image_tag: 1.1.1
+hl7_transformer_image_tag: 1.1.0
 
 # Extractor configuration
 hl7log_extractor_timeout: 480
