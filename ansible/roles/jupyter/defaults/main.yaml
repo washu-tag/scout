@@ -90,3 +90,11 @@ jupyter_cpu_profile:
               SPARK_EXECUTOR_MEMORY: '12g'
 jupyter_profiles:
   - '{{ jupyter_cpu_profile }}'
+
+# jupyterhub-idle-culler settings
+jupyter_cull_enabled: true
+jupyter_cull_every: 600
+jupyter_cull_timeout: 172800
+jupyter_cull_max_age: 172800
+jupyter_cull_remove_named_servers: true
+jupyter_cull_concurrency: 10

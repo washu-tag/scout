@@ -65,6 +65,14 @@ hub:
     Spawner:
       http_timeout: 120
 
+cull:
+  enabled: {{ jupyter_cull_enabled | lower }}
+  timeout: {{ jupyter_cull_timeout }}
+  every: {{ jupyter_cull_every }}
+  maxAge: {{ jupyter_cull_max_age }}
+  removeNamedServers: {{ jupyter_cull_remove_named_servers | lower }}
+  concurrency: {{ jupyter_cull_concurrency }}
+
 ingress:
   enabled: true
   ingressClassName: traefik
