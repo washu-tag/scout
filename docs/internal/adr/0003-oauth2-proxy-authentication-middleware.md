@@ -1,8 +1,8 @@
 # ADR 0003: OAuth2 Proxy as Authentication Middleware
 
-**Date:** 2025-10-29
-**Status:** Accepted
-**Deciders:** TAG Team
+**Date**: 2025-10-29  
+**Status**: Accepted  
+**Decision Owner**: TAG Team
 
 ## Context
 
