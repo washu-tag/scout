@@ -671,6 +671,8 @@ See [Ollama model library](https://ollama.com/library) for available models.
 
 #### HL7 Extractor
 
+The `modality_map_source_file` variable is **required** and must be defined in `inventory.yaml`. It specifies the path to a CSV file on the Ansible control machine that maps exam codes (service identifiers) to modality types (CT, MR, XR, etc.). During deployment, this file is read and stored as a Kubernetes ConfigMap, which is then mounted into the hl7-transformer container at `/data/modality_mapping_codes.csv`. The transformer uses this mapping to derive the `modality` column in the Delta Lake table.
+
 As stated in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#how-pods-with-resource-limits-are-run),
 "The memory request is mainly used during (Kubernetes) Pod scheduling", so we recommend setting it to a small but viable value where the extractor could run
 such as the one below to allow it to be scheduled. `hl7log_extractor_jvm_heap_max_ram_percentage` is passed into the container via `-XX:MaxRAMPercentage`. When in
@@ -680,6 +682,7 @@ a large scale production instance took around 60GB of memory for the pod. If we 
 
 ```yaml
 extractor_data_dir: /ceph/input/data  # Input directory for HL7 logs
+modality_map_source_file: /path/to/modality_mapping_codes.csv  # Path to modality mapping CSV file (on control machine)
 
 hl7log_extractor_resources:
   requests:

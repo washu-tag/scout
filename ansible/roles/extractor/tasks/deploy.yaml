@@ -63,6 +63,18 @@
         AWS_ALLOW_HTTP: 'true'
         AWS_REGION: '{{ s3_region }}'
 
+- name: Create modality mapping ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: modality-mapping
+        namespace: '{{ extractor_namespace }}'
+      data:
+        modality_mapping_codes.csv: "{{ lookup('file', modality_map_source_file) }}"
+
 - name: Setup Spark defaults ConfigMap
   ansible.builtin.include_role:
     name: scout_common

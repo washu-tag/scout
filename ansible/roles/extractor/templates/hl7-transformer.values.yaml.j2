@@ -35,6 +35,9 @@ volumes:
   - name: spark-defaults
     configMap:
       name: spark-defaults
+  - name: modality-mapping
+    configMap:
+      name: modality-mapping
 volumeMounts:
   - name: data
     mountPath: /data
@@ -45,6 +48,10 @@ volumeMounts:
   - name: spark-defaults
     mountPath: /opt/spark/conf/spark-defaults.conf
     subPath: spark-defaults.conf
+  - name: modality-mapping
+    mountPath: '{{ modality_map_path }}'
+    subPath: modality_mapping_codes.csv
+    readOnly: true
 ports:
   - containerPort: 8000
 readinessProbe:
