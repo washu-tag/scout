@@ -1,5 +1,34 @@
 # Tips & Tricks
 
+## Notebooks
+
+### Server Lifespan
+
+Jupyter notebook servers automatically shut down after 2 days of runtime. Your notebook files and home directory (`/home/jovyan/`) persist, but in-memory variables are lost.
+To avoid potentially losing any important work, save notebooks frequently (Ctrl+S / Cmd+S) and save large DataFrames and intermediate results to disk.
+
+### Saving Intermediate Results
+
+Your home directory (`/home/jovyan/`) persists across server restarts. Use it to checkpoint work:
+
+**Save DataFrames to Parquet:**
+```python
+# After expensive computation
+df.write.parquet('/home/jovyan/checkpoints/results.parquet')
+
+# Resume later
+df = spark.read.parquet('/home/jovyan/checkpoints/results.parquet')
+```
+
+**Save models:**
+```python
+# PyTorch
+torch.save(model.state_dict(), '/home/jovyan/models/checkpoint.pth')
+
+# Resume
+model.load_state_dict(torch.load('/home/jovyan/models/checkpoint.pth'))
+```
+
 ## Monitor
 
 - **Accessing Dashboards and Logs**: The Scout dashboards provisioned in Grafana can be found in

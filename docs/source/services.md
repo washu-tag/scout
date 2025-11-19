@@ -27,6 +27,10 @@ The [Jupyter AI](https://jupyter-ai.readthedocs.io/en/latest/) extension is also
 AI-powered code suggestions and completions to help users write queries and analyze data. Configure the Jupyter AI 
 extension with your LLM provider of choice (e.g., OpenAI, Anthropic, etc.) to enable this feature.
 
+**Important:** Notebook servers automatically shut down after 2 days to conserve resources. Your files in `/home/jovyan/`
+are preserved, but in-memory variables (DataFrames, models, etc.) are lost. Save your work regularly and checkpoint
+intermediate results. See [Tips & Tricks](tips.md#notebooks) for checkpointing strategies.
+
 ## Application Services
 
 The following services support the system's backend operations.
