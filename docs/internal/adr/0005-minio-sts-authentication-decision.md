@@ -144,7 +144,7 @@ Replace MinIO with another S3-compatible object storage that supports STS authen
 | **Ceph RADOS GW** | ✅ Full | ✅ Yes (via OIDC) | Most complete alternative; supports `AssumeRoleWithWebIdentity` with OIDC providers |
 | **Scality ARTESCA** | ✅ Enterprise only | ✅ Yes | Requires paid enterprise product |
 | **Scality CloudServer** | ❌ No | ❌ No | Open source version lacks STS |
-| **SeaweedFS** | 🚧 In development | 🚧 Planned | PR #7160 adds STS, not yet stable |
+| **SeaweedFS** | ✅ Yes (since 3.97) | ✅ Yes (via OIDC) | [PR #7160](https://github.com/seaweedfs/seaweedfs/pull/7160) merged Aug 2025; adds `AssumeRoleWithWebIdentity` with OIDC support |
 | **Garage** | ❌ Custom auth | ❌ No | Different auth paradigm, not AWS STS-compatible |
 | **OpenIO** | ❓ Unknown | ❓ Unknown | No documented STS support |
 
