@@ -71,13 +71,27 @@ The goal was to achieve authentication portability between MinIO (on-prem) and A
 
 ### What Does Not Work: Hadoop S3A Connector
 
-**Root Cause**: Hadoop S3A connector does NOT expose custom STS endpoint configuration.
+**Root Cause**: AWS SDK limitations combined with Hadoop's credential provider implementation.
+
+**AWS SDK Support for Custom STS Endpoints:**
+
+| SDK | `AWS_ENDPOINT_URL_STS` Support | Notes |
+|-----|-------------------------------|-------|
+| **Java SDK v1** | ❌ No | No mechanism to configure custom STS endpoints |
+| **Java SDK v2** | ⚠️ Partial | Requires explicit configuration (see below) |
+| **boto3 (Python)** | ✅ Yes | Fully automatic via environment variable |
+
+**Java SDK v2 Nuance**: While SDK v2 supports `AWS_ENDPOINT_URL_STS` (added in v2.28.1), the `WebIdentityTokenFileCredentialsProvider` class creates an internal STS client that does not respect this environment variable. AWS addressed this in [Issue #1881](https://github.com/aws/aws-sdk-java-v2/issues/1881) by creating a separate class (`StsWebIdentityTokenFileCredentialsProvider`) that allows passing a custom-configured STS client with explicit `endpointOverride()`. This requires manual wiring that Hadoop does not perform.
+
+**Why Hadoop S3A Fails:**
 
 Even with Hadoop 3.4.1+ (which uses AWS SDK v2 internally):
-- `AWS_ENDPOINT_URL_STS` is ignored by the S3A connector
+- Hadoop uses `WebIdentityTokenFileCredentialsProvider` from the automatic credential provider chain
+- This provider creates an internal STS client that ignores `AWS_ENDPOINT_URL_STS`
+- Hadoop does not use the newer `StsWebIdentityTokenFileCredentialsProvider` with custom STS client configuration
 - Requests are sent to `sts.amazonaws.com` instead of MinIO Operator STS
-- There is no Hadoop configuration property to override the STS endpoint for `WebIdentityTokenFileCredentialsProvider`
-- `fs.s3a.assumed.role.sts.endpoint` exists but only works with `AssumedRoleCredentialProvider`, not WebIdentity tokens
+- There is no Hadoop configuration property to override the STS endpoint for WebIdentity tokens
+- `fs.s3a.assumed.role.sts.endpoint` exists but only works with `AssumedRoleCredentialProvider`, not WebIdentity
 
 **Scout services blocked by Hadoop limitation:**
 - **Hive Metastore** (both write and read-only instances): Uses Hadoop-AWS
@@ -211,5 +225,6 @@ Suggested approach: Inventory variable (e.g., `deployment_target: on-prem|aws`) 
 - [AWS SDK v2 Service-Specific Endpoints](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
 - [Hadoop S3A Documentation](https://hadoop.apache.org/docs/stable/hadoop-aws/tools/hadoop-aws/index.html)
 - [AWS Java SDK v1 Issue #2343](https://github.com/aws/aws-sdk-java/issues/2343) - No custom STS endpoint for WebIdentity
+- [AWS Java SDK v2 Issue #1881](https://github.com/aws/aws-sdk-java-v2/issues/1881) - Ability to customize stsClient in WebIdentityCredentialsProvider (resolved with StsWebIdentityTokenFileCredentialsProvider)
 - [HADOOP-18154](https://issues.apache.org/jira/browse/HADOOP-18154) - Added WebIdentity support to Hadoop S3A (AWS only)
 - [HADOOP-17188](https://issues.apache.org/jira/browse/HADOOP-17188) - Added IRSA support (AWS EKS only)
