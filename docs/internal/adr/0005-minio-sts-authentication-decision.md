@@ -133,6 +133,26 @@ Monitor Hadoop project for native STS endpoint support.
 - No indication custom STS endpoint support is planned
 - Indefinite timeline
 
+### Option 5: Alternative S3-Compatible Storage Systems
+
+Replace MinIO with another S3-compatible object storage that supports STS authentication.
+
+**Alternatives Evaluated:**
+
+| Solution | STS Support | K8s SA Auth | Notes |
+|----------|-------------|-------------|-------|
+| **Ceph RADOS GW** | ✅ Full | ✅ Yes (via OIDC) | Most complete alternative; supports `AssumeRoleWithWebIdentity` with OIDC providers |
+| **Scality ARTESCA** | ✅ Enterprise only | ✅ Yes | Requires paid enterprise product |
+| **Scality CloudServer** | ❌ No | ❌ No | Open source version lacks STS |
+| **SeaweedFS** | 🚧 In development | 🚧 Planned | PR #7160 adds STS, not yet stable |
+| **Garage** | ❌ Custom auth | ❌ No | Different auth paradigm, not AWS STS-compatible |
+| **OpenIO** | ❓ Unknown | ❓ Unknown | No documented STS support |
+
+**Rejected**:
+- **The Hadoop limitation applies regardless of storage backend.** Even Ceph with full STS support would face the same issue: Hadoop S3A connector does not expose custom STS endpoint configuration for `WebIdentityTokenFileCredentialsProvider`.
+- Switching storage systems would not solve the core problem—the limitation is in the Hadoop connector, not MinIO.
+- Ceph RADOS Gateway is significantly more complex to deploy and operate than MinIO, with no benefit for this use case.
+
 ## Consequences
 
 ### Positive
