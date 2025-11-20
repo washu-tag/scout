@@ -1,8 +1,8 @@
 # ADR 0004: Storage Provisioning Approach
 
-**Status**: Proposed  
 **Date**: 2025-11-07  
-**Decision Owner/Deciders**: TAG Team
+**Status**: Accepted  
+**Decision Owner**: TAG Team
 
 ## Context
 
