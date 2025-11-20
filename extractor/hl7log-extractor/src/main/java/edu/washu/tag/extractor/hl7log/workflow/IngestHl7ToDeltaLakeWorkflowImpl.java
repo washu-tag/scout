@@ -3,6 +3,7 @@ package edu.washu.tag.extractor.hl7log.workflow;
 import static edu.washu.tag.extractor.hl7log.util.Constants.BUILD_MANIFEST_QUEUE;
 import static edu.washu.tag.extractor.hl7log.util.Constants.INGEST_DELTA_LAKE_QUEUE;
 import static edu.washu.tag.extractor.hl7log.util.Constants.PYTHON_ACTIVITY;
+import static edu.washu.tag.extractor.hl7log.util.Constants.REFRESH_VIEWS_QUEUE;
 
 import edu.washu.tag.extractor.hl7log.activity.FindHl7Files;
 import edu.washu.tag.extractor.hl7log.activity.SignalRefreshActivity;
@@ -45,6 +46,7 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
     private final SignalRefreshActivity signalRefreshActivity =
         Workflow.newActivityStub(SignalRefreshActivity.class,
             ActivityOptions.newBuilder()
+                .setTaskQueue(REFRESH_VIEWS_QUEUE)
                 .setStartToCloseTimeout(Duration.ofMinutes(1))
                 .setRetryOptions(RetryOptions.newBuilder()
                     .setMaximumAttempts(3)

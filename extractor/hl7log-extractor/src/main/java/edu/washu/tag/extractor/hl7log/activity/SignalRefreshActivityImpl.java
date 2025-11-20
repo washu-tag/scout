@@ -1,6 +1,5 @@
 package edu.washu.tag.extractor.hl7log.activity;
 
-import static edu.washu.tag.extractor.hl7log.util.Constants.INGEST_DELTA_LAKE_QUEUE;
 import static edu.washu.tag.extractor.hl7log.util.Constants.REFRESH_VIEWS_QUEUE;
 import static edu.washu.tag.extractor.hl7log.util.Constants.VIEW_REFRESH_WORKFLOW_ID;
 
@@ -19,7 +18,7 @@ import org.springframework.stereotype.Component;
  * Starts the workflow if not running, then signals it.
  */
 @Component
-@ActivityImpl(taskQueues = INGEST_DELTA_LAKE_QUEUE)
+@ActivityImpl(taskQueues = REFRESH_VIEWS_QUEUE)
 public class SignalRefreshActivityImpl implements SignalRefreshActivity {
     private static final Logger logger = LoggerFactory.getLogger(SignalRefreshActivityImpl.class);
 
