@@ -128,7 +128,7 @@ trino_user: trino
 helm_plugins_dir: /root/.local/share/helm/plugins
 
 # Container mounted paths
-modality_map_path: /data/modality_mapping_codes.csv
+modality_map_path: /config/modality_mapping_codes.csv
 
 # Object storage paths (use variables for bucket names)
 scratch_path: 's3://{{ scratch_bucket }}'
