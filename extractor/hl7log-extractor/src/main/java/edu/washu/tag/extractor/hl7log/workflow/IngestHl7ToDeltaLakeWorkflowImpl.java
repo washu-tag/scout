@@ -3,26 +3,21 @@ package edu.washu.tag.extractor.hl7log.workflow;
 import static edu.washu.tag.extractor.hl7log.util.Constants.BUILD_MANIFEST_QUEUE;
 import static edu.washu.tag.extractor.hl7log.util.Constants.INGEST_DELTA_LAKE_QUEUE;
 import static edu.washu.tag.extractor.hl7log.util.Constants.PYTHON_ACTIVITY;
-import static edu.washu.tag.extractor.hl7log.util.Constants.REFRESH_VIEWS_QUEUE;
 
 import edu.washu.tag.extractor.hl7log.activity.FindHl7Files;
+import edu.washu.tag.extractor.hl7log.activity.SignalRefreshActivity;
 import edu.washu.tag.extractor.hl7log.model.FindHl7FilesInput;
 import edu.washu.tag.extractor.hl7log.model.FindHl7FilesOutput;
 import edu.washu.tag.extractor.hl7log.model.IngestHl7FilesToDeltaLakeActivityInput;
 import edu.washu.tag.extractor.hl7log.model.IngestHl7FilesToDeltaLakeInput;
 import edu.washu.tag.extractor.hl7log.model.IngestHl7FilesToDeltaLakeOutput;
-import edu.washu.tag.extractor.hl7log.model.RefreshIngestDbViewsInput;
 import edu.washu.tag.extractor.hl7log.model.WriteHl7FilesErrorStatusToDbInput;
 import edu.washu.tag.extractor.hl7log.util.DefaultArgs;
 import io.temporal.activity.ActivityOptions;
-import io.temporal.api.common.v1.WorkflowExecution;
-import io.temporal.api.enums.v1.ParentClosePolicy;
 import io.temporal.common.RetryOptions;
 import io.temporal.failure.ActivityFailure;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.ActivityStub;
-import io.temporal.workflow.Async;
-import io.temporal.workflow.ChildWorkflowOptions;
 import io.temporal.workflow.Promise;
 import io.temporal.workflow.Workflow;
 import io.temporal.workflow.WorkflowInfo;
@@ -47,12 +42,13 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
                 .build()
         );
 
-    private final RefreshIngestDbViewsWorkflow refreshIngestDbViewsWorkflow =
-        Workflow.newChildWorkflowStub(
-            RefreshIngestDbViewsWorkflow.class,
-            ChildWorkflowOptions.newBuilder()
-                .setTaskQueue(REFRESH_VIEWS_QUEUE)
-                .setParentClosePolicy(ParentClosePolicy.PARENT_CLOSE_POLICY_ABANDON)
+    private final SignalRefreshActivity signalRefreshActivity =
+        Workflow.newActivityStub(SignalRefreshActivity.class,
+            ActivityOptions.newBuilder()
+                .setStartToCloseTimeout(Duration.ofMinutes(1))
+                .setRetryOptions(RetryOptions.newBuilder()
+                    .setMaximumAttempts(3)
+                    .build())
                 .build()
         );
 
@@ -122,16 +118,9 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
         logger.info("WorkflowId {} - Activity complete, ingested {} HL7 files",
             workflowInfo.getWorkflowId(), ingestHl7Output.numHl7Ingested());
 
-        // Launch refresh views workflow
-        Async.function(
-            refreshIngestDbViewsWorkflow::refreshIngestDbViews,
-            new RefreshIngestDbViewsInput()
-        );
-        // Wait for the refresh views workflow to start
-        Promise<WorkflowExecution> refreshViewsWorkflowPromise = Workflow.getWorkflowExecution(refreshIngestDbViewsWorkflow);
-        WorkflowExecution refreshViewsWorkflow = refreshViewsWorkflowPromise.get();
-        logger.info("WorkflowId {} - Launched refresh views workflow {}",
-            workflowInfo.getWorkflowId(), refreshViewsWorkflow.getWorkflowId());
+        // Signal the view refresh entity workflow
+        signalRefreshActivity.signalRefresh(workflowInfo.getWorkflowId());
+        logger.info("WorkflowId {} - Signaled view refresh workflow", workflowInfo.getWorkflowId());
 
         return ingestHl7Output;
     }
