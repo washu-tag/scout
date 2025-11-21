@@ -108,19 +108,15 @@ Deploys JupyterHub for interactive data analysis with PySpark support.
 
 #### Server Culling Configuration
 
-Scout uses [jupyterhub-idle-culler](https://github.com/jupyterhub/jupyterhub-idle-culler) to automatically shut down inactive or long-running notebook servers. Key settings:
+Scout uses [jupyterhub-idle-culler](https://github.com/jupyterhub/jupyterhub-idle-culler) to automatically shut down long-running notebook servers. Key settings:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `jupyter_cull_enabled` | `true` | Enable/disable automatic server culling |
-| `jupyter_cull_timeout` | `172800` (2 days) | Shut down servers idle for this many seconds |
-| `jupyter_cull_max_age` | `172800` (2 days) | Shut down servers running longer than this (regardless of activity) |
-| `jupyter_cull_every` | `600` (10 min) | How often to check for idle/old servers |
+| `jupyter_cull_max_age` | `172800` (2 days) | Shut down servers running longer than this |
+| `jupyter_cull_every` | `600` (10 min) | How often to check for servers to cull |
 
-**Important constraints when culling is enabled:**
-
-- **`timeout` cannot be 0**: When culling is enabled, a non-zero timeout is required
-- **To disable idle timeout but keep max age**: If you only want servers culled based on `max_age` (total runtime) without an idle timeout, set `jupyter_cull_timeout` >= `jupyter_cull_max_age`. This ensures servers are never culled for being idle before reaching their maximum age.
+> **Note:** We intentionally set the culler's `timeout` (idle timeout) equal to `maxAge`. The idle culler's "inactivity" detection is counterintuitive and notebooks can appear active even when users consider them idle (e.g., open browser tabs, running kernels). Using `maxAge` for both ensures predictable behavior based on total runtime rather than unreliable activity signals.
 
 ## Planned Role Refactoring
 

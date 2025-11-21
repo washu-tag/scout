@@ -417,7 +417,6 @@ k3s_cluster:
     # JupyterHub automatic shutdown settings
     # jupyter_cull_enabled: true
     # jupyter_cull_every: 600
-    # jupyter_cull_timeout: 172800
     # jupyter_cull_max_age: 172800
 
     #---------------------------------------------------------------------------

@@ -76,7 +76,7 @@ hub:
 
 cull:
   enabled: {{ jupyter_cull_enabled | lower }}
-  timeout: {{ jupyter_cull_timeout }}
+  timeout: {{ jupyter_cull_max_age }}
   every: {{ jupyter_cull_every }}
   maxAge: {{ jupyter_cull_max_age }}
   removeNamedServers: {{ jupyter_cull_remove_named_servers | lower }}
