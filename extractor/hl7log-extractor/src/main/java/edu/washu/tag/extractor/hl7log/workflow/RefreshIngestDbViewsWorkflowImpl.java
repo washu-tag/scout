@@ -57,15 +57,7 @@ public class RefreshIngestDbViewsWorkflowImpl implements RefreshIngestDbViewsWor
     public void requestRefresh(String sourceWorkflowId) {
         logger.info("Received refresh request from workflow {}, isRefreshing={}, pendingRefresh={}",
             sourceWorkflowId, isRefreshing, pendingRefresh);
-
-        if (!isRefreshing) {
-            // Not currently refreshing - mark for immediate refresh
-            pendingRefresh = true;
-        } else if (!pendingRefresh) {
-            // Currently refreshing but no pending - queue one
-            pendingRefresh = true;
-        }
-        // Else: already refreshing AND already pending - debounce (ignore)
+        pendingRefresh = true;
     }
 
     @Override
