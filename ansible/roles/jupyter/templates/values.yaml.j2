@@ -26,14 +26,23 @@ hub:
       configMap:
         name: scout-logo
         defaultMode: 0644
+    - name: custom-templates
+      configMap:
+        name: jupyterhub-custom-templates
+        defaultMode: 0644
   extraVolumeMounts:
     - name: scout-logo
       mountPath: /usr/local/share/jupyterhub/static/images/scout.png
       subPath: scout.png
       readOnly: true
+    - name: custom-templates
+      mountPath: /usr/local/share/jupyterhub/custom-templates
+      readOnly: true
   extraConfig:
     branding: |
       c.JupyterHub.logo_file = '/usr/local/share/jupyterhub/static/images/scout.png'
+    templates: |
+      c.JupyterHub.template_paths = ['/usr/local/share/jupyterhub/custom-templates']
   config:
     Authenticator:
       auto_login: true

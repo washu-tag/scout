@@ -1,0 +1,24 @@
+{% raw %}
+{% extends "templates/spawn.html" %}
+{% block heading %}
+{{ super() }}
+{% endraw %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+{% if jupyter_cull_timeout is defined and jupyter_cull_timeout > 0 and (jupyter_cull_max_age is not defined or jupyter_cull_timeout != jupyter_cull_max_age) %}
+    <div style="margin-bottom: 20px; padding: 12px 16px; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; font-size: 14px;">
+      <strong>⚠️</strong> Inactive servers are stopped after {{ '%d' | format((jupyter_cull_timeout / 3600) | int) }} hours of inactivity.
+      <a href="https://washu-scout.readthedocs.io/en/latest/tips.html#notebooks" target="_blank" style="text-decoration: underline; color: #856404;">Learn more</a>
+    </div>
+{% endif %}
+{% if jupyter_cull_max_age is defined and jupyter_cull_max_age > 0 %}
+    <div style="margin-bottom: 20px; padding: 12px 16px; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; font-size: 14px;">
+      <strong>⚠️</strong> All servers are automatically stopped after {{ '%d' | format((jupyter_cull_max_age / 3600) | int) }} hours regardless of activity to help manage compute resources.
+      <a href="https://washu-scout.readthedocs.io/en/latest/tips.html#notebooks" target="_blank" style="text-decoration: underline; color: #856404;">Learn more</a>
+    </div>
+{% endif %}
+  </div>
+</div>
+{% raw %}
+{% endblock %}
+{% endraw %}
