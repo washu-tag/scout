@@ -70,6 +70,7 @@
   register: modality_map_content
 
 - name: Create modality mapping ConfigMap
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
