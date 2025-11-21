@@ -1,5 +1,6 @@
 # Tips & Tricks
 
+(notebooks)=
 ## Notebooks
 
 ### Server Lifespan
