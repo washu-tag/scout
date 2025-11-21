@@ -9,23 +9,50 @@ To avoid potentially losing any important work, save notebooks frequently (Ctrl+
 
 ### Saving Intermediate Results
 
-Your home directory (`/home/jovyan/`) persists across server restarts. Use it to checkpoint work:
+Your home directory (`/home/jovyan/`) persists across server restarts. Use it to checkpoint your work so you can pick up where you left off.
 
-**Save DataFrames to Parquet:**
+**Spark DataFrames (Parquet):**
 ```python
-# After expensive computation
+# Save after expensive computation
 df.write.parquet('/home/jovyan/checkpoints/results.parquet')
 
 # Resume later
 df = spark.read.parquet('/home/jovyan/checkpoints/results.parquet')
 ```
 
-**Save models:**
+**Pandas DataFrames:**
 ```python
+# CSV (human-readable)
+df.to_csv('/home/jovyan/checkpoints/results.csv', index=False)
+df = pd.read_csv('/home/jovyan/checkpoints/results.csv')
+
+# Parquet (faster, preserves types)
+df.to_parquet('/home/jovyan/checkpoints/results.parquet')
+df = pd.read_parquet('/home/jovyan/checkpoints/results.parquet')
+```
+
+**Python objects (pickle):**
+```python
+import pickle
+
+# Save any Python object
+with open('/home/jovyan/checkpoints/my_data.pkl', 'wb') as f:
+    pickle.dump({'results': results, 'config': config}, f)
+
+# Load it back
+with open('/home/jovyan/checkpoints/my_data.pkl', 'rb') as f:
+    data = pickle.load(f)
+```
+
+**ML models:**
+```python
+# scikit-learn
+import joblib
+joblib.dump(model, '/home/jovyan/models/classifier.joblib')
+model = joblib.load('/home/jovyan/models/classifier.joblib')
+
 # PyTorch
 torch.save(model.state_dict(), '/home/jovyan/models/checkpoint.pth')
-
-# Resume
 model.load_state_dict(torch.load('/home/jovyan/models/checkpoint.pth'))
 ```
 
