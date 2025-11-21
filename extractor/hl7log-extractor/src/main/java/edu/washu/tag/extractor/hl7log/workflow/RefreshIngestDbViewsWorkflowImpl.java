@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 @WorkflowImpl(taskQueues = Constants.REFRESH_VIEWS_QUEUE)
 public class RefreshIngestDbViewsWorkflowImpl implements RefreshIngestDbViewsWorkflow {
     private static final Logger logger = Workflow.getLogger(RefreshIngestDbViewsWorkflowImpl.class);
+    private static final Duration REFRESH_VIEWS_HEARTBEAT_TIMEOUT = Duration.ofSeconds(Constants.REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS * 2);
     private static final Duration IDLE_TIMEOUT = Duration.ofHours(1);
 
     // Workflow state - these do NOT need to be Atomic because Temporal workflows
@@ -34,11 +35,16 @@ public class RefreshIngestDbViewsWorkflowImpl implements RefreshIngestDbViewsWor
     private final RefreshIngestDbViewsActivity refreshActivity =
         Workflow.newActivityStub(RefreshIngestDbViewsActivity.class,
             ActivityOptions.newBuilder()
-                .setHeartbeatTimeout(Duration.ofSeconds(Constants.REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS * 2))
+                .setHeartbeatTimeout(REFRESH_VIEWS_HEARTBEAT_TIMEOUT)
                 .setCancellationType(ActivityCancellationType.WAIT_CANCELLATION_COMPLETED)
                 .setStartToCloseTimeout(Duration.ofHours(Constants.REFRESH_VIEWS_TIMEOUT_HOURS))
                 .setRetryOptions(RetryOptions.newBuilder()
-                    .setInitialInterval(Duration.ofSeconds(Constants.REFRESH_VIEWS_HEARTBEAT_INTERVAL_SECONDS * 2))
+                    // Give the activity a chance to heartbeat and figure out it has timed out before retrying
+                    // When an activity times out it gets notified only during a heartbeat, and delivery
+                    // of the cancellation can be delayed up to 80% of the heartbeat timeout.
+                    // See https://community.temporal.io/t/problems-cancelling-a-running-activity-from-parent-workflow/2169
+                    // To compensate for this, do not start retrying until the full heartbeat timeout has elapsed.
+                    .setInitialInterval(REFRESH_VIEWS_HEARTBEAT_TIMEOUT)
                     .setMaximumAttempts(2)
                     .build())
                 .build());
