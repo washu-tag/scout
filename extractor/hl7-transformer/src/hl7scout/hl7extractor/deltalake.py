@@ -8,13 +8,21 @@ from pathlib import Path
 
 from delta.tables import DeltaTable
 from py4j.protocol import Py4JError
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, Column
 from pyspark.sql import functions as F
 from s3fs import S3FileSystem
 from temporalio import activity
 from temporalio.exceptions import ApplicationError
 
 from hl7scout.db import write_errors, write_successes
+from schemautils import (
+    split_and_transform_repeated_field,
+    extract_person_names_from_xpn,
+    extract_person_names_from_xcn,
+    extract_person_names_from_cnn,
+    read_first_struct_name_friendly,
+    read_struct_of_names_friendly,
+)
 
 import os
 import shutil
@@ -66,24 +74,10 @@ def extract_observation_id_suffix_content(column, suffix_list):
     ).alias(f"report_section_{column.lower()}")
 
 
-def split_and_transform_repeated_field(column, component_lambda):
-    return F.transform(
-        F.transform(
-            F.split(F.col(column), "~"),  # split repetition
-            lambda component: F.split(component, "\\^"),  # and then split by component
-        ),
-        component_lambda,
-    )
-
-
-def extract_people_from_obr_field(column):
-    return F.array_distinct(
-        F.filter(
-            split_and_transform_repeated_field(
-                column, lambda parts: F.concat_ws(" ", parts[2], parts[1])
-            ),
-            lambda name: name != "",
-        )
+# Whenever this method is being used, it is partially to emphasize that the objects accessed are *NOT* proper CNN datatypes. We have separated components for OBR-32, OBR-33, OBR-34, and OBR-35 that should be separated sub-components in the standard. In addition, even if we assume that's a simple mistake, there are more sub-components with values than are allowed by the CNN data type.
+def extract_people_from_obr_field(column: str) -> Column:
+    return extract_person_names_from_cnn(
+        column, lambda name: name.family_name.isNotNull()
     )
 
 
@@ -165,7 +159,7 @@ def import_hl7_files_to_deltalake(
                     F.expr(
                         f"filter(segments, x -> x.id = '{segment}')[0].fields"
                     ).alias(segment.lower())
-                    for segment in ("PID", "ORC", "OBR", "ZDS")
+                    for segment in ("PID", "PV1", "ORC", "OBR", "ZDS")
                 ],
                 # OBX and DG1 are special cases; we need to keep them as lists for now so
                 # later we can explode them into separate rows or iterate over them
@@ -184,6 +178,7 @@ def import_hl7_files_to_deltalake(
                     for segment, fields in (
                         ("msh", (4, 7, 10, 12)),
                         ("pid", (2, 7, 8, 10, 22)),
+                        ("pv1", (2,)),
                         ("orc", (2, 3)),
                         ("obr", (2, 3, 6, 7, 8, 22, 24)),
                         ("zds", (1,)),
@@ -201,11 +196,13 @@ def import_hl7_files_to_deltalake(
                     )
                     for component in components
                 ],
-                # PID-3 is a special case.
-                # We keep it as-is for now so we can explode it later.
+                # PID-3 and PID-5 are special cases.
+                # We keep them as-is for now so we can explode or decompose them later.
                 F.col("pid").getItem(2).alias("pid-3"),
-                # We need multiple repetitions from OBR-33 and OBR-34.
+                F.col("pid").getItem(4).alias("pid-5"),
+                # We need multiple repetitions from OBR-16, OBR-33 and OBR-34.
                 # We could handle OBR-32 above, but it's easier to centralize the logic here.
+                F.col("obr").getItem(15).alias("obr-16"),
                 F.col("obr").getItem(31).alias("obr-32"),
                 F.col("obr").getItem(32).alias("obr-33"),
                 F.col("obr").getItem(33).alias("obr-34"),
@@ -310,21 +307,46 @@ def import_hl7_files_to_deltalake(
 
         activity.heartbeat()
         activity.logger.info("Creating physician df")
-        physician_df = (
-            df.select("source_file", "obr-32", "obr-33", "obr-34")
+        name_df = (
+            df.select("source_file", "pid-5", "obr-16", "obr-32", "obr-33", "obr-34")
+            .withColumn("full_patient_name", extract_person_names_from_xpn("pid-5"))
             .withColumn(
-                "principal_result_interpreter",
+                "patient_name",
+                read_first_struct_name_friendly("full_patient_name"),
+            )
+            .withColumn(
+                "full_ordering_provider", extract_person_names_from_xcn("obr-16")
+            )
+            .withColumn(
+                "ordering_provider",
+                read_first_struct_name_friendly("full_ordering_provider"),
+            )
+            .withColumn(
+                "full_principal_result_interpreter",
                 extract_people_from_obr_field("obr-32").getItem(0),
             )
             .withColumn(
-                "assistant_result_interpreter",
-                F.filter(
-                    extract_people_from_obr_field("obr-33"),
-                    lambda name: F.trim(name) != "",
+                "principal_result_interpreter",
+                F.concat_ws(
+                    " ",
+                    F.col("full_principal_result_interpreter.given_name"),
+                    F.col("full_principal_result_interpreter.family_name"),
                 ),
             )
-            .withColumn("technician", extract_people_from_obr_field("obr-34"))
-            .drop("obr-32", "obr-33", "obr-34")
+            .withColumn(
+                "full_assistant_result_interpreter",
+                extract_people_from_obr_field("obr-33"),
+            )
+            .withColumn(
+                "assistant_result_interpreter",
+                read_struct_of_names_friendly("full_assistant_result_interpreter"),
+            )
+            .withColumn(
+                "full_technician",
+                extract_people_from_obr_field("obr-34"),
+            )
+            .withColumn("technician", read_struct_of_names_friendly("technician"))
+            .drop("pid-5", "obr-16", "obr-32", "obr-33", "obr-34")
         )
 
         activity.heartbeat()
@@ -401,6 +423,7 @@ def import_hl7_files_to_deltalake(
                 F.col("pid-11-5").alias("zip_or_postal_code"),
                 F.col("pid-11-6").alias("country"),
                 F.col("pid-22").alias("ethnic_group"),
+                F.col("pv1-2").alias("patient_class"),
                 F.col("orc-2").alias("orc_2_placer_order_number"),
                 F.col("obr-2").alias("obr_2_placer_order_number"),
                 F.col("orc-3").alias("orc_3_filler_order_number"),
@@ -440,7 +463,7 @@ def import_hl7_files_to_deltalake(
             .join(diagnosis_df, "source_file", "left")
             .join(patient_ids_df, "source_file", "left")
             .join(patient_id_df, "source_file", "left")
-            .join(physician_df, "source_file", "left")
+            .join(name_df, "source_file", "left")
             .join(modality_map, "service_identifier", "left")
             .withColumn("year", F.year("message_dt"))
             .withColumn("updated", F.current_timestamp())
