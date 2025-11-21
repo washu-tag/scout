@@ -29,7 +29,7 @@ extension with your LLM provider of choice (e.g., OpenAI, Anthropic, etc.) to en
 
 **Important:** Notebook servers automatically shut down after 2 days to conserve resources. Your files in `/home/jovyan/`
 are preserved, but in-memory variables (DataFrames, models, etc.) are lost. Save your work regularly and checkpoint
-intermediate results. See [Tips & Tricks](tips.md#notebooks) for checkpointing strategies.
+intermediate results. See {ref}`Tips & Tricks <notebooks_ref>` for checkpointing strategies.
 
 ## Application Services
 
