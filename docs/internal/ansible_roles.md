@@ -116,7 +116,7 @@ Scout uses [jupyterhub-idle-culler](https://github.com/jupyterhub/jupyterhub-idl
 | `jupyter_cull_max_age` | `172800` (2 days) | Shut down servers running longer than this |
 | `jupyter_cull_every` | `600` (10 min) | How often to check for servers to cull |
 
-> **Note:** We intentionally set the culler's `timeout` (idle timeout) equal to `maxAge`. The idle culler's "inactivity" detection is counterintuitive and notebooks can appear active even when users consider them idle (e.g., open browser tabs, running kernels). Using `maxAge` for both ensures predictable behavior based on total runtime rather than unreliable activity signals.
+> **Note:** We intentionally set the culler's `timeout` (idle timeout) equal to `maxAge` because we cannot disable the `tiemout` option. It's very easy for a notebook to be in an active state (e.g. open tab, running kernels (even if the notebook is closed)) so it's not a perticuallry reliable option anyways. Using `maxAge` for both ensures predictable behavior based on total runtime rather than unreliable activity signals.
 
 ## Planned Role Refactoring
 
