@@ -74,8 +74,11 @@ def read_first_struct_name_friendly(source_column: str) -> Column:
 
 
 def read_struct_of_names_friendly(source_column: str) -> Column:
-    return F.transform(
-        source_column, lambda name: F.concat_ws(" ", name.given_name, name.family_name)
+    return F.array_distinct(
+        F.transform(
+            source_column,
+            lambda name: F.concat_ws(" ", name.given_name, name.family_name),
+        )
     )
 
 

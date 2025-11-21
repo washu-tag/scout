@@ -15,7 +15,7 @@ from temporalio import activity
 from temporalio.exceptions import ApplicationError
 
 from hl7scout.db import write_errors, write_successes
-from schemautils import (
+from .schemautils import (
     split_and_transform_repeated_field,
     extract_person_names_from_xpn,
     extract_person_names_from_xcn,
