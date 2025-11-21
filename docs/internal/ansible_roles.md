@@ -102,6 +102,26 @@ Configuration:
 
 Used by: Staging node deployment when `use_staging_node: true`
 
+### jupyter
+
+Deploys JupyterHub for interactive data analysis with PySpark support.
+
+#### Server Culling Configuration
+
+Scout uses [jupyterhub-idle-culler](https://github.com/jupyterhub/jupyterhub-idle-culler) to automatically shut down inactive or long-running notebook servers. Key settings:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `jupyter_cull_enabled` | `true` | Enable/disable automatic server culling |
+| `jupyter_cull_timeout` | `172800` (2 days) | Shut down servers idle for this many seconds |
+| `jupyter_cull_max_age` | `172800` (2 days) | Shut down servers running longer than this (regardless of activity) |
+| `jupyter_cull_every` | `600` (10 min) | How often to check for idle/old servers |
+
+**Important constraints when culling is enabled:**
+
+- **`timeout` cannot be 0**: When culling is enabled, a non-zero timeout is required
+- **To disable idle timeout but keep max age**: If you only want servers culled based on `max_age` (total runtime) without an idle timeout, set `jupyter_cull_timeout` >= `jupyter_cull_max_age`. This ensures servers are never culled for being idle before reaching their maximum age.
+
 ## Planned Role Refactoring
 
 The following playbooks will be refactored into roles in future work:
@@ -111,7 +131,6 @@ The following playbooks will be refactored into roles in future work:
 - **extractor**: HL7 data extraction services (hl7log-extractor, hl7-transformer)
 - **analytics**: Apache Superset for data visualization
 - **monitoring**: Prometheus, Grafana, and Loki for cluster monitoring
-- **jupyter**: JupyterHub for interactive data analysis
 
 Each role will follow the same structure as `postgres`, with:
 - Dev-friendly defaults in `defaults/main.yaml`
