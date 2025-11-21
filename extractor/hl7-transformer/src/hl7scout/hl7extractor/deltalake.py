@@ -345,7 +345,7 @@ def import_hl7_files_to_deltalake(
                 "full_technician",
                 extract_people_from_obr_field("obr-34"),
             )
-            .withColumn("technician", read_struct_of_names_friendly("technician"))
+            .withColumn("technician", read_struct_of_names_friendly("full_technician"))
             .drop("pid-5", "obr-16", "obr-32", "obr-33", "obr-34")
         )
 
