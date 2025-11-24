@@ -31,37 +31,44 @@ def empty_column(column_name: str) -> Column:
     return F.lit(None).cast(StringType()).alias(column_name)
 
 
+def null_if_empty(column):
+    return F.when((column != "") & column.isNotNull(), column).otherwise(None)
+
+
 def map_xpn_to_struct(parts):
     return F.struct(
-        *[parts[i].alias(field.name) for i, field in enumerate(shared_name_components)]
+        *[
+            null_if_empty(parts[i]).alias(field.name)
+            for i, field in enumerate(shared_name_components)
+        ]
     )
 
 
 def map_xcn_to_struct(parts):
     return F.struct(
-        parts[0].alias("id_number"),
+        null_if_empty(parts[0]).alias("id_number"),
         *[
-            parts[i + 1].alias(field.name)
+            null_if_empty(parts[i + 1]).alias(field.name)
             for i, field in enumerate(shared_name_components)
             if i < 6
         ],  # wrong spot for name_type_code
-        parts[9].alias("name_type_code"),
-        parts[8].alias("assigning_authority"),
-        parts[12].alias("identifier_type_code"),
-        parts[13].alias("assigning_facility")
+        null_if_empty(parts[9]).alias("name_type_code"),
+        null_if_empty(parts[8]).alias("assigning_authority"),
+        null_if_empty(parts[12]).alias("identifier_type_code"),
+        null_if_empty(parts[13]).alias("assigning_facility")
     )
 
 
 def map_cnn_to_struct(parts):
     return F.struct(
-        parts[0].alias("id_number"),
+        null_if_empty(parts[0]).alias("id_number"),
         *[
-            parts[i + 1].alias(field.name)
+            null_if_empty(parts[i + 1]).alias(field.name)
             for i, field in enumerate(shared_name_components)
             if i < 6
         ],  # wrong spot for name_type_code
         empty_column("name_type_code"),
-        parts[8].alias("assigning_authority"),
+        null_if_empty(parts[8]).alias("assigning_authority"),
         empty_column("identifier_type_code"),
         empty_column("assigning_facility")
     )

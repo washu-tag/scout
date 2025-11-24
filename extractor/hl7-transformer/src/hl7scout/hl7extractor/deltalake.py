@@ -81,6 +81,18 @@ def extract_people_from_obr_field(column: str) -> Column:
     )
 
 
+def transform_diagnoses_to_delimited_string(code: str) -> Column:
+    return F.array_join(
+        F.transform(
+            F.expr(
+                f"filter(diagnoses, x -> x.diagnosis_code_coding_system = '{code}')"
+            ),
+            lambda diagnosis: diagnosis.diagnosis_code,
+        ),
+        "; ",
+    )
+
+
 def import_hl7_files_to_deltalake(
     hl7_manifest_file_path: str,
     modality_map_csv_path: str,
@@ -303,22 +315,12 @@ def import_hl7_files_to_deltalake(
                 ),
             )
             .withColumn(
-                "icd9_codes",
-                F.transform(
-                    F.expr(
-                        "filter(diagnoses, x -> x.diagnosis_code_coding_system = 'I9')"
-                    ),
-                    lambda diagnosis: diagnosis.diagnosis_code,
-                ),
+                "icd9_diagnoses_consolidated",
+                transform_diagnoses_to_delimited_string("I9"),
             )
             .withColumn(
-                "icd10_codes",
-                F.transform(
-                    F.expr(
-                        "filter(diagnoses, x -> x.diagnosis_code_coding_system = 'I10')"
-                    ),
-                    lambda diagnosis: diagnosis.diagnosis_code,
-                ),
+                "icd10_diagnoses_consolidated",
+                transform_diagnoses_to_delimited_string("I10"),
             )
             .drop("dg1_lines")
         )
