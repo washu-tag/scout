@@ -87,7 +87,7 @@ def transform_diagnoses_to_delimited_string(code: str) -> Column:
             F.expr(
                 f"filter(diagnoses, x -> x.diagnosis_code_coding_system = '{code}')"
             ),
-            lambda diagnosis: diagnosis.diagnosis_code,
+            lambda diagnosis: diagnosis.diagnosis_code_text,
         ),
         "; ",
     )
