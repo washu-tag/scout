@@ -302,6 +302,24 @@ def import_hl7_files_to_deltalake(
                     ),
                 ),
             )
+            .withColumn(
+                "icd9_codes",
+                F.transform(
+                    F.expr(
+                        "filter(diagnoses, x -> x.diagnosis_code_coding_system = 'I9')"
+                    ),
+                    lambda diagnosis: diagnosis.diagnosis_code,
+                ),
+            )
+            .withColumn(
+                "icd10_codes",
+                F.transform(
+                    F.expr(
+                        "filter(diagnoses, x -> x.diagnosis_code_coding_system = 'I10')"
+                    ),
+                    lambda diagnosis: diagnosis.diagnosis_code,
+                ),
+            )
             .drop("dg1_lines")
         )
 
