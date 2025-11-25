@@ -70,7 +70,7 @@
             nodePathMap:
               - node: DEFAULT_PATH_FOR_NON_LISTED_NODES
                 paths:
-                  - "{{ local_path_default_path }}"
+                  - '{{ local_path_default_path }}'
 
     - name: Add custom storage class configs
       ansible.builtin.set_fact:
@@ -81,9 +81,9 @@
                }
              })
           }}
-      loop: "{{ onprem_local_path_multidisk_storage_classes }}"
+      loop: '{{ onprem_local_path_multidisk_storage_classes }}'
       loop_control:
-        label: "{{ item.name }}"
+        label: '{{ item.name }}'
 
     - name: Update local-path-provisioner ConfigMap with storageClassConfigs
       kubernetes.core.k8s:
