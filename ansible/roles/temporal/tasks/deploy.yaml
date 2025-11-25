@@ -47,6 +47,10 @@
   no_log: true
 
 # Deploy Temporal
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    temporal_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
 - name: Deploy Temporal
   ansible.builtin.include_role:
     name: scout_common
@@ -59,7 +63,7 @@
     helm_repo_name: temporal
     helm_repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
     helm_chart_timeout: 15m
-    helm_chart_values: '{{ lookup("template", "values.yaml.j2") | from_yaml }}'
+    helm_chart_values: '{{ temporal_helm_chart_values }}'
 
 - name: Wait for Temporal schema job to complete
   shell: >-
