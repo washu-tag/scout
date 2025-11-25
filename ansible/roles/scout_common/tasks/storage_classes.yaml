@@ -3,6 +3,8 @@
 # Only runs when onprem_local_path_multidisk_storage_classes is non-empty
 - name: Configure custom storage classes for k3s on-prem multi-disk deployments
   when: onprem_local_path_multidisk_storage_classes | length > 0
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
   block:
     - name: Check for local-path-config in kube-system (k3d default)
       kubernetes.core.k8s_info:
@@ -59,8 +61,30 @@
       ansible.builtin.debug:
         msg: 'Using default local-path storage path: {{ local_path_default_path }}'
 
+    # Build the storageClassConfigs as a proper data structure
     # See https://github.com/rancher/local-path-provisioner#customize-the-configmap
-    # for info on this configmap configuration
+    - name: Initialize storage class configs with local-path default
+      ansible.builtin.set_fact:
+        local_path_storage_class_configs:
+          local-path:
+            nodePathMap:
+              - node: DEFAULT_PATH_FOR_NON_LISTED_NODES
+                paths:
+                  - "{{ local_path_default_path }}"
+
+    - name: Add custom storage class configs
+      ansible.builtin.set_fact:
+        local_path_storage_class_configs: >-
+          {{ local_path_storage_class_configs | combine({
+               item.name: {
+                 'nodePathMap': [{'node': 'DEFAULT_PATH_FOR_NON_LISTED_NODES', 'paths': [item.path]}]
+               }
+             })
+          }}
+      loop: "{{ onprem_local_path_multidisk_storage_classes }}"
+      loop_control:
+        label: "{{ item.name }}"
+
     - name: Update local-path-provisioner ConfigMap with storageClassConfigs
       kubernetes.core.k8s:
         state: present
@@ -71,30 +95,7 @@
             name: local-path-config
             namespace: '{{ local_path_provisioner_namespace }}'
           data:
-            config.json: |
-              {
-                "nodePathMap": [],
-                "storageClassConfigs": {
-                  "local-path": {
-                    "nodePathMap": [
-                      {
-                        "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES",
-                        "paths": ["{{ local_path_default_path }}"]
-                      }
-                    ]
-                  }{{ "," if onprem_local_path_multidisk_storage_classes | length > 0 else "" }}
-                  {% for sc in onprem_local_path_multidisk_storage_classes %}
-                  "{{ sc.name }}": {
-                    "nodePathMap": [
-                      {
-                        "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES",
-                        "paths": ["{{ sc.path }}"]
-                      }
-                    ]
-                  }{{ "," if not loop.last else "" }}
-                  {% endfor %}
-                }
-              }
+            config.json: "{{ {'nodePathMap': [], 'storageClassConfigs': local_path_storage_class_configs} | to_json }}"
             setup: |
               #!/bin/sh
               set -eu
