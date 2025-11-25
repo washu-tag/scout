@@ -161,11 +161,11 @@ The `diagnoses` column contains an array of structs to represent the diagnoses.
 An example of the column with schema is shown below:
 
 ```text
-+---------------------------------------------------------------------------------------------+
-|diagnoses                                                                                    |
-+---------------------------------------------------------------------------------------------+
-|[{J18.9, Pneumonia, unspecified organism, I10}, {I10, Essential (primary) hypertension, I10}]|
-+---------------------------------------------------------------------------------------------+
++------------------------------------------------------------------------------------------+-----------------------------------------------------------+
+|diagnoses                                                                                 |diagnoses_consolidated                                     |
++------------------------------------------------------------------------------------------+-----------------------------------------------------------+
+|[{I48.91, Unspecified atrial fibrillation, I10}, {I50.9, Heart failure, unspecified, I10}]|Unspecified atrial fibrillation; Heart failure, unspecified|
++------------------------------------------------------------------------------------------+-----------------------------------------------------------+
 
 root
  |-- diagnoses: array (nullable = true)
@@ -173,18 +173,23 @@ root
  |    |    |-- diagnosis_code: string (nullable = true)
  |    |    |-- diagnosis_code_text: string (nullable = true)
  |    |    |-- diagnosis_code_coding_system: string (nullable = true)
+ |-- diagnoses_consolidated: string (nullable = true)
 ```
 
 In this example, the report has two diagnosis codes, both of which are ICD-10 codes. The first code
-is J18.9 and the second is I10. An example spark query to filter an existing dataframe `df` for reports
-containing an ICD-10 diagnosis code of "J18.9" could look like:
+is I48.91 and the second is I50.9. An example spark query to filter an existing dataframe `df` for reports
+containing an ICD-10 diagnosis code of "I48.91" could look like:
 ```python
 from pyspark.sql import functions as F
 
 df.select("diagnoses").filter(
-    F.exists("diagnoses", lambda x: (x.diagnosis_code == "J18.9") & (x.diagnosis_code_coding_system == "I10"))
+    F.exists("diagnoses", lambda x: (x.diagnosis_code == "I48.91") & (x.diagnosis_code_coding_system == "I10"))
 )
 ```
+
+The `diagnoses_consolidated` column is provided as a convenience for when the list of diagnosis code text values
+is turned into a semicolon-delimited string is usable for simple text searches.
+
 
 (report_text_ref)=
 ## Report Text
