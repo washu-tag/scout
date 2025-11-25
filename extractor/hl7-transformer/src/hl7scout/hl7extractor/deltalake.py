@@ -22,6 +22,7 @@ from .schemautils import (
     extract_person_names_from_cnn,
     read_first_struct_name_friendly,
     read_struct_of_names_friendly,
+    struct_with_nulls,
 )
 
 import os
@@ -74,22 +75,14 @@ def extract_observation_id_suffix_content(column, suffix_list):
     ).alias(f"report_section_{column.lower()}")
 
 
-# Whenever this method is being used, it is partially to emphasize that the objects accessed are *NOT* proper CNN datatypes. We have separated components for OBR-32, OBR-33, OBR-34, and OBR-35 that should be separated sub-components in the standard. In addition, even if we assume that's a simple mistake, there are more sub-components with values than are allowed by the CNN data type.
+# Whenever this method is being used, it is partially to emphasize that the objects
+# accessed are *NOT* proper CNN datatypes. We have separated components for OBR-32,
+# OBR-33, OBR-34, and OBR-35 that should be separated sub-components in the standard.
+# In addition, even if we assume that's a simple mistake, there are more sub-components
+# with values than are allowed by the CNN data type.
 def extract_people_from_obr_field(column: str) -> Column:
     return extract_person_names_from_cnn(
         column, lambda name: name.family_name.isNotNull()
-    )
-
-
-def transform_diagnoses_to_delimited_string(code: str) -> Column:
-    return F.array_join(
-        F.transform(
-            F.expr(
-                f"filter(diagnoses, x -> x.diagnosis_code_coding_system = '{code}')"
-            ),
-            lambda diagnosis: diagnosis.diagnosis_code_text,
-        ),
-        "; ",
     )
 
 
@@ -315,12 +308,14 @@ def import_hl7_files_to_deltalake(
                 ),
             )
             .withColumn(
-                "icd9_diagnoses_consolidated",
-                transform_diagnoses_to_delimited_string("I9"),
-            )
-            .withColumn(
-                "icd10_diagnoses_consolidated",
-                transform_diagnoses_to_delimited_string("I10"),
+                "diagnoses_consolidated",
+                F.array_join(
+                    F.transform(
+                        "diagnoses",
+                        lambda diagnosis: diagnosis.diagnosis_code_text,
+                    ),
+                    "; ",
+                ),
             )
             .drop("dg1_lines")
         )
@@ -377,11 +372,11 @@ def import_hl7_files_to_deltalake(
                 "patient_ids",
                 split_and_transform_repeated_field(
                     "pid-3",
-                    lambda parts: F.struct(
-                        F.coalesce(parts[0], F.lit("")).alias("id_number"),
-                        F.coalesce(parts[3], F.lit("")).alias("assigning_authority"),
-                        F.coalesce(parts[4], F.lit("")).alias("identifier_type_code"),
-                        F.coalesce(parts[5], F.lit("")).alias("assigning_facility"),
+                    lambda parts: struct_with_nulls(
+                        parts[0].alias("id_number"),
+                        parts[3].alias("assigning_authority"),
+                        parts[4].alias("identifier_type_code"),
+                        parts[5].alias("assigning_facility"),
                     ),
                 ),
             )
@@ -402,8 +397,8 @@ def import_hl7_files_to_deltalake(
                 "source_file",
                 F.col("patient_id.id_number").alias("id_number"),
                 F.when(
-                    (F.col("patient_id.assigning_authority") != "")
-                    & (F.col("patient_id.identifier_type_code") != ""),
+                    F.col("patient_id.assigning_authority").isNotNull
+                    & F.col("patient_id.identifier_type_code").isNotNull,
                     F.concat_ws(
                         "_",
                         F.lower("patient_id.assigning_authority"),
