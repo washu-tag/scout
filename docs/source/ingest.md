@@ -24,6 +24,7 @@ file and updating the database. (Note also: the temporal client only sends the h
 heartbeats internally and could coalesce or drop heartbeats if they are too frequent.) Ansible equivalent: `hl7log_extractor_heartbeat_timeout`
 - `splitAndUploadConcurrency`: number of HL7 listener log files to process concurrently. Ansible equivalent: `hl7log_extractor_concurrency`
 - `modalityMapPath`: path to read modality map file, which is the source of the `modality` column in the Delta Lake table.
+   This file is deployed as a Kubernetes ConfigMap from the source file specified by `modality_map_source_file` in the inventory.
    Ansible equivalent: `modality_map_path`.
 - `reportTableName`: name of the Delta Lake table to write to. Ansible equivalent: `report_delta_table_name`.
 - `deltaIngestTimeout`: timeout in minutes for the activity and transforms the HL7 and uploads to the delta lake. Ansible equivalent: `hl7_transformer_timeout` 
