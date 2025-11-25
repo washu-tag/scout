@@ -77,12 +77,12 @@ def extract_observation_id_suffix_content(column, suffix_list):
 
 # Whenever this method is being used, it is partially to emphasize that the objects
 # accessed are *NOT* proper CNN datatypes. We have separated components for OBR-32,
-# OBR-33, OBR-34, and OBR-35 that should be separated sub-components in the standard.
-# In addition, even if we assume that's a simple mistake, there are more sub-components
+# OBR-33, OBR-34, and OBR-35 that should be separated subcomponents in the standard.
+# In addition, even if we assume that's a simple mistake, there are more subcomponents
 # with values than are allowed by the CNN data type.
 def extract_people_from_obr_field(column: str) -> Column:
     return extract_person_names_from_cnn(
-        column, lambda name: name.col2.isNotNull()  # family_name field not named yet
+        column, lambda name: name.family_name.isNotNull()
     )
 
 
@@ -373,10 +373,10 @@ def import_hl7_files_to_deltalake(
                 split_and_transform_repeated_field(
                     "pid-3",
                     lambda parts: struct_with_nulls(
-                        parts[0].alias("id_number"),
-                        parts[3].alias("assigning_authority"),
-                        parts[4].alias("identifier_type_code"),
-                        parts[5].alias("assigning_facility"),
+                        id_number=parts[0],
+                        assigning_authority=parts[3],
+                        identifier_type_code=parts[4],
+                        assigning_facility=parts[5],
                     ),
                 ),
             )
