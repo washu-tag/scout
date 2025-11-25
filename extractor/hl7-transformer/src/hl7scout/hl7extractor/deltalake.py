@@ -397,8 +397,8 @@ def import_hl7_files_to_deltalake(
                 "source_file",
                 F.col("patient_id.id_number").alias("id_number"),
                 F.when(
-                    F.col("patient_id.assigning_authority").isNotNull
-                    & F.col("patient_id.identifier_type_code").isNotNull,
+                    F.col("patient_id.assigning_authority").isNotNull()
+                    & F.col("patient_id.identifier_type_code").isNotNull(),
                     F.concat_ws(
                         "_",
                         F.lower("patient_id.assigning_authority"),
