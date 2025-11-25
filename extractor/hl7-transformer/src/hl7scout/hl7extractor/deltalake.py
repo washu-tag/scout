@@ -82,7 +82,7 @@ def extract_observation_id_suffix_content(column, suffix_list):
 # with values than are allowed by the CNN data type.
 def extract_people_from_obr_field(column: str) -> Column:
     return extract_person_names_from_cnn(
-        column, lambda name: name.family_name.isNotNull()
+        column, lambda name: name.col2.isNotNull()  # family_name field not named yet
     )
 
 
