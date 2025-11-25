@@ -697,19 +697,27 @@ hl7_transformer_cpu_limit: 4
 
 ### Namespace Customization
 
-Default namespaces are defined in `roles/scout_common/defaults/main.yaml`. Override them if needed:
+Scout uses 6 consolidated namespaces to organize services by function. Default namespaces are defined in `roles/scout_common/defaults/main.yaml`. Override them if needed:
 
 ```yaml
 k3s_cluster:
   vars:
-    postgres_cluster_namespace: postgres      # Default: cnpg
-    jupyter_namespace: custom-jupyter         # Default: jupyter
-    superset_namespace: custom-superset       # Default: superset
-    temporal_namespace: custom-temporal       # Default: temporal
-    # ... and so on for other services
+    # Consolidated Scout namespaces (defaults shown)
+    scout_core_namespace: scout-core           # PostgreSQL, Redis, Keycloak, OAuth2-Proxy, Launchpad
+    scout_data_namespace: scout-data           # MinIO, Hive Metastore
+    scout_extractor_namespace: scout-extractor # Cassandra, Elasticsearch, Temporal, Extractors
+    scout_analytics_namespace: scout-analytics # Trino, Superset, JupyterHub, Chat/Open WebUI
+    scout_operators_namespace: scout-operators # CloudNativePG, MinIO, K8ssandra, ECK, GPU operators
+    scout_monitoring_namespace: scout-monitoring # Prometheus, Loki, Grafana
+
+    # System namespaces
+    traefik_namespace: kube-system            # Traefik (K3s system ingress)
+    harbor_namespace: harbor                  # Harbor registry (air-gapped only)
 ```
 
-See `roles/scout_common/defaults/main.yaml` for the complete list of namespace variables.
+Individual services inherit namespaces from these consolidated variables (e.g., `postgres_cluster_namespace: "{{ scout_core_namespace }}"`).
+
+See `roles/scout_common/defaults/main.yaml` for the complete namespace mapping.
 
 (air-gapped-deployment)=
 ## Air-Gapped Deployment
