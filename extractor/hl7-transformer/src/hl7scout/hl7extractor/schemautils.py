@@ -27,50 +27,55 @@ person_name_schema = StructType(shared_name_components)
 person_name_and_id_schema = StructType(name_with_id_components)
 
 
-def struct_with_nulls(*columns: Column) -> Column:
+def struct_with_nulls(**column_mapping: Column) -> Column:
     def empty_to_null(column: Column) -> Column:
         return F.when(F.trim(column) == "", None).otherwise(column)
 
-    return F.struct(*[empty_to_null(column) for column in columns])
+    return F.struct(
+        *[
+            empty_to_null(column).alias(struct_field_name)
+            for struct_field_name, column in column_mapping.items()
+        ]
+    )
 
 
-def empty_column(column_name: str) -> Column:
-    return F.lit(None).cast(StringType()).alias(column_name)
+def empty_column() -> Column:
+    return F.lit(None).cast(StringType())
 
 
 def map_xpn_to_struct(parts):
     return struct_with_nulls(
-        *[parts[i].alias(field.name) for i, field in enumerate(shared_name_components)]
+        **{field.name: parts[i] for i, field in enumerate(shared_name_components)}
     )
 
 
 def map_xcn_to_struct(parts):
     return struct_with_nulls(
-        parts[0].alias("id_number"),
-        *[
-            parts[i + 1].alias(field.name)
+        id_number=parts[0],
+        **{
+            field.name: parts[i + 1]
             for i, field in enumerate(shared_name_components)
             if i < 6
-        ],  # wrong spot for name_type_code
-        parts[9].alias("name_type_code"),
-        parts[8].alias("assigning_authority"),
-        parts[12].alias("identifier_type_code"),
-        parts[13].alias("assigning_facility")
+        },  # wrong spot for name_type_code
+        name_type_code=parts[9],
+        assigning_authority=parts[8],
+        identifier_type_code=parts[12],
+        assigning_facility=parts[13]
     )
 
 
 def map_cnn_to_struct(parts):
     return struct_with_nulls(
-        parts[0].alias("id_number"),
-        *[
-            parts[i + 1].alias(field.name)
+        id_number=parts[0],
+        **{
+            field.name: parts[i + 1]
             for i, field in enumerate(shared_name_components)
             if i < 6
-        ],  # wrong spot for name_type_code
-        empty_column("name_type_code"),
-        parts[8].alias("assigning_authority"),
-        empty_column("identifier_type_code"),
-        empty_column("assigning_facility")
+        },  # wrong spot for name_type_code
+        name_type_code=empty_column(),
+        assigning_authority=parts[8],
+        identifier_type_code=empty_column(),
+        assigning_facility=empty_column()
     )
 
 
