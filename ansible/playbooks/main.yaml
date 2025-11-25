@@ -26,14 +26,6 @@
 - name: Install Helm
   import_playbook: helm.yaml
 
-- name: Configure custom storage classes
-  hosts: server
-  tasks:
-    - name: Configure storage classes for multi-disk deployments
-      ansible.builtin.import_role:
-        name: scout_common
-        tasks_from: storage_classes
-
 - name: Install GPU Operator and Services
   import_playbook: gpu.yaml
   when: groups.get('gpu_workers', []) | length > 0

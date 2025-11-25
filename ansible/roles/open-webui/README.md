@@ -91,7 +91,8 @@ Configure the Trino MCP external tool to enable SQL querying:
       - **Note**: Adjust namespace if Trino is deployed in a different namespace
       - Format: `http://mcp-trino.<trino_namespace>:8080/mcp`
    - **Auth**: `None`
-4. Click **Save**
+   - **Function Name Filter List**: `execute_query, get_table_schema` (temporarily required for `v0.6.40` due to [an Open WebUI bug](https://github.com/open-webui/open-webui/issues/19486))
+5. Click **Save**
 
 #### 3. Configure Model in Open WebUI
 
