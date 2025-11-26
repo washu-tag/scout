@@ -122,10 +122,29 @@ k3s_cluster:
     # Set this to execute ansible commands as root
     ansible_become: true
 
-    # Namespaces
-    # Default namespaces are defined in roles/scout_common/defaults/main.yaml
-    # Override them here if you need custom namespace names
-    # Example: prometheus_namespace: my-custom-prometheus-namespace
+    # Namespaces - Scout uses 6 consolidated namespaces by default
+    # Core infrastructure (PostgreSQL, Redis, Keycloak, OAuth2-Proxy, Launchpad)
+    # scout_core_namespace: scout-core
+    #
+    # Data layer (MinIO, Hive Metastore)
+    # scout_data_namespace: scout-data
+    #
+    # Extractor & workflow orchestration (Temporal, Cassandra, Elasticsearch, Extractors)
+    # scout_extractor_namespace: scout-extractor
+    #
+    # Analytics & user services (Trino, Superset, JupyterHub, Chat)
+    # scout_analytics_namespace: scout-analytics
+    #
+    # Operators (CloudNativePG, MinIO, K8ssandra, ECK, GPU)
+    # scout_operators_namespace: scout-operators
+    #
+    # Monitoring (Prometheus, Loki, Grafana)
+    # scout_monitoring_namespace: scout-monitoring
+    #
+    # Override consolidated namespaces here if needed for your environment
+    # Example: scout_core_namespace: my-core-namespace
+    # Or override individual service namespaces if needed
+    # Example: postgres_cluster_namespace: postgres
 
     #############################################################################
     ### Storage Configuration                                                 ###

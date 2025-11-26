@@ -1,9 +1,6 @@
 ---
 # Default values for NVIDIA GPU Operator deployment
 
-# Namespace
-gpu_operator_namespace: gpu-operator
-
 # GPU operator Helm chart values
 gpu_operator_values:
   toolkit:
