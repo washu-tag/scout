@@ -53,7 +53,7 @@ scout_monitoring_namespace: scout-monitoring
 traefik_namespace: kube-system
 harbor_namespace: harbor
 
-# Service-to-namespace mappings (for backward compatibility during migration)
+# Service-to-namespace mappings
 # Core infrastructure
 postgres_cluster_namespace: '{{ scout_core_namespace }}'
 keycloak_namespace: '{{ scout_core_namespace }}'

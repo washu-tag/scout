@@ -716,6 +716,14 @@ k3s_cluster:
 ```
 
 Individual services inherit namespaces from these consolidated variables (e.g., `postgres_cluster_namespace: "{{ scout_core_namespace }}"`).
+You can also override namespaces at the service level if you want to put a service into a different scout namespace or in its own dedicated namespace.
+
+```yaml
+k3s_cluster:
+  vars:
+    minio_tenant_namespace: "{{ scout_core_namespace }}"
+    postgres_cluster_namespace: postgres
+```
 
 See `roles/scout_common/defaults/main.yaml` for the complete namespace mapping.
 

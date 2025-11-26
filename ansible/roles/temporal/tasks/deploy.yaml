@@ -11,9 +11,6 @@
     state: present
 
 # Deploy Temporal
-# Note: Cassandra and Elasticsearch secrets are now accessible directly
-# in the same namespace (scout-extractor). The Temporal Helm chart will use
-# the existingSecret configuration to reference the Elasticsearch password.
 - name: Parse Helm values
   ansible.builtin.set_fact:
     temporal_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

@@ -143,6 +143,8 @@ k3s_cluster:
     #
     # Override consolidated namespaces here if needed for your environment
     # Example: scout_core_namespace: my-core-namespace
+    # Or override individual service namespaces if needed
+    # Example: postgres_cluster_namespace: postgres
 
     #############################################################################
     ### Storage Configuration                                                 ###
