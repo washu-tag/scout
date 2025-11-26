@@ -120,6 +120,12 @@ singleuser:
               echo "spark.executor.memory $SPARK_EXECUTOR_MEMORY" >> /usr/local/spark/conf/spark-defaults.conf
             fi
 
+            # Copy branding files to .jupyter/custom/ (must be done as UID 1000, not by K8s mounts)
+            # This avoids BeeGFS root squash creating .jupyter/ as nobody:nobody
+            mkdir -p /home/$NB_USER/.jupyter/custom
+            cp /opt/scout-branding/custom.css /home/$NB_USER/.jupyter/custom/
+            cp /opt/scout-branding/scout.png /home/$NB_USER/.jupyter/custom/
+
             # Copy Scout quickstart samples on first login
             FLAG_FILE=/home/$NB_USER/.scout_quickstart
             if [ ! -f $FLAG_FILE ]; then
@@ -133,6 +139,8 @@ singleuser:
     # HuggingFace model cache directory - models downloaded from HF Hub are stored here
     # This directory is created in postStart hook and persists with user's home directory
     HF_HOME: '/home/jovyan/models'
+    # Move IPython directory to local emptyDir to avoid SQLite locking issues on BeeGFS
+    IPYTHONDIR: '/home/jovyan/.local/share/jupyter/ipython'
     # Trino connection information for read-only access from notebooks
     # Users can connect with: trino.dbapi.connect(host=os.getenv('TRINO_HOST'), ...)
     TRINO_HOST: 'trino.{{ trino_namespace }}'
@@ -154,6 +162,12 @@ singleuser:
 
         # Enable custom CSS loading for Scout branding
         c.LabApp.custom_css = True
+
+        # Move YStore SQLite database to local emptyDir to avoid BeeGFS locking issues
+        c.SQLiteYStore.db_path = '/home/jovyan/.local/share/jupyter/ystore.db'
+
+        # Disable IPython history SQLite to avoid BeeGFS locking issues
+        c.HistoryManager.enabled = False
 
   storage:
     type: static
@@ -177,18 +191,29 @@ singleuser:
         name: jupyterlab-scout-logo
         configMap:
           name: scout-logo
+      # Local emptyDir for SQLite databases - avoids file locking issues on BeeGFS
+      jupyter-local-data:
+        name: jupyter-local-data
+        emptyDir: {}
     extraVolumeMounts:
+      # Mount local storage for SQLite (FileIdManager, jupyter_ai indices, runtime)
+      # This is ephemeral but avoids SQLite locking issues on network filesystems
+      jupyter-local-data:
+        name: jupyter-local-data
+        mountPath: /home/jovyan/.local/share/jupyter
       spark-defaults:
         name: spark-config-writable
         mountPath: /usr/local/spark/conf/spark-defaults.conf
         subPath: spark-defaults.conf
+      # Mount branding files to /opt (not /home/jovyan) to avoid Kubernetes creating
+      # .jupyter/ directory as root (which gets squashed to nobody on BeeGFS)
       jupyterlab-custom-css:
         name: jupyterlab-custom-css
-        mountPath: /home/jovyan/.jupyter/custom/custom.css
+        mountPath: /opt/scout-branding/custom.css
         subPath: custom.css
       jupyterlab-scout-logo:
         name: jupyterlab-scout-logo
-        mountPath: /home/jovyan/.jupyter/custom/scout.png
+        mountPath: /opt/scout-branding/scout.png
         subPath: scout.png
   networkPolicy:
     egress:
