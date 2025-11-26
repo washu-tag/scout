@@ -10,6 +10,11 @@ export const authOptions: NextAuthOptions = {
       authorization: { params: { scope: 'openid email profile microprofile-jwt' } },
     }),
   ],
+  pages: {
+    // Redirect auth errors to sign-in instead of showing error page
+    // This handles cases where the Keycloak session was terminated externally
+    error: '/api/auth/signin',
+  },
   callbacks: {
     async jwt({ token, account, profile }) {
       if (account) {
