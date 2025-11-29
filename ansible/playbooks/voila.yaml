@@ -1,0 +1,9 @@
+---
+- name: Install Voilà Playbooks
+  hosts: server
+  gather_facts: false
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  roles:
+    - role: voila
+      when: enable_playbooks | default(false)

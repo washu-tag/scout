@@ -6,6 +6,7 @@ replicaCount: 1
 
 # Feature flags
 enableChat: false
+enablePlaybooks: false
 
 image:
   repository: ghcr.io/washu-tag/launchpad
