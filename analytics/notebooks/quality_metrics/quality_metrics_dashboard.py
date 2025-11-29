@@ -50,7 +50,7 @@ def _connect_trino():
 
 
 def _load_quality_data(
-    table_name="default.latest_reports", date_range_days=None, limit=None
+    table_name="default.reports", date_range_days=None, limit=None
 ):
     """
     Load quality metrics data from Trino (optimized for speed).
@@ -58,7 +58,7 @@ def _load_quality_data(
     Parameters
     ----------
     table_name : str
-        Table name (e.g., "default.latest_reports")
+        Table name (e.g., "default.reports")
     date_range_days : int, optional
         Only load reports from last N days
     limit : int, default=50000
@@ -153,14 +153,14 @@ def _load_quality_data(
     return df
 
 
-def create_dashboard(table_name="default.latest_reports", date_range_days=30):
+def create_dashboard(table_name="default.reports", date_range_days=30):
     """
     Create and display quality metrics dashboard with progressive rendering.
 
     Parameters
     ----------
-    table_name : str, default="default.latest_reports"
-        Delta table to analyze (latest_reports recommended for Voila)
+    table_name : str, default="default.reports"
+        Delta table to analyze (reports recommended for Voila)
     date_range_days : int, default=30
         Only analyze reports from last N days (default 30 for fast load, max 50k rows)
     """
@@ -634,7 +634,7 @@ def _render_quality_indicators(df):
     )
 
 
-def create_landing_page(table_name="default.latest_reports", date_range_days=30):
+def create_landing_page(table_name="default.reports", date_range_days=30):
     """
     Create landing page with "Launch Dashboard" button for Voila.
 
@@ -642,7 +642,7 @@ def create_landing_page(table_name="default.latest_reports", date_range_days=30)
 
     Parameters
     ----------
-    table_name : str, default="default.latest_reports"
+    table_name : str, default="default.reports"
         Delta table to analyze
     date_range_days : int, default=30
         Only analyze reports from last N days (default 30 for fast load)

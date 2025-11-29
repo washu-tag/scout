@@ -10,7 +10,7 @@ Usage:
     process_reports_in_batches(
         spark=spark,
         classify_func=classify_report,
-        dest_table="default.latest_reports",
+        dest_table="default.reports",
         error_table="default.followup_errors",
         ollama_url="http://ollama.chat:11434",
         model="gpt-oss:20b",
@@ -54,7 +54,7 @@ def process_reports_in_batches(
     classify_func : callable
         Function that takes a row and returns classification result dict
     dest_table : str
-        Name of destination table (e.g., "default.latest_reports")
+        Name of destination table (e.g., "default.reports")
     error_table : str
         Name of error logging table (e.g., "default.followup_errors")
     ollama_url : str
@@ -231,7 +231,7 @@ def process_reports_in_batches(
             )
             print(f"     ✓ Errors logged")
 
-        # MERGE results back to latest_reports
+        # MERGE results back to reports
         if success_count > 0:
             print(f"  🔄 Merging {success_count} results into {dest_table}...")
             df_success.createOrReplaceTempView("results")
