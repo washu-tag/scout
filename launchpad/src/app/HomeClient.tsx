@@ -139,8 +139,8 @@ const PLAYBOOKS = [
   },
   {
     id: 'rads',
-    title: 'LI-RADS Dashboard',
-    description: 'Explore and monitor LI-RADS reporting trends over time',
+    title: 'RADS Dashboard',
+    description: 'Explore LI-RADS and BI-RADS reporting trends over time',
     notebook: 'RADS.ipynb',
     icon: HiChartBar,
     colors: {
@@ -335,7 +335,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
         <div className={`grid gap-6 ${enablePlaybooks ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
           {/* Playbooks */}
           {enablePlaybooks && subdomainUrls.playbooks && (
-            <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
+            <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg h-full">
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
@@ -354,7 +354,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
           )}
 
           {/* Admin Tools */}
-          <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
+          <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg h-full flex flex-col">
             <div className="text-center mb-6">
               <div className="flex items-center justify-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -368,7 +368,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
                 Infrastructure and user management
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 flex-1">
               <a
                 href={subdomainUrls.minio}
                 target="_blank"

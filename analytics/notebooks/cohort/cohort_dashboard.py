@@ -400,7 +400,7 @@ def launch_cohort_builder():
     )
 
     facility_select = widgets.SelectMultiple(
-        value=["BJH", "WUSM"],
+        value=(),
         options=[
             "BJH",
             "PWH",
@@ -524,6 +524,13 @@ def launch_cohort_builder():
             modality_select,
             service_name_input,
             facility_select,
+            widgets.HTML(
+                """
+            <div style='font-size: 12px; color: #6b7280; margin-top: 4px; font-style: italic;'>
+                💡 No selection = all facilities
+            </div>
+        """
+            ),
             date_range_select,
             widgets.HTML("<div style='height: 16px;'></div>"),
             widgets.HTML(
