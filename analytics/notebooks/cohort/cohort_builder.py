@@ -262,7 +262,7 @@ def build_cohort_query(config):
         diagnoses,
         sending_facility,
         message_dt
-    FROM {TRINO_CATALOG}.{TRINO_SCHEMA}.latest_reports
+    FROM {TRINO_CATALOG}.{TRINO_SCHEMA}.reports
     WHERE {where_clause}
     ORDER BY message_dt DESC
     {limit_clause}
