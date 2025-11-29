@@ -1,0 +1,53 @@
+---
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ voila_namespace }}'
+
+- name: Setup Spark defaults ConfigMap
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: spark_config_setup
+  vars:
+    spark_defaults_configmap_name: spark-defaults
+    spark_defaults_configmap_namespace: '{{ voila_namespace }}'
+    spark_memory: '{{ voila_spark_driver_memory }}'
+    spark_hive_metastore_uri: '{{ hive_metastore_endpoint }}'
+    spark_s3_username: '{{ s3_lake_writer }}'
+    spark_s3_password: '{{ s3_lake_writer_secret }}'
+
+- name: Deploy Voilà
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: voila
+    helm_chart_ref: '{{ voila_helm_chart_ref }}'
+    helm_chart_namespace: '{{ voila_namespace }}'
+    helm_chart_values_files:
+      - '{{ scout_repo_dir }}/helm/voila/values.yaml'
+    helm_chart_values:
+      replicaCount: '{{ voila_replicas }}'
+      image:
+        repository: '{{ voila_image_name }}'
+        tag: '{{ voila_image_tag }}'
+      resources: '{{ voila_resources }}'
+      scoutRepoDir: '{{ scout_repo_dir }}'
+      env:
+        TRINO_HOST: 'trino.{{ trino_namespace }}'
+        TRINO_PORT: '8080'
+        TRINO_SCHEME: 'http'
+        TRINO_USER: '{{ trino_user }}'
+        TRINO_CATALOG: 'delta'
+        TRINO_SCHEMA: 'default'
+      # S3/Spark settings come from spark-defaults ConfigMap
+      ingress:
+        enabled: true
+        className: traefik
+        annotations:
+          traefik.ingress.kubernetes.io/router.middlewares: >-
+            kube-system-oauth2-proxy-error@kubernetescrd,
+            kube-system-oauth2-proxy-auth@kubernetescrd
+        host: 'playbooks.{{ server_hostname }}'

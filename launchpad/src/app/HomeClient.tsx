@@ -3,9 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { FaPython } from 'react-icons/fa';
-import { SiMinio, SiTemporal, SiGrafana, SiKeycloak, SiReadthedocs } from 'react-icons/si';
+import { SiGrafana, SiKeycloak, SiMinio, SiReadthedocs, SiTemporal } from 'react-icons/si';
 import { BiLineChart, BiMessageSquareDetail } from 'react-icons/bi';
-import { HiArrowRight, HiCube, HiCog } from 'react-icons/hi';
+import {
+  HiArrowRight,
+  HiCube,
+  HiCog,
+  HiOutlineBookOpen,
+  HiUserGroup,
+  HiChartBar,
+  HiSparkles,
+  HiClipboardCheck,
+} from 'react-icons/hi';
 import TopBar from '@/components/TopBar';
 import AdminSection from '@/components/AdminSection';
 
@@ -111,11 +120,115 @@ const ToolsGrid = ({ subdomainUrls, enableChat }: ToolsGridProps) => {
   );
 };
 
-interface ContentGridProps {
-  enableChat: boolean;
+// Playbook definitions with icons and colors
+const PLAYBOOKS = [
+  {
+    id: 'cohort',
+    title: 'Research Cohorting',
+    description: 'Build and manage patient cohorts for research studies',
+    notebook: 'Cohort.ipynb',
+    icon: HiUserGroup,
+    colors: {
+      gradient: 'from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/10',
+      border: 'border-violet-200/50 dark:border-violet-800/50',
+      hoverBorder: 'hover:border-violet-400 dark:hover:border-violet-500',
+      shadow: 'hover:shadow-violet-200/50 dark:hover:shadow-violet-500/30',
+      icon: 'text-violet-600 dark:text-violet-400',
+      arrow: 'group-hover:text-violet-600 dark:group-hover:text-violet-400',
+    },
+  },
+  {
+    id: 'rads',
+    title: 'LI-RADS Dashboard',
+    description: 'Explore and monitor LI-RADS reporting trends over time',
+    notebook: 'RADS.ipynb',
+    icon: HiChartBar,
+    colors: {
+      gradient: 'from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/10',
+      border: 'border-rose-200/50 dark:border-rose-800/50',
+      hoverBorder: 'hover:border-rose-400 dark:hover:border-rose-500',
+      shadow: 'hover:shadow-rose-200/50 dark:hover:shadow-rose-500/30',
+      icon: 'text-rose-600 dark:text-rose-400',
+      arrow: 'group-hover:text-rose-600 dark:group-hover:text-rose-400',
+    },
+  },
+  {
+    id: 'followup_detection',
+    title: 'Clinical Follow-up Monitoring',
+    description: 'Review algorithmically-detected follow-up recommendations',
+    notebook: 'Dashboard.ipynb',
+    icon: HiSparkles,
+    colors: {
+      gradient: 'from-cyan-50 to-sky-50 dark:from-cyan-900/20 dark:to-sky-900/10',
+      border: 'border-cyan-200/50 dark:border-cyan-800/50',
+      hoverBorder: 'hover:border-cyan-400 dark:hover:border-cyan-500',
+      shadow: 'hover:shadow-cyan-200/50 dark:hover:shadow-cyan-500/30',
+      icon: 'text-cyan-600 dark:text-cyan-400',
+      arrow: 'group-hover:text-cyan-600 dark:group-hover:text-cyan-400',
+    },
+  },
+  {
+    id: 'quality_metrics',
+    title: 'Quality Metrics',
+    description: 'Analyze report quality and compliance metrics',
+    notebook: 'QualityMetrics.ipynb',
+    icon: HiClipboardCheck,
+    colors: {
+      gradient: 'from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/10',
+      border: 'border-emerald-200/50 dark:border-emerald-800/50',
+      hoverBorder: 'hover:border-emerald-400 dark:hover:border-emerald-500',
+      shadow: 'hover:shadow-emerald-200/50 dark:hover:shadow-emerald-500/30',
+      icon: 'text-emerald-600 dark:text-emerald-400',
+      arrow: 'group-hover:text-emerald-600 dark:group-hover:text-emerald-400',
+    },
+  },
+];
+
+interface PlaybooksGridProps {
+  playbooksUrl: string;
 }
 
-const ContentGrid = ({ enableChat }: ContentGridProps) => {
+const PlaybooksGrid = ({ playbooksUrl }: PlaybooksGridProps) => {
+  return (
+    <div className="space-y-3">
+      {PLAYBOOKS.map((playbook) => {
+        const IconComponent = playbook.icon;
+        return (
+          <a
+            key={playbook.id}
+            href={`${playbooksUrl}/voila/render/${playbook.id}/${playbook.notebook}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`group relative flex items-center gap-3 p-4 bg-gradient-to-r ${playbook.colors.gradient} border ${playbook.colors.border} ${playbook.colors.hoverBorder} rounded-xl hover:shadow-xl ${playbook.colors.shadow} hover:-translate-y-1 transition-all duration-300 no-underline overflow-hidden`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-transparent group-hover:from-white/5 group-hover:to-white/10 dark:group-hover:from-white/5 dark:group-hover:to-white/10 transition-all duration-300"></div>
+            <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
+              <IconComponent className={`text-xl ${playbook.colors.icon}`} />
+            </div>
+            <div className="relative flex-1 min-w-0">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                {playbook.title}
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                {playbook.description}
+              </p>
+            </div>
+            <HiArrowRight
+              className={`relative text-xl text-gray-300 dark:text-gray-600 ${playbook.colors.arrow} group-hover:translate-x-1 transition-all duration-300 flex-shrink-0`}
+            />
+          </a>
+        );
+      })}
+    </div>
+  );
+};
+
+interface ContentGridProps {
+  enableChat: boolean;
+  enablePlaybooks: boolean;
+}
+
+const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
   const [subdomainUrls, setSubdomainUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -133,6 +246,7 @@ const ContentGrid = ({ enableChat }: ContentGridProps) => {
       superset: getUrl('superset'),
       // Cannot redirect without a js modification, see https://github.com/open-webui/open-webui/discussions/7337
       chat: getUrl('chat', '/oauth/oidc/login'),
+      playbooks: getUrl('playbooks'),
       minio: getUrl('minio'),
       temporal: getUrl('temporal', '/auth/sso'),
       grafana: getUrl('grafana'),
@@ -140,8 +254,8 @@ const ContentGrid = ({ enableChat }: ContentGridProps) => {
     });
 
     console.debug('[Scout] Subdomain URLs generated', { protocol, host });
-    console.debug('[Scout] Feature flags:', { enableChat });
-  }, [enableChat]);
+    console.debug('[Scout] Feature flags:', { enableChat, enablePlaybooks });
+  }, [enableChat, enablePlaybooks]);
 
   // Don't render until subdomain URLs are set on client side
   if (Object.keys(subdomainUrls).length === 0) {
@@ -192,9 +306,54 @@ const ContentGrid = ({ enableChat }: ContentGridProps) => {
         </div>
       </div>
 
-      {/* Admin Tools Section - Only visible to admins */}
-      {Object.keys(subdomainUrls).length > 0 && (
-        <AdminSection requireAdmin={true}>
+      {/* Playbooks & Admin Tools - Side by side when admin, stacked otherwise */}
+      <AdminSection
+        requireAdmin={true}
+        fallback={
+          /* Playbooks only (non-admin view) */
+          enablePlaybooks && subdomainUrls.playbooks ? (
+            <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
+              <div className="text-center mb-6">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
+                    <HiOutlineBookOpen className="text-base text-white" />
+                  </div>
+                  <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">
+                    Playbooks
+                  </h2>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
+                  Pluggable workflows and dashboards
+                </p>
+              </div>
+              <PlaybooksGrid playbooksUrl={subdomainUrls.playbooks} />
+            </div>
+          ) : null
+        }
+      >
+        {/* Side-by-side layout for admins */}
+        <div className={`grid gap-6 ${enablePlaybooks ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
+          {/* Playbooks */}
+          {enablePlaybooks && subdomainUrls.playbooks && (
+            <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
+              <div className="text-center mb-6">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
+                    <HiOutlineBookOpen className="text-base text-white" />
+                  </div>
+                  <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">
+                    Playbooks
+                  </h2>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
+                  Pluggable workflows and dashboards
+                </p>
+              </div>
+              <PlaybooksGrid playbooksUrl={subdomainUrls.playbooks} />
+            </div>
+          )}
+
+          {/* Admin Tools */}
           <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
             <div className="text-center mb-6">
               <div className="flex items-center justify-center gap-2 mb-3">
@@ -206,7 +365,7 @@ const ContentGrid = ({ enableChat }: ContentGridProps) => {
                 </h2>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400 font-light">
-                Infrastructure management and monitoring
+                Infrastructure and user management
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -214,95 +373,76 @@ const ContentGrid = ({ enableChat }: ContentGridProps) => {
                 href={subdomainUrls.minio}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-xl hover:shadow-red-500/20 dark:hover:shadow-2xl dark:hover:shadow-red-500/30 hover:from-red-50 hover:to-slate-50 dark:hover:from-red-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
+                className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-red-50 hover:to-rose-50 dark:hover:from-red-900/20 dark:hover:to-rose-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-xl hover:shadow-red-200/30 dark:hover:shadow-red-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
               >
-                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                <div className="relative w-10 h-10 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
                   <SiMinio className="text-xl text-red-600 dark:text-red-400" />
                 </div>
-                <div className="relative flex-1 min-w-0">
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Lake</h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                    Object storage and data lake
-                  </p>
-                </div>
-                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-red-600 dark:group-hover:text-red-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+                <div className="relative text-sm font-bold text-gray-900 dark:text-white">Lake</div>
               </a>
 
               <a
                 href={subdomainUrls.temporal}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-600 hover:shadow-xl hover:shadow-cyan-500/20 dark:hover:shadow-2xl dark:hover:shadow-cyan-500/30 hover:from-cyan-50 hover:to-slate-50 dark:hover:from-cyan-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
+                className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-cyan-50 hover:to-sky-50 dark:hover:from-cyan-900/20 dark:hover:to-sky-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-600 hover:shadow-xl hover:shadow-cyan-200/30 dark:hover:shadow-cyan-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
               >
-                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                <div className="relative w-10 h-10 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
                   <SiTemporal className="text-xl text-cyan-600 dark:text-cyan-400" />
                 </div>
-                <div className="relative flex-1 min-w-0">
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Orchestrator</h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                    Workflow and task automation
-                  </p>
+                <div className="relative text-sm font-bold text-gray-900 dark:text-white">
+                  Orchestrator
                 </div>
-                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
               </a>
 
               <a
                 href={subdomainUrls.grafana}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-xl hover:shadow-orange-500/20 dark:hover:shadow-2xl dark:hover:shadow-orange-500/30 hover:from-orange-50 hover:to-slate-50 dark:hover:from-orange-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
+                className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-orange-50 hover:to-amber-50 dark:hover:from-orange-900/20 dark:hover:to-amber-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-xl hover:shadow-orange-200/30 dark:hover:shadow-orange-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
               >
-                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                <div className="relative w-10 h-10 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
                   <SiGrafana className="text-xl text-orange-500 dark:text-orange-400" />
                 </div>
-                <div className="relative flex-1 min-w-0">
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">Monitor</h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                    System metrics and dashboards
-                  </p>
+                <div className="relative text-sm font-bold text-gray-900 dark:text-white">
+                  Monitor
                 </div>
-                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-orange-500 dark:group-hover:text-orange-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
               </a>
 
               <a
                 href={subdomainUrls.keycloak}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-slate-200/50 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-xl hover:shadow-purple-500/20 dark:hover:shadow-2xl dark:hover:shadow-purple-500/30 hover:from-purple-50 hover:to-slate-50 dark:hover:from-purple-900/20 dark:hover:to-gray-800 transition-all duration-300 no-underline hover:scale-105 hover:-translate-y-1 overflow-hidden"
+                className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-xl hover:shadow-blue-200/30 dark:hover:shadow-blue-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
               >
-                <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 shadow-md flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                  <SiKeycloak className="text-xl text-purple-600 dark:text-purple-400" />
+                <div className="relative w-10 h-10 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                  <SiKeycloak className="text-xl text-blue-600 dark:text-blue-400" />
                 </div>
-                <div className="relative flex-1 min-w-0">
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                    User Management
-                  </h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                    Identity and access control
-                  </p>
+                <div className="relative text-sm font-bold text-gray-900 dark:text-white">
+                  Users
                 </div>
-                <HiArrowRight className="relative text-xl text-gray-300 dark:text-gray-600 group-hover:text-purple-600 dark:group-hover:text-purple-400 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
               </a>
             </div>
           </div>
-        </AdminSection>
-      )}
+        </div>
+      </AdminSection>
     </div>
   );
 };
 
 interface HomeClientProps {
   enableChat: boolean;
+  enablePlaybooks: boolean;
 }
 
-export default function HomeClient({ enableChat }: HomeClientProps) {
+export default function HomeClient({ enableChat, enablePlaybooks }: HomeClientProps) {
   const [mounted, setMounted] = useState(false);
   const { data: session, status } = useSession();
 
   useEffect(() => {
     setMounted(true);
-    console.log('[Scout Client] Props received:', { enableChat });
-  }, [enableChat]);
+    console.log('[Scout Client] Props received:', { enableChat, enablePlaybooks });
+  }, [enableChat, enablePlaybooks]);
 
   // Auto-login: redirect to sign in if not authenticated
   useEffect(() => {
@@ -367,7 +507,7 @@ export default function HomeClient({ enableChat }: HomeClientProps) {
         </div>
 
         {/* Content Grid */}
-        <ContentGrid enableChat={enableChat} />
+        <ContentGrid enableChat={enableChat} enablePlaybooks={enablePlaybooks} />
 
         {/* Footer */}
         <div className="text-center mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">

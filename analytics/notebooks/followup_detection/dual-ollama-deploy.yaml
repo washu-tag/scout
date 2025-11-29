@@ -1,0 +1,62 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ollama-dual
+---
+# Single Ollama Instance on GPU 1 (GPU 0 is used by chatbot/ollama)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama-gpu1
+  namespace: ollama-dual
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama-gpu1
+  template:
+    metadata:
+      labels:
+        app: ollama-gpu1
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama:0.12.3
+          ports:
+            - containerPort: 11434
+          env:
+            - name: OLLAMA_NUM_PARALLEL
+              value: '16'
+            - name: OLLAMA_FLASH_ATTENTION
+              value: '1'
+            - name: OLLAMA_KV_CACHE_TYPE
+              value: 'q8_0'
+            - name: OLLAMA_MODELS
+              value: '/models'
+          resources:
+            requests:
+              nvidia.com/gpu: 1
+            limits:
+              nvidia.com/gpu: 1
+          volumeMounts:
+            - name: ollama-models
+              mountPath: /models
+              readOnly: true
+      volumes:
+        - name: ollama-models
+          hostPath:
+            path: /scout/persistence/ollama/models
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-gpu1
+  namespace: ollama-dual
+spec:
+  selector:
+    app: ollama-gpu1
+  ports:
+    - port: 11434
+      targetPort: 11434

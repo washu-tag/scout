@@ -34,7 +34,7 @@ superset_postgres_password: changeme
 superset_database: superset
 
 # Analytics directory path
-superset_analytics_dir: '{{ scout_repo_dir }}/analytics'
+superset_analytics_dir: '{{ scout_repo_dir }}/analytics/superset'
 
 # Scout logo and favicon paths
 superset_logo_path: '{{ scout_repo_dir }}/launchpad/public/scout.png'

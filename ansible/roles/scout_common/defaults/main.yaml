@@ -67,6 +67,7 @@ dcm4chee_namespace: dcm4chee
 launchpad_namespace: launchpad
 keycloak_namespace: keycloak
 redis_namespace: redis
+voila_namespace: voila
 
 # OAuth configuration
 oauth_provider_name: Keycloak # User-facing name for OAuth provider (e.g., 'WashU Key', 'Keycloak')
@@ -145,6 +146,7 @@ keycloak_subdomain: keycloak
 
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
+enable_playbooks: false
 
 # Computed values (DO NOT CHANGE)
 s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
