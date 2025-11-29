@@ -54,6 +54,18 @@ LIRADS_SCORES = [
     "LR-TIV",
     "LR-TR",
 ]
+BIRADS_SCORES = [
+    "BI-RADS-0",
+    "BI-RADS-1",
+    "BI-RADS-2",
+    "BI-RADS-3",
+    "BI-RADS-4",
+    "BI-RADS-4A",
+    "BI-RADS-4B",
+    "BI-RADS-4C",
+    "BI-RADS-5",
+    "BI-RADS-6",
+]
 PIRADS_SCORES = ["1", "2", "3", "4", "5"]  # PI-RADS for prostate
 
 
@@ -124,6 +136,13 @@ LIRADS_PATTERNS = [
     r"LIRADS[-\s]*([1-5]|M|NC|TIV|TR)",  # LIRADS5, LIRADS 4, LIRADS TR
 ]
 
+# Breast RADS patterns
+BIRADS_PATTERNS = [
+    r"BI-?RADS[-\s]*((?:Category\s*)?[0-6](?:[ABC])?)",  # BI-RADS-5, BIRADS 4A, BI-RADS Category 4
+    r"BIRADS[-\s]*((?:Category\s*)?[0-6](?:[ABC])?)",  # BIRADS5, BIRADS 4B
+    r"(?:Category\s*)?([0-6](?:[ABC])?)\s*(?:BI-?RADS|BIRADS)",  # Category 4 BI-RADS, 5 BIRADS
+]
+
 # Prostate RADS patterns (for future expansion)
 PIRADS_PATTERNS = [
     r"PI-?RADS[-\s]*([1-5])",  # PI-RADS-5, PIRADS 4
@@ -137,15 +156,21 @@ def extract_rads_scores(report_text, rads_type="LIRADS"):
 
     Args:
         report_text: Report text to search
-        rads_type: 'LIRADS' or 'PIRADS'
+        rads_type: 'LIRADS', 'BIRADS', or 'PIRADS'
 
     Returns:
-        List of extracted scores (e.g., ['LR-5', 'LR-4'])
+        List of extracted scores (e.g., ['LR-5', 'LR-4'] or ['BI-RADS-4A'])
     """
     if not report_text or pd.isna(report_text):
         return []
 
-    patterns = LIRADS_PATTERNS if rads_type == "LIRADS" else PIRADS_PATTERNS
+    if rads_type == "LIRADS":
+        patterns = LIRADS_PATTERNS
+    elif rads_type == "BIRADS":
+        patterns = BIRADS_PATTERNS
+    else:
+        patterns = PIRADS_PATTERNS
+
     scores = []
 
     for pattern in patterns:
@@ -158,6 +183,13 @@ def extract_rads_scores(report_text, rads_type="LIRADS"):
                 # Add LR- prefix if not present
                 if not score.startswith("LR-"):
                     score = f"LR-{score}"
+                scores.append(score)
+            elif rads_type == "BIRADS":
+                # Normalize BI-RADS scores - remove "CATEGORY " prefix if present
+                score = re.sub(r"CATEGORY\s*", "", score)
+                # Add BI-RADS- prefix if not present
+                if not score.startswith("BI-RADS-"):
+                    score = f"BI-RADS-{score}"
                 scores.append(score)
             else:
                 scores.append(score)
@@ -186,19 +218,42 @@ def get_primary_score(scores):
     if not scores:
         return None
 
-    # Priority order for LI-RADS (highest risk first)
-    # LR-TR (treated) is placed after LR-4 as it represents a previously treated lesion
-    priority = [
-        "LR-M",
-        "LR-5",
-        "LR-TIV",
-        "LR-4",
-        "LR-TR",
-        "LR-3",
-        "LR-2",
-        "LR-1",
-        "LR-NC",
-    ]
+    # Detect score type from first score
+    first_score = scores[0]
+
+    if first_score.startswith("LR-"):
+        # Priority order for LI-RADS (highest risk first)
+        # LR-TR (treated) is placed after LR-4 as it represents a previously treated lesion
+        priority = [
+            "LR-M",
+            "LR-5",
+            "LR-TIV",
+            "LR-4",
+            "LR-TR",
+            "LR-3",
+            "LR-2",
+            "LR-1",
+            "LR-NC",
+        ]
+    elif first_score.startswith("BI-RADS-"):
+        # Priority order for BI-RADS (highest risk first)
+        # 6 = known malignancy, 5 = highly suggestive of malignancy
+        # 4C > 4B > 4A for subcategories
+        priority = [
+            "BI-RADS-6",
+            "BI-RADS-5",
+            "BI-RADS-4C",
+            "BI-RADS-4B",
+            "BI-RADS-4A",
+            "BI-RADS-4",
+            "BI-RADS-3",
+            "BI-RADS-2",
+            "BI-RADS-1",
+            "BI-RADS-0",
+        ]
+    else:
+        # Default for PI-RADS or unknown
+        priority = ["5", "4", "3", "2", "1"]
 
     for p in priority:
         if p in scores:
@@ -290,6 +345,9 @@ def build_rads_query(config):
     if rads_type == "LIRADS":
         conditions.append("REGEXP_LIKE(report_text, '(?is)(LI-?RADS|LR-[1-5M])')")
         criteria_summary.append("Report mentions LI-RADS")
+    elif rads_type == "BIRADS":
+        conditions.append("REGEXP_LIKE(report_text, '(?is)(BI-?RADS|BIRADS)')")
+        criteria_summary.append("Report mentions BI-RADS")
     else:
         conditions.append("REGEXP_LIKE(report_text, '(?is)(PI-?RADS)')")
         criteria_summary.append("Report mentions PI-RADS")
@@ -587,8 +645,8 @@ def calculate_score_distribution(df, by_patients=False):
         total_mentions = dist["count"].sum()
         dist["percentage"] = (dist["count"] / total_mentions * 100).round(1)
 
-    # Sort by score priority
-    priority_order = [
+    # Sort by score priority - detect RADS type from scores
+    lirads_priority = [
         "LR-M",
         "LR-5",
         "LR-TIV",
@@ -599,6 +657,25 @@ def calculate_score_distribution(df, by_patients=False):
         "LR-1",
         "LR-NC",
     ]
+    birads_priority = [
+        "BI-RADS-6",
+        "BI-RADS-5",
+        "BI-RADS-4C",
+        "BI-RADS-4B",
+        "BI-RADS-4A",
+        "BI-RADS-4",
+        "BI-RADS-3",
+        "BI-RADS-2",
+        "BI-RADS-1",
+        "BI-RADS-0",
+    ]
+
+    # Detect which priority order to use based on scores present
+    if len(dist) > 0 and dist["score"].iloc[0].startswith("BI-RADS-"):
+        priority_order = birads_priority
+    else:
+        priority_order = lirads_priority
+
     dist["sort_key"] = dist["score"].apply(
         lambda x: priority_order.index(x) if x in priority_order else 999
     )

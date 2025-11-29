@@ -64,7 +64,7 @@ def launch_rads_dashboard():
                     Scout RADS Dashboard
                 </h1>
                 <p style='margin: 0 0 28px 0; font-size: 16px; opacity: 0.95; font-weight: 400; line-height: 1.5;'>
-                    Advanced LI-RADS analysis with intelligent score extraction, population analytics,<br>
+                    Advanced RADS analysis with intelligent score extraction, population analytics,<br>
                     and longitudinal patient tracking
                 </p>
 
@@ -116,6 +116,7 @@ def launch_rads_dashboard():
     rads_type_select = widgets.Dropdown(
         options=[
             ("LI-RADS (Liver)", "LIRADS"),
+            ("BI-RADS (Breast)", "BIRADS"),
             # ('PI-RADS (Prostate)', 'PIRADS')  # Future expansion
         ],
         value="LIRADS",
@@ -126,7 +127,7 @@ def launch_rads_dashboard():
 
     modality_select = widgets.SelectMultiple(
         value=["CT", "MR", "MRI"],
-        options=["CT", "MR", "MRI", "US", "XR", "NM", "PT", "RF"],
+        options=["CT", "MR", "MRI", "MG", "US", "XR", "NM", "PT", "RF"],
         description="Modality:",
         layout=widgets.Layout(width="98%", height="100px"),
         style={"description_width": "100px"},
@@ -141,7 +142,7 @@ def launch_rads_dashboard():
     )
 
     facility_select = widgets.SelectMultiple(
-        value=["BJH", "WUSM"],
+        value=(),
         options=[
             "BJH",
             "PWH",
@@ -242,7 +243,7 @@ def launch_rads_dashboard():
             widgets.HTML(
                 """
             <div style='font-size: 12px; color: #6b7280; margin-top: 4px; font-style: italic;'>
-                💡 Tip: Hold Ctrl/Cmd to select multiple facilities
+                💡 No selection = all facilities. Hold Ctrl/Cmd to select multiple.
             </div>
         """
             ),
