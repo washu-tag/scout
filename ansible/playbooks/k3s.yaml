@@ -22,3 +22,11 @@
     - k3s
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
+
+- name: Configure custom storage classes
+  hosts: server
+  tasks:
+    - name: Configure storage classes for multi-disk deployments
+      ansible.builtin.import_role:
+        name: scout_common
+        tasks_from: storage_classes

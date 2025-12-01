@@ -26,7 +26,9 @@ ollama:
 {% endif %}
   persistentVolume:
     enabled: true
-    storageClass: {{ ollama_storage_class }}
+{% if ollama_storage_class is defined and ollama_storage_class %}
+    storageClass: '{{ ollama_storage_class }}'
+{% endif %}
     size: {{ ollama_storage_size }}
 
 pipelines:
@@ -43,7 +45,9 @@ ingress:
 
 persistence:
   enabled: true
-  storageClass: {{ open_webui_storage_class }}
+{% if open_webui_storage_class is defined and open_webui_storage_class %}
+  storageClass: '{{ open_webui_storage_class }}'
+{% endif %}
   size: {{ open_webui_storage_size }}
 
 resources: {{ open_webui_resources | to_json }}

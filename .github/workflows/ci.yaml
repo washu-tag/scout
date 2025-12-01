@@ -300,7 +300,7 @@ jobs:
         shell: bash
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/lake.yaml
-          sudo -E kubectl describe pod -l v1.min.io/tenant=minio-scout -n minio-scout
+          sudo -E kubectl describe pod -l v1.min.io/tenant=minio-scout -n scout-data
       - name: 'Install orchestrator'
         shell: bash
         run: |
@@ -315,16 +315,16 @@ jobs:
           cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
           sed -i "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
-          sudo -E kubectl wait --for=condition=complete --timeout=600s job/ci-tests -n extractor &
+          sudo -E kubectl wait --for=condition=complete --timeout=600s job/ci-tests -n scout-extractor &
           completion_pid=$!
-          sudo -E kubectl wait --for=condition=failed --timeout=600s job/ci-tests -n extractor && exit 1 &
+          sudo -E kubectl wait --for=condition=failed --timeout=600s job/ci-tests -n scout-extractor && exit 1 &
           failure_pid=$!
           wait -n $completion_pid $failure_pid
       - name: Test Logs
         shell: bash
         if: always()
         run: |
-          sudo -E kubectl -n extractor logs job/ci-tests
+          sudo -E kubectl -n scout-extractor logs job/ci-tests
       - name: Test Summary
         uses: test-summary/action@v2.4
         if: always()
@@ -335,12 +335,12 @@ jobs:
         shell: bash
         if: always()
         run: |
-          sudo -E kubectl -n extractor logs deployment/hl7log-extractor
+          sudo -E kubectl -n scout-extractor logs deployment/hl7log-extractor
       - name: Logging (hl7-transformer)
         shell: bash
         if: always()
         run: |
-          sudo -E kubectl -n extractor logs deployment/hl7-transformer
+          sudo -E kubectl -n scout-extractor logs deployment/hl7-transformer
   publish:
     if: github.ref_name == 'main'
     runs-on: ubuntu-latest
