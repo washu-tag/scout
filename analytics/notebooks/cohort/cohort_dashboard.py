@@ -34,14 +34,14 @@ from cohort_ui import (
 
 def generate_regex_fake(user_query, return_prompt=False):
     """
-    Fake regex pattern generator for testing (returns pneumonia patterns after 1s delay).
+    Fake regex pattern generator for testing (returns brain mets patterns after 1s delay).
 
     Args:
         user_query: Natural language description (ignored in fake version)
         return_prompt: If True, return what the prompt would be
 
     Returns:
-        Generated regex patterns for pneumonia matching
+        Generated regex patterns for brain mets matching
     """
     prompt = f"[FAKE] Would generate patterns for: {user_query}"
 
@@ -51,11 +51,11 @@ def generate_regex_fake(user_query, return_prompt=False):
     # Simulate API delay
     time.sleep(1)
 
-    # Return pneumonia-matching regex patterns
+    # Return brain mets-matching regex patterns
     return "\n".join([
-        r"pneumonia",
-        r"pneumonia.{0,30}(?:bilateral|unilateral|lobar|interstitial)",
-        r"(?:pulmonary|lung).{0,30}(?:infiltrate|consolidation|opacity).{0,30}(?:consistent|compatible|suggest).{0,30}pneumonia",
+        r"(?:metasta(?:sis|ses|tic)?|mets).{0,50}(?:brain|cerebr(?:al|um)|intracranial)",
+        r"(?:brain|cerebr(?:al|um)|intracranial).{0,50}(?:metasta(?:sis|ses|tic)?|mets)",
+        r"(?:brain|cerebral|intracranial).{0,30}(?:lesion|mass|tumor).{0,30}(?:metasta|secondary)",
     ])
 
 
@@ -344,7 +344,7 @@ def launch_cohort_builder():
                         f"""
                     <div style='background: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 11px; font-family: monospace;'>
                         <div style='font-weight: 600; margin-bottom: 4px;'>Request Details:</div>
-                        <div><b>Mode:</b> FAKE (returns pneumonia patterns after 1s delay)</div>
+                        <div><b>Mode:</b> FAKE (returns brain mets patterns after 1s delay)</div>
                         <div><b>Query:</b> {query}</div>
                         <div style='margin-top: 8px;'><b>Prompt:</b></div>
                         <pre style='background: white; padding: 4px; border-radius: 2px; overflow-x: auto; max-height: 200px; font-size: 10px;'>{prompt_escaped}</pre>
