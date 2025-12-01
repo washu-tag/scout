@@ -953,6 +953,15 @@ def create_review_dashboard(
 
     def render_report():
         """Render current report."""
+        import traceback
+        try:
+            _render_report_inner()
+        except Exception as e:
+            error_msg = f"ERROR in render_report: {str(e)}<br><pre>{traceback.format_exc()}</pre>"
+            report_html_widget.value = f'<div style="color: red; padding: 20px; background: #fee; border: 2px solid red;">{error_msg}</div>'
+
+    def _render_report_inner():
+        """Inner render function."""
         update_status_header()
 
         if not state["filtered_indices"]:
@@ -970,7 +979,7 @@ def create_review_dashboard(
             if pd.notna(row.get("followup_finding"))
             else ""
         )
-        report_text = row[report_col].strip()
+        report_text = str(row[report_col]).strip() if pd.notna(row[report_col]) else "No report text available"
 
         # Get patient demographics
         age = row.get("patient_age", "N/A")
@@ -1071,7 +1080,7 @@ def create_review_dashboard(
                     <div style='padding: 16px; font-size: 13px; line-height: 1.8;'>
                         <div style='margin-bottom: 12px;'>
                             <div style='font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; margin-bottom: 4px;'>Demographics</div>
-                            <div><span style='font-weight: 600; color: #888;'>Age:</span> {int(age) if isinstance(age, (int, float)) and age != 'N/A' else age} years</div>
+                            <div><span style='font-weight: 600; color: #888;'>Age:</span> {int(age) if isinstance(age, (int, float)) and pd.notna(age) else 'N/A'} years</div>
                             <div><span style='font-weight: 600; color: #888;'>Sex:</span> {sex}</div>
                             <div><span style='font-weight: 600; color: #888;'>Race:</span> {race}</div>
                         </div>
