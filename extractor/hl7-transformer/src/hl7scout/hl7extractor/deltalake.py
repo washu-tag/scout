@@ -327,7 +327,9 @@ def import_hl7_files_to_deltalake(
             .withColumns(
                 {
                     "full_patient_name": extract_person_names_from_xpn("pid-5"),
-                    "full_ordering_provider": extract_person_names_from_xcn("obr-16"),
+                    "full_ordering_provider": extract_person_names_from_xcn(
+                        "obr-16", lambda name: name.family_name.isNotNull()
+                    ),
                     "full_principal_result_interpreter": extract_people_from_obr_field(
                         "obr-32"
                     ),
