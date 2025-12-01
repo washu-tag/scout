@@ -60,9 +60,12 @@
       register: alert_templates
 
     - name: Create ConfigMap for each Grafana alert
+      vars:
+        alert_filename: '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}'
+        alert_content: '{{ lookup("template", item.path) }}'
       kubernetes.core.k8s:
         state: present
-        definition: |
+        definition:
           apiVersion: v1
           kind: ConfigMap
           metadata:
@@ -70,9 +73,7 @@
             namespace: '{{ grafana_namespace }}'
             labels:
               grafana_alert: '1'
-          data:
-            '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}':
-              '{{ lookup("template", item.path) | to_nice_json }}'
+          data: '{{ {alert_filename: alert_content} }}'
       loop: '{{ alert_templates.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
@@ -101,9 +102,12 @@
       register: contact_point_templates
 
     - name: Create Secret for each Grafana contact point
+      vars:
+        contact_point_filename: '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}'
+        contact_point_content: '{{ lookup("template", item.path) }}'
       kubernetes.core.k8s:
         state: present
-        definition: |
+        definition:
           apiVersion: v1
           kind: Secret
           metadata:
@@ -112,9 +116,7 @@
             labels:
               grafana_alert: '1'
           type: Opaque
-          stringData:
-            '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}':
-              '{{ lookup("template", item.path) | to_nice_json }}'
+          stringData: '{{ {contact_point_filename: contact_point_content} }}'
       loop: '{{ contact_point_templates.files }}'
       when: >-
         grafana_alert_contact_point in (item.path | basename) and

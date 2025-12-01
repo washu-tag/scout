@@ -32,14 +32,12 @@ See `defaults/main.yaml` for all available variables. Key requirements in `inven
 - `open_webui_redis_password`
 - `keycloak_open_webui_client_secret`
 
-**Required Paths** (host storage directories):
-- `ollama_dir`
-- `open_webui_dir`
-
 **Optional Overrides:**
 - `ollama_models`: List of additional models to pull
 - `scout_model_create`: Set to `false` to skip Scout model creation (default: `true`)
-- Resource limits, storage sizes, etc.
+- `ollama_storage_class` / `open_webui_storage_class`: Custom storage class (uses cluster default if not specified)
+- `ollama_storage_size` / `open_webui_storage_size`: PVC storage sizes (defaults: 5Gi / 2Gi)
+- Resource limits, etc.
 
 See `inventory.example.yaml` for configuration examples
 
@@ -93,7 +91,8 @@ Configure the Trino MCP external tool to enable SQL querying:
       - **Note**: Adjust namespace if Trino is deployed in a different namespace
       - Format: `http://mcp-trino.<trino_namespace>:8080/mcp`
    - **Auth**: `None`
-4. Click **Save**
+   - **Function Name Filter List**: `execute_query, get_table_schema` (temporarily required for `v0.6.40` due to [an Open WebUI bug](https://github.com/open-webui/open-webui/issues/19486))
+5. Click **Save**
 
 #### 3. Configure Model in Open WebUI
 

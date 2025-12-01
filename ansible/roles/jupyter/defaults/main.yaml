@@ -2,9 +2,6 @@
 # Jupyter role defaults
 # User-configurable settings are in inventory.yaml
 
-# Namespace
-jupyter_namespace: jupyter
-
 # Helm configuration
 jupyter_helm_repo_name: jupyterhub
 jupyter_helm_repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
