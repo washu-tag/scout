@@ -141,9 +141,9 @@ To see the exact SQL query that was executed, look for the expandable **Tool Use
 
 This is useful for:
 - Understanding how the AI interpreted your question
-- Learning SQL syntax for use in [Analytics](services.md#analytics) SQL Lab
+- Learning SQL syntax for use in {ref}`Analytics <analytics>` SQL Lab
 - Debugging unexpected results
-- Adapting queries for use in [Notebooks](services.md#notebooks)
+- Adapting queries for use in {ref}`Notebooks <notebooks>`
 
 ## Tips for Effective Queries
 
@@ -205,7 +205,7 @@ Give me a table of report counts by modality sorted from highest to lowest
 List the top 10 diagnosis codes with their counts
 ```
 
-For visualizations and dashboards, copy the results and use [Analytics](services.md#analytics).
+For visualizations and dashboards, copy the results and use {ref}`Analytics <analytics>`.
 
 ## Data Privacy and Security
 
@@ -228,8 +228,8 @@ Scout Chat can only query data that exists in the Scout Delta Lake.
 
 Very complex queries may be better suited for:
 
-- **[Analytics](services.md#analytics)**: For creating persistent visualizations and dashboards
-- **[Notebooks](services.md#notebooks)**: For complex data transformations, statistical analysis, or machine learning
+- **{ref}`Analytics <analytics>`**: For creating persistent visualizations and dashboards
+- **{ref}`Notebooks <notebooks>`**: For complex data transformations, statistical analysis, or machine learning
 
 ### Model Limitations
 
