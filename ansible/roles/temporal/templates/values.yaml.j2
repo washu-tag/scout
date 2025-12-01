@@ -12,7 +12,8 @@ elasticsearch:
   host: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-http.{{ elasticsearch_namespace }}'
   port: 9200
   username: 'elastic'
-  password: '{{ elasticsearch_password }}'
+  existingSecret: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-elastic-user'
+  secretKey: 'elastic'
   visibilityIndex: 'temporal_visibility_v1'
   logLevel: 'error'
 server:

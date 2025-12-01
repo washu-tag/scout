@@ -10,42 +10,6 @@
     kind: Namespace
     state: present
 
-# Copy Cassandra superuser secret to temporal namespace
-- name: Get Cassandra superuser secret
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Secret
-    name: '{{ cassandra_cluster_name | default("cassandra-cluster") }}-superuser'
-    namespace: '{{ cassandra_namespace }}'
-  register: cassandra_secret
-
-- name: Create Cassandra superuser secret in temporal namespace
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: '{{ cassandra_cluster_name | default("cassandra-cluster") }}-superuser'
-        namespace: '{{ temporal_namespace }}'
-      type: Opaque
-      data: '{{ cassandra_secret.resources[0].data }}'
-
-# Get Elasticsearch password for visibility store
-- name: Get Elasticsearch password
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Secret
-    name: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-elastic-user'
-    namespace: '{{ elasticsearch_namespace }}'
-  register: elasticsearch_password_secret
-  no_log: true
-
-- name: Decode Elasticsearch password
-  set_fact:
-    elasticsearch_password: '{{ elasticsearch_password_secret.resources[0].data.elastic | b64decode }}'
-  no_log: true
-
 # Deploy Temporal
 - name: Parse Helm values
   ansible.builtin.set_fact:
