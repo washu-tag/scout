@@ -43,7 +43,7 @@ def _highlight_rads_text(report_text, rads_type="LIRADS"):
 
     Args:
         report_text: The report text to highlight
-        rads_type: 'LIRADS' or 'PIRADS'
+        rads_type: 'LIRADS', 'BIRADS', or 'PIRADS'
 
     Returns:
         HTML-escaped and highlighted text
@@ -52,9 +52,14 @@ def _highlight_rads_text(report_text, rads_type="LIRADS"):
         return html.escape("No report text")
 
     # Extract scores to know what to highlight
-    from rads_builder import LIRADS_PATTERNS, PIRADS_PATTERNS
+    from rads_builder import LIRADS_PATTERNS, BIRADS_PATTERNS, PIRADS_PATTERNS
 
-    patterns = LIRADS_PATTERNS if rads_type == "LIRADS" else PIRADS_PATTERNS
+    if rads_type == "LIRADS":
+        patterns = LIRADS_PATTERNS
+    elif rads_type == "BIRADS":
+        patterns = BIRADS_PATTERNS
+    else:
+        patterns = PIRADS_PATTERNS
     all_matches = []
 
     # Find all pattern matches
@@ -222,8 +227,8 @@ def create_trend_chart(df_list, labels, title="RADS Score Trends"):
                 pd.DataFrame({"score": [], "count": [], "percentage": []})
             )
 
-    # Sort scores by priority
-    priority_order = [
+    # Sort scores by priority - detect RADS type
+    lirads_priority = [
         "LR-1",
         "LR-2",
         "LR-3",
@@ -234,6 +239,23 @@ def create_trend_chart(df_list, labels, title="RADS Score Trends"):
         "LR-NC",
         "LR-TIV",
     ]
+    birads_priority = [
+        "BI-RADS-0",
+        "BI-RADS-1",
+        "BI-RADS-2",
+        "BI-RADS-3",
+        "BI-RADS-4A",
+        "BI-RADS-4B",
+        "BI-RADS-4C",
+        "BI-RADS-4",
+        "BI-RADS-5",
+        "BI-RADS-6",
+    ]
+    # Detect which priority order to use
+    if any(s.startswith("BI-RADS") for s in all_scores):
+        priority_order = birads_priority
+    else:
+        priority_order = lirads_priority
     scores = sorted(
         all_scores,
         key=lambda x: priority_order.index(x) if x in priority_order else 999,
@@ -444,8 +466,8 @@ def create_score_distribution_panel(state):
         )
         dist_merged = dist_merged.fillna(0)
 
-        # Sort by LI-RADS severity (highest risk first)
-        priority_order = [
+        # Sort by RADS severity (highest risk first) - detect type from scores
+        lirads_priority = [
             "LR-M",
             "LR-5",
             "LR-TIV",
@@ -456,6 +478,23 @@ def create_score_distribution_panel(state):
             "LR-1",
             "LR-NC",
         ]
+        birads_priority = [
+            "BI-RADS-6",
+            "BI-RADS-5",
+            "BI-RADS-4C",
+            "BI-RADS-4B",
+            "BI-RADS-4A",
+            "BI-RADS-4",
+            "BI-RADS-3",
+            "BI-RADS-2",
+            "BI-RADS-1",
+            "BI-RADS-0",
+        ]
+        # Detect which priority order to use
+        if any(s.startswith("BI-RADS") for s in dist_merged["score"].tolist()):
+            priority_order = birads_priority
+        else:
+            priority_order = lirads_priority
         dist_merged["sort_key"] = dist_merged["score"].apply(
             lambda x: priority_order.index(x) if x in priority_order else 999
         )
@@ -463,7 +502,7 @@ def create_score_distribution_panel(state):
 
         # Create chart (using all detected scores count)
         chart_html = create_score_distribution_chart(
-            dist_df_reports, "LI-RADS Score Distribution (All Detected Scores)"
+            dist_df_reports, "RADS Score Distribution (All Detected Scores)"
         )
 
         # Create table with both counts
@@ -610,8 +649,8 @@ def create_time_trend_chart(df, granularity="month"):
     for counts in score_counts.values():
         all_scores.update(counts.keys())
 
-    # Sort scores by priority
-    priority_order = [
+    # Sort scores by priority - detect RADS type
+    lirads_priority = [
         "LR-1",
         "LR-2",
         "LR-3",
@@ -622,13 +661,31 @@ def create_time_trend_chart(df, granularity="month"):
         "LR-NC",
         "LR-TIV",
     ]
+    birads_priority = [
+        "BI-RADS-0",
+        "BI-RADS-1",
+        "BI-RADS-2",
+        "BI-RADS-3",
+        "BI-RADS-4A",
+        "BI-RADS-4B",
+        "BI-RADS-4C",
+        "BI-RADS-4",
+        "BI-RADS-5",
+        "BI-RADS-6",
+    ]
+    # Detect which priority order to use
+    if any(s.startswith("BI-RADS") for s in all_scores):
+        priority_order = birads_priority
+    else:
+        priority_order = lirads_priority
     scores = sorted(
         all_scores,
         key=lambda x: priority_order.index(x) if x in priority_order else 999,
     )
 
-    # Color map for scores
+    # Color map for scores - LI-RADS and BI-RADS
     score_colors = {
+        # LI-RADS
         "LR-1": "#10b981",  # Green
         "LR-2": "#84cc16",  # Light green
         "LR-3": "#eab308",  # Yellow
@@ -637,6 +694,18 @@ def create_time_trend_chart(df, granularity="month"):
         "LR-M": "#7c2d12",  # Dark red
         "LR-NC": "#9ca3af",  # Gray
         "LR-TIV": "#b91c1c",  # Dark red
+        "LR-TR": "#a855f7",  # Purple
+        # BI-RADS
+        "BI-RADS-0": "#9ca3af",  # Gray - Incomplete
+        "BI-RADS-1": "#10b981",  # Green - Negative
+        "BI-RADS-2": "#84cc16",  # Light green - Benign
+        "BI-RADS-3": "#eab308",  # Yellow - Probably benign
+        "BI-RADS-4": "#f97316",  # Orange - Suspicious
+        "BI-RADS-4A": "#fb923c",  # Light orange - Low suspicion
+        "BI-RADS-4B": "#ea580c",  # Orange - Moderate suspicion
+        "BI-RADS-4C": "#c2410c",  # Dark orange - High suspicion
+        "BI-RADS-5": "#dc2626",  # Red - Highly suggestive
+        "BI-RADS-6": "#7c2d12",  # Dark red - Known malignancy
     }
 
     # Create stacked area chart
@@ -1493,8 +1562,9 @@ def create_patient_progression_panel(state):
                     if rads_scores is not None and len(rads_scores) > 0:
                         all_patient_scores.update(rads_scores)
 
-                # Score color mapping
+                # Score color mapping - LI-RADS and BI-RADS
                 score_colors = {
+                    # LI-RADS
                     "LR-1": "#10b981",
                     "LR-2": "#84cc16",
                     "LR-3": "#eab308",
@@ -1504,6 +1574,17 @@ def create_patient_progression_panel(state):
                     "LR-M": "#7c2d12",
                     "LR-NC": "#9ca3af",
                     "LR-TIV": "#b91c1c",
+                    # BI-RADS
+                    "BI-RADS-0": "#9ca3af",
+                    "BI-RADS-1": "#10b981",
+                    "BI-RADS-2": "#84cc16",
+                    "BI-RADS-3": "#eab308",
+                    "BI-RADS-4": "#f97316",
+                    "BI-RADS-4A": "#fb923c",
+                    "BI-RADS-4B": "#ea580c",
+                    "BI-RADS-4C": "#c2410c",
+                    "BI-RADS-5": "#dc2626",
+                    "BI-RADS-6": "#7c2d12",
                 }
 
                 # Build timeline visualization
@@ -1537,8 +1618,8 @@ def create_patient_progression_panel(state):
                             "rads_scores", []
                         )
                         if all_scores_in_report and len(all_scores_in_report) > 0:
-                            # Sort scores by severity
-                            priority_order = [
+                            # Sort scores by severity - detect RADS type
+                            lirads_priority = [
                                 "LR-M",
                                 "LR-5",
                                 "LR-TIV",
@@ -1549,6 +1630,23 @@ def create_patient_progression_panel(state):
                                 "LR-1",
                                 "LR-NC",
                             ]
+                            birads_priority = [
+                                "BI-RADS-6",
+                                "BI-RADS-5",
+                                "BI-RADS-4C",
+                                "BI-RADS-4B",
+                                "BI-RADS-4A",
+                                "BI-RADS-4",
+                                "BI-RADS-3",
+                                "BI-RADS-2",
+                                "BI-RADS-1",
+                                "BI-RADS-0",
+                            ]
+                            # Detect which priority order to use
+                            if any(s.startswith("BI-RADS") for s in all_scores_in_report):
+                                priority_order = birads_priority
+                            else:
+                                priority_order = lirads_priority
                             sorted_scores = sorted(
                                 all_scores_in_report,
                                 key=lambda x: (
@@ -1573,8 +1671,9 @@ def create_patient_progression_panel(state):
                         lesion_count = 0
                         dot_color = "#9ca3af"
 
-                    # Clinical description helper
+                    # Clinical description helper - LI-RADS and BI-RADS
                     descriptions = {
+                        # LI-RADS
                         "LR-1": "Definitely benign",
                         "LR-2": "Probably benign",
                         "LR-3": "Intermediate probability",
@@ -1584,6 +1683,17 @@ def create_patient_progression_panel(state):
                         "LR-TR": "Post-treatment",
                         "LR-TIV": "Tumor in vein",
                         "LR-NC": "Non-categorizable",
+                        # BI-RADS
+                        "BI-RADS-0": "Incomplete - needs additional imaging",
+                        "BI-RADS-1": "Negative",
+                        "BI-RADS-2": "Benign",
+                        "BI-RADS-3": "Probably benign",
+                        "BI-RADS-4": "Suspicious",
+                        "BI-RADS-4A": "Low suspicion for malignancy",
+                        "BI-RADS-4B": "Moderate suspicion for malignancy",
+                        "BI-RADS-4C": "High suspicion for malignancy",
+                        "BI-RADS-5": "Highly suggestive of malignancy",
+                        "BI-RADS-6": "Known biopsy-proven malignancy",
                     }
 
                     timeline_rows.append(
@@ -1633,8 +1743,8 @@ def create_patient_progression_panel(state):
 
                 # Format all unique scores
                 if all_patient_scores:
-                    # Sort scores by priority
-                    priority_order = [
+                    # Sort scores by priority - detect RADS type
+                    lirads_priority = [
                         "LR-M",
                         "LR-5",
                         "LR-TIV",
@@ -1645,6 +1755,23 @@ def create_patient_progression_panel(state):
                         "LR-1",
                         "LR-NC",
                     ]
+                    birads_priority = [
+                        "BI-RADS-6",
+                        "BI-RADS-5",
+                        "BI-RADS-4C",
+                        "BI-RADS-4B",
+                        "BI-RADS-4A",
+                        "BI-RADS-4",
+                        "BI-RADS-3",
+                        "BI-RADS-2",
+                        "BI-RADS-1",
+                        "BI-RADS-0",
+                    ]
+                    # Detect which priority order to use
+                    if any(s.startswith("BI-RADS") for s in all_patient_scores):
+                        priority_order = birads_priority
+                    else:
+                        priority_order = lirads_priority
                     sorted_scores = sorted(
                         all_patient_scores,
                         key=lambda x: (
@@ -1829,8 +1956,8 @@ def create_report_browser(state):
         # RADS score display
         all_scores = row.get("rads_scores", [])
         if all_scores and len(all_scores) > 0:
-            # Sort scores by severity
-            priority_order = [
+            # Sort scores by severity - detect RADS type
+            lirads_priority = [
                 "LR-M",
                 "LR-5",
                 "LR-TIV",
@@ -1841,6 +1968,23 @@ def create_report_browser(state):
                 "LR-1",
                 "LR-NC",
             ]
+            birads_priority = [
+                "BI-RADS-6",
+                "BI-RADS-5",
+                "BI-RADS-4C",
+                "BI-RADS-4B",
+                "BI-RADS-4A",
+                "BI-RADS-4",
+                "BI-RADS-3",
+                "BI-RADS-2",
+                "BI-RADS-1",
+                "BI-RADS-0",
+            ]
+            # Detect which priority order to use
+            if any(s.startswith("BI-RADS") for s in all_scores):
+                priority_order = birads_priority
+            else:
+                priority_order = lirads_priority
             sorted_scores = sorted(
                 all_scores,
                 key=lambda x: priority_order.index(x) if x in priority_order else 999,

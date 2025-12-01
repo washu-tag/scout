@@ -115,27 +115,27 @@ def launch_rads_dashboard():
     # Input widgets
     rads_type_select = widgets.Dropdown(
         options=[
-            ("LI-RADS (Liver)", "LIRADS"),
             ("BI-RADS (Breast)", "BIRADS"),
+            ("LI-RADS (Liver)", "LIRADS"),
             # ('PI-RADS (Prostate)', 'PIRADS')  # Future expansion
         ],
-        value="LIRADS",
+        value="BIRADS",
         description="RADS Type:",
         layout=widgets.Layout(width="98%"),
         style={"description_width": "100px"},
     )
 
     modality_select = widgets.SelectMultiple(
-        value=["CT", "MR", "MRI"],
-        options=["CT", "MR", "MRI", "MG", "US", "XR", "NM", "PT", "RF"],
+        value=["MG", "US"],
+        options=["MG", "US", "CT", "MR", "MRI", "XR", "NM", "PT", "RF"],
         description="Modality:",
         layout=widgets.Layout(width="98%", height="100px"),
         style={"description_width": "100px"},
     )
 
     service_name_input = widgets.Text(
-        value="liver, hepatic",
-        placeholder="e.g., liver, hepatic (or liver|hepatic)",
+        value="",
+        placeholder="e.g., breast, mammo (leave empty for all)",
         description="Service Name:",
         layout=widgets.Layout(width="98%"),
         style={"description_width": "100px"},
@@ -169,11 +169,11 @@ def launch_rads_dashboard():
 
     # Date range inputs
     today = datetime.now()
-    one_year_ago = today - timedelta(days=365)
+    start_2015 = datetime(2015, 1, 1)
 
     start_date_input = widgets.DatePicker(
         description="Start Date:",
-        value=one_year_ago.date(),
+        value=start_2015.date(),
         layout=widgets.Layout(width="48%"),
         style={"description_width": "80px"},
     )
