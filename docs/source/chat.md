@@ -1,10 +1,12 @@
-# Scout Chat
+# Chat
 
 Scout Chat provides an AI-powered interface for natural language querying of data in the Scout data lake. Ask questions in plain English and receive data-driven answers from large language models with direct access to the Scout Delta Lake.
 
-**Current version:** Scout Chat currently queries HL7 radiology report data. As Scout expands to incorporate DICOM metadata, pathology reports, and extracted features, Chat will support querying across all data types.
-
 **Note:** The Chat service is optional and may not be enabled in all Scout deployments. If you don't see the Chat option on the Scout Launchpad, contact your administrator.
+
+![Scout Launchpad](images/ScoutLaunchpadWithChat.png)
+
+**Current version:** Scout Chat currently queries HL7 radiology report data. As Scout expands to incorporate DICOM metadata, pathology reports, and extracted features, Chat will support querying across all data types.
 
 ## Overview
 
@@ -18,9 +20,6 @@ Scout Chat is powered by [Open WebUI](https://docs.openwebui.com/) with [Ollama]
 ## Getting Started
 
 1. Navigate to the [Scout Launchpad](index.md) (your landing page after login)
-
-![Scout Launchpad](images/ScoutLaunchpadWithChat.png)
-
 2. Click on the **Chat** card in the Core Services section
 3. Type your question in plain English in the chat input box
 
