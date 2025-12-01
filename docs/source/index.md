@@ -30,6 +30,8 @@ Selecting **Chat** from the Launchpad provides an AI-powered interface for natur
 
 **Note:** The Chat service is optional and may not be available in all Scout deployments.
 
+![Scout Chat](images/ScoutQuery.png)
+
 #### Scout Notebooks
 
 Selecting **Notebooks** from the Launchpad launches JupyterHub with notebooks preloaded with [PySpark](https://spark.apache.org/docs/latest/api/python/index.html) for completely customizable data analysis. An example Jupyter notebook with sample code to access and analyze data is provided in `Scout/Quickstart.ipynb`. This notebook provides example code using Spark SQL to search for reports, filter by various criteria, and export results to CSV files.
