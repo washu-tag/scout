@@ -153,7 +153,7 @@ def _load_quality_data(
     return df
 
 
-def create_dashboard(table_name="default.reports", date_range_days=30):
+def create_dashboard(table_name="default.reports", date_range_days=360):
     """
     Create and display quality metrics dashboard with progressive rendering.
 
@@ -161,8 +161,8 @@ def create_dashboard(table_name="default.reports", date_range_days=30):
     ----------
     table_name : str, default="default.reports"
         Delta table to analyze (reports recommended for Voila)
-    date_range_days : int, default=30
-        Only analyze reports from last N days (default 30 for fast load, max 50k rows)
+    date_range_days : int, default=360
+        Only analyze reports from last N days (default 360 for comprehensive view)
     """
 
     # Display header
@@ -634,7 +634,7 @@ def _render_quality_indicators(df):
     )
 
 
-def create_landing_page(table_name="default.reports", date_range_days=30):
+def create_landing_page(table_name="default.reports", date_range_days=360):
     """
     Create landing page with "Launch Dashboard" button for Voila.
 
@@ -644,8 +644,8 @@ def create_landing_page(table_name="default.reports", date_range_days=30):
     ----------
     table_name : str, default="default.reports"
         Delta table to analyze
-    date_range_days : int, default=30
-        Only analyze reports from last N days (default 30 for fast load)
+    date_range_days : int, default=360
+        Only analyze reports from last N days (default 360 for comprehensive view)
     """
     # Container that will hold either the landing page or the dashboard
     container = widgets.VBox(
@@ -705,7 +705,7 @@ def create_landing_page(table_name="default.reports", date_range_days=30):
         <div style='text-align: center; margin-bottom: 20px;'>
             <span style='font-size: 12px; color: #6b7280; line-height: 1;'>
                 Number of days of reports to analyze from the most recent data.<br/>
-                <span style='font-weight: 500;'>Lower values</span> = faster load time. Try 30 days for quick insights.
+                <span style='font-weight: 500;'>Lower values</span> = faster load time.
             </span>
         </div>
     """
@@ -785,7 +785,7 @@ def create_landing_page(table_name="default.reports", date_range_days=30):
         """
         <div style='text-align: center;'>
             <span style='color: #6b7280; font-size: 14px; line-height: 1.6;'>
-                <strong style='color: #4b5563;'>Note:</strong> Load time depends on date range. Start with 30 days for best performance.
+                <strong style='color: #4b5563;'>Note:</strong> Load time depends on date range. Reduce days for faster load.
             </span>
         </div>
     """

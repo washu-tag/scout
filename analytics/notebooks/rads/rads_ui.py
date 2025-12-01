@@ -982,8 +982,9 @@ def create_demographics_charts(df):
         )
         return empty_msg, empty_msg, empty_msg
 
-    # Score colors (demographics charts)
+    # Score colors (demographics charts) - LI-RADS and BI-RADS
     score_colors = {
+        # LI-RADS
         "LR-1": "#10b981",  # Benign
         "LR-2": "#84cc16",  # Probably benign
         "LR-3": "#eab308",  # Intermediate
@@ -993,6 +994,17 @@ def create_demographics_charts(df):
         "LR-M": "#7c2d12",  # Non-HCC malignancy
         "LR-NC": "#9ca3af",  # Non-categorizable
         "LR-TIV": "#b91c1c",  # Tumor in vein
+        # BI-RADS
+        "BI-RADS-0": "#9ca3af",  # Incomplete
+        "BI-RADS-1": "#10b981",  # Negative
+        "BI-RADS-2": "#84cc16",  # Benign
+        "BI-RADS-3": "#eab308",  # Probably benign
+        "BI-RADS-4": "#f97316",  # Suspicious
+        "BI-RADS-4A": "#fb923c",  # Low suspicion
+        "BI-RADS-4B": "#ea580c",  # Moderate suspicion
+        "BI-RADS-4C": "#c2410c",  # High suspicion
+        "BI-RADS-5": "#dc2626",  # Highly suggestive of malignancy
+        "BI-RADS-6": "#7c2d12",  # Known malignancy
     }
 
     # Prepare data - count unique patients only
@@ -1020,8 +1032,8 @@ def create_demographics_charts(df):
         df_patients["age_group"], df_patients["primary_rads_score"]
     )
 
-    # Sort columns by score priority
-    priority_order = [
+    # Sort columns by score priority - detect RADS type from columns
+    lirads_priority = [
         "LR-1",
         "LR-2",
         "LR-3",
@@ -1032,135 +1044,172 @@ def create_demographics_charts(df):
         "LR-NC",
         "LR-TIV",
     ]
+    birads_priority = [
+        "BI-RADS-0",
+        "BI-RADS-1",
+        "BI-RADS-2",
+        "BI-RADS-3",
+        "BI-RADS-4A",
+        "BI-RADS-4B",
+        "BI-RADS-4C",
+        "BI-RADS-4",
+        "BI-RADS-5",
+        "BI-RADS-6",
+    ]
+    # Detect which priority order to use based on columns present
+    if any(c.startswith("BI-RADS") for c in age_crosstab.columns):
+        priority_order = birads_priority
+    else:
+        priority_order = lirads_priority
     cols_sorted = [c for c in priority_order if c in age_crosstab.columns]
-    age_crosstab = age_crosstab[cols_sorted]
+    # If no columns match priority order, use all columns as-is
+    if not cols_sorted:
+        cols_sorted = list(age_crosstab.columns)
+    age_crosstab = age_crosstab[cols_sorted] if cols_sorted else age_crosstab
 
-    age_crosstab.plot(
-        kind="bar",
-        stacked=True,
-        ax=ax,
-        color=[score_colors.get(c, "#6366f1") for c in cols_sorted],
-        alpha=0.8,
-        width=0.7,
-    )
+    # Handle empty crosstab
+    if age_crosstab.empty or len(cols_sorted) == 0:
+        plt.close(fig)
+        age_chart_html = "<div style='padding: 20px; text-align: center; color: #999;'>No age data available</div>"
+    else:
+        age_crosstab.plot(
+            kind="bar",
+            stacked=True,
+            ax=ax,
+            color=[score_colors.get(c, "#6366f1") for c in cols_sorted],
+            alpha=0.8,
+            width=0.7,
+        )
 
-    ax.set_xlabel("Age Group", fontsize=12, fontweight="bold")
-    ax.set_ylabel("Number of Unique Patients", fontsize=12, fontweight="bold")
-    ax.set_title(
-        "RADS Score Distribution by Age Group (Unique Patients)",
-        fontsize=14,
-        fontweight="bold",
-        pad=20,
-    )
-    ax.legend(title="RADS Score", bbox_to_anchor=(1.05, 1), loc="upper left")
-    ax.grid(axis="y", alpha=0.3)
-    plt.xticks(rotation=0)
-    plt.tight_layout()
+        ax.set_xlabel("Age Group", fontsize=12, fontweight="bold")
+        ax.set_ylabel("Number of Unique Patients", fontsize=12, fontweight="bold")
+        ax.set_title(
+            "RADS Score Distribution by Age Group (Unique Patients)",
+            fontsize=14,
+            fontweight="bold",
+            pad=20,
+        )
+        ax.legend(title="RADS Score", bbox_to_anchor=(1.05, 1), loc="upper left")
+        ax.grid(axis="y", alpha=0.3)
+        plt.xticks(rotation=0)
+        plt.tight_layout()
 
-    buf = BytesIO()
-    fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
-    buf.seek(0)
-    age_chart = base64.b64encode(buf.read()).decode("utf-8")
-    plt.close(fig)
+        buf = BytesIO()
+        fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+        buf.seek(0)
+        age_chart = base64.b64encode(buf.read()).decode("utf-8")
+        plt.close(fig)
 
-    age_chart_html = f'<img src="data:image/png;base64,{age_chart}" style="max-width: 100%; height: auto;" />'
+        age_chart_html = f'<img src="data:image/png;base64,{age_chart}" style="max-width: 100%; height: auto;" />'
 
     # 2. SEX PIE CHARTS (one per RADS score)
-    fig, axes = plt.subplots(2, 4, figsize=(16, 8))
-    axes = axes.flatten()
+    if not cols_sorted:
+        sex_chart_html = "<div style='padding: 20px; text-align: center; color: #999;'>No sex data available</div>"
+    else:
+        fig, axes = plt.subplots(2, 4, figsize=(16, 8))
+        axes = axes.flatten()
 
-    sex_crosstab = pd.crosstab(df_patients["primary_rads_score"], df_patients["sex"])
+        sex_crosstab = pd.crosstab(df_patients["primary_rads_score"], df_patients["sex"])
 
-    for idx, score in enumerate(cols_sorted[:8]):  # Max 8 scores
-        ax = axes[idx]
-        if score in sex_crosstab.index:
-            data = sex_crosstab.loc[score]
-            if data.sum() > 0:
-                ax.pie(
-                    data,
-                    labels=data.index,
-                    autopct="%1.1f%%",
-                    startangle=90,
-                    colors=["#3b82f6", "#ec4899", "#8b5cf6"][: len(data)],
-                )
-                ax.set_title(f"{score}\n(n={data.sum()})", fontweight="bold")
+        for idx, score in enumerate(cols_sorted[:8]):  # Max 8 scores
+            ax = axes[idx]
+            if score in sex_crosstab.index:
+                data = sex_crosstab.loc[score]
+                if data.sum() > 0:
+                    ax.pie(
+                        data,
+                        labels=data.index,
+                        autopct="%1.1f%%",
+                        startangle=90,
+                        colors=["#3b82f6", "#ec4899", "#8b5cf6"][: len(data)],
+                    )
+                    ax.set_title(f"{score}\n(n={data.sum()})", fontweight="bold")
+                else:
+                    ax.text(
+                        0.5,
+                        0.5,
+                        "No data",
+                        ha="center",
+                        va="center",
+                        transform=ax.transAxes,
+                    )
+                    ax.set_title(score, fontweight="bold")
             else:
                 ax.text(
-                    0.5,
-                    0.5,
-                    "No data",
-                    ha="center",
-                    va="center",
-                    transform=ax.transAxes,
+                    0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes
                 )
                 ax.set_title(score, fontweight="bold")
-        else:
-            ax.text(
-                0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes
-            )
-            ax.set_title(score, fontweight="bold")
-        ax.axis("equal")
+            ax.axis("equal")
 
-    # Hide unused subplots
-    for idx in range(len(cols_sorted), 8):
-        axes[idx].axis("off")
+        # Hide unused subplots
+        for idx in range(len(cols_sorted), 8):
+            axes[idx].axis("off")
 
-    plt.suptitle(
-        "Sex Distribution by RADS Score (Unique Patients)",
-        fontsize=14,
-        fontweight="bold",
-        y=1.02,
-    )
-    plt.tight_layout()
+        plt.suptitle(
+            "Sex Distribution by RADS Score (Unique Patients)",
+            fontsize=14,
+            fontweight="bold",
+            y=1.02,
+        )
+        plt.tight_layout()
 
-    buf = BytesIO()
-    fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
-    buf.seek(0)
-    sex_chart = base64.b64encode(buf.read()).decode("utf-8")
-    plt.close(fig)
+        buf = BytesIO()
+        fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+        buf.seek(0)
+        sex_chart = base64.b64encode(buf.read()).decode("utf-8")
+        plt.close(fig)
 
-    sex_chart_html = f'<img src="data:image/png;base64,{sex_chart}" style="max-width: 100%; height: auto;" />'
+        sex_chart_html = f'<img src="data:image/png;base64,{sex_chart}" style="max-width: 100%; height: auto;" />'
 
     # 3. RACE HORIZONTAL BAR CHART (top 10 races)
-    fig, ax = plt.subplots(figsize=(12, 8))
+    if not cols_sorted:
+        race_chart_html = "<div style='padding: 20px; text-align: center; color: #999;'>No race data available</div>"
+    else:
+        fig, ax = plt.subplots(figsize=(12, 8))
 
-    race_crosstab = pd.crosstab(df_patients["race"], df_patients["primary_rads_score"])
+        race_crosstab = pd.crosstab(df_patients["race"], df_patients["primary_rads_score"])
 
-    # Get top 10 races by total count
-    race_totals = race_crosstab.sum(axis=1).sort_values(ascending=False).head(10)
-    race_crosstab_top = race_crosstab.loc[race_totals.index]
+        # Get top 10 races by total count
+        race_totals = race_crosstab.sum(axis=1).sort_values(ascending=False).head(10)
+        race_crosstab_top = race_crosstab.loc[race_totals.index]
 
-    # Sort columns
-    cols_sorted_race = [c for c in priority_order if c in race_crosstab_top.columns]
-    race_crosstab_top = race_crosstab_top[cols_sorted_race]
+        # Sort columns using the same priority_order from age chart
+        cols_sorted_race = [c for c in priority_order if c in race_crosstab_top.columns]
+        if not cols_sorted_race:
+            cols_sorted_race = list(race_crosstab_top.columns)
+        race_crosstab_top = race_crosstab_top[cols_sorted_race] if cols_sorted_race else race_crosstab_top
 
-    race_crosstab_top.plot(
-        kind="barh",
-        stacked=True,
-        ax=ax,
-        color=[score_colors.get(c, "#6366f1") for c in cols_sorted_race],
-        alpha=0.8,
-    )
+        if race_crosstab_top.empty or len(cols_sorted_race) == 0:
+            plt.close(fig)
+            race_chart_html = "<div style='padding: 20px; text-align: center; color: #999;'>No race data available</div>"
+        else:
+            race_crosstab_top.plot(
+                kind="barh",
+                stacked=True,
+                ax=ax,
+                color=[score_colors.get(c, "#6366f1") for c in cols_sorted_race],
+                alpha=0.8,
+            )
 
-    ax.set_xlabel("Number of Unique Patients", fontsize=12, fontweight="bold")
-    ax.set_ylabel("Race", fontsize=12, fontweight="bold")
-    ax.set_title(
-        "RADS Score Distribution by Race - Top 10 (Unique Patients)",
-        fontsize=14,
-        fontweight="bold",
-        pad=20,
-    )
-    ax.legend(title="RADS Score", bbox_to_anchor=(1.05, 1), loc="upper left")
-    ax.grid(axis="x", alpha=0.3)
-    plt.tight_layout()
+            ax.set_xlabel("Number of Unique Patients", fontsize=12, fontweight="bold")
+            ax.set_ylabel("Race", fontsize=12, fontweight="bold")
+            ax.set_title(
+                "RADS Score Distribution by Race - Top 10 (Unique Patients)",
+                fontsize=14,
+                fontweight="bold",
+                pad=20,
+            )
+            ax.legend(title="RADS Score", bbox_to_anchor=(1.05, 1), loc="upper left")
+            ax.grid(axis="x", alpha=0.3)
+            plt.tight_layout()
 
-    buf = BytesIO()
-    fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
-    buf.seek(0)
-    race_chart = base64.b64encode(buf.read()).decode("utf-8")
-    plt.close(fig)
+            buf = BytesIO()
+            fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+            buf.seek(0)
+            race_chart = base64.b64encode(buf.read()).decode("utf-8")
+            plt.close(fig)
 
-    race_chart_html = f'<img src="data:image/png;base64,{race_chart}" style="max-width: 100%; height: auto;" />'
+            race_chart_html = f'<img src="data:image/png;base64,{race_chart}" style="max-width: 100%; height: auto;" />'
 
     return age_chart_html, sex_chart_html, race_chart_html
 

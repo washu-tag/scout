@@ -7,7 +7,7 @@ Usage in Voila (recommended - instant page load):
     # Shows landing page immediately with "Launch Dashboard" button
     # User clicks button to load data (fast with Trino) and show dashboard
     create_landing_page(
-        table_name="default.reports",
+        table_name="default.latest_reports",
         samples_per_category=50
     )
 
@@ -16,7 +16,7 @@ Usage in Jupyter Notebook:
 
     # Option 1: Load from Trino automatically with stratified sampling
     create_review_dashboard(
-        table_name="default.reports",
+        table_name="default.latest_reports",
         samples_per_category=50,  # Samples per modality/detection/confidence combo
         report_col='report_text'
     )
@@ -77,7 +77,7 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
     Parameters
     ----------
     table_name : str
-        Delta table name (e.g., "default.reports")
+        Delta table name (e.g., "default.latest_reports")
     samples_per_category : int
         Number of samples per modality/detection/confidence category
     report_col : str
@@ -261,7 +261,7 @@ def highlight_snippet_in_text(report_text, snippet, color="#FFC107"):
 
 
 def create_landing_page(
-    table_name="default.reports",
+    table_name="default.latest_reports",
     samples_per_category=50,
     report_col="report_text",
 ):
@@ -271,7 +271,7 @@ def create_landing_page(
 
     Parameters
     ----------
-    table_name : str, default="default.reports"
+    table_name : str, default="default.latest_reports"
         Delta table to load from
     samples_per_category : int, default=50
         Number of samples per category
@@ -499,7 +499,7 @@ def create_review_dashboard(
     df : pd.DataFrame, optional
         Pre-loaded Pandas DataFrame with required columns. If provided, table_name is ignored.
     table_name : str, optional
-        Delta table name to load from via Trino (e.g., "default.reports").
+        Delta table name to load from via Trino (e.g., "default.latest_reports").
         If provided and df is None, loads stratified sample using Trino query.
     samples_per_category : int, default=50
         Number of samples per modality/detection/confidence category.
