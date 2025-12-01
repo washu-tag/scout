@@ -1,6 +1,6 @@
 # Data Schema
 
-The Scout Rad Report Explorer is backed by [Delta Lake](https://delta.io/) and [MinIO](https://min.io/) to store 
+Scout is backed by [Delta Lake](https://delta.io/) and [MinIO](https://min.io/) to store 
 and manage HL7 radiology reports and other data and metadata. There is one main table that contains the report data. 
 Below is a description of the report table schema and the mapping of HL7 fields to the report table columns. Note that 
 some fields are derived from others, and some fields may not be directly mapped to HL7 fields.
