@@ -156,7 +156,7 @@ const PLAYBOOKS = [
     id: 'followup_detection',
     title: 'Clinical Follow-up Monitoring',
     description: 'Review algorithmically-detected follow-up recommendations',
-    notebook: 'Dashboard.ipynb',
+    notebook: 'FollowUpDetection.ipynb',
     icon: HiSparkles,
     colors: {
       gradient: 'from-cyan-50 to-sky-50 dark:from-cyan-900/20 dark:to-sky-900/10',

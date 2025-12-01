@@ -684,7 +684,7 @@ def create_review_dashboard(
     )
 
     metrics_output = widgets.Output()
-    output = widgets.Output()
+    report_html_widget = widgets.HTML()
     annotation_status = widgets.Output()
     status_header = widgets.HTML()
 
@@ -956,13 +956,7 @@ def create_review_dashboard(
         update_status_header()
 
         if not state["filtered_indices"]:
-            with output:
-                output.clear_output(wait=True)
-                display(
-                    HTML(
-                        '<div style="text-align: center; padding: 80px; color: #999;"><h2>No reports match this filter</h2><p style="margin-top: 16px;">Try changing the filter above</p></div>'
-                    )
-                )
+            report_html_widget.value = '<div style="text-align: center; padding: 80px; color: #999;"><h2>No reports match this filter</h2><p style="margin-top: 16px;">Try changing the filter above</p></div>'
             return
 
         idx = state["filtered_indices"][state["current_pos"]]
@@ -1193,9 +1187,7 @@ def create_review_dashboard(
         </script>
         """
 
-        with output:
-            output.clear_output(wait=True)
-            display(HTML(html + scroll_script))
+        report_html_widget.value = html + scroll_script
 
         load_annotation_state(idx)
 
@@ -1717,7 +1709,7 @@ def create_review_dashboard(
     )
 
     main_content = widgets.VBox(
-        [output], layout=widgets.Layout(flex="1", min_width="900px")
+        [report_html_widget], layout=widgets.Layout(flex="1", min_width="900px")
     )
 
     content_area = widgets.HBox(
