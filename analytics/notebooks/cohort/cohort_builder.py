@@ -324,17 +324,18 @@ def has_positive_mention(report_text, search_patterns, negation_patterns=None):
     if not matches:
         return False
 
-    # Check each match for local negation (50 chars before and after match to catch longer phrases)
+    # Check each match for local negation (only look BEFORE the match, not after)
+    # This prevents false positives where negation of a different finding appears after the match
+    # e.g., "pneumonia... No evidence of lymphadenopathy" should not negate pneumonia
     for match in matches:
         start_pos = max(0, match.start() - 50)
-        end_pos = min(len(report_lower), match.end() + 50)
-        context = report_lower[start_pos:end_pos]
+        context_before = report_lower[start_pos:match.start()]
 
-        # Check if negation exists in this specific context
-        if not negation_regex.search(context):
-            return True  # Found a positive mention without nearby negation
+        # Check if negation exists before the match
+        if not negation_regex.search(context_before):
+            return True  # Found a positive mention without preceding negation
 
-    return False  # All matches had negation nearby
+    return False  # All matches had negation before them
 
 
 def filter_negative_reports(df, search_patterns, skip_filter_condition=None):
