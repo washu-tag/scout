@@ -324,43 +324,38 @@ def import_hl7_files_to_deltalake(
         activity.logger.info("Creating physician df")
         name_df = (
             df.select("source_file", "pid-5", "obr-16", "obr-32", "obr-33", "obr-34")
-            .withColumn("full_patient_name", extract_person_names_from_xpn("pid-5"))
-            .withColumn(
-                "patient_name",
-                read_first_struct_name_friendly("full_patient_name"),
+            .withColumns(
+                {
+                    "full_patient_name": extract_person_names_from_xpn("pid-5"),
+                    "full_ordering_provider": extract_person_names_from_xcn("obr-16"),
+                    "full_principal_result_interpreter": extract_people_from_obr_field(
+                        "obr-32"
+                    ),
+                    "full_assistant_result_interpreter": extract_people_from_obr_field(
+                        "obr-33"
+                    ),
+                    "full_technician": extract_people_from_obr_field("obr-34"),
+                }
             )
-            .withColumn(
-                "full_ordering_provider", extract_person_names_from_xcn("obr-16")
+            .withColumns(
+                {
+                    "patient_name": read_first_struct_name_friendly(
+                        "full_patient_name"
+                    ),
+                    "ordering_provider": read_first_struct_name_friendly(
+                        "full_ordering_provider"
+                    ),
+                    "principal_result_interpreter": F.concat_ws(
+                        " ",
+                        F.col("full_principal_result_interpreter.given_name"),
+                        F.col("full_principal_result_interpreter.family_name"),
+                    ),
+                    "assistant_result_interpreter": read_struct_of_names_friendly(
+                        "full_assistant_result_interpreter"
+                    ),
+                    "technician": read_struct_of_names_friendly("full_technician"),
+                }
             )
-            .withColumn(
-                "ordering_provider",
-                read_first_struct_name_friendly("full_ordering_provider"),
-            )
-            .withColumn(
-                "full_principal_result_interpreter",
-                extract_people_from_obr_field("obr-32").getItem(0),
-            )
-            .withColumn(
-                "principal_result_interpreter",
-                F.concat_ws(
-                    " ",
-                    F.col("full_principal_result_interpreter.given_name"),
-                    F.col("full_principal_result_interpreter.family_name"),
-                ),
-            )
-            .withColumn(
-                "full_assistant_result_interpreter",
-                extract_people_from_obr_field("obr-33"),
-            )
-            .withColumn(
-                "assistant_result_interpreter",
-                read_struct_of_names_friendly("full_assistant_result_interpreter"),
-            )
-            .withColumn(
-                "full_technician",
-                extract_people_from_obr_field("obr-34"),
-            )
-            .withColumn("technician", read_struct_of_names_friendly("full_technician"))
             .drop("pid-5", "obr-16", "obr-32", "obr-33", "obr-34")
         )
 

@@ -187,8 +187,8 @@ df.select("diagnoses").filter(
 )
 ```
 
-The `diagnoses_consolidated` column is provided as a convenience for when the list of diagnosis code text values
-is turned into a semicolon-delimited string is usable for simple text searches.
+The `diagnoses_consolidated` column is provided as a semicolon-delimited string derived from the
+list of diagnosis code text values. It may be more easily usable for simple text searches.
 
 
 (report_text_ref)=
