@@ -10,6 +10,7 @@ Scout consists of several services that work together to process medical imaging
 
 Scout provides three primary user-facing services for data exploration and analysis. These are accessible from the Scout Launchpad after [authentication](authentication.md).
 
+(analytics)=
 ### Analytics
 
 [Apache Superset](https://superset.apache.org/) provides a user-friendly interface for exploring and visualizing data in the Scout data lake. Superset offers two main approaches:
@@ -44,6 +45,7 @@ The Chat service is configured with:
 
 **Note:** The Chat service is optional and may not be enabled in all Scout deployments. For detailed information about using the Chat interface, see the [Chat documentation](chat.md).
 
+(notebooks)=
 ### Notebooks
 
 [JupyterHub](https://jupyterhub.readthedocs.io/) provides an interface for power users to perform custom data analysis using Python code. Each user receives their own single-user [Jupyter notebook](https://jupyter.org/) environment with full access to data in the Scout data lake.
