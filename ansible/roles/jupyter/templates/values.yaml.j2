@@ -88,6 +88,10 @@ singleuser:
     tag: '{{ jupyter_singleuser_image_tag }}'
     pullPolicy: IfNotPresent
   profileList: {{ jupyter_profiles | to_json }}
+{% if jupyter_target_node_name is defined and jupyter_target_node_name != omit %}
+  nodeSelector:
+    kubernetes.io/hostname: '{{ jupyter_target_node_name }}'
+{% endif %}
   cmd: null
   initContainers:
     - name: spark-config-setup
@@ -156,11 +160,12 @@ singleuser:
         c.LabApp.custom_css = True
 
   storage:
-    type: static
-    static:
-      pvcName: '{{ jupyter_singleuser_pvc }}'
-      subPath: '{username}'
-    capacity: 10Gi
+    type: dynamic
+{% if jupyter_singleuser_storage_class is defined and jupyter_singleuser_storage_class %}
+    storageClass: '{{ jupyter_singleuser_storage_class }}'
+{% endif %}
+    capacity: '{{ jupyter_singleuser_storage_size }}'
+    subPath: '{username}'
     extraVolumes:
       spark-defaults:
         name: spark-defaults
