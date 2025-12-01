@@ -275,6 +275,56 @@ def build_cohort_query(config):
 # NEGATIVE FILTERING (Python-level)
 # ============================================================================
 
+# Default negation patterns - centralized here for use by both detection and highlighting
+DEFAULT_NEGATION_PATTERNS = [
+    r"no\s+(mri?\s+)?evidence",
+    r"without\s+(mri?\s+)?evidence",
+    r"negative\s+for",
+    r"absence\s+of",
+    r"ruled?\s+out",
+    r"rules?\s+out",
+    r"excluding",
+    r"excluded",
+    r"evaluat(?:e|ion)\s+(for)?",
+    r"concern\s+(for)?",
+    r"no\s+\w+\s+(suggest|indication|sign)",
+    r"no\s+",  # Catches "no brain metastases", "no definite", etc.
+]
+
+
+def get_default_negation_regex():
+    """
+    Get the compiled regex for default negation patterns.
+    Used by both negation detection and text highlighting.
+    """
+    return re.compile("|".join(DEFAULT_NEGATION_PATTERNS), re.IGNORECASE)
+
+
+def check_negation_before_match(report_lower, match_start, negation_regex=None, context_chars=50):
+    """
+    Check if there's a negation phrase in the text BEFORE a match.
+
+    Only looks before the match (not after) to prevent false positives where
+    negation of a different finding appears after the match.
+    e.g., "pneumonia... No evidence of lymphadenopathy" should NOT negate pneumonia.
+
+    Args:
+        report_lower: Lowercase report text
+        match_start: Start position of the match
+        negation_regex: Compiled regex for negation patterns (uses default if None)
+        context_chars: How many characters before the match to check (default 50)
+
+    Returns:
+        bool: True if negation found before match, False otherwise
+    """
+    if negation_regex is None:
+        negation_regex = get_default_negation_regex()
+
+    start_pos = max(0, match_start - context_chars)
+    context_before = report_lower[start_pos:match_start]
+
+    return bool(negation_regex.search(context_before))
+
 
 def has_positive_mention(report_text, search_patterns, negation_patterns=None):
     """
@@ -284,32 +334,18 @@ def has_positive_mention(report_text, search_patterns, negation_patterns=None):
     Args:
         report_text: Report text to search
         search_patterns: List of regex patterns to search for
-        negation_patterns: Optional list of negation regex patterns
+        negation_patterns: Optional list of negation regex patterns (uses DEFAULT_NEGATION_PATTERNS if None)
     """
     if not report_text or pd.isna(report_text):
         return False
 
     report_lower = report_text.lower()
 
-    # Default negation pattern
+    # Use default or custom negation patterns
     if negation_patterns is None:
-        negation_patterns = [
-            r"no\s+(mri?\s+)?evidence",
-            r"without\s+(mri?\s+)?evidence",
-            r"negative\s+for",
-            r"absence\s+of",
-            r"ruled?\s+out",
-            r"rules?\s+out",
-            r"excluding",
-            r"excluded",
-            r"evaluat(?:e|ion)\s+(for)?",
-            r"concern\s+(for)?",
-            r"no\s+\w+\s+(suggest|indication|sign)",
-            r"no\s+",  # Catches "no brain metastases", "no definite", etc.
-        ]
-
-    # Compile negation pattern
-    negation_regex = re.compile("|".join(negation_patterns), re.IGNORECASE)
+        negation_regex = get_default_negation_regex()
+    else:
+        negation_regex = re.compile("|".join(negation_patterns), re.IGNORECASE)
 
     # Find all matches for any search pattern
     matches = []
@@ -324,15 +360,9 @@ def has_positive_mention(report_text, search_patterns, negation_patterns=None):
     if not matches:
         return False
 
-    # Check each match for local negation (only look BEFORE the match, not after)
-    # This prevents false positives where negation of a different finding appears after the match
-    # e.g., "pneumonia... No evidence of lymphadenopathy" should not negate pneumonia
+    # Check each match for local negation using shared utility
     for match in matches:
-        start_pos = max(0, match.start() - 50)
-        context_before = report_lower[start_pos:match.start()]
-
-        # Check if negation exists before the match
-        if not negation_regex.search(context_before):
+        if not check_negation_before_match(report_lower, match.start(), negation_regex):
             return True  # Found a positive mention without preceding negation
 
     return False  # All matches had negation before them

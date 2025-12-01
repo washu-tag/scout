@@ -18,6 +18,8 @@ from cohort_builder import (
     GREEN_SUCCESS,
     ORANGE_WARNING,
     RED_ERROR,
+    get_default_negation_regex,
+    check_negation_before_match,
 )
 
 
@@ -40,8 +42,6 @@ def _highlight_report_text(report_text, config):
     if not report_text or pd.isna(report_text):
         return html.escape("No report text")
 
-    from cohort_builder import has_positive_mention
-
     # Collect all search patterns from config
     search_patterns = []
 
@@ -56,39 +56,24 @@ def _highlight_report_text(report_text, config):
     if not search_patterns:
         return html.escape(report_text)
 
-    # Find all matches and their negation status using actual logic
+    # Find all matches and their negation status using shared logic from cohort_builder
     report_lower = report_text.lower()
     all_matches = []
 
-    # Default negation pattern (from cohort_builder.py) - must match cohort_builder.py
-    negation_patterns = [
-        r"no\s+(mri?\s+)?evidence",
-        r"without\s+(mri?\s+)?evidence",
-        r"negative\s+for",
-        r"absence\s+of",
-        r"ruled?\s+out",
-        r"rules?\s+out",
-        r"excluding",
-        r"excluded",
-        r"evaluat(?:e|ion)\s+(for)?",  # Updated to match "evaluate" and "evaluation"
-        r"concern\s+(for)?",
-        r"no\s+\w+\s+(suggest|indication|sign)",
-        r"no\s+",  # Catches "no brain metastases", "no definite", etc.
-    ]
-    negation_regex = re.compile("|".join(negation_patterns), re.IGNORECASE)
+    # Use shared negation regex from cohort_builder
+    negation_regex = get_default_negation_regex()
 
     # Find all pattern matches
     for pattern in search_patterns:
         try:
             matches = re.finditer(pattern, report_lower, re.IGNORECASE | re.DOTALL)
             for match in matches:
-                # Check 50 chars before and after the match (updated to match cohort_builder.py)
-                start_pos = max(0, match.start() - 50)
-                end_pos = min(len(report_lower), match.end() + 50)
-                context = report_lower[start_pos:end_pos]
-
-                # Check if negation exists in context
-                has_negation = bool(negation_regex.search(context))
+                # Use shared function to check negation BEFORE match only
+                # This prevents false positives where negation of a different
+                # finding appears after the match
+                has_negation = check_negation_before_match(
+                    report_lower, match.start(), negation_regex
+                )
 
                 all_matches.append(
                     {
