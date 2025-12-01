@@ -373,10 +373,10 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
                 href={subdomainUrls.minio}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-red-50 hover:to-rose-50 dark:hover:from-red-900/20 dark:hover:to-rose-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-xl hover:shadow-red-200/30 dark:hover:shadow-red-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
+                className="group relative p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-red-50 hover:to-rose-50 dark:hover:from-red-900/20 dark:hover:to-rose-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-xl hover:shadow-red-200/30 dark:hover:shadow-red-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden flex flex-col items-center justify-center"
               >
-                <div className="relative w-14 h-14 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
-                  <SiMinio className="text-3xl text-red-600 dark:text-red-400" />
+                <div className="relative w-16 h-16 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                  <SiMinio className="text-4xl text-red-600 dark:text-red-400" />
                 </div>
                 <div className="relative text-sm font-bold text-gray-900 dark:text-white">Lake</div>
               </a>
@@ -385,10 +385,10 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
                 href={subdomainUrls.temporal}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-cyan-50 hover:to-sky-50 dark:hover:from-cyan-900/20 dark:hover:to-sky-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-600 hover:shadow-xl hover:shadow-cyan-200/30 dark:hover:shadow-cyan-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
+                className="group relative p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-cyan-50 hover:to-sky-50 dark:hover:from-cyan-900/20 dark:hover:to-sky-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-cyan-300 dark:hover:border-cyan-600 hover:shadow-xl hover:shadow-cyan-200/30 dark:hover:shadow-cyan-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden flex flex-col items-center justify-center"
               >
-                <div className="relative w-14 h-14 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
-                  <SiTemporal className="text-3xl text-cyan-600 dark:text-cyan-400" />
+                <div className="relative w-16 h-16 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                  <SiTemporal className="text-4xl text-cyan-600 dark:text-cyan-400" />
                 </div>
                 <div className="relative text-sm font-bold text-gray-900 dark:text-white">
                   Orchestrator
@@ -399,10 +399,10 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
                 href={subdomainUrls.grafana}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-orange-50 hover:to-amber-50 dark:hover:from-orange-900/20 dark:hover:to-amber-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-xl hover:shadow-orange-200/30 dark:hover:shadow-orange-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
+                className="group relative p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-orange-50 hover:to-amber-50 dark:hover:from-orange-900/20 dark:hover:to-amber-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-xl hover:shadow-orange-200/30 dark:hover:shadow-orange-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden flex flex-col items-center justify-center"
               >
-                <div className="relative w-14 h-14 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
-                  <SiGrafana className="text-3xl text-orange-500 dark:text-orange-400" />
+                <div className="relative w-16 h-16 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                  <SiGrafana className="text-4xl text-orange-500 dark:text-orange-400" />
                 </div>
                 <div className="relative text-sm font-bold text-gray-900 dark:text-white">
                   Monitor
@@ -413,10 +413,10 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
                 href={subdomainUrls.keycloak}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative p-6 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-xl hover:shadow-blue-200/30 dark:hover:shadow-blue-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden"
+                className="group relative p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-xl hover:shadow-blue-200/30 dark:hover:shadow-blue-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden flex flex-col items-center justify-center"
               >
-                <div className="relative w-14 h-14 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
-                  <SiKeycloak className="text-3xl text-blue-600 dark:text-blue-400" />
+                <div className="relative w-16 h-16 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                  <SiKeycloak className="text-4xl text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="relative text-sm font-bold text-gray-900 dark:text-white">
                   Users
