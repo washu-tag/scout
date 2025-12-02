@@ -59,7 +59,7 @@ some fields are derived from others, and some fields may not be directly mapped 
 
 
 (patient_name_ref)=
-# Patient Name
+## Patient Name
 The name of the patient is represented in two different ways: an array of structs and a simple string. The intention
 behind this decision is that users wanting access to the more complex fields in a name (or the multiple representations
 of a name that HL7 supports) have access to this information in `full_patient_name`, while users needing only a simple
@@ -89,7 +89,7 @@ root
 
 
 (name_and_ids_ref)=
-# Name + IDs
+## Name + IDs
 Several name fields have columns with a "full" and simplified representation (such as `full_ordering_provider`
 and `ordering_provider`). The intention behind this decision is that users wanting access to the more complex fields in
 a name or IDs associated to a person in repetitions of the field have access to this information the "full" column,
