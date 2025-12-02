@@ -41,32 +41,54 @@ package_download_image: rockylinux/rockylinux:9.6
 # Set to 0 to disable timeout
 package_install_timeout: 300
 
-# Default namespaces
-cnpg_operator_namespace: cnpg-operator
-postgres_cluster_namespace: cnpg
-prometheus_namespace: prometheus
-grafana_namespace: grafana
-loki_namespace: loki
-gpu_operator_namespace: gpu-operator
-extractor_namespace: extractor
-minio_operator_namespace: minio-operator
-minio_tenant_namespace: minio-scout
-hive_namespace: hive
-temporal_namespace: temporal
-cassandra_namespace: cassandra
-cert_manager_namespace: cert-manager
-eck_operator_namespace: eck-operator
-elasticsearch_namespace: elastic
-chatbot_namespace: chatbot
-jupyter_namespace: jupyter
-superset_namespace: superset
-trino_namespace: trino
+# Consolidated Namespaces (6 primary namespaces)
+scout_core_namespace: scout-core
+scout_data_namespace: scout-data
+scout_extractor_namespace: scout-extractor
+scout_analytics_namespace: scout-analytics
+scout_operators_namespace: scout-operators
+scout_monitoring_namespace: scout-monitoring
+
+# System namespaces (kept separate)
+traefik_namespace: kube-system
 harbor_namespace: harbor
-orthanc_namespace: orthanc
-dcm4chee_namespace: dcm4chee
-launchpad_namespace: launchpad
-keycloak_namespace: keycloak
-redis_namespace: redis
+
+# Service-to-namespace mappings
+# Core infrastructure
+postgres_cluster_namespace: '{{ scout_core_namespace }}'
+keycloak_namespace: '{{ scout_core_namespace }}'
+redis_namespace: '{{ scout_core_namespace }}'
+launchpad_namespace: '{{ scout_core_namespace }}'
+
+# Data layer
+minio_tenant_namespace: '{{ scout_data_namespace }}'
+hive_namespace: '{{ scout_data_namespace }}'
+dcm4chee_namespace: '{{ scout_data_namespace }}'
+orthanc_namespace: '{{ scout_data_namespace }}'
+
+# Extractor & workflow orchestration
+cassandra_namespace: '{{ scout_extractor_namespace }}'
+elasticsearch_namespace: '{{ scout_extractor_namespace }}'
+temporal_namespace: '{{ scout_extractor_namespace }}'
+extractor_namespace: '{{ scout_extractor_namespace }}'
+
+# Analytics & user services
+trino_namespace: '{{ scout_analytics_namespace }}'
+superset_namespace: '{{ scout_analytics_namespace }}'
+jupyter_namespace: '{{ scout_analytics_namespace }}'
+chatbot_namespace: '{{ scout_analytics_namespace }}'
+
+# Operators
+cnpg_operator_namespace: '{{ scout_operators_namespace }}'
+minio_operator_namespace: '{{ scout_operators_namespace }}'
+eck_operator_namespace: '{{ scout_operators_namespace }}'
+gpu_operator_namespace: '{{ scout_operators_namespace }}'
+cert_manager_namespace: '{{ scout_operators_namespace }}'
+
+# Monitoring
+prometheus_namespace: '{{ scout_monitoring_namespace }}'
+grafana_namespace: '{{ scout_monitoring_namespace }}'
+loki_namespace: '{{ scout_monitoring_namespace }}'
 
 # OAuth configuration
 oauth_provider_name: Keycloak # User-facing name for OAuth provider (e.g., 'WashU Key', 'Keycloak')

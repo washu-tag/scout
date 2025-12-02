@@ -2,9 +2,6 @@
 # Default configuration for traefik role
 # Configures Traefik ingress controller with TLS termination
 
-# Traefik namespace (where k3s deploys Traefik by default)
-traefik_namespace: kube-system
-
 # TLS secret configuration
 traefik_tls_secret_name: tls-secret
 
