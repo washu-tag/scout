@@ -165,7 +165,8 @@ singleuser:
     storageClass: '{{ jupyter_singleuser_storage_class }}'
 {% endif %}
     capacity: '{{ jupyter_singleuser_storage_size }}'
-    subPath: '{username}'
+    dynamic:
+      subPath: '{username}'
     extraVolumes:
       spark-defaults:
         name: spark-defaults
