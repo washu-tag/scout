@@ -1,6 +1,6 @@
 # Data Schema
 
-The Scout Rad Report Explorer is backed by [Delta Lake](https://delta.io/) and [MinIO](https://min.io/) to store 
+Scout is backed by [Delta Lake](https://delta.io/) and [MinIO](https://min.io/) to store 
 and manage HL7 radiology reports and other data and metadata. There is one main table that contains the report data. 
 Below is a description of the report table schema and the mapping of HL7 fields to the report table columns. Note that 
 some fields are derived from others, and some fields may not be directly mapped to HL7 fields.
@@ -51,7 +51,7 @@ some fields are derived from others, and some fields may not be directly mapped 
 
 
 (patient_ids_ref)=
-# Patient IDs
+## Patient IDs
 The `patient_ids` column contains an array of structs to represent all patient identifiers associated with the report.
 
 An example of the column with schema is shown below:
@@ -84,7 +84,7 @@ example.
 
 
 (diagnoses_ref)=
-# Diagnoses
+## Diagnoses
 The `diagnoses` column contains an array of structs to represent the diagnoses.
 
 An example of the column with schema is shown below:
@@ -117,7 +117,7 @@ df.select("diagnoses").filter(
 ```
 
 (report_text_ref)=
-# Report Text
+## Report Text
 
 The full report text is reconstructed by the following process:
 1. Take all of the `OBX` segments in the HL7 message in order.
