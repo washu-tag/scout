@@ -176,9 +176,6 @@
             "orc_2_placer_order_number": null,
             "obr_2_placer_order_number": "1804679",
             "patient_age": null,
-            "principal_result_interpreter": "TONY MAY",
-            "assistant_result_interpreter": "[ERIN PROCTOR]",
-            "technician": "[]",
             "orc_3_filler_order_number": null,
             "obr_3_filler_order_number": "620943125",
             "service_name": "US ABDOMEN LIMITED",
@@ -202,9 +199,6 @@
             "orc_2_placer_order_number": "",
             "obr_2_placer_order_number": "96932",
             "patient_age": null,
-            "principal_result_interpreter": "ANA OLSON",
-            "assistant_result_interpreter": "[]",
-            "technician": "[WALTER HOLLAND]",
             "orc_3_filler_order_number": "",
             "obr_3_filler_order_number": "620943126",
             "service_name": "XR ABDOMEN AP 1 VIEW",
@@ -228,9 +222,6 @@
             "orc_2_placer_order_number": "8989586",
             "obr_2_placer_order_number": "8989586",
             "patient_age": "83",
-            "principal_result_interpreter": null,
-            "assistant_result_interpreter": "[CRAIG TAYLOR]",
-            "technician": "[JENNIFER LUNA]",
             "orc_3_filler_order_number": "620943127",
             "obr_3_filler_order_number": "620943127",
             "service_name": "XR ABDOMEN AP 1 VIEW",
@@ -268,14 +259,6 @@
           {
             "type": ".IntegerType",
             "columnName": "patient_age"
-          },
-          {
-            "type": ".ArrayType",
-            "columnName": "assistant_result_interpreter"
-          },
-          {
-            "type": ".ArrayType",
-            "columnName": "technician"
           }
         ]
       },
@@ -292,105 +275,105 @@
             "epic_mrn": "EPIC2603471",
             "legacy_patient_id_un": null,
             "empi_mr": "7209352",
-            "patient_ids": "[[ABC1234330,ABC,MR,], [EPIC2603471,EPIC,MRN,], [7209352,EMPI,MR,]]"
+            "patient_ids": "[[ABC1234330,ABC,MR,null], [EPIC2603471,EPIC,MRN,null], [7209352,EMPI,MR,null]]"
           },
           "2.25.83733773296604060316231433263389742135": {
             "abc_mr": "ABC1234330",
             "epic_mrn": "EPIC2603471",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1234330,ABC,MR,], [EPIC2603471,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234330,ABC,MR,null], [EPIC2603471,EPIC,MRN,null]]"
           },
           "2.25.86894298082825883439238171253269619380": {
             "abc_mr": null,
             "epic_mrn": null,
             "legacy_patient_id_un": "9566019",
             "empi_mr": null,
-            "patient_ids": "[[9566019,,,UN]]"
+            "patient_ids": "[[9566019,null,null,UN]]"
           },
           "2.25.296476389772545408330432299707949012627": {
             "abc_mr": "ABC1234330",
             "epic_mrn": "EPIC2603471",
             "legacy_patient_id_un": null,
             "empi_mr": "7209352",
-            "patient_ids": "[[ABC1234330,ABC,MR,], [EPIC2603471,EPIC,MRN,], [7209352,EMPI,MR,]]"
+            "patient_ids": "[[ABC1234330,ABC,MR,null], [EPIC2603471,EPIC,MRN,null], [7209352,EMPI,MR,null]]"
           },
           "2.25.27294531846963388481947318112461449032": {
             "abc_mr": "ABC1234331",
             "epic_mrn": "EPIC2603472",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1234331,ABC,MR,], [EPIC2603472,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234331,ABC,MR,null], [EPIC2603472,EPIC,MRN,null]]"
           },
           "2.25.66092044680927012484208907663249350495": {
             "abc_mr": "ABC1234331",
             "epic_mrn": "EPIC2603472",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1234331,ABC,MR,], [EPIC2603472,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234331,ABC,MR,null], [EPIC2603472,EPIC,MRN,null]]"
           },
           "2.25.72756099571087589399340186312311126974": {
             "abc_mr": "ABC1234331",
             "epic_mrn": "EPIC2603472",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1234331,ABC,MR,], [EPIC2603472,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234331,ABC,MR,null], [EPIC2603472,EPIC,MRN,null]]"
           },
           "2.25.8517564923695072524410339422472128015": {
             "abc_mr": "ABC1234332",
             "epic_mrn": "EPIC2603473",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1234332,ABC,MR,], [EPIC2603473,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234332,ABC,MR,null], [EPIC2603473,EPIC,MRN,null]]"
           },
           "2.25.338503419107449463704505260997993941596": {
             "abc_mr": "ABC1234332",
             "epic_mrn": "EPIC2603473",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1234332,ABC,MR,], [EPIC2603473,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234332,ABC,MR,null], [EPIC2603473,EPIC,MRN,null]]"
           },
           "2.25.46922071367648385371960750069272638650": {
             "abc_mr": "ABC1234332",
             "epic_mrn": "EPIC2603473",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1234332,ABC,MR,], [EPIC2603473,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234332,ABC,MR,null], [EPIC2603473,EPIC,MRN,null]]"
           },
           "2.25.255447108864050578016103835923469143730": {
             "abc_mr": "ABC1234333",
             "epic_mrn": "EPIC2603474",
             "legacy_patient_id_un": null,
             "empi_mr": "7209355",
-            "patient_ids": "[[ABC1234333,ABC,MR,], [EPIC2603474,EPIC,MRN,], [7209355,EMPI,MR,]]"
+            "patient_ids": "[[ABC1234333,ABC,MR,null], [EPIC2603474,EPIC,MRN,null], [7209355,EMPI,MR,null]]"
           },
           "2.25.269543980460923814767645637194759190589": {
             "abc_mr": "ABC1234333",
             "epic_mrn": "EPIC2603474",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1234333,ABC,MR,], [EPIC2603474,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234333,ABC,MR,null], [EPIC2603474,EPIC,MRN,null]]"
           },
           "2.25.213732642005146782981422416471503084231": {
             "abc_mr": null,
             "epic_mrn": null,
             "legacy_patient_id_un": "9566022",
             "empi_mr": null,
-            "patient_ids": "[[9566022,,,UN]]"
+            "patient_ids": "[[9566022,null,null,UN]]"
           },
           "2.25.209518007095785260615917265844163878634": {
             "abc_mr": "ABC1234334",
             "epic_mrn": "EPIC2603475",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1234334,ABC,MR,], [EPIC2603475,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234334,ABC,MR,null], [EPIC2603475,EPIC,MRN,null]]"
           },
           "2.25.279562864306182853939133746784869784459": {
             "abc_mr": "ABC1234334",
             "epic_mrn": "EPIC2603475",
             "legacy_patient_id_un": null,
             "empi_mr": null,
-            "patient_ids": "[[ABC1234334,ABC,MR,], [EPIC2603475,EPIC,MRN,]]"
+            "patient_ids": "[[ABC1234334,ABC,MR,null], [EPIC2603475,EPIC,MRN,null]]"
           }
         },
         "columnTypes": [
@@ -489,7 +472,8 @@
         "uniqueIdColumnName": "message_control_id",
         "rowAssertions": {
           "2.25.255447108864050578016103835923469143730": {
-            "diagnoses": "[[J18.9,Pneumonia, unspecified organism,I10], [R04.2,Hemoptysis,I10], [R91.8,Other nonspecific abnormal finding of lung field,I10]]"
+            "diagnoses": "[[J18.9,Pneumonia, unspecified organism,I10], [R04.2,Hemoptysis,I10], [R91.8,Other nonspecific abnormal finding of lung field,I10]]",
+            "diagnoses_consolidated": "Pneumonia, unspecified organism; Hemoptysis; Other nonspecific abnormal finding of lung field"
           }
         },
         "columnTypes": [
@@ -499,8 +483,87 @@
           }
         ]
       },
-      "sql": "SELECT message_control_id, diagnoses FROM %TABLE_PLACEHOLDER% WHERE message_control_id IN ('2.25.255447108864050578016103835923469143730')",
+      "sql": "SELECT message_control_id, diagnoses, diagnoses_consolidated FROM %TABLE_PLACEHOLDER% WHERE message_control_id IN ('2.25.255447108864050578016103835923469143730')",
       "id": "diagnoses"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".ExactRowsResult",
+        "uniqueIdColumnName": "message_control_id",
+        "rowAssertions": {
+          "2.25.83733773296604060316231433263389742135": {
+            "version_id": "2.4",
+            "full_patient_name": "[WHITE,JAMIL,CHARLES,null,null,null,D]",
+            "patient_name": "Jamil White",
+            "full_ordering_provider": "[[D1458839,PROCTOR,ERIN,Rachel,null,null,M.D.,null,ABC,null,null]]",
+            "ordering_provider": "Erin Proctor",
+            "full_principal_result_interpreter": "[[D1458835,MAY,TONY,F.,null,null,M.D.,null,null,null,null]]",
+            "principal_result_interpreter": "TONY MAY",
+            "full_assistant_result_interpreter": "[[D1458839,PROCTOR,ERIN,R.,null,null,M.D.,null,null,null,null]]",
+            "assistant_result_interpreter": "[ERIN PROCTOR]",
+            "full_technician": "[]",
+            "technician": "[]"
+          },
+          "2.25.86894298082825883439238171253269619380": {
+            "version_id": "2.3",
+            "full_patient_name": "[WHITE,JAMIL,CHARLES,null,null,null,null]",
+            "patient_name": "Jamil White",
+            "full_ordering_provider": "[]",
+            "ordering_provider": null,
+            "full_principal_result_interpreter": "[[D1458827,OLSON,ANA,L.,null,null,M.D.,null,null,null,null]]",
+            "principal_result_interpreter": "ANA OLSON",
+            "full_assistant_result_interpreter": "[]",
+            "assistant_result_interpreter": "[]",
+            "full_technician": "[[null,HOLLAND,WALTER,null,null,null,null,null,null,null,null]]",
+            "technician": "[WALTER HOLLAND]"
+          },
+          "2.25.296476389772545408330432299707949012627": {
+            "version_id": "2.7",
+            "full_patient_name": "[WHITE,JAMIL,CHARLES,null,null,null,D]",
+            "patient_name": "Jamil White",
+            "full_ordering_provider": "[[D1458827,OLSON,ANA,L.,null,null,M.D.,null,ABC,HOSP,null]]",
+            "ordering_provider": "Ana Olson",
+            "full_principal_result_interpreter": "[]",
+            "principal_result_interpreter": null,
+            "full_assistant_result_interpreter": "[[D1458832,TAYLOR,CRAIG,S.,null,null,null,null,ABC,null,null]]",
+            "assistant_result_interpreter": "[CRAIG TAYLOR]",
+            "full_technician": "[[T1067309,LUNA,JENNIFER,null,null,null,null,null,null,null,null]]",
+            "technician": "[JENNIFER LUNA]"
+          }
+        },
+        "columnTypes": [
+          {
+            "type": ".ArrayType",
+            "columnName": "full_patient_name"
+          },
+          {
+            "type": ".ArrayType",
+            "columnName": "full_ordering_provider"
+          },
+          {
+            "type": ".ArrayType",
+            "columnName": "full_principal_result_interpreter"
+          },
+          {
+            "type": ".ArrayType",
+            "columnName": "full_assistant_result_interpreter"
+          },
+          {
+            "type": ".ArrayType",
+            "columnName": "assistant_result_interpreter"
+          },
+          {
+            "type": ".ArrayType",
+            "columnName": "full_technician"
+          },
+          {
+            "type": ".ArrayType",
+            "columnName": "technician"
+          }
+        ]
+      },
+      "sql": "SELECT * FROM %TABLE_PLACEHOLDER% WHERE message_control_id IN ('2.25.83733773296604060316231433263389742135', '2.25.86894298082825883439238171253269619380', '2.25.296476389772545408330432299707949012627')",
+      "id": "extended_metadata"
     }
   ]
 }
