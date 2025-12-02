@@ -26,7 +26,7 @@
     helm_chart_name: cass-operator
     helm_chart_ref: k8ssandra/cass-operator
     helm_chart_version: '{{ cass_operator_version }}'
-    helm_chart_namespace: '{{ cassandra_namespace }}'
+    helm_chart_namespace: '{{ scout_extractor_namespace }}'
     helm_repo_name: k8ssandra
     helm_repo_url: https://helm.k8ssandra.io/stable
     helm_chart_timeout: 10m
@@ -40,7 +40,7 @@
       kind: CassandraDatacenter
       metadata:
         name: '{{ cassandra_datacenter_name }}'
-        namespace: '{{ cassandra_namespace }}'
+        namespace: '{{ scout_extractor_namespace }}'
       spec:
         clusterName: '{{ cassandra_cluster_name }}'
         serverType: cassandra
@@ -69,6 +69,6 @@
             max_heap_size: '{{ cassandra_max_heap }}'
 
 - name: Wait for Cassandra to be ready
-  command: 'kubectl -n {{ cassandra_namespace }} wait --for=condition=Ready --timeout=600s cassandradatacenter/{{ cassandra_datacenter_name }}'
+  command: 'kubectl -n {{ scout_extractor_namespace }} wait --for=condition=Ready --timeout=600s cassandradatacenter/{{ cassandra_datacenter_name }}'
   register: cassandra_ready
   changed_when: false

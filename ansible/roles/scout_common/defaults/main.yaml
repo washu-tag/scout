@@ -67,9 +67,6 @@ dcm4chee_namespace: '{{ scout_data_namespace }}'
 orthanc_namespace: '{{ scout_data_namespace }}'
 
 # Extractor & workflow orchestration
-cassandra_namespace: '{{ scout_extractor_namespace }}'
-elasticsearch_namespace: '{{ scout_extractor_namespace }}'
-temporal_namespace: '{{ scout_extractor_namespace }}'
 extractor_namespace: '{{ scout_extractor_namespace }}'
 
 # Analytics & user services
