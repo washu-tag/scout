@@ -5,7 +5,7 @@
 
 - name: Create namespace
   kubernetes.core.k8s:
-    name: '{{ temporal_namespace }}'
+    name: '{{ scout_extractor_namespace }}'
     api_version: v1
     kind: Namespace
     state: present
@@ -23,7 +23,7 @@
     helm_chart_name: temporal
     helm_chart_ref: temporal/temporal
     helm_chart_version: '{{ temporal_version }}'
-    helm_chart_namespace: '{{ temporal_namespace }}'
+    helm_chart_namespace: '{{ scout_extractor_namespace }}'
     helm_repo_name: temporal
     helm_repo_url: https://raw.githubusercontent.com/temporalio/helm-charts/refs/heads/gh-pages/
     helm_chart_timeout: 15m
@@ -31,11 +31,11 @@
 
 - name: Wait for Temporal schema job to complete
   shell: >-
-    JOB_NAME=$(kubectl -n {{ temporal_namespace }} get jobs -l app.kubernetes.io/component=schema
+    JOB_NAME=$(kubectl -n {{ scout_extractor_namespace }} get jobs -l app.kubernetes.io/component=schema
     --sort-by='.metadata.creationTimestamp'
     -o jsonpath='{.items[-1].metadata.name}' 2>/dev/null || echo "");
     if [ -n "$JOB_NAME" ]; then
-      kubectl -n {{ temporal_namespace }} wait --for=condition=complete --timeout=300s job/$JOB_NAME;
+      kubectl -n {{ scout_extractor_namespace }} wait --for=condition=complete --timeout=300s job/$JOB_NAME;
     fi
   register: temporal_schema
   changed_when: false
@@ -55,7 +55,7 @@
       kind: Job
       metadata:
         name: 'add-prospective-indexing'
-        namespace: '{{ temporal_namespace }}'
+        namespace: '{{ scout_extractor_namespace }}'
         labels:
           app: prospective-indexing
       spec:
@@ -71,7 +71,7 @@
                 image: temporalio/admin-tools
                 env:
                   - name: TEMPORAL_ADDRESS
-                    value: 'temporal-internal-frontend.{{ temporal_namespace }}:7236'
+                    value: 'temporal-internal-frontend.{{ scout_extractor_namespace }}:7236'
                 command:
                   - temporal
                   - schedule

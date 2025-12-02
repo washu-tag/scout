@@ -9,7 +9,7 @@ elasticsearch:
   external: true
   version: 'v7' # All ES versions (7/8/9) use v7 template format
   scheme: 'http' # TLS disabled on Elasticsearch for simplicity
-  host: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-http.{{ elasticsearch_namespace }}'
+  host: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-http.{{ scout_extractor_namespace }}'
   port: 9200
   username: 'elastic'
   existingSecret: '{{ elasticsearch_cluster_name | default("elasticsearch") }}-es-elastic-user'
@@ -30,7 +30,7 @@ server:
         cassandra:
           hosts:
             [
-              '{{ cassandra_cluster_name | default("cassandra-cluster") }}-{{ cassandra_datacenter_name | default("dc1") }}-service.{{ cassandra_namespace }}',
+              '{{ cassandra_cluster_name | default("cassandra-cluster") }}-{{ cassandra_datacenter_name | default("dc1") }}-service.{{ scout_extractor_namespace }}',
             ]
           port: 9042
           keyspace: temporal
