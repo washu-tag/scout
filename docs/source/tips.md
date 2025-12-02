@@ -23,7 +23,7 @@ This page provides helpful tips for using Scout services effectively.
 
 - **Be specific**: Include details like modality, date ranges, or specific fields in your questions
 - **Use Scout terminology**: Reference field names from the [data schema](dataschema.md) for more accurate queries
-- **Check the SQL**: Expand the Tool Use section to verify the AI generated the correct query
+- **Check the SQL**: Expand the "View Result from scout-db" section to verify the AI generated the correct query
 - **Iterate**: Ask follow-up questions to refine results
 
 ### When to Use Chat vs. Analytics vs. Notebooks
@@ -31,20 +31,6 @@ This page provides helpful tips for using Scout services effectively.
 - **Use Chat for**: Quick exploratory questions, ad-hoc analysis, learning about the data
 - **Use Analytics for**: Creating visualizations, building dashboards, sharing results with others
 - **Use Notebooks for**: Complex transformations, statistical analysis, machine learning, custom exports
-
-### Common Chat Patterns
-
-- Start broad, then narrow down:
-  ```
-  1. "How many CT reports are there?"
-  2. "How many CT chest reports?"
-  3. "Show me CT chest reports with 'nodule' in the findings"
-  ```
-
-- Request structured output for further analysis:
-  ```
-  "Give me a table of the top 10 diagnosis codes with counts"
-  ```
 
 ## Notebooks (JupyterHub)
 
