@@ -1,7 +1,7 @@
 # ADR 0004: Storage Provisioning Approach
 
 **Date**: 2025-11-07  
-**Status**: Accepted  
+**Status**: Accepted (superseded by ADR 0006 for Jupyter single-user storage)  
 **Decision Owner**: TAG Team
 
 ## Context

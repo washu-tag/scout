@@ -721,7 +721,7 @@ k3s_cluster:
 ```
 
 Individual services inherit namespaces from these consolidated variables (e.g., `postgres_cluster_namespace: "{{ scout_core_namespace }}"`).
-You can also override namespaces at the service level if you want to put a service into a different scout namespace or in its own dedicated namespace.
+You can also override namespaces at the service level if you want to put a service into a different scout namespace or in its own dedicated namespace:
 
 ```yaml
 k3s_cluster:
@@ -731,6 +731,8 @@ k3s_cluster:
 ```
 
 See `roles/scout_common/defaults/main.yaml` for the complete namespace mapping.
+
+**Important:** Orchestration services (Temporal, Cassandra, Elasticsearch) must share the same namespace for proper operation. They cannot be separated into different namespaces because cross-namespace secret access is not supported. These services always use `scout_extractor_namespace`.
 
 (air-gapped-deployment)=
 ## Air-Gapped Deployment
