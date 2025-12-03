@@ -12,10 +12,6 @@ voila>=0.5.8
 # --- everything else ---
 delta-spark
 jupyterlab-git
-jupyter-ai
-langchain-openai
-langchain-ollama
-langextract
 transformers
 transformers[torch]
 scikit-learn
