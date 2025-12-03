@@ -88,7 +88,7 @@ singleuser:
     tag: '{{ jupyter_singleuser_image_tag }}'
     pullPolicy: IfNotPresent
   profileList: {{ jupyter_profiles | to_json }}
-{% if jupyter_target_node_name is defined and jupyter_target_node_name != omit %}
+{% if jupyter_target_node_name is defined %}
   nodeSelector:
     kubernetes.io/hostname: '{{ jupyter_target_node_name }}'
 {% endif %}

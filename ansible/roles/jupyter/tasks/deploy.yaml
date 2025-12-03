@@ -25,9 +25,8 @@
         {{ hostvars[groups['gpu_workers'][0]]['inventory_hostname'] }}
       {%- elif groups['workers'] is defined and groups['workers'] | length > 0 -%}
         {{ hostvars[groups['workers'][0]]['inventory_hostname'] }}
-      {%- else -%}
-        {{ omit }}
       {%- endif -%}
+  when: (groups['gpu_workers'] is defined and groups['gpu_workers'] | length > 0) or (groups['workers'] is defined and groups['workers'] | length > 0)
 
 - name: Setup Spark Defaults ConfigMap
   ansible.builtin.include_role:
