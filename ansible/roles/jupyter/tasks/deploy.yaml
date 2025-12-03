@@ -18,47 +18,10 @@
   vars:
     ns: '{{ jupyter_namespace }}'
 
-- name: Create static PV for Jupyter notebook storage (on-prem)
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: PersistentVolume
-      metadata:
-        name: '{{ jupyter_singleuser_pv_name }}'
-      spec:
-        capacity:
-          storage: '{{ jupyter_singleuser_storage_size }}'
-        accessModes:
-          - ReadWriteMany
-        persistentVolumeReclaimPolicy: Retain
-        # For static PV binding: empty string prevents default storage class assignment
-        # If jupyter_singleuser_storage_class is set, use it; otherwise use empty string
-        storageClassName: '{{ jupyter_singleuser_storage_class if jupyter_singleuser_storage_class else "" }}'
-        hostPath:
-          path: '{{ jupyter_singleuser_hostpath }}'
-          type: DirectoryOrCreate
-  when: jupyter_singleuser_hostpath | length > 0
-
-- name: Create PersistentVolumeClaim for Jupyter single-user storage
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: PersistentVolumeClaim
-      metadata:
-        name: '{{ jupyter_singleuser_pvc }}'
-        namespace: '{{ jupyter_namespace }}'
-      spec:
-        accessModes:
-          - ReadWriteMany
-        resources:
-          requests:
-            storage: '{{ jupyter_singleuser_storage_size }}'
-        # When using static PV (hostpath): set empty string to prevent default storage class
-        # When using dynamic provisioning: omit field to use cluster default, or specify custom class
-        storageClassName: '{{ jupyter_singleuser_storage_class if jupyter_singleuser_storage_class else ("" if jupyter_singleuser_hostpath else omit) }}'
-        volumeName: '{{ jupyter_singleuser_pv_name if (jupyter_singleuser_hostpath | default("")) else omit }}'
+- name: Determine target node for Jupyter pods
+  ansible.builtin.set_fact:
+    jupyter_target_node_name: "{{ hostvars[groups['gpu_workers'][0]]['inventory_hostname'] }}"
+  when: groups['gpu_workers'] is defined and groups['gpu_workers'] | length > 0
 
 - name: Setup Spark Defaults ConfigMap
   ansible.builtin.include_role:

@@ -311,6 +311,33 @@ export default function HomeClient({ enableChat }: HomeClientProps) {
     }
   }, [status, session]);
 
+  // Show loading state while checking auth or redirecting to login
+  if (status === 'loading' || !session) {
+    return (
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block p-1 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 mb-4 shadow-lg shadow-blue-200 dark:shadow-blue-900/50">
+            <img src="/scout.png" alt="Scout" className="h-16 rounded-xl bg-white p-2" />
+          </div>
+          <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400">
+            <div
+              className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+              style={{ animationDelay: '0ms' }}
+            ></div>
+            <div
+              className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+              style={{ animationDelay: '150ms' }}
+            ></div>
+            <div
+              className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+              style={{ animationDelay: '300ms' }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 transition-colors duration-500 flex items-center justify-center py-12">
       {/* Floating TopBar */}
