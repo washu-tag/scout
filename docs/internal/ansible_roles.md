@@ -116,23 +116,7 @@ Scout uses [jupyterhub-idle-culler](https://github.com/jupyterhub/jupyterhub-idl
 | `jupyter_cull_max_age` | `172800` (2 days) | Shut down servers running longer than this |
 | `jupyter_cull_every` | `600` (10 min) | How often to check for servers to cull |
 
-> **Note:** We intentionally set the culler's `timeout` (idle timeout) equal to `maxAge` because we cannot disable the `tiemout` option. It's very easy for a notebook to be in an active state (e.g. open tab, running kernels (even if the notebook is closed)) so it's not a perticuallry reliable option anyways. Using `maxAge` for both ensures predictable behavior based on total runtime rather than unreliable activity signals.
-
-## Planned Role Refactoring
-
-The following playbooks will be refactored into roles in future work:
-
-- **lake**: MinIO object storage and Hive Metastore deployment
-- **orchestrator**: Temporal workflow engine with Cassandra backend
-- **extractor**: HL7 data extraction services (hl7log-extractor, hl7-transformer)
-- **analytics**: Apache Superset for data visualization
-- **monitoring**: Prometheus, Grafana, and Loki for cluster monitoring
-
-Each role will follow the same structure as `postgres`, with:
-- Dev-friendly defaults in `defaults/main.yaml`
-- Service-specific deployment logic in `tasks/`
-- Dependency on `scout_common` for shared functionality
-- Optional Molecule tests for validation
+> **Note:** We intentionally set the culler's `timeout` (idle timeout) equal to `maxAge` because we cannot disable the `timeout` option. It's very easy for a notebook to be in an active state (e.g. open tab, running kernels (even if the notebook is closed)) so it's not a particularly reliable option anyways. Using `maxAge` for both ensures predictable behavior based on total runtime rather than unreliable activity signals.
 
 ## Writing Playbooks
 

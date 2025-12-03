@@ -5,8 +5,11 @@
 
 ### Server Lifespan
 
-Jupyter notebook servers automatically shut down after 2 days of runtime. Your notebook files and home directory (`/home/jovyan/`) persist, but in-memory variables are lost.
-To avoid potentially losing any important work, save notebooks frequently (Ctrl+S / Cmd+S) and save large DataFrames and intermediate results to disk.
+Jupyter notebook servers automatically shut down after a configurable period of runtime (2 days by default). You'll see the specific timeout for your deployment displayed in a notification banner when you start your server:
+
+![Jupyter Server Timeout Notification](images/JupyterServerTimeoutNotification.png)
+
+Your notebook files and home directory (`/home/jovyan/`) persist, but in-memory variables are lost. To avoid potentially losing any important work, save notebooks frequently (Ctrl+S / Cmd+S) and save large DataFrames and intermediate results to disk.
 
 ### Saving Intermediate Results
 

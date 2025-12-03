@@ -434,9 +434,12 @@ k3s_cluster:
     #                 nvidia.com/gpu: '1'
 
     # JupyterHub automatic shutdown settings
-    # jupyter_cull_enabled: true
-    # jupyter_cull_every: 600
-    # jupyter_cull_max_age: 172800
+    # Servers automatically stop after jupyter_cull_max_age seconds
+    # jupyter_cull_enabled: true                 # Enable automatic shutdown
+    # jupyter_cull_every: 600                    # Check every 10 minutes
+    # jupyter_cull_max_age: 172800               # 2 days (48 hours)
+    # jupyter_cull_remove_named_servers: true    # Remove all server types
+    # jupyter_cull_concurrency: 10               # Parallel culling operations
 
     #---------------------------------------------------------------------------
     # Temporal
