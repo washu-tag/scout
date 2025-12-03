@@ -1,7 +1,7 @@
 # ADR 0005: Decision Not to Implement MinIO STS Authentication in Scout
 
 **Date:** 2025-11-19  
-**Status:** Proposed  
+**Status:** Accepted  
 **Decision Owner**: TAG Team
 
 ## Context

@@ -1,7 +1,7 @@
 # ADR 0006: Jupyter Node Pinning and Storage Approach
 
-**Date**: 2025-12-01  
-**Status**: Proposed  
+**Date**: 2025-12-03  
+**Status**: Accepted  
 **Decision Owner**: TAG Team  
 **Supersedes**: Jupyter-specific portions of ADR 0004
 
