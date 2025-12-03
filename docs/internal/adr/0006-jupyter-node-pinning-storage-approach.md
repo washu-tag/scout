@@ -21,40 +21,33 @@ The original requirement—flexible scheduling across CPU/GPU nodes—is less va
 
 ## Decision
 
-**Pin all Jupyter single-user pods to a specific node** using pod nodeSelector. Prefer GPU node when available, otherwise use CPU worker node. This enables dynamic local storage provisioning with automatic volume node affinity.
+**Pin Jupyter single-user pods to GPU nodes when available** using pod nodeSelector. For non-GPU clusters, rely on automatic PV node affinity for pod placement consistency.
 
 ### Implementation Details
 
-**Pod Node Scheduling**:
-- Set `nodeSelector` on single-user pods with `kubernetes.io/hostname: <target-node>`
-- Forces pod to schedule on specific node before storage provisioning
-- Local-path provisioner creates PV on same node where pod is scheduled
-- Provisioner automatically sets node affinity on created PV
-
 **Node Selection Logic**:
-- Check if `gpu_workers` Ansible group exists and has nodes: use first GPU worker hostname
-- Otherwise, check if `workers` group exists and has nodes: use first CPU worker hostname
-- Otherwise, no nodeSelector (single-node cluster or special configuration)
-- Node identified by hostname from Ansible inventory
+- Check if `gpu_workers` Ansible group exists and has nodes: set `nodeSelector` to first GPU worker hostname
+- Otherwise: no `nodeSelector` (Kubernetes scheduler places pod freely)
 
-**Storage Configuration**:
-- Use dynamic provisioning via `storage.type: dynamic` in JupyterHub Helm values
-- JupyterHub creates PVC; local-path provisioner creates PV automatically
-- Provisioner creates PV on node where pod is running (due to nodeSelector)
-- Provisioner automatically sets node affinity on PV to match creation node
+**Storage Provisioning** (k3s local-path-provisioner with `volumeBindingMode: WaitForFirstConsumer`):
+1. Pod scheduled to node (GPU node if `nodeSelector` set, any available node otherwise)
+2. PVC binding delayed until pod placement confirmed
+3. Provisioner creates PV on pod's scheduled node
+4. Provisioner automatically sets `VolumeNodeAffinity` on PV matching that node
+5. Subsequent pod launches bound to same node via PV's node affinity
 
 **Behavior**:
-- Clusters with GPU nodes: All Jupyter pods pinned to GPU node via nodeSelector
-- Clusters without GPU nodes but with workers: Pods pinned to first worker node
-- Single-node clusters: Works without nodeSelector
+- GPU clusters: Pods pinned to GPU node via explicit `nodeSelector`, ensuring GPU resource access
+- Non-GPU clusters: First pod lands on any worker node, PV created there, subsequent pods naturally pinned via PV node affinity
+- Single-node clusters: Works without `nodeSelector`
 
 ## Rationale
 
-**Why pin to specific node?** SQLite locking is architecturally incompatible with network filesystems. Local storage is simpler than network mounts with workarounds. GPU nodes have sufficient CPU resources for both workloads. Other Scout components accept single-node deployment for on-premise installations.
+**Why local storage?** SQLite locking is architecturally incompatible with network filesystems. Local storage eliminates corruption issues and is simpler than network mounts with workarounds.
 
-**Why pod nodeSelector instead of volume affinity alone?** Local-path provisioner creates PVs on the node where the pod is scheduled. Pod nodeSelector ensures pods schedule to desired node; provisioner then creates PV there with automatic node affinity. Cannot control provisioner's node choice without first controlling pod placement.
+**Why pin GPU clusters but not CPU-only clusters?** GPU resource access requires explicit node selection. For CPU-only clusters, PV node affinity (automatically set by local-path provisioner) provides pod placement consistency without explicit pinning.
 
-**Why dynamic provisioning?** Simpler than static PV creation. Matches pattern used by other Scout services. Local-path provisioner automatically sets node affinity on created PVs. No manual PV/PVC management needed.
+**Why use WaitForFirstConsumer binding mode?** Delays PV creation until pod placement is determined, allowing provisioner to create volumes on the correct node. Combined with automatic VolumeNodeAffinity, ensures subsequent pods land on the same node as the first pod.
 
 ## Alternatives Considered
 
@@ -83,16 +76,13 @@ The original requirement—flexible scheduling across CPU/GPU nodes—is less va
 
 ### Negative
 
-1. **Not HA**: GPU node failure makes Jupyter unavailable until node recovery
-2. **Resource contention**: CPU and GPU workloads share same node's CPU resources
-3. **Single point of failure**: All users' notebook data stored on one node's local storage
-4. **Limited portability**: Cannot move user data to different node without backup/restore
+1. **Not HA**: Node failure makes Jupyter unavailable until node recovery
+2. **Single point of failure**: All users' notebook data stored on one node's local storage
+3. **Limited portability**: Cannot move user data to different node without backup/restore
 
 ### Mitigation Strategies
 
-**Production HA**: Use node-level redundancy, automated backups to MinIO, idle culler, Prometheus/Grafana health monitoring.
-
-**Multi-GPU clusters**: Current implementation uses single GPU node. Future: prefer GPU nodes with fallback, or distribute users with consistent hashing.
+Node-level redundancy, automated backups to MinIO, idle culler, Prometheus/Grafana monitoring. Multi-GPU clusters: distribute users across GPU nodes with consistent hashing (future enhancement).
 
 ## Migration Path
 
@@ -105,3 +95,5 @@ The original requirement—flexible scheduling across CPU/GPU nodes—is less va
 
 - ADR 0004: Storage Provisioning Approach (superseded for Jupyter)
 - SQLite network filesystem issues: https://www.sqlite.org/lockingv3.html
+- K3s local-path provisioner: https://github.com/rancher/local-path-provisioner
+- Kubernetes WaitForFirstConsumer: https://kubernetes.io/docs/concepts/storage/storage-classes/#volume-binding-mode

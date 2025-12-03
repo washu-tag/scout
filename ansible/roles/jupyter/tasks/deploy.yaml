@@ -20,16 +20,8 @@
 
 - name: Determine target node for Jupyter pods
   ansible.builtin.set_fact:
-    jupyter_target_node_name: >-
-      {%- if has_gpu_workers -%}
-        {{ hostvars[groups['gpu_workers'][0]]['inventory_hostname'] }}
-      {%- elif has_workers -%}
-        {{ hostvars[groups['workers'][0]]['inventory_hostname'] }}
-      {%- endif -%}
-  vars:
-    has_gpu_workers: "{{ groups['gpu_workers'] is defined and groups['gpu_workers'] | length > 0 }}"
-    has_workers: "{{ groups['workers'] is defined and groups['workers'] | length > 0 }}"
-  when: has_gpu_workers or has_workers
+    jupyter_target_node_name: "{{ hostvars[groups['gpu_workers'][0]]['inventory_hostname'] }}"
+  when: groups['gpu_workers'] is defined and groups['gpu_workers'] | length > 0
 
 - name: Setup Spark Defaults ConfigMap
   ansible.builtin.include_role:
