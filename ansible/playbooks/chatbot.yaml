@@ -2,11 +2,7 @@
 - name: Deploy Chatbot
   hosts: server
   gather_facts: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
-  tasks:
-    - name: Deploy Open WebUI
-      ansible.builtin.include_role:
-        name: open-webui
-      when: enable_chat | default(false) | bool
+  when: enable_chat | default(false) | bool
+  environment: "{{ k8s_environment }}"
+  roles:
+    - role: open-webui

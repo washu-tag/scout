@@ -405,7 +405,7 @@ Scout supports deployment in air-gapped (offline) environments:
 ### Setup
 1. Define `staging` group in `inventory.yaml`
 2. Set `air_gapped: true` in inventory
-3. Deploy staging: `ansible-playbook playbooks/staging-k3s.yaml && ansible-playbook playbooks/harbor.yaml`
+3. Deploy staging: `make install-staging` (or `ansible-playbook playbooks/staging.yaml`)
 4. Deploy Scout: `make all` (automatically uses Harbor mirrors)
 
 See `ansible/README.md` and `docs/internal/air-gapped-helm-remote-deployment-adr.md` for details.

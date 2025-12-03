@@ -4,11 +4,14 @@
 # Used for air-gapped deployments with Harbor registry
 #
 # Documentation: docs/source/technical/air-gapped.md
+#
+# Prerequisites:
+#   - 'staging' group defined in inventory
+#   - air_gapped: true in inventory
 
-- name: Shared pre-requisites for staging K3s
+- name: Prepare staging node for K3s
   hosts: staging
-  vars:
-    uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
+  when: air_gapped | default(false) | bool
   tasks:
     - name: Create /root/bin directory
       ansible.builtin.file:
@@ -22,43 +25,19 @@
         dest: /root/bin/get.k3s.io.sh
         mode: '0755'
 
-    - name: Add python kubernetes library from system package
+    - name: Install python kubernetes library
       ansible.builtin.package:
         name: python3-kubernetes
         state: present
 
-################################################################################
-- name: Install k3s on staging node
+- name: Deploy staging infrastructure
   hosts: staging
+  when: air_gapped | default(false) | bool
+  environment: "{{ k8s_environment }}"
   vars:
-    # Map staging_k3s_token to k3s_token expected by k3s role
     k3s_token: '{{ staging_k3s_token }}'
-    # Staging node has internet access, use online installation mode
-    air_gapped: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
+    air_gapped: false  # Staging node has internet access
   roles:
-    # This role handles installation, service management, and verification
-    # It will use online installation mode (air_gapped=false)
-    # It will NOT configure registry mirrors (staging IS the registry)
     - role: k3s
-
-################################################################################
-- name: Configure Traefik on staging node
-  hosts: staging
-  gather_facts: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-  roles:
-    - traefik
-
-################################################################################
-- name: Deploy Harbor on staging node
-  hosts: staging
-  gather_facts: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
-  roles:
-    - harbor
+    - role: traefik
+    - role: harbor

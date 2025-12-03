@@ -26,6 +26,16 @@ helm_chart_values_files: []
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 air_gapped: false
 
+# Scout repository path (on localhost / Ansible control node)
+# Used for scout-local helm charts, analytics files, logos, and kubeconfig storage
+# Default assumes running Ansible from within the cloned scout repo
+scout_repo_dir: '{{ (playbook_dir ~ "/../..") | realpath }}'
+
+# Clone/update scout repo to scout_repo_dir before deployment
+# Default: false (assumes running from within cloned repo)
+# Set to true to clone or update the repo to a different location
+clone_scout_repo: false
+
 # Local kubeconfig path - USE THIS in all tasks that need kubeconfig
 # The k3s role may override this via set_fact to point to a local copy of the kubeconfig
 # with updated server address for remote access. Defaults to kubeconfig_yaml.
@@ -145,6 +155,13 @@ trino_user: trino
 
 # Helm configuration
 helm_plugins_dir: /root/.local/share/helm/plugins
+
+# Shared environment for Kubernetes/Helm operations
+# Use in playbooks: environment: "{{ k8s_environment }}"
+k8s_environment:
+  KUBECONFIG: '{{ kubeconfig_yaml }}'
+  K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
+  HELM_PLUGINS: '{{ helm_plugins_dir }}'
 
 # Container mounted paths
 modality_map_path: /data/modality_mapping_codes.csv

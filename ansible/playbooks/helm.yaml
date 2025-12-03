@@ -10,22 +10,17 @@
 - name: Install Helm on server nodes (non-air-gapped mode)
   hosts: server
   gather_facts: false
-  tasks:
-    - name: Install Helm on server node
-      when: not (air_gapped | default(false) | bool)
-      ansible.builtin.include_role:
-        name: helm
+  when: not (air_gapped | default(false) | bool)
+  roles:
+    - role: helm
       vars:
         helm_script_dir: /root/bin
 
 - name: Install Helm on Ansible control node (air-gapped mode)
   hosts: localhost
-  connection: local
   gather_facts: true
-  tasks:
-    - name: Install Helm on control node
-      when: air_gapped | default(false) | bool
-      ansible.builtin.include_role:
-        name: helm
+  when: air_gapped | default(false) | bool
+  roles:
+    - role: helm
       vars:
         helm_script_dir: '{{ ansible_env.HOME }}/.local/bin'

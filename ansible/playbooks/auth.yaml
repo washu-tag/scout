@@ -2,9 +2,7 @@
 - name: Install auth components
   hosts: server
   gather_facts: false
-  environment:
-    HELM_PLUGINS: '{{ helm_plugins_dir }}'
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  environment: "{{ k8s_environment }}"
   roles:
     - role: keycloak
     - role: oauth2-proxy

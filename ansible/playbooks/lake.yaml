@@ -2,8 +2,7 @@
 - name: Install components for Lake service
   hosts: server
   gather_facts: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  environment: "{{ k8s_environment }}"
   roles:
     - role: minio
     - role: hive

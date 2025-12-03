@@ -203,21 +203,17 @@ workers:
 
 ### 4. Deploy Staging Infrastructure
 
-Deploy K3s and Harbor on the staging node:
+Deploy K3s, Traefik, and Harbor on the staging node:
 
 ```bash
 cd ansible
 
-# Deploy staging K3s cluster
-ansible-playbook -i inventory.yaml playbooks/staging-k3s.yaml
-
-# Deploy Harbor registry on staging cluster
-ansible-playbook -i inventory.yaml playbooks/harbor.yaml
+# Deploy staging infrastructure (k3s, traefik, harbor)
+make install-staging
 ```
 
 **What happens:**
-- `staging-k3s.yaml` installs a single-node K3s cluster on the staging host (online mode)
-- `harbor.yaml` deploys Harbor via Helm with pull-through proxy configured for Docker Hub, Quay.io, and GitHub Container Registry
+- `staging.yaml` installs a single-node K3s cluster on the staging host (online mode), configures Traefik, and deploys Harbor via Helm with pull-through proxy configured for Docker Hub, Quay.io, and GitHub Container Registry
 
 ### 5. Deploy Production K3s Cluster
 
