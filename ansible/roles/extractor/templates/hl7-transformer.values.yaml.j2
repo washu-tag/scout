@@ -15,8 +15,6 @@ env:
     value: default
   - name: REPORT_DELTA_TABLE_NAME
     value: '{{ report_delta_table_name }}'
-  - name: MODALITY_MAP_PATH
-    value: '{{ modality_map_path }}'
 resources:
   requests:
     cpu: '{{ hl7_transformer_cpu_request }}'
@@ -49,7 +47,7 @@ volumeMounts:
     mountPath: /opt/spark/conf/spark-defaults.conf
     subPath: spark-defaults.conf
   - name: modality-mapping
-    mountPath: '{{ modality_map_path }}'
+    mountPath: /config/modality_mapping_codes.csv
     subPath: modality_mapping_codes.csv
     readOnly: true
 ports:

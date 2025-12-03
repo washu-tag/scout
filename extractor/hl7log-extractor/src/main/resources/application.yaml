@@ -63,5 +63,4 @@ scout:
     ingestHl7ToDeltaLake:
       # Timeout (in minutes) for transform and upload to delta lake activity
       deltaIngestTimeout: 480
-      modalityMapPath: ''
       reportTableName: ''

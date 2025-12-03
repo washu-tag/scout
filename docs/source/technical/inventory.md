@@ -671,7 +671,9 @@ See [Ollama model library](https://ollama.com/library) for available models.
 
 #### HL7 Extractor
 
-The `modality_map_source_file` variable is **required** and must be defined in `inventory.yaml`. During deployment, this file is read and stored as a Kubernetes ConfigMap, which is then mounted into the hl7-transformer container at `/data/modality_mapping_codes.csv`. The transformer uses this mapping to derive the `modality` column in the Delta Lake table.
+Scout ships with a default modality mapping file (`extractor/hl7-transformer/modality_mapping_codes.csv`) that is used to derive the `modality` column in the Delta Lake table. During deployment, this file is read and stored as a Kubernetes ConfigMap, which is then mounted into the hl7-transformer container at `/config/modality_mapping_codes.csv`.
+
+The default mapping is based on WashU's exam codes. Sites using custom extractors would typically customize this file as part of their implementation. Sites using the standard extractor can override the mapping by setting `modality_map_source_file` in `inventory.yaml` to point to a custom CSV file.
 
 As stated in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#how-pods-with-resource-limits-are-run),
 "The memory request is mainly used during (Kubernetes) Pod scheduling", so we recommend setting it to a small but viable value where the extractor could run
@@ -682,7 +684,7 @@ a large scale production instance took around 60GB of memory for the pod. If we 
 
 ```yaml
 extractor_data_dir: /ceph/input/data  # Input directory for HL7 logs
-modality_map_source_file: /path/to/modality_mapping_codes.csv  # Path to modality mapping CSV file (on control machine)
+# modality_map_source_file: /path/to/custom_modality_mapping.csv  # Optional: override default modality mapping
 
 hl7log_extractor_resources:
   requests:

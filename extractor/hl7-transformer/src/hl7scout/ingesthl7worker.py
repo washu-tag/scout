@@ -23,14 +23,12 @@ async def run_worker(
     temporal_address: str,
     namespace: str,
     default_report_delta_table_name: str,
-    default_modality_map_path: str,
     health_file: Path,
 ) -> None:
     try:
         client = await Client.connect(temporal_address, namespace=namespace)
         ingest_hl7_files_activity = IngestHl7FilesActivity(
             default_report_delta_table_name,
-            default_modality_map_path,
             health_file,
         )
         with concurrent.futures.ThreadPoolExecutor(1) as pool:
@@ -87,9 +85,6 @@ async def main(argv=None):
     default_report_delta_table_name = os.environ.get(
         "REPORT_DELTA_TABLE_NAME", "reports"
     )
-    default_modality_map_path = os.environ.get(
-        "MODALITY_MAP_PATH", "/data/modality_mapping_codes.csv"
-    )
 
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.INFO,
@@ -110,7 +105,6 @@ async def main(argv=None):
             temporal_address,
             temporal_namespace,
             default_report_delta_table_name,
-            default_modality_map_path,
             HEALTH_TEMP_FILE,
         ),
     ]

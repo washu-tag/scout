@@ -2,14 +2,14 @@
 # Kubernetes deployment tasks for Extractor services
 # These tasks run on the server host (which has access to k3s_cluster inventory variables)
 
-- name: Initialize extractor database
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: create_db_with_owner
-  vars:
-    db_name: '{{ ingest_postgres_table_name }}'
-    db_owner: '{{ postgres_user }}'
-    db_owner_pass: '{{ postgres_password }}'
+# - name: Initialize extractor database
+#   ansible.builtin.include_role:
+#     name: scout_common
+#     tasks_from: create_db_with_owner
+#   vars:
+#     db_name: '{{ ingest_postgres_table_name }}'
+#     db_owner: '{{ postgres_user }}'
+#     db_owner_pass: '{{ postgres_password }}'
 
 - name: Create namespace
   kubernetes.core.k8s:
@@ -63,11 +63,21 @@
         AWS_ALLOW_HTTP: 'true'
         AWS_REGION: '{{ s3_region }}'
 
-- name: Read modality mapping file
-  no_log: true
-  ansible.builtin.slurp:
-    src: '{{ modality_map_source_file }}'
-  register: modality_map_content
+- name: Check modality mapping file exists
+  ansible.builtin.stat:
+    path: '{{ modality_map_source_file }}'
+  register: modality_map_stat
+  delegate_to: localhost
+
+- name: Fail with helpful message if modality map is missing
+  ansible.builtin.fail:
+    msg: |
+      Modality mapping file not found at: {{ modality_map_source_file }}
+
+      The default modality map should be at: {{ scout_repo_dir }}/extractor/hl7-transformer/modality_mapping_codes.csv
+
+      If you're using a custom mapping, ensure 'modality_map_source_file' in your inventory points to a valid file path on the Ansible controller.
+  when: not modality_map_stat.stat.exists
 
 - name: Create modality mapping ConfigMap
   no_log: true
@@ -80,7 +90,7 @@
         name: modality-mapping
         namespace: '{{ extractor_namespace }}'
       data:
-        modality_mapping_codes.csv: '{{ modality_map_content.content | b64decode }}'
+        modality_mapping_codes.csv: '{{ lookup("file", modality_map_source_file) }}'
 
 - name: Setup Spark defaults ConfigMap
   ansible.builtin.include_role:

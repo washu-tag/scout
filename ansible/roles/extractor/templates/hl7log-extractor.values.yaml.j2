@@ -71,4 +71,3 @@ config:
         ingestHl7ToDeltaLake:
           deltaIngestTimeout: {{ hl7_transformer_timeout | default(60) }}
           reportTableName: '{{ report_delta_table_name }}'
-          modalityMapPath: '{{ modality_map_path }}'

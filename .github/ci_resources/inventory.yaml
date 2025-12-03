@@ -75,7 +75,6 @@ k3s_cluster:
     grafana_dir: '{{ base_dir }}/grafana'
     jupyter_dir: '{{ base_dir }}/jupyter'
     extractor_data_dir: '{{ scout_repo_dir }}/tests/staging_test_data'
-    modality_map_source_file: '{{ scout_repo_dir }}/tests/staging_test_data/modality_mapping_codes.csv'
 
     # Object storage paths
     lake_bucket: ci-lake

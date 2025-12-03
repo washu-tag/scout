@@ -12,7 +12,6 @@ package edu.washu.tag.extractor.hl7log.model;
  * @param splitAndUploadTimeout The timeout for the split and upload job in minutes.
  * @param splitAndUploadHeartbeatTimeout The heartbeat timeout for the split and upload job in minutes.
  * @param splitAndUploadConcurrency How many logs we should process before continuing as new.
- * @param modalityMapPath Path to read modality map file, which is the source of the modality column in Delta Lake table.
  * @param reportTableName Name of the report table to be created in Delta Lake.
  * @param deltaIngestTimeout The timeout for the delta lake ingest job in minutes.
  * @param continued Do not set this on initial workflow run. Parameters needed to resume when workflow is Continued As New.
@@ -26,13 +25,11 @@ public record IngestHl7LogWorkflowInput(
         Integer splitAndUploadTimeout,
         Integer splitAndUploadHeartbeatTimeout,
         Integer splitAndUploadConcurrency,
-        String modalityMapPath,
         String reportTableName,
         Integer deltaIngestTimeout,
         ContinueIngestWorkflow continued
 ) {
     public static IngestHl7LogWorkflowInput EMPTY = new IngestHl7LogWorkflowInput(
-        null,
         null,
         null,
         null,

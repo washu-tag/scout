@@ -17,7 +17,6 @@ public class DefaultArgs {
     private static Integer splitAndUploadTimeout;
     private static Integer splitAndUploadHeartbeatTimeout;
     private static Integer splitAndUploadConcurrency;
-    private static String modalityMapPath;
     private static String reportTableName;
     private static Integer deltaIngestTimeout;
 
@@ -139,26 +138,6 @@ public class DefaultArgs {
      */
     public static Integer getSplitAndUploadConcurrency(Integer input) {
         return getValueOrDefault(input, splitAndUploadConcurrency);
-    }
-
-    /**
-     * Modality map path.
-     *
-     * @param modalityMapPath The input value for modality map path.
-     */
-    @Value("${scout.workflowArgDefaults.ingestHl7ToDeltaLake.modalityMapPath}")
-    public void setModalityMapPath(String modalityMapPath) {
-        DefaultArgs.modalityMapPath = modalityMapPath;
-    }
-
-    /**
-     * Modality map path.
-     *
-     * @param input The input value for modality map path.
-     * @return The modality map path value or the default.
-     */
-    public static String getModalityMapPath(String input) {
-        return getValueOrDefault(input, modalityMapPath);
     }
 
     /**

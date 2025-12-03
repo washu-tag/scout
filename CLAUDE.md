@@ -244,7 +244,6 @@ HL7 reports are ingested via Temporal workflows:
   "scratchSpaceRootPath": "/tmp/scout",       // Temp files during processing
   "hl7OutputPath": "s3://bucket/hl7",         // Bronze layer S3 path
   "reportTableName": "reports",               // Delta Lake table name
-  "modalityMapPath": "/config/modality.json", // Modality mapping config
   "splitAndUploadTimeout": 120,               // Activity timeout (minutes)
   "splitAndUploadHeartbeatTimeout": 10,       // Heartbeat timeout (minutes)
   "splitAndUploadConcurrency": 4,             // Concurrent log processing

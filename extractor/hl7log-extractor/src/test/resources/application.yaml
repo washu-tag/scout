@@ -34,5 +34,4 @@ scout:
       splitAndUploadConcurrency: 150
     ingestHl7ToDeltaLake:
       deltaIngestTimeout: 60
-      modalityMapPath: '/path/to/modality_map.csv'
       reportTableName: 'reports'
