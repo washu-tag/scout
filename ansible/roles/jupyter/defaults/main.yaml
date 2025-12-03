@@ -10,17 +10,14 @@ jupyter_helm_chart_name: jupyterhub
 # Storage configuration
 jupyter_hub_storage_size: 1Gi
 jupyter_singleuser_storage_size: 10Gi
-jupyter_singleuser_pvc: jupyter-singleuser-pvc
 
-# Storage class for JupyterHub database (RWO sufficient)
+# Storage class for JupyterHub database
+# Leave empty to use cluster default storage class
 jupyterhub_storage_class: ''
 
-# Storage class for Jupyter notebooks (RWX required for multi-node GPU scheduling)
+# Storage class for Jupyter notebooks
+# Leave empty to use cluster default storage class
 jupyter_singleuser_storage_class: ''
-
-# Static PV for notebook storage (on-prem with network mount)
-jupyter_singleuser_hostpath: ''
-jupyter_singleuser_pv_name: 'jupyter-singleuser-pv'
 
 # Single-user image configuration
 jupyter_singleuser_image_name: ghcr.io/washu-tag/pyspark-notebook
