@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 
 from pyspark.sql.types import StructField, StringType, StructType, ArrayType
 from pyspark.sql import functions as F, Column
@@ -97,7 +97,7 @@ def read_struct_of_names_friendly(source_column: str) -> Column:
 def split_and_transform_repeated_field(
     column: str,
     component_lambda: Callable[[Column], Column],
-    object_filter: Callable[[Column], Column] = None,
+    object_filter: Optional[Callable[[Column], Column]] = None,
 ) -> Column:
     transformed = F.transform(
         F.transform(
@@ -110,7 +110,7 @@ def split_and_transform_repeated_field(
 
 
 def extract_person_names_from_xpn(
-    column: str, object_filter: Callable[[Column], Column] = None
+    column: str, object_filter: Optional[Callable[[Column], Column]] = None
 ) -> Column:
     return split_and_transform_repeated_field(
         column, map_xpn_to_struct, object_filter
@@ -118,7 +118,7 @@ def extract_person_names_from_xpn(
 
 
 def extract_person_names_from_xcn(
-    column: str, object_filter: Callable[[Column], Column] = None
+    column: str, object_filter: Optional[Callable[[Column], Column]] = None
 ) -> Column:
     return split_and_transform_repeated_field(
         column, map_xcn_to_struct, object_filter
@@ -126,7 +126,7 @@ def extract_person_names_from_xcn(
 
 
 def extract_person_names_from_cnn(
-    column: str, object_filter: Callable[[Column], Column] = None
+    column: str, object_filter: Optional[Callable[[Column], Column]] = None
 ) -> Column:
     return split_and_transform_repeated_field(
         column, map_cnn_to_struct, object_filter
