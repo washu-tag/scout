@@ -510,11 +510,24 @@ def import_hl7_files_to_deltalake(
         activity.heartbeat()
         success_paths = [row.source_file for row in df.select("source_file").collect()]
 
+        spark.sql(
+            f"""
+            ALTER TABLE {report_table_name} 
+            SET TBLPROPERTIES (delta.enableChangeDataFeed = true)
+        """
+        )
+
         def upsert_to_latest_table(batch_df, batch_id):
             """
             Keeps only 1 report per accession number
             """
             if batch_df.isEmpty():
+                return
+
+            updates_insert_df = batch_df.filter(
+                F.col("_change_type").isin(["insert", "update_postimage"])
+            ).drop("_change_type", "_commit_version", "_commit_timestamp")
+            if updates_insert_df.isEmpty():
                 return
 
             # First, make sure our new data only has the newest report per accession number
@@ -524,7 +537,9 @@ def import_hl7_files_to_deltalake(
             # We have to create an explicit column instead of filtering by window function
             # even though it looks tempting to put it all in the filter
             deduped_df = (
-                batch_df.withColumn("report_index", F.row_number().over(dedupe_window))
+                updates_insert_df.withColumn(
+                    "report_index", F.row_number().over(dedupe_window)
+                )
                 .filter(F.col("report_index") == 1)
                 .drop("report_index")
             )
@@ -548,7 +563,11 @@ def import_hl7_files_to_deltalake(
                     "latest_temp"
                 )
 
-        full_table = spark.readStream.format("delta").table(report_table_name)
+        full_table = (
+            spark.readStream.format("delta")
+            .option("readChangeFeed", "true")
+            .table(report_table_name)
+        )
         latest_table_operation = (
             full_table.writeStream.foreachBatch(upsert_to_latest_table)
             .option("checkpointLocation", "s3a://scratch/checkpoints/full_table")
