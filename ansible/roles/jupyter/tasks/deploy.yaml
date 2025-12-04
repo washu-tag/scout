@@ -63,6 +63,20 @@
         custom.css: '{{ lookup("file", "custom.css") }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
+- name: Create ConfigMap with custom JupyterHub templates
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: jupyterhub-custom-templates
+        namespace: '{{ jupyter_namespace }}'
+      data:
+        spawn.html: '{{ lookup("template", "spawn.html.j2") }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+
 - name: Parse Helm values
   ansible.builtin.set_fact:
     jh_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

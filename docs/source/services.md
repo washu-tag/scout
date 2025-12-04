@@ -62,6 +62,11 @@ The Chat service is configured with:
 - Custom report generation
 - Data quality checks and validation
 
+**Important:** Notebook servers automatically shut down after a period of time (default: 2 days, configurable by your
+deployment) to conserve resources. Your files in `/home/jovyan/` are preserved, but in-memory variables (DataFrames,
+models, etc.) are lost. Save your work regularly and checkpoint intermediate results. See {ref}`Tips & Tricks <notebooks_ref>`
+for checkpointing strategies.
+
 ## Backend Services
 
 The following services support Scout's data processing, storage, and monitoring infrastructure. Administrators can access these services from the **Admin Tools** section of the Scout Launchpad.
