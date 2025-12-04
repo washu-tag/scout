@@ -1,0 +1,147 @@
+---
+# Pull Ollama models on staging and transfer to production via kubectl cp (air-gapped fallback)
+# Used when air_gapped=true but no shared NFS is available
+# See ADR 0008 for architecture details
+
+- name: Create temporary directory for model transfer
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: ollama-models-
+  register: temp_models_dir
+  delegate_to: localhost
+
+- name: Create model download Job on staging
+  kubernetes.core.k8s:
+    kubeconfig: '{{ staging_kubeconfig }}'
+    state: present
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: 'ollama-download-models-transfer'
+        namespace: '{{ staging_ollama_namespace | default("ollama-staging") }}'
+        labels:
+          app: ollama-download-models-transfer
+      spec:
+        ttlSecondsAfterFinished: 7200 # Keep for 2 hours for extraction
+        backoffLimit: 2
+        template:
+          metadata:
+            labels:
+              app: ollama-download-models-transfer
+          spec:
+            restartPolicy: OnFailure
+            containers:
+              - name: ollama
+                image: 'ollama/ollama:{{ ollama_version | default("latest") }}'
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    set -e
+                    echo "Starting Ollama server..."
+                    ollama serve &
+                    sleep 5
+
+                    echo "Pulling models..."
+                    {% for model in ollama_models %}
+                    echo "Pulling model: {{ model }}"
+                    ollama pull {{ model }}
+                    {% endfor %}
+
+                    echo "All models pulled successfully"
+                    echo "Keeping pod running for file extraction..."
+                    sleep infinity
+                volumeMounts:
+                  - name: models
+                    mountPath: /root/.ollama
+            volumes:
+              - name: models
+                emptyDir: {}
+
+- name: Wait for staging model download to complete (models pulled)
+  kubernetes.core.k8s_info:
+    kubeconfig: '{{ staging_kubeconfig }}'
+    api_version: v1
+    kind: Pod
+    namespace: '{{ staging_ollama_namespace | default("ollama-staging") }}'
+    label_selectors:
+      - app=ollama-download-models-transfer
+  register: pod_status
+  until: >-
+    pod_status.resources | length > 0 and
+    pod_status.resources[0].status.phase == 'Running'
+  retries: 120 # 2 hours max
+  delay: 60
+
+- name: Get staging pod name
+  ansible.builtin.set_fact:
+    staging_pod_name: '{{ pod_status.resources[0].metadata.name }}'
+
+# Wait a bit for models to finish pulling (the pod is running but models may still be downloading)
+- name: Wait for model pulls to complete
+  ansible.builtin.pause:
+    seconds: 30
+    prompt: "Waiting for model downloads to stabilize..."
+
+- name: Extract models from staging pod
+  ansible.builtin.command:
+    cmd: >-
+      kubectl --kubeconfig={{ staging_kubeconfig }}
+      cp {{ staging_ollama_namespace | default('ollama-staging') }}/{{ staging_pod_name }}:/root/.ollama/models
+      {{ temp_models_dir.path }}/models
+  delegate_to: localhost
+  register: extract_result
+
+- name: Verify models were extracted
+  ansible.builtin.stat:
+    path: '{{ temp_models_dir.path }}/models/blobs'
+  register: blobs_dir
+  delegate_to: localhost
+
+- name: Fail if models not extracted
+  ansible.builtin.fail:
+    msg: "Failed to extract models from staging. Blobs directory not found."
+  when: not blobs_dir.stat.exists
+
+- name: Get production Ollama pod name
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: '{{ chatbot_namespace }}'
+    label_selectors:
+      - app.kubernetes.io/name=ollama
+  register: prod_pod_status
+
+- name: Set production pod name
+  ansible.builtin.set_fact:
+    prod_pod_name: '{{ prod_pod_status.resources[0].metadata.name }}'
+
+- name: Copy models to production Ollama pod
+  ansible.builtin.command:
+    cmd: >-
+      kubectl cp {{ temp_models_dir.path }}/models
+      {{ chatbot_namespace }}/{{ prod_pod_name }}:/root/.ollama/models
+  delegate_to: localhost
+  register: copy_result
+
+- name: Clean up staging download Job
+  kubernetes.core.k8s:
+    kubeconfig: '{{ staging_kubeconfig }}'
+    state: absent
+    api_version: batch/v1
+    kind: Job
+    namespace: '{{ staging_ollama_namespace | default("ollama-staging") }}'
+    name: ollama-download-models-transfer
+    wait: true
+    wait_timeout: 120
+
+- name: Clean up temporary directory
+  ansible.builtin.file:
+    path: '{{ temp_models_dir.path }}'
+    state: absent
+  delegate_to: localhost
+
+- name: Models transferred successfully
+  ansible.builtin.debug:
+    msg: "Models successfully transferred from staging to production Ollama pod."

@@ -1,46 +1,27 @@
 ---
-# Pull Ollama models asynchronously via Kubernetes Job
-# This runs after Ollama deployment to avoid blocking Helm install
+# Pull Ollama models - selects appropriate method based on deployment mode
+#
+# Modes:
+#   - Online (air_gapped: false): Pull directly from registry.ollama.ai
+#   - Air-gapped with NFS: Pull to shared NFS from staging, production mounts read-only
+#   - Air-gapped without NFS: Pull on staging, transfer via kubectl cp
 
-- name: Create model pull Job
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: batch/v1
-      kind: Job
-      metadata:
-        generateName: 'ollama-pull-models-'
-        namespace: '{{ chatbot_namespace }}'
-        labels:
-          app: ollama-pull-models
-      spec:
-        ttlSecondsAfterFinished: 600 # Clean up 10 minutes after completion
-        backoffLimit: 3
-        template:
-          metadata:
-            labels:
-              app: ollama-pull-models
-          spec:
-            restartPolicy: OnFailure
-            containers:
-              - name: ollama-pull
-                image: ollama/ollama:latest
-                env:
-                  - name: OLLAMA_HOST
-                    value: 'http://{{ ollama_name }}.{{ chatbot_namespace }}:11434'
-                command:
-                  - /bin/sh
-                  - -c
-                  - |
-                    set -e
-                    echo "Waiting for Ollama to be ready..."
-                    until ollama list > /dev/null 2>&1; do
-                      echo "Ollama not ready, waiting..."
-                      sleep 5
-                    done
-                    echo "Ollama is ready, pulling models..."
-                    {% for model in ollama_models %}
-                    echo "Pulling model: {{ model }}"
-                    ollama pull {{ model }}
-                    {% endfor %}
-                    echo "All models pulled successfully"
+# Online: pull directly from registry (current behavior)
+- name: Pull models via Job (online)
+  ansible.builtin.include_tasks: pull_models_online.yaml
+  when: not (air_gapped | default(false) | bool)
+
+# Air-gapped with NFS: pull to NFS on staging
+- name: Pull models to NFS from staging
+  ansible.builtin.include_tasks: pull_models_nfs.yaml
+  when:
+    - air_gapped | default(false) | bool
+    - ollama_nfs_path is defined
+    - ollama_nfs_path | length > 0
+
+# Air-gapped without NFS: pull on staging, transfer via kubectl cp
+- name: Pull and transfer models from staging
+  ansible.builtin.include_tasks: pull_models_transfer.yaml
+  when:
+    - air_gapped | default(false) | bool
+    - ollama_nfs_path is not defined or ollama_nfs_path | length == 0

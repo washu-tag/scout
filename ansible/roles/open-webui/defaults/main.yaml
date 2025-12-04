@@ -16,6 +16,15 @@ open_webui_name: open-webui
 ollama_storage_size: 5Gi
 ollama_storage_class: ''
 
+# Air-gapped deployment configuration (ADR 0008)
+# Set ollama_nfs_path when using shared NFS for model storage in air-gapped environments
+# If air_gapped=true and ollama_nfs_path is set: models are read from NFS (pre-staged from staging)
+# If air_gapped=true and ollama_nfs_path is not set: models are transferred via kubectl cp
+# If air_gapped=false: models are pulled directly from registry.ollama.ai (online mode)
+ollama_nfs_path: ''
+# Namespace for staging Ollama download job (air-gapped only)
+staging_ollama_namespace: ollama-staging
+
 # Scout custom model configuration
 scout_base_model: gpt-oss:120b
 scout_model_name: gpt-oss-120b-long:latest
