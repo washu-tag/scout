@@ -123,9 +123,10 @@ extraEnvVars:
   - name: ENABLE_OAUTH_ROLE_MANAGEMENT
     value: 'true'
 
-  # Role claim path (Keycloak client roles)
+  # Role claim path (uses 'groups' claim from microprofile-jwt scope which includes
+  # all client roles and is present in both access and ID tokens)
   - name: OAUTH_ROLES_CLAIM
-    value: 'resource_access.{{ keycloak_open_webui_client_id }}.roles'
+    value: 'groups'
 
   # Allowed roles (users with these roles can log in)
   - name: OAUTH_ALLOWED_ROLES

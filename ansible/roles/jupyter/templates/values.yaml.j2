@@ -26,14 +26,23 @@ hub:
       configMap:
         name: scout-logo
         defaultMode: 0644
+    - name: custom-templates
+      configMap:
+        name: jupyterhub-custom-templates
+        defaultMode: 0644
   extraVolumeMounts:
     - name: scout-logo
       mountPath: /usr/local/share/jupyterhub/static/images/scout.png
       subPath: scout.png
       readOnly: true
+    - name: custom-templates
+      mountPath: /usr/local/share/jupyterhub/custom-templates
+      readOnly: true
   extraConfig:
     branding: |
       c.JupyterHub.logo_file = '/usr/local/share/jupyterhub/static/images/scout.png'
+    templates: |
+      c.JupyterHub.template_paths = ['/usr/local/share/jupyterhub/custom-templates']
   config:
     Authenticator:
       auto_login: true
@@ -65,6 +74,14 @@ hub:
     Spawner:
       http_timeout: 120
 
+cull:
+  enabled: {{ jupyter_cull_enabled | lower }}
+  timeout: {{ jupyter_cull_max_age }}
+  every: {{ jupyter_cull_every }}
+  maxAge: {{ jupyter_cull_max_age }}
+  removeNamedServers: {{ jupyter_cull_remove_named_servers | lower }}
+  concurrency: {{ jupyter_cull_concurrency }}
+
 ingress:
   enabled: true
   ingressClassName: traefik
@@ -88,6 +105,10 @@ singleuser:
     tag: '{{ jupyter_singleuser_image_tag }}'
     pullPolicy: IfNotPresent
   profileList: {{ jupyter_profiles | to_json }}
+{% if jupyter_target_node_name is defined %}
+  nodeSelector:
+    kubernetes.io/hostname: '{{ jupyter_target_node_name }}'
+{% endif %}
   cmd: null
   initContainers:
     - name: spark-config-setup
@@ -156,11 +177,13 @@ singleuser:
         c.LabApp.custom_css = True
 
   storage:
-    type: static
-    static:
-      pvcName: '{{ jupyter_singleuser_pvc }}'
+    type: dynamic
+{% if jupyter_singleuser_storage_class is defined and jupyter_singleuser_storage_class %}
+    storageClass: '{{ jupyter_singleuser_storage_class }}'
+{% endif %}
+    capacity: '{{ jupyter_singleuser_storage_size }}'
+    dynamic:
       subPath: '{username}'
-    capacity: 10Gi
     extraVolumes:
       spark-defaults:
         name: spark-defaults
