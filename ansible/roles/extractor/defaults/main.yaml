@@ -36,5 +36,10 @@ hl7_transformer_cpu_limit: 4
 # Container paths
 hl7logs_root_dir: /data
 
+# Modality mapping file (source file on control machine)
+# Default points to the reference mapping shipped with Scout
+# Override in inventory.yaml to use a custom mapping file
+modality_map_source_file: '{{ scout_repo_dir }}/extractor/hl7-transformer/modality_mapping_codes.csv'
+
 # S3 paths
 hl7_path: 's3://{{ lake_bucket }}/hl7'
