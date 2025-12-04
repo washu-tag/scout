@@ -5,9 +5,9 @@
 - name: Clone Scout repository
   hosts: localhost
   gather_facts: false
-  when: clone_scout_repo | default(false)
   tasks:
     - name: Clone repository
+      when: clone_scout_repo | default(false)
       ansible.builtin.git:
         repo: https://github.com/washu-tag/scout.git
         dest: '{{ scout_repo_dir }}'

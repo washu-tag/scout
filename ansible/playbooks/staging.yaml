@@ -11,7 +11,10 @@
 
 - name: Prepare staging node for K3s
   hosts: staging
-  when: air_gapped | default(false) | bool
+  pre_tasks:
+    - name: Skip if not air-gapped deployment
+      ansible.builtin.meta: end_play
+      when: not (air_gapped | default(false) | bool)
   tasks:
     - name: Create /root/bin directory
       ansible.builtin.file:
@@ -32,7 +35,10 @@
 
 - name: Deploy staging infrastructure
   hosts: staging
-  when: air_gapped | default(false) | bool
+  pre_tasks:
+    - name: Skip if not air-gapped deployment
+      ansible.builtin.meta: end_play
+      when: not (air_gapped | default(false) | bool)
   environment: '{{ k8s_environment }}'
   vars:
     k3s_token: '{{ staging_k3s_token }}'

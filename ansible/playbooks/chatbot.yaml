@@ -2,7 +2,10 @@
 - name: Deploy Chatbot
   hosts: server
   gather_facts: false
-  when: enable_chat | default(false) | bool
+  pre_tasks:
+    - name: Skip if chat not enabled
+      ansible.builtin.meta: end_play
+      when: not (enable_chat | default(false) | bool)
   environment: '{{ k8s_environment }}'
   roles:
     - role: open-webui

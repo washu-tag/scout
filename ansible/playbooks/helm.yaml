@@ -10,7 +10,10 @@
 - name: Install Helm on server nodes (non-air-gapped mode)
   hosts: server
   gather_facts: false
-  when: not (air_gapped | default(false) | bool)
+  pre_tasks:
+    - name: Skip in air-gapped mode
+      ansible.builtin.meta: end_play
+      when: air_gapped | default(false) | bool
   roles:
     - role: helm
       vars:
@@ -19,7 +22,10 @@
 - name: Install Helm on Ansible control node (air-gapped mode)
   hosts: localhost
   gather_facts: true
-  when: air_gapped | default(false) | bool
+  pre_tasks:
+    - name: Skip in non-air-gapped mode
+      ansible.builtin.meta: end_play
+      when: not (air_gapped | default(false) | bool)
   roles:
     - role: helm
       vars:
