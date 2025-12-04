@@ -32,6 +32,7 @@ This page provides helpful tips for using Scout services effectively.
 - **Use Analytics for**: Creating visualizations, building dashboards, sharing results with others
 - **Use Notebooks for**: Complex transformations, statistical analysis, machine learning, custom exports
 
+(notebooks_ref)=
 ## Notebooks (JupyterHub)
 
 ### PySpark Best Practices
@@ -54,6 +55,59 @@ The Delta Lake schema includes parsed report sections:
 - `report_section_technician_note`
 
 Use these for targeted text analysis instead of parsing `report_text`.
+
+### Saving Intermediate Results
+
+Jupyter notebook servers automatically shut down after a configurable period of runtime (2 days by default). You'll see the specific timeout for your deployment displayed in a notification banner when you start your server:
+
+![Jupyter Server Timeout Notification](images/JupyterServerTimeoutNotification.png)
+
+Your notebook files and home directory (`/home/jovyan/`) persist, but in-memory variables are lost. To avoid potentially losing any important work, save notebooks frequently (Ctrl+S / Cmd+S) and save large DataFrames and intermediate results to disk.
+
+**Spark DataFrames (Parquet):**
+```python
+# Save after expensive computation
+df.write.parquet('/home/jovyan/checkpoints/results.parquet')
+
+# Resume later
+df = spark.read.parquet('/home/jovyan/checkpoints/results.parquet')
+```
+
+**Pandas DataFrames:**
+```python
+# CSV (human-readable)
+df.to_csv('/home/jovyan/checkpoints/results.csv', index=False)
+df = pd.read_csv('/home/jovyan/checkpoints/results.csv')
+
+# Parquet (faster, preserves types)
+df.to_parquet('/home/jovyan/checkpoints/results.parquet')
+df = pd.read_parquet('/home/jovyan/checkpoints/results.parquet')
+```
+
+**Python objects (pickle):**
+```python
+import pickle
+
+# Save any Python object
+with open('/home/jovyan/checkpoints/my_data.pkl', 'wb') as f:
+    pickle.dump({'results': results, 'config': config}, f)
+
+# Load it back
+with open('/home/jovyan/checkpoints/my_data.pkl', 'rb') as f:
+    data = pickle.load(f)
+```
+
+**ML models:**
+```python
+# scikit-learn
+import joblib
+joblib.dump(model, '/home/jovyan/models/classifier.joblib')
+model = joblib.load('/home/jovyan/models/classifier.joblib')
+
+# PyTorch
+torch.save(model.state_dict(), '/home/jovyan/models/checkpoint.pth')
+model.load_state_dict(torch.load('/home/jovyan/models/checkpoint.pth'))
+```
 
 ## Monitor (Grafana)
 
