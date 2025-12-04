@@ -521,7 +521,13 @@ def import_hl7_files_to_deltalake(
             dedupe_window = Window.partitionBy("obr_3_filler_order_number").orderBy(
                 F.desc("message_dt")
             )
-            deduped_df = batch_df.filter(F.row_number().over(dedupe_window) == 1)
+            # We have to create an explicit column instead of filtering by window function
+            # even though it looks tempting to put it all in the filter
+            deduped_df = (
+                batch_df.withColumn("report_index", F.row_number().over(dedupe_window))
+                .filter(F.col("report_index") == 1)
+                .drop("report_index")
+            )
 
             # Next, update existing latest table or create it if it does not yet exist
             if spark.catalog.tableExists("latest_temp"):
