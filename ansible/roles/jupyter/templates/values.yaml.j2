@@ -180,11 +180,14 @@ singleuser:
         # Configure Extension Manager to readonly mode (view installed extensions only)
         c.LabApp.extension_manager = 'readonly'
 {% endif %}
-{% if jupyter_extension_manager_mode == 'disabled' %}
     lab-config:
       mountPath: /etc/jupyter/labconfig/page_config.json
       data:
         disabledExtensions:
+          # Disable update announcements (news/update notifications)
+          "@jupyterlab/apputils-extension:announcements": true
+{% if jupyter_extension_manager_mode == 'disabled' %}
+          # Disable Extension Manager UI (prevent users from installing extensions)
           "@jupyterlab/extensionmanager-extension": true
 {% endif %}
 
