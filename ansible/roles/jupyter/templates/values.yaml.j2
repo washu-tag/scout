@@ -175,6 +175,18 @@ singleuser:
 
         # Enable custom CSS loading for Scout branding
         c.LabApp.custom_css = True
+{% if jupyter_extension_manager_mode == 'readonly' %}
+
+        # Configure Extension Manager to readonly mode (view installed extensions only)
+        c.LabApp.extension_manager = 'readonly'
+{% endif %}
+{% if jupyter_extension_manager_mode == 'disabled' %}
+    lab-config:
+      mountPath: /etc/jupyter/labconfig/page_config.json
+      data:
+        disabledExtensions:
+          "@jupyterlab/extensionmanager-extension": true
+{% endif %}
 
   storage:
     type: dynamic
