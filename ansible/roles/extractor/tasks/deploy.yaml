@@ -81,6 +81,7 @@
 
 - name: Create modality mapping ConfigMap
   no_log: true
+  delegate_to: localhost
   kubernetes.core.k8s:
     state: present
     definition:
