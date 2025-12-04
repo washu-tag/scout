@@ -436,6 +436,13 @@ k3s_cluster:
     #               extra_resource_limits:
     #                 nvidia.com/gpu: '1'
 
+    # JupyterLab Extension Manager configuration
+    # Controls whether users can install/manage JupyterLab extensions
+    # jupyter_extension_manager_mode: 'disabled'  # Options: 'disabled' (Scout default), 'readonly', 'enabled'
+    #   'disabled' - Hide Extension Manager UI completely (Scout default, recommended for air-gapped/production)
+    #   'readonly' - Show installed extensions, allow enable/disable, but no installation
+    #   'enabled'  - Full extension management (users can install from PyPI)
+
     # JupyterHub automatic shutdown settings
     # Servers automatically stop after jupyter_cull_max_age seconds
     # jupyter_cull_enabled: true                 # Enable automatic shutdown
