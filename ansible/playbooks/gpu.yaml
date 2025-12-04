@@ -12,6 +12,6 @@
   hosts: server
   gather_facts: false
   when: groups.get('gpu_workers', []) | length > 0
-  environment: "{{ k8s_environment }}"
+  environment: '{{ k8s_environment }}'
   roles:
     - role: gpu-operator

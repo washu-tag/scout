@@ -2,6 +2,6 @@
 - name: Configure Traefik
   hosts: server
   gather_facts: false
-  environment: "{{ k8s_environment }}"
+  environment: '{{ k8s_environment }}'
   roles:
     - role: traefik

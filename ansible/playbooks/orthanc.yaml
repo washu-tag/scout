@@ -2,6 +2,6 @@
 - name: Install Orthanc
   hosts: server
   gather_facts: false
-  environment: "{{ k8s_environment }}"
+  environment: '{{ k8s_environment }}'
   roles:
     - role: orthanc

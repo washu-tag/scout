@@ -33,10 +33,10 @@
 - name: Deploy staging infrastructure
   hosts: staging
   when: air_gapped | default(false) | bool
-  environment: "{{ k8s_environment }}"
+  environment: '{{ k8s_environment }}'
   vars:
     k3s_token: '{{ staging_k3s_token }}'
-    air_gapped: false  # Staging node has internet access
+    air_gapped: false # Staging node has internet access
   roles:
     - role: k3s
     - role: traefik
