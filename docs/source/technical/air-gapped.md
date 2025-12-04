@@ -201,36 +201,7 @@ workers:
       ansible_host: worker-2
 ```
 
-### 4. Deploy Staging Infrastructure
-
-Deploy K3s, Traefik, and Harbor on the staging node:
-
-```bash
-cd ansible
-
-# Deploy staging infrastructure (k3s, traefik, harbor)
-make install-staging
-```
-
-**What happens:**
-- `staging.yaml` installs a single-node K3s cluster on the staging host (online mode), configures Traefik, and deploys Harbor via Helm with pull-through proxy configured for Docker Hub, Quay.io, and GitHub Container Registry
-
-### 5. Deploy Production K3s Cluster
-
-Deploy K3s on production nodes in air-gapped mode:
-
-```bash
-ansible-playbook -i inventory.yaml playbooks/k3s.yaml
-```
-
-**What happens:**
-- K3s artifacts (binary, install script) are downloaded to Ansible control node
-- SELinux packages are downloaded via Kubernetes Job on staging cluster
-- Artifacts are distributed to production nodes without internet access
-- K3s is installed with Harbor registry mirrors configured
-- Production nodes can now pull container images through Harbor
-
-### 6. Deploy Scout Services
+### 4. Deploy
 
 Deploy Scout components normally:
 
@@ -242,9 +213,16 @@ make all
 ```
 
 **What happens:**
-- Helm charts are deployed from Ansible control node (charts are bundled in the Scout repository)
-- Container images are pulled by production nodes through Harbor
-- Harbor automatically caches images from upstream registries on first pull
+- `staging` play installs a single-node K3s cluster on the staging host (online mode), configures Traefik, and deploys Harbor via Helm with pull-through proxy configured for Docker Hub, Quay.io, and GitHub Container Registry
+- `k3s` play
+  - Downloads K3s artifacts (binary, install script) to Ansible control node
+  - Downloads SELinux packages via Kubernetes Job on staging cluster
+  - Distributes artifacts to production nodes that lack internet access
+  - Installs K3s with Harbor registry mirrors configured so production nodes can pull container images through Harbor
+- Other Scout plays
+  - Helm charts are deployed from Ansible control node (charts are bundled in the Scout repository)
+  - Container images are pulled by production nodes through Harbor
+  - Harbor automatically caches images from upstream registries on first pull
 
 ## How It Works
 

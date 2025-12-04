@@ -744,7 +744,7 @@ For complete air-gapped deployment documentation, see [Air-Gapped Deployment Gui
 
 1. Set `air_gapped: true` in inventory
 2. Define staging node in inventory (see [Air-Gapped Deployment Guide](air-gapped.md))
-3. Run playbooks: `make install-staging`, then `make all`
+3. Run playbooks: `make all`
 
 See [Air-Gapped Deployment Guide](air-gapped.md) for detailed instructions.
 
