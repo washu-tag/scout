@@ -207,9 +207,6 @@ k3s_cluster:
     # HL7 extractor input directory (not managed by Kubernetes persistent volumes)
     extractor_data_dir: /ceph/input/data
 
-    # Modality mapping CSV file path
-    modality_map_source_file: /path/to/modality_mapping_codes.csv
-
     #############################################################################
     ### Service-specific secrets and resources                                ###
     #############################################################################
