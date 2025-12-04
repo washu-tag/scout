@@ -545,8 +545,8 @@ def import_hl7_files_to_deltalake(
             )
 
             # Next, update existing latest table or create it if it does not yet exist
-            if spark.catalog.tableExists("latest_temp"):
-                latest_table = DeltaTable.forName(spark, "latest_temp")
+            if spark.catalog.tableExists(f"{report_table_name}_latest"):
+                latest_table = DeltaTable.forName(spark, f"{report_table_name}_latest")
                 update_set = {
                     col_name: F.col(f"s.{col_name}") for col_name in deduped_df.columns
                 }
@@ -560,7 +560,7 @@ def import_hl7_files_to_deltalake(
                 ).whenNotMatchedInsertAll().execute()  # If no existing row for accession number, insert it as-is
             else:
                 deduped_df.write.format("delta").mode("overwrite").saveAsTable(
-                    "latest_temp"
+                    f"{report_table_name}_latest"
                 )
 
         full_table = (
@@ -570,7 +570,9 @@ def import_hl7_files_to_deltalake(
         )
         latest_table_operation = (
             full_table.writeStream.foreachBatch(upsert_to_latest_table)
-            .option("checkpointLocation", "s3a://scratch/checkpoints/full_table")
+            .option(
+                "checkpointLocation", f"s3a://scratch/checkpoints/{report_table_name}"
+            )
             .trigger(availableNow=True)
             .start()
         )
