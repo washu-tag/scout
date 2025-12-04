@@ -8,7 +8,7 @@ from pathlib import Path
 
 from delta.tables import DeltaTable
 from py4j.protocol import Py4JError
-from pyspark.sql import SparkSession, Column
+from pyspark.sql import SparkSession, Column, Window
 from pyspark.sql import functions as F
 from s3fs import S3FileSystem
 from temporalio import activity
@@ -509,6 +509,48 @@ def import_hl7_files_to_deltalake(
 
         activity.heartbeat()
         success_paths = [row.source_file for row in df.select("source_file").collect()]
+
+        def upsert_to_latest_table(batch_df, batch_id):
+            """
+            Keeps only 1 report per accession number
+            """
+            if batch_df.isEmpty():
+                return
+
+            # First, make sure our new data only has the newest report per accession number
+            dedupe_window = Window.partitionBy("obr_3_filler_order_number").orderBy(
+                F.col("message_dt").desc
+            )
+            deduped_df = batch_df.filter(F.row_number().over(dedupe_window) == 1)
+
+            # Next, update existing latest table or create it if it does not yet exist
+            if spark.catalog.exists("latest_temp"):
+                latest_table = DeltaTable.forName(spark, "latest_temp")
+                update_set = {
+                    col_name: F.col(f"s.{col_name}") for col_name in deduped_df.columns
+                }
+
+                latest_table.alias("t").merge(
+                    deduped_df.alias("s"),
+                    "t.obr_3_filler_order_number = s.obr_3_filler_order_number",
+                ).whenMatchedUpdate(
+                    "s.message_dt > t.message_dt",
+                    update_set,  # Use exact columns as in source
+                ).whenNotMatchedInsertAll().execute()  # If no existing row for accession number, insert it as-is
+            else:
+                deduped_df.write.format("delta").mode("overwrite").saveAsTable(
+                    "latest_temp"
+                )
+
+        full_table = spark.readStream.format("delta").table(report_table_name)
+        latest_table_operation = (
+            full_table.writeStream.foreachBatch(upsert_to_latest_table)
+            .option("checkpointLocation", "s3a://scratch/checkpoints/full_table")
+            .trigger(availableNow=True)
+            .start()
+        )
+
+        latest_table_operation.awaitTermination()
 
     except (Py4JError, ConnectionError) as e:
         activity.logger.error(
