@@ -153,7 +153,7 @@ const PLAYBOOKS = [
     },
   },
   {
-    id: 'followup_detection',
+    id: 'followup-detection',
     title: 'Clinical Follow-up Monitoring',
     description: 'Review algorithmically-detected follow-up recommendations',
     notebook: 'FollowUpDetection.ipynb',
@@ -168,7 +168,7 @@ const PLAYBOOKS = [
     },
   },
   {
-    id: 'quality_metrics',
+    id: 'quality-metrics',
     title: 'Quality Metrics',
     description: 'Analyze report quality and compliance metrics',
     notebook: 'QualityMetrics.ipynb',

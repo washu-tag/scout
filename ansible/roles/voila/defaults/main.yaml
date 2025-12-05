@@ -2,6 +2,9 @@
 # Voilà role defaults
 # User-configurable settings are in inventory.yaml
 
+# Namespace configuration
+voila_namespace: '{{ scout_analytics_namespace }}'
+
 # Helm configuration
 voila_helm_chart_ref: '{{ scout_repo_dir }}/helm/voila'
 
@@ -22,5 +25,5 @@ voila_resources:
     memory: 8Gi
 
 # Spark memory settings for notebooks
-voila_spark_driver_memory: "4g"
-voila_spark_executor_memory: "4g"
+voila_spark_driver_memory: '4g'
+voila_spark_executor_memory: '4g'

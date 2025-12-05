@@ -11,6 +11,8 @@ scoutRepoDir: "{{ scout_repo_dir }}"
 
 sparkConfigMapName: spark-defaults
 
+playbooks: {{ voila_playbooks | to_json }}
+
 env:
   TRINO_HOST: "trino.{{ trino_namespace }}"
   TRINO_PORT: "8080"

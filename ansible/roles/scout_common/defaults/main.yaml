@@ -19,8 +19,11 @@ helm_chart_values_files: []
 # Custom images (override from inventory for CI/CD)
 # Launchpad: launchpad_image_repository and launchpad_image_tag (see roles/launchpad/defaults/main.yaml)
 # Superset: superset_image_repository and superset_image_tag (see roles/superset/defaults/main.yaml)
-# Jupyter: jupyter_singleuser_image_name and jupyter_singleuser_image_tag (see roles/jupyter/defaults/main.yaml)
 # Extractors: hl7log_extractor_image_repository/tag and hl7_transformer_image_repository/tag (see roles/extractor/defaults/main.yaml)
+
+# Jupyter singleuser image (shared by JupyterHub and Voila)
+jupyter_singleuser_image_name: ghcr.io/washu-tag/pyspark-notebook
+jupyter_singleuser_image_tag: 1.1.0
 
 # Kubernetes configuration
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml

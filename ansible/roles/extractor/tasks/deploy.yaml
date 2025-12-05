@@ -92,6 +92,7 @@
         namespace: '{{ extractor_namespace }}'
       data:
         modality_mapping_codes.csv: '{{ lookup("file", modality_map_source_file) }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Setup Spark defaults ConfigMap
   ansible.builtin.include_role:

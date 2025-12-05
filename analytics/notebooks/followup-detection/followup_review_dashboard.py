@@ -954,6 +954,7 @@ def create_review_dashboard(
     def render_report():
         """Render current report."""
         import traceback
+
         try:
             _render_report_inner()
         except Exception as e:
@@ -979,7 +980,11 @@ def create_review_dashboard(
             if pd.notna(row.get("followup_finding"))
             else ""
         )
-        report_text = str(row[report_col]).strip() if pd.notna(row[report_col]) else "No report text available"
+        report_text = (
+            str(row[report_col]).strip()
+            if pd.notna(row[report_col])
+            else "No report text available"
+        )
 
         # Get patient demographics
         age = row.get("patient_age", "N/A")

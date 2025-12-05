@@ -18,6 +18,64 @@
     spark_s3_username: '{{ s3_lake_writer }}'
     spark_s3_password: '{{ s3_lake_writer_secret }}'
 
+- name: Find all playbook directories
+  ansible.builtin.find:
+    paths: '{{ scout_repo_dir }}/analytics/notebooks'
+    file_type: directory
+    recurse: no
+  register: playbook_dirs
+  delegate_to: localhost
+
+- name: Find all files in each playbook directory
+  ansible.builtin.find:
+    paths: '{{ item.path }}'
+    file_type: file
+    recurse: yes
+  register: playbook_files_results
+  loop: '{{ playbook_dirs.files }}'
+  loop_control:
+    label: '{{ item.path | basename }}'
+  delegate_to: localhost
+
+- name: Create ConfigMap for each playbook
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: 'voila-playbook-{{ item.item.path | basename }}'
+        namespace: '{{ voila_namespace }}'
+        labels:
+          app.kubernetes.io/name: voila
+          app.kubernetes.io/component: playbook
+      binaryData: {}
+      data: '{{ configmap_data }}'
+  loop: '{{ playbook_files_results.results }}'
+  loop_control:
+    label: '{{ item.item.path | basename }}'
+  vars:
+    configmap_data: |
+      {% set data = {} %}
+      {% for file in item.files %}
+      {%   set relative_path = file.path | relpath(item.item.path) %}
+      {%   set _ = data.update({relative_path: lookup('file', file.path)}) %}
+      {% endfor %}
+      {{ data }}
+  when: item.files | length > 0
+
+- name: Build list of playbooks
+  ansible.builtin.set_fact:
+    voila_playbooks: >-
+      {{
+        voila_playbooks | default([]) + [item.item.path | basename]
+      }}
+  loop: '{{ playbook_files_results.results }}'
+  loop_control:
+    label: '{{ item.item.path | basename }}'
+  when: item.files | length > 0
+  delegate_to: localhost
+
 - name: Parse Helm values
   ansible.builtin.set_fact:
     voila_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

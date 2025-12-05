@@ -49,9 +49,7 @@ def _connect_trino():
     return conn
 
 
-def _load_quality_data(
-    table_name="default.reports", date_range_days=None, limit=None
-):
+def _load_quality_data(table_name="default.reports", date_range_days=None, limit=None):
     """
     Load quality metrics data from Trino (optimized for speed).
 

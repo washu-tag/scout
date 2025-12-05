@@ -4,18 +4,18 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/washu-tag/pyspark-notebook
-  tag: "1.1.0"
+  tag: '1.1.0'
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
+nameOverride: ''
+fullnameOverride: ''
 
 serviceAccount:
   create: true
   automount: true
   annotations: {}
-  name: ""
+  name: ''
 
 podAnnotations: {}
 podLabels: {}
@@ -35,7 +35,7 @@ ingress:
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd
-  host: ""
+  host: ''
   tls: []
 
 # Resource limits - sized for POC with multiple concurrent users
@@ -48,11 +48,8 @@ resources:
     cpu: 2
     memory: 8Gi
 
-# Path to scout repo on the host (for copying notebooks)
-scoutRepoDir: /scout/data/scout
-
-# Notebooks source directory within the scout repo
-notebooksSourceDir: analytics/notebooks
+# List of playbook names to mount from ConfigMaps (created externally by Ansible with the name format playbook-<name>)
+playbooks: []
 
 # Name of the ConfigMap containing spark-defaults.conf (created externally by Ansible)
 sparkConfigMapName: spark-defaults
@@ -61,7 +58,7 @@ sparkConfigMapName: spark-defaults
 # S3/Spark settings come from spark-defaults.conf ConfigMap
 env:
   TRINO_HOST: trino.trino
-  TRINO_PORT: "8080"
+  TRINO_PORT: '8080'
   TRINO_SCHEME: http
   TRINO_USER: scout
   TRINO_CATALOG: delta
