@@ -19,6 +19,7 @@
     state: present
 
 - name: Create Postgres secret
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
@@ -36,6 +37,7 @@
         DB_PASSWORD: '{{ postgres_password }}'
 
 - name: Create S3 secret
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
