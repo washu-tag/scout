@@ -6,4 +6,5 @@
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   roles:
     - role: minio
+      when: not aws_deployment
     - role: hive
