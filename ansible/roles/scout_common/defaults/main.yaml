@@ -25,9 +25,17 @@ helm_chart_values_files: []
 # Kubernetes configuration
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 air_gapped: false
-is_local_deployment: '{{ ansible_connection | default("ssh") == "local" and not (air_gapped | bool) }}'
-jump_kubeconfig_yaml_dir: '{{ scout_repo_dir }}/.kube/scout/{{ ansible_host | default(inventory_hostname) }}'
-local_kubeconfig_yaml: "{{ kubeconfig_yaml if is_local_deployment else (jump_kubeconfig_yaml_dir + '/config') }}"
+
+# Ansible control node location relative to cluster
+# TRUE when control node is external to cluster - needs fetched kubeconfig
+# FALSE when control node is on the cluster - can use cluster kubeconfig directly
+ansible_control_node_external_to_cluster: "{{ ansible_connection | default('ssh') != 'local' or (air_gapped | bool) }}"
+
+# Kubeconfig path for Ansible control node execution
+# When control node is on cluster, uses the cluster's kubeconfig directly
+# When control node is external, uses a fetched copy stored locally
+local_kubeconfig_dir: '{{ scout_repo_dir }}/.kube/scout/{{ ansible_host | default(inventory_hostname) }}'
+local_kubeconfig_yaml: "{{ (local_kubeconfig_dir + '/config') if ansible_control_node_external_to_cluster else kubeconfig_yaml }}"
 
 # Scout repository path (on localhost / Ansible control node)
 # Used for scout-local helm charts, analytics files, logos, and kubeconfig storage

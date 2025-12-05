@@ -1,11 +1,4 @@
 ---
-- name: Create storage directories for Dcm4chee
-  hosts: k3s_cluster
-  gather_facts: false
-  roles:
-    - role: dcm4chee
-      tasks_from: storage
-
 - name: Install Dcm4chee
   hosts: server
   gather_facts: false

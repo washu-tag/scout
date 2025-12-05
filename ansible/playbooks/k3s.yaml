@@ -21,10 +21,9 @@
   roles:
     - role: scout_common
     - role: k3s
-
-- name: Configure custom storage classes
-  hosts: server
-  environment: '{{ k8s_environment }}'
-  roles:
-    - role: scout_common
-      tasks_from: storage_classes
+  post_tasks:
+    - name: Configure custom storage classes
+      ansible.builtin.include_role:
+        name: scout_common
+        tasks_from: storage_classes
+      when: inventory_hostname in groups['server']

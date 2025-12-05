@@ -34,8 +34,8 @@
     - registry_config_changed | default(false)
     - not k3s_install_result.changed
 
-- name: Setup kubeconfig for remote deployment
-  when: not is_local_deployment
+- name: Setup kubeconfig for remote control node
+  when: ansible_control_node_external_to_cluster
   block:
     - name: Fetch k3s kubeconfig
       ansible.builtin.slurp:
@@ -59,14 +59,14 @@
                 # NOTE: The certificates we have only valid for hostnames that we can't use to reach the machines, so we cannot TLS validate the connection
                 insecure-skip-tls-verify: true
 
-    - name: Create kubeconfig dir
+    - name: Create local kubeconfig directory on jump node
       ansible.builtin.file:
-        path: '{{ jump_kubeconfig_yaml_dir }}'
+        path: '{{ local_kubeconfig_dir }}'
         state: directory
         mode: '0700'
       delegate_to: localhost
 
-    - name: Write modified kubeconfig locally
+    - name: Write modified kubeconfig locally on jump node
       ansible.builtin.copy:
         content: '{{ modified_kubeconfig | to_nice_yaml }}'
         dest: '{{ local_kubeconfig_yaml }}'

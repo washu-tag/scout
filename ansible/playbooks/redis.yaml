@@ -10,4 +10,3 @@
   environment: '{{ k8s_environment }}'
   roles:
     - role: redis
-      tasks_from: deploy
