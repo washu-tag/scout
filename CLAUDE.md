@@ -244,7 +244,6 @@ HL7 reports are ingested via Temporal workflows:
   "scratchSpaceRootPath": "/tmp/scout",       // Temp files during processing
   "hl7OutputPath": "s3://bucket/hl7",         // Bronze layer S3 path
   "reportTableName": "reports",               // Delta Lake table name
-  "modalityMapPath": "/config/modality.json", // Modality mapping config
   "splitAndUploadTimeout": 120,               // Activity timeout (minutes)
   "splitAndUploadHeartbeatTimeout": 10,       // Heartbeat timeout (minutes)
   "splitAndUploadConcurrency": 4,             // Concurrent log processing
@@ -441,7 +440,6 @@ See `ansible/filter_plugins/` and `ansible/README.md` for details and testing.
 ### PySpark in JupyterHub
 - Filter array columns with `F.exists()`: `df.filter(F.exists("diagnoses", lambda x: x.diagnosis_code == "J18.9"))`
 - Use `patient_ids` array or convenience columns like `epic_mrn`
-- Leverage Jupyter AI extension for code assistance (configure with your LLM provider)
 
 ### Monitoring
 - Adjust time ranges to match data availability

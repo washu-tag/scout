@@ -19,9 +19,4 @@ RUN python3 -m pip install --no-cache-dir -r /tmp/requirements.txt && \
     fix-permissions "/home/${NB_USER}" && \
     rm /tmp/requirements.txt
 
-# Disable JupyterLab announcements/news updates
-RUN jupyter labextension disable "@jupyterlab/apputils-extension:announcements" && \
-    fix-permissions "${CONDA_DIR}" && \
-    fix-permissions "/home/${NB_USER}"
-
 ADD --chown=${NB_UID}:${NB_GID} samples /opt/scout/samples

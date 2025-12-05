@@ -63,6 +63,36 @@
         AWS_ALLOW_HTTP: 'true'
         AWS_REGION: '{{ s3_region }}'
 
+- name: Check modality mapping file exists
+  ansible.builtin.stat:
+    path: '{{ modality_map_source_file }}'
+  register: modality_map_stat
+  delegate_to: localhost
+
+- name: Fail with helpful message if modality map is missing
+  ansible.builtin.fail:
+    msg: |
+      Modality mapping file not found at: {{ modality_map_source_file }}
+
+      The default modality map should be at: {{ scout_repo_dir }}/extractor/hl7-transformer/modality_mapping_codes.csv
+
+      If you're using a custom mapping, ensure 'modality_map_source_file' in your inventory points to a valid file path on the Ansible controller.
+  when: not modality_map_stat.stat.exists
+
+- name: Create modality mapping ConfigMap
+  no_log: true
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: modality-mapping
+        namespace: '{{ extractor_namespace }}'
+      data:
+        modality_mapping_codes.csv: '{{ lookup("file", modality_map_source_file) }}'
+
 - name: Setup Spark defaults ConfigMap
   ansible.builtin.include_role:
     name: scout_common

@@ -668,6 +668,10 @@ See [Ollama model library](https://ollama.com/library) for available models.
 
 #### HL7 Extractor
 
+Scout ships with a default modality mapping file (`extractor/hl7-transformer/modality_mapping_codes.csv`) that is used to derive the `modality` column in the Delta Lake table. During deployment, this file is read and stored as a Kubernetes ConfigMap, which is then mounted into the hl7-transformer container at `/config/modality_mapping_codes.csv`.
+
+The default mapping is based on WashU's exam codes. Sites using custom extractors would typically customize this file as part of their implementation. Sites using the standard extractor can override the mapping by setting `modality_map_source_file` in `inventory.yaml` to point to a custom CSV file.
+
 As stated in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#how-pods-with-resource-limits-are-run),
 "The memory request is mainly used during (Kubernetes) Pod scheduling", so we recommend setting it to a small but viable value where the extractor could run
 such as the one below to allow it to be scheduled. `hl7log_extractor_jvm_heap_max_ram_percentage` is passed into the container via `-XX:MaxRAMPercentage`. When in
@@ -677,6 +681,7 @@ a large scale production instance took around 60GB of memory for the pod. If we 
 
 ```yaml
 extractor_data_dir: /ceph/input/data  # Input directory for HL7 logs
+# modality_map_source_file: /path/to/custom_modality_mapping.csv  # Optional: override default modality mapping
 
 hl7log_extractor_resources:
   requests:
@@ -691,6 +696,29 @@ hl7_transformer_spark_memory: 16G
 hl7_transformer_cpu_request: 2
 hl7_transformer_cpu_limit: 4
 ```
+
+#### JupyterLab Extension Manager
+
+Control whether users can install and manage JupyterLab extensions:
+
+```yaml
+# Extension Manager configuration
+# Controls whether users can install/manage JupyterLab extensions
+jupyter_extension_manager_mode: 'disabled'  # Options: 'disabled', 'readonly', 'enabled'
+```
+
+**Extension Manager Modes:**
+- **`disabled`** (Scout default, recommended): Completely hides the Extension Manager icon from JupyterLab. Users cannot see or access extension installation UI. This is the recommended setting for air-gapped and production environments where extension installation is not desired.
+- **`readonly`**: Shows the Extension Manager UI with a list of installed extensions. Users can enable or disable extensions that are already installed in the image, but cannot install new ones from PyPI.
+- **`enabled`**: Full extension management capabilities. Users can search for, install, and manage extensions from PyPI. Only recommended for development environments with internet access and where users need to customize their JupyterLab environment.
+
+:::{note}
+In air-gapped environments, users cannot install extensions anyway due to lack of PyPI access. The `disabled` mode provides a cleaner user experience by hiding the non-functional Extension Manager UI.
+:::
+
+:::{warning}
+Even with the Extension Manager disabled, users with terminal access can still run `jupyter labextension` commands. However, in air-gapped environments, these commands will fail due to lack of internet connectivity. The Extension Manager setting primarily controls the UI, not a comprehensive security lockdown.
+:::
 
 ### Namespace Customization
 
