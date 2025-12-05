@@ -23,6 +23,16 @@
     jupyter_target_node_name: "{{ hostvars[groups['gpu_workers'][0]]['inventory_hostname'] }}"
   when: groups['gpu_workers'] is defined and groups['gpu_workers'] | length > 0
 
+- name: Create lake-reader ServiceAccount for Jupyter
+  when: aws_deployment
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_service_account
+  vars:
+    sa_name: lake-reader
+    sa_namespace: '{{ jupyter_namespace }}'
+    sa_role_arn: '{{ lake_reader_role_arn }}'
+
 - name: Setup Spark Defaults ConfigMap
   ansible.builtin.include_role:
     name: scout_common

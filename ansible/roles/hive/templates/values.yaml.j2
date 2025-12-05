@@ -9,11 +9,12 @@ imagePullSecrets: []
 nameOverride: ''
 fullnameOverride: '{{ hive_fullname_override | default("") }}'
 
+{% if aws_deployment %}
 serviceAccount:
   create: false
   automount: true
-  annotations: {}
-  name: ''
+  name: 'lake-writer'
+{% endif %}
 
 podAnnotations: {}
 podLabels: {}
@@ -39,8 +40,16 @@ autoscaling:
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
 
-volumes: []
-volumeMounts: []
+{% if aws_deployment %}
+volumes:
+  - name: hadoop-config
+    configMap:
+      name: hive-hadoop-config
+volumeMounts:
+  - name: hadoop-config
+    mountPath: /opt/hadoop-3.3.6/etc/hadoop/core-site.xml
+    subPath: core-site.xml
+{% endif %}
 
 nodeSelector: {}
 
@@ -57,12 +66,12 @@ env:
     value: '{{ hive_metastore_db_user }}'
   - name: HIVE_METASTORE_WAREHOUSE_DIR
     value: '{{ delta_lake_path }}'
-  - name: S3_ENDPOINT
-    value: '{{ s3_endpoint }}'
-  - name: S3_ACCESS_KEY
-    value: '{{ hive_s3_access_key }}'
   - name: S3_PATH_STYLE_ACCESS
-    value: 'true'
+    value: "{{ 'true' if not aws_deployment else 'false' }}"
+  - name: S3_ENDPOINT
+    value: "{{ s3_endpoint if not aws_deployment else '' }}"
+  - name: S3_ACCESS_KEY
+    value: "{{ hive_s3_access_key if not aws_deployment else '' }}"
   - name: REGION
     value: '{{ s3_region }}'
   - name: HIVE_METASTORE_USERS_IN_ADMIN_ROLE
