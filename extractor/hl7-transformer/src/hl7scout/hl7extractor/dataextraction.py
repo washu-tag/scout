@@ -94,7 +94,8 @@ def process_dx_denormalize(batch_df, spark, base_table_name):
         .withColumn("diagnosis_code", F.col("diagnosis.diagnosis_code"))
         .withColumn("diagnosis_code_text", F.col("diagnosis.diagnosis_code_text"))
         .withColumn(
-            "diagnosis_code_coding_system", F.col("diagnosis_code_coding_system")
+            "diagnosis_code_coding_system",
+            F.col("diagnosis.diagnosis_code_coding_system"),
         )
         .drop("diagnosis", "diagnoses", "diagnoses_consolidated")
     )
