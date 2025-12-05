@@ -56,7 +56,7 @@
               cluster:
                 server: 'https://{{ ansible_host | default(inventory_hostname) }}:6443'
                 # certificate-authority-data: '{{ k3s_kubeconfig.clusters[0].cluster["certificate-authority-data"] }}'
-                # NOTE: The certificates we have only valid for hostnames that we can't use to reach the machines, so we cannot TLS validate the connection
+                # NOTE: The certificates we have are only valid for hostnames that we can't use to reach the machines, so we cannot TLS validate the connection
                 insecure-skip-tls-verify: true
 
     - name: Create local kubeconfig directory on jump node

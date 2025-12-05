@@ -1,5 +1,7 @@
 # Staging Node Architecture
 
+> **Note:** For the architectural decision to separate the staging node (Harbor registry) from the Ansible control node ("jump node"), see [ADR-0007: Jump Node Architecture](adr/0007-jump-node-architecture-adr.md). This document covers operational details of the staging node and Harbor configuration.
+
 ## Overview
 
 The staging node serves as a **data diode** for air-gapped Scout deployments. It hosts a Harbor container registry that proxies and caches container images from public registries (Docker Hub, GitHub Container Registry) so that the main k3s cluster nodes can operate without direct internet access.
@@ -13,7 +15,7 @@ In air-gapped or restricted network environments:
 3. **Helm charts** must be pulled from public repositories to deploy services
 4. **Manual image management** (downloading and importing images) is error-prone and labor-intensive
 
-The staging node solves problems #1 and #2. For #3, Helm installations are delegated to the staging node, which has internet access and can use the Kubernetes remote API to deploy to the air-gapped cluster.
+The staging node solves problems #1 and #2. For #3, Helm installations are run from the Ansible control node ("jump node"), which has internet access and uses the Kubernetes remote API via a fetched kubeconfig to deploy to the air-gapped cluster. See [ADR-0007](adr/0007-jump-node-architecture-adr.md) for details on the separation of staging and jump node roles.
 
 ## Architecture
 
@@ -86,7 +88,7 @@ The staging node solves problems #1 and #2. For #3, Helm installations are deleg
 - Has internet access
 - Runs its own standalone k3s server (not part of main cluster)
 - Hosts Harbor container registry
-- Can access k3s cluster API for deployments
+- Does NOT need access to production k3s cluster API (deployments run from jump node)
 - Runs on a single physical/virtual machine
 
 **Why separate k3s?**
@@ -255,11 +257,13 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 
 ## Helm Chart Handling
 
+> **Superseded:** The decision on Helm chart handling has been made. Helm runs on the Ansible control node ("jump node"), not the staging node. See [ADR-0007](adr/0007-jump-node-architecture-adr.md) for the rationale. The options below are preserved for historical context.
+
 ### Problem: Harbor Cannot Proxy Helm Charts
 
 Harbor's proxy cache feature only supports container images (OCI artifacts), not traditional Helm charts. See [Harbor Issue #17355](https://github.com/goharbor/harbor/issues/17355).
 
-### Solution Options (Decision Pending)
+### Solution Options (Historical)
 
 Two approaches are under consideration:
 
@@ -491,9 +495,7 @@ Production Zone (no internet)
 - K3s Cluster → Staging: HTTPS (443) for Harbor registry endpoints only
 - K3s Cluster → Staging: **No access** to staging k3s API (6443)
 - K3s Cluster → Internet: BLOCKED
-- Staging → K3s Cluster: Conditional, depends on Helm deployment strategy (see Helm Chart Handling section)
-  - If using delegation approach: Allow staging → k3s API (6443)
-  - If using pre-rendered manifests: No access required
+- Staging → K3s Cluster: **No access required** (Helm runs from jump node, not staging)
 
 ## Troubleshooting
 
@@ -577,7 +579,7 @@ crictl info | jq .config.registry.mirrors
 
 ### Current Limitations
 
-1. **No Helm chart proxy** - Harbor cannot cache Helm charts, must use staging node delegation
+1. **No Helm chart proxy** - Harbor cannot cache Helm charts; Helm runs from jump node instead
 2. **Self-signed certificates** - Requires `insecure_skip_verify`, should upgrade to cert-manager
 3. **Single staging node** - No high availability, single point of failure
 4. **No pull authentication** - Harbor proxy projects are public

@@ -1,7 +1,7 @@
 # ADR: Separation of Ansible Control Node ("Jump Node") and Staging Node
 
-**Date**: 2025-12-03  
-**Status**: Proposed  
+**Date**: 2025-12-03
+**Status**: Accepted  
 **Decision Owner**: TAG Team
 
 ## Context
@@ -58,8 +58,8 @@ The node separation alone is defense-in-depth. The real security boundary is the
 ┌─────────────────────────┐        ┌─────────────────────────────────┐
 │  Ansible Control Node   │        │  Staging Node                   │
 │  ("Jump Node")          │        │                                 │
-│                         │        │  Installed: K3s, Harbor,        │
-│  Installed: Helm        │        │             Traefik             │
+│                         │        │  Installed: K3s, Harbor         │
+│  Installed: Helm        │        │  (Traefik only if ingress mode) │
 │                         │        │                                 │
 │  Also has:              │        │  Purpose: Container image       │
 │  - Scout repository     │        │  caching proxy for prod         │
@@ -89,8 +89,10 @@ The node separation alone is defense-in-depth. The real security boundary is the
 |----------|---------|------------|------|
 | Internet access | Yes | No (firewall) | Yes |
 | Prod cluster access | No | Yes (is the cluster) | Yes (kubeconfig) |
-| Scout-installed software | K3s, Harbor, Traefik | K3s, Traefik, Scout services | Helm CLI |
+| Scout-installed software | K3s, Harbor, Traefik* | K3s, Traefik, Scout services | Helm CLI |
 | Compromise impact | Supply chain | Data (no exfil path) | **Primary risk** |
+
+*Traefik only installed on staging when `harbor_expose_type: ingress`; skipped for nodePort mode.
 
 **Why jump node is the primary risk**: It's the only node with both internet access AND prod cluster credentials. Staging can poison images but prod can't exfiltrate; prod has data but can't reach internet. Jump has both.
 

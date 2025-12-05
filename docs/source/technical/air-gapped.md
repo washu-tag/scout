@@ -11,17 +11,26 @@ Scout supports air-gapped deployments through a staging node architecture. Ansib
 ```
 ┌──────────────┐         ┌──────────────────────────────┐
 │   Internet   │────────▶│  Staging Node                │
-└──────────────┘         │  - K3s cluster (auto-deploy) │
+└──────────────┘         │  - K3s cluster (standalone)  │
                          │  - Harbor registry proxy     │
-                         └──────┬───────────────────────┘
-                                │
-                         Air Gap│ (registry mirrors)
-                                │
-                         ┌──────▼───────────────────────┐
-                         │  Production K3s Cluster      │
-                         │  - No internet access        │
-                         │  - Pulls images via Harbor   │
                          └──────────────────────────────┘
+                                          │
+┌───────────────────────┐                 │ HTTPS (registry)
+│  Ansible Control Node │                 │
+│  ("Jump Node")        │                 │
+│  - Helm CLI           │                 │
+│  - Scout repo         │                 │
+│  - Kubeconfig access  │                 │
+└───────────┬───────────┘                 │
+            │ K8s API                     │
+            │                             │
+            ▼                             ▼
+┌─────────────────────────────────────────────────────────┐
+│  Production K3s Cluster                                 │
+│  - No internet access                                   │
+│  - Pulls images via Harbor                              │
+│  - Managed by Ansible from jump node                    │
+└─────────────────────────────────────────────────────────┘
 ```
 
 **How it works:**
@@ -209,7 +218,7 @@ make all
 ```
 
 **What happens:**
-- `staging` play installs a single-node K3s cluster on the staging host (online mode), configures Traefik, and deploys Harbor via Helm with pull-through proxy configured for Docker Hub, Quay.io, and GitHub Container Registry
+- `staging` play installs a single-node K3s cluster on the staging host (online mode) and deploys Harbor via Helm with pull-through proxy configured for Docker Hub, Quay.io, and GitHub Container Registry (Traefik is installed only if `harbor_expose_type: ingress`)
 - `k3s` play
   - Downloads K3s artifacts (binary, install script) to Ansible control node
   - Downloads SELinux packages via Kubernetes Job on staging cluster
@@ -293,7 +302,9 @@ Air-gapped mode prevents production nodes from accessing the internet, but:
 
 Air-gapped installations only support **Rocky Linux 9** for production nodes due to SELinux package requirements. The staging node can run other distributions, but Rocky Linux 9 is recommended for consistency.
 
-## Additional information:
+## Additional Information
+
 - [Creating the Ansible Inventory File](inventory.md)
 - [K3s Air-Gapped Installation Docs](https://docs.k3s.io/installation/airgap)
 - [Harbor Documentation](https://goharbor.io/docs/latest/)
+- [Jump Node Architecture ADR](https://github.com/washu-tag/scout/blob/main/docs/internal/adr/0007-jump-node-architecture-adr.md) - Security rationale for separating staging and jump nodes
