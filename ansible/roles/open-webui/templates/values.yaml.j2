@@ -24,12 +24,32 @@ ollama:
                 values:
                   - '{{ ollama_min_gpu_memory_gb }}'
 {% endif %}
+{% if air_gapped | default(false) and ollama_nfs_path is defined and ollama_nfs_path | length > 0 %}
+  # Air-gapped with NFS: mount pre-staged models read-only (ADR 0008)
+  extraEnv:
+    - name: OLLAMA_MODELS
+      value: /nfs/ollama/models
+  volumes:
+    - name: nfs-models
+      hostPath:
+        path: '{{ ollama_nfs_path }}'
+        type: Directory
+  volumeMounts:
+    - name: nfs-models
+      mountPath: /nfs/ollama
+      readOnly: true
+  # Disable PVC for models when using NFS
+  persistentVolume:
+    enabled: false
+{% else %}
+  # Online: use PVC for models
   persistentVolume:
     enabled: true
 {% if ollama_storage_class is defined and ollama_storage_class %}
     storageClass: '{{ ollama_storage_class }}'
 {% endif %}
     size: {{ ollama_storage_size }}
+{% endif %}
 
 pipelines:
   enabled: false

@@ -1,46 +1,41 @@
 ---
-# Pull Ollama models asynchronously via Kubernetes Job
-# This runs after Ollama deployment to avoid blocking Helm install
+# Pull Ollama models via Kubernetes Job
+# Runs in background - does not block cluster installation
+#
+# Modes:
+#   - Online (air_gapped: false): Pull directly from registry.ollama.ai to cluster Ollama
+#   - Air-gapped with NFS: Pull to shared NFS from staging, cluster mounts read-only
+#
+# See ADR 0008 for air-gapped architecture details
+
+- name: Fail if air-gapped without NFS path
+  ansible.builtin.fail:
+    msg: >-
+      Air-gapped deployment requires ollama_nfs_path to be set.
+      Configure shared NFS storage for Ollama models between staging and cluster.
+  when:
+    - air_gapped | default(false) | bool
+    - ollama_nfs_path is not defined or ollama_nfs_path | length == 0
+
+- name: Set model pull configuration
+  ansible.builtin.set_fact:
+    _pull_air_gapped: '{{ air_gapped | default(false) | bool }}'
+    _pull_namespace: '{{ staging_ollama_namespace if (air_gapped | default(false) | bool) else chatbot_namespace }}'
+    _pull_job_name: "{{ 'ollama-download-models-' if (air_gapped | default(false) | bool) else 'ollama-pull-models-' }}"
+    _pull_label: "{{ 'ollama-download-models' if (air_gapped | default(false) | bool) else 'ollama-pull-models' }}"
+    _pull_ttl: '{{ 3600 if (air_gapped | default(false) | bool) else 600 }}'
+    _pull_backoff: '{{ 2 if (air_gapped | default(false) | bool) else 3 }}'
 
 - name: Create model pull Job
   kubernetes.core.k8s:
+    kubeconfig: '{{ kubeconfig_yaml }}'
     state: present
-    definition:
-      apiVersion: batch/v1
-      kind: Job
-      metadata:
-        generateName: 'ollama-pull-models-'
-        namespace: '{{ chatbot_namespace }}'
-        labels:
-          app: ollama-pull-models
-      spec:
-        ttlSecondsAfterFinished: 600 # Clean up 10 minutes after completion
-        backoffLimit: 3
-        template:
-          metadata:
-            labels:
-              app: ollama-pull-models
-          spec:
-            restartPolicy: OnFailure
-            containers:
-              - name: ollama-pull
-                image: ollama/ollama:latest
-                env:
-                  - name: OLLAMA_HOST
-                    value: 'http://{{ ollama_name }}.{{ chatbot_namespace }}:11434'
-                command:
-                  - /bin/sh
-                  - -c
-                  - |
-                    set -e
-                    echo "Waiting for Ollama to be ready..."
-                    until ollama list > /dev/null 2>&1; do
-                      echo "Ollama not ready, waiting..."
-                      sleep 5
-                    done
-                    echo "Ollama is ready, pulling models..."
-                    {% for model in ollama_models %}
-                    echo "Pulling model: {{ model }}"
-                    ollama pull {{ model }}
-                    {% endfor %}
-                    echo "All models pulled successfully"
+    definition: '{{ lookup("template", "pull_models_job.yaml.j2") | from_yaml }}'
+  delegate_to: "{{ groups['staging'][0] if _pull_air_gapped else omit }}"
+
+- name: Model pull Job started
+  ansible.builtin.debug:
+    msg: >-
+      Model pull Job created in {{ _pull_namespace }} namespace{{ ' on staging' if _pull_air_gapped else '' }}.
+      Models will download in the background. Check status with:
+      kubectl get jobs -n {{ _pull_namespace }} -l app={{ _pull_label }}
