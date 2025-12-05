@@ -25,7 +25,7 @@ helm_chart_values_files: []
 # Kubernetes configuration
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 air_gapped: false
-is_local_deployment: '{{ ansible_connection | default("ssh") == "local" }}'
+is_local_deployment: '{{ ansible_connection | default("ssh") == "local" and not (air_gapped | bool) }}'
 jump_kubeconfig_yaml_dir: '{{ scout_repo_dir }}/.kube/scout/{{ ansible_host | default(inventory_hostname) }}'
 local_kubeconfig_yaml: "{{ kubeconfig_yaml if is_local_deployment else (jump_kubeconfig_yaml_dir + '/config') }}"
 
