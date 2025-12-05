@@ -16,19 +16,6 @@
       metadata:
         name: '{{ hive_namespace }}'
 
-- name: Create Hadoop configuration ConfigMap for Hive
-  when: aws_deployment
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: hive-hadoop-config
-        namespace: '{{ hive_namespace }}'
-      data:
-        core-site.xml: "{{ lookup('template', 'core-site.xml.j2') }}"
-
 - name: Create lake-writer ServiceAccount for Hive
   when: aws_deployment
   ansible.builtin.include_role:

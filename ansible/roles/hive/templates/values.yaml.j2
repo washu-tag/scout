@@ -40,17 +40,6 @@ autoscaling:
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
 
-{% if aws_deployment %}
-volumes:
-  - name: hadoop-config
-    configMap:
-      name: hive-hadoop-config
-volumeMounts:
-  - name: hadoop-config
-    mountPath: /opt/hadoop-3.3.6/etc/hadoop/core-site.xml
-    subPath: core-site.xml
-{% endif %}
-
 nodeSelector: {}
 
 tolerations: []
@@ -58,6 +47,10 @@ tolerations: []
 affinity: {}
 
 env:
+{% if aws_deployment %}
+  - name: HADOOP_OPTS
+    value: "-Dfs.s3a.aws.credentials.provider=com.amazonaws.auth.WebIdentityTokenCredentialsProvider -Dfs.s3a.endpoint.region={{ s3_region }}"
+{% endif %}
   - name: HIVE_METASTORE_DRIVER
     value: 'org.postgresql.Driver'
   - name: HIVE_METASTORE_JDBC_URL
