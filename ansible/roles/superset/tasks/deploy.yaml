@@ -83,6 +83,7 @@
   no_log: true
   kubernetes.core.k8s:
     state: present
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
     definition:
       apiVersion: v1
       kind: ConfigMap

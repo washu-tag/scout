@@ -2,7 +2,7 @@
 - name: Install Cassandra, Elasticsearch, and Temporal
   hosts: server
   gather_facts: false
-  environment: '{{ k8s_environment }}'
+  environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: cassandra
     - role: elasticsearch

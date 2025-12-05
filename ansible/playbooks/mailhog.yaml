@@ -2,7 +2,7 @@
 - name: Deploy MailHog to Kubernetes
   hosts: server
   gather_facts: false
-  environment: '{{ k8s_environment }}'
+  environment: '{{ cluster_k8s_environment }}'
   vars:
     mailhog_namespace: mailhog
   tasks:

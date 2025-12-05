@@ -15,6 +15,6 @@
     - name: Skip if no GPU workers defined
       ansible.builtin.meta: end_play
       when: groups.get('gpu_workers', []) | length == 0
-  environment: '{{ k8s_environment }}'
+  environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: gpu-operator

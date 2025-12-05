@@ -17,7 +17,7 @@
 - name: Install k3s cluster
   hosts: k3s_cluster
   any_errors_fatal: true
-  environment: '{{ k8s_environment }}'
+  environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: scout_common
     - role: k3s

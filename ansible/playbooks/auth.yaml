@@ -2,7 +2,7 @@
 - name: Install auth components
   hosts: server
   gather_facts: false
-  environment: '{{ k8s_environment }}'
+  environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: keycloak
     - role: oauth2-proxy

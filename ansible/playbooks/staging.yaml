@@ -48,7 +48,7 @@
     - name: Skip if first play was skipped
       ansible.builtin.meta: end_play
       when: not (run_deploy | default(false) | bool)
-  environment: '{{ k8s_environment }}'
+  environment: '{{ cluster_k8s_environment }}'
   vars:
     k3s_token: '{{ staging_k3s_token }}'
     air_gapped: false # Staging node has internet access

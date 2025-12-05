@@ -100,8 +100,6 @@
 - name: Check that server is ready
   ansible.builtin.command:
     cmd: kubectl get nodes
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   changed_when: false
   failed_when: >-
     kubectl_get_nodes_result.stdout.find("was refused") != -1 or
@@ -120,8 +118,6 @@
     taints:
       - key: node-role.kubernetes.io/control-plane
         effect: PreferNoSchedule
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   # Skip taint on single-node clusters (needs to run workloads on control plane)
   when:
     - "'staging' not in group_names"
