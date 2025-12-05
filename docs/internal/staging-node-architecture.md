@@ -200,7 +200,6 @@ staging:
     staging_k3s_token: "separate-token-from-main-cluster"
     harbor_admin_password: "VaultEncryptedPassword"
     harbor_storage_size: 100Gi
-    harbor_dir: /scout/persistence/harbor
     harbor_namespace: harbor
 
 k3s_cluster:

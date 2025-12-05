@@ -93,9 +93,6 @@ staging:
 
     # Storage size for Harbor registry cache
     harbor_storage_size: 100Gi
-
-    # Local directory on staging node for Harbor data
-    harbor_dir: /scout/persistence/harbor
 ```
 
 ### Required Variables
@@ -105,7 +102,6 @@ staging:
 | `staging_k3s_token` | Cluster join token for the staging K3s cluster (separate from production `k3s_token`) |
 | `harbor_admin_password` | Admin password for Harbor web UI and API |
 | `harbor_storage_size` | Persistent volume size for cached images (recommend 100Gi minimum) |
-| `harbor_dir` | Local path on staging node where Harbor data is stored |
 
 ### Generating Staging Credentials
 

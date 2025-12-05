@@ -1,6 +1,6 @@
 ---
 # Staging Node Deployment Playbook
-# Installs k3s, configures Traefik, and deploys Harbor on the staging node
+# Installs k3s and deploys Harbor on the staging node
 # Used for air-gapped deployments with Harbor registry
 #
 # Documentation: docs/source/technical/air-gapped.md
@@ -8,6 +8,10 @@
 # Prerequisites:
 #   - 'staging' group defined in inventory
 #   - air_gapped: true in inventory
+#
+# Notes:
+#   - Traefik is only deployed when harbor_expose_type: ingress (requires TLS certs)
+#   - For nodePort mode (default), Harbor uses self-signed certs and Traefik is skipped
 
 - name: Prepare staging node for K3s
   hosts: staging
@@ -15,6 +19,11 @@
     - name: Skip if not air-gapped deployment
       ansible.builtin.meta: end_play
       when: not (air_gapped | default(false) | bool)
+
+    # Deploy play needs to override `air_gapped`, so set a trigger to ensure it runs when it should
+    - name: Mark that we want to deploy staging infrastructure next
+      ansible.builtin.set_fact:
+        run_deploy: true
   tasks:
     - name: Create /root/bin directory
       ansible.builtin.file:
@@ -36,9 +45,9 @@
 - name: Deploy staging infrastructure
   hosts: staging
   pre_tasks:
-    - name: Skip if not air-gapped deployment
+    - name: Skip if first play was skipped
       ansible.builtin.meta: end_play
-      when: not (air_gapped | default(false) | bool)
+      when: not (run_deploy | default(false) | bool)
   environment: '{{ k8s_environment }}'
   vars:
     k3s_token: '{{ staging_k3s_token }}'
@@ -46,4 +55,5 @@
   roles:
     - role: k3s
     - role: traefik
+      when: harbor_expose_type == 'ingress'
     - role: harbor

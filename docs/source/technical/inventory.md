@@ -211,7 +211,6 @@ staging:
           $ANSIBLE_VAULT;1.1;AES256
           ...encrypted password...
     harbor_storage_size: 100Gi
-    harbor_dir: /scout/persistence/harbor
 ```
 
 See {ref}`Air-Gapped Deployment <air-gapped-deployment>` for details.
@@ -277,7 +276,6 @@ loki_storage_class: ""
 grafana_storage_class: ""
 orthanc_storage_class: ""
 dcm4chee_storage_class: ""
-harbor_storage_class: ""
 ollama_storage_class: ""
 open_webui_storage_class: ""
 
@@ -330,7 +328,6 @@ open_webui_storage_class: "local-database"   # User data and chat history
 orthanc_storage_class: "local-database"
 dcm4chee_storage_class: "local-database"
 temporal_storage_class: ""  # Uses Cassandra for persistence
-harbor_storage_class: ""  # Only used in air-gapped deployments
 ```
 
 **When to use multiple storage classes:**

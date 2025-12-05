@@ -2,21 +2,6 @@
 # Global settings that apply to all hosts
 all:
   vars:
-    # SSH connection and privilege escalation
-    # There are many other params you could set here to customize your situation.
-    # See https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html#connecting-to-hosts-behavioral-inventory-parameters
-    ansible_user: '<ssh username>'
-    ansible_become_method: sudo
-    ansible_become_user: root
-    ansible_become_password: $(echo $ANSIBLE_BECOME_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-
-    # Do *not* set this to true for all, or ansible will act as root on localhost and make things difficult
-    # Instead set ansible_become: true in the staging and k3s_cluster groups
-    # ansible_become: true
-
-    # K3s kubeconfig path, modify if not using K3s
-    # kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
-
     # Air-gapped deployment configuration
     # Set to true to enable air-gapped deployment mode for Kubernetes clusters
     # without internet access on worker nodes.
@@ -44,7 +29,7 @@ all:
 #
 # Requirements for air-gapped deployments (air_gapped: true):
 #   1. Staging node must have internet access
-#   2. Harbor must be deployed on staging node (playbooks/harbor.yaml)
+#   2. Harbor must be deployed on staging node (playbooks/staging.yaml)
 #   3. K3s cluster nodes must have registry mirrors configured to use Harbor
 #   4. Kubeconfig for air-gapped cluster must be accessible from localhost
 #   5. K8s API port (6443) must be accessible from localhost
@@ -56,15 +41,18 @@ staging:
     FQDN-staging.edu:
       ansible_host: staging # Host name to use for ssh connection
       ansible_python_interpreter: /usr/bin/python3
+      external_url: alt.fqdn.edu # omit to use FQDN-staging.edu
   vars:
-    ansible_become: true
-
     # Staging-specific variables (only needed if use_staging_node: true)
     # The staging node runs a separate k3s cluster from the main cluster
     staging_k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     harbor_admin_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     harbor_storage_size: 100Gi
-    harbor_dir: /scout/persistence/harbor
+    # harbor_expose_type: nodePort
+
+    # Traefik
+    tls_cert_path: ''
+    tls_key_path: ''
 
 # The server group contains the control plane nodes for the k3s cluster.
 server:
@@ -75,6 +63,11 @@ server:
       ansible_python_interpreter: /usr/bin/python3
       k3s_control_node: true
       external_url: alt.fqdn.edu # omit to use FQDN-leader.edu
+  vars:
+    # Traefik
+    tls_cert_path: ''
+    tls_key_path: ''
+
 # The workers group contains the worker nodes for the k3s cluster.
 workers:
   hosts:
@@ -82,6 +75,7 @@ workers:
       ansible_connection: local # set if running ansible on this node. if connecting via ssh omit.
       ansible_host: worker-1 # Host name to use for ssh connection; omit if `ansible_connection: local` OR ssh can connect using FQDN
       ansible_python_interpreter: /usr/bin/python3
+
 gpu_workers:
   hosts:
     FQDN-gpu-1.edu:
@@ -90,10 +84,12 @@ gpu_workers:
       ansible_python_interpreter: /usr/bin/python3
 # The agents group contains nodes that run only the k3s agent.
 # In this example it only includes the workers and gpu_workers groups.
+
 agents:
   children:
     workers:
     gpu_workers:
+
 # Include in this group any nodes on which MinIO should run.
 # Note that if this group contains more than one node, the value of
 #  `minio_volumes_per_server` must be greater than 1 or minio will fail to start.
@@ -101,7 +97,8 @@ minio_hosts:
   children:
     server:
     workers:
-# This group contains all nodes in the k3s cluster.
+
+# This group contains all nodes in Scout k3s cluster.
 k3s_cluster:
   children:
     server:
@@ -118,9 +115,6 @@ k3s_cluster:
     # Best practice for upgrades: Test version upgrades in your staging
     # environment before applying them to production. For example:
     #   ansible-playbook -e "k3s_version=v1.35.0+k3s1" playbooks/k3s.yaml
-
-    # Set this to execute ansible commands as root
-    ansible_become: true
 
     # Namespaces - Scout uses 6 consolidated namespaces by default
     # Core infrastructure (PostgreSQL, Redis, Keycloak, OAuth2-Proxy, Launchpad)
@@ -184,7 +178,6 @@ k3s_cluster:
     # ollama_storage_class: "local-objectstorage"  # Large model files
     # open_webui_storage_class: "local-database"  # User data and chat history
     # orthanc_storage_class: "local-database"
-    # harbor_storage_class: "local-database"
     # DCM4chee has multiple volumes with different I/O profiles:
     # dcm4chee_wildfly_storage_class: "local-database"  # Application server
     # dcm4chee_storage_storage_class: "local-objectstorage"  # DICOM images (large files)
@@ -215,13 +208,6 @@ k3s_cluster:
     # K3s
     #---------------------------------------------------------------------------
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
-    kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
-
-    #---------------------------------------------------------------------------
-    # Traefik
-    #---------------------------------------------------------------------------
-    tls_cert_path: ''
-    tls_key_path: ''
 
     #---------------------------------------------------------------------------
     # OAuth2 Proxy
@@ -535,3 +521,27 @@ k3s_cluster:
       limits:
         cpu: 4
         memory: 4Gi
+
+# This group contains all nodes that are remote relative to the node running Ansible
+remotes:
+  children:
+    staging:
+    k3s_cluster:
+  vars:
+    # SSH connection and privilege escalation
+    # There are many other params you could set here to customize your situation.
+    # See https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html#connecting-to-hosts-behavioral-inventory-parameters
+    ansible_user: '<ssh username>'
+    ansible_become_method: sudo
+    ansible_become_flags: '-i'
+    ansible_become_user: root
+    ansible_become_password: $(echo $ANSIBLE_BECOME_PASSWORD | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    ansible_become: true
+    # ansible_remote_tmp: /tmp/.ansible-{{ ansible_user }} # May be needed depending on home directory permissions
+
+    #---------------------------------------------------------------------------
+    # Kubeconfig
+    #---------------------------------------------------------------------------
+    # K3s kubeconfig path, modify if not using K3s
+    # kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
+    kubeconfig_group: '<name of the linux group that should be able to run kubectl>'
