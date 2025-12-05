@@ -10,11 +10,13 @@
 
 - name: Install Python kubernetes library on cluster nodes
   hosts: k3s_cluster
+  any_errors_fatal: true
   roles:
     - role: python-kubernetes
 
 - name: Install k3s cluster
   hosts: k3s_cluster
+  any_errors_fatal: true
   environment: '{{ k8s_environment }}'
   roles:
     - role: scout_common

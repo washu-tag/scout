@@ -14,16 +14,29 @@
 #   - verify_command: Command to verify installation (optional)
 #   - online_repo_setup: List of tasks for online mode repo setup (optional)
 
+################################################################################
+# Skip if packages already installed
+################################################################################
+
+- name: Check if {{ package_type }} packages are already installed
+  ansible.builtin.shell: |
+    rpm -q {{ package_names | join(' ') }} > /dev/null 2>&1
+  register: packages_check
+  changed_when: false
+  failed_when: false
+
 - name: Display package installation mode
   ansible.builtin.debug:
-    msg: "Installing {{ package_type }} packages via {{ 'downloaded RPMs (air-gapped)' if air_gapped | default(false) | bool else 'system package manager (online)' }}"
+    msg: "{{ package_type }} packages {{ 'already installed - skipping' if packages_check.rc == 0 else 'will be installed via ' + ('downloaded RPMs (air-gapped)' if air_gapped | default(false) | bool else 'system package manager (online)') }}"
 
 ################################################################################
 # Online Mode: Install directly via package manager
 ################################################################################
 
 - name: Install packages (online mode)
-  when: not (air_gapped | default(false) | bool)
+  when:
+    - not (air_gapped | default(false) | bool)
+    - packages_check.rc != 0
   block:
     - name: Run online repository setup tasks
       ansible.builtin.include_tasks: '{{ online_repo_setup }}'
@@ -39,7 +52,9 @@
 ################################################################################
 
 - name: Install packages (air-gapped mode)
-  when: air_gapped | default(false) | bool
+  when:
+    - air_gapped | default(false) | bool
+    - packages_check.rc != 0
   block:
     - name: Create temp directory on control node for RPM artifacts
       ansible.builtin.tempfile:
