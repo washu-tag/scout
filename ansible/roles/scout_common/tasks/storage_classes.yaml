@@ -3,8 +3,6 @@
 # Only runs when onprem_local_path_multidisk_storage_classes is non-empty
 - name: Configure custom storage classes for k3s on-prem multi-disk deployments
   when: onprem_local_path_multidisk_storage_classes | length > 0
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   block:
     - name: Check for local-path-config in kube-system (k3d default)
       kubernetes.core.k8s_info:

@@ -32,22 +32,37 @@
         msg: 'No RPM files found after extracting {{ rpm_package_type }} archive'
       when: rpm_files_on_node.files | length == 0
 
-    - name: Display list of RPM files to be installed
-      ansible.builtin.debug:
-        msg: '{{ rpm_files_on_node.files | map(attribute="path") | map("basename") | list }}'
-        verbosity: 1
+    - name: Get names of already installed packages
+      ansible.builtin.shell: rpm -qa --queryformat '%{NAME}\n' | sort -u
+      register: installed_package_names
+      changed_when: false
 
-    - name: Install all {{ rpm_package_type }} packages
+    - name: Filter RPMs to exclude already installed packages
+      ansible.builtin.shell: |
+        for rpm_file in {{ rpm_files_on_node.files | map(attribute='path') | join(' ') }}; do
+          pkg_name=$(rpm -qp --queryformat '%{NAME}' "$rpm_file" 2>/dev/null)
+          if ! echo "{{ installed_package_names.stdout }}" | grep -qx "$pkg_name"; then
+            echo "$rpm_file"
+          fi
+        done
+      register: rpms_to_install
+      changed_when: false
+
+    - name: Display RPMs to be installed (excluding already installed)
+      ansible.builtin.debug:
+        msg: "{{ rpms_to_install.stdout_lines | map('basename') | list if rpms_to_install.stdout_lines else 'None - all packages already installed' }}"
+
+    - name: Install {{ rpm_package_type }} packages (skipping already installed)
       ansible.builtin.dnf:
-        name: '{{ rpm_files_on_node.files | map(attribute="path") | list }}'
+        name: '{{ rpms_to_install.stdout_lines }}'
         state: present
         disable_gpg_check: true
         disablerepo: '*'
         # Disable all repos to prevent metadata refresh in air-gapped environment
-        # All dependencies are already included in the downloaded RPM files
       register: rpm_install_result
       async: '{{ package_install_timeout }}'
       poll: 5
+      when: rpms_to_install.stdout_lines | length > 0
 
   always:
     - name: Clean up staging directory

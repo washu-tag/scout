@@ -20,6 +20,7 @@
     state: present
 
 - name: Set up environment secret
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
@@ -45,6 +46,7 @@
           {% endif %}
 
 - name: Create MinIO user credential secrets
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:

@@ -151,6 +151,66 @@ Playbooks using roles are concise and declarative:
 - Most Kubernetes operations run directly on `server` host without delegation
 - Block-level delegation used only when needed (e.g., Helm chart installs from local filesystem)
 
+## Kubeconfig Configuration
+
+Tasks that interact with Kubernetes need access to a kubeconfig file. The approach differs based on where the task runs:
+
+### Cluster Node Execution (Default)
+
+Most playbooks run on `hosts: server` and set the environment at the play level:
+
+```yaml
+- name: Deploy service
+  hosts: server
+  environment: '{{ cluster_k8s_environment }}'  # Defined in scout_common/defaults
+  roles:
+    - my_service
+```
+
+The `cluster_k8s_environment` variable (defined in `scout_common/defaults/main.yaml`) sets both `KUBECONFIG` and `K8S_AUTH_KUBECONFIG` to the cluster's kubeconfig path (`/etc/rancher/k3s/k3s.yaml`).
+
+### Jump Node Execution (delegate_to: localhost)
+
+For tasks that must run from the Ansible control node (jump node), use `delegate_to: localhost` with the `local_kubeconfig_yaml` path:
+
+**Single task** - use `kubeconfig:` module parameter:
+```yaml
+- name: Create ConfigMap from local file
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+    definition:
+      # ...
+```
+
+**Block with multiple tasks** - use `environment:` on the block:
+```yaml
+- name: Configure resources from localhost
+  delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml }}'
+  block:
+    - name: Create first resource
+      kubernetes.core.k8s:
+        # ...
+    - name: Create second resource
+      kubernetes.core.k8s:
+        # ...
+```
+
+### Convention Summary
+
+| Scenario | Approach |
+|----------|----------|
+| Play runs on cluster node | `environment: '{{ cluster_k8s_environment }}'` at play level |
+| Single task from localhost | `kubeconfig:` parameter on the module |
+| Block of tasks from localhost | `environment: K8S_AUTH_KUBECONFIG` on the block |
+
+**Why two approaches for localhost?**
+- Module parameter is explicit and self-contained for single tasks
+- Environment variable avoids repetition when a block has multiple `kubernetes.core` tasks
+
 ## Benefits of Role-Based Structure
 
 1. **Reusable**: Roles can be used across multiple environments and projects

@@ -4,8 +4,8 @@
 #
 # This task file provides a consistent interface for deploying Helm charts
 # across all Scout playbooks. It automatically switches between:
-# - Helm-native deployment (non-air-gapped): Uses kubernetes.core.helm module on cluster nodes
-# - Remote Helm deployment (air-gapped): Uses kubernetes.core.helm module from localhost with remote kubeconfig
+# - Cluster deployment: Helm runs on cluster nodes using K3s kubeconfig "kubeconfig_yaml"
+# - Jump node deployment: Helm runs from Ansible control node ("jump node") using fetched kubeconfig "local_kubeconfig_yaml"
 #
 # The deployment mode is controlled by the air_gapped inventory variable.
 #
@@ -40,7 +40,7 @@
     # Use localhost when air-gapped OR deploying local chart (no helm_repo_name)
     is_local_chart: '{{ helm_repo_name is not defined or helm_repo_name is none or helm_repo_name | length == 0 }}'
     use_localhost: '{{ air_gapped | default(false) | bool or is_local_chart | bool }}'
-    # Use local_kubeconfig_yaml for localhost, regular kubeconfig_yaml for remote execution
+    # Use local_kubeconfig_yaml for localhost, regular kubeconfig_yaml for cluster execution
     kubeconfig: '{{ local_kubeconfig_yaml if use_localhost else kubeconfig_yaml }}'
   delegate_to: '{{ "localhost" if use_localhost else inventory_hostname }}'
   environment:

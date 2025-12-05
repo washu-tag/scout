@@ -4,7 +4,6 @@
 
 # Harbor helm chart configuration
 harbor_storage_size: 100Gi
-harbor_storage_class: ''
 harbor_admin_password: 'Harbor12345' # Override in inventory with vault-encrypted value!
 
 # Harbor exposure configuration

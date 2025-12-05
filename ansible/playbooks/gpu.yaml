@@ -1,8 +1,20 @@
 ---
+# GPU Operator Installation Playbook
+# Installs NVIDIA GPU Operator for GPU-accelerated workloads
+#
+# Prerequisites:
+#   - 'gpu_workers' group defined in inventory with GPU nodes
+#
+# When run standalone via 'make install-gpu-op', will skip if:
+#   - No hosts in 'gpu_workers' group
+
 - name: Install gpu-operator
   hosts: server
   gather_facts: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  pre_tasks:
+    - name: Skip if no GPU workers defined
+      ansible.builtin.meta: end_play
+      when: groups.get('gpu_workers', []) | length == 0
+  environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: gpu-operator

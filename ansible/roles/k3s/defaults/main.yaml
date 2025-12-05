@@ -34,7 +34,7 @@ kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 kubeconfig_group: root
 
 # Note: local_kubeconfig_yaml is defined in scout_common/defaults/main.yaml
-# The k3s role sets it via set_fact during remote deployment setup
+# The k3s role fetches and writes it during jump node deployment setup
 
 ################################################################################
 # Air-Gapped Artifact Configuration

@@ -7,6 +7,7 @@
     ns: '{{ grafana_namespace }}'
 
 - name: Create SMTP secret
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
@@ -128,6 +129,7 @@
         label: '{{ item.path | basename }}'
 
     - name: Create OAuth2 Client Secret
+      no_log: true
       kubernetes.core.k8s:
         state: present
         definition:
@@ -143,6 +145,7 @@
             client-secret: '{{ keycloak_grafana_client_secret }}'
 
     - name: Create postgres datasource secret
+      no_log: true
       kubernetes.core.k8s:
         state: present
         definition:

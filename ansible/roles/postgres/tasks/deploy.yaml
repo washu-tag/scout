@@ -22,6 +22,7 @@
     ns: '{{ postgres_cluster_namespace }}'
 
 - name: Create Postgres user secret
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
@@ -36,6 +37,7 @@
         password: '{{ postgres_password }}'
 
 - name: Create Postgres superuser secret
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:

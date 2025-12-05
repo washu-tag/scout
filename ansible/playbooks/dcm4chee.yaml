@@ -1,18 +1,7 @@
 ---
-- name: Create storage directories for Dcm4chee
-  hosts: k3s_cluster
-  gather_facts: false
-  tasks:
-    - name: Create storage directories
-      ansible.builtin.include_role:
-        name: dcm4chee
-        tasks_from: storage
-
 - name: Install Dcm4chee
   hosts: server
   gather_facts: false
-  environment:
-    HELM_PLUGINS: '{{ helm_plugins_dir }}'
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: dcm4chee
