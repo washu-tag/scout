@@ -20,7 +20,7 @@
 - name: Set model pull configuration
   ansible.builtin.set_fact:
     _pull_air_gapped: '{{ air_gapped | default(false) | bool }}'
-    _pull_namespace: "{{ staging_ollama_namespace if (air_gapped | default(false) | bool) else chatbot_namespace }}"
+    _pull_namespace: '{{ staging_ollama_namespace if (air_gapped | default(false) | bool) else chatbot_namespace }}'
     _pull_job_name: "{{ 'ollama-download-models-' if (air_gapped | default(false) | bool) else 'ollama-pull-models-' }}"
     _pull_label: "{{ 'ollama-download-models' if (air_gapped | default(false) | bool) else 'ollama-pull-models' }}"
 
@@ -37,8 +37,8 @@
         labels:
           app: '{{ _pull_label }}'
       spec:
-        ttlSecondsAfterFinished: "{{ 3600 if _pull_air_gapped else 600 }}"
-        backoffLimit: "{{ 2 if _pull_air_gapped else 3 }}"
+        ttlSecondsAfterFinished: '{{ 3600 if _pull_air_gapped else 600 }}'
+        backoffLimit: '{{ 2 if _pull_air_gapped else 3 }}'
         template:
           metadata:
             labels:
