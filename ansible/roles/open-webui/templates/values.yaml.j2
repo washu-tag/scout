@@ -42,7 +42,7 @@ ollama:
   persistentVolume:
     enabled: false
 {% else %}
-  # Online or air-gapped with transfer: use PVC for models
+  # Online: use PVC for models
   persistentVolume:
     enabled: true
 {% if ollama_storage_class is defined and ollama_storage_class %}

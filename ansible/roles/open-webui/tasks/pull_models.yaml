@@ -1,26 +1,14 @@
 ---
-# Pull Ollama models - selects appropriate method based on deployment mode
-# Jobs run in background and do not block cluster installation
+# Pull Ollama models via Kubernetes Job
+# Runs in background - does not block cluster installation
 #
 # Modes:
-#   - Online (air_gapped: false): Pull directly from registry.ollama.ai
+#   - Online (air_gapped: false): Pull directly from registry.ollama.ai to cluster Ollama
 #   - Air-gapped with NFS: Pull to shared NFS from staging, cluster mounts read-only
+#
+# See ADR 0008 for air-gapped architecture details
 
-# Online: pull directly from registry
-- name: Pull models via Job (online)
-  ansible.builtin.include_tasks: pull_models_online.yaml
-  when: not (air_gapped | default(false) | bool)
-
-# Air-gapped with NFS: pull to NFS on staging
-- name: Pull models to NFS from staging
-  ansible.builtin.include_tasks: pull_models_nfs.yaml
-  when:
-    - air_gapped | default(false) | bool
-    - ollama_nfs_path is defined
-    - ollama_nfs_path | length > 0
-
-# Air-gapped without NFS: not supported, warn user
-- name: Warn if air-gapped without NFS
+- name: Fail if air-gapped without NFS path
   ansible.builtin.fail:
     msg: >-
       Air-gapped deployment requires ollama_nfs_path to be set.
@@ -28,3 +16,74 @@
   when:
     - air_gapped | default(false) | bool
     - ollama_nfs_path is not defined or ollama_nfs_path | length == 0
+
+- name: Set model pull configuration
+  ansible.builtin.set_fact:
+    _pull_air_gapped: '{{ air_gapped | default(false) | bool }}'
+    _pull_namespace: "{{ staging_ollama_namespace if (air_gapped | default(false) | bool) else chatbot_namespace }}"
+    _pull_job_name: "{{ 'ollama-download-models-' if (air_gapped | default(false) | bool) else 'ollama-pull-models-' }}"
+    _pull_label: "{{ 'ollama-download-models' if (air_gapped | default(false) | bool) else 'ollama-pull-models' }}"
+
+- name: Create model pull Job
+  kubernetes.core.k8s:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    state: present
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        generateName: '{{ _pull_job_name }}'
+        namespace: '{{ _pull_namespace }}'
+        labels:
+          app: '{{ _pull_label }}'
+      spec:
+        ttlSecondsAfterFinished: "{{ 3600 if _pull_air_gapped else 600 }}"
+        backoffLimit: "{{ 2 if _pull_air_gapped else 3 }}"
+        template:
+          metadata:
+            labels:
+              app: '{{ _pull_label }}'
+          spec:
+            restartPolicy: OnFailure
+            containers:
+              - name: ollama
+                image: 'ollama/ollama:{{ ollama_version | default("latest") }}'
+                env: >-
+                  {{
+                    [{'name': 'OLLAMA_MODELS', 'value': '/nfs/ollama/models'}]
+                    if _pull_air_gapped else
+                    [{'name': 'OLLAMA_HOST', 'value': 'http://' + ollama_name + '.' + chatbot_namespace + ':11434'}]
+                  }}
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    set -e
+                    {% if air_gapped | default(false) | bool %}
+                    echo "Starting Ollama server..."
+                    ollama serve &
+                    sleep 5
+                    echo "Pulling models to NFS..."
+                    {% else %}
+                    echo "Waiting for Ollama to be ready..."
+                    until ollama list > /dev/null 2>&1; do
+                      echo "Ollama not ready, waiting..."
+                      sleep 5
+                    done
+                    echo "Ollama is ready, pulling models..."
+                    {% endif %}
+                    {% for model in ollama_models %}
+                    echo "Pulling model: {{ model }}"
+                    ollama pull {{ model }}
+                    {% endfor %}
+                    echo "All models pulled successfully"
+                volumeMounts: "{{ [{'name': 'nfs-models', 'mountPath': '/nfs/ollama'}] if _pull_air_gapped else omit }}"
+            volumes: "{{ [{'name': 'nfs-models', 'hostPath': {'path': ollama_nfs_path, 'type': 'DirectoryOrCreate'}}] if _pull_air_gapped else omit }}"
+  delegate_to: "{{ groups['staging'][0] if _pull_air_gapped else omit }}"
+
+- name: Model pull Job started
+  ansible.builtin.debug:
+    msg: >-
+      Model pull Job created in {{ _pull_namespace }} namespace{{ ' on staging' if _pull_air_gapped else '' }}.
+      Models will download in the background. Check status with:
+      kubectl get jobs -n {{ _pull_namespace }} -l app={{ _pull_label }}

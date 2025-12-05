@@ -366,29 +366,12 @@ Document manual process for operators to download and transfer models.
 
 **Modify open-webui role** (`ansible/roles/open-webui/tasks/pull_models.yaml`):
 
-```yaml
-# Online: pull directly from registry (current behavior)
-- name: Pull models via Job
-  ansible.builtin.include_tasks: pull_models_online.yaml
-  when: not (air_gapped | default(false) | bool)
-
-# Air-gapped with NFS: pull to NFS on staging
-- name: Pull models to NFS from staging
-  ansible.builtin.include_tasks: pull_models_nfs.yaml
-  when:
-    - air_gapped | default(false) | bool
-    - ollama_nfs_path is defined and ollama_nfs_path | length > 0
-
-# Air-gapped without NFS: not supported
-- name: Warn if air-gapped without NFS
-  ansible.builtin.fail:
-    msg: >-
-      Air-gapped deployment requires ollama_nfs_path to be set.
-      Configure shared NFS storage for Ollama models between staging and cluster.
-  when:
-    - air_gapped | default(false) | bool
-    - ollama_nfs_path is not defined or ollama_nfs_path | length == 0
-```
+A single task file handles both online and air-gapped modes using conditional logic:
+- Sets `_pull_air_gapped` fact based on `air_gapped` variable
+- Configures namespace, job name, and labels based on mode
+- Creates Job with mode-specific env vars, volumes, and delegation
+- Air-gapped mode: delegates to staging, mounts NFS, runs local Ollama server
+- Online mode: connects to cluster Ollama service via `OLLAMA_HOST`
 
 **Modify open-webui role** (`ansible/roles/open-webui/templates/values.yaml.j2`):
 
