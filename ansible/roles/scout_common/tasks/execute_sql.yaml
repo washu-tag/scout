@@ -4,7 +4,7 @@
     db_connect_user: "{{ db_connect_user | default('postgres', true) }}"
     db_connect_pass: '{{ db_connect_pass | default(postgres_superuser_password, true) }}'
     db_connect_sslmode: "{{ db_connect_sslmode | default('require', true) }}"
-    maintenance_namespace: db-maintenance
+    maintenance_namespace: '{{ scout_core_namespace }}'
 
 - name: Configure DB derived variables
   ansible.builtin.set_fact:
@@ -19,7 +19,7 @@
       - (sql_script | trim | length) > 0
     fail_msg: 'Provide sql_script as a non-empty string.'
 
-- name: Ensure db-maintenance namespace exists
+- name: Ensure maintenance namespace exists
   kubernetes.core.k8s:
     state: present
     definition:
