@@ -126,11 +126,12 @@ def process_derivative_data(spark: SparkSession, report_table_name: str):
             if table.source_table == report_table_name
             else tables_with_dependencies
         ).append(table)
+    perform_table_operations(spark, tables_without_dependencies)
     activity.heartbeat()
     activity.logger.info(
         f"Derivative tables without dependencies updated: {[table.name for table in tables_without_dependencies]}"
     )
-    for table in tables_without_dependencies:
+    for table in tables_with_dependencies:
         # TODO: this is currently lazy just to make a PoC. This (and realistically the preceding part) should all just resolve the derivative tables as a DAG
         perform_table_operations(spark, [table])
         activity.heartbeat()
