@@ -29,12 +29,12 @@ ollama:
   extraEnv:
     - name: OLLAMA_MODELS
       value: /nfs/ollama/models
-  extraVolumes:
+  volumes:
     - name: nfs-models
       hostPath:
         path: '{{ ollama_nfs_path }}'
         type: Directory
-  extraVolumeMounts:
+  volumeMounts:
     - name: nfs-models
       mountPath: /nfs/ollama
       readOnly: true

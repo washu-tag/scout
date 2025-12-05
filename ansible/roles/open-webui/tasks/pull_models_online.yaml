@@ -45,3 +45,10 @@
                     ollama pull {{ model }}
                     {% endfor %}
                     echo "All models pulled successfully"
+
+- name: Model pull Job started
+  ansible.builtin.debug:
+    msg: >-
+      Model pull Job created in {{ chatbot_namespace }} namespace.
+      Models will download in the background. Check status with:
+      kubectl get jobs -n {{ chatbot_namespace }} -l app=ollama-pull-models

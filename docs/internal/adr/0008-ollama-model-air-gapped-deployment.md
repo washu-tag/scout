@@ -156,12 +156,12 @@ ollama:
   extraEnv:
     - name: OLLAMA_MODELS
       value: /nfs/ollama/models
-  extraVolumes:
+  volumes:
     - name: nfs-models
       hostPath:
         path: {{ ollama_nfs_path }}
         type: Directory
-  extraVolumeMounts:
+  volumeMounts:
     - name: nfs-models
       mountPath: /nfs/ollama
       readOnly: true  # Production only reads
@@ -205,12 +205,11 @@ ollama_models:
 |--------------|----------------------|----------|
 | `false` | (ignored) | **Online**: Production Job pulls directly from `registry.ollama.ai` (current behavior) |
 | `true` | Yes | **NFS**: Staging Job pulls to NFS, production mounts read-only |
-| `true` | No | **Transfer**: Staging Job pulls to emptyDir, kubectl cp to production PVC |
+| `true` | No | **Error**: Deployment fails with message to configure `ollama_nfs_path` |
 
 This logic ensures:
 - Non-air-gapped deployments work unchanged
-- Air-gapped deployments prefer NFS when available
-- Air-gapped deployments without NFS fall back to kubectl cp transfer
+- Air-gapped deployments require shared NFS storage
 
 ## Alternatives Considered
 
@@ -218,8 +217,8 @@ This logic ensures:
 
 | Alternative | Verdict |
 |-------------|---------|
-| **1. Shared NFS Storage** | **Primary for air-gapped** - Simple, leverages existing infra |
-| **2. Pre-stage + kubectl cp Transfer** | **Fallback for air-gapped** - When NFS unavailable |
+| **1. Shared NFS Storage** | **Selected for air-gapped** - Simple, leverages existing infra |
+| 2. Pre-stage + kubectl cp Transfer | Rejected - Large transfers through jump node, complexity |
 | 3. Ollama Registry Pull-Through Proxy | Rejected - Adds third-party dependency |
 | 4. HTTPS_PROXY to Staging | Rejected - Creates persistent network path |
 | 5. Manual Model Transfer | Rejected - Operator burden |
@@ -243,7 +242,7 @@ Pull models to shared NFS from staging, mount read-only on production.
 
 **Verdict:** Selected - simplest approach given existing NFS infrastructure.
 
-### Alternative 2: Pre-stage + kubectl cp Transfer (Fallback)
+### Alternative 2: Pre-stage + kubectl cp Transfer (Rejected)
 
 Download models on staging, transfer to production via kubectl cp through jump node.
 
@@ -256,8 +255,9 @@ Download models on staging, transfer to production via kubectl cp through jump n
 - Large file transfers (models are 4-240GB) through jump node
 - Temporary storage needed on Ansible control node
 - Slower than shared storage approach
+- Added complexity for minimal benefit given NFS availability
 
-**Verdict:** Automatic fallback when `air_gapped: true` but `ollama_nfs_path` is not set.
+**Verdict:** Rejected - complexity and large file transfers not justified when NFS is available.
 
 ### Alternative 3: Ollama Registry Pull-Through Proxy
 
@@ -379,9 +379,12 @@ Document manual process for operators to download and transfer models.
     - air_gapped | default(false) | bool
     - ollama_nfs_path is defined and ollama_nfs_path | length > 0
 
-# Air-gapped without NFS: pull on staging, transfer via kubectl cp
-- name: Pull and transfer models from staging
-  ansible.builtin.include_tasks: pull_models_transfer.yaml
+# Air-gapped without NFS: not supported
+- name: Warn if air-gapped without NFS
+  ansible.builtin.fail:
+    msg: >-
+      Air-gapped deployment requires ollama_nfs_path to be set.
+      Configure shared NFS storage for Ollama models between staging and cluster.
   when:
     - air_gapped | default(false) | bool
     - ollama_nfs_path is not defined or ollama_nfs_path | length == 0
@@ -396,17 +399,16 @@ ollama:
   extraEnv:
     - name: OLLAMA_MODELS
       value: /nfs/ollama/models
-  extraVolumes:
+  volumes:
     - name: nfs-models
       hostPath:
         path: {{ ollama_nfs_path }}
         type: Directory
-  extraVolumeMounts:
+  volumeMounts:
     - name: nfs-models
       mountPath: /nfs/ollama
       readOnly: true
 {% endif %}
-  # Air-gapped without NFS: models transferred to default PVC location
   # Online: models pulled to default PVC location
 ```
 

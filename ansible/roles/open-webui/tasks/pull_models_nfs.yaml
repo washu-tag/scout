@@ -1,18 +1,19 @@
 ---
 # Pull Ollama models to shared NFS from staging cluster (air-gapped mode)
-# Models are pulled to NFS on staging; production Ollama mounts NFS read-only
+# Models are pulled to NFS on staging; cluster Ollama mounts NFS read-only
+# Job runs in background - does not block cluster installation
 # See ADR 0008 for architecture details
 
 - name: Create model download Job on staging
   kubernetes.core.k8s:
-    kubeconfig: '{{ staging_kubeconfig }}'
+    kubeconfig: '{{ kubeconfig_yaml }}'
     state: present
     definition:
       apiVersion: batch/v1
       kind: Job
       metadata:
         generateName: 'ollama-download-models-'
-        namespace: '{{ staging_ollama_namespace | default("ollama-staging") }}'
+        namespace: '{{ staging_ollama_namespace }}'
         labels:
           app: ollama-download-models
       spec:
@@ -54,29 +55,11 @@
                 hostPath:
                   path: '{{ ollama_nfs_path }}'
                   type: DirectoryOrCreate
-  register: staging_job
+  delegate_to: "{{ groups['staging'][0] }}"
 
-- name: Wait for staging model download Job to complete
-  kubernetes.core.k8s_info:
-    kubeconfig: '{{ staging_kubeconfig }}'
-    api_version: batch/v1
-    kind: Job
-    namespace: '{{ staging_ollama_namespace | default("ollama-staging") }}'
-    label_selectors:
-      - app=ollama-download-models
-  register: job_status
-  until: >-
-    job_status.resources | length > 0 and
-    (job_status.resources[0].status.succeeded | default(0) > 0 or
-     job_status.resources[0].status.failed | default(0) > 0)
-  retries: 120 # 2 hours max (large models take time)
-  delay: 60
-
-- name: Check if staging Job succeeded
-  ansible.builtin.fail:
-    msg: "Staging model download Job failed. Check logs with: kubectl --kubeconfig={{ staging_kubeconfig }} logs -n {{ staging_ollama_namespace | default('ollama-staging') }} -l app=ollama-download-models"
-  when: job_status.resources[0].status.failed | default(0) > 0
-
-- name: Models available on NFS
+- name: Model download Job started on staging
   ansible.builtin.debug:
-    msg: "Models successfully pulled to NFS at {{ ollama_nfs_path }}. Production Ollama will mount this path read-only."
+    msg: >-
+      Model download Job created on staging cluster in {{ staging_ollama_namespace }} namespace.
+      Models will download to NFS in the background. Check status on staging with:
+      kubectl get jobs -n {{ staging_ollama_namespace }} -l app=ollama-download-models

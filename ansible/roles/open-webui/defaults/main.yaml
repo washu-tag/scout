@@ -23,7 +23,8 @@ ollama_storage_class: ''
 # If air_gapped=false: models are pulled directly from registry.ollama.ai (online mode)
 ollama_nfs_path: ''
 # Namespace for staging Ollama download job (air-gapped only)
-staging_ollama_namespace: ollama-staging
+# Reuses the same namespace as RPM package downloads on staging
+staging_ollama_namespace: '{{ package_download_namespace }}'
 
 # Scout custom model configuration
 scout_base_model: gpt-oss:120b

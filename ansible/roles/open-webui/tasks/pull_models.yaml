@@ -1,12 +1,12 @@
 ---
 # Pull Ollama models - selects appropriate method based on deployment mode
+# Jobs run in background and do not block cluster installation
 #
 # Modes:
 #   - Online (air_gapped: false): Pull directly from registry.ollama.ai
-#   - Air-gapped with NFS: Pull to shared NFS from staging, production mounts read-only
-#   - Air-gapped without NFS: Pull on staging, transfer via kubectl cp
+#   - Air-gapped with NFS: Pull to shared NFS from staging, cluster mounts read-only
 
-# Online: pull directly from registry (current behavior)
+# Online: pull directly from registry
 - name: Pull models via Job (online)
   ansible.builtin.include_tasks: pull_models_online.yaml
   when: not (air_gapped | default(false) | bool)
@@ -19,9 +19,12 @@
     - ollama_nfs_path is defined
     - ollama_nfs_path | length > 0
 
-# Air-gapped without NFS: pull on staging, transfer via kubectl cp
-- name: Pull and transfer models from staging
-  ansible.builtin.include_tasks: pull_models_transfer.yaml
+# Air-gapped without NFS: not supported, warn user
+- name: Warn if air-gapped without NFS
+  ansible.builtin.fail:
+    msg: >-
+      Air-gapped deployment requires ollama_nfs_path to be set.
+      Configure shared NFS storage for Ollama models between staging and cluster.
   when:
     - air_gapped | default(false) | bool
     - ollama_nfs_path is not defined or ollama_nfs_path | length == 0
