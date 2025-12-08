@@ -10,8 +10,8 @@
 #   - air_gapped: true in inventory
 #
 # Notes:
-#   - Traefik is only deployed when harbor_expose_type: ingress (requires TLS certs)
-#   - For nodePort mode (default), Harbor uses self-signed certs and Traefik is skipped
+#   - Traefik is deployed by default when harbor_expose_type: ingress (requires TLS certs)
+#   - For nodePort mode, Harbor uses self-signed certs and Traefik is skipped
 
 - name: Prepare staging node for K3s
   hosts: staging

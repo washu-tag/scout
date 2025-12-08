@@ -43,7 +43,7 @@ staging:
       ansible_python_interpreter: /usr/bin/python3
       external_url: alt.fqdn.edu # omit to use FQDN-staging.edu
   vars:
-    # Staging-specific variables (only needed if use_staging_node: true)
+    # Staging-specific variables (only needed if air_gapped: true)
     # The staging node runs a separate k3s cluster from the main cluster
     staging_k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     harbor_admin_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
