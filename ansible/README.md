@@ -19,7 +19,7 @@ Scout uses Ansible to orchestrate deployment of a distributed data analysis plat
 
 ### Required Software
 
-- [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) 2.14 or later
+- [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) 2.20 or later
 - `make` (for using Makefile targets)
 - SSH access to target nodes
 - Sufficient storage on target nodes (see storage requirements below)
