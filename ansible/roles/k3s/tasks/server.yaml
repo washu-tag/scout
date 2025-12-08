@@ -36,7 +36,7 @@
     - not k3s_install_result.changed
 
 - name: Update kubeconfig group permissions since write-kubeconfig-group/K3S_KUBECONFIG_GROUP isn't working
-  file:
+  ansible.builtin.file:
     path: '{{ kubeconfig_yaml }}'
     state: file
     mode: '0640'
