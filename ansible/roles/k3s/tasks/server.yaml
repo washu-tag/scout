@@ -17,14 +17,22 @@
     INSTALL_K3S_SKIP_DOWNLOAD: "{{ 'true' if air_gapped | default(false) | bool else omit }}"
     INSTALL_K3S_EXEC: >-
       --default-local-storage-path={{ base_dir }}
-      --write-kubeconfig-mode=0640
       {% if use_staging_node | default(false) %}--disable-default-registry-endpoint{% endif %}
       {{ k3s_extra_args }}
     INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
     K3S_TOKEN: '{{ k3s_token }}'
     UNINSTALL_K3S_SH: /usr/local/bin/k3s-uninstall.sh
     KUBECONFIG: '{{ kubeconfig_yaml }}'
+    K3S_KUBECONFIG_MODE: '0640'
+    K3S_KUBECONFIG_GROUP: '{{ kubeconfig_group }}'
   register: k3s_install_result
+
+- name: Update kubeconfig group permissions since write-kubeconfig-group/K3S_KUBECONFIG_GROUP isn't working
+  file:
+    path: '{{ kubeconfig_yaml }}'
+    state: file
+    mode: '0640'
+    group: '{{ kubeconfig_group }}'
 
 - name: Restart k3s to pick up registry config changes
   ansible.builtin.systemd:
@@ -38,15 +46,18 @@
   when: ansible_control_node_external_to_cluster
   block:
     - name: Fetch k3s kubeconfig
+      no_log: true
       ansible.builtin.slurp:
         src: '{{ kubeconfig_yaml }}'
       register: k3s_kubeconfig_raw
 
     - name: Parse and modify kubeconfig
+      no_log: true
       ansible.builtin.set_fact:
         k3s_kubeconfig: '{{ k3s_kubeconfig_raw.content | b64decode | from_yaml }}'
 
     - name: Update server address in kubeconfig
+      no_log: true
       ansible.builtin.set_fact:
         modified_kubeconfig: '{{ k3s_kubeconfig | combine(cluster_update, recursive=True) }}'
       vars:
@@ -67,6 +78,7 @@
       delegate_to: localhost
 
     - name: Write modified kubeconfig locally on jump node
+      no_log: true
       ansible.builtin.copy:
         content: '{{ modified_kubeconfig | to_nice_yaml }}'
         dest: '{{ local_kubeconfig_yaml }}'
