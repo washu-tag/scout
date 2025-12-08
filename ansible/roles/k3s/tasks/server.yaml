@@ -27,13 +27,6 @@
     K3S_KUBECONFIG_GROUP: '{{ kubeconfig_group }}'
   register: k3s_install_result
 
-- name: Update kubeconfig group permissions since write-kubeconfig-group/K3S_KUBECONFIG_GROUP isn't working
-  file:
-    path: '{{ kubeconfig_yaml }}'
-    state: file
-    mode: '0640'
-    group: '{{ kubeconfig_group }}'
-
 - name: Restart k3s to pick up registry config changes
   ansible.builtin.systemd:
     name: k3s
@@ -41,6 +34,13 @@
   when:
     - registry_config_changed | default(false)
     - not k3s_install_result.changed
+
+- name: Update kubeconfig group permissions since write-kubeconfig-group/K3S_KUBECONFIG_GROUP isn't working
+  file:
+    path: '{{ kubeconfig_yaml }}'
+    state: file
+    mode: '0640'
+    group: '{{ kubeconfig_group }}'
 
 - name: Setup kubeconfig for remote control node
   when: ansible_control_node_external_to_cluster

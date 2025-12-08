@@ -202,14 +202,10 @@
     force_basic_auth: true
     body_format: json
     status_code: [201, 409]
-    body: >-
-      {{
-        {
-          'project_name': item.project_name,
-          'registry_id': registries_response.json | selectattr('name', 'equalto', item.registry_name) | map(attribute='id') | first,
-          'public': true
-        }
-      }}
+    body:
+      project_name: '{{ item.project_name }}'
+      registry_id: "{{ registries_response.json | selectattr('name', 'equalto', item.registry_name) | map(attribute='id') | first }}"
+      public: true
   loop: '{{ harbor_registry_proxies_final }}'
   register: project_create_result
   changed_when: project_create_result.status == 201
