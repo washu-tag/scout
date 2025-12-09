@@ -1,14 +1,29 @@
 ---
 # Staging Node Deployment Playbook
-# Installs k3s, configures Traefik, and deploys Harbor on the staging node
+# Installs k3s and deploys Harbor on the staging node
 # Used for air-gapped deployments with Harbor registry
 #
 # Documentation: docs/source/technical/air-gapped.md
+#
+# Prerequisites:
+#   - 'staging' group defined in inventory
+#   - air_gapped: true in inventory
+#
+# Notes:
+#   - Traefik is deployed by default when harbor_expose_type: ingress (requires TLS certs)
+#   - For nodePort mode, Harbor uses self-signed certs and Traefik is skipped
 
-- name: Shared pre-requisites for staging K3s
+- name: Prepare staging node for K3s
   hosts: staging
-  vars:
-    uninstall_script: '/usr/local/bin/k3s-uninstall.sh'
+  pre_tasks:
+    - name: Skip if not air-gapped deployment
+      ansible.builtin.meta: end_play
+      when: not (air_gapped | default(false) | bool)
+
+    # Deploy play needs to override `air_gapped`, so set a trigger to ensure it runs when it should
+    - name: Mark that we want to deploy staging infrastructure next
+      ansible.builtin.set_fact:
+        run_deploy: true
   tasks:
     - name: Create /root/bin directory
       ansible.builtin.file:
@@ -22,43 +37,23 @@
         dest: /root/bin/get.k3s.io.sh
         mode: '0755'
 
-    - name: Add python kubernetes library from system package
+    - name: Install python kubernetes library
       ansible.builtin.package:
         name: python3-kubernetes
         state: present
 
-################################################################################
-- name: Install k3s on staging node
+- name: Deploy staging infrastructure
   hosts: staging
+  pre_tasks:
+    - name: Skip if first play was skipped
+      ansible.builtin.meta: end_play
+      when: not (run_deploy | default(false) | bool)
+  environment: '{{ cluster_k8s_environment }}'
   vars:
-    # Map staging_k3s_token to k3s_token expected by k3s role
     k3s_token: '{{ staging_k3s_token }}'
-    # Staging node has internet access, use online installation mode
-    air_gapped: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
+    air_gapped: false # Staging node has internet access
   roles:
-    # This role handles installation, service management, and verification
-    # It will use online installation mode (air_gapped=false)
-    # It will NOT configure registry mirrors (staging IS the registry)
     - role: k3s
-
-################################################################################
-- name: Configure Traefik on staging node
-  hosts: staging
-  gather_facts: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-  roles:
-    - traefik
-
-################################################################################
-- name: Deploy Harbor on staging node
-  hosts: staging
-  gather_facts: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
-  roles:
-    - harbor
+    - role: traefik
+      when: harbor_expose_type == 'ingress'
+    - role: harbor

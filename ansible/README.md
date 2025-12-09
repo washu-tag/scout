@@ -19,7 +19,7 @@ Scout uses Ansible to orchestrate deployment of a distributed data analysis plat
 
 ### Required Software
 
-- [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) 2.14 or later
+- [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) 2.20 or later
 - `make` (for using Makefile targets)
 - SSH access to target nodes
 - Sufficient storage on target nodes (see storage requirements below)
@@ -188,10 +188,9 @@ Scout supports air-gapped deployments for environments without direct internet a
        air_gapped: true
    ```
 
-3. **Deploy staging infrastructure**:
+3. **Deploy staging infrastructure** (k3s, traefik, and harbor):
    ```bash
-   ansible-playbook -i inventory.yaml playbooks/staging-k3s.yaml
-   ansible-playbook -i inventory.yaml playbooks/harbor.yaml
+   make install-staging
    ```
 
 4. **Deploy Scout** from staging node. It will automatically use Harbor for image pulls
@@ -265,9 +264,20 @@ Scout uses Ansible's variable precedence system (low to high):
 
 ### Common Customizations
 
+**Scout repository path** (in `inventory.yaml`):
+```yaml
+# Path to scout repo on localhost (Ansible control node)
+# Used for scout-local helm charts, analytics files, logos, and kubeconfig storage
+# Default: repo root (assumes running Ansible from within cloned repo)
+scout_repo_dir: /path/to/scout
+
+# Clone/update repo before deployment (default: false)
+# Set to true to clone or update the repo to a different location
+clone_scout_repo: true
+```
+
 **Storage paths** (in `inventory.yaml`):
 ```yaml
-scout_repo_dir: /scout/data/scout
 minio_dir: /scout/data/minio
 postgres_dir: /scout/persistence/postgres
 # ... customize other paths

@@ -3,10 +3,6 @@
 # Installs and configures k3s server (control plane) node
 # Only runs on hosts in the 'server' group
 
-- name: Determine deployment context
-  ansible.builtin.set_fact:
-    is_local_deployment: '{{ inventory_hostname == ansible_hostname or ansible_connection | default("ssh") == "local" }}'
-
 - name: Create directory for K3s data
   ansible.builtin.file:
     path: '{{ base_dir }}'
@@ -21,13 +17,14 @@
     INSTALL_K3S_SKIP_DOWNLOAD: "{{ 'true' if air_gapped | default(false) | bool else omit }}"
     INSTALL_K3S_EXEC: >-
       --default-local-storage-path={{ base_dir }}
-      --write-kubeconfig-mode=0640
       {% if use_staging_node | default(false) %}--disable-default-registry-endpoint{% endif %}
       {{ k3s_extra_args }}
     INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
     K3S_TOKEN: '{{ k3s_token }}'
     UNINSTALL_K3S_SH: /usr/local/bin/k3s-uninstall.sh
     KUBECONFIG: '{{ kubeconfig_yaml }}'
+    K3S_KUBECONFIG_MODE: '0640'
+    K3S_KUBECONFIG_GROUP: '{{ kubeconfig_group }}'
   register: k3s_install_result
 
 - name: Restart k3s to pick up registry config changes
@@ -38,34 +35,29 @@
     - registry_config_changed | default(false)
     - not k3s_install_result.changed
 
-- name: Update kubeconfig group permissions since write-kubeconfig-group isn't working
+- name: Update kubeconfig group permissions since write-kubeconfig-group/K3S_KUBECONFIG_GROUP isn't working
   ansible.builtin.file:
     path: '{{ kubeconfig_yaml }}'
     state: file
     mode: '0640'
     group: '{{ kubeconfig_group }}'
 
-- name: Setup kubeconfig for remote deployment
-  when: not is_local_deployment
+- name: Setup kubeconfig for remote control node
+  when: ansible_control_node_external_to_cluster
   block:
-    - name: Set kubeconfig dir path
-      ansible.builtin.set_fact:
-        local_kubeconfig_yaml_dir: '{{ scout_repo_dir }}/.kube/scout/{{ ansible_host | default(inventory_hostname) }}'
-
-    - name: Set kubeconfig path
-      ansible.builtin.set_fact:
-        local_kubeconfig_yaml: '{{ local_kubeconfig_yaml_dir }}/config'
-
     - name: Fetch k3s kubeconfig
+      no_log: true
       ansible.builtin.slurp:
         src: '{{ kubeconfig_yaml }}'
       register: k3s_kubeconfig_raw
 
     - name: Parse and modify kubeconfig
+      no_log: true
       ansible.builtin.set_fact:
         k3s_kubeconfig: '{{ k3s_kubeconfig_raw.content | b64decode | from_yaml }}'
 
     - name: Update server address in kubeconfig
+      no_log: true
       ansible.builtin.set_fact:
         modified_kubeconfig: '{{ k3s_kubeconfig | combine(cluster_update, recursive=True) }}'
       vars:
@@ -75,17 +67,18 @@
               cluster:
                 server: 'https://{{ ansible_host | default(inventory_hostname) }}:6443'
                 # certificate-authority-data: '{{ k3s_kubeconfig.clusters[0].cluster["certificate-authority-data"] }}'
-                # NOTE: The certificates we have only validate for hostnames that we can't use to reach the machines, so we cannot TLS validate the connection
+                # NOTE: The certificates we have are only valid for hostnames that we can't use to reach the machines, so we cannot TLS validate the connection
                 insecure-skip-tls-verify: true
 
-    - name: Create kubeconfig dir
+    - name: Create local kubeconfig directory on jump node
       ansible.builtin.file:
-        path: '{{ local_kubeconfig_yaml_dir }}'
+        path: '{{ local_kubeconfig_dir }}'
         state: directory
         mode: '0700'
       delegate_to: localhost
 
-    - name: Write modified kubeconfig locally
+    - name: Write modified kubeconfig locally on jump node
+      no_log: true
       ansible.builtin.copy:
         content: '{{ modified_kubeconfig | to_nice_yaml }}'
         dest: '{{ local_kubeconfig_yaml }}'
@@ -119,8 +112,6 @@
 - name: Check that server is ready
   ansible.builtin.command:
     cmd: kubectl get nodes
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   changed_when: false
   failed_when: >-
     kubectl_get_nodes_result.stdout.find("was refused") != -1 or
@@ -139,7 +130,7 @@
     taints:
       - key: node-role.kubernetes.io/control-plane
         effect: PreferNoSchedule
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-  # Skip taint on staging nodes (single-node cluster needs to run workloads)
-  when: "'staging' not in group_names"
+  # Skip taint on single-node clusters (needs to run workloads on control plane)
+  when:
+    - "'staging' not in group_names"
+    - (groups['k3s_cluster'] | default([]) | length) > 1

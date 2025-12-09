@@ -26,11 +26,26 @@ helm_chart_values_files: []
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
 air_gapped: false
 
-# Local kubeconfig path - USE THIS in all tasks that need kubeconfig
-# The k3s role may override this via set_fact to point to a local copy of the kubeconfig
-# with updated server address for remote access. Defaults to kubeconfig_yaml.
-# This centralizes the pattern: {{ local_kubeconfig_yaml | default(kubeconfig_yaml) }}
-local_kubeconfig_yaml: '{{ kubeconfig_yaml }}'
+# Ansible control node location relative to cluster
+# TRUE when control node is external to cluster - needs fetched kubeconfig
+# FALSE when control node is on the cluster - can use cluster kubeconfig directly
+ansible_control_node_external_to_cluster: "{{ ansible_connection | default('ssh') != 'local' or (air_gapped | bool) }}"
+
+# Kubeconfig path for Ansible control node execution
+# When control node is on cluster, uses the cluster's kubeconfig directly
+# When control node is external, uses a fetched copy stored locally
+local_kubeconfig_dir: '{{ scout_repo_dir }}/.kube/scout/{{ ansible_host | default(inventory_hostname) }}'
+local_kubeconfig_yaml: "{{ (local_kubeconfig_dir + '/config') if ansible_control_node_external_to_cluster else kubeconfig_yaml }}"
+
+# Scout repository path (on localhost / Ansible control node)
+# Used for scout-local helm charts, analytics files, logos, and kubeconfig storage
+# Default assumes running Ansible from within the cloned scout repo
+scout_repo_dir: '{{ (playbook_dir ~ "/../..") | realpath }}'
+
+# Clone/update scout repo to scout_repo_dir before deployment
+# Default: false (assumes running from within cloned repo)
+# Set to true to clone or update the repo to a different location
+clone_scout_repo: false
 
 # Package Management Configuration (for air-gapped RPM downloads via Kubernetes Jobs)
 package_download_namespace: default
@@ -148,8 +163,11 @@ hive_metastore_instance_readonly: hive-metastore-readonly
 # Trino - this is a dummy username since all Trino access is RO
 trino_user: trino
 
-# Helm configuration
-helm_plugins_dir: /root/.local/share/helm/plugins
+# Shared environment for Kubernetes operations on cluster nodes
+# Use in playbooks: environment: "{{ cluster_k8s_environment }}"
+cluster_k8s_environment:
+  KUBECONFIG: '{{ kubeconfig_yaml }}'
+  K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
 
 # Object storage paths (use variables for bucket names)
 scratch_path: 's3://{{ scratch_bucket }}'
