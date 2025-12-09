@@ -15,12 +15,12 @@ hub:
       description: 'Read JupyterHub metrics'
       scopes: [read:metrics]
       services: [prometheus]
-{% if jupyterhub_storage_class is defined and jupyterhub_storage_class %}
   db:
     pvc:
+{% if jupyterhub_storage_class is defined and jupyterhub_storage_class %}
       storageClassName: '{{ jupyterhub_storage_class }}'
-      storage: '{{ jupyter_hub_storage_size }}'
 {% endif %}
+      storage: '{{ jupyter_hub_storage_size }}'
   extraVolumes:
     - name: scout-logo
       configMap:
@@ -100,6 +100,9 @@ prePuller:
     enabled: {{ jupyter_prepuller_continuous | default(false) }}
 
 singleuser:
+{% if aws_deployment %}
+  serviceAccountName: '{{ lake_reader_service_account_name }}'
+{% endif %}
   image:
     name: '{{ jupyter_singleuser_image_name }}'
     tag: '{{ jupyter_singleuser_image_tag }}'
@@ -230,6 +233,7 @@ singleuser:
         subPath: scout.png
   networkPolicy:
     egress:
+{% if not aws_deployment %}
       # Allow access to MinIO for data lake storage
       - to:
           - namespaceSelector:
@@ -237,6 +241,7 @@ singleuser:
                 kubernetes.io/metadata.name: '{{ minio_tenant_namespace }}'
         ports:
           - port: 9000
+{% endif %}
       # Allow access to Hive Metastore (readonly) for metadata queries
       - to:
           - namespaceSelector:

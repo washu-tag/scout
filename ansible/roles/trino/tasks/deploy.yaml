@@ -5,6 +5,16 @@
   ansible.builtin.set_fact:
     trino_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
 
+- name: Create lake-reader ServiceAccount for Trino
+  when: aws_deployment
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_service_account
+  vars:
+    sa_name: '{{ lake_reader_service_account_name }}'
+    sa_namespace: '{{ trino_namespace }}'
+    sa_role_arn: '{{ lake_reader_role_arn }}'
+
 - name: Deploy Trino
   ansible.builtin.include_role:
     name: scout_common
