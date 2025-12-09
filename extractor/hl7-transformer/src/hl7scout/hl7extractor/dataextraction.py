@@ -7,16 +7,7 @@ from pyspark.sql import SparkSession, DataFrame, Window
 from .curatedtable import curated_table
 from .diagnosistable import diagnosis_table
 from .latesttable import latest_table
-
-
-@dataclass
-class DerivativeTable:
-    source_table: str
-    table_name: str
-    process_source_data: Callable[[DataFrame, SparkSession, str], None]
-    children_tables: dict[str, "DerivativeTable"] = field(
-        default_factory=dict, init=False
-    )
+from .derivativetable import DerivativeTable
 
 
 def define_derivative_tables(report_table_name: str):

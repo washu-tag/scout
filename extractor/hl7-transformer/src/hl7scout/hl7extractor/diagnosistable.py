@@ -1,5 +1,5 @@
 from delta import DeltaTable
-from .dataextraction import DerivativeTable
+from .derivativetable import DerivativeTable
 from .sparkutils import dedupe_df_on_accession_number, create_table_from_df
 from pyspark.sql import functions as F
 
