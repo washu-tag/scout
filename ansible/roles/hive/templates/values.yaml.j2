@@ -13,7 +13,7 @@ fullnameOverride: '{{ hive_fullname_override | default("") }}'
 serviceAccount:
   create: false
   automount: true
-  name: '{{ lake_writer_service_account }}'
+  name: '{{ lake_writer_service_account_name }}'
 {% endif %}
 
 podAnnotations: {}

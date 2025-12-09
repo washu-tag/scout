@@ -101,7 +101,7 @@ prePuller:
 
 singleuser:
 {% if aws_deployment %}
-  serviceAccountName: '{{ lake_reader_service_account }}'
+  serviceAccountName: '{{ lake_reader_service_account_name }}'
 {% endif %}
   image:
     name: '{{ jupyter_singleuser_image_name }}'

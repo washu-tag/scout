@@ -9,7 +9,7 @@ server:
 {% if aws_deployment %}
 serviceAccount:
   create: false
-  name: '{{ lake_reader_service_account }}'
+  name: '{{ lake_reader_service_account_name }}'
 {% endif %}
 
 # Coordinator configuration

@@ -116,9 +116,9 @@ loki_ruler_bucket: loki-ruler
 loki_admin_bucket: loki-admin
 
 # Service Account names
-lake_reader_service_account: lake-reader
-lake_writer_service_account: lake-writer
-loki_writer_service_account: loki-writer
+lake_reader_service_account_name: lake-reader
+lake_writer_service_account_name: lake-writer
+loki_writer_service_account_name: loki-writer
 
 # Deployment Type
 deployment_type: onprem

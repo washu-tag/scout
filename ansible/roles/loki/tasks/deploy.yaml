@@ -12,7 +12,7 @@
     name: scout_common
     tasks_from: create_service_account
   vars:
-    sa_name: '{{ loki_writer_service_account }}'
+    sa_name: '{{ loki_writer_service_account_name }}'
     sa_namespace: '{{ loki_namespace }}'
     sa_role_arn: '{{ loki_writer_role_arn }}'
 
