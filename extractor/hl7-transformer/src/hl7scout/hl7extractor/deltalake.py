@@ -25,6 +25,7 @@ from .schemautils import (
     struct_with_nulls,
 )
 from .dataextraction import process_derivative_data
+from .sparkutils import merge_df_into_dt_on_source_file
 
 import os
 import shutil
@@ -496,18 +497,9 @@ def import_hl7_files_to_deltalake(
 
         activity.heartbeat()
         activity.logger.info("Writing data to Delta Lake table %s", report_table_name)
-        (
-            dt.alias("s")
-            .merge(
-                df.alias("t"),
-                "s.source_file = t.source_file AND s.year = t.year",
-            )
-            .whenMatchedUpdateAll()
-            .whenNotMatchedInsertAll()
-            .execute()
-        )
+        merge_df_into_dt_on_source_file(dt, df)
 
-        activity.logger.info("Finished writing to delta lake")
+        activity.logger.info(f"Finished writing {report_table_name} to delta lake")
 
         activity.heartbeat()
         success_paths = [row.source_file for row in df.select("source_file").collect()]
