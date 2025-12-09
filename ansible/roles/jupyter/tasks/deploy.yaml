@@ -29,7 +29,7 @@
     name: scout_common
     tasks_from: create_service_account
   vars:
-    sa_name: lake-reader
+    sa_name: '{{ lake_reader_service_account }}'
     sa_namespace: '{{ jupyter_namespace }}'
     sa_role_arn: '{{ lake_reader_role_arn }}'
 

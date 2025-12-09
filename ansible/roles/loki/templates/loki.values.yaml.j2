@@ -39,7 +39,7 @@ minio:
 {% if aws_deployment %}
 serviceAccount:
   create: false
-  name: loki-writer
+  name: '{{ loki_writer_service_account }}'
 {% endif %}
 deploymentMode: SingleBinary
 

@@ -22,7 +22,7 @@
     name: scout_common
     tasks_from: create_service_account
   vars:
-    sa_name: lake-writer
+    sa_name: '{{ lake_writer_service_account }}'
     sa_namespace: '{{ hive_namespace }}'
     sa_role_arn: '{{ lake_writer_role_arn }}'
 
