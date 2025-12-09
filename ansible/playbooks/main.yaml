@@ -34,7 +34,6 @@
 
 - name: Install Voila
   import_playbook: voila.yaml
-  when: enable_playbooks | default(false) | bool
 
 - name: Install Analytics
   import_playbook: analytics.yaml
