@@ -6,7 +6,18 @@
   vars:
     ns: '{{ loki_namespace }}'
 
+- name: Create loki-writer ServiceAccount for Loki
+  when: aws_deployment
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_service_account
+  vars:
+    sa_name: '{{ loki_writer_service_account_name }}'
+    sa_namespace: '{{ loki_namespace }}'
+    sa_role_arn: '{{ loki_writer_role_arn }}'
+
 - name: Create S3 secret for Loki
+  when: not aws_deployment
   kubernetes.core.k8s:
     state: present
     definition:

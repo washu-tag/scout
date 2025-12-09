@@ -16,6 +16,16 @@
       metadata:
         name: '{{ hive_namespace }}'
 
+- name: Create lake-writer ServiceAccount for Hive
+  when: aws_deployment
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: create_service_account
+  vars:
+    sa_name: '{{ lake_writer_service_account_name }}'
+    sa_namespace: '{{ hive_namespace }}'
+    sa_role_arn: '{{ lake_writer_role_arn }}'
+
 # Create Kubernetes secret for write metastore
 - name: Create write metastore secret
   no_log: true

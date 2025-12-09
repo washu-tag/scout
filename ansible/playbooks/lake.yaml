@@ -5,4 +5,5 @@
   environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: minio
+      when: not aws_deployment
     - role: hive

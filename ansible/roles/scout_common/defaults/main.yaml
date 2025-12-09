@@ -130,6 +130,11 @@ loki_chunks_bucket: loki-chunks
 loki_ruler_bucket: loki-ruler
 loki_admin_bucket: loki-admin
 
+# Service Account names
+lake_reader_service_account_name: lake-reader
+lake_writer_service_account_name: lake-writer
+loki_writer_service_account_name: loki-writer
+
 # Deployment Type
 deployment_type: onprem
 
@@ -181,17 +186,19 @@ keycloak_subdomain: keycloak
 enable_chat: false
 
 # Computed values (DO NOT CHANGE)
-s3_endpoint: 'http://minio.{{ minio_tenant_namespace }}'
+aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"
+s3_endpoint: "{{ aws_deployment | ternary('', 'http://minio.' ~ minio_tenant_namespace) }}"
 hive_metastore_endpoint: 'thrift://{{ hive_metastore_instance }}.{{ hive_namespace }}:9083'
 hive_metastore_endpoint_readonly: 'thrift://{{ hive_metastore_instance_readonly }}.{{ hive_namespace }}:9083'
 server_hostname: '{{ hostvars[groups["server"][0]].external_url | default(groups["server"][0]) }}'
-aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"
 db_host: '{{ postgres_cluster_name }}-rw.{{ postgres_cluster_namespace }}'
 db_host_ro: '{{ postgres_cluster_name }}-r.{{ postgres_cluster_namespace }}'
 db_port: 5432
 jdbc_url: 'jdbc:postgresql://{{ db_host }}:{{ db_port }}'
+# External Keycloak URLs (for browser/external access)
 keycloak_base_url: 'https://{{ keycloak_subdomain }}.{{ server_hostname }}'
 keycloak_realm_url: '{{ keycloak_base_url }}/realms/{{ keycloak_realm_name }}'
+# OIDC URLs
 keycloak_oidc_auth_url: '{{ keycloak_realm_url }}/protocol/openid-connect/auth'
 keycloak_oidc_token_url: '{{ keycloak_realm_url }}/protocol/openid-connect/token'
 keycloak_oidc_userinfo_url: '{{ keycloak_realm_url }}/protocol/openid-connect/userinfo'
