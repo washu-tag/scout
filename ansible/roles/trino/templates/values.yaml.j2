@@ -6,6 +6,12 @@ server:
       # Cluster-wide max memory = workers × worker_heap × per_node_fraction
       maxMemory: "{{ trino_worker_max_heap | multiply_memory(trino_worker_count * trino_per_node_query_memory_fraction) }}B"
 
+{% if aws_deployment %}
+serviceAccount:
+  create: false
+  name: '{{ lake_reader_service_account_name }}'
+{% endif %}
+
 # Coordinator configuration
 # JVM heap = trino_coordinator_max_heap, pod memory limit = 2x heap for off-heap overhead
 coordinator:
@@ -41,8 +47,12 @@ catalogs:
     hive.metastore.uri={{ hive_metastore_endpoint_readonly }}
     delta.security=READ_ONLY
     fs.native-s3.enabled=true
+    s3.region={{ s3_region }}
+{% if not aws_deployment %}
     s3.aws-access-key={{ s3_lake_reader }}
     s3.aws-secret-key={{ s3_lake_reader_secret }}
-    s3.region={{ s3_region }}
     s3.endpoint={{ s3_endpoint }}
     s3.path-style-access=true
+{% else %}
+    s3.path-style-access=false
+{% endif %}

@@ -26,14 +26,21 @@ loki:
       ruler: '{{ loki_ruler_bucket }}'
       admin: '{{ loki_admin_bucket }}'
     s3:
+{% if not aws_deployment %}
       endpoint: 'minio.{{ minio_tenant_namespace }}.svc.cluster.local'
-      region: '{{ s3_region }}'
       insecure: true
       s3ForcePathStyle: true
+{% endif %}
+      region: '{{ s3_region }}'
 
 minio:
   enabled: false
 
+{% if aws_deployment %}
+serviceAccount:
+  create: false
+  name: '{{ loki_writer_service_account_name }}'
+{% endif %}
 deploymentMode: SingleBinary
 
 singleBinary:
@@ -44,6 +51,7 @@ singleBinary:
     storageClass: '{{ loki_storage_class }}'
 {% endif %}
   resources: {{ loki_resources | to_json }}
+{% if not aws_deployment %}
   extraEnv:
     - name: AWS_ACCESS_KEY_ID
       valueFrom:
@@ -55,6 +63,7 @@ singleBinary:
         secretKeyRef:
           name: loki-secrets
           key: AWS_SECRET_ACCESS_KEY
+{% endif %}
 
 # Zero out replica counts of other deployment modes
 backend:
