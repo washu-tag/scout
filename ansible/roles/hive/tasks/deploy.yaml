@@ -28,6 +28,7 @@
 
 # Create Kubernetes secret for write metastore
 - name: Create write metastore secret
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
@@ -57,6 +58,7 @@
 
 # Create Kubernetes secret for readonly metastore
 - name: Create readonly metastore secret
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:

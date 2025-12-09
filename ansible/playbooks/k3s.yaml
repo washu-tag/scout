@@ -10,23 +10,20 @@
 
 - name: Install Python kubernetes library on cluster nodes
   hosts: k3s_cluster
-  tasks:
-    - name: Include python-kubernetes role
-      ansible.builtin.include_role:
-        name: python-kubernetes
+  any_errors_fatal: true
+  roles:
+    - role: python-kubernetes
 
 - name: Install k3s cluster
   hosts: k3s_cluster
+  any_errors_fatal: true
+  environment: '{{ cluster_k8s_environment }}'
   roles:
-    - scout_common
-    - k3s
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-
-- name: Configure custom storage classes
-  hosts: server
-  tasks:
-    - name: Configure storage classes for multi-disk deployments
-      ansible.builtin.import_role:
+    - role: scout_common
+    - role: k3s
+  post_tasks:
+    - name: Configure custom storage classes
+      ansible.builtin.include_role:
         name: scout_common
         tasks_from: storage_classes
+      when: inventory_hostname in groups['server']

@@ -1,6 +1,6 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
     install-postgres install-redis install-auth install-lake install-analytics install-orchestrator \
-    install-extractor install-monitor install-jupyter install-launchpad echo
+    install-extractor install-monitor install-jupyter install-launchpad install-staging echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -37,6 +37,10 @@ deps:
 
 clone-scout:
 	$(ANSIBLE_CMD) playbooks/scout.yaml
+
+# Staging node (air-gapped deployments)
+install-staging:
+	$(ANSIBLE_CMD) playbooks/staging.yaml
 
 install-helm:
 	$(ANSIBLE_CMD) playbooks/helm.yaml

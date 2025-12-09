@@ -2,8 +2,6 @@
 - name: Install Orthanc
   hosts: server
   gather_facts: false
-  environment:
-    HELM_PLUGINS: '{{ helm_plugins_dir }}'
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: orthanc

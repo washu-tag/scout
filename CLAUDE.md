@@ -404,7 +404,7 @@ Scout supports deployment in air-gapped (offline) environments:
 ### Setup
 1. Define `staging` group in `inventory.yaml`
 2. Set `air_gapped: true` in inventory
-3. Deploy staging: `ansible-playbook playbooks/staging-k3s.yaml && ansible-playbook playbooks/harbor.yaml`
+3. Deploy staging: `make install-staging` (or `ansible-playbook playbooks/staging.yaml`)
 4. Deploy Scout: `make all` (automatically uses Harbor mirrors)
 
 See `ansible/README.md` and `docs/internal/air-gapped-helm-remote-deployment-adr.md` for details.
@@ -494,6 +494,7 @@ See `ansible/filter_plugins/` and `ansible/README.md` for details and testing.
 - **Update versions**: Edit `ansible/group_vars/all/versions.yaml`, redeploy component
 - **Configure namespaces**: Override namespace variables in `inventory.yaml`
 - **Enable optional features**: Set feature flags in `inventory.yaml` (e.g., `enable_chat: true`), configure required paths and secrets, complete post-deployment setup per role README
+- **Add Ansible tasks with kubernetes.core**: See `docs/internal/ansible_roles.md` for kubeconfig configuration conventions (cluster vs jump node execution)
 
 ### Debugging Strategy
 1. Check pod status: `kubectl get pods -n <namespace>`

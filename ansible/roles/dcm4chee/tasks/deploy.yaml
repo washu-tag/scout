@@ -43,6 +43,7 @@
       storage_class: '{{ dcm4chee_slapd_storage_class }}'
 
 - name: Create DB secrets
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
