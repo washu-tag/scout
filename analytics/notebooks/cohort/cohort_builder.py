@@ -300,7 +300,9 @@ def get_default_negation_regex():
     return re.compile("|".join(DEFAULT_NEGATION_PATTERNS), re.IGNORECASE)
 
 
-def check_negation_before_match(report_lower, match_start, negation_regex=None, context_chars=50):
+def check_negation_before_match(
+    report_lower, match_start, negation_regex=None, context_chars=50
+):
     """
     Check if there's a negation phrase in the text BEFORE a match.
 

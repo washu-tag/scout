@@ -52,11 +52,13 @@ def generate_regex_fake(user_query, return_prompt=False):
     time.sleep(1)
 
     # Return brain mets-matching regex patterns
-    return "\n".join([
-        r"(?:metasta(?:sis|ses|tic)?|mets).{0,50}(?:brain|cerebr(?:al|um)|intracranial)",
-        r"(?:brain|cerebr(?:al|um)|intracranial).{0,50}(?:metasta(?:sis|ses|tic)?|mets)",
-        r"(?:brain|cerebral|intracranial).{0,30}(?:lesion|mass|tumor).{0,30}(?:metasta|secondary)",
-    ])
+    return "\n".join(
+        [
+            r"(?:metasta(?:sis|ses|tic)?|mets).{0,50}(?:brain|cerebr(?:al|um)|intracranial)",
+            r"(?:brain|cerebr(?:al|um)|intracranial).{0,50}(?:metasta(?:sis|ses|tic)?|mets)",
+            r"(?:brain|cerebral|intracranial).{0,30}(?:lesion|mass|tumor).{0,30}(?:metasta|secondary)",
+        ]
+    )
 
 
 # def generate_regex_with_ollama(

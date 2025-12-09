@@ -1178,7 +1178,9 @@ def create_demographics_charts(df):
         fig, axes = plt.subplots(2, 4, figsize=(16, 8))
         axes = axes.flatten()
 
-        sex_crosstab = pd.crosstab(df_patients["primary_rads_score"], df_patients["sex"])
+        sex_crosstab = pd.crosstab(
+            df_patients["primary_rads_score"], df_patients["sex"]
+        )
 
         for idx, score in enumerate(cols_sorted[:8]):  # Max 8 scores
             ax = axes[idx]
@@ -1205,7 +1207,12 @@ def create_demographics_charts(df):
                     ax.set_title(score, fontweight="bold")
             else:
                 ax.text(
-                    0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes
+                    0.5,
+                    0.5,
+                    "No data",
+                    ha="center",
+                    va="center",
+                    transform=ax.transAxes,
                 )
                 ax.set_title(score, fontweight="bold")
             ax.axis("equal")
@@ -1236,7 +1243,9 @@ def create_demographics_charts(df):
     else:
         fig, ax = plt.subplots(figsize=(12, 8))
 
-        race_crosstab = pd.crosstab(df_patients["race"], df_patients["primary_rads_score"])
+        race_crosstab = pd.crosstab(
+            df_patients["race"], df_patients["primary_rads_score"]
+        )
 
         # Get top 10 races by total count
         race_totals = race_crosstab.sum(axis=1).sort_values(ascending=False).head(10)
@@ -1246,7 +1255,11 @@ def create_demographics_charts(df):
         cols_sorted_race = [c for c in priority_order if c in race_crosstab_top.columns]
         if not cols_sorted_race:
             cols_sorted_race = list(race_crosstab_top.columns)
-        race_crosstab_top = race_crosstab_top[cols_sorted_race] if cols_sorted_race else race_crosstab_top
+        race_crosstab_top = (
+            race_crosstab_top[cols_sorted_race]
+            if cols_sorted_race
+            else race_crosstab_top
+        )
 
         if race_crosstab_top.empty or len(cols_sorted_race) == 0:
             plt.close(fig)
@@ -1643,7 +1656,9 @@ def create_patient_progression_panel(state):
                                 "BI-RADS-0",
                             ]
                             # Detect which priority order to use
-                            if any(s.startswith("BI-RADS") for s in all_scores_in_report):
+                            if any(
+                                s.startswith("BI-RADS") for s in all_scores_in_report
+                            ):
                                 priority_order = birads_priority
                             else:
                                 priority_order = lirads_priority
