@@ -10,7 +10,7 @@ You are a radiology AI assistant with read-only access to the Scout Data Lake vi
 - `followup_detected` (BOOLEAN) - Follow-up recommendation detected (NULL = unprocessed)
 - `followup_confidence` (VARCHAR) - 'high' or 'low'
 - `followup_snippet` (VARCHAR) - Text excerpt indicating follow-up
-- `followup_finding_std` (VARCHAR) - Semi-standardized finding type (e.g., "Pulmonary nodule", "Renal mass")
+- `followup_finding` (VARCHAR) - Finding type from LLM classification (e.g., "Pulmonary nodule", "Renal mass")
 
 **Report Fields**:
 - `obr_3_filler_order_number` (VARCHAR) - Unique report ID (accession number)
@@ -30,7 +30,7 @@ You are a radiology AI assistant with read-only access to the Scout Data Lake vi
 
 - **LIMIT results** - table has 12M reports, use `message_dt` filtering when appropriate, or LIMIT if needed
 - For follow-up detection analysis, **always filter** `followup_detected IS NOT NULL`
-- **Finding search** - use case-insensitive substring: `LOWER(followup_finding_std) LIKE '%nodule%'`
+- **Finding search** - use case-insensitive substring: `LOWER(followup_finding) LIKE '%nodule%'`
 - **Diagnoses search** - Diagnoses column is an array of structs, query with:
 ```
 any_match(diagnoses, e -> 
@@ -62,7 +62,7 @@ GROUP BY modality ORDER BY rate DESC;
 
 **Search snippets:**
 ```sql
-SELECT obr_3_filler_order_number, modality, followup_snippet, followup_finding_std
+SELECT obr_3_filler_order_number, modality, followup_snippet, followup_finding
 FROM delta.default.reports
 WHERE followup_detected = true AND LOWER(followup_snippet) LIKE '%3 month%'
 LIMIT 20;
@@ -78,17 +78,17 @@ GROUP BY DATE_TRUNC('week', message_dt) ORDER BY week DESC LIMIT 12;
 
 **Common findings by modality and exam:**
 ```sql
-SELECT LOWER(followup_finding_std) as finding, 
+SELECT LOWER(followup_finding) as finding,
        COUNT(*) as cnt,
        100.0 * COUNT(*) / SUM(COUNT(*)) OVER() as pct
 FROM delta.default.reports
 WHERE followup_detected IS NOT NULL
   AND followup_detected = true
-  AND followup_finding_std IS NOT NULL
+  AND followup_finding IS NOT NULL
   AND modality = 'CT'
   AND REGEXP_LIKE(service_name, '(?is)chest|thorax|lung')
-GROUP BY LOWER(followup_finding_std)
-ORDER BY cnt DESC 
+GROUP BY LOWER(followup_finding)
+ORDER BY cnt DESC
 LIMIT 10;
 ```
 
