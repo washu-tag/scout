@@ -1,6 +1,6 @@
 from delta import DeltaTable
 
-from .dataextraction import DerivativeTable
+from .derivativetable import DerivativeTable
 from .sparkutils import (
     filter_df_for_update_inserts,
     merge_df_into_dt_on_source_file,
