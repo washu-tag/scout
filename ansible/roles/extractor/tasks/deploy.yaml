@@ -19,6 +19,7 @@
     state: present
 
 - name: Create Postgres secret
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
@@ -36,6 +37,7 @@
         DB_PASSWORD: '{{ postgres_password }}'
 
 - name: Create S3 secret
+  no_log: true
   kubernetes.core.k8s:
     state: present
     definition:
@@ -84,6 +86,7 @@
   delegate_to: localhost
   kubernetes.core.k8s:
     state: present
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
     definition:
       apiVersion: v1
       kind: ConfigMap
@@ -92,7 +95,6 @@
         namespace: '{{ extractor_namespace }}'
       data:
         modality_mapping_codes.csv: '{{ lookup("file", modality_map_source_file) }}'
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Setup Spark defaults ConfigMap
   ansible.builtin.include_role:

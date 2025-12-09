@@ -53,6 +53,7 @@
     db_owner_pass: '{{ keycloak_postgres_password }}'
 
 - name: Create Keycloak DB secret
+  no_log: true
   kubernetes.core.k8s:
     state: present
     namespace: '{{ keycloak_namespace }}'
@@ -67,6 +68,7 @@
         password: '{{ keycloak_postgres_password }}'
 
 - name: Create Keycloak Admin Credential Secret
+  no_log: true
   kubernetes.core.k8s:
     state: present
     namespace: '{{ keycloak_namespace }}'

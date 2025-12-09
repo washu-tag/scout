@@ -1,0 +1,61 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: '{{ _pull_job_name }}'
+  namespace: '{{ _pull_namespace }}'
+  labels:
+    app: '{{ _pull_label }}'
+spec:
+  ttlSecondsAfterFinished: {{ _pull_ttl }}
+  backoffLimit: {{ _pull_backoff }}
+  template:
+    metadata:
+      labels:
+        app: '{{ _pull_label }}'
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: ollama
+          image: 'ollama/ollama:{{ ollama_version | default("latest") }}'
+          env:
+{% if _pull_air_gapped %}
+            - name: OLLAMA_MODELS
+              value: /nfs/ollama/models
+{% else %}
+            - name: OLLAMA_HOST
+              value: 'http://{{ ollama_name }}.{{ chatbot_namespace }}:11434'
+{% endif %}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+{% if _pull_air_gapped %}
+              echo "Starting Ollama server..."
+              ollama serve &
+              sleep 5
+              echo "Pulling models to NFS..."
+{% else %}
+              echo "Waiting for Ollama to be ready..."
+              until ollama list > /dev/null 2>&1; do
+                echo "Ollama not ready, waiting..."
+                sleep 5
+              done
+              echo "Ollama is ready, pulling models..."
+{% endif %}
+{% for model in ollama_models %}
+              echo "Pulling model: {{ model }}"
+              ollama pull {{ model }}
+{% endfor %}
+              echo "All models pulled successfully"
+{% if _pull_air_gapped %}
+          volumeMounts:
+            - name: nfs-models
+              mountPath: /nfs/ollama
+      volumes:
+        - name: nfs-models
+          hostPath:
+            path: '{{ ollama_nfs_path }}'
+            type: DirectoryOrCreate
+{% endif %}

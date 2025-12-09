@@ -2,9 +2,10 @@
 - name: Deploy Chatbot
   hosts: server
   gather_facts: false
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-    K8S_AUTH_KUBECONFIG: '{{ kubeconfig_yaml }}'
+  pre_tasks:
+    - name: Skip if chat not enabled
+      ansible.builtin.meta: end_play
+      when: not (enable_chat | default(false) | bool)
+  environment: '{{ cluster_k8s_environment }}'
   roles:
     - role: open-webui
-      when: enable_chat | default(false) | bool

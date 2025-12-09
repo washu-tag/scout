@@ -211,7 +211,6 @@ staging:
           $ANSIBLE_VAULT;1.1;AES256
           ...encrypted password...
     harbor_storage_size: 100Gi
-    harbor_dir: /scout/persistence/harbor
 ```
 
 See {ref}`Air-Gapped Deployment <air-gapped-deployment>` for details.
@@ -277,7 +276,6 @@ loki_storage_class: ""
 grafana_storage_class: ""
 orthanc_storage_class: ""
 dcm4chee_storage_class: ""
-harbor_storage_class: ""
 ollama_storage_class: ""
 open_webui_storage_class: ""
 
@@ -330,7 +328,6 @@ open_webui_storage_class: "local-database"   # User data and chat history
 orthanc_storage_class: "local-database"
 dcm4chee_storage_class: "local-database"
 temporal_storage_class: ""  # Uses Cassandra for persistence
-harbor_storage_class: ""  # Only used in air-gapped deployments
 ```
 
 **When to use multiple storage classes:**
@@ -700,6 +697,29 @@ hl7_transformer_cpu_request: 2
 hl7_transformer_cpu_limit: 4
 ```
 
+#### JupyterLab Extension Manager
+
+Control whether users can install and manage JupyterLab extensions:
+
+```yaml
+# Extension Manager configuration
+# Controls whether users can install/manage JupyterLab extensions
+jupyter_extension_manager_mode: 'disabled'  # Options: 'disabled', 'readonly', 'enabled'
+```
+
+**Extension Manager Modes:**
+- **`disabled`** (Scout default, recommended): Completely hides the Extension Manager icon from JupyterLab. Users cannot see or access extension installation UI. This is the recommended setting for air-gapped and production environments where extension installation is not desired.
+- **`readonly`**: Shows the Extension Manager UI with a list of installed extensions. Users can enable or disable extensions that are already installed in the image, but cannot install new ones from PyPI.
+- **`enabled`**: Full extension management capabilities. Users can search for, install, and manage extensions from PyPI. Only recommended for development environments with internet access and where users need to customize their JupyterLab environment.
+
+:::{note}
+In air-gapped environments, users cannot install extensions anyway due to lack of PyPI access. The `disabled` mode provides a cleaner user experience by hiding the non-functional Extension Manager UI.
+:::
+
+:::{warning}
+Even with the Extension Manager disabled, users with terminal access can still run `jupyter labextension` commands. However, in air-gapped environments, these commands will fail due to lack of internet connectivity. The Extension Manager setting primarily controls the UI, not a comprehensive security lockdown.
+:::
+
 ### Namespace Customization
 
 Scout uses 6 consolidated namespaces to organize services by function. Default namespaces are defined in `roles/scout_common/defaults/main.yaml`. Override them if needed:
@@ -749,7 +769,7 @@ For complete air-gapped deployment documentation, see [Air-Gapped Deployment Gui
 
 1. Set `air_gapped: true` in inventory
 2. Define staging node in inventory (see [Air-Gapped Deployment Guide](air-gapped.md))
-3. Run playbooks: `staging-k3s.yaml`, `harbor.yaml`, `k3s.yaml`, `main.yaml`
+3. Run playbooks: `make all`
 
 See [Air-Gapped Deployment Guide](air-gapped.md) for detailed instructions.
 

@@ -27,6 +27,15 @@ jupyter_metrics_api_token: ''
 # PrePuller configuration
 jupyter_prepuller_continuous: false
 
+# Extension Manager Configuration
+# Controls JupyterLab extension installation capabilities
+# Options:
+#   'disabled' - Completely hide Extension Manager UI (recommended for air-gapped/production)
+#   'readonly' - Show installed extensions only, no installation allowed
+#   'enabled' - Full extension management (default JupyterLab behavior)
+# Note: In air-gapped environments, users cannot install extensions anyway due to lack of PyPI access
+jupyter_extension_manager_mode: 'disabled'
+
 # Branding
 jupyter_logo_path: '{{ scout_repo_dir }}/launchpad/public/scout.png'
 
