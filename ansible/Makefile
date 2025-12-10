@@ -1,6 +1,6 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
     install-postgres install-redis install-auth install-lake install-analytics install-orchestrator \
-    install-extractor install-monitor install-jupyter install-launchpad install-staging echo
+    install-extractor install-monitor install-jupyter install-launchpad install-voila install-staging echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -88,6 +88,9 @@ install-monitor:
 
 install-launchpad:
 	$(ANSIBLE_CMD) playbooks/launchpad.yaml
+
+install-voila:
+	$(ANSIBLE_CMD) playbooks/voila.yaml
 
 # For tests
 install-orthanc:

@@ -32,6 +32,9 @@
 - name: Install Chat
   import_playbook: chatbot.yaml
 
+- name: Install Voila
+  import_playbook: voila.yaml
+
 - name: Install Analytics
   import_playbook: analytics.yaml
 

@@ -1,0 +1,71 @@
+# Default values for voila.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/washu-tag/pyspark-notebook
+  tag: '1.1.0'
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ''
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 8866
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      kube-system-oauth2-proxy-error@kubernetescrd,
+      kube-system-oauth2-proxy-auth@kubernetescrd
+  host: ''
+  tls: []
+
+# Resource limits - sized for POC with multiple concurrent users
+# Each dashboard view spawns a kernel, so memory can grow quickly
+resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 2
+    memory: 8Gi
+
+# List of playbook names to mount from ConfigMaps (created externally by Ansible with the name format playbook-<name>)
+playbooks: []
+
+# Name of the ConfigMap containing spark-defaults.conf (created externally by Ansible)
+sparkConfigMapName: spark-defaults
+
+# Environment variables for Trino connectivity
+# S3/Spark settings come from spark-defaults.conf ConfigMap
+env:
+  TRINO_HOST: trino.trino
+  TRINO_PORT: '8080'
+  TRINO_SCHEME: http
+  TRINO_USER: scout
+  TRINO_CATALOG: delta
+  TRINO_SCHEMA: default
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

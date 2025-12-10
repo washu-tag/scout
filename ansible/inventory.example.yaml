@@ -529,6 +529,20 @@ k3s_cluster:
         cpu: 4
         memory: 4Gi
 
+    #---------------------------------------------------------------------------
+    # Playbooks (Voilà)
+    #---------------------------------------------------------------------------
+    # Uncomment the following line to enable interactive notebook playbooks
+    # enable_playbooks: true
+    # voila_replicas: 1
+    # voila_resources:
+    #   requests:
+    #     cpu: 500m
+    #     memory: 2Gi
+    #   limits:
+    #     cpu: 2
+    #     memory: 8Gi
+
 # This group contains all nodes that are remote relative to the node running Ansible
 remotes:
   children:

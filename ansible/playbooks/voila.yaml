@@ -1,0 +1,11 @@
+---
+- name: Install Voilà Playbooks
+  hosts: server
+  gather_facts: false
+  pre_tasks:
+    - name: Skip if voila playbook is not enabled
+      ansible.builtin.meta: end_play
+      when: not (enable_playbooks | default(false) | bool)
+  environment: '{{ cluster_k8s_environment }}'
+  roles:
+    - role: voila

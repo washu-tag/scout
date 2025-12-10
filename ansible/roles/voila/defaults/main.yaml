@@ -1,0 +1,29 @@
+---
+# Voilà role defaults
+# User-configurable settings are in inventory.yaml
+
+# Namespace configuration
+voila_namespace: '{{ scout_analytics_namespace }}'
+
+# Helm configuration
+voila_helm_chart_ref: '{{ scout_repo_dir }}/helm/voila'
+
+# Image configuration - uses same image as JupyterHub singleuser
+voila_image_name: '{{ jupyter_singleuser_image_name }}'
+voila_image_tag: '{{ jupyter_singleuser_image_tag }}'
+
+# Replicas (increase for load balancing)
+voila_replicas: 1
+
+# Resource limits - sized for POC with multiple concurrent users
+voila_resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 2
+    memory: 8Gi
+
+# Spark memory settings for notebooks
+voila_spark_driver_memory: '4g'
+voila_spark_executor_memory: '4g'
