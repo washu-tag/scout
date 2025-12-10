@@ -5,11 +5,9 @@
 # Directory where helm install script is downloaded
 helm_script_dir: /root/bin
 
-# Helm version to install (empty string for latest)
-helm_version: ''
-
-# Whether to install helm diff plugin
+# Whether to install helm-diff plugin
+# Used by kubernetes.core.helm module to improve idempotency checking.
 helm_install_diff_plugin: true
 
-# URL for helm diff plugin
+# Helm-diff plugin configuration (only used when helm_install_diff_plugin: true)
 helm_diff_plugin_url: 'https://github.com/databus23/helm-diff'

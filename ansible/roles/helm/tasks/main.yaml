@@ -33,8 +33,8 @@
         DESIRED_VERSION: '{{ helm_version }}'
 
 - name: Install Helm Diff plugin
+  when: helm_install_diff_plugin | bool
   kubernetes.core.helm_plugin:
     plugin_path: '{{ helm_diff_plugin_url }}'
+    plugin_version: '{{ helm_diff_plugin_version }}'
     state: present
-  become: false
-  when: helm_install_diff_plugin | bool

@@ -8,7 +8,9 @@
 k3s_version: v1.34.1+k3s1
 
 # helm version - if not specified or empty, will use latest
-helm_version: ''
+# Using Helm 3.x until Helm 4 plugin ecosystem matures (helm-diff compatibility)
+helm_version: v3.19.2
+helm_diff_plugin_version: 'v3.14.1'
 
 # Databases & Data Storage - Elasticsearch
 eck_operator_version: ~3.1.0
