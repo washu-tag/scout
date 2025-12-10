@@ -60,8 +60,9 @@ def create_table_from_df(df: DataFrame, table_name: str):
 
 def empty_string_coalesce(col1: str, col2: str) -> Column:
     """
-    Coalesce two columns, treating empty strings as null
+    Returns col1 if not null and not empty string, otherwise col2
     """
-    return F.when(F.col(col1).isNotNull() & F.col(col1) != "", F.col(col1)).otherwise(
-        F.col(col2)
-    )
+    c1 = F.col(col1)
+    c2 = F.col(col2)
+
+    return F.when(c1 != "", c1).otherwise(c2)
