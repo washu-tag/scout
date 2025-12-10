@@ -21,13 +21,23 @@
       DO $do$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{{ hive_readonly_postgres_user }}') THEN
-          EXECUTE format('CREATE USER %I WITH PASSWORD %L', '{{ hive_readonly_postgres_user }}', '{{ hive_readonly_postgres_password }}');
-          EXECUTE format('GRANT CONNECT ON DATABASE %I TO %I', '{{ hive_database_name }}', '{{ hive_readonly_postgres_user }}');
-          EXECUTE format('GRANT USAGE ON SCHEMA public TO %I', '{{ hive_readonly_postgres_user }}');
-          EXECUTE format('GRANT SELECT ON ALL TABLES IN SCHEMA public TO %I', '{{ hive_readonly_postgres_user }}');
-          EXECUTE format('GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO %I', '{{ hive_readonly_postgres_user }}');
-          EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public GRANT SELECT ON TABLES TO %I', '{{ hive_postgres_user }}', '{{ hive_readonly_postgres_user }}');
-          EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public GRANT SELECT ON SEQUENCES TO %I', '{{ hive_postgres_user }}', '{{ hive_readonly_postgres_user }}');
+          CREATE USER {{ hive_readonly_postgres_user }} WITH PASSWORD '{{ hive_readonly_postgres_password }}';
         END IF;
       END;
       $do$ LANGUAGE plpgsql;
+
+      GRANT CONNECT ON DATABASE {{ hive_database_name }} TO {{ hive_readonly_postgres_user }};
+      GRANT USAGE ON SCHEMA public TO {{ hive_readonly_postgres_user }};
+      GRANT SELECT ON ALL TABLES IN SCHEMA public TO {{ hive_readonly_postgres_user }};
+      GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO {{ hive_readonly_postgres_user }};
+
+      {% if aws_deployment %}
+      GRANT {{ hive_postgres_user }} TO CURRENT_USER;
+      {% endif %}
+
+      ALTER DEFAULT PRIVILEGES FOR ROLE {{ hive_postgres_user }} IN SCHEMA public GRANT SELECT ON TABLES TO {{ hive_readonly_postgres_user }};
+      ALTER DEFAULT PRIVILEGES FOR ROLE {{ hive_postgres_user }} IN SCHEMA public GRANT SELECT ON SEQUENCES TO {{ hive_readonly_postgres_user }};
+
+      {% if aws_deployment %}
+      REVOKE {{ hive_postgres_user }} FROM CURRENT_USER;
+      {% endif %}
