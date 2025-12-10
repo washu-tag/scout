@@ -17,17 +17,17 @@
         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{{ db_owner }}') THEN
           CREATE USER {{ db_owner }} WITH PASSWORD '{{ db_owner_pass }}';
         END IF;
-
-        IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '{{db_name}}') THEN
-          {% if aws_deployment %}
-          GRANT {{ db_owner }} TO CURRENT_USER;
-          {% endif %}
-
-          CREATE DATABASE {{db_name}} OWNER {{ db_owner }};
-          
-          {% if aws_deployment %}
-          REVOKE {{ db_owner }} FROM CURRENT_USER;
-          {% endif %}
-        END IF;
       END;
       $do$ LANGUAGE plpgsql;
+
+      {% if aws_deployment %}
+      GRANT {{ db_owner }} TO CURRENT_USER;
+      {% endif %}
+
+      SELECT 'CREATE DATABASE {{db_name}} OWNER {{ db_owner }}'
+      WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '{{db_name}}');
+      \gexec
+          
+      {% if aws_deployment %}
+      REVOKE {{ db_owner }} FROM CURRENT_USER;
+      {% endif %}
