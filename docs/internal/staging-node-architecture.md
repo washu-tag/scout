@@ -135,15 +135,21 @@ The k3s cluster nodes are configured with `/etc/rancher/k3s/registries.yaml`:
 mirrors:
   docker.io:
     endpoint:
-      - "https://staging-node.example.com/v2/dockerhub-proxy"
+      - "staging-node.example.com"
+    rewrite:
+      "^(.*)$": "dockerhub-proxy/$1"
   ghcr.io:
     endpoint:
-      - "https://staging-node.example.com/v2/ghcr-proxy"
+      - "staging-node.example.com"
+    rewrite:
+      "^(.*)$": "ghcr-proxy/$1"
 
+# Only included when using self-signed certificates
+# (when tls_cert_path is not defined in staging inventory)
 configs:
   "staging-node.example.com":
     tls:
-      insecure_skip_verify: true  # Self-signed certificate
+      insecure_skip_verify: true
 ```
 
 **How it works:**
@@ -224,27 +230,42 @@ harbor_ghcr_proxy_project: ghcr-proxy
 
 ## TLS Certificate Strategy
 
-### Initial Implementation: Self-Signed Certificates
+### Option 1: Self-Signed Certificates (Default)
 
-**Generation:**
-```bash
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout harbor-tls.key \
-  -out harbor-tls.crt \
-  -subj "/CN=staging-node.example.com/O=Scout Harbor"
-```
+When `tls_cert_path` and `tls_key_path` are not defined in the staging inventory, the staging playbook automatically generates a self-signed certificate.
 
 **Configuration:**
-- Certificate stored as Kubernetes secret
-- Harbor configured to use secret for TLS
-- k3s configured with `insecure_skip_verify: true` for staging hostname
+- Certificate generated during staging playbook execution
+- Stored at `/etc/rancher/k3s/tls/staging-tls.crt` and `.key`
+- Traefik configured to use the certificate
+- k3s nodes configured with `insecure_skip_verify: true`
 
 **Trade-offs:**
-- ✅ Simple to implement
+- ✅ Simple to implement (no manual cert management)
 - ✅ No external dependencies
 - ✅ Works in completely air-gapped environments
 - ❌ Requires `insecure_skip_verify` (security concern)
-- ❌ Certificate management manual
+
+### Option 2: User-Provided Certificates
+
+For production deployments, provide your own certificates by defining in staging inventory:
+
+```yaml
+staging:
+  vars:
+    tls_cert_path: /path/to/cert.pem
+    tls_key_path: /path/to/key.pem
+```
+
+**Configuration:**
+- Certificate read from specified paths on staging node
+- Traefik configured to use the provided certificate
+- k3s nodes perform TLS verification (no `insecure_skip_verify`)
+
+**Trade-offs:**
+- ✅ Better security posture
+- ✅ Can use enterprise CA or publicly trusted certs
+- ❌ Requires certificate management outside Ansible
 
 ### Future Enhancement: Cert-Manager
 
@@ -252,7 +273,6 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 - Deploy cert-manager to staging k3s
 - Create self-signed ClusterIssuer or use enterprise CA
 - Automatic certificate rotation
-- Remove `insecure_skip_verify` configuration
 - Better security posture
 
 ## Helm Chart Handling

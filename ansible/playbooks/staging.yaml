@@ -42,12 +42,49 @@
         name: python3-kubernetes
         state: present
 
+    - name: Install Helm
+      ansible.builtin.include_role:
+        name: helm
+
 - name: Deploy staging infrastructure
   hosts: staging
   pre_tasks:
     - name: Skip if first play was skipped
       ansible.builtin.meta: end_play
       when: not (run_deploy | default(false) | bool)
+
+    - name: Generate self-signed TLS certificate for ingress
+      when:
+        - harbor_expose_type == 'ingress'
+        - tls_cert_path is not defined or tls_key_path is not defined
+      block:
+        - name: Check if cert already exists
+          ansible.builtin.stat:
+            path: /etc/rancher/k3s/tls/staging-tls.crt
+          register: staging_cert_stat
+
+        - name: Generate self-signed certificate
+          when: not staging_cert_stat.stat.exists
+          block:
+            - name: Create TLS directory
+              ansible.builtin.file:
+                path: /etc/rancher/k3s/tls
+                state: directory
+                mode: '0700'
+
+            - name: Generate certificate
+              ansible.builtin.shell: |
+                openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+                  -keyout /etc/rancher/k3s/tls/staging-tls.key \
+                  -out /etc/rancher/k3s/tls/staging-tls.crt \
+                  -subj "/CN={{ inventory_hostname }}/O=Scout" \
+                  -addext "subjectAltName=DNS:{{ inventory_hostname }}"
+              changed_when: true
+
+        - name: Set self-signed cert paths
+          ansible.builtin.set_fact:
+            tls_cert_path: /etc/rancher/k3s/tls/staging-tls.crt
+            tls_key_path: /etc/rancher/k3s/tls/staging-tls.key
   environment: '{{ cluster_k8s_environment }}'
   vars:
     k3s_token: '{{ staging_k3s_token }}'
