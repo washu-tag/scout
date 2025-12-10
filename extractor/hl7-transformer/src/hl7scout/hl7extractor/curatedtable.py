@@ -9,7 +9,6 @@ from .sparkutils import (
 )
 
 from pyspark.sql import functions as F
-import uuid
 
 
 def curated_table(base_report_table_name: str) -> DerivativeTable:
