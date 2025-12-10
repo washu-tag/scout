@@ -71,6 +71,11 @@ scout_monitoring_namespace: scout-monitoring
 traefik_namespace: kube-system
 harbor_namespace: harbor
 
+# Staging node self-signed TLS certificate paths
+# Used when tls_cert_path/tls_key_path not provided in inventory
+staging_self_signed_tls_cert_path: /etc/rancher/k3s/tls/staging-tls.crt
+staging_self_signed_tls_key_path: /etc/rancher/k3s/tls/staging-tls.key
+
 # Service-to-namespace mappings
 # Core infrastructure
 postgres_cluster_namespace: '{{ scout_core_namespace }}'
