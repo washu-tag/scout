@@ -10,7 +10,7 @@ from .latesttable import latest_table
 from .derivativetable import DerivativeTable
 
 
-def define_derivative_tables(report_table_name: str):
+def define_derivative_tables(report_table_name: str) -> Dict[str, DerivativeTable]:
     return {
         table.table_name: table
         for table in [
@@ -53,7 +53,7 @@ def process_derivative_data(spark: SparkSession, report_table_name: str):
     derivative_tables = define_derivative_tables(report_table_name)
     activity.heartbeat()
     activity.logger.info(
-        f"Processing derivative data tables: {[table.name for name, table in derivative_tables]}"
+        f"Processing derivative data tables: {[table.table_name for table in derivative_tables.values()]}"
     )
     # noinspection PyTypeChecker
     root_table = DerivativeTable(
