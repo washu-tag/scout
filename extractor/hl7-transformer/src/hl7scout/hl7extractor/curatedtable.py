@@ -1,4 +1,5 @@
 from delta import DeltaTable
+from temporalio import activity
 
 from .derivativetable import DerivativeTable
 from .sparkutils import (
@@ -27,6 +28,8 @@ def curate_silver_table(batch_df, spark, table_name):
     filtered_df = filter_df_for_update_inserts(batch_df)
     if filtered_df is None:
         return
+
+    activity.logger.info(f"Column available in curated table: {batch_df.columns}")
 
     curated_df = (
         filtered_df.withColumnRenamed("source_file", "primary_report_identifier")
