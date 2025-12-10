@@ -126,6 +126,27 @@ openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/
 
 See {ref}`configuring-secrets` for more details on Ansible Vault.
 
+### Optional TLS Configuration
+
+By default, the staging playbook generates a self-signed TLS certificate for Harbor ingress mode. To use your own certificate, define in staging vars:
+
+```yaml
+staging:
+  vars:
+    tls_cert_path: /path/to/cert.pem
+    tls_key_path: /path/to/key.pem
+```
+
+When using self-signed certs, k3s nodes skip TLS verification. When providing valid certs, TLS verification is enabled.
+
+To use bare hostname (no subdomain):
+
+```yaml
+staging:
+  vars:
+    harbor_subdomain: ''  # Uses staging hostname directly instead of harbor.<hostname>
+```
+
 ## Air-Gapped Configuration Variables
 
 ### Enabling Air-Gapped Mode
