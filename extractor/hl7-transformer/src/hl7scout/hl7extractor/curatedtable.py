@@ -39,7 +39,9 @@ def curate_silver_table(batch_df, spark, table_name):
                 "filler_order_number": empty_string_coalesce(
                     "orc_3_filler_order_number", "obr_3_filler_order_number"
                 ),
-                "primary_patient_identifier": uuid.uuid4().hex,  # TODO : this obviously doesn't work
+                "primary_patient_identifier": F.expr(
+                    "uuid()"
+                ),  # TODO : this obviously doesn't work
             }
         )
         .withColumns(
