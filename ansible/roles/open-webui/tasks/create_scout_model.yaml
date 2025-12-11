@@ -1,64 +1,38 @@
 ---
 # Create custom Scout Ollama model via Kubernetes Job
 # This creates gpt-oss-120b-long:latest with extended context settings
+#
+# Modes:
+#   - Online (air_gapped: false): Create model on cluster Ollama
+#   - Air-gapped with NFS: Create model on staging, stored in shared NFS
+
+- name: Fail if air-gapped without NFS path
+  ansible.builtin.fail:
+    msg: >-
+      Air-gapped deployment requires ollama_nfs_path to be set.
+      Configure shared NFS storage for Ollama models between staging and cluster.
+  when:
+    - air_gapped | default(false) | bool
+    - ollama_nfs_path is not defined or ollama_nfs_path | length == 0
+
+- name: Set Scout model creation configuration
+  ansible.builtin.set_fact:
+    _scout_air_gapped: '{{ air_gapped | default(false) | bool }}'
+    _scout_namespace: '{{ staging_ollama_namespace if (air_gapped | default(false) | bool) else chatbot_namespace }}'
+    _scout_job_name: "{{ 'ollama-create-scout-model-staging-' if (air_gapped | default(false) | bool) else 'ollama-create-scout-model-' }}"
+    _scout_label: "{{ 'ollama-create-scout-model-staging' if (air_gapped | default(false) | bool) else 'ollama-create-scout-model' }}"
+    _scout_ttl: '{{ 3600 if (air_gapped | default(false) | bool) else 600 }}'
 
 - name: Create Scout model creation Job
   kubernetes.core.k8s:
+    kubeconfig: '{{ kubeconfig_yaml }}'
     state: present
-    definition:
-      apiVersion: batch/v1
-      kind: Job
-      metadata:
-        generateName: 'ollama-create-scout-model-'
-        namespace: '{{ chatbot_namespace }}'
-        labels:
-          app: ollama-create-scout-model
-      spec:
-        ttlSecondsAfterFinished: 600 # Clean up 10 minutes after completion
-        backoffLimit: 3
-        template:
-          metadata:
-            labels:
-              app: ollama-create-scout-model
-          spec:
-            restartPolicy: OnFailure
-            containers:
-              - name: ollama-create
-                image: ollama/ollama:latest
-                env:
-                  - name: OLLAMA_HOST
-                    value: 'http://{{ ollama_name }}.{{ chatbot_namespace }}:11434'
-                command:
-                  - /bin/sh
-                  - -c
-                  - |
-                    set -e
-                    echo "Waiting for Ollama to be ready..."
-                    until ollama list > /dev/null 2>&1; do
-                      echo "Ollama not ready, waiting..."
-                      sleep 5
-                    done
+    definition: '{{ lookup("template", "create_scout_model_job.yaml.j2") | from_yaml }}'
+  delegate_to: "{{ groups['staging'][0] if _scout_air_gapped else omit }}"
 
-                    echo "Checking if base model {{ scout_base_model }} exists..."
-                    if ! ollama list | grep -q "{{ scout_base_model }}"; then
-                      echo "Base model {{ scout_base_model }} not found. Please ensure it is pulled first."
-                      exit 1
-                    fi
-
-                    echo "Creating Scout custom model {{ scout_model_name }}..."
-                    cat > /tmp/Modelfile <<EOF
-                    FROM {{ scout_base_model }}
-                    PARAMETER num_predict {{ scout_model_num_predict }}
-                    PARAMETER num_ctx {{ scout_model_num_ctx }}
-                    PARAMETER num_keep {{ scout_model_num_keep }}
-                    EOF
-
-                    ollama create {{ scout_model_name }} -f /tmp/Modelfile
-
-                    echo "Verifying model creation..."
-                    if ollama list | grep -q "{{ scout_model_name }}"; then
-                      echo "Scout model {{ scout_model_name }} created successfully"
-                    else
-                      echo "Failed to verify Scout model creation"
-                      exit 1
-                    fi
+- name: Scout model creation Job started
+  ansible.builtin.debug:
+    msg: >-
+      Scout model creation Job created in {{ _scout_namespace }} namespace{{ ' on staging' if _scout_air_gapped else '' }}.
+      The {{ scout_model_name }} model will be created in the background. Check status with:
+      kubectl get jobs -n {{ _scout_namespace }} -l app={{ _scout_label }}
