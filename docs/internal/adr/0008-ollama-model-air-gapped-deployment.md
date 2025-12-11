@@ -1,7 +1,7 @@
 # ADR 0008: Ollama Model Distribution in Air-Gapped Environments
 
-**Date**: 2025-12-04  
-**Status**: Proposed  
+**Date**: 2025-12-04
+**Status**: Accepted
 **Decision Owner**: TAG Team
 
 ## Context
@@ -170,11 +170,11 @@ ollama:
 ### Workflow
 
 ```
-1. Ansible starts Job on staging cluster
-   └── Job pulls models from registry.ollama.ai to NFS
+1. Ansible starts model pull Job on staging cluster
+   └── Job pulls base models from registry.ollama.ai to NFS
 
-2. Ansible waits for Job completion
-   └── Models now available on shared NFS
+2. Ansible starts Scout model creation Job on staging cluster
+   └── Job creates gpt-oss-120b-long:latest custom model on NFS
 
 3. Ansible deploys production Ollama
    └── Configured to read models from NFS path
@@ -182,6 +182,8 @@ ollama:
 4. Production Ollama starts with models available
    └── No file transfer required, no internet access needed
 ```
+
+Note: Both Jobs run asynchronously. The Scout model creation Job has retry logic (`backoffLimit: 3`) and will wait for the base model to be available.
 
 ### Configuration Variables
 
@@ -373,6 +375,15 @@ A single task file handles both online and air-gapped modes using conditional lo
 - Air-gapped mode: delegates to staging, mounts NFS, runs local Ollama server
 - Online mode: connects to cluster Ollama service via `OLLAMA_HOST`
 
+**Modify open-webui role** (`ansible/roles/open-webui/tasks/create_scout_model.yaml`):
+
+The Scout custom model creation also supports air-gapped mode:
+- Sets `_scout_air_gapped` fact based on `air_gapped` variable
+- Air-gapped mode: delegates to staging, mounts NFS, starts local Ollama server
+- Online mode: connects to cluster Ollama service via `OLLAMA_HOST`
+- Job verifies base model exists before creating custom model
+- Retry logic handles race condition with model pull Job
+
 **Modify open-webui role** (`ansible/roles/open-webui/templates/values.yaml.j2`):
 
 ```yaml
@@ -401,15 +412,18 @@ ollama:
 {{ ollama_nfs_path }}/
 └── models/
     ├── blobs/
-    │   ├── sha256-abc123...  # Model weight files
+    │   ├── sha256-abc123...  # Model weight files (shared across models)
     │   └── sha256-def456...
     └── manifests/
-        └── registry.ollama.ai/
-            └── library/
-                ├── gpt-oss/
-                │   └── 120b
-                └── llama3/
-                    └── 8b
+        ├── registry.ollama.ai/
+        │   └── library/
+        │       ├── gpt-oss/
+        │       │   └── 120b        # Base model
+        │       └── llama3/
+        │           └── 8b
+        └── localhost/
+            └── gpt-oss-120b-long/
+                └── latest          # Scout custom model
 ```
 
 ### Future Enhancements
