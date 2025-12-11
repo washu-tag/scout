@@ -60,7 +60,7 @@
       block:
         - name: Check if cert already exists
           ansible.builtin.stat:
-            path: /etc/rancher/k3s/tls/staging-tls.crt
+            path: '{{ staging_self_signed_tls_cert_path }}'
           register: staging_cert_stat
 
         - name: Generate self-signed certificate
@@ -75,16 +75,16 @@
             - name: Generate certificate
               ansible.builtin.shell: |
                 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                  -keyout /etc/rancher/k3s/tls/staging-tls.key \
-                  -out /etc/rancher/k3s/tls/staging-tls.crt \
+                  -keyout {{ staging_self_signed_tls_key_path }} \
+                  -out {{ staging_self_signed_tls_cert_path }} \
                   -subj "/CN={{ inventory_hostname }}/O=Scout" \
                   -addext "subjectAltName=DNS:{{ inventory_hostname }}"
               changed_when: true
 
-        - name: Set self-signed cert paths
+        - name: Set tls_cert_path to self-signed location
           ansible.builtin.set_fact:
-            tls_cert_path: /etc/rancher/k3s/tls/staging-tls.crt
-            tls_key_path: /etc/rancher/k3s/tls/staging-tls.key
+            tls_cert_path: '{{ staging_self_signed_tls_cert_path }}'
+            tls_key_path: '{{ staging_self_signed_tls_key_path }}'
   environment: '{{ cluster_k8s_environment }}'
   vars:
     k3s_token: '{{ staging_k3s_token }}'
