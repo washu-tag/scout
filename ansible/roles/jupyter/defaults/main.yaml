@@ -37,7 +37,7 @@ jupyter_prepuller_continuous: false
 jupyter_extension_manager_mode: 'disabled'
 
 # Branding
-jupyter_logo_path: '{{ scout_repo_dir }}/launchpad/public/scout.png'
+jupyter_logo_path: '{{ scout_repo_dir }}/launchpad/public/favicon.ico'
 
 # Jupyter resources
 jupyter_hub_resources:
