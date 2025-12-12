@@ -21,7 +21,7 @@ resources:
     memory: '{{ hl7_transformer_spark_memory | jvm_memory_to_k8s }}'
   limits:
     cpu: '{{ hl7_transformer_cpu_limit }}'
-    memory: '{{ hl7_transformer_spark_memory | jvm_memory_to_k8s(2) }}'
+    memory: '{{ hl7_transformer_spark_memory | jvm_memory_to_k8s(4) }}'
 volumes:
   - name: data
 {% if aws_deployment %}

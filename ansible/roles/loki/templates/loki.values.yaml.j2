@@ -91,3 +91,16 @@ bloomCompactor:
   replicas: 0
 bloomGateway:
   replicas: 0
+
+# Memcached cache configuration
+# Loki uses memcached for two caching layers:
+# - chunksCache: Caches log chunks to reduce S3 fetches
+# - resultsCache: Caches query results for repeated queries
+# Override in inventory.yaml if needed (e.g., production may need larger caches)
+chunksCache:
+  enabled: true
+  allocatedMemory: {{ loki_chunks_cache_allocated_memory }}  # MB, default 8192
+
+resultsCache:
+  enabled: true
+  allocatedMemory: {{ loki_results_cache_allocated_memory }}  # MB, default 1024
