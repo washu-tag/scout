@@ -33,7 +33,7 @@ trino_coordinator_resources:
     memory: '{{ trino_coordinator_max_heap | jvm_memory_to_k8s }}'
   limits:
     cpu: '{{ trino_coordinator_cpu_limit }}'
-    memory: '{{ trino_coordinator_max_heap | jvm_memory_to_k8s(2) }}'
+    memory: '{{ trino_coordinator_max_heap | jvm_memory_to_k8s(4) }}'
 
 trino_worker_resources:
   requests:
@@ -41,7 +41,7 @@ trino_worker_resources:
     memory: '{{ trino_worker_max_heap | jvm_memory_to_k8s }}'
   limits:
     cpu: '{{ trino_worker_cpu_limit }}'
-    memory: '{{ trino_worker_max_heap | jvm_memory_to_k8s(2) }}'
+    memory: '{{ trino_worker_max_heap | jvm_memory_to_k8s(4) }}'
 
 # Trino MCP server configuration
 mcp_trino_repo_url: https://github.com/tuannvm/mcp-trino.git
