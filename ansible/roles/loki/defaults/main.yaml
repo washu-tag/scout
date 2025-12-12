@@ -23,3 +23,12 @@ loki_resources:
   limits:
     cpu: 2
     memory: 2Gi
+
+# Memcached cache configuration (dev defaults)
+# Loki uses memcached for two caching layers:
+# - chunksCache: Caches log chunks to reduce S3 fetches
+# - resultsCache: Caches query results for repeated queries
+# Values are in MB. The helm chart computes pod memory as allocatedMemory * 1.2
+# Upstream defaults (8192MB chunks, 1024MB results) are excessive for most dev deployments
+loki_chunks_cache_allocated_memory: 512 # MB (upstream default: 8192)
+loki_results_cache_allocated_memory: 256 # MB (upstream default: 1024)

@@ -471,6 +471,28 @@ minio_resources:
     memory: 8Gi
 ```
 
+#### Loki
+
+```yaml
+loki_resources:
+  requests:
+    cpu: 250m
+    memory: 1Gi
+  limits:
+    cpu: 2
+    memory: 4Gi
+
+# Memcached cache configuration (optional - has dev-friendly defaults)
+# Loki uses memcached for two caching layers:
+# - chunksCache: Caches log chunks to reduce S3 fetches
+# - resultsCache: Caches query results for repeated queries
+# Values are in MB. Pod memory is computed as allocatedMemory * 1.2
+# Role defaults: 512MB chunks, 256MB results (adequate for most deployments)
+# Uncomment to override for large-scale production:
+# loki_chunks_cache_allocated_memory: 1024  # MB
+# loki_results_cache_allocated_memory: 512  # MB
+```
+
 #### JupyterHub
 
 ```yaml
