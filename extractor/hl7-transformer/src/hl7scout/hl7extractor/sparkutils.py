@@ -5,12 +5,12 @@ from pyspark.sql import DataFrame, Column, Window
 from pyspark.sql import functions as F
 
 
-def merge_df_into_dt_on_source_file(dt: DeltaTable, df: DataFrame):
+def merge_df_into_dt_on_source_file(dt: DeltaTable, df: DataFrame, merge_col: str):
     (
         dt.alias("s")
         .merge(
             df.alias("t"),
-            "s.source_file = t.source_file AND s.year = t.year",
+            f"s.{merge_col} = t.{merge_col} AND s.year = t.year",
         )
         .whenMatchedUpdateAll()
         .whenNotMatchedInsertAll()

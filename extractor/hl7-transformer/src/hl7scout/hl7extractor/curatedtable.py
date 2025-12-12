@@ -1,5 +1,4 @@
 from delta import DeltaTable
-from temporalio import activity
 
 from .derivativetable import DerivativeTable
 from .sparkutils import (
@@ -29,8 +28,6 @@ def curate_silver_table(batch_df, spark, table_name):
     if filtered_df is None:
         return
 
-    activity.logger.info(f"Column available in curated table: {batch_df.columns}")
-
     curated_df = (
         filtered_df.withColumnRenamed("source_file", "primary_report_identifier")
         .withColumns(
@@ -53,8 +50,8 @@ def curate_silver_table(batch_df, spark, table_name):
             }
         )
         .drop(
-            "orc_3_filler_order_number",
-            "obr_3_filler_order_number",
+            "orc_2_placer_order_number",
+            "obr_2_placer_order_number",
             "orc_3_filler_order_number",
             "obr_3_filler_order_number",
         )
@@ -63,7 +60,9 @@ def curate_silver_table(batch_df, spark, table_name):
     # Update existing curated table or create it if it does not yet exist
     if spark.catalog.tableExists(table_name):
         merge_df_into_dt_on_source_file(
-            DeltaTable.forName(spark, table_name), curated_df
+            DeltaTable.forName(spark, table_name),
+            curated_df,
+            "primary_report_identifier",
         )
     else:
         create_table_from_df(curated_df, table_name)
