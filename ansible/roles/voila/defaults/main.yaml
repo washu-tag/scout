@@ -18,8 +18,8 @@ voila_replicas: 1
 # Resource limits - sized for POC with multiple concurrent users
 voila_resources:
   requests:
-    cpu: 500m
-    memory: 2Gi
+    cpu: 100m
+    memory: 512Mi
   limits:
     cpu: 2
     memory: 8Gi
