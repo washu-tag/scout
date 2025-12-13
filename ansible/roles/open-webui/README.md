@@ -119,7 +119,7 @@ Configure the Trino MCP external tool to enable SQL querying:
      - **Function calling**: `Native`
      - **Keep alive**: `-1` (keeps model loaded indefinitely)
    - **Prompt Suggestions**: Select "Custom" and add sample prompts
-   - **Tools**: Enable "Trino MCP", disable "Web Search"
+   - **Tools**: Enable "Trino MCP", disable "Web Search" and "Code Interpreter"
 6. Click **Save**
 
 #### 4. Disable Arena Model

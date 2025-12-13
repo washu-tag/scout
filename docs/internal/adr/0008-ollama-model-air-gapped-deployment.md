@@ -170,20 +170,18 @@ ollama:
 ### Workflow
 
 ```
-1. Ansible starts model pull Job on staging cluster
+1. Ansible starts combined model Job on staging cluster
    └── Job pulls base models from registry.ollama.ai to NFS
-
-2. Ansible starts Scout model creation Job on staging cluster
    └── Job creates gpt-oss-120b-long:latest custom model on NFS
 
-3. Ansible deploys production Ollama
+2. Ansible deploys production Ollama
    └── Configured to read models from NFS path
 
-4. Production Ollama starts with models available
+3. Production Ollama starts with models available
    └── No file transfer required, no internet access needed
 ```
 
-Note: Both Jobs run asynchronously. The Scout model creation Job has retry logic (`backoffLimit: 3`) and will wait for the base model to be available.
+Note: The Job runs asynchronously with retry logic (`backoffLimit: 3`).
 
 ### Configuration Variables
 
@@ -341,9 +339,9 @@ Document manual process for operators to download and transfer models.
 
 1. Deploy staging k3s (existing)
 2. Deploy Harbor (existing)
-3. **Pull Ollama models to NFS from staging** (new)
-4. Deploy production k3s with registry mirrors (existing)
-5. Deploy Scout services including Ollama with NFS mount (modified)
+3. **Pull Ollama models and create Scout model on NFS from staging**
+4. Deploy production k3s with registry mirrors
+5. Deploy Scout services including Ollama with NFS mount
 
 ### Storage Requirements
 
@@ -375,14 +373,10 @@ A single task file handles both online and air-gapped modes using conditional lo
 - Air-gapped mode: delegates to staging, mounts NFS, runs local Ollama server
 - Online mode: connects to cluster Ollama service via `OLLAMA_HOST`
 
-**Modify open-webui role** (`ansible/roles/open-webui/tasks/create_scout_model.yaml`):
-
-The Scout custom model creation also supports air-gapped mode:
-- Sets `_scout_air_gapped` fact based on `air_gapped` variable
-- Air-gapped mode: delegates to staging, mounts NFS, starts local Ollama server
-- Online mode: connects to cluster Ollama service via `OLLAMA_HOST`
-- Job verifies base model exists before creating custom model
-- Retry logic handles race condition with model pull Job
+Scout model creation is combined into the same Job template (`pull_models_job.yaml.j2`):
+- After pulling base models, the Job creates `gpt-oss-120b-long:latest` custom model
+- Uses same NFS mount and `OLLAMA_MODELS` configuration
+- Eliminates race condition between separate pull and create Jobs
 
 **Modify open-webui role** (`ansible/roles/open-webui/templates/values.yaml.j2`):
 
