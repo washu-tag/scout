@@ -38,7 +38,7 @@ Scout implements a two-layer authentication architecture:
 
 **Layer 1: OAuth2 Proxy (Centralized Approval Gateway)**
 - Validates user authentication via Keycloak OIDC
-- Enforces the user approval requirement by checking for the `scout-user` role
+- Enforces the user approval requirement by checking for the `oauth2-proxy-user` client role (inherited from `scout-user` group)
 - Redirects unapproved users to a "Pending Approval" page
 - Provides consistent login flow across all services
 
@@ -48,9 +48,8 @@ Scout implements a two-layer authentication architecture:
 - Services maintain their own session cookies
 
 This separation of concerns means:
-- OAuth2 Proxy handles user approval (scout-user role check)
+- OAuth2 Proxy handles user approval (oauth2-proxy-user client role check)
 - Services handle their own authorization (service-specific client roles if service supports OAuth/OIDC)
-- Services don't need to check the scout-user role themselves and only handle their own permissions
 
 ### Architecture
 
@@ -61,7 +60,7 @@ Traefik Ingress
     ↓
 OAuth2 Proxy Middleware (ForwardAuth)
     ├─ Check authentication (oauth2_proxy session cookie)
-    ├─ Check authorization (scout-user role from Keycloak)
+    ├─ Check authorization (oauth2-proxy-user client role from Keycloak)
     ├─ Redirect to Keycloak if unauthenticated
     ├─ Show "Pending" page if unauthorized
     └─ Forward to service if approved
@@ -129,7 +128,6 @@ Each service implements OAuth/OIDC directly with Keycloak. No centralized middle
 - Services have direct Keycloak integration
 
 **Cons:**
-- **More challenging approval enforcement:** Each service would need to check for scout-user role (realm-level) in addition to their own client roles, or check for absence of their roles
 - **Mixed authorization concerns:** Services would handle both user approval logic AND service-specific authorization
 - **Cannot protect services without OAuth/OIDC support:** Tools like Prometheus, Ollama cannot be added. Future playbook services would need OAuth/OIDC support built-in.
 - **Configuration duplication:** Every service needs Keycloak client configuration
@@ -152,11 +150,11 @@ The hybrid approach was selected for three core reasons:
 
 **1. Separation of Concerns**
 
-OAuth2 Proxy handles user approval (realm-level `scout-user` role check) while services handle their own authorization (client-specific roles like `superset-admin`, `grafana-editor`). Without OAuth2 Proxy, services would need to check for scout-user role in addition to their own client roles, mixing approval workflow with service authorization logic.
+OAuth2 Proxy handles user approval (`oauth2-proxy-user` client role check) while services handle their own authorization (client-specific roles like `superset-admin`, `grafana-editor`). Without OAuth2 Proxy, services would need to check for oauth2-proxy-user role in addition to their own client roles, mixing approval workflow with service authorization logic.
 
 **2. Centralized Approval Enforcement with Unified UX**
 
-OAuth2 Proxy checks for the `scout-user` role at the ingress layer before any service receives the request. This provides:
+OAuth2 Proxy checks for the `oauth2-proxy-user` client role at the ingress layer before any service receives the request. This provides:
 - Consistent "Pending Approval" page across all services
 - Single source of truth for user approval status
 - Simpler service implementation (no approval logic needed)

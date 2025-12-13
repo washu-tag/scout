@@ -123,8 +123,14 @@ keycloak_minio_client_id: minio
 keycloak_launchpad_client_id: launchpad
 keycloak_open_webui_client_id: open-webui
 
-# Open WebUI URLs
+# OAuth callback URLs for each client
 open_webui_callback_url: 'https://chat.{{ server_hostname }}/oauth/oidc/callback'
+jupyterhub_callback_url: 'https://jupyter.{{ server_hostname }}/hub/oauth_callback'
+grafana_callback_url: 'https://grafana.{{ server_hostname }}/login/generic_oauth'
+temporal_callback_url: 'https://temporal.{{ server_hostname }}/auth/sso/callback'
+superset_callback_url: 'https://superset.{{ server_hostname }}/oauth-authorized/keycloak'
+minio_callback_url: 'https://minio.{{ server_hostname }}/oauth_callback'
+launchpad_callback_url: 'https://{{ server_hostname }}/api/auth/callback/keycloak'
 
 # S3/MinIO configuration (passwords defined in inventory)
 s3_region: us-east-1

@@ -123,6 +123,9 @@ configOverrides:
             app.config.setdefault("AUTH_TYPE", AUTH_OAUTH)
             self.authoauthview = KeycloakOAuthView
     CUSTOM_SECURITY_MANAGER = KeycloakSecurityManager
+  proxy_configuration: |
+    PREFERRED_URL_SCHEME = "https"
+    ENABLE_PROXY_FIX = True
 extraVolumes:
   - name: dashboard-config
     configMap:
