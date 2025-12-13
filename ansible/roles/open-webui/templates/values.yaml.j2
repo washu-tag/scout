@@ -65,6 +65,9 @@ ingress:
   class: traefik
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: >-
+{% if open_webui_csp_enabled %}
+      {{ chatbot_namespace }}-open-webui-csp@kubernetescrd,
+{% endif %}
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd
   host: chat.{{ server_hostname }}
