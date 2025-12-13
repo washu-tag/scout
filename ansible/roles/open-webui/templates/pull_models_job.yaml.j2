@@ -49,6 +49,26 @@ spec:
               ollama pull {{ model }}
 {% endfor %}
               echo "All models pulled successfully"
+{% if scout_model_create %}
+
+              echo "Creating Scout custom model {{ scout_model_name }}..."
+              cat > /tmp/Modelfile <<EOF
+              FROM {{ scout_base_model }}
+              PARAMETER num_predict {{ scout_model_num_predict }}
+              PARAMETER num_ctx {{ scout_model_num_ctx }}
+              PARAMETER num_keep {{ scout_model_num_keep }}
+              EOF
+
+              ollama create {{ scout_model_name }} -f /tmp/Modelfile
+
+              echo "Verifying model creation..."
+              if ollama list | grep -q "{{ scout_model_name }}"; then
+                echo "Scout model {{ scout_model_name }} created successfully"
+              else
+                echo "Failed to verify Scout model creation"
+                exit 1
+              fi
+{% endif %}
 {% if _pull_air_gapped %}
           volumeMounts:
             - name: nfs-models

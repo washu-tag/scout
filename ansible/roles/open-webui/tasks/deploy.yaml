@@ -124,15 +124,10 @@
   ansible.builtin.set_fact:
     ollama_models: '{{ (ollama_models | default([])) | union([scout_base_model]) }}'
   when:
-    - scout_model_create | default(true) | bool
+    - scout_model_create | bool
     - scout_base_model not in (ollama_models | default([]))
 
-# Pull Ollama models asynchronously
+# Pull Ollama models and create Scout model (combined into single job)
 - name: Pull Ollama models
   ansible.builtin.include_tasks: pull_models.yaml
   when: ollama_models is defined and ollama_models | length > 0
-
-# Create Scout custom model
-- name: Create Scout custom model
-  ansible.builtin.include_tasks: create_scout_model.yaml
-  when: scout_model_create | default(true) | bool
