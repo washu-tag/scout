@@ -260,7 +260,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
   // Don't render until subdomain URLs are set on client side
   if (Object.keys(subdomainUrls).length === 0) {
     return (
-      <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg mb-6">
+      <div className="bg-white/80 border-2 border-gray-200/50 dark:bg-gray-800/80 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg mb-6">
         <div className="animate-pulse">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="h-32 bg-gray-100 dark:bg-gray-700 rounded-2xl"></div>
@@ -274,7 +274,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
   return (
     <div className="space-y-6">
       {/* Core Services */}
-      <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
+      <div className="bg-white/80 border-2 border-gray-200/50 dark:bg-gray-800/80 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
@@ -312,7 +312,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
         fallback={
           /* Playbooks only (non-admin view) */
           enablePlaybooks && subdomainUrls.playbooks ? (
-            <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
+            <div className="bg-white/80 border-2 border-gray-200/50 dark:bg-gray-800/80 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg">
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
@@ -335,7 +335,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
         <div className={`grid gap-6 ${enablePlaybooks ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
           {/* Playbooks */}
           {enablePlaybooks && subdomainUrls.playbooks && (
-            <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg h-full">
+            <div className="bg-white/80 border-2 border-gray-200/50 dark:bg-gray-800/80 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg h-full">
               <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
@@ -354,7 +354,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
           )}
 
           {/* Admin Tools */}
-          <div className="bg-white/60 backdrop-blur-sm border-2 border-gray-200/50 dark:bg-gray-800/60 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg h-full flex flex-col">
+          <div className="bg-white/80 border-2 border-gray-200/50 dark:bg-gray-800/80 dark:border-gray-700/50 rounded-3xl p-8 shadow-lg h-full flex flex-col">
             <div className="text-center mb-6">
               <div className="flex items-center justify-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
