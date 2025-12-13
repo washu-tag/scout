@@ -6,9 +6,9 @@
 <div class="row justify-content-center">
   <div class="col-md-8">
 {% if jupyter_cull_max_age is defined and jupyter_cull_max_age > 0 %}
-    <div style="margin-bottom: 20px; padding: 12px 16px; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; font-size: 14px;">
+    <div style="margin-bottom: 20px; padding: 12px 16px; background-color: light-dark(#fff3cd, #4a4000); border-left: 4px solid light-dark(#ffc107, #ffd700); border-radius: 4px; font-size: 14px; color: light-dark(#856404, #ffd700);">
       <strong>⚠️</strong> All servers are automatically stopped after <strong>{{ '%d' | format((jupyter_cull_max_age / 3600) | int) }} hours</strong> regardless of activity to help manage compute resources.
-      <a href="https://washu-scout.readthedocs.io/en/latest/tips.html#notebooks" target="_blank" style="text-decoration: underline; color: #856404;">Learn more</a>
+      <a href="https://washu-scout.readthedocs.io/en/latest/tips.html#notebooks" target="_blank" style="text-decoration: underline; color: inherit;">Learn more</a>
     </div>
 {% endif %}
   </div>

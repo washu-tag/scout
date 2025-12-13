@@ -11,6 +11,10 @@
   delegate_to: localhost
   run_once: true
 
+- name: Load MCP Trino Helm values
+  ansible.builtin.set_fact:
+    mcp_trino_helm_chart_values: "{{ lookup('template', 'mcp_trino_values.yaml.j2') | from_yaml }}"
+
 - name: Deploy Trino MCP using Helm
   ansible.builtin.include_role:
     name: scout_common
@@ -19,4 +23,4 @@
     helm_chart_name: '{{ mcp_trino_release_name }}'
     helm_chart_ref: '{{ mcp_trino_chart_path }}/charts/mcp-trino'
     helm_chart_namespace: '{{ trino_namespace }}'
-    helm_chart_values: '{{ mcp_trino_values }}'
+    helm_chart_values: '{{ mcp_trino_helm_chart_values }}'

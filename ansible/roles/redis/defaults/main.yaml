@@ -25,11 +25,11 @@ redis_operator_resources:
 
 # Redis Enterprise Cluster node resources
 redis_cluster_node_resources:
-  limits:
-    cpu: 2000m
-    memory: 4Gi
   requests:
-    cpu: 500m
+    cpu: 100m
+    memory: 1Gi
+  limits:
+    cpu: 2
     memory: 4Gi
 
 # Number of Redis Enterprise nodes (minimum 3 for HA)

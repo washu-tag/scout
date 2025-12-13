@@ -345,6 +345,14 @@ k3s_cluster:
       limits:
         cpu: 4
         memory: 8Gi
+    # Memcached cache configuration (optional - has dev-friendly defaults)
+    # Loki uses memcached for caching log chunks and query results
+    # Values are in MB. Pod memory is computed as allocatedMemory * 1.2
+    # Role defaults: 512MB chunks, 256MB results (adequate for most deployments)
+    # Upstream defaults: 8192MB chunks, 1024MB results (overkill for most)
+    # Uncomment to override for large-scale production deployments:
+    # loki_chunks_cache_allocated_memory: 1024  # MB
+    # loki_results_cache_allocated_memory: 512  # MB
 
     #---------------------------------------------------------------------------
     # Grafana
@@ -488,6 +496,14 @@ k3s_cluster:
     trino_coordinator_cpu_limit: 3
     # Override query memory allocation if needed (default: 0.3 = 30% of heap per Trino docs)
     # trino_per_node_query_memory_fraction: 0.3
+    # MCP Trino server resources (used by Open WebUI for natural language SQL queries)
+    mcp_trino_resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 1
+        memory: 2Gi
 
     #---------------------------------------------------------------------------
     # Extractor

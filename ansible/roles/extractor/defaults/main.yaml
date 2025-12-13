@@ -13,7 +13,12 @@ hl7log_extractor_timeout: 480
 hl7log_extractor_heartbeat_timeout: 30
 hl7log_extractor_concurrency: 150
 hl7_transformer_timeout: 60
+# HL7 Transformer resources
+# Memory: requests = spark_memory, limits = 4x spark_memory to account for Spark overhead
+# Memory is computed in templates using jvm_memory_to_k8s filter (not computable here in defaults)
 hl7_transformer_spark_memory: 1G
+hl7_transformer_cpu_request: 100m
+hl7_transformer_cpu_limit: 4
 
 # Resource configuration (dev defaults - CI friendly)
 hl7log_extractor_resources:
@@ -26,12 +31,6 @@ hl7log_extractor_resources:
 # Recommended to be low in CI because there is significantly less memory available, so
 # less memory can be allocated to the heap itself.
 hl7log_extractor_jvm_heap_max_ram_percentage: 60
-
-# HL7 Transformer resources
-# Memory: requests = spark_memory, limits = 2x spark_memory to account for Spark overhead
-# Memory is computed in templates using jvm_memory_to_k8s filter (not computable here in defaults)
-hl7_transformer_cpu_request: 100m
-hl7_transformer_cpu_limit: 4
 
 # Container paths
 hl7logs_root_dir: /data
