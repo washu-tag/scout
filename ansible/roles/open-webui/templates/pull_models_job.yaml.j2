@@ -21,7 +21,7 @@ spec:
           env:
 {% if _pull_air_gapped %}
             - name: OLLAMA_MODELS
-              value: /nfs/ollama/models
+              value: '{{ ollama_nfs_mount_path }}'
 {% else %}
             - name: OLLAMA_HOST
               value: 'http://{{ ollama_name }}.{{ chatbot_namespace }}:11434'
@@ -52,7 +52,7 @@ spec:
 {% if _pull_air_gapped %}
           volumeMounts:
             - name: nfs-models
-              mountPath: /nfs/ollama
+              mountPath: '{{ ollama_nfs_mount_path }}'
       volumes:
         - name: nfs-models
           hostPath:

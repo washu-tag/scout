@@ -52,6 +52,23 @@
 - name: Create Kubernetes Secret for sensitive env vars
   ansible.builtin.include_tasks: create_secret.yaml
 
+# For air-gapped deployments: ensure NFS directory structure exists BEFORE deploying Ollama
+# Production Ollama mounts NFS read-only, so it can't create these directories itself
+- name: Pre-create Ollama directory structure on NFS (air-gapped)
+  block:
+    - name: Create Ollama blobs and manifests directories
+      ansible.builtin.file:
+        path: '{{ ollama_nfs_path }}/{{ item }}'
+        state: directory
+        mode: '0755'
+      loop:
+        - blobs
+        - manifests
+      delegate_to: '{{ groups["staging"][0] }}'
+  when:
+    - air_gapped | default(false) | bool
+    - ollama_nfs_path is defined and ollama_nfs_path | length > 0
+
 - name: Parse Helm values
   ansible.builtin.set_fact:
     owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
@@ -91,7 +108,7 @@
         path: /spec/template/spec/containers/0/livenessProbe
         value:
           exec:
-            command: ['/bin/sh', '-c', 'ls /nfs/ollama/models > /dev/null 2>&1']
+            command: ['/bin/sh', '-c', 'ls {{ ollama_nfs_mount_path }} > /dev/null 2>&1']
           initialDelaySeconds: 60
           periodSeconds: 30
           timeoutSeconds: 10
