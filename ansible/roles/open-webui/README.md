@@ -22,6 +22,17 @@ The role automatically:
 - Pulls configured Ollama models
 - Creates the Scout custom model `gpt-oss-120b-long:latest`
 
+### Air-Gapped Deployment
+
+In air-gapped environments (`air_gapped: true`), both model pulling and Scout model creation run on the staging node:
+
+- Models are downloaded to shared NFS storage (`ollama_nfs_path`)
+- The air-gapped cluster mounts this NFS read-only
+- Scout custom model creation also runs on staging with NFS storage
+
+**Required for air-gapped:**
+- `ollama_nfs_path`: Shared NFS path accessible by both staging and cluster
+
 ### Required Configuration
 
 See `defaults/main.yaml` for all available variables. Key requirements in `inventory.yaml`:
@@ -80,64 +91,43 @@ exit
 
 Configure the Trino MCP external tool to enable SQL querying:
 
-1. Navigate to **[User Icon in bottom left]  → Admin Panel → Settings → External Tools** (requires admin access)
+1. Navigate to **Admin Panel → Settings → External Tools** (requires admin access)
 2. Click **+ (Add Server)**
-3. Configure the tool with the following settings:
+3. Configure the tool:
    - **Type**: `MCP (Streamable HTTP)`
    - **ID**: `scout-db`
    - **Name**: `Trino MCP`
    - **Description**: `Query Scout Delta Lake with Trino`
-   - **Server URL**: `http://mcp-trino.trino:8080/mcp`
-      - **Note**: Adjust namespace if Trino is deployed in a different namespace
-      - Format: `http://mcp-trino.<trino_namespace>:8080/mcp`
+   - **Server URL**: `http://mcp-trino.scout-analytics:8080/mcp`
+     - Adjust namespace if Trino is deployed elsewhere: `http://mcp-trino.<namespace>:8080/mcp`
    - **Auth**: `None`
-   - **Function Name Filter List**: `execute_query, get_table_schema` (temporarily required for `v0.6.40` due to [an Open WebUI bug](https://github.com/open-webui/open-webui/issues/19486))
-5. Click **Save**
+   - **Visibility**: `Public`
+4. Click **Save**
 
 #### 3. Configure Model in Open WebUI
 
-Access the Open WebUI interface and configure the model settings:
-
-1. Navigate to **[User Icon in bottom left]  → Admin Panel → Settings → Models** (requires admin access)
+1. Navigate to **Admin Panel → Settings → Models** (requires admin access)
 2. Find `gpt-oss-120b-long:latest` in the model list
-3. (optionally) Disable all other models 
+3. Optionally disable all other models
 4. Click the **edit icon** (pencil) next to `gpt-oss-120b-long:latest`
 5. Configure the following settings:
+   - **Model Name**: `Scout Explorer`
+   - **Description**: `Intelligent data exploration`
+   - **Visibility**: `Public`
+   - **System Prompt**: Copy contents of `ansible/roles/open-webui/files/gpt-oss-scout-query-prompt.md`
+   - **Advanced Params**:
+     - **Function calling**: `Native`
+     - **Keep alive**: `-1` (keeps model loaded indefinitely)
+   - **Prompt Suggestions**: Select "Custom" and add sample prompts
+   - **Tools**: Enable "Trino MCP", disable "Web Search" and "Code Interpreter"
+6. Click **Save**
 
-**Basic Settings:**
-- **Model Name**: `Scout Explorer`
-- **Description**: `Intelligent data exploration`
+#### 4. Disable Arena Model
 
-**Model Badge (Icon):**
-- Upload or select an icon representing Scout (optional)
-- Recommended: Upload the Scout logo if available
+1. Navigate to **Admin Panel → Settings → Evaluations**
+2. Disable Arena Model
 
-**Visbility:**
-- Set to Public
-
-**Model System Prompt:**
-- Navigate to **System Prompt** section
-- Copy the entire contents of `ansible/roles/open-webui/files/gpt-oss-scout-query-prompt.md`
-- Paste into the system prompt field
-- The prompt instructs the model to use the Trino MCP tool for querying the Delta Lake
-
-**Advanced Parameters:**
-- Navigate to **Advanced Params** section
-- **Function calling**: Set to **`Native`**
-- **Keep alive**: Set to **`-1`** (keeps model loaded indefinitely)
-
-**Prompt Suggestions:**
-- Navigate to **Prompt suggestions** section
-- Select "Custom"
-- Add some sample prompts
-
-**Tools:**
-- Check "Trino MCP"
-- Uncheck "Web Search"
-
-6. Click **Save** to apply changes
-
-#### 4. Verify Configuration
+#### 5. Verify Configuration
 
 Test the configuration to ensure everything is working:
 
@@ -167,7 +157,7 @@ There are 1,234,567 radiology reports in the Scout database.
 ```
 
 If the tool is not working, check:
-- Trino MCP service is running: `kubectl get svc -n trino mcp-trino`
+- Trino MCP service is running: `kubectl get svc -n scout-analytics mcp-trino`
 - Tool configuration in Open WebUI Admin Settings
 - Model has Function Calling set to "Native"
 
@@ -205,8 +195,8 @@ kubectl exec -n ollama deploy/ollama -- ollama list
 - Verify base model was pulled: `kubectl exec -n ollama deploy/ollama -- ollama list`
 
 **MCP tool not working:**
-- Verify MCP server is running: `kubectl get pods -n trino -l app.kubernetes.io/name=mcp-trino`
-- Test connectivity: `kubectl exec -n ollama deploy/open-webui -- curl http://mcp-trino.trino:8080/health`
+- Verify MCP server is running: `kubectl get pods -n scout-analytics -l app.kubernetes.io/name=mcp-trino`
+- Test connectivity: `kubectl exec -n ollama deploy/open-webui -- curl http://mcp-trino.scout-analytics:8080/health`
 - In Open WebUI model settings, ensure Function Calling is set to "Native"
 
 **Authentication issues:**

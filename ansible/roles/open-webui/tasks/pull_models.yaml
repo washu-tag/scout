@@ -37,5 +37,5 @@
   ansible.builtin.debug:
     msg: >-
       Model pull Job created in {{ _pull_namespace }} namespace{{ ' on staging' if _pull_air_gapped else '' }}.
-      Models will download in the background. Check status with:
-      kubectl get jobs -n {{ _pull_namespace }} -l app={{ _pull_label }}
+      Models will download{{ ' and Scout model (' + scout_model_name + ') will be created' if scout_model_create else '' }} in the background.
+      Check status with: kubectl get jobs -n {{ _pull_namespace }} -l app={{ _pull_label }}
