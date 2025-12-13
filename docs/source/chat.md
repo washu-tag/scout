@@ -128,6 +128,19 @@ For visualizations, copy results to {ref}`Analytics <analytics>`.
 - **Authentication required**: Keycloak authentication (same as other Scout services)
 - **Read-only access**: Chat cannot modify or delete data
 - **Conversation privacy**: Chat history is private to your user account
+- **External content blocked**: Scout blocks loading images and resources from external websites
+
+### External Images and Links
+
+Scout Chat includes security protections that block external content. If the AI generates a response containing an image from an external service (such as a charting website), the image will not render.
+
+```{warning}
+**Do not click links to external websites in chat responses.**
+
+LLM responses may contain links to third-party services. These links could potentially contain sensitive data from your query embedded in the URL. If you see a broken image or an external link, do not click it.
+```
+
+For visualizations, copy the data to {ref}`Analytics <analytics>` and build charts there.
 
 ## Limitations
 
