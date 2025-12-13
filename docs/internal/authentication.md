@@ -35,13 +35,13 @@ Scout's authentication system uses a multi-layered approach combining Keycloak (
 2. **OAuth2 Proxy Check**: Traefik middleware redirects unauthenticated requests to OAuth2 Proxy
 3. **Keycloak Authentication**: OAuth2 Proxy redirects to Keycloak for login
 4. **Identity Provider**: Keycloak authenticates against configured institutional identity provider
-5. **User Registration Check**: OAuth2 Proxy verifies user has been assigned the `scout-user` role
+5. **User Registration Check**: OAuth2 Proxy verifies user has the `oauth2-proxy-user` role (inherited from `scout-user` group)
 6. **Service Access**: OAuth2 Proxy forwards the request to the target service
 7. **Service Authentication**: Service validates user identity and roles with Keycloak OAuth/OIDC
 
 **Subsequent requests:**
 
-For authenticated users with the `scout-user` role, OAuth2 Proxy validates its session cookie and forwards the request. Each service then validates its own session cookie/token internally without needing to re-authenticate with Keycloak.
+For authenticated users in the `scout-user` group, OAuth2 Proxy validates its session cookie and forwards the request. Each service then validates its own session cookie/token internally without needing to re-authenticate with Keycloak.
 
 ### Subdomain Routing
 
@@ -98,7 +98,7 @@ Add this middleware stack to any new service ingress to enable authentication wi
 **Role**: Authentication middleware and user registration gatekeeper
 
 **Key Features**:
-- Checks if users have been approved (assigned `scout-user` role from Keycloak)
+- Checks if users have been approved (added to `scout-user` group in Keycloak)
 - Redirects unauthenticated users to Keycloak sign-in
 - Redirects unauthorized users to pending approval page
 
@@ -108,18 +108,33 @@ Each Scout service integrates with Keycloak for authentication and authorization
 
 ## Roles & Permissions
 
-### Groups
+### Groups and Client Roles
 
-Keycloak groups automatically assign roles:
+Keycloak groups automatically assign client-specific roles for each service:
 
-**`scout-admin` group**:
-- Grants realm role `scout-admin`
-- Includes all admin client roles
-- Realm management permissions
+**`scout-admin` group assigns these client roles**:
+- OAuth2 Proxy: `oauth2-proxy-user` (required for any Scout access)
+- Launchpad: `launchpad-admin` (admin view with all services)
+- JupyterHub: `jupyterhub-admin`
+- Superset: `superset_admin`
+- Grafana: `grafana-admin`
+- Temporal: `temporal-system:admin`, `default:admin`
+- Open WebUI: `open-webui-admin` (if enabled)
+- Keycloak: `realm-admin` (realm management permissions)
 
-**`scout-user` group**:
-- Grants realm role `scout-user`
-- Includes standard client roles for each service
+**`scout-user` group assigns these client roles**:
+- OAuth2 Proxy: `oauth2-proxy-user` (required for any Scout access)
+- Launchpad: `launchpad-user` (standard user view)
+- JupyterHub: `jupyterhub-user`
+- Superset: `superset_alpha`, `superset_sql_lab`
+- Open WebUI: `open-webui-user` (if enabled)
+
+**Authentication Flow**:
+1. User authenticates via OAuth2 Proxy → checks for `oauth2-proxy-user` client role
+2. User accesses specific service → service checks for its own client roles
+3. All client roles are mapped to the `groups` claim in JWT tokens via the `microprofile-jwt` scope
+
+**Note**: Scout uses Keycloak groups to assign client roles. Always add users to the `scout-user` group for standard access, and to the `scout-admin` group for elevated admin access instead of assigning client roles directly.
 
 ### User Approval Workflow
 

@@ -6,7 +6,7 @@ config:
     provider = "keycloak-oidc"
     redirect_url = "{{ oauth2_proxy_callback_url }}"
     oidc_issuer_url = "{{ keycloak_realm_url }}"
-    allowed_roles = "scout-user"
+    allowed_roles = "oauth2-proxy:oauth2-proxy-user"
     cookie_expire = "{{ oauth2_proxy_cookie_expire }}"
     skip_provider_button = false
     email_domains=  ['*']
