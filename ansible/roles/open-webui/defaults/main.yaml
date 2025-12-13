@@ -22,6 +22,8 @@ ollama_storage_class: ''
 # If air_gapped=true and ollama_nfs_path is not set: models are transferred via kubectl cp
 # If air_gapped=false: models are pulled directly from registry.ollama.ai (online mode)
 ollama_nfs_path: ''
+# Mount path for NFS models inside containers (used by Ollama and model pull/create jobs)
+ollama_nfs_mount_path: /nfs/ollama
 # Namespace for staging Ollama download job (air-gapped only)
 # Reuses the same namespace as RPM package downloads on staging
 staging_ollama_namespace: '{{ package_download_namespace }}'
