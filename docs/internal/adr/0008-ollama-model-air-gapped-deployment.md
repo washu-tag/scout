@@ -1,7 +1,7 @@
 # ADR 0008: Ollama Model Distribution in Air-Gapped Environments
 
-**Date**: 2025-12-04
-**Status**: Accepted
+**Date**: 2025-12-04 
+**Status**: Accepted 
 **Decision Owner**: TAG Team
 
 ## Context

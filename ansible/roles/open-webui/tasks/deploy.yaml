@@ -92,10 +92,13 @@
   register: open_webui_ready
   changed_when: false
 
-# Add NFS mount health check to Ollama liveness probe (air-gapped only)
+# Add NFS + HTTP health check to Ollama liveness probe (air-gapped only)
 # The Helm chart only supports httpGet probes, but we need an exec probe
-# to detect stale NFS handles. This replaces the HTTP probe with one that
-# checks NFS mount accessibility - fails immediately on stale handle.
+# to detect stale NFS handles. This replaces the HTTP probe with one that:
+# 1. Checks NFS mount accessibility (fails immediately on stale handle)
+# 2. Checks Ollama HTTP API via 'ollama list' (restarts if server hung)
+# The readiness probe (HTTP) still handles quick removal from service;
+# this liveness probe ensures restart after prolonged failures.
 # Uses JSON patch to fully replace the livenessProbe (strategic merge can't
 # replace probe handler types).
 - name: Patch Ollama deployment with NFS liveness probe
@@ -108,10 +111,10 @@
         path: /spec/template/spec/containers/0/livenessProbe
         value:
           exec:
-            command: ['/bin/sh', '-c', 'ls {{ ollama_nfs_mount_path }} > /dev/null 2>&1']
+            command: ['/bin/sh', '-c', 'ls {{ ollama_nfs_mount_path }} > /dev/null 2>&1 && ollama list > /dev/null 2>&1']
           initialDelaySeconds: 60
           periodSeconds: 30
-          timeoutSeconds: 10
+          timeoutSeconds: 20
           failureThreshold: 3
           successThreshold: 1
   when:
