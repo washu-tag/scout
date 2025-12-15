@@ -91,3 +91,4 @@
     helm_chart_values_files:
       - '{{ scout_repo_dir }}/helm/voila/values.yaml'
     helm_chart_values: '{{ voila_helm_chart_values }}'
+    wait_timeout: 10m
