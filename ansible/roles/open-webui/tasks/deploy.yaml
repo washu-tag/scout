@@ -111,7 +111,12 @@
         path: /spec/template/spec/containers/0/livenessProbe
         value:
           exec:
-            command: ['/bin/sh', '-c', 'ls {{ ollama_nfs_mount_path }} > /dev/null 2>&1 && ollama list > /dev/null 2>&1']
+            command:
+              [
+                '/bin/sh',
+                '-c',
+                'ls {{ ollama_nfs_mount_path }} > /dev/null 2>&1 && ollama list > /dev/null 2>&1',
+              ]
           initialDelaySeconds: 60
           periodSeconds: 30
           timeoutSeconds: 20
