@@ -24,7 +24,9 @@ coordinator:
       maxMemoryPerNode: "{{ trino_coordinator_max_heap | multiply_memory(trino_per_node_query_memory_fraction) }}B"
   resources: {{ trino_coordinator_resources | to_json }}
   annotations:
-    prometheus.io/trino_scrape: 'true'
+    prometheus.io/scrape: 'true'
+    prometheus.io/port: '8080'
+    prometheus.io/path: '/v1/jmx/mbean'
 
 # Worker configuration
 # JVM heap = trino_worker_max_heap, pod memory limit = 2x heap for off-heap overhead
@@ -38,7 +40,9 @@ worker:
       maxMemoryPerNode: "{{ trino_worker_max_heap | multiply_memory(trino_per_node_query_memory_fraction) }}B"
   resources: {{ trino_worker_resources | to_json }}
   annotations:
-    prometheus.io/trino_scrape: 'true'
+    prometheus.io/scrape: 'true'
+    prometheus.io/port: '8080'
+    prometheus.io/path: '/v1/jmx/mbean'
 
 # Catalogs
 catalogs:
