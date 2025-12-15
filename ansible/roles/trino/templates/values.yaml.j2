@@ -12,6 +12,24 @@ serviceAccount:
   name: '{{ lake_reader_service_account_name }}'
 {% endif %}
 
+# JMX exporter configuration for Prometheus metrics
+# Note: Trino Helm chart requires Bitnami-compatible image (command structure incompatible with sscaling)
+# Using bitnamilegacy as Bitnami moved to paid registry. No security updates but functional.
+jmx:
+  enabled: true
+  registryPort: 9080
+  serverPort: 9081
+  exporter:
+    enabled: true
+    image: bitnamilegacy/jmx-exporter:1.0.1
+    pullPolicy: IfNotPresent
+    port: 5556
+    configProperties: |
+      hostPort: localhost:9080
+      startDelaySeconds: 30
+      ssl: false
+      lowercaseOutputName: false
+
 # Coordinator configuration
 # JVM heap = trino_coordinator_max_heap, pod memory limit = 2x heap for off-heap overhead
 coordinator:
@@ -25,8 +43,8 @@ coordinator:
   resources: {{ trino_coordinator_resources | to_json }}
   annotations:
     prometheus.io/scrape: 'true'
-    prometheus.io/port: '8080'
-    prometheus.io/path: '/v1/jmx/mbean'
+    prometheus.io/port: '5556'
+    prometheus.io/path: '/metrics'
 
 # Worker configuration
 # JVM heap = trino_worker_max_heap, pod memory limit = 2x heap for off-heap overhead
@@ -41,8 +59,8 @@ worker:
   resources: {{ trino_worker_resources | to_json }}
   annotations:
     prometheus.io/scrape: 'true'
-    prometheus.io/port: '8080'
-    prometheus.io/path: '/v1/jmx/mbean'
+    prometheus.io/port: '5556'
+    prometheus.io/path: '/metrics'
 
 # Catalogs
 catalogs:
