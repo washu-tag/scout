@@ -28,7 +28,9 @@ ollama:
   # Air-gapped with NFS: mount pre-staged models read-only (ADR 0008)
   extraEnv:
     - name: OLLAMA_MODELS
-      value: /nfs/ollama/models
+      value: '{{ ollama_nfs_mount_path }}'
+    - name: OLLAMA_NOPRUNE
+      value: 'true'
   volumes:
     - name: nfs-models
       hostPath:
@@ -36,10 +38,14 @@ ollama:
         type: Directory
   volumeMounts:
     - name: nfs-models
-      mountPath: /nfs/ollama
+      mountPath: '{{ ollama_nfs_mount_path }}'
       readOnly: true
   # Disable PVC for models when using NFS
   persistentVolume:
+    enabled: false
+  # Disable Helm's httpGet liveness probe - we replace it with an exec probe
+  # that checks NFS mount accessibility (see deploy.yaml post-Helm patch)
+  livenessProbe:
     enabled: false
 {% else %}
   # Online: use PVC for models

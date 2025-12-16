@@ -696,6 +696,14 @@ ollama_models:
   - gpt-oss:120b
   - llama2
   - codellama
+
+# Scout custom model (gpt-oss-120b-long:latest) is created by default
+# Set to false to skip Scout model creation
+scout_model_create: true
+
+# For air-gapped deployments: shared NFS path for model storage
+# Models are pulled to NFS on staging, mounted read-only on production
+ollama_nfs_path: /mnt/nfs/ollama
 ```
 
 See [Ollama model library](https://ollama.com/library) for available models.

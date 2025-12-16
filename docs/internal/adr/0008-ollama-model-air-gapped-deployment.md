@@ -1,7 +1,7 @@
 # ADR 0008: Ollama Model Distribution in Air-Gapped Environments
 
 **Date**: 2025-12-04  
-**Status**: Proposed  
+**Status**: Accepted  
 **Decision Owner**: TAG Team
 
 ## Context
@@ -170,18 +170,18 @@ ollama:
 ### Workflow
 
 ```
-1. Ansible starts Job on staging cluster
-   └── Job pulls models from registry.ollama.ai to NFS
+1. Ansible starts combined model Job on staging cluster
+   └── Job pulls base models from registry.ollama.ai to NFS
+   └── Job creates gpt-oss-120b-long:latest custom model on NFS
 
-2. Ansible waits for Job completion
-   └── Models now available on shared NFS
-
-3. Ansible deploys production Ollama
+2. Ansible deploys production Ollama
    └── Configured to read models from NFS path
 
-4. Production Ollama starts with models available
+3. Production Ollama starts with models available
    └── No file transfer required, no internet access needed
 ```
+
+Note: The Job runs asynchronously with retry logic (`backoffLimit: 3`).
 
 ### Configuration Variables
 
@@ -339,9 +339,9 @@ Document manual process for operators to download and transfer models.
 
 1. Deploy staging k3s (existing)
 2. Deploy Harbor (existing)
-3. **Pull Ollama models to NFS from staging** (new)
-4. Deploy production k3s with registry mirrors (existing)
-5. Deploy Scout services including Ollama with NFS mount (modified)
+3. **Pull Ollama models and create Scout model on NFS from staging**
+4. Deploy production k3s with registry mirrors
+5. Deploy Scout services including Ollama with NFS mount
 
 ### Storage Requirements
 
@@ -373,6 +373,11 @@ A single task file handles both online and air-gapped modes using conditional lo
 - Air-gapped mode: delegates to staging, mounts NFS, runs local Ollama server
 - Online mode: connects to cluster Ollama service via `OLLAMA_HOST`
 
+Scout model creation is combined into the same Job template (`pull_models_job.yaml.j2`):
+- After pulling base models, the Job creates `gpt-oss-120b-long:latest` custom model
+- Uses same NFS mount and `OLLAMA_MODELS` configuration
+- Eliminates race condition between separate pull and create Jobs
+
 **Modify open-webui role** (`ansible/roles/open-webui/templates/values.yaml.j2`):
 
 ```yaml
@@ -401,15 +406,18 @@ ollama:
 {{ ollama_nfs_path }}/
 └── models/
     ├── blobs/
-    │   ├── sha256-abc123...  # Model weight files
+    │   ├── sha256-abc123...  # Model weight files (shared across models)
     │   └── sha256-def456...
     └── manifests/
-        └── registry.ollama.ai/
-            └── library/
-                ├── gpt-oss/
-                │   └── 120b
-                └── llama3/
-                    └── 8b
+        ├── registry.ollama.ai/
+        │   └── library/
+        │       ├── gpt-oss/
+        │       │   └── 120b        # Base model
+        │       └── llama3/
+        │           └── 8b
+        └── localhost/
+            └── gpt-oss-120b-long/
+                └── latest          # Scout custom model
 ```
 
 ### Future Enhancements
