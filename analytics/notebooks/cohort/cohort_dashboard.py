@@ -192,24 +192,17 @@ def generate_regex_fake(user_query, return_prompt=False):
 #         return f"Error generating regex: {str(e)}"
 
 
-def launch_cohort_builder():
+def _create_search_form(container, config=None):
     """
-    Main entry point for the cohort builder dashboard.
-    Creates and displays the landing page with configuration inputs.
+    Create the search form with optional pre-populated values.
+
+    Args:
+        container: Widget container to render the form into
+        config: Optional configuration dictionary to pre-populate form values
     """
-    # Global styles
-    display(
-        HTML(
-            """
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-            body, .widget-html, .widget-label, .widget-text input, .widget-textarea textarea {
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-            }
-        </style>
-    """
-        )
-    )
+    # Use empty config if none provided
+    if config is None:
+        config = {}
 
     # Header - more compact
     header_html = widgets.HTML(
@@ -254,9 +247,9 @@ def launch_cohort_builder():
     """
     )
 
-    # Input widgets - prepopulated for testing
+    # Input widgets - populate from config if provided
     diagnosis_codes_input = widgets.Textarea(
-        value="",
+        value=config.get("diagnosis_codes", ""),
         placeholder="e.g., C79.31, C79.32",
         description="ICD-10 Codes:",
         layout=widgets.Layout(width="98%", height="60px"),
@@ -264,6 +257,7 @@ def launch_cohort_builder():
     )
 
     diagnosis_text_input = widgets.Text(
+        value=config.get("diagnosis_text", ""),
         placeholder="e.g., brain metastases",
         description="ICD-10 Text:",
         layout=widgets.Layout(width="98%"),
@@ -299,7 +293,7 @@ def launch_cohort_builder():
     )
 
     report_text_input = widgets.Textarea(
-        value="",
+        value=config.get("report_text_terms", ""),
         placeholder="Enter search terms or regex patterns (one per line)\ne.g., metasta(?:sis|ses|tic).{0,50}brain",
         description="Text to match:",
         layout=widgets.Layout(width="98%", height="200px"),
@@ -411,7 +405,7 @@ def launch_cohort_builder():
     generate_regex_button.on_click(on_generate_regex)
 
     modality_select = widgets.SelectMultiple(
-        value=[],
+        value=tuple(config.get("modalities", [])),
         options=["CT", "MR", "US", "XR", "NM", "PT", "RF", "MG"],
         description="Modality:",
         layout=widgets.Layout(width="98%", height="120px"),
@@ -419,7 +413,7 @@ def launch_cohort_builder():
     )
 
     service_name_input = widgets.Text(
-        value="",
+        value=config.get("service_name_pattern", ""),
         placeholder="e.g., brain, chest, abdomen",
         description="Exam Description:",
         layout=widgets.Layout(width="98%"),
@@ -427,7 +421,7 @@ def launch_cohort_builder():
     )
 
     facility_select = widgets.SelectMultiple(
-        value=(),
+        value=tuple(config.get("facilities", [])),
         options=[
             "BJH",
             "PWH",
@@ -453,14 +447,14 @@ def launch_cohort_builder():
     )
 
     min_age_input = widgets.IntText(
-        value=18,
+        value=config.get("min_age", 18) if config.get("min_age") is not None else 18,
         description="Min Age:",
         layout=widgets.Layout(width="48%"),
         style={"description_width": "80px"},
     )
 
     max_age_input = widgets.IntText(
-        value=89,
+        value=config.get("max_age", 89) if config.get("max_age") is not None else 89,
         description="Max Age:",
         layout=widgets.Layout(width="48%"),
         style={"description_width": "80px"},
@@ -474,14 +468,18 @@ def launch_cohort_builder():
             ("Last 180 days", "180"),
             ("Last 365 days", "365"),
         ],
-        value="all",
+        value=config.get("date_range_days", "all"),
         description="Date Range:",
         layout=widgets.Layout(width="98%"),
         style={"description_width": "100px"},
     )
 
     sample_limit_input = widgets.IntText(
-        value=100,
+        value=(
+            config.get("sample_limit", 100)
+            if config.get("sample_limit") is not None
+            else 100
+        ),
         placeholder="Leave empty for no limit",
         description="Sample Limit:",
         layout=widgets.Layout(width="98%"),
@@ -489,7 +487,7 @@ def launch_cohort_builder():
     )
 
     apply_negation_filter = widgets.Checkbox(
-        value=True,
+        value=config.get("apply_negation_filter", True),
         description="Exclude negated matches (recommended, you can still review and manually include)",
         layout=widgets.Layout(width="98%"),
         style={"description_width": "0px"},
@@ -593,34 +591,10 @@ def launch_cohort_builder():
         layout=widgets.Layout(width="98%", height="50px"),
     )
 
-    # Container that will hold either landing page or dashboard
-    main_container = widgets.VBox(
-        [
-            widgets.VBox(
-                [
-                    header_html,
-                    widgets.VBox(
-                        [features_html, form_container, build_button],
-                        layout=widgets.Layout(padding="20px"),
-                    ),
-                ],
-                layout=widgets.Layout(
-                    width="85%",
-                    max_width="1800px",
-                    margin="100px auto",
-                    background="white",
-                    border_radius="12px",
-                    border="2px solid #667eea",
-                    box_shadow="0 10px 30px rgba(0, 0, 0, 0.1)",
-                ),
-            )
-        ]
-    )
-
     # Button click handler
     def on_build_click(b):
         # Gather configuration
-        config = {
+        new_config = {
             "diagnosis_codes": diagnosis_codes_input.value,
             "diagnosis_text": diagnosis_text_input.value,
             "report_text_terms": report_text_input.value,
@@ -637,12 +611,61 @@ def launch_cohort_builder():
         }
 
         # Clear and show dashboard
-        main_container.children = []
-        _create_review_dashboard(config, main_container)
+        container.children = []
+        _create_review_dashboard(new_config, container)
 
     build_button.on_click(on_build_click)
 
-    # Display the landing page
+    # Build the landing page layout
+    landing_page = widgets.VBox(
+        [
+            header_html,
+            widgets.VBox(
+                [features_html, form_container, build_button],
+                layout=widgets.Layout(padding="20px"),
+            ),
+        ],
+        layout=widgets.Layout(
+            width="85%",
+            max_width="1800px",
+            margin="100px auto",
+            background="white",
+            border_radius="12px",
+            border="2px solid #667eea",
+            box_shadow="0 10px 30px rgba(0, 0, 0, 0.1)",
+        ),
+    )
+
+    # Update container with the landing page
+    container.children = [landing_page]
+
+
+def launch_cohort_builder():
+    """
+    Main entry point for the cohort builder dashboard.
+    Creates and displays the landing page with configuration inputs.
+    """
+    # Global styles
+    display(
+        HTML(
+            """
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+            body, .widget-html, .widget-label, .widget-text input, .widget-textarea textarea {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            }
+        </style>
+    """
+        )
+    )
+
+    # Create main container that will hold either landing page or dashboard
+    main_container = widgets.VBox([])
+
+    # Create and display the search form
+    _create_search_form(main_container, config=None)
+
+    # Display the container
     display(main_container)
 
 
@@ -776,18 +799,97 @@ def _build_dashboard_ui(df, criteria_summary, config, sql, container, status_out
             else len(df)
         )
 
-        summary_widget = widgets.HTML(
+        # Create back button
+        back_button = widgets.Button(
+            description="← Back to Search",
+            button_style="",
+            layout=widgets.Layout(width="auto", height="auto"),
+            style={"button_color": "rgba(255, 255, 255, 0.2)"},
+        )
+
+        # Back button handler
+        def on_back_click(b):
+            # Check if there are any annotations
+            has_annotations = any(
+                ann.get("reviewed", False) or ann.get("notes", "").strip()
+                for ann in state["annotations"].values()
+            )
+
+            if has_annotations:
+                # Show confirmation message
+                confirm_output = widgets.Output()
+                confirm_yes = widgets.Button(
+                    description="Yes, go back",
+                    button_style="warning",
+                    layout=widgets.Layout(width="auto"),
+                )
+                confirm_no = widgets.Button(
+                    description="Cancel",
+                    button_style="",
+                    layout=widgets.Layout(width="auto"),
+                )
+
+                def on_confirm_yes(b2):
+                    container.children = []
+                    _create_search_form(container, state["config"])
+
+                def on_confirm_no(b2):
+                    container.children = [dashboard]
+
+                confirm_yes.on_click(on_confirm_yes)
+                confirm_no.on_click(on_confirm_no)
+
+                confirmation = widgets.VBox(
+                    [
+                        widgets.HTML(
+                            f"""
+                            <div style='background: {ORANGE_WARNING}; padding: 24px; border-radius: 12px;
+                                        color: white; margin: 20px auto; text-align: center; max-width: 600px;'>
+                                <div style='font-size: 28px; margin-bottom: 8px;'>⚠️</div>
+                                <div style='font-size: 18px; font-weight: 600;'>Unsaved Annotations</div>
+                                <div style='font-size: 14px; margin-top: 8px; opacity: 0.9;'>
+                                    You have reviewed reports. Going back will not save these annotations.
+                                    Are you sure you want to continue?
+                                </div>
+                            </div>
+                        """
+                        ),
+                        widgets.HBox(
+                            [confirm_yes, confirm_no],
+                            layout=widgets.Layout(justify_content="center", gap="12px"),
+                        ),
+                        confirm_output,
+                    ],
+                    layout=widgets.Layout(
+                        width="98%", max_width="2000px", margin="0 auto", padding="15px"
+                    ),
+                )
+                container.children = [confirmation]
+            else:
+                # No annotations, go back immediately
+                container.children = []
+                _create_search_form(container, state["config"])
+
+        back_button.on_click(on_back_click)
+
+        # Summary section with back button
+        summary_html = widgets.HTML(
             f"""
             <div style='background: {PRIMARY_GRADIENT}; padding: 12px 20px; border-radius: 8px;
-                        color: white; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;'>
-                <div>
-                    <span style='font-size: 18px; font-weight: 700;'>Scout Cohort Builder</span>
-                    <span style='font-size: 14px; opacity: 0.9; margin-left: 16px;'>
-                        {cohort_included_count:,} included reports • {unique_patients:,} patients
-                    </span>
-                </div>
+                        color: white; margin-bottom: 12px;'>
+                <span style='font-size: 18px; font-weight: 700;'>Scout Cohort Builder</span>
+                <span style='font-size: 14px; opacity: 0.9; margin-left: 16px;'>
+                    {cohort_included_count:,} included reports • {unique_patients:,} patients
+                </span>
             </div>
         """
+        )
+
+        summary_widget = widgets.HBox(
+            [back_button, summary_html],
+            layout=widgets.Layout(
+                justify_content="flex-start", align_items="center", gap="12px"
+            ),
         )
 
         # Create UI components
