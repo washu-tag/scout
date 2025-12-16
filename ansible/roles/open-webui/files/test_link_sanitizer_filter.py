@@ -427,19 +427,18 @@ class TestStreamProcessing:
     def test_stream_no_url(self):
         """Stream without URLs passes through."""
         f = Filter()
-        event = {"id": "test-1", "choices": [{"delta": {"content": "Hello world"}}]}
-        result = f.stream(event)
+        event = {"choices": [{"delta": {"content": "Hello world"}}]}
+        metadata = {"chat_id": "test-chat-1"}
+        result = f.stream(event, __metadata__=metadata)
         # Buffer holds last 7 chars, rest emitted
         assert result["choices"][0]["delta"]["content"] == "Hell"
 
     def test_stream_url_in_single_chunk(self):
         """URL contained in single chunk is sanitized."""
         f = Filter()
-        event = {
-            "id": "test-1",
-            "choices": [{"delta": {"content": "Visit https://evil.com for info"}}],
-        }
-        result = f.stream(event)
+        event = {"choices": [{"delta": {"content": "Visit https://evil.com for info"}}]}
+        metadata = {"chat_id": "test-chat-1"}
+        result = f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
         assert "evil.com" not in content
         assert "(external link removed for security)" in content
@@ -447,22 +446,17 @@ class TestStreamProcessing:
     def test_stream_url_split_across_chunks(self):
         """URL split across chunks is properly buffered and sanitized."""
         f = Filter()
+        metadata = {"chat_id": "test-chat-1"}
 
         # First chunk: partial URL
-        event1 = {
-            "id": "test-1",
-            "choices": [{"delta": {"content": "Check https://ev"}}],
-        }
-        result1 = f.stream(event1)
+        event1 = {"choices": [{"delta": {"content": "Check https://ev"}}]}
+        result1 = f.stream(event1, __metadata__=metadata)
         # Should emit "Check " and buffer the partial URL
         assert "evil.com" not in result1["choices"][0]["delta"]["content"]
 
-        # Second chunk: rest of URL (same stream ID)
-        event2 = {
-            "id": "test-1",
-            "choices": [{"delta": {"content": "il.com/data now"}}],
-        }
-        result2 = f.stream(event2)
+        # Second chunk: rest of URL (same chat_id)
+        event2 = {"choices": [{"delta": {"content": "il.com/data now"}}]}
+        result2 = f.stream(event2, __metadata__=metadata)
         content2 = result2["choices"][0]["delta"]["content"]
         assert "evil.com" not in content2
         assert "(external link removed for security)" in content2
@@ -471,35 +465,34 @@ class TestStreamProcessing:
         """Internal URLs are preserved in stream."""
         f = Filter()
         f.valves.internal_domains = "example.com"
+        metadata = {"chat_id": "test-chat-1"}
 
-        event = {
-            "id": "test-1",
-            "choices": [{"delta": {"content": "See https://example.com/docs "}}],
-        }
-        result = f.stream(event)
+        event = {"choices": [{"delta": {"content": "See https://example.com/docs "}}]}
+        result = f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
         assert "https://example.com/docs" in content
 
     def test_stream_finish_flushes_buffer(self):
         """End of stream flushes remaining buffer."""
         f = Filter()
+        metadata = {"chat_id": "test-chat-1"}
 
         # Send content without URL
-        event1 = {"id": "test-1", "choices": [{"delta": {"content": "Short"}}]}
-        result1 = f.stream(event1)
+        event1 = {"choices": [{"delta": {"content": "Short"}}]}
+        result1 = f.stream(event1, __metadata__=metadata)
         # Buffer too short, nothing emitted
         assert result1["choices"][0]["delta"]["content"] == ""
 
-        # Finish signal (same stream ID)
-        event2 = {"id": "test-1", "choices": [{"delta": {}, "finish_reason": "stop"}]}
-        result2 = f.stream(event2)
+        # Finish signal (same chat_id)
+        event2 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
+        result2 = f.stream(event2, __metadata__=metadata)
         assert result2["choices"][0]["delta"]["content"] == "Short"
 
     def test_stream_multiple_urls(self):
         """Multiple URLs in stream are all processed."""
         f = Filter()
+        metadata = {"chat_id": "test-chat-1"}
         event = {
-            "id": "test-1",
             "choices": [
                 {
                     "delta": {
@@ -508,7 +501,7 @@ class TestStreamProcessing:
                 }
             ],
         }
-        result = f.stream(event)
+        result = f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
         assert "https://a.com" not in content
         assert "https://b.com" not in content
@@ -517,17 +510,15 @@ class TestStreamProcessing:
     def test_stream_http_split_at_boundary(self):
         """'http' split across chunks doesn't cause issues."""
         f = Filter()
+        metadata = {"chat_id": "test-chat-1"}
 
         # First chunk ends with 'htt'
-        event1 = {"id": "test-1", "choices": [{"delta": {"content": "Link: htt"}}]}
-        result1 = f.stream(event1)
+        event1 = {"choices": [{"delta": {"content": "Link: htt"}}]}
+        result1 = f.stream(event1, __metadata__=metadata)
 
-        # Second chunk completes the URL (same stream ID)
-        event2 = {
-            "id": "test-1",
-            "choices": [{"delta": {"content": "ps://evil.com here "}}],
-        }
-        result2 = f.stream(event2)
+        # Second chunk completes the URL (same chat_id)
+        event2 = {"choices": [{"delta": {"content": "ps://evil.com here "}}]}
+        result2 = f.stream(event2, __metadata__=metadata)
 
         # Combined should have replaced the URL
         combined = (
@@ -541,52 +532,36 @@ class TestStreamProcessing:
         Multiple concurrent streams are isolated from each other.
 
         This is critical for thread-safety: Open WebUI reuses a single Filter
-        instance across all users, so buffers must be keyed by stream ID to
+        instance across all users, so buffers must be keyed by chat_id to
         prevent data leakage between users.
         """
         f = Filter()
+        metadata_a = {"chat_id": "chat-user-a"}
+        metadata_b = {"chat_id": "chat-user-b"}
 
         # User A starts streaming (contains PHI)
-        event_a1 = {
-            "id": "stream-user-a",
-            "choices": [{"delta": {"content": "Patient MRN 12345 "}}],
-        }
-        result_a1 = f.stream(event_a1)
+        event_a1 = {"choices": [{"delta": {"content": "Patient MRN 12345 "}}]}
+        result_a1 = f.stream(event_a1, __metadata__=metadata_a)
 
-        # User B starts streaming concurrently (different stream ID)
-        event_b1 = {
-            "id": "stream-user-b",
-            "choices": [{"delta": {"content": "Hello, how can I "}}],
-        }
-        result_b1 = f.stream(event_b1)
+        # User B starts streaming concurrently (different chat_id)
+        event_b1 = {"choices": [{"delta": {"content": "Hello, how can I "}}]}
+        result_b1 = f.stream(event_b1, __metadata__=metadata_b)
 
         # User A continues
-        event_a2 = {
-            "id": "stream-user-a",
-            "choices": [{"delta": {"content": "has diagnosis "}}],
-        }
-        result_a2 = f.stream(event_a2)
+        event_a2 = {"choices": [{"delta": {"content": "has diagnosis "}}]}
+        result_a2 = f.stream(event_a2, __metadata__=metadata_a)
 
         # User B continues
-        event_b2 = {
-            "id": "stream-user-b",
-            "choices": [{"delta": {"content": "help you today?"}}],
-        }
-        result_b2 = f.stream(event_b2)
+        event_b2 = {"choices": [{"delta": {"content": "help you today?"}}]}
+        result_b2 = f.stream(event_b2, __metadata__=metadata_b)
 
         # User A finishes
-        event_a3 = {
-            "id": "stream-user-a",
-            "choices": [{"delta": {}, "finish_reason": "stop"}],
-        }
-        result_a3 = f.stream(event_a3)
+        event_a3 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
+        result_a3 = f.stream(event_a3, __metadata__=metadata_a)
 
         # User B finishes
-        event_b3 = {
-            "id": "stream-user-b",
-            "choices": [{"delta": {}, "finish_reason": "stop"}],
-        }
-        result_b3 = f.stream(event_b3)
+        event_b3 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
+        result_b3 = f.stream(event_b3, __metadata__=metadata_b)
 
         # Reconstruct User A's full output
         user_a_output = (
@@ -612,24 +587,22 @@ class TestStreamProcessing:
         assert "MRN" not in user_b_output
 
         # Buffers should be cleaned up after finish
-        assert "stream-user-a" not in f._stream_buffers
-        assert "stream-user-b" not in f._stream_buffers
+        assert "chat-user-a" not in f._stream_buffers
+        assert "chat-user-b" not in f._stream_buffers
 
     def test_stream_buffer_cleanup_on_finish(self):
         """Stream buffer is cleaned up when finish_reason is received."""
         f = Filter()
+        metadata = {"chat_id": "test-cleanup"}
 
         # Start a stream
-        event1 = {"id": "test-cleanup", "choices": [{"delta": {"content": "Hello"}}]}
-        f.stream(event1)
+        event1 = {"choices": [{"delta": {"content": "Hello"}}]}
+        f.stream(event1, __metadata__=metadata)
         assert "test-cleanup" in f._stream_buffers
 
         # Finish the stream
-        event2 = {
-            "id": "test-cleanup",
-            "choices": [{"delta": {}, "finish_reason": "stop"}],
-        }
-        f.stream(event2)
+        event2 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
+        f.stream(event2, __metadata__=metadata)
 
         # Buffer should be cleaned up
         assert "test-cleanup" not in f._stream_buffers
@@ -639,6 +612,7 @@ class TestStreamProcessing:
         import time
 
         f = Filter()
+        metadata = {"chat_id": "new-chat"}
 
         # Manually insert an "old" buffer entry with expired timestamp
         old_timestamp = time.time() - f.STREAM_BUFFER_TTL - 100  # Expired
@@ -649,8 +623,8 @@ class TestStreamProcessing:
         f._stream_buffers["active-stream"] = ("fresh content", fresh_timestamp)
 
         # Process a new stream event (triggers cleanup)
-        event = {"id": "new-stream", "choices": [{"delta": {"content": "Hello"}}]}
-        f.stream(event)
+        event = {"choices": [{"delta": {"content": "Hello"}}]}
+        f.stream(event, __metadata__=metadata)
 
         # Stale buffer should be cleaned up
         assert "abandoned-stream" not in f._stream_buffers
@@ -659,7 +633,22 @@ class TestStreamProcessing:
         assert "active-stream" in f._stream_buffers
 
         # New stream buffer should exist
-        assert "new-stream" in f._stream_buffers
+        assert "new-chat" in f._stream_buffers
+
+    def test_stream_without_metadata_uses_default(self):
+        """Stream without metadata falls back to default buffer."""
+        f = Filter()
+
+        # No metadata provided
+        event1 = {"choices": [{"delta": {"content": "Hello world "}}]}
+        result1 = f.stream(event1)
+        assert result1["choices"][0]["delta"]["content"] == "Hello"
+
+        # Finish without metadata
+        event2 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
+        result2 = f.stream(event2)
+        # Buffer kept last 7 chars: " world " (with leading space)
+        assert result2["choices"][0]["delta"]["content"] == " world "
 
 
 class TestPreservedContent:

@@ -200,19 +200,21 @@ class Filter:
         # Recursively process rest of buffer
         return result + self._process_stream_buffer(stream_id, final)
 
-    def stream(self, event: dict) -> dict:
+    def stream(self, event: dict, __metadata__: dict = None) -> dict:
         """
         Process streaming chunks in real-time, sanitizing URLs as they arrive.
 
-        Uses the event's "id" field to maintain separate buffers per stream,
+        Uses chat_id from __metadata__ to maintain separate buffers per conversation,
         ensuring thread-safety when multiple concurrent streams are processed.
         """
         # Opportunistically clean up abandoned stream buffers to prevent memory leaks
         self._cleanup_stale_buffers()
 
-        # Get stream ID from event (OpenAI format includes "id" field)
-        # Fall back to "default" if not present (shouldn't happen in practice)
-        stream_id = event.get("id", "default")
+        # Get stream ID from metadata (chat_id provides stable per-conversation identity)
+        # Fall back to "default" if metadata not available
+        stream_id = "default"
+        if __metadata__:
+            stream_id = __metadata__.get("chat_id") or "default"
 
         for choice in event.get("choices", []):
             delta = choice.get("delta", {})
