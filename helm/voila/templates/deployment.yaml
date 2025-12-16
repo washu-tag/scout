@@ -73,6 +73,8 @@ spec:
             - name: spark-config
               mountPath: /usr/local/spark/conf/spark-defaults.conf
               subPath: spark-defaults.conf
+            - name: exports
+              mountPath: /home/jovyan/notebooks/exports
       volumes:
         {{- range .Values.playbooks }}
         - name: playbook-{{ . }}
@@ -82,6 +84,8 @@ spec:
         - name: spark-config
           configMap:
             name: {{ .Values.sparkConfigMapName | default "spark-defaults" }}
+        - name: exports
+          emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

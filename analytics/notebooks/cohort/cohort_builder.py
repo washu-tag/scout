@@ -38,8 +38,8 @@ TRINO_USER = os.environ.get("TRINO_USER", "trino")
 TRINO_CATALOG = os.environ.get("TRINO_CATALOG", "delta")
 TRINO_SCHEMA = os.environ.get("TRINO_SCHEMA", "default")
 
-# Export directory
-EXPORT_DIR = "/home/jovyan/cohort_exports"
+# Export directory (must be under /home/jovyan/notebooks for Voila file serving)
+EXPORT_DIR = "/home/jovyan/notebooks/exports"
 os.makedirs(EXPORT_DIR, exist_ok=True)
 
 
