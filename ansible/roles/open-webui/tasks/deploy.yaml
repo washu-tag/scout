@@ -69,6 +69,17 @@
     - air_gapped | default(false) | bool
     - ollama_nfs_path is defined and ollama_nfs_path | length > 0
 
+# Create Traefik middleware for Content Security Policy (CSP)
+# Mitigates LLM data exfiltration attacks where malicious/manipulated model output
+# embeds sensitive data in external resource URLs (images, scripts, forms, etc.)
+# that the user's browser then fetches, leaking data to attacker-controlled servers.
+# See: https://developer.nvidia.com/blog/practical-llm-security-advice-from-the-nvidia-ai-red-team/
+- name: Create CSP middleware for data exfiltration prevention
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'csp-middleware.yaml.j2') | from_yaml }}"
+  when: open_webui_csp_enabled | bool
+
 - name: Parse Helm values
   ansible.builtin.set_fact:
     owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

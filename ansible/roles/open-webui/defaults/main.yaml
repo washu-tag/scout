@@ -96,3 +96,10 @@ open_webui_resources:
   limits:
     cpu: 2
     memory: 2Gi
+
+# Content Security Policy (CSP) configuration
+# Mitigates LLM data exfiltration attacks where malicious/manipulated model output
+# embeds sensitive data in external resource URLs (images, scripts, forms, etc.)
+# that the user's browser then fetches, leaking data to attacker-controlled servers.
+# See: https://developer.nvidia.com/blog/practical-llm-security-advice-from-the-nvidia-ai-red-team/
+open_webui_csp_enabled: true
