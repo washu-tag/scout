@@ -634,6 +634,33 @@ class TestStreamProcessing:
         # Buffer should be cleaned up
         assert "test-cleanup" not in f._stream_buffers
 
+    def test_stream_stale_buffer_cleanup(self):
+        """Stale buffers from abandoned streams are cleaned up."""
+        import time
+
+        f = Filter()
+
+        # Manually insert an "old" buffer entry with expired timestamp
+        old_timestamp = time.time() - f.STREAM_BUFFER_TTL - 100  # Expired
+        f._stream_buffers["abandoned-stream"] = ("partial content", old_timestamp)
+
+        # Insert a "fresh" buffer entry
+        fresh_timestamp = time.time()
+        f._stream_buffers["active-stream"] = ("fresh content", fresh_timestamp)
+
+        # Process a new stream event (triggers cleanup)
+        event = {"id": "new-stream", "choices": [{"delta": {"content": "Hello"}}]}
+        f.stream(event)
+
+        # Stale buffer should be cleaned up
+        assert "abandoned-stream" not in f._stream_buffers
+
+        # Fresh buffer should still exist
+        assert "active-stream" in f._stream_buffers
+
+        # New stream buffer should exist
+        assert "new-stream" in f._stream_buffers
+
 
 class TestPreservedContent:
     """Test that certain content patterns are NOT modified."""

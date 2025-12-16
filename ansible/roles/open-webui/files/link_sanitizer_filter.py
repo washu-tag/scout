@@ -4,6 +4,7 @@ description: Removes external URLs from LLM responses to prevent data exfiltrati
 """
 
 import re
+import time
 from typing import Optional, Callable, Any, Awaitable
 from urllib.parse import urlparse
 
@@ -29,6 +30,10 @@ class Filter:
             description="Text shown in place of removed links",
         )
 
+    # Time-to-live for stream buffers (seconds). Buffers older than this are
+    # cleaned up to prevent memory leaks from abandoned streams.
+    STREAM_BUFFER_TTL = 600  # 10 minutes
+
     def __init__(self):
         self.valves = self.Valves()
         self.md_link_pattern = re.compile(
@@ -40,6 +45,7 @@ class Filter:
             r'(?<!")(https?://[^\s()\[\]<>"]+)', re.IGNORECASE
         )
         # For stream processing: per-stream buffers keyed by stream ID
+        # Values are (buffer_content, last_updated_timestamp) tuples
         # This ensures thread-safety when the same Filter instance handles
         # multiple concurrent streams (Open WebUI shares filter instances)
         self._stream_buffers = {}
@@ -92,6 +98,30 @@ class Filter:
         content = self.raw_url_pattern.sub(self.sanitize_raw_url, content)
         return content
 
+    def _cleanup_stale_buffers(self) -> None:
+        """Remove stream buffers that haven't been updated within the TTL."""
+        now = time.time()
+        stale_ids = [
+            stream_id
+            for stream_id, (_, timestamp) in self._stream_buffers.items()
+            if now - timestamp > self.STREAM_BUFFER_TTL
+        ]
+        for stream_id in stale_ids:
+            del self._stream_buffers[stream_id]
+
+    def _get_buffer(self, stream_id: str) -> str:
+        """Get the buffer content for a stream, or empty string if not found."""
+        entry = self._stream_buffers.get(stream_id)
+        return entry[0] if entry else ""
+
+    def _set_buffer(self, stream_id: str, content: str) -> None:
+        """Set the buffer content for a stream with current timestamp."""
+        self._stream_buffers[stream_id] = (content, time.time())
+
+    def _delete_buffer(self, stream_id: str) -> None:
+        """Delete the buffer for a stream if it exists."""
+        self._stream_buffers.pop(stream_id, None)
+
     def _process_stream_buffer(self, stream_id: str, final: bool = False) -> str:
         """
         Process the stream buffer, returning sanitized content that's safe to emit.
@@ -101,7 +131,7 @@ class Filter:
             stream_id: Unique identifier for this stream (from event["id"])
             final: If True, flush everything (end of stream)
         """
-        buffer = self._stream_buffers.get(stream_id, "")
+        buffer = self._get_buffer(stream_id)
         if not buffer:
             return ""
 
@@ -123,12 +153,12 @@ class Filter:
             if final:
                 # Flush everything
                 result = buffer
-                del self._stream_buffers[stream_id]
+                self._delete_buffer(stream_id)
                 return result
             # Keep last few chars in case "http" is split across chunks
             if len(buffer) > 7:  # len("https://") - 1
                 result = buffer[:-7]
-                self._stream_buffers[stream_id] = buffer[-7:]
+                self._set_buffer(stream_id, buffer[-7:])
                 return result
             return ""
 
@@ -150,17 +180,17 @@ class Filter:
             if final:
                 # End of stream - process what we have
                 url = buffer
-                del self._stream_buffers[stream_id]
+                self._delete_buffer(stream_id)
                 if self.is_external(url):
                     return result + self.valves.replacement_text
                 return result + url
             # Keep buffering
-            self._stream_buffers[stream_id] = buffer
+            self._set_buffer(stream_id, buffer)
             return result
 
         # We have a complete URL
         url = buffer[:url_end]
-        self._stream_buffers[stream_id] = buffer[url_end:]
+        self._set_buffer(stream_id, buffer[url_end:])
 
         if self.is_external(url):
             result += self.valves.replacement_text
@@ -177,6 +207,9 @@ class Filter:
         Uses the event's "id" field to maintain separate buffers per stream,
         ensuring thread-safety when multiple concurrent streams are processed.
         """
+        # Opportunistically clean up abandoned stream buffers to prevent memory leaks
+        self._cleanup_stale_buffers()
+
         # Get stream ID from event (OpenAI format includes "id" field)
         # Fall back to "default" if not present (shouldn't happen in practice)
         stream_id = event.get("id", "default")
@@ -185,9 +218,8 @@ class Filter:
             delta = choice.get("delta", {})
             if "content" in delta and delta["content"]:
                 # Add chunk to buffer for this stream
-                self._stream_buffers[stream_id] = (
-                    self._stream_buffers.get(stream_id, "") + delta["content"]
-                )
+                current_buffer = self._get_buffer(stream_id)
+                self._set_buffer(stream_id, current_buffer + delta["content"])
                 # Process and emit safe content
                 delta["content"] = self._process_stream_buffer(stream_id, final=False)
 
@@ -198,7 +230,7 @@ class Filter:
                 if remaining:
                     delta["content"] = delta.get("content", "") + remaining
                 # Ensure cleanup even if buffer was already empty
-                self._stream_buffers.pop(stream_id, None)
+                self._delete_buffer(stream_id)
 
         return event
 
