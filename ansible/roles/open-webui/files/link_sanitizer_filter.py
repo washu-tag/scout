@@ -42,7 +42,7 @@ class Filter:
         # For stream processing: buffer for partial URLs
         self._stream_buffer = ""
         # Characters that end a URL
-        self._url_end_chars = set(' \t\n\r()[]<>"\'')
+        self._url_end_chars = set(" \t\n\r()[]<>\"'")
 
     def get_internal_domains(self) -> set:
         if not self.valves.internal_domains:

