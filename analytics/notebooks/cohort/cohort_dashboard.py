@@ -447,14 +447,14 @@ def _create_search_form(container, config=None):
     )
 
     min_age_input = widgets.IntText(
-        value=config.get("min_age", 18) if config.get("min_age") is not None else 18,
+        value=config.get("min_age") if config.get("min_age") is not None else 18,
         description="Min Age:",
         layout=widgets.Layout(width="48%"),
         style={"description_width": "80px"},
     )
 
     max_age_input = widgets.IntText(
-        value=config.get("max_age", 89) if config.get("max_age") is not None else 89,
+        value=config.get("max_age") if config.get("max_age") is not None else 89,
         description="Max Age:",
         layout=widgets.Layout(width="48%"),
         style={"description_width": "80px"},
@@ -476,7 +476,7 @@ def _create_search_form(container, config=None):
 
     sample_limit_input = widgets.IntText(
         value=(
-            config.get("sample_limit", 100)
+            config.get("sample_limit")
             if config.get("sample_limit") is not None
             else 100
         ),
