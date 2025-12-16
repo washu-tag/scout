@@ -39,8 +39,10 @@ class Filter:
         self.raw_url_pattern = re.compile(
             r'(?<!")(https?://[^\s()\[\]<>"]+)', re.IGNORECASE
         )
-        # For stream processing: buffer for partial URLs
-        self._stream_buffer = ""
+        # For stream processing: per-stream buffers keyed by stream ID
+        # This ensures thread-safety when the same Filter instance handles
+        # multiple concurrent streams (Open WebUI shares filter instances)
+        self._stream_buffers = {}
         # Characters that end a URL
         self._url_end_chars = set(" \t\n\r()[]<>\"'")
 
@@ -90,20 +92,22 @@ class Filter:
         content = self.raw_url_pattern.sub(self.sanitize_raw_url, content)
         return content
 
-    def _process_stream_buffer(self, final: bool = False) -> str:
+    def _process_stream_buffer(self, stream_id: str, final: bool = False) -> str:
         """
         Process the stream buffer, returning sanitized content that's safe to emit.
         Keeps partial URLs in buffer for next chunk.
 
         Args:
+            stream_id: Unique identifier for this stream (from event["id"])
             final: If True, flush everything (end of stream)
         """
-        if not self._stream_buffer:
+        buffer = self._stream_buffers.get(stream_id, "")
+        if not buffer:
             return ""
 
         # Look for URL start patterns
-        http_pos = self._stream_buffer.lower().find("http://")
-        https_pos = self._stream_buffer.lower().find("https://")
+        http_pos = buffer.lower().find("http://")
+        https_pos = buffer.lower().find("https://")
 
         # Find earliest URL start (-1 means not found)
         url_start = -1
@@ -118,23 +122,23 @@ class Filter:
             # No URL in buffer
             if final:
                 # Flush everything
-                result = self._stream_buffer
-                self._stream_buffer = ""
+                result = buffer
+                del self._stream_buffers[stream_id]
                 return result
             # Keep last few chars in case "http" is split across chunks
-            if len(self._stream_buffer) > 7:  # len("https://") - 1
-                result = self._stream_buffer[:-7]
-                self._stream_buffer = self._stream_buffer[-7:]
+            if len(buffer) > 7:  # len("https://") - 1
+                result = buffer[:-7]
+                self._stream_buffers[stream_id] = buffer[-7:]
                 return result
             return ""
 
         # Found a URL start - emit everything before it
-        result = self._stream_buffer[:url_start]
-        self._stream_buffer = self._stream_buffer[url_start:]
+        result = buffer[:url_start]
+        buffer = buffer[url_start:]
 
         # Now find the end of the URL
         url_end = -1
-        for i, char in enumerate(self._stream_buffer):
+        for i, char in enumerate(buffer):
             if i == 0:
                 continue  # Skip the 'h' of http
             if char in self._url_end_chars:
@@ -145,17 +149,18 @@ class Filter:
             # URL might continue in next chunk
             if final:
                 # End of stream - process what we have
-                url = self._stream_buffer
-                self._stream_buffer = ""
+                url = buffer
+                del self._stream_buffers[stream_id]
                 if self.is_external(url):
                     return result + self.valves.replacement_text
                 return result + url
             # Keep buffering
+            self._stream_buffers[stream_id] = buffer
             return result
 
         # We have a complete URL
-        url = self._stream_buffer[:url_end]
-        self._stream_buffer = self._stream_buffer[url_end:]
+        url = buffer[:url_end]
+        self._stream_buffers[stream_id] = buffer[url_end:]
 
         if self.is_external(url):
             result += self.valves.replacement_text
@@ -163,26 +168,37 @@ class Filter:
             result += url
 
         # Recursively process rest of buffer
-        return result + self._process_stream_buffer(final)
+        return result + self._process_stream_buffer(stream_id, final)
 
     def stream(self, event: dict) -> dict:
         """
         Process streaming chunks in real-time, sanitizing URLs as they arrive.
+
+        Uses the event's "id" field to maintain separate buffers per stream,
+        ensuring thread-safety when multiple concurrent streams are processed.
         """
+        # Get stream ID from event (OpenAI format includes "id" field)
+        # Fall back to "default" if not present (shouldn't happen in practice)
+        stream_id = event.get("id", "default")
+
         for choice in event.get("choices", []):
             delta = choice.get("delta", {})
             if "content" in delta and delta["content"]:
-                # Add chunk to buffer
-                self._stream_buffer += delta["content"]
+                # Add chunk to buffer for this stream
+                self._stream_buffers[stream_id] = (
+                    self._stream_buffers.get(stream_id, "") + delta["content"]
+                )
                 # Process and emit safe content
-                delta["content"] = self._process_stream_buffer(final=False)
+                delta["content"] = self._process_stream_buffer(stream_id, final=False)
 
             # Check for end of stream
             if choice.get("finish_reason"):
-                # Flush remaining buffer
-                remaining = self._process_stream_buffer(final=True)
+                # Flush remaining buffer and clean up
+                remaining = self._process_stream_buffer(stream_id, final=True)
                 if remaining:
                     delta["content"] = delta.get("content", "") + remaining
+                # Ensure cleanup even if buffer was already empty
+                self._stream_buffers.pop(stream_id, None)
 
         return event
 

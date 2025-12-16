@@ -427,7 +427,7 @@ class TestStreamProcessing:
     def test_stream_no_url(self):
         """Stream without URLs passes through."""
         f = Filter()
-        event = {"choices": [{"delta": {"content": "Hello world"}}]}
+        event = {"id": "test-1", "choices": [{"delta": {"content": "Hello world"}}]}
         result = f.stream(event)
         # Buffer holds last 7 chars, rest emitted
         assert result["choices"][0]["delta"]["content"] == "Hell"
@@ -435,7 +435,10 @@ class TestStreamProcessing:
     def test_stream_url_in_single_chunk(self):
         """URL contained in single chunk is sanitized."""
         f = Filter()
-        event = {"choices": [{"delta": {"content": "Visit https://evil.com for info"}}]}
+        event = {
+            "id": "test-1",
+            "choices": [{"delta": {"content": "Visit https://evil.com for info"}}],
+        }
         result = f.stream(event)
         content = result["choices"][0]["delta"]["content"]
         assert "evil.com" not in content
@@ -446,13 +449,19 @@ class TestStreamProcessing:
         f = Filter()
 
         # First chunk: partial URL
-        event1 = {"choices": [{"delta": {"content": "Check https://ev"}}]}
+        event1 = {
+            "id": "test-1",
+            "choices": [{"delta": {"content": "Check https://ev"}}],
+        }
         result1 = f.stream(event1)
         # Should emit "Check " and buffer the partial URL
         assert "evil.com" not in result1["choices"][0]["delta"]["content"]
 
-        # Second chunk: rest of URL
-        event2 = {"choices": [{"delta": {"content": "il.com/data now"}}]}
+        # Second chunk: rest of URL (same stream ID)
+        event2 = {
+            "id": "test-1",
+            "choices": [{"delta": {"content": "il.com/data now"}}],
+        }
         result2 = f.stream(event2)
         content2 = result2["choices"][0]["delta"]["content"]
         assert "evil.com" not in content2
@@ -463,7 +472,10 @@ class TestStreamProcessing:
         f = Filter()
         f.valves.internal_domains = "example.com"
 
-        event = {"choices": [{"delta": {"content": "See https://example.com/docs "}}]}
+        event = {
+            "id": "test-1",
+            "choices": [{"delta": {"content": "See https://example.com/docs "}}],
+        }
         result = f.stream(event)
         content = result["choices"][0]["delta"]["content"]
         assert "https://example.com/docs" in content
@@ -473,13 +485,13 @@ class TestStreamProcessing:
         f = Filter()
 
         # Send content without URL
-        event1 = {"choices": [{"delta": {"content": "Short"}}]}
+        event1 = {"id": "test-1", "choices": [{"delta": {"content": "Short"}}]}
         result1 = f.stream(event1)
         # Buffer too short, nothing emitted
         assert result1["choices"][0]["delta"]["content"] == ""
 
-        # Finish signal
-        event2 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
+        # Finish signal (same stream ID)
+        event2 = {"id": "test-1", "choices": [{"delta": {}, "finish_reason": "stop"}]}
         result2 = f.stream(event2)
         assert result2["choices"][0]["delta"]["content"] == "Short"
 
@@ -487,13 +499,14 @@ class TestStreamProcessing:
         """Multiple URLs in stream are all processed."""
         f = Filter()
         event = {
+            "id": "test-1",
             "choices": [
                 {
                     "delta": {
                         "content": "Bad: https://a.com Good later https://b.com end "
                     }
                 }
-            ]
+            ],
         }
         result = f.stream(event)
         content = result["choices"][0]["delta"]["content"]
@@ -506,11 +519,14 @@ class TestStreamProcessing:
         f = Filter()
 
         # First chunk ends with 'htt'
-        event1 = {"choices": [{"delta": {"content": "Link: htt"}}]}
+        event1 = {"id": "test-1", "choices": [{"delta": {"content": "Link: htt"}}]}
         result1 = f.stream(event1)
 
-        # Second chunk completes the URL
-        event2 = {"choices": [{"delta": {"content": "ps://evil.com here "}}]}
+        # Second chunk completes the URL (same stream ID)
+        event2 = {
+            "id": "test-1",
+            "choices": [{"delta": {"content": "ps://evil.com here "}}],
+        }
         result2 = f.stream(event2)
 
         # Combined should have replaced the URL
@@ -519,6 +535,104 @@ class TestStreamProcessing:
             + result2["choices"][0]["delta"]["content"]
         )
         assert "evil.com" not in combined
+
+    def test_stream_concurrent_isolation(self):
+        """
+        Multiple concurrent streams are isolated from each other.
+
+        This is critical for thread-safety: Open WebUI reuses a single Filter
+        instance across all users, so buffers must be keyed by stream ID to
+        prevent data leakage between users.
+        """
+        f = Filter()
+
+        # User A starts streaming (contains PHI)
+        event_a1 = {
+            "id": "stream-user-a",
+            "choices": [{"delta": {"content": "Patient MRN 12345 "}}],
+        }
+        result_a1 = f.stream(event_a1)
+
+        # User B starts streaming concurrently (different stream ID)
+        event_b1 = {
+            "id": "stream-user-b",
+            "choices": [{"delta": {"content": "Hello, how can I "}}],
+        }
+        result_b1 = f.stream(event_b1)
+
+        # User A continues
+        event_a2 = {
+            "id": "stream-user-a",
+            "choices": [{"delta": {"content": "has diagnosis "}}],
+        }
+        result_a2 = f.stream(event_a2)
+
+        # User B continues
+        event_b2 = {
+            "id": "stream-user-b",
+            "choices": [{"delta": {"content": "help you today?"}}],
+        }
+        result_b2 = f.stream(event_b2)
+
+        # User A finishes
+        event_a3 = {
+            "id": "stream-user-a",
+            "choices": [{"delta": {}, "finish_reason": "stop"}],
+        }
+        result_a3 = f.stream(event_a3)
+
+        # User B finishes
+        event_b3 = {
+            "id": "stream-user-b",
+            "choices": [{"delta": {}, "finish_reason": "stop"}],
+        }
+        result_b3 = f.stream(event_b3)
+
+        # Reconstruct User A's full output
+        user_a_output = (
+            result_a1["choices"][0]["delta"]["content"]
+            + result_a2["choices"][0]["delta"]["content"]
+            + result_a3["choices"][0]["delta"]["content"]
+        )
+
+        # Reconstruct User B's full output
+        user_b_output = (
+            result_b1["choices"][0]["delta"]["content"]
+            + result_b2["choices"][0]["delta"]["content"]
+            + result_b3["choices"][0]["delta"]["content"]
+        )
+
+        # User A's output should contain their content, not User B's
+        assert "Patient" in user_a_output or "MRN" in user_a_output
+        assert "how can I" not in user_a_output
+
+        # User B's output should contain their content, not User A's
+        assert "how can I" in user_b_output or "help you" in user_b_output
+        assert "Patient" not in user_b_output
+        assert "MRN" not in user_b_output
+
+        # Buffers should be cleaned up after finish
+        assert "stream-user-a" not in f._stream_buffers
+        assert "stream-user-b" not in f._stream_buffers
+
+    def test_stream_buffer_cleanup_on_finish(self):
+        """Stream buffer is cleaned up when finish_reason is received."""
+        f = Filter()
+
+        # Start a stream
+        event1 = {"id": "test-cleanup", "choices": [{"delta": {"content": "Hello"}}]}
+        f.stream(event1)
+        assert "test-cleanup" in f._stream_buffers
+
+        # Finish the stream
+        event2 = {
+            "id": "test-cleanup",
+            "choices": [{"delta": {}, "finish_reason": "stop"}],
+        }
+        f.stream(event2)
+
+        # Buffer should be cleaned up
+        assert "test-cleanup" not in f._stream_buffers
 
 
 class TestPreservedContent:
