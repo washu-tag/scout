@@ -172,10 +172,22 @@ class Filter:
         buffer = buffer[url_start:]
 
         # Now find the end of the URL
+        # Handle IPv6 addresses in brackets: http://[2001:db8::1]/path
         url_end = -1
+        in_ipv6_bracket = False
         for i, char in enumerate(buffer):
             if i == 0:
                 continue  # Skip the first char ('h' of http or 'w' of www)
+            # Track IPv6 bracket state (e.g., http://[::1]:8080/path)
+            if char == "[" and not in_ipv6_bracket:
+                in_ipv6_bracket = True
+                continue
+            if char == "]" and in_ipv6_bracket:
+                in_ipv6_bracket = False
+                continue
+            # Don't end URL while inside IPv6 brackets
+            if in_ipv6_bracket:
+                continue
             if char in self._url_end_chars:
                 url_end = i
                 break

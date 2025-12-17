@@ -745,6 +745,33 @@ class TestStreamProcessing:
         assert "www.evil.com" not in content
         assert "(external link removed for security)" in content
 
+    def test_stream_ipv6_url_sanitized(self):
+        """IPv6 URLs in stream are fully sanitized (not just the scheme)."""
+        f = Filter()
+        metadata = {"chat_id": "test-chat-1"}
+        event = {
+            "choices": [{"delta": {"content": "Connect to http://[2001:db8::1]/api now "}}]
+        }
+        result = f.stream(event, __metadata__=metadata)
+        content = result["choices"][0]["delta"]["content"]
+        # The entire IPv6 URL should be removed, not just http://
+        assert "2001:db8" not in content
+        assert "[" not in content or "Connect" in content  # brackets from URL removed
+        assert "(external link removed for security)" in content
+
+    def test_stream_ipv6_url_with_port_sanitized(self):
+        """IPv6 URLs with port in stream are fully sanitized."""
+        f = Filter()
+        metadata = {"chat_id": "test-chat-1"}
+        event = {
+            "choices": [{"delta": {"content": "Server at http://[::1]:8080/path here "}}]
+        }
+        result = f.stream(event, __metadata__=metadata)
+        content = result["choices"][0]["delta"]["content"]
+        assert "::1" not in content
+        assert "8080" not in content
+        assert "(external link removed for security)" in content
+
 
 class TestPreservedContent:
     """Test that certain content patterns are NOT modified."""
