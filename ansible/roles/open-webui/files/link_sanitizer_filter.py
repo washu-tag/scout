@@ -42,10 +42,10 @@ class Filter:
         # Match raw URLs (markdown links already processed)
         # Matches http://, https://, or www. URLs
         # Handles IPv6 URLs with brackets: http://[::1]/path
-        # Stop at common delimiters: space, parens, brackets, angle brackets, quotes
+        # Stop at common delimiters: space, parens, brackets, angle brackets, quotes, backticks, asterisks
         # Exclude trailing . , ; ? ! when followed by whitespace or end (likely sentence punctuation)
         self.raw_url_pattern = re.compile(
-            r"((?:https?://|www\.)(?:\[[^\]]+\]|[^\s()\[\]<>\"'.,;?!]|[.,;?!](?!\s|$))+)",
+            r"((?:https?://|www\.)(?:\[[^\]]+\]|[^\s()\[\]<>\"'`*.,;?!]|[.,;?!](?!\s|$))+)",
             re.IGNORECASE,
         )
         # For stream processing: per-stream buffers keyed by stream ID
@@ -54,8 +54,10 @@ class Filter:
         # multiple concurrent streams (Open WebUI shares filter instances)
         self._stream_buffers = {}
         self._buffer_lock = threading.Lock()
-        # Characters that end a URL
-        self._url_end_chars = set(" \t\n\r()[]<>\"'")
+        # Characters that always end a URL
+        self._url_end_chars = set(" \t\n\r()[]<>\"'`*")
+        # Punctuation that ends a URL only if followed by whitespace or end of input
+        self._conditional_url_end_chars = set(".,;?!")
 
     def get_internal_domains(self) -> set:
         if not self.valves.internal_domains:
@@ -202,15 +204,31 @@ class Filter:
                 if char in self._url_end_chars:
                     url_end = i
                     break
+                # Conditional end chars (.,;?!) only end URL if followed by whitespace/end
+                if char in self._conditional_url_end_chars:
+                    next_i = i + 1
+                    if next_i >= len(buffer):
+                        # At end of buffer - might continue in next chunk, don't end here
+                        # unless we're in final mode (handled below when url_end == -1)
+                        continue
+                    next_char = buffer[next_i]
+                    if next_char in " \t\n\r":
+                        url_end = i
+                        break
 
             if url_end == -1:
                 # URL might continue in next chunk
                 if final:
                     # End of stream - process what we have
                     self._delete_buffer(stream_id)
+                    # Strip trailing conditional punctuation (it's sentence-ending)
+                    trailing = ""
+                    while buffer and buffer[-1] in self._conditional_url_end_chars:
+                        trailing = buffer[-1] + trailing
+                        buffer = buffer[:-1]
                     if self.is_external(buffer):
-                        return result + self.valves.replacement_text
-                    return result + buffer
+                        return result + self.valves.replacement_text + trailing
+                    return result + buffer + trailing
                 # Keep buffering
                 self._set_buffer(stream_id, buffer)
                 return result

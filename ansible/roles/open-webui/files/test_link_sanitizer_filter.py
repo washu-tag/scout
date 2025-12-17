@@ -303,6 +303,20 @@ class TestSanitizeContent:
         assert "evil.com" not in result
         assert "(external link removed for security)" in result
 
+    def test_url_in_backticks_sanitized(self, filter_instance):
+        """URLs in backticks are sanitized without including backticks."""
+        content = "Use `https://evil.com/api` as the endpoint"
+        result = filter_instance.sanitize_content(content)
+        assert "evil.com" not in result
+        assert "`(external link removed for security)`" in result
+
+    def test_url_in_asterisks_sanitized(self, filter_instance):
+        """URLs in markdown bold/italic are sanitized without including asterisks."""
+        content = "Check out **https://evil.com/api** for details"
+        result = filter_instance.sanitize_content(content)
+        assert "evil.com" not in result
+        assert "**(external link removed for security)**" in result
+
 
 class TestDataExfiltrationPatterns:
     """
@@ -847,6 +861,56 @@ class TestStreamProcessing:
         assert "::1" not in content
         assert "8080" not in content
         assert "(external link removed for security)" in content
+
+    def test_stream_url_with_trailing_period(self):
+        """URLs followed by period in stream preserve the period."""
+        f = Filter()
+        metadata = {"chat_id": "test-chat-1"}
+        event = {
+            "choices": [
+                {"delta": {"content": "Visit https://evil.com. Then continue "}}
+            ]
+        }
+        result = f.stream(event, __metadata__=metadata)
+        content = result["choices"][0]["delta"]["content"]
+        assert "evil.com" not in content
+        assert "(external link removed for security). Then" in content
+
+    def test_stream_url_with_trailing_period_at_end(self):
+        """URLs with trailing period at stream end preserve the period."""
+        f = Filter()
+        metadata = {"chat_id": "test-chat-1"}
+
+        # Send URL with trailing period
+        event1 = {"choices": [{"delta": {"content": "See https://evil.com."}}]}
+        result1 = f.stream(event1, __metadata__=metadata)
+
+        # Finish the stream
+        event2 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
+        result2 = f.stream(event2, __metadata__=metadata)
+
+        combined = (
+            result1["choices"][0]["delta"]["content"]
+            + result2["choices"][0]["delta"]["content"]
+        )
+        assert "evil.com" not in combined
+        assert combined.endswith(".")
+        assert "(external link removed for security)." in combined
+
+    def test_stream_url_with_version_in_path(self):
+        """URLs with version numbers in path preserve dots within URL."""
+        f = Filter()
+        f.valves.internal_domains = "example.com"
+        metadata = {"chat_id": "test-chat-1"}
+        event = {
+            "choices": [
+                {"delta": {"content": "API at https://example.com/v1.0/users here "}}
+            ]
+        }
+        result = f.stream(event, __metadata__=metadata)
+        content = result["choices"][0]["delta"]["content"]
+        # The dots in v1.0 should be preserved
+        assert "v1.0" in content
 
 
 class TestPreservedContent:
