@@ -203,6 +203,26 @@ class TestSanitizeContent:
         assert "http://evil.com" not in result
         assert "https://evil.com" not in result
 
+    def test_www_urls_sanitized(self, filter_instance):
+        """URLs starting with www. are sanitized."""
+        content = "Visit www.evil.com/exfil?data=secret for more"
+        result = filter_instance.sanitize_content(content)
+        assert "www.evil.com" not in result
+        assert "(external link removed for security)" in result
+
+    def test_www_markdown_link_sanitized(self, filter_instance):
+        """Markdown links with www. URLs are sanitized."""
+        content = "[Click here](www.evil.com/steal?id=123)"
+        result = filter_instance.sanitize_content(content)
+        assert "www.evil.com" not in result
+        assert "Click here" in result
+
+    def test_www_internal_domain_preserved(self, filter_with_internal_domains):
+        """www. URLs for internal domains are preserved."""
+        content = "Visit www.scout.example.com/docs for help"
+        result = filter_with_internal_domains.sanitize_content(content)
+        assert "www.scout.example.com/docs" in result
+
 
 class TestDataExfiltrationPatterns:
     """
@@ -649,6 +669,16 @@ class TestStreamProcessing:
         result2 = f.stream(event2)
         # Buffer kept last 7 chars: " world " (with leading space)
         assert result2["choices"][0]["delta"]["content"] == " world "
+
+    def test_stream_www_url_sanitized(self):
+        """www. URLs in stream are sanitized."""
+        f = Filter()
+        metadata = {"chat_id": "test-chat-1"}
+        event = {"choices": [{"delta": {"content": "Visit www.evil.com/data for info "}}]}
+        result = f.stream(event, __metadata__=metadata)
+        content = result["choices"][0]["delta"]["content"]
+        assert "www.evil.com" not in content
+        assert "(external link removed for security)" in content
 
 
 class TestPreservedContent:

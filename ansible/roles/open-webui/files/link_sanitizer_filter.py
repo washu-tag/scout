@@ -36,13 +36,15 @@ class Filter:
 
     def __init__(self):
         self.valves = self.Valves()
+        # Match markdown links with http://, https://, or www.
         self.md_link_pattern = re.compile(
-            r"\[([^\]]*)\]\((https?://[^)]+)\)", re.IGNORECASE
+            r"\[([^\]]*)\]\(((?:https?://|www\.)[^)]+)\)", re.IGNORECASE
         )
         # Match raw URLs not in quotes (markdown links already processed)
+        # Matches http://, https://, or www. URLs
         # Stop at common delimiters: space, parens, brackets, angle brackets, quotes
         self.raw_url_pattern = re.compile(
-            r'(?<!")(https?://[^\s()\[\]<>"]+)', re.IGNORECASE
+            r'(?<!")((?:https?://|www\.)[^\s()\[\]<>"]+)', re.IGNORECASE
         )
         # For stream processing: per-stream buffers keyed by stream ID
         # Values are (buffer_content, last_updated_timestamp) tuples
@@ -63,7 +65,12 @@ class Filter:
 
     def is_external(self, url: str) -> bool:
         try:
-            parsed = urlparse(url)
+            # Add scheme if missing (for www. URLs) so urlparse works correctly
+            parse_url = url
+            if url.lower().startswith("www."):
+                parse_url = "http://" + url
+
+            parsed = urlparse(parse_url)
             # Use hostname to strip port and userinfo (e.g., user:pass@host:port)
             domain = (parsed.hostname or "").lower()
 
@@ -135,18 +142,15 @@ class Filter:
         if not buffer:
             return ""
 
-        # Look for URL start patterns
-        http_pos = buffer.lower().find("http://")
-        https_pos = buffer.lower().find("https://")
+        # Look for URL start patterns (http://, https://, www.)
+        buffer_lower = buffer.lower()
+        http_pos = buffer_lower.find("http://")
+        https_pos = buffer_lower.find("https://")
+        www_pos = buffer_lower.find("www.")
 
         # Find earliest URL start (-1 means not found)
-        url_start = -1
-        if http_pos >= 0 and https_pos >= 0:
-            url_start = min(http_pos, https_pos)
-        elif http_pos >= 0:
-            url_start = http_pos
-        elif https_pos >= 0:
-            url_start = https_pos
+        positions = [p for p in [http_pos, https_pos, www_pos] if p >= 0]
+        url_start = min(positions) if positions else -1
 
         if url_start == -1:
             # No URL in buffer
@@ -155,7 +159,7 @@ class Filter:
                 result = buffer
                 self._delete_buffer(stream_id)
                 return result
-            # Keep last few chars in case "http" is split across chunks
+            # Keep last few chars in case "http" or "www" is split across chunks
             if len(buffer) > 7:  # len("https://") - 1
                 result = buffer[:-7]
                 self._set_buffer(stream_id, buffer[-7:])
@@ -170,7 +174,7 @@ class Filter:
         url_end = -1
         for i, char in enumerate(buffer):
             if i == 0:
-                continue  # Skip the 'h' of http
+                continue  # Skip the first char ('h' of http or 'w' of www)
             if char in self._url_end_chars:
                 url_end = i
                 break
