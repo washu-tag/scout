@@ -25,9 +25,16 @@ superset_logo_width: 200
 
 # SQL Alchemy pool settings
 # Pool size maintains persistent connections, overflow allows burst capacity
-# Total max connections = pool_size + pool_max_overflow (50 total)
-superset_pool_size: 10
-superset_pool_max_overflow: 40
+# Total max connections = pool_size + pool_max_overflow
+# We've set the pool size based on an estimated number of users who can simultaneously load the main scout dashboard (~10 widgets)
+# 30 persistent connections = 3 users
+# 60 total connections = 6 users
+# If more than 6 users try to load the main dashboard at the same moment, they may experience delays
+#  or "Data error: Bad gateway" messages. But a refresh will clear that up.
+# We don't want the total number of connections to get so high it has effects on trino, but we don't know
+#  trino's max capacity.
+superset_pool_size: 30
+superset_pool_max_overflow: 30
 superset_pool_timeout: 60
 
 # PostgreSQL configuration
