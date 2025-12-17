@@ -73,13 +73,13 @@
           "execErrState": "KeepLast",
           "for": "10m",
           "annotations": {
-            "summary": "{% raw %}Node {{ $labels.node }} has high system load{% endraw %}",
-            "description": "{% raw %}System load is above 1000 on node {{ $labels.node }}. Current load: {{ printf \"%.3f\" $values.A.Value }}%{% endraw %}"
+            "summary": "Node {{ $labels.node }} has high system load",
+            "description": "System load is above 1000 on node {{ $labels.node }}. Current load: {{ printf \"%.3f\" $values.A.Value }}%"
           },
           "labels": {},
           "isPaused": false,
           "notification_settings": {
-            "receiver": "{{ grafana_alert_contact_point }}"
+            "receiver": "[% grafana_alert_contact_point %]"
           }
         }
       ]

@@ -73,13 +73,13 @@
           "execErrState": "KeepLast",
           "for": "10m",
           "annotations": {
-            "summary": "{% raw %}Node {{ $labels.node }} has high disk usage{% endraw %}",
-            "description": "{% raw %}Disk usage is above 85% on node {{ $labels.node }} for mountpoint {{ $labels.mountpoint }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%{% endraw %}"
+            "summary": "Node {{ $labels.node }} has high disk usage",
+            "description": "Disk usage is above 85% on node {{ $labels.node }} for mountpoint {{ $labels.mountpoint }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
           },
           "labels": {},
           "isPaused": false,
           "notification_settings": {
-            "receiver": "{{ grafana_alert_contact_point }}"
+            "receiver": "[% grafana_alert_contact_point %]"
           }
         }
       ]

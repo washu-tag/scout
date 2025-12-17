@@ -51,7 +51,7 @@
             namespace: '{{ grafana_namespace }}'
             labels:
               grafana_dashboard: '1'
-          data: '{{ {dashboard_filename: (dashboard_content_b64 | b64decode)} }}'
+          binaryData: '{{ {dashboard_filename: dashboard_content_b64} }}'
       loop: '{{ dashboard_templates.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
@@ -63,9 +63,11 @@
       register: alert_templates
 
     - name: Create ConfigMap for each Grafana alert
+      no_log: true
       vars:
         alert_filename: '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}'
-        alert_content: '{{ lookup("template", item.path) }}'
+        alert_content_b64: >-
+          {{ (lookup("template", item.path, variable_start_string="[%", variable_end_string="%]") | b64encode) }}
       kubernetes.core.k8s:
         state: present
         definition:
@@ -76,12 +78,15 @@
             namespace: '{{ grafana_namespace }}'
             labels:
               grafana_alert: '1'
-          data: '{{ {alert_filename: alert_content} }}'
+          binaryData: '{{ {alert_filename: alert_content_b64} }}'
       loop: '{{ alert_templates.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
 
     - name: Create Grafana notification policy as ConfigMap
+      vars:
+        notification_policy_content_b64: >-
+          {{ (lookup('template', 'notification-policy.yaml.j2', variable_start_string='[%', variable_end_string='%]') | b64encode) }}
       kubernetes.core.k8s:
         state: present
         definition:
@@ -92,8 +97,8 @@
             namespace: '{{ grafana_namespace }}'
             labels:
               grafana_alert: '1'
-          data:
-            notification-policy.yaml: "{{ lookup('template', 'notification-policy.yaml.j2') }}"
+          binaryData:
+            notification-policy.yaml: '{{ notification_policy_content_b64 }}'
       when: >
         (grafana_alert_contact_point == 'slack' and slack_channel_id != '' and slack_token != '') or
         (grafana_alert_contact_point == 'email' and grafana_smtp_host != '' and grafana_smtp_user != '')
@@ -105,9 +110,11 @@
       register: contact_point_templates
 
     - name: Create Secret for each Grafana contact point
+      no_log: true
       vars:
         contact_point_filename: '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}'
-        contact_point_content: '{{ lookup("template", item.path) }}'
+        contact_point_content_b64: >-
+          {{ (lookup("template", item.path, variable_start_string="[%", variable_end_string="%]") | b64encode) }}
       kubernetes.core.k8s:
         state: present
         definition:
@@ -119,7 +126,7 @@
             labels:
               grafana_alert: '1'
           type: Opaque
-          stringData: '{{ {contact_point_filename: contact_point_content} }}'
+          data: '{{ {contact_point_filename: contact_point_content_b64} }}'
       loop: '{{ contact_point_templates.files }}'
       when: >-
         grafana_alert_contact_point in (item.path | basename) and
@@ -148,6 +155,9 @@
 
     - name: Create postgres datasource secret
       no_log: true
+      vars:
+        postgres_datasource_content_b64: >-
+          {{ (lookup('template', 'datasources/postgres-datasource.yaml.j2', variable_start_string='[%', variable_end_string='%]') | b64encode) }}
       kubernetes.core.k8s:
         state: present
         definition:
@@ -157,10 +167,9 @@
             name: postgres-ingest-db-secret
             namespace: '{{ grafana_namespace }}'
             labels:
-              # default value for: sidecar.datasources.label
               grafana_datasource: 'true'
-          stringData:
-            pg-db.yaml: "{{ lookup('template', 'datasources/postgres-datasource.yaml.j2') }}"
+          data:
+            pg-db.yaml: '{{ postgres_datasource_content_b64 }}'
 
 - name: Deploy Grafana
   ansible.builtin.include_role:
