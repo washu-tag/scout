@@ -31,6 +31,8 @@ ollama:
       value: '{{ ollama_nfs_mount_path }}'
     - name: OLLAMA_NOPRUNE
       value: 'true'
+    - name: OLLAMA_KEEP_ALIVE
+      value: '-1'
   volumes:
     - name: nfs-models
       hostPath:
@@ -55,6 +57,21 @@ ollama:
     storageClass: '{{ ollama_storage_class }}'
 {% endif %}
     size: {{ ollama_storage_size }}
+  extraEnv:
+    - name: OLLAMA_KEEP_ALIVE
+      value: '-1'
+{% endif %}
+{% if scout_model_create %}
+  # Load Scout model into memory on pod startup (if present)
+  # Runs in background to avoid blocking pod readiness
+  lifecycle:
+    postStart:
+      exec:
+        command:
+          - /bin/sh
+          - -c
+          - |
+            (sleep 30 && if ollama list 2>/dev/null | grep -q "{{ scout_model_name }}"; then echo "" | ollama run "{{ scout_model_name }}" || true; fi) &
 {% endif %}
 
 pipelines:

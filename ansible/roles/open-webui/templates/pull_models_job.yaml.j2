@@ -68,6 +68,11 @@ spec:
                 echo "Failed to verify Scout model creation"
                 exit 1
               fi
+
+{% if not _pull_air_gapped %}
+              echo "Loading Scout model into memory (best effort)..."
+              echo "" | ollama run "{{ scout_model_name }}" || true
+{% endif %}
 {% endif %}
 {% if _pull_air_gapped %}
           volumeMounts:
