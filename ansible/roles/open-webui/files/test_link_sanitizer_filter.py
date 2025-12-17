@@ -162,6 +162,27 @@ class TestIsExternal:
         assert filter_instance.is_external("http://localhost:3000") is True
         assert filter_instance.is_external("http://127.0.0.1") is True
 
+    def test_excessively_long_url_treated_as_external(
+        self, filter_with_internal_domains
+    ):
+        """URLs exceeding MAX_URL_LENGTH are treated as external for DoS protection."""
+        # Create a URL longer than MAX_URL_LENGTH (2048)
+        long_path = "a" * 2100
+        long_url = f"https://scout.example.com/{long_path}"
+        assert len(long_url) > Filter.MAX_URL_LENGTH
+        # Even though domain is internal, long URL is treated as external
+        assert filter_with_internal_domains.is_external(long_url) is True
+
+    def test_url_at_length_limit_processed_normally(self, filter_with_internal_domains):
+        """URLs at exactly MAX_URL_LENGTH are processed normally."""
+        # Create a URL exactly at MAX_URL_LENGTH
+        base = "https://scout.example.com/"
+        padding = "a" * (Filter.MAX_URL_LENGTH - len(base))
+        url = base + padding
+        assert len(url) == Filter.MAX_URL_LENGTH
+        # Should be processed normally (internal)
+        assert filter_with_internal_domains.is_external(url) is False
+
 
 class TestSanitizeContent:
     """Test content sanitization with various URL formats."""
@@ -321,11 +342,63 @@ class TestEdgeCases:
     """Test edge cases and boundary conditions."""
 
     def test_url_at_end_of_sentence(self, filter_instance):
-        """URLs at end of sentences are handled."""
+        """URLs at end of sentences are handled, period preserved."""
         content = "Visit https://evil.com."
         result = filter_instance.sanitize_content(content)
         # Should remove URL but keep period
         assert "evil.com" not in result
+        assert result == "Visit (external link removed for security)."
+
+    def test_url_with_trailing_comma(self, filter_instance):
+        """URLs followed by comma have comma preserved."""
+        content = "See https://evil.com, then continue."
+        result = filter_instance.sanitize_content(content)
+        assert "evil.com" not in result
+        assert "(external link removed for security), then continue." in result
+
+    def test_url_with_trailing_semicolon(self, filter_instance):
+        """URLs followed by semicolon have semicolon preserved."""
+        content = "First https://evil.com; second item."
+        result = filter_instance.sanitize_content(content)
+        assert "evil.com" not in result
+        assert "(external link removed for security); second" in result
+
+    def test_url_with_trailing_question_mark(self, filter_instance):
+        """URLs followed by question mark (not query string) have it preserved."""
+        content = "Did you visit https://evil.com?"
+        result = filter_instance.sanitize_content(content)
+        assert "evil.com" not in result
+        assert result == "Did you visit (external link removed for security)?"
+
+    def test_url_with_trailing_exclamation(self, filter_instance):
+        """URLs followed by exclamation mark have it preserved."""
+        content = "Check out https://evil.com!"
+        result = filter_instance.sanitize_content(content)
+        assert "evil.com" not in result
+        assert result == "Check out (external link removed for security)!"
+
+    def test_url_with_query_string_preserved(self, filter_with_internal_domains):
+        """URLs with query strings have the query string preserved."""
+        content = (
+            "Search at https://scout.example.com/search?q=test&page=1 for results."
+        )
+        result = filter_with_internal_domains.sanitize_content(content)
+        assert "https://scout.example.com/search?q=test&page=1" in result
+
+    def test_url_with_version_in_path(self, filter_with_internal_domains):
+        """URLs with version numbers in path are fully preserved."""
+        content = "API at https://scout.example.com/api/v1.0/users works."
+        result = filter_with_internal_domains.sanitize_content(content)
+        # Version number should remain intact
+        assert "https://scout.example.com/api/v1.0/users" in result
+        assert result.endswith("works.")
+
+    def test_url_with_file_extension(self, filter_with_internal_domains):
+        """URLs with file extensions are fully preserved."""
+        content = "Get https://scout.example.com/data.json here."
+        result = filter_with_internal_domains.sanitize_content(content)
+        assert "https://scout.example.com/data.json" in result
+        assert result.endswith("here.")
 
     def test_url_in_parentheses(self, filter_instance):
         """URLs in parentheses are handled."""
@@ -687,11 +760,11 @@ class TestStreamProcessing:
         assert "test-cleanup" not in f._stream_buffers
 
     def test_stream_stale_buffer_cleanup(self):
-        """Stale buffers from abandoned streams are cleaned up."""
+        """Stale buffers from abandoned streams are cleaned up during outlet."""
+        import asyncio
         import time
 
         f = Filter()
-        metadata = {"chat_id": "new-chat"}
 
         # Manually insert an "old" buffer entry with expired timestamp
         old_timestamp = time.time() - f.STREAM_BUFFER_TTL - 100  # Expired
@@ -701,18 +774,17 @@ class TestStreamProcessing:
         fresh_timestamp = time.time()
         f._stream_buffers["active-stream"] = ("fresh content", fresh_timestamp)
 
-        # Process a new stream event (triggers cleanup)
-        event = {"choices": [{"delta": {"content": "Hello"}}]}
-        f.stream(event, __metadata__=metadata)
+        # Process outlet (triggers cleanup)
+        async def run():
+            return await f.outlet({"messages": []})
+
+        asyncio.run(run())
 
         # Stale buffer should be cleaned up
         assert "abandoned-stream" not in f._stream_buffers
 
         # Fresh buffer should still exist
         assert "active-stream" in f._stream_buffers
-
-        # New stream buffer should exist
-        assert "new-chat" in f._stream_buffers
 
     def test_stream_without_metadata_skips_processing(self):
         """Stream without metadata skips buffered processing (outlet handles it)."""
@@ -750,7 +822,9 @@ class TestStreamProcessing:
         f = Filter()
         metadata = {"chat_id": "test-chat-1"}
         event = {
-            "choices": [{"delta": {"content": "Connect to http://[2001:db8::1]/api now "}}]
+            "choices": [
+                {"delta": {"content": "Connect to http://[2001:db8::1]/api now "}}
+            ]
         }
         result = f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
@@ -764,7 +838,9 @@ class TestStreamProcessing:
         f = Filter()
         metadata = {"chat_id": "test-chat-1"}
         event = {
-            "choices": [{"delta": {"content": "Server at http://[::1]:8080/path here "}}]
+            "choices": [
+                {"delta": {"content": "Server at http://[::1]:8080/path here "}}
+            ]
         }
         result = f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]

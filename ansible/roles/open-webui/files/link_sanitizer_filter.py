@@ -29,6 +29,10 @@ class Filter:
     # cleaned up to prevent memory leaks from abandoned streams.
     STREAM_BUFFER_TTL = 600  # 10 minutes
 
+    # Maximum URL length to process. URLs exceeding this are treated as external
+    # for defense against regex DoS attacks with malformed URLs.
+    MAX_URL_LENGTH = 2048
+
     def __init__(self):
         self.valves = self.Valves()
         # Match markdown links with http://, https://, or www.
@@ -39,8 +43,10 @@ class Filter:
         # Matches http://, https://, or www. URLs
         # Handles IPv6 URLs with brackets: http://[::1]/path
         # Stop at common delimiters: space, parens, brackets, angle brackets, quotes
+        # Exclude trailing . , ; ? ! when followed by whitespace or end (likely sentence punctuation)
         self.raw_url_pattern = re.compile(
-            r"((?:https?://|www\.)(?:\[[^\]]+\]|[^\s()\[\]<>\"'])+)", re.IGNORECASE
+            r"((?:https?://|www\.)(?:\[[^\]]+\]|[^\s()\[\]<>\"'.,;?!]|[.,;?!](?!\s|$))+)",
+            re.IGNORECASE,
         )
         # For stream processing: per-stream buffers keyed by stream ID
         # Values are (buffer_content, last_updated_timestamp) tuples
@@ -62,6 +68,10 @@ class Filter:
 
     def is_external(self, url: str) -> bool:
         try:
+            # Reject excessively long URLs as external (defense against regex DoS)
+            if len(url) > self.MAX_URL_LENGTH:
+                return True
+
             # Add scheme if missing (for www. URLs) so urlparse works correctly
             parse_url = url
             if url.lower().startswith("www."):
@@ -139,83 +149,82 @@ class Filter:
             stream_id: Unique identifier for this stream (from event["id"])
             final: If True, flush everything (end of stream)
         """
-        buffer = self._get_buffer(stream_id)
-        if not buffer:
-            return ""
+        result = ""
 
-        # Look for URL start patterns (http://, https://, www.)
-        buffer_lower = buffer.lower()
-        http_pos = buffer_lower.find("http://")
-        https_pos = buffer_lower.find("https://")
-        www_pos = buffer_lower.find("www.")
-
-        # Find earliest URL start (-1 means not found)
-        positions = [p for p in [http_pos, https_pos, www_pos] if p >= 0]
-        url_start = min(positions) if positions else -1
-
-        if url_start == -1:
-            # No URL in buffer
-            if final:
-                # Flush everything
-                result = buffer
-                self._delete_buffer(stream_id)
+        while True:
+            buffer = self._get_buffer(stream_id)
+            if not buffer:
                 return result
-            # Keep last few chars in case "http" or "www" is split across chunks
-            if len(buffer) > 7:  # len("https://") - 1
-                result = buffer[:-7]
-                self._set_buffer(stream_id, buffer[-7:])
+
+            # Look for URL start patterns (http://, https://, www.)
+            buffer_lower = buffer.lower()
+            http_pos = buffer_lower.find("http://")
+            https_pos = buffer_lower.find("https://")
+            www_pos = buffer_lower.find("www.")
+
+            # Find earliest URL start (-1 means not found)
+            positions = [p for p in [http_pos, https_pos, www_pos] if p >= 0]
+            url_start = min(positions) if positions else -1
+
+            if url_start == -1:
+                # No URL in buffer
+                if final:
+                    # Flush everything
+                    self._delete_buffer(stream_id)
+                    return result + buffer
+                # Keep last few chars in case "http" or "www" is split across chunks
+                if len(buffer) > 7:  # len("https://") - 1
+                    self._set_buffer(stream_id, buffer[-7:])
+                    return result + buffer[:-7]
                 return result
-            return ""
 
-        # Found a URL start - emit everything before it
-        result = buffer[:url_start]
-        buffer = buffer[url_start:]
+            # Found a URL start - emit everything before it
+            result += buffer[:url_start]
+            buffer = buffer[url_start:]
 
-        # Now find the end of the URL
-        # Handle IPv6 addresses in brackets: http://[2001:db8::1]/path
-        url_end = -1
-        in_ipv6_bracket = False
-        for i, char in enumerate(buffer):
-            if i == 0:
-                continue  # Skip the first char ('h' of http or 'w' of www)
-            # Track IPv6 bracket state (e.g., http://[::1]:8080/path)
-            if char == "[" and not in_ipv6_bracket:
-                in_ipv6_bracket = True
-                continue
-            if char == "]" and in_ipv6_bracket:
-                in_ipv6_bracket = False
-                continue
-            # Don't end URL while inside IPv6 brackets
-            if in_ipv6_bracket:
-                continue
-            if char in self._url_end_chars:
-                url_end = i
-                break
+            # Now find the end of the URL
+            # Handle IPv6 addresses in brackets: http://[2001:db8::1]/path
+            url_end = -1
+            in_ipv6_bracket = False
+            for i, char in enumerate(buffer):
+                if i == 0:
+                    continue  # Skip the first char ('h' of http or 'w' of www)
+                # Track IPv6 bracket state (e.g., http://[::1]:8080/path)
+                if char == "[" and not in_ipv6_bracket:
+                    in_ipv6_bracket = True
+                    continue
+                if char == "]" and in_ipv6_bracket:
+                    in_ipv6_bracket = False
+                    continue
+                # Don't end URL while inside IPv6 brackets
+                if in_ipv6_bracket:
+                    continue
+                if char in self._url_end_chars:
+                    url_end = i
+                    break
 
-        if url_end == -1:
-            # URL might continue in next chunk
-            if final:
-                # End of stream - process what we have
-                url = buffer
-                self._delete_buffer(stream_id)
-                if self.is_external(url):
-                    return result + self.valves.replacement_text
-                return result + url
-            # Keep buffering
-            self._set_buffer(stream_id, buffer)
-            return result
+            if url_end == -1:
+                # URL might continue in next chunk
+                if final:
+                    # End of stream - process what we have
+                    self._delete_buffer(stream_id)
+                    if self.is_external(buffer):
+                        return result + self.valves.replacement_text
+                    return result + buffer
+                # Keep buffering
+                self._set_buffer(stream_id, buffer)
+                return result
 
-        # We have a complete URL
-        url = buffer[:url_end]
-        self._set_buffer(stream_id, buffer[url_end:])
+            # We have a complete URL
+            url = buffer[:url_end]
+            self._set_buffer(stream_id, buffer[url_end:])
 
-        if self.is_external(url):
-            result += self.valves.replacement_text
-        else:
-            result += url
+            if self.is_external(url):
+                result += self.valves.replacement_text
+            else:
+                result += url
 
-        # Recursively process rest of buffer
-        return result + self._process_stream_buffer(stream_id, final)
+            # Continue loop to process rest of buffer
 
     def stream(self, event: dict, __metadata__: dict = None) -> dict:
         """
@@ -229,9 +238,6 @@ class Filter:
         # and let the outlet handle sanitization instead.
         if not __metadata__ or not __metadata__.get("chat_id"):
             return event
-
-        # Opportunistically clean up abandoned stream buffers to prevent memory leaks
-        self._cleanup_stale_buffers()
 
         stream_id = __metadata__["chat_id"]
 
@@ -261,6 +267,9 @@ class Filter:
         __user__: Optional[dict] = None,
         __event_emitter__: Callable[[Any], Awaitable[None]] = None,
     ) -> dict:
+        # Clean up stale stream buffers to prevent memory leaks from abandoned streams
+        self._cleanup_stale_buffers()
+
         if not body.get("messages"):
             return body
 
