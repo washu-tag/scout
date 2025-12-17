@@ -140,7 +140,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(kube_pod_status_phase{phase=\"Running\"}) by (namespace)",
+          "expr": "sum(kube_pod_status_phase{namespace=~\"$namespace\", phase=\"Running\"}) by (namespace)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -215,10 +215,9 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "exemplar": true,
-          "expr": "avg(1-rate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__rate_interval]))",
-          "interval": "",
-          "legendFormat": "Real",
+          "expr": "sum(kube_pod_container_resource_requests{namespace=~\"$namespace\", unit=\"core\"}) / sum(machine_cpu_cores)",
+          "hide": false,
+          "legendFormat": "Requests",
           "range": true,
           "refId": "A"
         },
@@ -228,26 +227,14 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(kube_pod_container_resource_requests{unit=\"core\"}) / sum(machine_cpu_cores)",
-          "hide": false,
-          "legendFormat": "Requests",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum(kube_pod_container_resource_limits{unit=\"core\"}) / sum(machine_cpu_cores)",
+          "expr": "sum(kube_pod_container_resource_limits{namespace=~\"$namespace\", unit=\"core\"}) / sum(machine_cpu_cores)",
           "hide": false,
           "legendFormat": "Limits",
           "range": true,
-          "refId": "C"
+          "refId": "B"
         }
       ],
-      "title": "Global CPU  Usage",
+      "title": "CPU Requests/Limits",
       "type": "bargauge"
     },
     {
@@ -318,10 +305,9 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemAvailable_bytes{job=\"node-exporter\"}) / sum(node_memory_MemTotal_bytes{job=\"node-exporter\"})",
-          "interval": "",
-          "legendFormat": "Real",
+          "expr": "sum(kube_pod_container_resource_requests{namespace=~\"$namespace\", unit=\"byte\"}) / sum(machine_memory_bytes)",
+          "hide": false,
+          "legendFormat": "Requests",
           "range": true,
           "refId": "A"
         },
@@ -331,26 +317,14 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(kube_pod_container_resource_requests{unit=\"byte\"}) / sum(machine_memory_bytes)",
-          "hide": false,
-          "legendFormat": "Requests",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum(kube_pod_container_resource_limits{unit=\"byte\"}) / sum(machine_memory_bytes)",
+          "expr": "sum(kube_pod_container_resource_limits{namespace=~\"$namespace\", unit=\"byte\"}) / sum(machine_memory_bytes)",
           "hide": false,
           "legendFormat": "Limits",
           "range": true,
-          "refId": "C"
+          "refId": "B"
         }
       ],
-      "title": "Global RAM Usage",
+      "title": "Memory Requests/Limits",
       "type": "bargauge"
     },
     {
@@ -404,7 +378,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "count(kube_namespace_created)",
+          "expr": "count(kube_namespace_created{namespace=~\"$namespace\"})",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -466,10 +440,9 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(1-rate(node_cpu_seconds_total{mode=\"idle\", job=\"node-exporter\"}[$__rate_interval]))",
-          "interval": "",
-          "legendFormat": "Real",
+          "expr": "sum(kube_pod_container_resource_requests{namespace=~\"$namespace\", unit=\"core\"})",
+          "hide": false,
+          "legendFormat": "Requests",
           "range": true,
           "refId": "A"
         },
@@ -479,9 +452,9 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(kube_pod_container_resource_requests{unit=\"core\"})",
+          "expr": "sum(kube_pod_container_resource_limits{namespace=~\"$namespace\", unit=\"core\"})",
           "hide": false,
-          "legendFormat": "Requests",
+          "legendFormat": "Limits",
           "range": true,
           "refId": "B"
         },
@@ -491,26 +464,14 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(kube_pod_container_resource_limits{unit=\"core\"})",
-          "hide": false,
-          "legendFormat": "Limits",
-          "range": true,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
           "expr": "sum(machine_cpu_cores)",
           "hide": false,
-          "legendFormat": "Total",
+          "legendFormat": "Available",
           "range": true,
-          "refId": "D"
+          "refId": "C"
         }
       ],
-      "title": "CPU Usage",
+      "title": "CPU Requests/Limits",
       "type": "stat"
     },
     {
@@ -565,10 +526,9 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "exemplar": true,
-          "expr": "sum(node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemAvailable_bytes{job=\"node-exporter\"})",
-          "interval": "",
-          "legendFormat": "Real",
+          "expr": "sum(kube_pod_container_resource_requests{namespace=~\"$namespace\", unit=\"byte\"})",
+          "hide": false,
+          "legendFormat": "Requests",
           "range": true,
           "refId": "A"
         },
@@ -578,9 +538,9 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(kube_pod_container_resource_requests{unit=\"byte\"})",
+          "expr": "sum(kube_pod_container_resource_limits{namespace=~\"$namespace\", unit=\"byte\"})",
           "hide": false,
-          "legendFormat": "Requests",
+          "legendFormat": "Limits",
           "range": true,
           "refId": "B"
         },
@@ -590,26 +550,14 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(kube_pod_container_resource_limits{unit=\"byte\"})",
-          "hide": false,
-          "legendFormat": "Limits",
-          "range": true,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
           "expr": "sum(machine_memory_bytes)",
           "hide": false,
-          "legendFormat": "Total",
+          "legendFormat": "Available",
           "range": true,
-          "refId": "D"
+          "refId": "C"
         }
       ],
-      "title": "RAM Usage",
+      "title": "Memory Requests/Limits",
       "type": "stat"
     },
     {
@@ -663,7 +611,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(kube_pod_status_phase{phase=\"Running\"})",
+          "expr": "sum(kube_pod_status_phase{namespace=~\"$namespace\", phase=\"Running\"})",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -776,20 +724,6 @@
           "legendFormat": "Linux",
           "range": true,
           "refId": "Linux"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "1 - avg(rate(windows_cpu_time_total{mode=\"idle\"}[$__rate_interval]))",
-          "hide": false,
-          "interval": "$resolution",
-          "legendFormat": "Windows",
-          "range": true,
-          "refId": "Windows"
         }
       ],
       "title": "Cluster CPU Utilization",
@@ -1019,7 +953,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(container_cpu_usage_seconds_total{pod!=\"\"}[$__rate_interval])) by (namespace)\n+ on (namespace)\n(sum(rate(windows_container_cpu_usage_seconds_total{container_id!=\"\", cluster=\"$cluster\"}[$__rate_interval]) * on (container_id) group_left (container, pod, namespace) max by ( container, container_id, pod, namespace) (kube_pod_container_info{container_id!=\"\",}) OR kube_namespace_created * 0) by (namespace))",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod!=\"\"}[$__rate_interval])) by (namespace)\n+ on (namespace)\n(sum(rate(windows_container_cpu_usage_seconds_total{container_id!=\"\", cluster=\"$cluster\"}[$__rate_interval]) * on (container_id) group_left (container, pod, namespace) max by ( container, container_id, pod, namespace) (kube_pod_container_info{container_id!=\"\",}) OR kube_namespace_created * 0) by (namespace))",
           "format": "time_series",
           "hide": false,
           "interval": "$resolution",
@@ -1122,14 +1056,14 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(container_memory_working_set_bytes{pod!=\"\"}) by (namespace)\n+ on (namespace)\n(sum(windows_container_memory_usage_commit_bytes{container_id!=\"\"} * on (container_id) group_left (container, pod, namespace) max by ( container, container_id, pod, namespace) (kube_pod_container_info{container_id!=\"\"}) OR kube_namespace_created * 0) by (namespace))",
+          "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\",pod!=\"\"}) by (namespace)\n+ on (namespace)\n(sum(windows_container_memory_usage_commit_bytes{container_id!=\"\"} * on (container_id) group_left (container, pod, namespace) max by ( container, container_id, pod, namespace) (kube_pod_container_info{container_id!=\"\"}) OR kube_namespace_created * 0) by (namespace))",
           "interval": "$resolution",
           "legendFormat": "{{ namespace }}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Memory Utilization by namespace",
+      "title": "Memory Utilization by Namespace",
       "type": "timeseries"
     },
     {
@@ -1228,7 +1162,7 @@
           "refId": "A"
         }
       ],
-      "title": "CPU usage by Pod",
+      "title": "CPU Usage by Pod",
       "type": "timeseries"
     },
     {
@@ -1327,7 +1261,7 @@
           "refId": "A"
         }
       ],
-      "title": "Memory usage by Pod",
+      "title": "Memory Usage by Pod",
       "type": "timeseries"
     },
     {
@@ -1436,7 +1370,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "sum by(namespace, container) (kube_pod_container_status_restarts_total)",
+          "expr": "sum by(namespace, container) (kube_pod_container_status_restarts_total{namespace=~\"$namespace\"})",
           "fullMetaSearch": false,
           "includeNullMetadata": false,
           "interval": "",
