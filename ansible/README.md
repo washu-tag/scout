@@ -711,6 +711,25 @@ Pre-configured dashboards monitor:
 
 Access Grafana via port-forward or ingress to view dashboards.
 
+### Developing Grafana Dashboards
+
+Grafana dashboards are templated to support dynamic configuration (e.g., namespace variables). **Important**: Dashboard templates use custom Jinja delimiters `[% %]` instead of `{{ }}` to avoid conflicts with PromQL syntax.
+
+When creating or modifying dashboards:
+- Use `[% variable_name %]` for Ansible variables
+- Use `{{ label }}` for PromQL label interpolation (unchanged)
+- Use `$variable` for Grafana dashboard variables (unchanged)
+
+**Example**:
+```json
+{
+  "expr": "up{namespace=\"[% temporal_namespace %]\"}",
+  "legendFormat": "{{ pod }}"
+}
+```
+
+See `roles/grafana/README.md` for complete dashboard development documentation.
+
 ## Troubleshooting
 
 ### Check Ansible Variables

@@ -32,25 +32,27 @@
     - name: Find all Grafana dashboards
       ansible.builtin.find:
         paths: '{{ grafana_dashboards_path }}'
-        patterns: '*.json'
-      register: dashboard_files
+        patterns: '*.json.j2'
+      register: dashboard_templates
 
     - name: Create ConfigMap for each Grafana dashboard
       no_log: true
+      vars:
+        dashboard_filename: '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}'
+        dashboard_content_b64: >-
+          {{ (lookup("template", item.path, variable_start_string="[%", variable_end_string="%]") | b64encode) }}
       kubernetes.core.k8s:
         state: present
-        definition: |
+        definition:
           apiVersion: v1
           kind: ConfigMap
           metadata:
-            name: '{{ item.path | basename | regex_replace(".json$", "") }}'
+            name: '{{ item.path | basename | regex_replace(".json.j2$", "") }}'
             namespace: '{{ grafana_namespace }}'
             labels:
               grafana_dashboard: '1'
-          data:
-            '{{ item.path | basename }}':
-              {{ lookup("file", item.path) | to_nice_json }}
-      loop: '{{ dashboard_files.files }}'
+          data: '{{ {dashboard_filename: (dashboard_content_b64 | b64decode)} }}'
+      loop: '{{ dashboard_templates.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
 
