@@ -138,6 +138,30 @@ class TestIsExternal:
             is True
         )
 
+    def test_ipv4_urls_external(self, filter_instance):
+        """IPv4 address URLs are treated as external."""
+        assert filter_instance.is_external("http://192.168.1.1") is True
+        assert filter_instance.is_external("https://10.0.0.1/path") is True
+        assert filter_instance.is_external("http://8.8.8.8:8080/api") is True
+
+    def test_ipv4_urls_with_internal_domains(self, filter_with_internal_domains):
+        """IPv4 URLs are external even when internal domains are configured."""
+        # IP addresses don't match domain names
+        assert filter_with_internal_domains.is_external("http://192.168.1.1") is True
+        assert filter_with_internal_domains.is_external("https://10.0.0.1") is True
+
+    def test_ipv6_urls_external(self, filter_instance):
+        """IPv6 address URLs are treated as external."""
+        assert filter_instance.is_external("http://[::1]") is True
+        assert filter_instance.is_external("http://[2001:db8::1]") is True
+        assert filter_instance.is_external("http://[fe80::1]:8080/path") is True
+
+    def test_localhost_external(self, filter_instance):
+        """localhost URLs are treated as external (no internal domains configured)."""
+        assert filter_instance.is_external("http://localhost") is True
+        assert filter_instance.is_external("http://localhost:3000") is True
+        assert filter_instance.is_external("http://127.0.0.1") is True
+
 
 class TestSanitizeContent:
     """Test content sanitization with various URL formats."""
@@ -222,6 +246,41 @@ class TestSanitizeContent:
         content = "Visit www.scout.example.com/docs for help"
         result = filter_with_internal_domains.sanitize_content(content)
         assert "www.scout.example.com/docs" in result
+
+    def test_ipv4_url_sanitized(self, filter_instance):
+        """IPv4 address URLs are sanitized."""
+        content = "Connect to http://192.168.1.1:8080/api for the service"
+        result = filter_instance.sanitize_content(content)
+        assert "192.168.1.1" not in result
+        assert "(external link removed for security)" in result
+
+    def test_ipv6_url_sanitized(self, filter_instance):
+        """IPv6 address URLs are sanitized."""
+        content = "The server is at http://[2001:db8::1]/endpoint"
+        result = filter_instance.sanitize_content(content)
+        assert "2001:db8" not in result
+        assert "(external link removed for security)" in result
+
+    def test_localhost_url_sanitized(self, filter_instance):
+        """localhost URLs are sanitized (when no internal domains configured)."""
+        content = "Debug at http://localhost:3000/debug"
+        result = filter_instance.sanitize_content(content)
+        assert "localhost" not in result
+        assert "(external link removed for security)" in result
+
+    def test_url_in_double_quotes_sanitized(self, filter_instance):
+        """URLs in double quotes are still sanitized."""
+        content = 'The URL is "https://evil.com/data" in the config'
+        result = filter_instance.sanitize_content(content)
+        assert "evil.com" not in result
+        assert "(external link removed for security)" in result
+
+    def test_url_in_single_quotes_sanitized(self, filter_instance):
+        """URLs in single quotes are still sanitized."""
+        content = "Set the endpoint to 'https://evil.com/api' in settings"
+        result = filter_instance.sanitize_content(content)
+        assert "evil.com" not in result
+        assert "(external link removed for security)" in result
 
 
 class TestDataExfiltrationPatterns:

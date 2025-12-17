@@ -4,17 +4,12 @@ description: Removes external URLs from LLM responses to prevent data exfiltrati
 """
 
 import re
+import threading
 import time
 from typing import Optional, Callable, Any, Awaitable
 from urllib.parse import urlparse
 
-try:
-    from pydantic import BaseModel, Field
-except ImportError:
-    BaseModel = object
-
-    def Field(default=None, description=None):
-        return default
+from pydantic import BaseModel, Field
 
 
 class Filter:
@@ -40,17 +35,19 @@ class Filter:
         self.md_link_pattern = re.compile(
             r"\[([^\]]*)\]\(((?:https?://|www\.)[^)]+)\)", re.IGNORECASE
         )
-        # Match raw URLs not in quotes (markdown links already processed)
+        # Match raw URLs (markdown links already processed)
         # Matches http://, https://, or www. URLs
+        # Handles IPv6 URLs with brackets: http://[::1]/path
         # Stop at common delimiters: space, parens, brackets, angle brackets, quotes
         self.raw_url_pattern = re.compile(
-            r'(?<!")((?:https?://|www\.)[^\s()\[\]<>"]+)', re.IGNORECASE
+            r"((?:https?://|www\.)(?:\[[^\]]+\]|[^\s()\[\]<>\"'])+)", re.IGNORECASE
         )
         # For stream processing: per-stream buffers keyed by stream ID
         # Values are (buffer_content, last_updated_timestamp) tuples
-        # This ensures thread-safety when the same Filter instance handles
+        # Lock ensures thread-safety when the same Filter instance handles
         # multiple concurrent streams (Open WebUI shares filter instances)
         self._stream_buffers = {}
+        self._buffer_lock = threading.Lock()
         # Characters that end a URL
         self._url_end_chars = set(" \t\n\r()[]<>\"'")
 
@@ -108,26 +105,30 @@ class Filter:
     def _cleanup_stale_buffers(self) -> None:
         """Remove stream buffers that haven't been updated within the TTL."""
         now = time.time()
-        stale_ids = [
-            stream_id
-            for stream_id, (_, timestamp) in self._stream_buffers.items()
-            if now - timestamp > self.STREAM_BUFFER_TTL
-        ]
-        for stream_id in stale_ids:
-            del self._stream_buffers[stream_id]
+        with self._buffer_lock:
+            stale_ids = [
+                stream_id
+                for stream_id, (_, timestamp) in self._stream_buffers.items()
+                if now - timestamp > self.STREAM_BUFFER_TTL
+            ]
+            for stream_id in stale_ids:
+                del self._stream_buffers[stream_id]
 
     def _get_buffer(self, stream_id: str) -> str:
         """Get the buffer content for a stream, or empty string if not found."""
-        entry = self._stream_buffers.get(stream_id)
-        return entry[0] if entry else ""
+        with self._buffer_lock:
+            entry = self._stream_buffers.get(stream_id)
+            return entry[0] if entry else ""
 
     def _set_buffer(self, stream_id: str, content: str) -> None:
         """Set the buffer content for a stream with current timestamp."""
-        self._stream_buffers[stream_id] = (content, time.time())
+        with self._buffer_lock:
+            self._stream_buffers[stream_id] = (content, time.time())
 
     def _delete_buffer(self, stream_id: str) -> None:
         """Delete the buffer for a stream if it exists."""
-        self._stream_buffers.pop(stream_id, None)
+        with self._buffer_lock:
+            self._stream_buffers.pop(stream_id, None)
 
     def _process_stream_buffer(self, stream_id: str, final: bool = False) -> str:
         """
