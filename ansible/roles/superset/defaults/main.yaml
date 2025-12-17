@@ -24,8 +24,10 @@ superset_app_name: Scout Analytics
 superset_logo_width: 200
 
 # SQL Alchemy pool settings
-superset_pool_size: 20
-superset_pool_max_overflow: 30
+# These values prevent "Bad Gateway" errors under concurrent load
+# Connection pools are lightweight; safe for both dev and prod
+superset_pool_size: 50
+superset_pool_max_overflow: 50
 superset_pool_timeout: 60
 
 # PostgreSQL configuration
