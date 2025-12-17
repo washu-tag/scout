@@ -714,20 +714,24 @@ class TestStreamProcessing:
         # New stream buffer should exist
         assert "new-chat" in f._stream_buffers
 
-    def test_stream_without_metadata_uses_default(self):
-        """Stream without metadata falls back to default buffer."""
+    def test_stream_without_metadata_skips_processing(self):
+        """Stream without metadata skips buffered processing (outlet handles it)."""
         f = Filter()
 
-        # No metadata provided
+        # No metadata provided - event returned unchanged
         event1 = {"choices": [{"delta": {"content": "Hello world "}}]}
         result1 = f.stream(event1)
-        assert result1["choices"][0]["delta"]["content"] == "Hello"
+        assert result1["choices"][0]["delta"]["content"] == "Hello world "
 
-        # Finish without metadata
-        event2 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
-        result2 = f.stream(event2)
-        # Buffer kept last 7 chars: " world " (with leading space)
-        assert result2["choices"][0]["delta"]["content"] == " world "
+        # With empty metadata - also skipped
+        event2 = {"choices": [{"delta": {"content": "https://evil.com test"}}]}
+        result2 = f.stream(event2, __metadata__={})
+        assert result2["choices"][0]["delta"]["content"] == "https://evil.com test"
+
+        # With metadata but no chat_id - also skipped
+        event3 = {"choices": [{"delta": {"content": "https://evil.com test"}}]}
+        result3 = f.stream(event3, __metadata__={"other_key": "value"})
+        assert result3["choices"][0]["delta"]["content"] == "https://evil.com test"
 
     def test_stream_www_url_sanitized(self):
         """www. URLs in stream are sanitized."""

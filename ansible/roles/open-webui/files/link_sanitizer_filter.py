@@ -212,14 +212,16 @@ class Filter:
         Uses chat_id from __metadata__ to maintain separate buffers per conversation,
         ensuring thread-safety when multiple concurrent streams are processed.
         """
+        # Require chat_id for stream buffering to ensure proper isolation.
+        # Without it, we can't safely buffer across chunks. Skip stream processing
+        # and let the outlet handle sanitization instead.
+        if not __metadata__ or not __metadata__.get("chat_id"):
+            return event
+
         # Opportunistically clean up abandoned stream buffers to prevent memory leaks
         self._cleanup_stale_buffers()
 
-        # Get stream ID from metadata (chat_id provides stable per-conversation identity)
-        # Fall back to "default" if metadata not available
-        stream_id = "default"
-        if __metadata__:
-            stream_id = __metadata__.get("chat_id") or "default"
+        stream_id = __metadata__["chat_id"]
 
         for choice in event.get("choices", []):
             delta = choice.get("delta", {})
