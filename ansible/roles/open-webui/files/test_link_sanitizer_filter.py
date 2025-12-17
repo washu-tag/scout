@@ -733,7 +733,9 @@ class TestStreamProcessing:
         """www. URLs in stream are sanitized."""
         f = Filter()
         metadata = {"chat_id": "test-chat-1"}
-        event = {"choices": [{"delta": {"content": "Visit www.evil.com/data for info "}}]}
+        event = {
+            "choices": [{"delta": {"content": "Visit www.evil.com/data for info "}}]
+        }
         result = f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
         assert "www.evil.com" not in content
