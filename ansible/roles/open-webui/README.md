@@ -33,6 +33,22 @@ In air-gapped environments (`air_gapped: true`), both model pulling and Scout mo
 **Required for air-gapped:**
 - `ollama_nfs_path`: Shared NFS path accessible by both staging and cluster
 
+**First install - manual model load required:**
+
+After the initial `make install-chat`, the Scout model exists on NFS but is not loaded into memory on the air-gapped Ollama instance. The first user request will experience a slow cold start while the model loads.
+
+To pre-load the model after the pull Job completes:
+
+```bash
+# Wait for the pull Job to complete
+kubectl get jobs -n ollama -l app=ollama-pull-models -w
+
+# Load the Scout model into memory
+kubectl exec -n ollama deploy/ollama -- ollama run gpt-oss-120b-long:latest "hi"
+```
+
+On subsequent Ollama pod restarts, the model loads automatically via a lifecycle hook.
+
 ### Required Configuration
 
 See `defaults/main.yaml` for all available variables. Key requirements in `inventory.yaml`:
@@ -118,6 +134,7 @@ Configure the Trino MCP external tool to enable SQL querying:
    - **Advanced Params**:
      - **Function calling**: `Native`
      - **Keep alive**: `-1` (keeps model loaded indefinitely)
+     - **Reasoning Effort**: `high`
    - **Prompt Suggestions**: Select "Custom" and add sample prompts
    - **Tools**: Enable "Trino MCP", disable "Web Search" and "Code Interpreter"
 6. Click **Save**

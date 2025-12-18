@@ -69,9 +69,15 @@ spec:
                 exit 1
               fi
 
+{# Model loading into memory:
+   - Non-air-gapped: This Job connects to the persistent Ollama server, so we can
+     load the model now for immediate use.
+   - Air-gapped: This Job runs a temporary Ollama to write models to NFS and cannot
+     reach the production Ollama instance. Manual load required after first install,
+     then the lifecycle hook handles subsequent pod restarts. See README.md. #}
 {% if not _pull_air_gapped %}
               echo "Loading Scout model into memory (best effort)..."
-              echo "" | ollama run "{{ scout_model_name }}" || true
+              ollama run "{{ scout_model_name }}" "hi" || true
 {% endif %}
 {% endif %}
 {% if _pull_air_gapped %}
