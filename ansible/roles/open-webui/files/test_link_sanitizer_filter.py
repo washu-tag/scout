@@ -464,6 +464,71 @@ class TestEdgeCases:
         assert "evil.com" not in result
 
 
+class TestAllowedUrls:
+    """Test allowed URLs feature for schema references and other exceptions."""
+
+    def test_vega_lite_schema_allowed_by_default(self, filter_instance):
+        """Vega-Lite schema URL is allowed by default."""
+        url = "https://vega.github.io/schema/vega-lite/v5.json"
+        assert filter_instance.is_external(url) is False
+
+    def test_vega_lite_schema_preserved_in_content(self, filter_instance):
+        """Vega-Lite schema URL is preserved in content."""
+        content = '{"$schema": "https://vega.github.io/schema/vega-lite/v5.json"}'
+        result = filter_instance.sanitize_content(content)
+        assert "https://vega.github.io/schema/vega-lite/v5.json" in result
+
+    def test_allowed_url_exact_match_only(self, filter_instance):
+        """Only exact URL matches are allowed, not subpaths."""
+        # Exact match is allowed
+        assert (
+            filter_instance.is_external(
+                "https://vega.github.io/schema/vega-lite/v5.json"
+            )
+            is False
+        )
+        # Different path on same domain is NOT allowed
+        assert filter_instance.is_external("https://vega.github.io/other/path") is True
+        # URL with query string is NOT allowed (not exact match)
+        assert (
+            filter_instance.is_external(
+                "https://vega.github.io/schema/vega-lite/v5.json?foo=bar"
+            )
+            is True
+        )
+
+    def test_custom_allowed_urls(self):
+        """Custom allowed URLs can be configured."""
+        f = Filter()
+        f.valves.allowed_urls = "https://example.com/schema.json,https://other.com/ref"
+        assert f.is_external("https://example.com/schema.json") is False
+        assert f.is_external("https://other.com/ref") is False
+        # Default Vega-Lite URL no longer allowed after override
+        assert f.is_external("https://vega.github.io/schema/vega-lite/v5.json") is True
+
+    def test_allowed_urls_with_whitespace(self):
+        """Allowed URLs with extra whitespace are handled."""
+        f = Filter()
+        f.valves.allowed_urls = " https://a.com/x , https://b.com/y "
+        assert f.is_external("https://a.com/x") is False
+        assert f.is_external("https://b.com/y") is False
+
+    def test_allowed_urls_empty(self):
+        """Empty allowed URLs means no exceptions."""
+        f = Filter()
+        f.valves.allowed_urls = ""
+        # Even Vega-Lite URL is external when allowed_urls is empty
+        assert f.is_external("https://vega.github.io/schema/vega-lite/v5.json") is True
+
+    def test_get_allowed_urls_empty_entries(self):
+        """Empty entries in allowed URLs are ignored."""
+        f = Filter()
+        f.valves.allowed_urls = "https://a.com,,https://b.com,"
+        urls = f.get_allowed_urls()
+        assert "" not in urls
+        assert len(urls) == 2
+
+
 class TestValvesConfiguration:
     """Test filter behavior with different valve configurations."""
 
