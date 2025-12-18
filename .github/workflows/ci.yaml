@@ -202,7 +202,7 @@ jobs:
       - name: 'Unit tests: hl7log-extractor'
         shell: bash
         run: cd extractor/hl7log-extractor && ./gradlew test
-  ansible-test:
+  ansible-and-python-tests:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -213,10 +213,13 @@ jobs:
           python-version: '3.12'
       - name: Install Molecule and dependencies
         run: |
-          pip install molecule ansible-core pytest
+          pip install molecule ansible-core pytest pydantic
       - name: 'Unit tests: filter plugins'
         shell: bash
         run: cd ansible && pytest tests/unit/filter_plugins/ -v
+      - name: 'Unit tests: Open WebUI link sanitizer filter'
+        shell: bash
+        run: cd ansible/roles/open-webui/files && pytest test_link_sanitizer_filter.py -v
       - name: 'Molecule tests: postgres role'
         shell: bash
         run: cd ansible/roles/postgres && molecule test -s default
@@ -234,7 +237,7 @@ jobs:
       - build-and-upload-superset
       - build-and-upload-keycloak
       - unit-test
-      - ansible-test
+      - ansible-and-python-tests
     permissions:
       contents: read
       packages: read
