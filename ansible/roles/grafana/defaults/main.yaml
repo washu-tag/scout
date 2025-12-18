@@ -24,7 +24,7 @@ slack_token: ''
 slack_channel_id: ''
 
 # Dashboard and alert paths
-grafana_dashboards_path: '{{ role_path }}/files/dashboards'
+grafana_dashboards_path: '{{ role_path }}/templates/dashboards'
 grafana_alerts_path: '{{ role_path }}/templates/alerts'
 grafana_contact_points_path: '{{ role_path }}/templates/contact-points'
 
