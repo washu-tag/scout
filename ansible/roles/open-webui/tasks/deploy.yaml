@@ -52,6 +52,34 @@
 - name: Create Kubernetes Secret for sensitive env vars
   ansible.builtin.include_tasks: create_secret.yaml
 
+# For air-gapped deployments: ensure NFS directory structure exists BEFORE deploying Ollama
+# Production Ollama mounts NFS read-only, so it can't create these directories itself
+- name: Pre-create Ollama directory structure on NFS (air-gapped)
+  block:
+    - name: Create Ollama blobs and manifests directories
+      ansible.builtin.file:
+        path: '{{ ollama_nfs_path }}/{{ item }}'
+        state: directory
+        mode: '0755'
+      loop:
+        - blobs
+        - manifests
+      delegate_to: '{{ groups["staging"][0] }}'
+  when:
+    - air_gapped | default(false) | bool
+    - ollama_nfs_path is defined and ollama_nfs_path | length > 0
+
+# Create Traefik middleware for Content Security Policy (CSP)
+# Mitigates LLM data exfiltration attacks where malicious/manipulated model output
+# embeds sensitive data in external resource URLs (images, scripts, forms, etc.)
+# that the user's browser then fetches, leaking data to attacker-controlled servers.
+# See: https://developer.nvidia.com/blog/practical-llm-security-advice-from-the-nvidia-ai-red-team/
+- name: Create CSP middleware for data exfiltration prevention
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'csp-middleware.yaml.j2') | from_yaml }}"
+  when: open_webui_csp_enabled | bool
+
 - name: Parse Helm values
   ansible.builtin.set_fact:
     owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
@@ -75,20 +103,50 @@
   register: open_webui_ready
   changed_when: false
 
+# Add NFS + HTTP health check to Ollama liveness probe (air-gapped only)
+# The Helm chart only supports httpGet probes, but we need an exec probe
+# to detect stale NFS handles. This replaces the HTTP probe with one that:
+# 1. Checks NFS mount accessibility (fails immediately on stale handle)
+# 2. Checks Ollama HTTP API via 'ollama list' (restarts if server hung)
+# The readiness probe (HTTP) still handles quick removal from service;
+# this liveness probe ensures restart after prolonged failures.
+# Uses JSON patch to fully replace the livenessProbe (strategic merge can't
+# replace probe handler types).
+- name: Patch Ollama deployment with NFS liveness probe
+  kubernetes.core.k8s_json_patch:
+    kind: Deployment
+    name: ollama
+    namespace: '{{ chatbot_namespace }}'
+    patch:
+      - op: replace
+        path: /spec/template/spec/containers/0/livenessProbe
+        value:
+          exec:
+            command:
+              [
+                '/bin/sh',
+                '-c',
+                'ls {{ ollama_nfs_mount_path }} > /dev/null 2>&1 && ollama list > /dev/null 2>&1',
+              ]
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 20
+          failureThreshold: 3
+          successThreshold: 1
+  when:
+    - air_gapped | default(false) | bool
+    - ollama_nfs_path is defined
+    - ollama_nfs_path | length > 0
+
 # Ensure Scout base model is in ollama_models list if Scout model creation is enabled
 - name: Add Scout base model to ollama_models if needed
   ansible.builtin.set_fact:
     ollama_models: '{{ (ollama_models | default([])) | union([scout_base_model]) }}'
   when:
-    - scout_model_create | default(true) | bool
+    - scout_model_create | bool
     - scout_base_model not in (ollama_models | default([]))
 
-# Pull Ollama models asynchronously
+# Pull Ollama models and create Scout model (combined into single job)
 - name: Pull Ollama models
   ansible.builtin.include_tasks: pull_models.yaml
   when: ollama_models is defined and ollama_models | length > 0
-
-# Create Scout custom model
-- name: Create Scout custom model
-  ansible.builtin.include_tasks: create_scout_model.yaml
-  when: scout_model_create | default(true) | bool

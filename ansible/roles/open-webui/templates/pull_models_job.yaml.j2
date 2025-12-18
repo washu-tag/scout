@@ -21,7 +21,7 @@ spec:
           env:
 {% if _pull_air_gapped %}
             - name: OLLAMA_MODELS
-              value: /nfs/ollama/models
+              value: '{{ ollama_nfs_mount_path }}'
 {% else %}
             - name: OLLAMA_HOST
               value: 'http://{{ ollama_name }}.{{ chatbot_namespace }}:11434'
@@ -49,10 +49,41 @@ spec:
               ollama pull {{ model }}
 {% endfor %}
               echo "All models pulled successfully"
+
+{% if scout_model_create %}
+              echo "Creating Scout custom model {{ scout_model_name }}..."
+              cat > /tmp/Modelfile <<EOF
+FROM {{ scout_base_model }}
+PARAMETER num_predict {{ scout_model_num_predict }}
+PARAMETER num_ctx {{ scout_model_num_ctx }}
+PARAMETER num_keep {{ scout_model_num_keep }}
+EOF
+
+              ollama create {{ scout_model_name }} -f /tmp/Modelfile
+
+              echo "Verifying model creation..."
+              if ollama list | grep -q "{{ scout_model_name }}"; then
+                echo "Scout model {{ scout_model_name }} created successfully"
+              else
+                echo "Failed to verify Scout model creation"
+                exit 1
+              fi
+
+{# Model loading into memory:
+   - Non-air-gapped: This Job connects to the persistent Ollama server, so we can
+     load the model now for immediate use.
+   - Air-gapped: This Job runs a temporary Ollama to write models to NFS and cannot
+     reach the production Ollama instance. Manual load required after first install,
+     then the lifecycle hook handles subsequent pod restarts. See README.md. #}
+{% if not _pull_air_gapped %}
+              echo "Loading Scout model into memory (best effort)..."
+              ollama run "{{ scout_model_name }}" "hi" || true
+{% endif %}
+{% endif %}
 {% if _pull_air_gapped %}
           volumeMounts:
             - name: nfs-models
-              mountPath: /nfs/ollama
+              mountPath: '{{ ollama_nfs_mount_path }}'
       volumes:
         - name: nfs-models
           hostPath:

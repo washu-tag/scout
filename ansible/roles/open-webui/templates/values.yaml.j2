@@ -24,11 +24,15 @@ ollama:
                 values:
                   - '{{ ollama_min_gpu_memory_gb }}'
 {% endif %}
-{% if air_gapped | default(false) and ollama_nfs_path is defined and ollama_nfs_path | length > 0 %}
-  # Air-gapped with NFS: mount pre-staged models read-only (ADR 0008)
   extraEnv:
+    - name: OLLAMA_KEEP_ALIVE
+      value: '-1'
+{% if air_gapped | default(false) and ollama_nfs_path is defined and ollama_nfs_path | length > 0 %}
+    # Air-gapped with NFS: mount pre-staged models read-only (ADR 0008)
     - name: OLLAMA_MODELS
-      value: /nfs/ollama/models
+      value: '{{ ollama_nfs_mount_path }}'
+    - name: OLLAMA_NOPRUNE
+      value: 'true'
   volumes:
     - name: nfs-models
       hostPath:
@@ -36,10 +40,14 @@ ollama:
         type: Directory
   volumeMounts:
     - name: nfs-models
-      mountPath: /nfs/ollama
+      mountPath: '{{ ollama_nfs_mount_path }}'
       readOnly: true
   # Disable PVC for models when using NFS
   persistentVolume:
+    enabled: false
+  # Disable Helm's httpGet liveness probe - we replace it with an exec probe
+  # that checks NFS mount accessibility (see deploy.yaml post-Helm patch)
+  livenessProbe:
     enabled: false
 {% else %}
   # Online: use PVC for models
@@ -50,6 +58,29 @@ ollama:
 {% endif %}
     size: {{ ollama_storage_size }}
 {% endif %}
+{% if scout_model_create %}
+  # Load Scout model into memory on pod startup (if present)
+  # Runs in background to avoid blocking pod readiness
+  lifecycle:
+    postStart:
+      exec:
+        command:
+          - /bin/sh
+          - -c
+          - |
+            (
+              # Wait for Ollama API to be ready (poll every 5s, timeout after 60s)
+              for i in $(seq 1 12); do
+                ollama list >/dev/null 2>&1 && break
+                sleep 5
+              done
+              # Load model into memory if present
+              if ollama list 2>/dev/null | grep -q "{{ scout_model_name }}"; then
+                echo "Loading Scout model {{ scout_model_name }} into memory..."
+                ollama run "{{ scout_model_name }}" "hi" || true
+              fi
+            ) &
+{% endif %}
 
 pipelines:
   enabled: false
@@ -58,9 +89,15 @@ ingress:
   enabled: true
   class: traefik
   annotations:
+    # Middleware order matters for CSP:
+    # 1. Error first: catches 401 and serves sign_in page (bypasses CSP)
+    # 2. Auth second: checks authentication
+    # 3. CSP last: only applied to authenticated responses
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
-      kube-system-oauth2-proxy-auth@kubernetescrd
+      kube-system-oauth2-proxy-auth@kubernetescrd{% if open_webui_csp_enabled %},
+      {{ chatbot_namespace }}-open-webui-csp@kubernetescrd
+{% endif %}
   host: chat.{{ server_hostname }}
 
 persistence:
@@ -105,6 +142,10 @@ extraEnvVars:
     value: 'false'
 
   - name: ENABLE_LOGIN_FORM
+    value: 'false'
+
+  # Disable share to OpenWebUI community
+  - name: ENABLE_COMMUNITY_SHARING
     value: 'false'
 
   # Enable OAuth signup and authentication

@@ -22,6 +22,8 @@ ollama_storage_class: ''
 # If air_gapped=true and ollama_nfs_path is not set: models are transferred via kubectl cp
 # If air_gapped=false: models are pulled directly from registry.ollama.ai (online mode)
 ollama_nfs_path: ''
+# Mount path for NFS models inside containers (used by Ollama and model pull/create jobs)
+ollama_nfs_mount_path: /nfs/ollama
 # Namespace for staging Ollama download job (air-gapped only)
 # Reuses the same namespace as RPM package downloads on staging
 staging_ollama_namespace: '{{ package_download_namespace }}'
@@ -94,3 +96,10 @@ open_webui_resources:
   limits:
     cpu: 2
     memory: 2Gi
+
+# Content Security Policy (CSP) configuration
+# Mitigates LLM data exfiltration attacks where malicious/manipulated model output
+# embeds sensitive data in external resource URLs (images, scripts, forms, etc.)
+# that the user's browser then fetches, leaking data to attacker-controlled servers.
+# See: https://developer.nvidia.com/blog/practical-llm-security-advice-from-the-nvidia-ai-red-team/
+open_webui_csp_enabled: true

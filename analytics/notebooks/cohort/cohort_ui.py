@@ -4,6 +4,7 @@ Scout Cohort Builder - UI Components Module
 This module provides the interactive UI components for the cohort builder dashboard.
 """
 
+import os
 import re
 import html
 import pandas as pd
@@ -961,17 +962,34 @@ def create_export_controls(state):
                     1 for a in state["annotations"].values() if a.get("reviewed", False)
                 )
 
+                # Get filename and create download link
+                filename = os.path.basename(filepath)
+                download_url = f"/voila/files/exports/{filename}"
+
                 display(
                     HTML(
                         f"""
+                    <style>
+                        .download-link:hover {{
+                            background: rgba(255,255,255,0.3) !important;
+                        }}
+                    </style>
                     <div style='background: {SUCCESS_GRADIENT}; padding: 16px; border-radius: 8px;
-                                color: white; margin-top: 12px;'>
+                                color: white; margin-top: 12px; width: 100%; box-sizing: border-box;'>
                         <div style='font-weight: 600; margin-bottom: 8px;'>✓ Export Successful</div>
-                        <div style='font-size: 14px; opacity: 0.95;'>
-                            Exported {len(state['df'])} reports ({annotated_count} annotated)<br>
-                            File: <code style='background: rgba(255,255,255,0.2); padding: 2px 6px;
-                                               border-radius: 4px;'>{filepath}</code>
+                        <div style='font-size: 14px; opacity: 0.95; margin-bottom: 16px;'>
+                            Exported {len(state['df'])} reports ({annotated_count} annotated)
                         </div>
+                        <a href="{download_url}" download="{filename}"
+                           class='download-link'
+                           style='display: block; width: 100%; box-sizing: border-box;
+                                  background: rgba(255,255,255,0.2);
+                                  padding: 12px 16px; border-radius: 6px; color: white;
+                                  text-decoration: none; font-weight: bold; text-align: center;
+                                  font-size: 14px;
+                                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>
+                            📥 Download {filename}
+                        </a>
                     </div>
                 """
                     )
