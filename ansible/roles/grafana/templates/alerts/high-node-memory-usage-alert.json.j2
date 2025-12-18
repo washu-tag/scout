@@ -73,13 +73,13 @@
           "execErrState": "KeepLast",
           "for": "10m",
           "annotations": {
-            "summary": "{% raw %}Node {{ $labels.node }} has high memory usage{% endraw %}",
-            "description": "{% raw %}Memory usage is above 90% on node {{ $labels.node }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%{% endraw %}"
+            "summary": "Node {{ $labels.node }} has high memory usage",
+            "description": "Memory usage is above 90% on node {{ $labels.node }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
           },
           "labels": {},
           "isPaused": false,
           "notification_settings": {
-            "receiver": "{{ grafana_alert_contact_point }}"
+            "receiver": "[% grafana_alert_contact_point %]"
           }
         }
       ]

@@ -77,12 +77,12 @@
           "execErrState": "Error",
           "annotations": {
             "description": "Temporal workflow failed",
-            "summary": "{% raw %}At least one Temporal workflow failed since last check (Temporal namespace: {{ $labels.namespace }}){% endraw %}"
+            "summary": "At least one Temporal workflow failed since last check (Temporal namespace: {{ $labels.namespace }})"
           },
           "labels": {},
           "isPaused": false,
           "notification_settings": {
-            "receiver": "{{ grafana_alert_contact_point }}"
+            "receiver": "[% grafana_alert_contact_point %]"
           }
         }
       ]

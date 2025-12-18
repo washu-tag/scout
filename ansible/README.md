@@ -711,6 +711,24 @@ Pre-configured dashboards monitor:
 
 Access Grafana via port-forward or ingress to view dashboards.
 
+### Developing Grafana Dashboards, Alerts, and Contact Points
+
+All Grafana resources (dashboards, alerts, contact points, datasources, notification policies, etc.) are templated to support dynamic configuration. **Important**: Templates use custom Jinja delimiters `[% %]` for Ansible variables to avoid conflicts with Grafana's internal variable syntax using `{{ }}`.
+
+**Variable syntax**:
+- `[% variable %]` - Ansible variables (namespace names, configuration values, etc.)
+- `{{ grafana_variable }}` - Grafana internal variables (PromQL label interpolation, alert labels, alert values, etc.)
+
+When creating or modifying Grafana resources, use the appropriate syntax for each context.
+**Example**:
+```json
+{
+  "expr": "up{namespace=\"[% temporal_namespace %]\"}", // Ansible variable for namespace
+  "legendFormat": "{{ pod }}", // Grafana variable for pod name
+  "summary": "Alert on {{ $labels.instance }}" // Grafana variable for alert instance
+}
+```
+
 ## Troubleshooting
 
 ### Check Ansible Variables

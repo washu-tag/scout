@@ -9,10 +9,10 @@
           "uid": "slack_scout_contact_point_01",
           "type": "slack",
           "settings": {
-            "recipient": "{{ slack_channel_id }}",
-            "text": "{% raw %}{{ template \"slack_message\" . }}{% endraw %}",
-            "title": "{% raw %}{{ template \"slack_title\" . }}{% endraw %}",
-            "token": "{{ slack_token }}"
+            "recipient": "[% slack_channel_id %]",
+            "text": "{{ template \"slack_message\" . }}",
+            "title": "{{ template \"slack_title\" . }}",
+            "token": "[% slack_token %]"
           },
           "disableResolveMessage": false
         }

@@ -75,13 +75,13 @@
           "execErrState": "KeepLast",
           "for": "10m",
           "annotations": {
-            "description": "{% raw %}High Postgres connections usage for pod {{ $labels.pod }}{% endraw %}",
-            "summary": "{% raw %}Pod {{ $labels.pod }} has connection usage above 90% of max_connections. Current usage is {{ printf \"%.1f\" $values.A.Value }}%{% endraw %}"
+            "description": "High Postgres connections usage for pod {{ $labels.pod }}",
+            "summary": "Pod {{ $labels.pod }} has connection usage above 90% of max_connections. Current usage is {{ printf \"%.1f\" $values.A.Value }}%"
           },
           "labels": {},
           "isPaused": false,
           "notification_settings": {
-            "receiver": "{{ grafana_alert_contact_point }}"
+            "receiver": "[% grafana_alert_contact_point %]"
           }
         }
       ]
