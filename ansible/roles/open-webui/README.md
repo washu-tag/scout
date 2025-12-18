@@ -139,12 +139,35 @@ Configure the Trino MCP external tool to enable SQL querying:
    - **Tools**: Enable "Trino MCP", disable "Web Search" and "Code Interpreter"
 6. Click **Save**
 
-#### 4. Disable Arena Model
+#### 4. Install Link Sanitizer Filter
+
+Install a security filter to prevent data exfiltration via external links in LLM responses. This complements the CSP middleware (which blocks automatic resource loading) by also blocking clickable links. See [ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md) for details.
+
+1. Navigate to **Admin Panel → Functions** (requires admin access)
+2. Click **+ (New Function)**
+3. Set Name to "Link Sanitizer Filter"
+4. Set Description to "Removes external URLs from LLM responses to prevent data exfiltration."
+5. Copy the contents of `ansible/roles/open-webui/files/link_sanitizer_filter.py` into the code editor and click **Save**
+6. Click the **gear icon** next to the new function to configure Valves:
+   - **internal_domains**: Your organization's domain (e.g., `example.com`)
+     - This allows all subdomains: `scout.example.com`, `api.example.com`, etc.
+   - **replacement_text**: Text shown in place of removed links (default is fine)
+7. Enable the filter (you still have to add it to each model) AND/OR enable the filter globally:
+   - Click the **"..." menu** next to the function
+   - Toggle **Global** to enable for all models
+
+**What the filter does:**
+- Removes external URLs from LLM responses before display
+- Preserves internal URLs matching your configured domain
+- Handles both markdown links `[text](url)` and raw URLs
+- Prevents HIPAA violations from PHI being transmitted via clicked links
+
+#### 5. Disable Arena Model
 
 1. Navigate to **Admin Panel → Settings → Evaluations**
 2. Disable Arena Model
 
-#### 5. Verify Configuration
+#### 6. Verify Configuration
 
 Test the configuration to ensure everything is working:
 
@@ -224,3 +247,7 @@ kubectl exec -n ollama deploy/ollama -- ollama list
 - **Main Scout Docs**: https://washu-scout.readthedocs.io/
 - **Open WebUI Docs**: https://docs.openwebui.com/
 - **Scout Query Prompt**: `files/gpt-oss-scout-query-prompt.md`
+- **Link Sanitizer Filter**: `files/link_sanitizer_filter.py`
+- **Security ADRs**:
+  - [ADR 0009: Content Security Policy](../../../docs/internal/adr/0009-open-webui-content-security-policy.md)
+  - [ADR 0010: Link Exfiltration Filter](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)
