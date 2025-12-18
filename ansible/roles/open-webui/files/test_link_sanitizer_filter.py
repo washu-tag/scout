@@ -488,9 +488,7 @@ class TestAllowedUrls:
             is False
         )
         # Different path on same domain is NOT allowed
-        assert (
-            filter_instance.is_external("https://vega.github.io/other/path") is True
-        )
+        assert filter_instance.is_external("https://vega.github.io/other/path") is True
         # URL with query string is NOT allowed (not exact match)
         assert (
             filter_instance.is_external(
@@ -506,9 +504,7 @@ class TestAllowedUrls:
         assert f.is_external("https://example.com/schema.json") is False
         assert f.is_external("https://other.com/ref") is False
         # Default Vega-Lite URL no longer allowed after override
-        assert (
-            f.is_external("https://vega.github.io/schema/vega-lite/v5.json") is True
-        )
+        assert f.is_external("https://vega.github.io/schema/vega-lite/v5.json") is True
 
     def test_allowed_urls_with_whitespace(self):
         """Allowed URLs with extra whitespace are handled."""
@@ -522,9 +518,7 @@ class TestAllowedUrls:
         f = Filter()
         f.valves.allowed_urls = ""
         # Even Vega-Lite URL is external when allowed_urls is empty
-        assert (
-            f.is_external("https://vega.github.io/schema/vega-lite/v5.json") is True
-        )
+        assert f.is_external("https://vega.github.io/schema/vega-lite/v5.json") is True
 
     def test_get_allowed_urls_empty_entries(self):
         """Empty entries in allowed URLs are ignored."""
