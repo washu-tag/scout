@@ -125,11 +125,14 @@ Configure the Trino MCP external tool to enable SQL querying:
 
 #### 3. Configure Model in Open WebUI
 
-1. Navigate to **Admin Panel → Settings → Models** (requires admin access)
-2. Find `gpt-oss-120b-long:latest` in the model list
-3. Optionally disable all other models
-4. Click the **edit icon** (pencil) next to `gpt-oss-120b-long:latest`
-5. Configure the following settings:
+1. Click Notes in the left side bar. Add the contents of `docs/source/dataschema.md` as a note called "Scout Schema".
+2. (optionally) add the contents of `ansible/roles/open-webui/files/gpt-oss-charting.md` as a note called "Charting Tools".
+3. Navigate to **Admin Panel → Settings → Documents** (requires admin access)
+4. Replace the `RAG Template` with the contents of `ansible/roles/open-webui/files/rag-prompt.md` and save.
+5. Load the "Models" tab and find `gpt-oss-120b-long:latest` in the model list
+6. Optionally disable all other models
+7. Click the **edit icon** (pencil) next to `gpt-oss-120b-long:latest`
+8. Configure the following settings:
    - **Model Name**: `Scout Explorer`
    - **Description**: `Intelligent data exploration`
    - **Visibility**: `Public`
@@ -139,6 +142,7 @@ Configure the Trino MCP external tool to enable SQL querying:
      - **Keep alive**: `-1` (keeps model loaded indefinitely)
      - **Reasoning Effort**: `high`
    - **Prompt Suggestions**: Select "Custom" and add sample prompts
+   - **Knowledge**: Using "Select Knowledge" add "Scout Schema" and optionally "Charting Tools"
    - **Tools**: Enable "Trino MCP", disable "Web Search" and "Code Interpreter"
 6. Click **Save**
 
