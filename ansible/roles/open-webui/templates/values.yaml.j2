@@ -69,13 +69,14 @@ ollama:
           - -c
           - |
             (
-              # Wait for Ollama API to be ready (poll every 2s, timeout after 60s)
-              for i in $(seq 1 30); do
+              # Wait for Ollama API to be ready (poll every 5s, timeout after 60s)
+              for i in $(seq 1 12); do
                 ollama list >/dev/null 2>&1 && break
-                sleep 2
+                sleep 5
               done
               # Load model into memory if present
               if ollama list 2>/dev/null | grep -q "{{ scout_model_name }}"; then
+                echo "Loading Scout model {{ scout_model_name }} into memory..."
                 ollama run "{{ scout_model_name }}" "hi" || true
               fi
             ) &

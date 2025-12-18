@@ -37,13 +37,13 @@ In air-gapped environments (`air_gapped: true`), both model pulling and Scout mo
 
 After the initial `make install-chat`, the Scout model exists on NFS but is not loaded into memory on the air-gapped Ollama instance. The first user request will experience a slow cold start while the model loads.
 
-To pre-load the model after the pull Job completes:
+To pre-load the model after the pull Job completes (replace the model name with your `scout_model_name` if customized):
 
 ```bash
 # Wait for the pull Job to complete
 kubectl get jobs -n ollama -l app=ollama-pull-models -w
 
-# Load the Scout model into memory
+# Load the Scout model into memory (default: gpt-oss-120b-long:latest)
 kubectl exec -n ollama deploy/ollama -- ollama run gpt-oss-120b-long:latest "hi"
 ```
 
