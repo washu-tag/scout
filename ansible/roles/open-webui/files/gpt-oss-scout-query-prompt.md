@@ -18,10 +18,6 @@ You have access to **Trino MCP** for querying the Scout Delta Lake.
 | Imaging findings (nodule, mass, fracture) | Report text columns | "reports mentioning lung nodule" |
 | Exam types | `modality` + `service_name` | "chest CTs" |
 
-## Schema: `reports` table
-
-Described separately.
-
 ### Diagnoses Column
 
 Array of structs with: `diagnosis_code`, `diagnosis_code_text`, `diagnosis_code_coding_system` ("I10" or "I9")
