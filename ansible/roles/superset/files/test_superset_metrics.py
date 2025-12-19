@@ -360,29 +360,34 @@ class TestQueryTiming:
     """Test query timing metrics."""
 
     def test_before_cursor_sets_start_time(self, fresh_metrics):
-        """before_cursor_execute should set _query_start_time on context."""
+        """before_cursor_execute should set _query_start_time and _query_database_label on context."""
         mock_context = MagicMock(spec=[])
-
-        fresh_metrics.before_cursor_execute(
-            MagicMock(), MagicMock(), "SELECT 1", None, mock_context, False
-        )
-
-        assert hasattr(mock_context, "_query_start_time")
-        assert isinstance(mock_context._query_start_time, float)
-
-    def test_after_cursor_records_duration(self, fresh_metrics):
-        """after_cursor_execute should record query duration."""
-        mock_context = MagicMock()
-        mock_context._query_start_time = time.perf_counter() - 0.5  # 500ms ago
-
         mock_conn = MagicMock()
 
         with patch.object(
             fresh_metrics, "_get_label_for_connection", return_value="trino"
         ):
-            fresh_metrics.after_cursor_execute(
+            fresh_metrics.before_cursor_execute(
                 mock_conn, MagicMock(), "SELECT 1", None, mock_context, False
             )
+
+        assert hasattr(mock_context, "_query_start_time")
+        assert isinstance(mock_context._query_start_time, float)
+        assert hasattr(mock_context, "_query_database_label")
+        assert mock_context._query_database_label == "trino"
+
+    def test_after_cursor_records_duration(self, fresh_metrics):
+        """after_cursor_execute should record query duration."""
+        mock_context = MagicMock()
+        mock_context._query_start_time = time.perf_counter() - 0.5  # 500ms ago
+        # Set the database label that would be cached by before_cursor_execute
+        mock_context._query_database_label = "trino"
+
+        mock_conn = MagicMock()
+
+        fresh_metrics.after_cursor_execute(
+            mock_conn, MagicMock(), "SELECT 1", None, mock_context, False
+        )
 
         # Check that observation was recorded
         histogram = fresh_metrics.db_query_duration_seconds

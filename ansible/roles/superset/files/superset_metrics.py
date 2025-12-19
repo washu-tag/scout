@@ -77,6 +77,17 @@ db_errors_total = Counter(
 _engine_labels: dict = {}
 _engine_labels_lock = threading.Lock()
 
+# Registry for pool -> database label mapping (more reliable than deriving from pool)
+_pool_label_registry: dict = {}
+_pool_label_registry_lock = threading.Lock()
+
+
+def register_pool_label(pool, label: str) -> None:
+    """Register a pool with its database label for reliable lookup."""
+    with _pool_label_registry_lock:
+        _pool_label_registry[id(pool)] = label
+        logger.debug(f"Registered pool {id(pool)} with label '{label}'")
+
 
 def get_database_label(engine_or_url) -> str:
     """
@@ -122,11 +133,17 @@ def _get_label_for_pool(pool) -> str:
     """Get database label for a connection pool."""
     pool_id = id(pool)
 
+    # First check the explicit registry (most reliable)
+    with _pool_label_registry_lock:
+        if pool_id in _pool_label_registry:
+            return _pool_label_registry[pool_id]
+
+    # Then check the engine labels cache
     with _engine_labels_lock:
         if pool_id in _engine_labels:
             return _engine_labels[pool_id]
 
-    # Try to find the engine for this pool
+    # Try to find the engine for this pool (fallback)
     label = "unknown"
     try:
         # Pool has a reference to its creator (engine)
@@ -138,8 +155,9 @@ def _get_label_for_pool(pool) -> str:
     except Exception:
         pass
 
-    with _engine_labels_lock:
-        _engine_labels[pool_id] = label
+    # Cache in the registry for future lookups
+    with _pool_label_registry_lock:
+        _pool_label_registry[pool_id] = label
 
     return label
 
@@ -208,6 +226,7 @@ def on_pool_checkout(dbapi_conn, connection_record, connection_proxy):
 
         if pool:
             label = _get_label_for_pool(pool)
+            logger.info(f"METRICS: Pool checkout for database={label}")
             _update_pool_metrics(pool, label)
     except Exception as e:
         logger.debug(f"Error in on_pool_checkout: {e}")
@@ -239,9 +258,12 @@ def on_pool_checkin(dbapi_conn, connection_record):
 def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
     """Record query start time before execution."""
     try:
+        label = _get_label_for_connection(conn)
+        logger.info(f"METRICS: Query starting for database={label}")
         context._query_start_time = time.perf_counter()
+        context._query_database_label = label
     except Exception as e:
-        logger.debug(f"Error in before_cursor_execute: {e}")
+        logger.warning(f"Error in before_cursor_execute: {e}")
 
 
 @event.listens_for(Engine, "after_cursor_execute")
@@ -251,12 +273,18 @@ def after_cursor_execute(conn, cursor, statement, parameters, context, executema
         start_time = getattr(context, "_query_start_time", None)
         if start_time is not None:
             duration = time.perf_counter() - start_time
-            label = _get_label_for_connection(conn)
+            # Use cached label if available, otherwise derive it
+            label = getattr(context, "_query_database_label", None)
+            if label is None:
+                label = _get_label_for_connection(conn)
+            logger.info(
+                f"METRICS: Query completed for database={label}, duration={duration:.3f}s"
+            )
             db_query_duration_seconds.labels(database=label, status="success").observe(
                 duration
             )
     except Exception as e:
-        logger.debug(f"Error in after_cursor_execute: {e}")
+        logger.warning(f"Error in after_cursor_execute: {e}")
 
 
 # -----------------------------------------------------------------------------
@@ -321,6 +349,8 @@ def _periodic_pool_update(interval: int = 15) -> None:
 
             pool = db.engine.pool
             label = get_database_label(db.engine)
+            # Register the pool label for reliable lookup in event handlers
+            register_pool_label(pool, label)
             _update_pool_metrics(pool, label)
         except Exception as e:
             logger.debug(f"Error in periodic pool update: {e}")
@@ -334,12 +364,92 @@ def _periodic_pool_update(interval: int = 15) -> None:
 # -----------------------------------------------------------------------------
 
 
+def _instrument_database_engines() -> None:
+    """
+    Instrument Superset's Database methods to capture data source metrics.
+
+    This instruments:
+    1. get_sqla_engine() - to register pools with correct labels
+    2. get_raw_connection() - to track query execution (since Superset bypasses SQLAlchemy events)
+    """
+    try:
+        from contextlib import contextmanager
+        from superset.models.core import Database
+
+        # Store the original methods
+        _original_get_sqla_engine = Database.get_sqla_engine
+        _original_get_raw_connection = Database.get_raw_connection
+
+        def _instrumented_get_sqla_engine(self, *args, **kwargs):
+            """Wrapped get_sqla_engine that registers the engine's pool."""
+            engine = _original_get_sqla_engine(self, *args, **kwargs)
+            try:
+                # Use self.backend (e.g., "trino", "postgresql") from Superset's Database object
+                label = getattr(self, "backend", None) or get_database_label(engine)
+                if hasattr(engine, "pool") and engine.pool is not None:
+                    register_pool_label(engine.pool, label)
+                logger.info(
+                    f"METRICS: Instrumented engine created for database={label}"
+                )
+            except Exception as e:
+                logger.warning(f"Error registering engine pool: {e}")
+            return engine
+
+        @contextmanager
+        def _instrumented_get_raw_connection(self, *args, **kwargs):
+            """Wrapped get_raw_connection that tracks connection usage and query timing."""
+            label = getattr(self, "backend", None) or "unknown"
+            start_time = time.perf_counter()
+            logger.info(f"METRICS: Raw connection starting for database={label}")
+
+            try:
+                with _original_get_raw_connection(self, *args, **kwargs) as conn:
+                    yield conn
+            except Exception as e:
+                # Record error
+                error_type = type(e).__name__
+                db_errors_total.labels(
+                    database=label, error_type=error_type, is_disconnect="true"
+                ).inc()
+                duration = time.perf_counter() - start_time
+                db_query_duration_seconds.labels(
+                    database=label, status="error"
+                ).observe(duration)
+                logger.info(
+                    f"METRICS: Raw connection error for database={label}, error={error_type}, duration={duration:.3f}s"
+                )
+                raise
+            else:
+                # Record success
+                duration = time.perf_counter() - start_time
+                db_query_duration_seconds.labels(
+                    database=label, status="success"
+                ).observe(duration)
+                logger.info(
+                    f"METRICS: Raw connection completed for database={label}, duration={duration:.3f}s"
+                )
+
+        # Replace the methods
+        Database.get_sqla_engine = _instrumented_get_sqla_engine
+        Database.get_raw_connection = _instrumented_get_raw_connection
+        logger.info(
+            "Instrumented Database.get_sqla_engine() and get_raw_connection() for metrics collection"
+        )
+    except ImportError as e:
+        logger.debug(f"Could not instrument Database methods: {e}")
+    except Exception as e:
+        logger.warning(f"Error instrumenting Database methods: {e}")
+
+
 def setup_metrics(app: Flask) -> Flask:
     """
     Configure Prometheus metrics endpoint and start background tasks.
 
     This function is called by Superset via FLASK_APP_MUTATOR.
     """
+    # Instrument Superset's Database class to capture data source engines
+    _instrument_database_engines()
+
     # Start periodic pool metrics update thread
     metrics_thread = threading.Thread(
         target=_periodic_pool_update, args=(15,), daemon=True, name="superset-metrics"
