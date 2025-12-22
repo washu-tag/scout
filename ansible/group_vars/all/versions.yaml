@@ -43,7 +43,9 @@ minio_client_image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
 temporal_version: ~0.67.0
 
 # Analytics & Query Engines - Trino
-trino_helm_chart_version: ~1.41.0
+# Note: Trino 1.41.0+ requires x86-64-v3 CPU support. If you see
+# "Fatal glibc error: CPU does not support x86-64-v3", use ~1.40.0
+trino_helm_chart_version: ~1.40.0
 mcp_trino_version: 4.1.0
 
 # Analytics & Query Engines - Hive
