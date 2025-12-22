@@ -1477,14 +1477,18 @@
           "text": "All",
           "value": "$__all"
         },
-        "definition": "label_values(namespace)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(trino_execution_QueryManager_RunningQueries, namespace)",
         "includeAll": true,
         "label": "Namespace",
         "name": "namespace",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(namespace)",
+          "query": "label_values(trino_execution_QueryManager_RunningQueries, namespace)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
