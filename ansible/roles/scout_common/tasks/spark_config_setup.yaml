@@ -1,12 +1,6 @@
 ---
 # Create Spark configuration ConfigMap
 # This is used by JupyterHub and other Spark-enabled services
-#
-# Parameters:
-#   spark_hive_metastore_uri: Which Hive metastore to connect to
-#     - Pass hive_metastore_endpoint for write access (HL7 transformer, extractors)
-#     - Pass hive_metastore_endpoint_readonly for readonly access (Jupyter)
-#     - Defaults to hive_metastore_endpoint (write) for backward compatibility
 
 - name: Render Spark defaults configuration
   ansible.builtin.set_fact:

@@ -13,7 +13,7 @@ spark.databricks.delta.constraints.allowUnenforcedNotNull.enabled true
 spark.sql.extensions io.delta.sql.DeltaSparkSessionExtension
 spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog
 spark.hadoop.fs.s3a.path.style.access {{ 'true' if not aws_deployment else 'false' }}
-spark.hadoop.hive.metastore.uris {{ spark_hive_metastore_uri | default(hive_metastore_endpoint) }}
+spark.hadoop.hive.metastore.uris {{ spark_hive_metastore_uri | default(hive_metastore_endpoint_readonly) }}
 spark.sql.warehouse.dir {{ delta_lake_path }}
 spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
 spark.executor.memory {{ spark_memory | default('1G') }}
