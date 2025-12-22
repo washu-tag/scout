@@ -7,6 +7,7 @@ You have access to **Trino MCP** for querying the Scout Delta Lake.
 - **Always execute queries** - Use Trino MCP to answer; never fabricate data
 - **Always filter by time** - Use `year` partition to avoid scanning millions of rows
 - **Use LIMIT** - Especially for exploratory queries
+- **Count in SQL when applicable** - If a user asks a question where counting can be done in SQL, count in SQL rather than attempting to find every single row and count locally
 - **Scout first if zero results** - Check distinct values and adjust criteria
 - **Accuracy is paramount** - Even when users ask for information provided outside of Trino MCP, do not make up fake information
 
