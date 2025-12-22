@@ -20,6 +20,10 @@ class Filter:
             default="",
             description="Comma-separated internal domains to allow (subdomains included)",
         )
+        allowed_urls: str = Field(
+            default="https://vega.github.io/schema/vega-lite/v5.json",
+            description="Comma-separated exact URLs to allow (for schema references, etc.)",
+        )
         replacement_text: str = Field(
             default="(external link removed for security)",
             description="Text shown in place of removed links",
@@ -68,11 +72,21 @@ class Filter:
             if d.strip()
         }
 
+    def get_allowed_urls(self) -> set:
+        if not self.valves.allowed_urls:
+            return set()
+        return {u.strip() for u in self.valves.allowed_urls.split(",") if u.strip()}
+
     def is_external(self, url: str) -> bool:
         try:
             # Reject excessively long URLs as external (defense against regex DoS)
             if len(url) > self.MAX_URL_LENGTH:
                 return True
+
+            # Check if URL is in the allowed URLs list (exact match)
+            allowed_urls = self.get_allowed_urls()
+            if url in allowed_urls:
+                return False
 
             # Add scheme if missing (for www. URLs) so urlparse works correctly
             parse_url = url

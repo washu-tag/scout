@@ -3,12 +3,12 @@ datasources:
   - name: ingest-db
     type: grafana-postgresql-datasource
     uid: postgres_ingest_db_datasource_01
-    url: '{{ db_host_ro }}:{{ db_port }}'
-    user: '{{ postgres_user }}'
+    url: '[% db_host_ro %]:[% db_port %]'
+    user: '[% postgres_user %]'
     secureJsonData:
-      password: '{{ postgres_password }}'
+      password: '[% postgres_password %]'
     jsonData:
-      database: '{{ ingest_postgres_table_name }}'
+      database: '[% ingest_postgres_table_name %]'
       sslmode: 'require' # disable/require/verify-ca/verify-full
       maxOpenConns: 100
       maxIdleConns: 100
