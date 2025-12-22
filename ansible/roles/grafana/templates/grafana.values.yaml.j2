@@ -78,10 +78,14 @@ datasources:
 
       - name: Loki
         type: loki
-        datasourceUid: loki_datasource_01
+        uid: loki_datasource_01
         url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local/'
         editable: false
         isDefault: false
+        jsonData:
+          httpHeaderName1: 'X-Scope-OrgID'
+        secureJsonData:
+          httpHeaderValue1: 'scout'
 
 sidecar:
   alerts:
