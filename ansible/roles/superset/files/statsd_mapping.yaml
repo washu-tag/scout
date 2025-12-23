@@ -1,0 +1,34 @@
+mappings:
+  # --------------------------------------------------------------------------
+  # REST API timings
+  # Pattern: superset.<XRestApi>.<method>.time
+  # --------------------------------------------------------------------------
+  - match: "superset\\.(\\w+RestApi)\\.(\\w+)\\.time"
+    match_type: regex
+    name: 'superset_api_request_duration_ms'
+    labels:
+      api: '$1'
+      method: '$2'
+    observer_type: histogram
+    histogram_options:
+      buckets: [10, 50, 100, 250, 500, 1000, 2500]
+
+  # --------------------------------------------------------------------------
+  # REST API counters
+  # Pattern: superset.<XRestApi>.<method>.<status>
+  # --------------------------------------------------------------------------
+  - match: "superset\\.(\\w+RestApi)\\.(\\w+)\\.(\\w+)"
+    match_type: regex
+    name: 'superset_api_requests_total'
+    labels:
+      api: '$1'
+      method: '$2'
+      status: '$3'
+
+  # --------------------------------------------------------------------------
+  # Drop everything else
+  # --------------------------------------------------------------------------
+  - match: '.'
+    match_type: regex
+    action: drop
+    name: 'dropped'

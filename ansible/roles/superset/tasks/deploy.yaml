@@ -94,6 +94,44 @@
         favicon.ico: '{{ lookup("file", superset_favicon_path) | b64encode }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
+- name: Create ConfigMap for StatsD exporter mapping
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: superset-statsd-mapping
+        namespace: '{{ superset_namespace }}'
+      data:
+        statsd_mapping.yaml: '{{ lookup("file", role_path + "/files/statsd_mapping.yaml") }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+
+- name: Create Service for StatsD exporter metrics
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: superset-statsd-metrics
+        namespace: '{{ superset_namespace }}'
+        labels:
+          app: superset
+          component: statsd-exporter
+      spec:
+        type: ClusterIP
+        ports:
+          - name: metrics
+            port: '{{ superset_statsd_metrics_port }}'
+            targetPort: '{{ superset_statsd_metrics_port }}'
+            protocol: TCP
+        selector:
+          app: superset
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+
 - name: Parse Superset Helm values
   ansible.builtin.set_fact:
     superset_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

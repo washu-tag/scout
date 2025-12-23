@@ -92,7 +92,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "trino_metadata_DiscoveryNodeManager_ActiveNodeCount{namespace=~\"$namespace\"}",
+          "expr": "max(trino_metadata_DiscoveryNodeManager_ActiveNodeCount{namespace=~\"$namespace\"})",
           "legendFormat": "Active Nodes",
           "range": true,
           "refId": "A"
@@ -163,7 +163,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "trino_execution_QueryManager_RunningQueries{namespace=~\"$namespace\"}",
+          "expr": "sum(trino_execution_QueryManager_RunningQueries{namespace=~\"$namespace\"})",
           "legendFormat": "Running",
           "range": true,
           "refId": "A"
@@ -234,7 +234,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "trino_execution_QueryManager_QueuedQueries{namespace=~\"$namespace\"}",
+          "expr": "sum(trino_execution_QueryManager_QueuedQueries{namespace=~\"$namespace\"})",
           "legendFormat": "Queued",
           "range": true,
           "refId": "A"
@@ -297,7 +297,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "increase(trino_execution_QueryManager_CompletedQueries_TotalCount{namespace=~\"$namespace\"}[5m])",
+          "expr": "sum(increase(trino_execution_QueryManager_CompletedQueries_TotalCount{namespace=~\"$namespace\"}[5m]))",
           "legendFormat": "Completed (5m)",
           "range": true,
           "refId": "A"
@@ -368,7 +368,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[5m])",
+          "expr": "sum(increase(trino_execution_QueryManager_FailedQueries_TotalCount{namespace=~\"$namespace\"}[5m]))",
           "legendFormat": "Failed (5m)",
           "range": true,
           "refId": "A"
@@ -435,7 +435,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "trino_memory_ClusterMemoryPool_BlockedNodes{namespace=~\"$namespace\"}",
+          "expr": "max(trino_memory_ClusterMemoryPool_BlockedNodes{namespace=~\"$namespace\"})",
           "legendFormat": "Blocked",
           "range": true,
           "refId": "A"
@@ -1455,7 +1455,6 @@
   "preload": false,
   "refresh": "30s",
   "schemaVersion": 41,
-  "tags": ["trino", "scout"],
   "templating": {
     "list": [
       {

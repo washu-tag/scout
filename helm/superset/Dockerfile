@@ -19,7 +19,8 @@ RUN uv pip install --no-cache \
     pyhive \
     trino \
     pillow \
-    prometheus_client
+    prometheus_client \
+    statsd
 
 # Switch to user that runs Superset
 USER superset

@@ -27,11 +27,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 21
       },
       "id": 100,
       "panels": [],
-      "title": "Connection Pool Overview",
+      "title": "Superset Connection Pool Overview",
       "type": "row"
     },
     {
@@ -77,7 +77,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 1
+        "y": 22
       },
       "id": 1,
       "options": {
@@ -100,7 +100,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "(superset_db_pool_checked_out{namespace=\"$namespace\"} / superset_db_pool_size{namespace=\"$namespace\"}) * 100",
+          "expr": "(sum(superset_db_pool_checked_out{namespace=\"$namespace\"}) / sum(superset_db_pool_size{namespace=\"$namespace\"})) * 100",
           "refId": "A"
         }
       ],
@@ -144,7 +144,7 @@
         "h": 4,
         "w": 9,
         "x": 6,
-        "y": 1
+        "y": 22
       },
       "id": 2,
       "options": {
@@ -169,7 +169,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "superset_db_pool_checked_out{namespace=\"$namespace\"}",
+          "expr": "sum(superset_db_pool_checked_out{namespace=\"$namespace\"})",
           "refId": "A"
         }
       ],
@@ -213,7 +213,7 @@
         "h": 4,
         "w": 9,
         "x": 15,
-        "y": 1
+        "y": 22
       },
       "id": 3,
       "options": {
@@ -238,7 +238,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "superset_db_pool_overflow{namespace=\"$namespace\"}",
+          "expr": "sum(superset_db_pool_overflow{namespace=\"$namespace\"})",
           "refId": "A"
         }
       ],
@@ -274,7 +274,7 @@
         "h": 4,
         "w": 9,
         "x": 6,
-        "y": 5
+        "y": 26
       },
       "id": 4,
       "options": {
@@ -299,7 +299,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "superset_db_pool_size{namespace=\"$namespace\"}",
+          "expr": "sum(superset_db_pool_size{namespace=\"$namespace\"})",
           "refId": "A"
         }
       ],
@@ -343,7 +343,7 @@
         "h": 4,
         "w": 9,
         "x": 15,
-        "y": 5
+        "y": 26
       },
       "id": 5,
       "options": {
@@ -368,7 +368,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "superset_db_pool_checked_in{namespace=\"$namespace\"}",
+          "expr": "sum(superset_db_pool_checked_in{namespace=\"$namespace\"})",
           "refId": "A"
         }
       ],
@@ -461,7 +461,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 9
+        "y": 30
       },
       "id": 6,
       "options": {
@@ -483,7 +483,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "superset_db_pool_checked_out{namespace=\"$namespace\"}",
+          "expr": "sum(superset_db_pool_checked_out{namespace=\"$namespace\"})",
           "legendFormat": "Checked Out (Active)",
           "refId": "A"
         },
@@ -492,7 +492,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "superset_db_pool_checked_in{namespace=\"$namespace\"}",
+          "expr": "sum(superset_db_pool_checked_in{namespace=\"$namespace\"})",
           "legendFormat": "Checked In (Idle)",
           "refId": "B"
         },
@@ -501,7 +501,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "superset_db_pool_overflow{namespace=\"$namespace\"}",
+          "expr": "sum(superset_db_pool_overflow{namespace=\"$namespace\"})",
           "legendFormat": "Overflow",
           "refId": "C"
         },
@@ -510,7 +510,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "superset_db_pool_size{namespace=\"$namespace\"}",
+          "expr": "sum(superset_db_pool_size{namespace=\"$namespace\"})",
           "legendFormat": "Pool Size",
           "refId": "D"
         }
@@ -586,7 +586,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 9
+        "y": 30
       },
       "id": 7,
       "options": {
@@ -608,7 +608,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "(superset_db_pool_checked_out{namespace=\"$namespace\"} / superset_db_pool_size{namespace=\"$namespace\"}) * 100",
+          "expr": "(sum(superset_db_pool_checked_out{namespace=\"$namespace\"}) / sum(superset_db_pool_size{namespace=\"$namespace\"})) * 100",
           "legendFormat": "Utilization %",
           "refId": "A"
         }
@@ -622,11 +622,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 38
       },
       "id": 101,
       "panels": [],
-      "title": "Kubernetes Resources",
+      "title": "Superset Kubernetes Resources",
       "type": "row"
     },
     {
@@ -692,7 +692,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 39
       },
       "id": 20,
       "options": {
@@ -788,7 +788,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 18
+        "y": 39
       },
       "id": 21,
       "options": {
@@ -822,108 +822,24 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "description": "Container restarts over time by pod",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "stepAfter",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "decimals": 0,
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
+      "collapsed": false,
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 1,
+        "w": 24,
         "x": 0,
-        "y": 26
+        "y": 0
       },
-      "id": 22,
-      "options": {
-        "legend": {
-          "calcs": ["lastNotNull"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum by(pod) (kube_pod_container_status_restarts_total{namespace=\"$namespace\", pod=~\"superset.*\"})",
-          "legendFormat": "{{ pod }}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Pod Restarts Over Time",
-      "type": "timeseries"
+      "id": 200,
+      "panels": [],
+      "title": "Superset API Metrics",
+      "type": "row"
     },
     {
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Network traffic received and transmitted by Superset pods",
+      "description": "Total API requests per second by endpoint",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -973,30 +889,17 @@
               }
             ]
           },
-          "unit": "Bps"
+          "unit": "reqps"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/.*Transmit.*/"
-            },
-            "properties": [
-              {
-                "id": "custom.transform",
-                "value": "negative-Y"
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
-        "x": 12,
-        "y": 26
+        "x": 0,
+        "y": 1
       },
-      "id": 23,
+      "id": 201,
       "options": {
         "legend": {
           "calcs": ["mean", "max"],
@@ -1005,7 +908,6 @@
           "showLegend": true
         },
         "tooltip": {
-          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
@@ -1018,30 +920,262 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(container_network_receive_bytes_total{namespace=\"$namespace\", pod=~\"superset.*\"}[5m]))",
-          "legendFormat": "Receive",
+          "expr": "sum by(api) (rate(superset_api_requests_total{namespace=\"$namespace\"}[5m]))",
+          "legendFormat": "{{api}}",
           "range": true,
           "refId": "A"
+        }
+      ],
+      "title": "API Request Rate by Endpoint",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "API request success vs error rate",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "reqps"
         },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "success"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "warning"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "id": 202,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "sum"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(container_network_transmit_bytes_total{namespace=\"$namespace\", pod=~\"superset.*\"}[5m]))",
-          "legendFormat": "Transmit",
+          "expr": "sum by(status) (rate(superset_api_requests_total{namespace=\"$namespace\"}[5m]))",
+          "legendFormat": "{{status}}",
           "range": true,
-          "refId": "B"
+          "refId": "A"
         }
       ],
-      "title": "Network I/O",
+      "title": "API Requests by Status",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Average API request latency by endpoint (95th percentile)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 500
+              },
+              {
+                "color": "red",
+                "value": 1000
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "id": 206,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by(api, le) (rate(superset_api_request_duration_ms_bucket{namespace=\"$namespace\"}[5m])))",
+          "legendFormat": "{{api}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "API Latency (p95) by Endpoint",
       "type": "timeseries"
     }
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["scout", "superset"],
   "templating": {
     "list": [
       {
