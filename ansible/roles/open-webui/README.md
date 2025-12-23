@@ -123,16 +123,25 @@ Configure the Trino MCP external tool to enable SQL querying:
    - **Visibility**: `Public`
 4. Click **Save**
 
-#### 3. Configure Model in Open WebUI
+#### 3. Add Knowledge in Open WebUI
 
-1. Click Notes in the left side bar. Add the contents of `docs/source/dataschema.md` as a note called "Scout Schema".
-2. (optionally) add the contents of `ansible/roles/open-webui/files/gpt-oss-charting.md` as a note called "Charting Tools".
-3. Navigate to **Admin Panel → Settings → Documents** (requires admin access)
-4. Replace the `RAG Template` with the contents of `ansible/roles/open-webui/files/rag-prompt.md` and save.
-5. Load the "Models" tab and find `gpt-oss-120b-long:latest` in the model list
-6. Optionally disable all other models
-7. Click the **edit icon** (pencil) next to `gpt-oss-120b-long:latest`
-8. Configure the following settings:
+1. Navigate to **Workspace (left sidebar) → Knowledge → New Knowledge**
+2. Create a new knowledge base, tweaking name/description if desired:
+   - **Name**: `Scout Capabilities`
+   - **Description**: `Provides extra context to the model on information about the Scout database and how to interact with it`
+   - **Visibility**: `Public`
+3. Using **+ button → Upload files**, add documents to the collection:
+   - `docs/source/dataschema.md`
+   - (optional) `ansible/roles/open-webui/files/gpt-oss-charting.md`
+
+#### 4. Configure Model in Open WebUI
+
+1. Navigate to **Admin Panel → Settings → Documents** (requires admin access)
+2. Replace the `RAG Template` with the contents of `ansible/roles/open-webui/files/rag-prompt.md` and save.
+3. Load the "Models" tab and find `gpt-oss-120b-long:latest` in the model list
+4. Optionally disable all other models
+5. Click the **edit icon** (pencil) next to `gpt-oss-120b-long:latest`
+6. Configure the following settings:
    - **Model Name**: `Scout Explorer`
    - **Description**: `Intelligent data exploration`
    - **Visibility**: `Public`
@@ -142,11 +151,11 @@ Configure the Trino MCP external tool to enable SQL querying:
      - **Keep alive**: `-1` (keeps model loaded indefinitely)
      - **Reasoning Effort**: `high`
    - **Prompt Suggestions**: Select "Custom" and add sample prompts
-   - **Knowledge**: Using "Select Knowledge" add "Scout Schema" and optionally "Charting Tools"
+   - **Knowledge**: Using "Select Knowledge" add `dataschema.md` and optionally `gpt-oss-charting.md`
    - **Tools**: Enable "Trino MCP", disable "Web Search" and "Code Interpreter"
-9. Click **Save**
+7. Click **Save**
 
-#### 4. Install Link Sanitizer Filter
+#### 5. Install Link Sanitizer Filter
 
 Install a security filter to prevent data exfiltration via external links in LLM responses. This complements the CSP middleware (which blocks automatic resource loading) by also blocking clickable links. See [ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md) for details.
 
@@ -169,12 +178,12 @@ Install a security filter to prevent data exfiltration via external links in LLM
 - Handles both markdown links `[text](url)` and raw URLs
 - Prevents HIPAA violations from PHI being transmitted via clicked links
 
-#### 5. Disable Arena Model
+#### 6. Disable Arena Model
 
 1. Navigate to **Admin Panel → Settings → Evaluations**
 2. Disable Arena Model
 
-#### 6. Verify Configuration
+#### 7. Verify Configuration
 
 Test the configuration to ensure everything is working:
 
