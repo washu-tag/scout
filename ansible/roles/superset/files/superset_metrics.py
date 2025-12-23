@@ -5,6 +5,7 @@ Provides connection pool metrics for Superset's metadata database.
 
 Metrics exposed:
 - superset_db_pool_size: Configured pool size
+- superset_db_pool_max_overflow: Configured max overflow connections
 - superset_db_pool_checked_in: Available connections in pool
 - superset_db_pool_checked_out: Connections currently in use
 - superset_db_pool_overflow: Overflow connections in use (always >= 0)
@@ -28,7 +29,11 @@ logger = logging.getLogger(__name__)
 # Connection pool metrics (Gauges)
 db_pool_size = Gauge(
     "superset_db_pool_size",
-    "Database connection pool size",
+    "Database connection pool size (configured)",
+)
+db_pool_max_overflow = Gauge(
+    "superset_db_pool_max_overflow",
+    "Maximum overflow connections (configured)",
 )
 db_pool_checked_in = Gauge(
     "superset_db_pool_checked_in",
@@ -53,15 +58,18 @@ def _update_pool_metrics(pool) -> None:
     """Update all pool metrics for a given pool."""
     try:
         pool_size = pool.size()
+        # _max_overflow is the configured max; pool.overflow() is internal counter
+        max_overflow = getattr(pool, "_max_overflow", 0)
         checked_in = pool.checkedin()
         checked_out = pool.checkedout()
-        # Fix: Calculate actual overflow in use (never negative)
-        overflow = max(0, checked_out - pool_size)
+        # Calculate actual overflow in use, pool.overflow() returns internal counter starting at negative pool_size
+        overflow_in_use = max(0, checked_out - pool_size)
 
         db_pool_size.set(pool_size)
+        db_pool_max_overflow.set(max_overflow)
         db_pool_checked_in.set(checked_in)
         db_pool_checked_out.set(checked_out)
-        db_pool_overflow.set(overflow)
+        db_pool_overflow.set(overflow_in_use)
     except Exception as e:
         logger.debug(f"Error updating pool metrics: {e}")
 

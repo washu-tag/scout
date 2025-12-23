@@ -44,6 +44,7 @@ temporal_version: ~0.67.0
 
 # Analytics & Query Engines - Trino
 trino_helm_chart_version: ~1.40.0
+trino_jmx_exporter_version: 1.0.1
 mcp_trino_version: 4.1.0
 
 # Analytics & Query Engines - Hive

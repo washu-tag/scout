@@ -21,7 +21,7 @@ jmx:
   serverPort: 9081
   exporter:
     enabled: true
-    image: bitnamilegacy/jmx-exporter:1.0.1
+    image: bitnamilegacy/jmx-exporter:{{ trino_jmx_exporter_version }}
     pullPolicy: IfNotPresent
     port: 5556
     configProperties: |

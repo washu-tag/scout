@@ -100,7 +100,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "(sum(superset_db_pool_checked_out{namespace=\"$namespace\"}) / sum(superset_db_pool_size{namespace=\"$namespace\"})) * 100",
+          "expr": "(superset_db_pool_checked_out{namespace=\"$namespace\"} / superset_db_pool_size{namespace=\"$namespace\"}) * 100",
           "refId": "A"
         }
       ],
@@ -169,7 +169,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(superset_db_pool_checked_out{namespace=\"$namespace\"})",
+          "expr": "superset_db_pool_checked_out{namespace=\"$namespace\"}",
           "refId": "A"
         }
       ],
@@ -238,7 +238,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(superset_db_pool_overflow{namespace=\"$namespace\"})",
+          "expr": "superset_db_pool_overflow{namespace=\"$namespace\"}",
           "refId": "A"
         }
       ],
@@ -250,7 +250,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Total configured pool size",
+      "description": "Configured pool size + max overflow connections",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -299,8 +299,18 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(superset_db_pool_size{namespace=\"$namespace\"})",
+          "expr": "superset_db_pool_size{namespace=\"$namespace\"}",
+          "legendFormat": "Pool Size",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "superset_db_pool_max_overflow{namespace=\"$namespace\"}",
+          "legendFormat": "Max Overflow",
+          "refId": "B"
         }
       ],
       "title": "Pool Size (Configured)",
@@ -368,7 +378,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(superset_db_pool_checked_in{namespace=\"$namespace\"})",
+          "expr": "superset_db_pool_checked_in{namespace=\"$namespace\"}",
           "refId": "A"
         }
       ],
@@ -483,7 +493,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(superset_db_pool_checked_out{namespace=\"$namespace\"})",
+          "expr": "superset_db_pool_checked_out{namespace=\"$namespace\"}",
           "legendFormat": "Checked Out (Active)",
           "refId": "A"
         },
@@ -492,7 +502,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(superset_db_pool_checked_in{namespace=\"$namespace\"})",
+          "expr": "superset_db_pool_checked_in{namespace=\"$namespace\"}",
           "legendFormat": "Checked In (Idle)",
           "refId": "B"
         },
@@ -501,7 +511,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(superset_db_pool_overflow{namespace=\"$namespace\"})",
+          "expr": "superset_db_pool_overflow{namespace=\"$namespace\"}",
           "legendFormat": "Overflow",
           "refId": "C"
         },
@@ -510,7 +520,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(superset_db_pool_size{namespace=\"$namespace\"})",
+          "expr": "superset_db_pool_size{namespace=\"$namespace\"}",
           "legendFormat": "Pool Size",
           "refId": "D"
         }
@@ -608,7 +618,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "(sum(superset_db_pool_checked_out{namespace=\"$namespace\"}) / sum(superset_db_pool_size{namespace=\"$namespace\"})) * 100",
+          "expr": "(superset_db_pool_checked_out{namespace=\"$namespace\"} / superset_db_pool_size{namespace=\"$namespace\"}) * 100",
           "legendFormat": "Utilization %",
           "refId": "A"
         }

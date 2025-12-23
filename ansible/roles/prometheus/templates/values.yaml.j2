@@ -113,10 +113,6 @@ extraScrapeConfigs: |
         regex: http
       - source_labels: [__meta_kubernetes_namespace]
         target_label: namespace
-      - source_labels: [__meta_kubernetes_pod_name]
-        target_label: pod
-      - source_labels: [__meta_kubernetes_service_name]
-        target_label: service
 
   - job_name: superset-statsd
     metrics_path: /metrics
@@ -131,7 +127,3 @@ extraScrapeConfigs: |
         regex: metrics
       - source_labels: [__meta_kubernetes_namespace]
         target_label: namespace
-      - source_labels: [__meta_kubernetes_pod_name]
-        target_label: pod
-      - source_labels: [__meta_kubernetes_service_name]
-        target_label: service
