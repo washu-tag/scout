@@ -29,7 +29,7 @@ dcm4chee_db_user: pacs
 dcm4chee_db_password: pacs
 
 # Resource configuration (dev defaults)
-dcm4chee_resources:
+dcm4chee_resources_default:
   requests:
     cpu: 500m
     memory: 1Gi

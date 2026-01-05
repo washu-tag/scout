@@ -12,7 +12,7 @@ ollama:
       number: 1
     models:
       pull: []  # Models are pulled asynchronously via separate Job to avoid Helm timeout
-  resources: {{ ollama_resources | to_json }}
+  resources: {{ ollama_resources_default | combine(ollama_resources | default({}), recursive=true) | to_json }}
 {% if ollama_min_gpu_memory_gb | int > 0 %}
   affinity:
     nodeAffinity:
@@ -107,7 +107,7 @@ persistence:
 {% endif %}
   size: {{ open_webui_storage_size }}
 
-resources: {{ open_webui_resources | to_json }}
+resources: {{ open_webui_resources_default | combine(open_webui_resources | default({}), recursive=true) | to_json }}
 
 # -- Configure database URL, needed to work with Postgres (example: `postgresql://<user>:<password>@<service>:<port>/<database>`), leave empty to use the default sqlite database
 databaseUrl: 'postgresql://{{ open_webui_postgres_user }}:{{ open_webui_postgres_password }}@{{ db_host }}:{{ db_port }}/{{ open_webui_database }}'

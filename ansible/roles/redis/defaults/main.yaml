@@ -15,7 +15,7 @@ redis_name: redis
 redis_storage_class: ''
 redis_storage_size: 8Gi
 # Operator resources
-redis_operator_resources:
+redis_operator_resources_default:
   limits:
     cpu: 500m
     memory: 512Mi
@@ -24,7 +24,7 @@ redis_operator_resources:
     memory: 256Mi
 
 # Redis Enterprise Cluster node resources
-redis_cluster_node_resources:
+redis_cluster_node_resources_default:
   requests:
     cpu: 100m
     memory: 1Gi

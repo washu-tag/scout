@@ -16,7 +16,7 @@ voila_image_tag: '{{ jupyter_singleuser_image_tag }}'
 voila_replicas: 1
 
 # Resource limits - sized for POC with multiple concurrent users
-voila_resources:
+voila_resources_default:
   requests:
     cpu: 100m
     memory: 512Mi

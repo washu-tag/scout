@@ -2,7 +2,7 @@
 # Deploys the operator which manages Redis Enterprise clusters
 
 # Resource limits for the operator pod
-resources: {{ redis_operator_resources | to_json }}
+resources: {{ redis_operator_resources_default | combine(redis_operator_resources | default({}), recursive=true) | to_json }}
 
 # Image pull policy
 imagePullPolicy: IfNotPresent

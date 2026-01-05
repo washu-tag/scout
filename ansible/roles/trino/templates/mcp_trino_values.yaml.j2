@@ -19,7 +19,7 @@ trino:
     schemas: [delta.default]
     tables: []
 
-resources: {{ mcp_trino_resources | to_json }}
+resources: {{ mcp_trino_resources_default | combine(mcp_trino_resources | default({}), recursive=true) | to_json }}
 
 service:
   type: ClusterIP

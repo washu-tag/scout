@@ -9,7 +9,7 @@ orthanc_storage_size: 100Gi
 orthanc_storage_class: ''
 
 # Resource configuration (dev defaults)
-orthanc_resources:
+orthanc_resources_default:
   requests:
     cpu: 500m
     memory: 1Gi

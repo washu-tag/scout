@@ -50,7 +50,7 @@ singleBinary:
 {% if loki_storage_class is defined and loki_storage_class %}
     storageClass: '{{ loki_storage_class }}'
 {% endif %}
-  resources: {{ loki_resources | to_json }}
+  resources: {{ loki_resources_default | combine(loki_resources | default({}), recursive=true) | to_json }}
 {% if not aws_deployment %}
   extraEnv:
     - name: AWS_ACCESS_KEY_ID

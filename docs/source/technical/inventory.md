@@ -397,6 +397,27 @@ postgres_password: !vault |
 
 Override default resource allocations for each service. All services have development-scale defaults defined in their role's `defaults/main.yaml`, but you can override them for your environment.
 
+#### Partial Resource Overrides
+
+Most services support **partial resource overrides**. You only need to specify the values you want to change; unspecified values will use the role defaults:
+
+```yaml
+# Override only limits (requests use defaults)
+temporal_resources:
+  limits:
+    cpu: 4
+    memory: 8Gi
+
+# Override a single value
+prometheus_resources:
+  limits:
+    memory: 4Gi
+```
+
+**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, mcp_trino
+
+**Services NOT supporting partial overrides** (use flattened variables instead): Trino coordinator/worker, Cassandra, Elasticsearch, HL7 Transformer. These services use individual variables (e.g., `cassandra_max_heap`, `trino_worker_cpu_limit`) because JVM heap sizes drive memory calculations with different multipliers for requests vs limits.
+
 #### PostgreSQL
 
 ```yaml
