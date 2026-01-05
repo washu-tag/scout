@@ -39,10 +39,10 @@ Install Loki with:
 helm upgrade --install loki grafana/loki --namespace loki --version 6.24.0 --values loki-values.yaml
 ```
 
-Promtail agent is used to collect logs from the Kubernetes cluster and send them to Loki. Install Promtail with:
+Grafana Alloy is used to collect logs from the Kubernetes cluster and send them to Loki. Install Alloy with:
 
 ```bash
-helm upgrade --install promtail grafana/promtail --namespace loki --version 6.16.6 --values promtail-values.yaml
+helm upgrade --install alloy grafana/alloy --namespace loki --version 1.5.1 --values alloy-values.yaml
 ```
 
 Uninstall Loki with:
@@ -51,10 +51,10 @@ Uninstall Loki with:
 helm uninstall loki --namespace loki
 ```
 
-Uninstall Promtail with:
+Uninstall Alloy with:
 
 ```bash
-helm uninstall promtail --namespace loki
+helm uninstall alloy --namespace loki
 ```
 
 ## Accessing Loki

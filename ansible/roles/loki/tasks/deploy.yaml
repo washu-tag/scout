@@ -46,21 +46,24 @@
     helm_chart_timeout: '{{ loki_helm_timeout }}'
     helm_chart_values: "{{ lookup('template', 'loki.values.yaml.j2') | from_yaml }}"
 
-- name: Deploy Promtail
+- name: Deploy Alloy
   ansible.builtin.include_role:
     name: scout_common
     tasks_from: deploy_helm_chart
   vars:
-    helm_chart_name: promtail
-    helm_chart_ref: '{{ loki_helm_repo_name }}/promtail'
+    helm_chart_name: alloy
+    helm_chart_ref: '{{ loki_helm_repo_name }}/alloy'
     helm_chart_namespace: '{{ loki_namespace }}'
     helm_repo_name: '{{ loki_helm_repo_name }}'
     helm_repo_url: '{{ loki_helm_repo_url }}'
-    helm_chart_version: '{{ promtail_helm_chart_version }}'
+    helm_chart_version: '{{ alloy_helm_chart_version }}'
     helm_chart_create_namespace: false
     helm_chart_values:
-      promtail:
-        enabled: true
-        config:
-          clients:
-            - url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local:3100/loki/api/v1/push'
+      alloy:
+        configMap:
+          content: |
+            loki.write "default" {
+              endpoint {
+                url = "http://loki-gateway.{{ loki_namespace }}.svc.cluster.local:3100/loki/api/v1/push"
+              }
+            }

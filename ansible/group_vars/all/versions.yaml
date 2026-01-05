@@ -68,9 +68,9 @@ open_webui_helm_chart_version: ~8.22.0
 # Monitoring & Observability - Prometheus
 prometheus_helm_chart_version: ~27.52.0
 
-# Monitoring & Observability - Loki & Promtail
+# Monitoring & Observability - Loki & Alloy
 loki_helm_chart_version: ~6.49.0
-promtail_helm_chart_version: ~6.17.0
+alloy_helm_chart_version: ~1.5.1
 
 # Container Registry
 harbor_version: ~1.14.0
