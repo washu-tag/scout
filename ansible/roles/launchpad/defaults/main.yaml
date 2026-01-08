@@ -7,7 +7,7 @@ launchpad_helm_chart_ref: '{{ scout_repo_dir }}/helm/launchpad'
 
 # Custom Launchpad image (override from inventory for CI/CD)
 launchpad_image_repository: ghcr.io/washu-tag/launchpad
-launchpad_image_tag: 1.1.0
+launchpad_image_tag: 2.0.0
 
 # Launchpad nextauth cookie secret, override from inventory for production
 launchpad_nextauth_secret: changeme-nextauth-secret
