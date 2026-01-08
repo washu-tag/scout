@@ -2,5 +2,5 @@ apiVersion: v2
 name: hl7log-extractor
 description: Parse HL7 messages from daily log files and trigger ingestion into Lake
 type: application
-version: 2.0.0
-appVersion: "2.0.0"
+version: latest
+appVersion: "latest"

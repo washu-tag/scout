@@ -4,9 +4,9 @@ hl7log_extractor_timezone: '{{ timezone }}'
 
 # Custom extractor images (override from inventory for CI/CD)
 hl7log_extractor_image_repository: ghcr.io/washu-tag/hl7log-extractor
-hl7log_extractor_image_tag: 2.0.0
+hl7log_extractor_image_tag: latest
 hl7_transformer_image_repository: ghcr.io/washu-tag/hl7-transformer
-hl7_transformer_image_tag: 2.0.0
+hl7_transformer_image_tag: latest
 
 # Extractor configuration
 hl7log_extractor_timeout: 480
