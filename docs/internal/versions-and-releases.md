@@ -18,10 +18,13 @@ Scout currently uses **manual version updates**. When releasing a new version:
 For day-to-day development on `main`, Scout component versions are set to development values. CI publishes any changes to `main` with the `latest` Docker image tag, allowing continuous integration without version string changes.
 
 **Development version values:**
-- Most components: `latest`
-- Python packages: `0.0.dev0` (required by PEP-440; see note below)
+- Docker image tags, npm, Gradle: `latest`
+- Helm chart versions: `0.0.0-dev` (required by [SemVer 2](https://helm.sh/docs/topics/charts/))
+- Python packages: `0.0.dev0` (required by [PEP-440](https://peps.python.org/pep-0440/))
 
-**Note on Python versions**: Python package versions must comply with [PEP-440](https://peps.python.org/pep-0440/), which does not allow `latest` as a version string. We use `0.0.dev0` for the Python package version, but create a separate `VERSION` file containing `latest` which CI uses for Docker image tagging (VERSION file takes precedence over pyproject.toml).
+**Note on constrained versions**:
+- **Helm charts** require SemVer 2 compliant versions. We use `0.0.0-dev` as a development placeholder.
+- **Python packages** require PEP-440 compliant versions. We use `0.0.dev0` for the package version, but create a separate `VERSION` file containing `latest` which CI uses for Docker image tagging (VERSION file takes precedence over pyproject.toml).
 
 ### Release Process
 
@@ -92,22 +95,24 @@ cd launchpad && npm install
 
 ### Helm Charts
 
+Helm chart `version` must be SemVer 2 compliant. Use `0.0.0-dev` for development.
+
 **Scout Application Charts** (update both `version` and `appVersion`):
 
-| File | Fields |
-|------|--------|
-| `helm/launchpad/Chart.yaml` | `version`, `appVersion` |
-| `helm/launchpad/values.yaml` | `image.tag` |
-| `helm/extractor/hl7-transformer/Chart.yaml` | `version`, `appVersion` |
-| `helm/extractor/hl7log-extractor/Chart.yaml` | `version`, `appVersion` |
+| File | Fields | Dev Values |
+|------|--------|------------|
+| `helm/launchpad/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
+| `helm/launchpad/values.yaml` | `image.tag` | `latest` |
+| `helm/extractor/hl7-transformer/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
+| `helm/extractor/hl7log-extractor/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 
 **Charts for External Applications** (update only `version`, NOT `appVersion`):
 
-| File | Field | Note |
-|------|-------|------|
-| `helm/hive-metastore/Chart.yaml` | `version` only | `appVersion` tracks Hive version |
-| `helm/voila/Chart.yaml` | `version` only | `appVersion` tracks Voila version |
-| `helm/voila/values.yaml` | `image.tag` | Uses pyspark-notebook image |
+| File | Field | Dev Value | Note |
+|------|-------|-----------|------|
+| `helm/hive-metastore/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` tracks Hive version |
+| `helm/voila/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` tracks Voila version |
+| `helm/voila/values.yaml` | `image.tag` | `latest` | Uses pyspark-notebook image |
 
 ### VERSION Files
 
@@ -141,7 +146,9 @@ These files track external dependency versions and should NOT be manually update
 - VERSION files: `X.Y.Z` (plain text, single line)
 
 **For development** (after release, reset to):
-- Most files: `latest`
+- Docker image tags, npm, Gradle, VERSION files: `latest`
+- Helm chart `version`: `0.0.0-dev` (SemVer 2 compliant)
+- Helm chart `appVersion`: `"latest"` (for Scout apps only)
 - Python pyproject.toml: `"0.0.dev0"` (PEP-440 compliant)
 
 ## CI Version Detection
