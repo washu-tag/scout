@@ -1,5 +1,5 @@
 name: 'Derive Docker image version'
-description: 'Derives version to use for a docker image from VERSION file'
+description: 'Derives version to use for a docker image from project files'
 inputs:
   subproject:
     description: 'Subdirectory for microservice'
@@ -19,7 +19,13 @@ runs:
         if [ -f VERSION ]; then
           echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
         elif [ -f package.json ]; then
-          echo "VERSION=$(cat package.json | jq ".version" -r)" >> "$GITHUB_OUTPUT"
+          echo "version=$(jq -r '.version' package.json)" >> "$GITHUB_OUTPUT"
+        elif [ -f build.gradle ]; then
+          # Extract version from: version = '1.2.3' or version = "1.2.3"
+          echo "version=$(grep "^version" build.gradle | sed "s/.*['\"]\([^'\"]*\)['\"].*/\1/")" >> "$GITHUB_OUTPUT"
+        elif [ -f pyproject.toml ]; then
+          # Extract version from: version = "1.2.3"
+          echo "version=$(grep "^version" pyproject.toml | sed 's/.*"\([^"]*\)".*/\1/')" >> "$GITHUB_OUTPUT"
         else
           echo "Could not find a way to determine version"
           exit 22
