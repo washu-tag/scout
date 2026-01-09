@@ -1,6 +1,6 @@
 # ADR 0011: Real-Time HL7 Listener Architecture
 
-**Date:** 2025-01-07
+**Date:** 2025-01-09
 **Status:** Proposed
 **Decision Owner:** TAG Team
 
@@ -34,15 +34,48 @@ We must ACK all messages to prevent queue backup (10,000 message limit before in
 
 ### Challenges
 
-1. **Volume Management:** Will be overwhelmed by messages - need organized storage and filtering strategy
-2. **Reliability:** Must ACK promptly, 10k message limit before they stop sending
-3. **Database End State:** How do report updates (Preliminary → Final → Corrected) and patient merges (ADT^A40) get handled and represented to users?
-4. **Infrastructure Reliability:** Current on-prem K3s cluster can be unreliable, need buffering and replay strategy. We can ask for upstream HL7 message replays if needed, but would like to avoid frequent requests.
-5. **Object Storage Performance:** Direct per-message writes to object storage performed poorly (learned from previous Temporal experience) - need to keep batching strategy.
+1. **Volume**: ~220k messages/day requires organized storage and filtering
+2. **ACK Latency**: Must ACK promptly to avoid upstream queue backup
+3. **Report Updates**: Handle status transitions (Preliminary → Final → Corrected)
+4. **Patient Merges**: Handling ADT^A40 messages indicate patient record merges
+5. **Patient Demographics**: ADT messages contain demographic data not in ORU^R01; scope TBD
+6. **Buffering**: Need replay capability without frequent upstream requests
+
+## POC Results
+
+A proof-of-concept validated the Camel K approach with the following components working end-to-end:
+
+| Component | Status | Description |
+|-----------|--------|-------------|
+| **hl7-listener** | ✅ Working | Camel K Integration receiving MLLP, parsing HL7, writing to Kafka |
+| **Strimzi Kafka** | ✅ Working | Kafka cluster deployed via Strimzi operator with 7-day retention |
+| **hl7-batcher** | ✅ Working | Camel K Integration consuming Kafka, batching into ZIPs, uploading to object storage |
+| **hl7-test-sender** | ✅ Working | Camel K Integration for development/testing (sends synthetic HL7 messages) |
+
+**Key POC Findings:**
+
+1. **Camel K MLLP works well** - Successfully receives and parses HL7 v2.x messages (tested with v2.7)
+2. **Fast ACK achieved** - Listener ACKs after Kafka write, decoupled from downstream processing
+3. **Batching via Camel K** - `ZipAggregationStrategy` aggregates messages by count/timeout, uploads to S3
+4. **No hl7log-extractor needed** - The hl7-batcher (Camel K) replaces the Kafka→S3 batching function
+
+**POC Architecture Validated:**
+```
+HL7 Source ──► hl7-listener ──► Kafka ──► hl7-batcher ──► Object Storage (Bronze)
+   (MLLP)      (Camel K)     (hl7-messages) (Camel K)           │
+                    │                                            ▼
+                    ▼                         Kafka ◄──── (hl7-batches topic)
+                ACK fast                                         │
+                                                                 ▼
+                                                    [hl7-transformer integration TBD]
+                                                                 │
+                                                                 ▼
+                                                          Delta Lake (Silver)
+```
 
 ## Decision
 
-Use Apache Camel K for MLLP listener that writes HL7 messages to Kafka, then update existing hl7log-extractor to poll Kafka instead of file system.
+Use Apache Camel K for MLLP listener and message batching, with Kafka as the durable message buffer. The hl7-batcher (Camel K) replaces the batch zipping function previously used in the hl7log-extractor.
 
 ### Apache Camel K
 
@@ -91,12 +124,64 @@ Use **Kafka** as durable buffer between listener and extractor:
 - 7-day retention enables replay without requesting from upstream
 - Use [Strimzi Kafka Operator](https://strimzi.io/) to deploy/manage Kafka in-cluster
 
+### hl7-batcher Integration
+
+Consumes from Kafka, batches messages into ZIPs, uploads to S3, publishes manifest to Kafka:
+
+```yaml
+apiVersion: camel.apache.org/v1
+kind: Integration
+metadata:
+  name: hl7-batcher
+spec:
+  dependencies:
+    - camel:kafka
+    - camel:aws2-s3
+    - camel:zipfile
+  traits:
+    mount:
+      configs:
+        - 'secret:hl7-batcher-s3-creds'
+  flows:
+    - beans:
+        - name: zipAggregator
+          type: '#class:org.apache.camel.processor.aggregate.zipfile.ZipAggregationStrategy'
+          constructors:
+            0: false  # preserveFolderStructure
+            1: true   # useFilenameHeader
+    - route:
+        id: batchHl7Messages
+        from:
+          uri: "kafka:hl7-messages?brokers={{kafka.brokers}}&groupId=hl7-batcher"
+          steps:
+            - setHeader:
+                name: CamelFileName
+                expression:
+                  simple: '${header.kafka.KEY}-${date:now:yyyyMMddHHmmssSSS}.hl7'
+            - aggregate:
+                completionSize: 100
+                completionTimeout: 30000
+                aggregationStrategy: '#zipAggregator'
+                correlationExpression:
+                  constant: 'true'
+                steps:
+                  - setHeader:
+                      name: CamelAwsS3Key
+                      expression:
+                        simple: 'hl7-batches/${date:now:yyyy/MM/dd}/batch-${date:now:HHmmssSSS}.zip'
+                  - to:
+                      uri: "aws2-s3://hl7-raw?..."
+                  - to:
+                      uri: "kafka:hl7-batches?brokers={{kafka.brokers}}"
+```
+
 ### Processing Integration
 
-- Existing `hl7log-extractor` (Temporal workflow) updated to poll Kafka instead of file system
-- Extractor batches messages into ZIPs, uploads to object storage (Bronze)
-- Existing `hl7-transformer` parses HL7, writes to Delta Lake (Silver)
+- **hl7-batcher** (Camel K) batches messages into ZIPs, uploads to object storage (Bronze)
+- **hl7-batches** Kafka topic receives S3 paths for each uploaded batch
+- **hl7-transformer** parses HL7, writes to Delta Lake (Silver) - trigger mechanism TBD
 - Delta Lake, Trino, Superset unchanged
+- **hl7log-extractor** retained for legacy file-based ingestion (optional)
 
 ### Message Type Strategy
 
@@ -117,12 +202,12 @@ ADT messages stored in v1 with `message_dt` timestamp to preserve ordering for f
 | **Apache Camel K + Kafka (selected)** | Kubernetes-native, YAML-based routes, built-in MLLP + Kafka, durable buffer with replay |
 | hl7-to-kafka (or fork) | Some code to write/maintain, need to publish images and create helm chart |
 | python-hl7 mllp to Kafka | More code to write/maintain, need to publish images and create helm chart  |
-| Direct to object storage | Too many small writes, performed poorly, slow ACKs |
-| Listener to file system | Too many small writes, slow ACKs |
+| Direct to object storage | Too many small writes, slows ACKs |
+| Listener to file system | Too many small writes, slows ACKs |
 
 ### Cloud Deployment
 
-Running the HL7 listener in the cloud (e.g., Azure) would provide significant durability benefits:
+Running the HL7 listener in the cloud (e.g., Azure) would provide durability benefits:
 
 - **Higher availability** than on-prem K3s cluster which experiences periodic outages
 - **Isolated infrastructure** reduces risk of local network issues affecting HL7 ingestion
@@ -134,30 +219,46 @@ However, our air-gapped deployment prevents this approach. The on-prem network c
 ### Component Overview
 
 ```
-HL7 Source ──► hl7-listener ──► Kafka ──► hl7log-extractor ──► Object Storage (Bronze)
-   (MLLP)      (Camel K)     (hl7-messages)   (Temporal)              │
-                    │                              │                  │
-                    ▼                              ▼                  ▼
-                ACK fast                    Batch into ZIPs     hl7-transformer
-                                                                      │
-                                                                      ▼
-                                                                Delta Lake (Silver)
+HL7 Source ──► hl7-listener ──► Kafka ──► hl7-batcher ──► Object Storage (Bronze)
+   (MLLP)      (Camel K)     (hl7-messages) (Camel K)           │
+                    │                                            ▼
+                    ▼                         Kafka ◄──── (hl7-batches topic)
+                ACK                        (batch manifests)     │
+                                                                 ▼
+                                                          hl7-transformer
+                                                           (trigger TBD)
+                                                                 │
+                                                                 ▼
+                                                          Delta Lake (Silver)
 ```
 
 | Component | Type | Lifecycle | Purpose |
 |-----------|------|-----------|---------|
 | hl7-listener | Camel K Integration | Runs continuously | Receive MLLP, write to Kafka, ACK |
-| Kafka | Message broker | Runs continuously | Durable buffer, 7-day retention |
-| hl7log-extractor | Java/Spring (Temporal) | Polls Kafka | Batch messages into ZIPs, upload to S3 (Bronze) |
-| hl7-transformer | Python/Spark (Temporal) | On-demand | Parse HL7, write to Delta Lake (Silver) |
+| Kafka | Message broker (Strimzi) | Runs continuously | Durable buffer, 7-day retention |
+| hl7-batcher | Camel K Integration | Runs continuously | Batch messages into ZIPs, upload to S3 (Bronze), publish manifest |
+| hl7-transformer | Python/Spark | TBD | Parse HL7, write to Delta Lake (Silver) |
 
 ### Changes to Existing Scout Components
 
 | Component | Change Required |
 |-----------|-----------------|
-| hl7log-extractor | Add Kafka consumer to poll Kafka instead of file system |
-| hl7-transformer | Minimal changes - same ZIP input format; write ADT messages to `adt_messages` table |
+| hl7log-extractor | No changes needed for real-time flow; retained for legacy file-based ingestion |
+| hl7-transformer | Trigger mechanism TBD (see hl7-transformer Integration section); write ADT messages to `adt_messages` table |
 | Delta Lake schema | Add `adt_messages` table for raw ADT storage; future phases add patient_id_mapping table |
+
+### hl7-transformer Integration (Investigation Required)
+
+The hl7-batcher publishes batch manifest paths to Kafka (`hl7-batches` topic). A mechanism is needed to trigger the hl7-transformer to process these batches. Options under investigation:
+
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| **Spark Structured Streaming** | Transformer runs continuously, consumes from Kafka | Low latency, eliminates Temporal | Always-running job, requires refactor |
+| **Temporal + Kafka Trigger** | Kafka consumer triggers Temporal workflow | Minimal transformer changes | Additional component, higher latency |
+| **Kubernetes CronJob** | Scheduled job triggers transformer | Simple, no new dependencies | Fixed latency, not event-driven |
+| **Camel K → Temporal API** | Camel K route triggers Temporal | Keeps logic in Camel K | Still requires Temporal |
+
+**Recommendation:** Further investigation required. The choice depends on whether to keep or eliminate Temporal from the real-time ingestion flow.
 
 ## Database End State
 
@@ -203,39 +304,117 @@ ADT^A40: Patient 78901 merged into Patient 78900
 - Separate from reports table, linked by patient identifiers
 - Scope TBD - need to research exact contents of ADT^A08, A31, A04, A01, A28
 
+## Production Considerations
+
+### High Availability
+
+| Component | HA Strategy |
+|-----------|-------------|
+| **Kafka** | Deploy with replication factor ≥ 2; Strimzi handles broker failover |
+| **hl7-listener** | Can run multiple replicas; Kafka handles dedup via message key |
+| **hl7-batcher** | Single replica recommended (aggregation state); or partition-based sharding via consumer groups |
+| **hl7-transformer** | Depends on trigger mechanism; Spark Structured Streaming or Temporal provide their own HA |
+
+### Monitoring & Alerting
+
+- **Kafka lag monitoring** - Alert if consumer falls behind (indicates processing bottleneck)
+- **hl7-listener health** - Camel K provides `/health` endpoint; integrate with K8s probes
+- **S3 upload metrics** - Track success/failure rates, latency
+- **End-to-end latency** - Track time from message receipt to Delta Lake availability
+- **Integration with Grafana/Prometheus** - Use existing Scout monitoring stack
+
+### Failure Recovery
+
+| Scenario | Recovery |
+|----------|----------|
+| **hl7-listener restart** | Kafka durability; no message loss if written before ACK |
+| **hl7-batcher restart** | Aggregation state lost, but consumer resumes from last committed offset |
+| **S3 upload failure** | Retry logic in Camel route; idempotent uploads (same key overwrites) |
+| **hl7-transformer failure** | Depends on trigger; Delta Lake MERGE handles duplicate processing |
+| **Kafka broker failure** | Strimzi handles failover; 7-day retention enables replay |
+
+### Scaling
+
+- **Current volume**: ~2-3 msg/sec sustained, ~40 msg/sec burst - well within single instance capacity
+- **Kafka partitions** control parallelism for consumers
+- **Multiple hl7-listener replicas** for throughput (if needed)
+- **hl7-batcher scaling** via Kafka consumer groups (one consumer per partition)
+
+### Security
+
+- **Kafka TLS** - Strimzi supports TLS for client connections
+- **S3 credentials** - Kubernetes secrets mounted via Camel K `mount.configs` trait
+- **Network policies** - Restrict pod-to-pod communication to required paths
+
+### Backup & Disaster Recovery
+
+- **Kafka retention** - 7 days of message history for replay
+- **S3/MinIO** - Backed up per existing Scout policies
+- **Delta Lake** - Versioning provides point-in-time recovery
+
+### Automated Testing
+
+Independent of hospital test environment, we need automated tests that run in CI/CD:
+
+| Test Type | Scope | Environment |
+|-----------|-------|-------------|
+| **Unit tests** | Camel route logic, message parsing | Local/CI |
+| **Integration tests** | hl7-listener → Kafka → hl7-batcher flow | Test Kafka cluster |
+| **End-to-end tests** | Full flow with synthetic HL7 messages | Dev K8s cluster |
+| **Load tests** | Verify performance at expected volumes | Dev K8s cluster |
+| **Failure tests** | Component restarts, network partitions | Dev K8s cluster |
+
+Test infrastructure:
+- **hl7-test-sender** (Camel K) generates synthetic HL7 messages for testing
+- Dedicated test Kafka topics to isolate from production
+- Assertions on Kafka message counts, S3 object presence, Delta Lake row counts
+
 ## Open Questions
 
 - [ ] ADT message contents - what exactly is in A08, A31, A04, A01, A28?
 - [ ] Patient info table schema - what fields are needed beyond what ORU PID segment provides?
 - [ ] Test environment - when available? how to schedule testing?
 - [ ] Alerting - who should receive incident alerts?
+- [ ] hl7-transformer trigger mechanism - which option to pursue?
 
 ## Test Plan
 
 ### Goal
 
-Validate end-to-end message flow with test environment before production deployment.
+Validate end-to-end message flow before production deployment.
 
-### Steps
+### POC Validation (Complete)
 
-1. Deploy Camel K operator to cluster
-2. Deploy Kafka to cluster (or connect to existing)
-3. Create Kafka topic: `hl7-messages`
-4. Apply `hl7-listener` Integration CR
-5. Update hl7log-extractor to poll Kafka
-6. Connect hl7-listener to test environment
-7. Validate message flow:
-   - Messages received and ACKs sent correctly
-   - No upstream queue backup
-   - Messages appear in Kafka
-   - Extractor batches messages into ZIPs
-   - ZIPs written to object storage
-   - Transformer processes ZIPs
-   - Data appears correctly in Delta Lake
-8. Test failure scenarios:
-   - Listener restart - verify no message loss (Kafka durability)
-   - Extractor restart - verify Kafka replay works
-   - Transformer failure - verify Temporal retry works
+- [x] Deploy Camel K operator to cluster
+- [x] Deploy Strimzi Kafka operator and cluster
+- [x] Create Kafka topics: `hl7-messages`, `hl7-batches`
+- [x] Apply `hl7-listener` Integration CR
+- [x] Apply `hl7-batcher` Integration CR
+- [x] Apply `hl7-test-sender` Integration CR (for testing)
+- [x] Validate message flow: listener → Kafka → batcher → S3 → Kafka manifest
+
+### Internal Testing (Pending)
+
+- [ ] Automated unit tests for Camel K integrations
+- [ ] Integration tests with test Kafka cluster
+- [ ] End-to-end tests with synthetic HL7 messages
+- [ ] Failure scenario tests (component restarts, network issues)
+- [ ] Performance/load testing with expected message volumes
+
+### Hospital Test Environment (Pending)
+
+- [ ] Connect hl7-listener to hospital test HL7 feed
+- [ ] Validate message flow with real HL7 messages:
+  - Messages received and ACKs sent correctly
+  - No upstream queue backup
+  - Messages appear in Kafka with correct parsing
+  - Batcher creates ZIPs with proper structure
+  - ZIPs written to object storage
+- [ ] Validate end-to-end to Delta Lake (requires hl7-transformer integration)
+- [ ] Test failure scenarios:
+  - Listener restart - verify no message loss (Kafka durability)
+  - Batcher restart - verify Kafka replay works
+  - Transformer failure - verify retry mechanism works
 
 ### Success Criteria
 
@@ -255,21 +434,26 @@ Validate end-to-end message flow with test environment before production deploym
 
 ## Implementation Phases
 
-| Phase | Scope |
-|-------|-------|
-| **0: Design** | Finalize architecture |
-| **1: Build** | Deploy Camel K operator, create hl7-listener Integration, update hl7log-extractor to poll Kafka |
-| **2: Test** | Connect to test environment, validate end-to-end flow |
-| **3: Production** | Production connection, monitoring, alerting |
-| **4: Updates (v2)** | Handle report status updates with `reports_latest` view |
-| **5: Merges (v3)** | Patient ID mapping table for ADT^A40 processing |
-| **6: Patient Info** | Dedicated patient demographics table from ADT messages |
+| Phase | Scope | Status |
+|-------|-------|--------|
+| **0: Design** | Finalize architecture | ✅ Complete |
+| **1: POC** | Camel K listener + batcher, Kafka, S3 integration | ✅ Complete |
+| **2: hl7-transformer Integration** | Decide and implement Kafka → hl7-transformer trigger | 🔄 In Progress |
+| **3: Internal Testing** | Automated tests for hl7-listener components | Pending |
+| **4: Hospital Test Environment** | Connect to hospital test HL7 feed, validate with real messages | Pending |
+| **5: Production** | Production connection, monitoring, alerting | Pending |
+| **6: Updates (v2)** | Handle report status updates with `reports_latest` view | Pending |
+| **7: Merges (v3)** | Patient ID mapping table for ADT^A40 processing | Pending |
+| **8: Patient Info** | Dedicated patient demographics table from ADT messages | Pending |
 
 ## References
 
 - [Apache Camel K GitHub](https://github.com/apache/camel-k)
 - [Apache Camel MLLP Component](https://camel.apache.org/components/4.8.x/mllp-component.html)
 - [Apache Camel Kafka Component](https://camel.apache.org/components/4.8.x/kafka-component.html)
+- [Strimzi Kafka Operator](https://strimzi.io/)
+- [Spark Structured Streaming + Kafka](https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html)
+- [Delta Lake Streaming](https://docs.delta.io/latest/delta-streaming.html)
 - [hl7-to-kafka](https://github.com/diz-unimr/hl7-to-kafka)
 - [python-hl7 MLLP](https://python-hl7.readthedocs.io/en/latest/mllp.html)
 - [MLLP Protocol Specification](https://rhapsody.health/resources/mlp-minimum-layer-protocol/)
