@@ -347,10 +347,8 @@ def import_hl7_files_to_deltalake(
                     "ordering_provider": read_first_struct_name_friendly(
                         "full_ordering_provider"
                     ),
-                    "principal_result_interpreter": F.concat_ws(
-                        " ",
-                        F.col("full_principal_result_interpreter.given_name"),
-                        F.col("full_principal_result_interpreter.family_name"),
+                    "principal_result_interpreter": read_first_struct_name_friendly(
+                        "full_principal_result_interpreter"
                     ),
                     "assistant_result_interpreter": read_struct_of_names_friendly(
                         "full_assistant_result_interpreter"

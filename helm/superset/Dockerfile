@@ -18,7 +18,9 @@ RUN uv pip install --no-cache \
     psycopg2-binary \
     pyhive \
     trino \
-    pillow
+    pillow \
+    prometheus_client \
+    statsd
 
 # Switch to user that runs Superset
 USER superset

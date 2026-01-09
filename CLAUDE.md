@@ -491,7 +491,8 @@ See `ansible/filter_plugins/` and `ansible/README.md` for details and testing.
 - **Modify workflow**: Edit TypeScript in `orchestrator/`, redeploy extractor role
 - **Adjust resources**: Override in `inventory.yaml` (JVM heap, CPU, memory, storage)
 - **Add dashboard**: Create in Grafana UI, export JSON to `ansible/roles/grafana/files/dashboards/`
-- **Update versions**: Edit `ansible/group_vars/all/versions.yaml`, redeploy component
+- **Update dependency versions**: Edit `ansible/group_vars/all/versions.yaml`, redeploy component
+- **Release new Scout version**: See `docs/internal/versions-and-releases.md` for complete checklist of files to update
 - **Configure namespaces**: Override namespace variables in `inventory.yaml`
 - **Enable optional features**: Set feature flags in `inventory.yaml` (e.g., `enable_chat: true`), configure required paths and secrets, complete post-deployment setup per role README
 - **Add Ansible tasks with kubernetes.core**: See `docs/internal/ansible_roles.md` for kubeconfig configuration conventions (cluster vs jump node execution)
