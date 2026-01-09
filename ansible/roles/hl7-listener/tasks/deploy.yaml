@@ -1,0 +1,286 @@
+---
+# Kubernetes deployment tasks for HL7 Listener
+# Deploys Strimzi Kafka operator, Kafka cluster, Camel K operator, and HL7 listener integration
+
+# Create namespaces
+- name: Create HL7 listener namespace
+  kubernetes.core.k8s:
+    name: '{{ hl7_listener_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Create operators namespace
+  kubernetes.core.k8s:
+    name: '{{ strimzi_operator_namespace }}'
+    api_version: v1
+    kind: Namespace
+    state: present
+
+# Deploy Strimzi Kafka operator to scout-operators namespace
+# Operator watches scout-extractor namespace where Kafka resources are deployed
+- name: Deploy Strimzi Kafka operator
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: strimzi-kafka-operator
+    helm_chart_ref: strimzi/strimzi-kafka-operator
+    helm_chart_version: '{{ strimzi_operator_version }}'
+    helm_chart_namespace: '{{ strimzi_operator_namespace }}'
+    helm_repo_name: strimzi
+    helm_repo_url: https://strimzi.io/charts/
+    helm_chart_timeout: 10m
+    helm_chart_values:
+      watchNamespaces:
+        - '{{ hl7_listener_namespace }}'
+
+# Deploy Kafka NodePool (KRaft mode - no ZooKeeper)
+# In KRaft mode, we use a single node pool with both controller and broker roles for simplicity
+- name: Deploy Kafka NodePool
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: kafka.strimzi.io/v1beta2
+      kind: KafkaNodePool
+      metadata:
+        name: '{{ kafka_cluster_name }}-pool'
+        namespace: '{{ hl7_listener_namespace }}'
+        labels:
+          strimzi.io/cluster: '{{ kafka_cluster_name }}'
+      spec:
+        replicas: '{{ kafka_replicas }}'
+        roles:
+          - controller
+          - broker
+        storage:
+          type: jbod
+          volumes:
+            - id: 0
+              type: persistent-claim
+              size: '{{ kafka_storage_size }}'
+              class: '{{ kafka_storage_class | default(omit, true) }}'
+              deleteClaim: false
+        resources:
+          requests:
+            cpu: '{{ kafka_cpu_request }}'
+            memory: '{{ kafka_memory_request }}'
+          limits:
+            cpu: '{{ kafka_cpu_limit }}'
+            memory: '{{ kafka_memory_limit }}'
+
+# Deploy Kafka cluster (KRaft mode is default in Strimzi 0.48+)
+- name: Deploy Kafka cluster
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: kafka.strimzi.io/v1beta2
+      kind: Kafka
+      metadata:
+        name: '{{ kafka_cluster_name }}'
+        namespace: '{{ hl7_listener_namespace }}'
+      spec:
+        kafka:
+          version: '{{ kafka_version }}'
+          listeners:
+            - name: plain
+              port: 9092
+              type: internal
+              tls: false
+          config:
+            offsets.topic.replication.factor: 1
+            transaction.state.log.replication.factor: 1
+            transaction.state.log.min.isr: 1
+            default.replication.factor: 1
+            min.insync.replicas: 1
+            log.retention.ms: '{{ kafka_retention_ms }}'
+            log.retention.bytes: '{{ kafka_retention_bytes }}'
+        entityOperator:
+          topicOperator: {}
+          userOperator: {}
+
+- name: Wait for Kafka cluster to be ready
+  kubernetes.core.k8s_info:
+    api_version: kafka.strimzi.io/v1beta2
+    kind: Kafka
+    name: '{{ kafka_cluster_name }}'
+    namespace: '{{ hl7_listener_namespace }}'
+  register: kafka_status
+  until:
+    - kafka_status.resources | length > 0
+    - kafka_status.resources[0].status is defined
+    - kafka_status.resources[0].status.conditions is defined
+    - kafka_status.resources[0].status.conditions | selectattr('type', 'equalto', 'Ready') | selectattr('status', 'equalto', 'True') | list | length > 0
+  retries: 60
+  delay: 10
+  changed_when: false
+
+# Create Kafka topic for HL7 messages
+- name: Create HL7 messages Kafka topic
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: kafka.strimzi.io/v1beta2
+      kind: KafkaTopic
+      metadata:
+        name: '{{ kafka_hl7_topic }}'
+        namespace: '{{ hl7_listener_namespace }}'
+        labels:
+          strimzi.io/cluster: '{{ kafka_cluster_name }}'
+      spec:
+        partitions: '{{ kafka_hl7_topic_partitions }}'
+        replicas: '{{ kafka_hl7_topic_replicas }}'
+        config:
+          retention.ms: '{{ kafka_retention_ms }}'
+
+# Deploy Camel K operator
+- name: Deploy Camel K operator
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: camel-k
+    helm_chart_ref: camel-k/camel-k
+    helm_chart_version: '{{ camel_k_version }}'
+    helm_chart_namespace: '{{ hl7_listener_namespace }}'
+    helm_repo_name: camel-k
+    helm_repo_url: https://apache.github.io/camel-k/charts/
+    helm_chart_timeout: 10m
+    helm_chart_values:
+      operator:
+        global: 'false'
+
+- name: Wait for Camel K operator to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: camel-k-operator
+    namespace: '{{ hl7_listener_namespace }}'
+  register: camelk_operator
+  until:
+    - camelk_operator.resources | length > 0
+    - camelk_operator.resources[0].status.readyReplicas is defined
+    - camelk_operator.resources[0].status.readyReplicas >= 1
+  retries: 30
+  delay: 10
+  changed_when: false
+
+# Create IntegrationPlatform for Camel K
+# This configures how Camel K builds and deploys integrations
+# Jib is the default build strategy in Camel K 2.8+
+- name: Create Camel K IntegrationPlatform
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: camel.apache.org/v1
+      kind: IntegrationPlatform
+      metadata:
+        name: camel-k
+        namespace: '{{ hl7_listener_namespace }}'
+      spec:
+        build:
+          registry:
+            address: '{{ camel_k_registry_address }}'
+            insecure: '{{ camel_k_registry_insecure }}'
+
+- name: Wait for IntegrationPlatform to be ready
+  kubernetes.core.k8s_info:
+    api_version: camel.apache.org/v1
+    kind: IntegrationPlatform
+    name: camel-k
+    namespace: '{{ hl7_listener_namespace }}'
+  register: integration_platform
+  until:
+    - integration_platform.resources | length > 0
+    - integration_platform.resources[0].status is defined
+    - integration_platform.resources[0].status.phase is defined
+    - integration_platform.resources[0].status.phase == 'Ready'
+  retries: 30
+  delay: 10
+  changed_when: false
+
+# Deploy HL7 Listener Integration
+- name: Deploy HL7 Listener Camel Integration
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: camel.apache.org/v1
+      kind: Integration
+      metadata:
+        name: '{{ hl7_listener_name }}'
+        namespace: '{{ hl7_listener_namespace }}'
+      spec:
+        dependencies:
+          - camel:mllp
+          - camel:hl7
+          - camel:kafka
+          - mvn:ca.uhn.hapi/hapi-structures-v21/2.5.1
+          - mvn:ca.uhn.hapi/hapi-structures-v22/2.5.1
+          - mvn:ca.uhn.hapi/hapi-structures-v23/2.5.1
+          - mvn:ca.uhn.hapi/hapi-structures-v231/2.5.1
+          - mvn:ca.uhn.hapi/hapi-structures-v24/2.5.1
+          - mvn:ca.uhn.hapi/hapi-structures-v25/2.5.1
+          - mvn:ca.uhn.hapi/hapi-structures-v251/2.5.1
+          - mvn:ca.uhn.hapi/hapi-structures-v26/2.5.1
+        traits:
+          container:
+            configuration:
+              requestCPU: '{{ hl7_listener_cpu_request }}'
+              requestMemory: '{{ hl7_listener_memory_request }}'
+              limitCPU: '{{ hl7_listener_cpu_limit }}'
+              limitMemory: '{{ hl7_listener_memory_limit }}'
+          service:
+            configuration:
+              enabled: true
+              nodePort: '{{ hl7_listener_service_type == "NodePort" }}'
+        flows:
+          - route:
+              id: hl7Listener
+              from:
+                uri: 'mllp://0.0.0.0:{{ hl7_listener_port }}'
+                steps:
+                  - unmarshal:
+                      hl7: {}
+                  - setHeader:
+                      name: kafka.KEY
+                      expression:
+                        header: CamelHL7MessageControl
+                  - to:
+                      uri: 'kafka:{{ kafka_hl7_topic }}?brokers={{ kafka_cluster_name }}-kafka-bootstrap.{{ hl7_listener_namespace }}:9092'
+
+- name: Wait for HL7 Listener Integration to be ready
+  kubernetes.core.k8s_info:
+    api_version: camel.apache.org/v1
+    kind: Integration
+    name: '{{ hl7_listener_name }}'
+    namespace: '{{ hl7_listener_namespace }}'
+  register: hl7_listener_status
+  until:
+    - hl7_listener_status.resources | length > 0
+    - hl7_listener_status.resources[0].status is defined
+    - hl7_listener_status.resources[0].status.phase is defined
+    - hl7_listener_status.resources[0].status.phase == 'Running'
+  retries: 60
+  delay: 10
+  changed_when: false
+
+# Create Service to expose HL7 Listener externally
+- name: Create HL7 Listener Service
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: '{{ hl7_listener_name }}-external'
+        namespace: '{{ hl7_listener_namespace }}'
+      spec:
+        type: '{{ hl7_listener_service_type }}'
+        selector:
+          camel.apache.org/integration: '{{ hl7_listener_name }}'
+        ports:
+          - name: mllp
+            port: '{{ hl7_listener_port }}'
+            targetPort: '{{ hl7_listener_port }}'
+            protocol: TCP
+            nodePort: '{{ hl7_listener_node_port | default(omit, true) if hl7_listener_service_type == "NodePort" else omit }}'

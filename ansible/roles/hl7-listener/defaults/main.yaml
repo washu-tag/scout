@@ -1,0 +1,49 @@
+---
+# Default values for HL7 Listener deployment
+# Deploys Strimzi Kafka, Camel K operator, and HL7 listener integration
+
+# Namespace configuration
+hl7_listener_namespace: '{{ scout_extractor_namespace }}'
+strimzi_operator_namespace: '{{ scout_operators_namespace }}'
+
+# Kafka configuration
+kafka_cluster_name: kafka
+kafka_replicas: 1
+kafka_storage_size: 10Gi
+kafka_storage_class: ''
+
+# Kafka retention (7 days per ADR)
+kafka_retention_ms: 604800000
+kafka_retention_bytes: -1
+
+# Kafka resource configuration
+kafka_cpu_request: 100m
+kafka_cpu_limit: 1
+kafka_memory_request: 1Gi
+kafka_memory_limit: 2Gi
+
+# Kafka topic configuration
+kafka_hl7_topic: hl7-messages
+kafka_hl7_topic_partitions: 3
+kafka_hl7_topic_replicas: 1
+
+# HL7 Listener configuration
+hl7_listener_name: hl7-listener
+hl7_listener_port: 2575
+
+# HL7 Listener resource configuration
+hl7_listener_cpu_request: 100m
+hl7_listener_cpu_limit: 500m
+hl7_listener_memory_request: 256Mi
+hl7_listener_memory_limit: 512Mi
+
+# Service type for external access (LoadBalancer, NodePort, or ClusterIP)
+hl7_listener_service_type: LoadBalancer
+# Optional: NodePort if service_type is NodePort
+hl7_listener_node_port: ''
+
+# Camel K IntegrationPlatform registry configuration
+# Default uses ttl.sh - anonymous ephemeral registry for testing (images expire after 24h)
+# For production, override with your container registry (e.g., Harbor, Docker Hub, etc.)
+camel_k_registry_address: 'ttl.sh'
+camel_k_registry_insecure: false
