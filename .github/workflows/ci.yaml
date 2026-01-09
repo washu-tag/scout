@@ -362,11 +362,23 @@ jobs:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Remove unnecessary files to save space
+      - name: Free up disk space
         shell: bash
         run: |
+          echo "Disk space before cleanup:"
+          df -h
+
+          echo "Removing unnecessary tools to free up disk space..."
           sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf /opt/ghc
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo apt-get clean
+          docker system prune -af --volumes
+
+          echo "Disk space after cleanup:"
+          df -h
       - name: 'Push Image - hl7log-extractor'
         if: needs.changes.outputs.hl7log-extractor == 'true'
         uses: ./.github/actions/docker-push
@@ -415,11 +427,23 @@ jobs:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Remove unnecessary files to save space
+      - name: Free up disk space
         shell: bash
         run: |
+          echo "Disk space before cleanup:"
+          df -h
+
+          echo "Removing unnecessary tools to free up disk space..."
           sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf /opt/ghc
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo apt-get clean
+          docker system prune -af --volumes
+
+          echo "Disk space after cleanup:"
+          df -h
       - name: 'Push Image - pyspark-notebook'
         if: needs.changes.outputs.pyspark-notebook == 'true'
         uses: ./.github/actions/docker-push
