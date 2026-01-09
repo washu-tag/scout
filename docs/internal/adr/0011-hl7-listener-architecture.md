@@ -346,6 +346,18 @@ ADT^A40: Patient 78901 merged into Patient 78900
 - **S3 credentials** - Kubernetes secrets mounted via Camel K `mount.configs` trait
 - **Network policies** - Restrict pod-to-pod communication to required paths
 
+### Container Registry
+
+Camel K operator requires a container registry to push built Integration images:
+
+| Option | Description | Deployment |
+|--------|-------------|------------|
+| **ttl.sh** | Anonymous ephemeral registry (POC default) | ❌ Not for production, useful for testing |
+| **Harbor on staging** | Use existing staging Harbor | ❌ prod can reach staging |
+| **Local registry** | Deploy registry in production cluster | ✅ On-prem - adds operational overhead |
+| **Cloud registry (ACR)** | Azure Container Registry or similar | ✅ Cloud - native integration, managed service |
+| **Pre-built images** | Build images externally, deploy as Deployments | ✅ Either - loses Camel K operator benefits |
+
 ### Backup & Disaster Recovery
 
 - **Kafka retention** - 7 days of message history for replay
@@ -371,6 +383,7 @@ Test infrastructure:
 
 ## Open Questions
 
+- [ ] Container registry for Camel K - can production reach Harbor on staging? Need local registry?
 - [ ] ADT message contents - what exactly is in A08, A31, A04, A01, A28?
 - [ ] Patient info table schema - what fields are needed beyond what ORU PID segment provides?
 - [ ] Test environment - when available? how to schedule testing?
