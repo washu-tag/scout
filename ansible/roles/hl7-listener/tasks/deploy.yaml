@@ -222,6 +222,8 @@
           - mvn:ca.uhn.hapi/hapi-structures-v25/2.5.1
           - mvn:ca.uhn.hapi/hapi-structures-v251/2.5.1
           - mvn:ca.uhn.hapi/hapi-structures-v26/2.5.1
+          - mvn:ca.uhn.hapi/hapi-structures-v27/2.5.1
+          - mvn:ca.uhn.hapi/hapi-structures-v271/2.5.1
         traits:
           container:
             configuration:
@@ -239,14 +241,23 @@
               from:
                 uri: 'mllp://0.0.0.0:{{ hl7_listener_port }}'
                 steps:
+                  - log:
+                      message: 'Received HL7 message from ${header.CamelMllpRemoteAddress}'
+                      loggingLevel: INFO
                   - unmarshal:
                       hl7: {}
+                  - log:
+                      message: 'Parsed HL7 message: controlId=${header.CamelHL7MessageControl}, type=${header.CamelHL7TriggerEvent}, version=${header.CamelHL7VersionId}'
+                      loggingLevel: INFO
                   - setHeader:
                       name: kafka.KEY
                       expression:
                         header: CamelHL7MessageControl
                   - to:
                       uri: 'kafka:{{ kafka_hl7_topic }}?brokers={{ kafka_cluster_name }}-kafka-bootstrap.{{ hl7_listener_namespace }}:9092'
+                  - log:
+                      message: 'Sent to Kafka: topic={{ kafka_hl7_topic }}, key=${header.kafka.KEY}'
+                      loggingLevel: INFO
 
 - name: Wait for HL7 Listener Integration to be ready
   kubernetes.core.k8s_info:
@@ -284,3 +295,303 @@
             targetPort: '{{ hl7_listener_port }}'
             protocol: TCP
             nodePort: '{{ hl7_listener_node_port | default(omit, true) if hl7_listener_service_type == "NodePort" else omit }}'
+
+# HL7 Batcher - aggregates messages from Kafka, zips, uploads to S3
+- name: Create HL7 batches Kafka topic
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: kafka.strimzi.io/v1beta2
+      kind: KafkaTopic
+      metadata:
+        name: '{{ kafka_hl7_batches_topic }}'
+        namespace: '{{ hl7_listener_namespace }}'
+        labels:
+          strimzi.io/cluster: '{{ kafka_cluster_name }}'
+      spec:
+        partitions: '{{ kafka_hl7_batches_topic_partitions }}'
+        replicas: '{{ kafka_hl7_batches_topic_replicas }}'
+        config:
+          retention.ms: '{{ kafka_retention_ms }}'
+  when: hl7_batcher_enabled | bool
+
+- name: Create S3 credentials secret for HL7 Batcher
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ hl7_batcher_name }}-s3-creds'
+        namespace: '{{ hl7_listener_namespace }}'
+      type: Opaque
+      stringData:
+        aws-access-key: '{{ hl7_batcher_s3_access_key }}'
+        aws-secret-key: '{{ hl7_batcher_s3_secret_key }}'
+  when: hl7_batcher_enabled | bool
+  no_log: true
+
+# Create bucket in MinIO for HL7 batches
+# Uses MinIO root credentials to create bucket and grant lake-writer access
+- name: Get MinIO root credentials secret
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: '{{ minio_env_secret_name | default("minio-scout-env-configuration") }}'
+    namespace: '{{ minio_tenant_namespace | default("minio-tenant") }}'
+  register: minio_root_secret
+  when: hl7_batcher_enabled | bool
+
+- name: Copy MinIO root credentials to HL7 listener namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: minio-root-creds
+        namespace: '{{ hl7_listener_namespace }}'
+      type: Opaque
+      data: '{{ minio_root_secret.resources[0].data }}'
+  when: hl7_batcher_enabled | bool
+
+- name: Create S3 bucket for HL7 batches
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: hl7-bucket-setup
+        namespace: '{{ hl7_listener_namespace }}'
+      spec:
+        ttlSecondsAfterFinished: 300
+        backoffLimit: 3
+        template:
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: mc
+                image: '{{ minio_client_image }}'
+                command: ['/bin/sh', '-c']
+                args:
+                  - |
+                    set -euo pipefail
+                    # Source root credentials
+                    . /rootcreds/config.env
+
+                    # Set up MinIO client with root creds
+                    mc alias set minio http://{{ minio_tenant_name | default('scout') }}-hl.{{ minio_tenant_namespace | default('minio-tenant') }}:9000 \
+                      "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+
+                    # Create bucket if it doesn't exist
+                    mc mb --ignore-existing minio/{{ hl7_batcher_s3_bucket }}
+                    echo "Bucket {{ hl7_batcher_s3_bucket }} created or already exists"
+
+                    # Create policy for lake-writer to access this bucket
+                    cat > /tmp/hl7-bucket-policy.json << 'POLICY'
+                    {
+                      "Version": "2012-10-17",
+                      "Statement": [
+                        {
+                          "Effect": "Allow",
+                          "Action": ["s3:*"],
+                          "Resource": [
+                            "arn:aws:s3:::{{ hl7_batcher_s3_bucket }}",
+                            "arn:aws:s3:::{{ hl7_batcher_s3_bucket }}/*"
+                          ]
+                        }
+                      ]
+                    }
+                    POLICY
+
+                    # Create and attach policy (ignore errors if already exists)
+                    mc admin policy create minio hl7-bucket-rw /tmp/hl7-bucket-policy.json || true
+                    mc admin policy attach minio hl7-bucket-rw --user {{ hl7_batcher_s3_access_key }} || true
+
+                    echo "HL7 bucket setup completed successfully"
+                volumeMounts:
+                  - name: rootcreds
+                    mountPath: /rootcreds
+                    readOnly: true
+            volumes:
+              - name: rootcreds
+                secret:
+                  secretName: minio-root-creds
+                  items:
+                    - key: config.env
+                      path: config.env
+  when: hl7_batcher_enabled | bool
+
+- name: Wait for bucket creation job to complete
+  kubernetes.core.k8s_info:
+    api_version: batch/v1
+    kind: Job
+    name: hl7-bucket-setup
+    namespace: '{{ hl7_listener_namespace }}'
+  register: bucket_job
+  until:
+    - bucket_job.resources | length > 0
+    - bucket_job.resources[0].status.succeeded is defined
+    - bucket_job.resources[0].status.succeeded >= 1
+  retries: 30
+  delay: 5
+  changed_when: false
+  when: hl7_batcher_enabled | bool
+
+- name: Deploy HL7 Batcher Camel Integration
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: camel.apache.org/v1
+      kind: Integration
+      metadata:
+        name: '{{ hl7_batcher_name }}'
+        namespace: '{{ hl7_listener_namespace }}'
+      spec:
+        dependencies:
+          - camel:kafka
+          - camel:aws2-s3
+          - camel:zipfile
+          - camel:bean
+        traits:
+          container:
+            configuration:
+              requestCPU: '{{ hl7_batcher_cpu_request }}'
+              requestMemory: '{{ hl7_batcher_memory_request }}'
+              limitCPU: '{{ hl7_batcher_cpu_limit }}'
+              limitMemory: '{{ hl7_batcher_memory_limit }}'
+          mount:
+            configs:
+              - 'secret:{{ hl7_batcher_name }}-s3-creds'
+        flows:
+          - beans:
+              - name: zipAggregator
+                type: '#class:org.apache.camel.processor.aggregate.zipfile.ZipAggregationStrategy'
+                constructors:
+                  0: false
+                  1: true
+          - route:
+              id: batchHl7Messages
+              from:
+                uri: 'kafka:{{ kafka_hl7_topic }}?brokers={{ kafka_cluster_name }}-kafka-bootstrap.{{ hl7_listener_namespace }}:9092&groupId={{ hl7_batcher_name }}&autoOffsetReset=earliest'
+                steps:
+                  - log:
+                      message: 'Consumed from Kafka: partition=${header.kafka.PARTITION}, offset=${header.kafka.OFFSET}, key=${header.kafka.KEY}'
+                      loggingLevel: DEBUG
+                  - setHeader:
+                      name: CamelFileName
+                      expression:
+                        simple: '${header.kafka.KEY}-${date:now:yyyyMMddHHmmssSSS}.hl7'
+                  - log:
+                      message: 'Adding message to batch: ${header.CamelFileName}'
+                      loggingLevel: DEBUG
+                  - aggregate:
+                      completionSize: '{{ hl7_batcher_completion_size }}'
+                      completionTimeout: '{{ hl7_batcher_completion_timeout }}'
+                      aggregationStrategy: '#zipAggregator'
+                      correlationExpression:
+                        constant: 'true'
+                      steps:
+                        - log:
+                            message: 'Batch complete: aggregatedSize=${header.CamelAggregatedSize}, completedBy=${header.CamelAggregatedCompletedBy}'
+                            loggingLevel: INFO
+                        - setHeader:
+                            name: CamelAwsS3Key
+                            expression:
+                              simple: 'hl7-batches/${date:now:yyyy/MM/dd}/batch-${date:now:HHmmssSSS}.zip'
+                        - log:
+                            message: 'Uploading batch to S3: bucket={{ hl7_batcher_s3_bucket }}, key=${header.CamelAwsS3Key}'
+                            loggingLevel: INFO
+                        - to:
+                            uri: "aws2-s3://{{ hl7_batcher_s3_bucket }}?accessKey={{ '{{' }}secret:{{ hl7_batcher_name }}-s3-creds/aws-access-key{{ '}}' }}&secretKey=RAW({{ '{{' }}secret:{{ hl7_batcher_name }}-s3-creds/aws-secret-key{{ '}}' }})&region={{ hl7_batcher_s3_region }}&overrideEndpoint=true&uriEndpointOverride={{ hl7_batcher_s3_endpoint }}&useDefaultCredentialsProvider=false&forcePathStyle=true"
+                        - log:
+                            message: 'S3 upload successful: ${header.CamelAwsS3Key}, eTag=${header.CamelAwsS3ETag}'
+                            loggingLevel: INFO
+                        - setBody:
+                            expression:
+                              simple: '${header.CamelAwsS3Key}'
+                        - to:
+                            uri: 'kafka:{{ kafka_hl7_batches_topic }}?brokers={{ kafka_cluster_name }}-kafka-bootstrap.{{ hl7_listener_namespace }}:9092'
+                        - log:
+                            message: 'Published batch manifest to Kafka: topic={{ kafka_hl7_batches_topic }}, s3Key=${body}'
+                            loggingLevel: INFO
+  when: hl7_batcher_enabled | bool
+
+- name: Wait for HL7 Batcher Integration to be ready
+  kubernetes.core.k8s_info:
+    api_version: camel.apache.org/v1
+    kind: Integration
+    name: '{{ hl7_batcher_name }}'
+    namespace: '{{ hl7_listener_namespace }}'
+  register: hl7_batcher_status
+  until:
+    - hl7_batcher_status.resources | length > 0
+    - hl7_batcher_status.resources[0].status is defined
+    - hl7_batcher_status.resources[0].status.phase is defined
+    - hl7_batcher_status.resources[0].status.phase == 'Running'
+  retries: 60
+  delay: 10
+  changed_when: false
+  when: hl7_batcher_enabled | bool
+
+# HL7 Test Sender - sends test messages to the listener for testing/demo
+- name: Deploy HL7 Test Sender Camel Integration
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: camel.apache.org/v1
+      kind: Integration
+      metadata:
+        name: '{{ hl7_test_sender_name }}'
+        namespace: '{{ hl7_listener_namespace }}'
+      spec:
+        dependencies:
+          - camel:mllp
+          - camel:hl7
+        traits:
+          container:
+            configuration:
+              requestCPU: '{{ hl7_test_sender_cpu_request }}'
+              requestMemory: '{{ hl7_test_sender_memory_request }}'
+              limitCPU: '{{ hl7_test_sender_cpu_limit }}'
+              limitMemory: '{{ hl7_test_sender_memory_limit }}'
+        flows:
+          - route:
+              id: sendTestHl7
+              from:
+                uri: 'timer:test?period={{ hl7_test_sender_period }}'
+                steps:
+                  - setHeader:
+                      name: messageId
+                      expression:
+                        simple: 'MSG${date:now:yyyyMMddHHmmssSSS}'
+                  - setBody:
+                      expression:
+                        simple: "MSH|^~\\&|RIS|RADIOLOGY|SCOUT|HOSPITAL|${date:now:yyyyMMddHHmmss}||ORU^R01^ORU_R01|${header.messageId}|P|2.7\rPID|1||MRN${random(100000,999999)}^^^HOSP^MR||DOE^JOHN^A||19651215|M|||123 MAIN ST^^CHICAGO^IL^60601||3125551234\rPV1|1|O|RAD^^^HOSP||||1234^SMITH^ROBERT^J^MD|||RAD\rORC|RE|ORD${random(100,999)}|FIL${random(100,999)}||CM\rOBR|1|ORD789|FIL456|71020^XR CHEST 2 VIEWS^CPT|||${date:now:yyyyMMddHHmmss}|||||||${date:now:yyyyMMddHHmmss}||1234^SMITH^ROBERT^J^MD||||||${date:now:yyyyMMddHHmmss}|||F\rOBX|1|TX|GDT^REPORT TEXT||CHEST X-RAY: Normal findings.||||||F"
+                  - log:
+                      message: 'Sending test HL7 message: ${header.messageId}'
+                      loggingLevel: INFO
+                  - to:
+                      uri: 'mllp://{{ hl7_listener_name }}-external.{{ hl7_listener_namespace }}.svc.cluster.local:{{ hl7_listener_port }}'
+                  - log:
+                      message: 'Test HL7 message sent successfully: ${header.messageId}'
+                      loggingLevel: INFO
+  when: hl7_test_sender_enabled | bool
+
+- name: Wait for HL7 Test Sender Integration to be ready
+  kubernetes.core.k8s_info:
+    api_version: camel.apache.org/v1
+    kind: Integration
+    name: '{{ hl7_test_sender_name }}'
+    namespace: '{{ hl7_listener_namespace }}'
+  register: hl7_test_sender_status
+  until:
+    - hl7_test_sender_status.resources | length > 0
+    - hl7_test_sender_status.resources[0].status is defined
+    - hl7_test_sender_status.resources[0].status.phase is defined
+    - hl7_test_sender_status.resources[0].status.phase == 'Running'
+  retries: 60
+  delay: 10
+  changed_when: false
+  when: hl7_test_sender_enabled | bool
