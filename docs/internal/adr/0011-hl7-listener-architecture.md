@@ -30,7 +30,9 @@ Example message counts from a recent weekday:
 | ADT^A40 | 299 | <1% | Patient merge |
 | **Total** | **219,564** | 100% |  |
 
-We must ACK all messages to prevent queue backup (10,000 message limit before interface engine stops sending).
+These message types are what we requested and we could ask for more or fewer types as needed.
+
+We must ACK all messages to prevent queue backup (10,000 message limit before interface engine stops sending). We can also request replays of missed messages if needed.
 
 ### Challenges
 
@@ -39,43 +41,11 @@ We must ACK all messages to prevent queue backup (10,000 message limit before in
 3. **Report Updates**: Handle status transitions (Preliminary → Final → Corrected)
 4. **Patient Merges**: Handling ADT^A40 messages indicate patient record merges
 5. **Patient Demographics**: ADT messages contain demographic data not in ORU^R01; scope TBD
-6. **Buffering**: Need replay capability without frequent upstream requests
-
-## POC Results
-
-A proof-of-concept validated the Camel K approach with the following components working end-to-end:
-
-| Component | Status | Description |
-|-----------|--------|-------------|
-| **hl7-listener** | ✅ Working | Camel K Integration receiving MLLP, parsing HL7, writing to Kafka |
-| **Strimzi Kafka** | ✅ Working | Kafka cluster deployed via Strimzi operator with 7-day retention |
-| **hl7-batcher** | ✅ Working | Camel K Integration consuming Kafka, batching into ZIPs, uploading to object storage |
-| **hl7-test-sender** | ✅ Working | Camel K Integration for development/testing (sends synthetic HL7 messages) |
-
-**Key POC Findings:**
-
-1. **Camel K MLLP works well** - Successfully receives and parses HL7 v2.x messages (tested with v2.7)
-2. **Fast ACK achieved** - Listener ACKs after Kafka write, decoupled from downstream processing
-3. **Batching via Camel K** - `ZipAggregationStrategy` aggregates messages by count/timeout, uploads to S3
-4. **No hl7log-extractor needed** - The hl7-batcher (Camel K) replaces the Kafka→S3 batching function
-
-**POC Architecture Validated:**
-```
-HL7 Source ──► hl7-listener ──► Kafka ──► hl7-batcher ──► Object Storage (Bronze)
-   (MLLP)      (Camel K)     (hl7-messages) (Camel K)           │
-                    │                                            ▼
-                    ▼                         Kafka ◄──── (hl7-batches topic)
-                ACK fast                                         │
-                                                                 ▼
-                                                    [hl7-transformer integration TBD]
-                                                                 │
-                                                                 ▼
-                                                          Delta Lake (Silver)
-```
+6. **Buffering**: Need message buffering and replay capability without frequent upstream requests for replays
 
 ## Decision
 
-Use Apache Camel K for MLLP listener and message batching, with Kafka as the durable message buffer. The hl7-batcher (Camel K) replaces the batch zipping function previously used in the hl7log-extractor.
+Use Apache Camel K for MLLP listener and message batching, with Kafka as the durable message buffer. The hl7-batcher (Camel K) replaces the batch zipping functionality previously used in the hl7log-extractor.
 
 ### Apache Camel K
 
@@ -84,7 +54,7 @@ Use **Apache Camel K** for the MLLP listener:
 - [Camel K](https://github.com/apache/camel-k) is a Kubernetes operator that deploys Camel routes as custom resources
 - Define integration as YAML, operator handles container build and deployment
 - Built-in MLLP and Kafka components (production-tested)
-- No Dockerfile, no Helm chart needed - just apply the Integration CR
+- No Dockerfile, no Helm chart needed, but does require container registry to push build Integration CRD images
 
 ### hl7-listener Integration
 
@@ -201,9 +171,9 @@ ADT messages stored in v1 with `message_dt` timestamp to preserve ordering for f
 |--------|---------|
 | **Apache Camel K + Kafka (selected)** | Kubernetes-native, YAML-based routes, built-in MLLP + Kafka, durable buffer with replay |
 | hl7-to-kafka (or fork) | Some code to write/maintain, need to publish images and create helm chart |
-| python-hl7 mllp to Kafka | More code to write/maintain, need to publish images and create helm chart  |
-| Direct to object storage | Too many small writes, slows ACKs |
-| Listener to file system | Too many small writes, slows ACKs |
+| python-hl7 mllp to Kafka | More code to write/maintain, need to publish images and create helm chart |
+| Direct to object storage | Too many small writes |
+| Listener to file system | Too many small writes |
 
 ### Cloud Deployment
 
@@ -223,7 +193,7 @@ HL7 Source ──► hl7-listener ──► Kafka ──► hl7-batcher ──�
    (MLLP)      (Camel K)     (hl7-messages) (Camel K)           │
                     │                                            ▼
                     ▼                         Kafka ◄──── (hl7-batches topic)
-                ACK                        (batch manifests)     │
+                   ACK                  (batch manifests)        │
                                                                  ▼
                                                           hl7-transformer
                                                            (trigger TBD)
@@ -310,9 +280,9 @@ ADT^A40: Patient 78901 merged into Patient 78900
 
 | Component | HA Strategy |
 |-----------|-------------|
-| **Kafka** | Deploy with replication factor ≥ 2; Strimzi handles broker failover |
-| **hl7-listener** | Can run multiple replicas; Kafka handles dedup via message key |
-| **hl7-batcher** | Single replica recommended (aggregation state); or partition-based sharding via consumer groups |
+| **Kafka** | TBD |
+| **hl7-listener** | TBD |
+| **hl7-batcher** | TBD |
 | **hl7-transformer** | Depends on trigger mechanism; Spark Structured Streaming or Temporal provide their own HA |
 
 ### Monitoring & Alerting
@@ -354,9 +324,9 @@ Camel K operator requires a container registry to push built Integration images:
 |--------|-------------|------------|
 | **ttl.sh** | Anonymous ephemeral registry (POC default) | ❌ Not for production, useful for testing |
 | **Harbor on staging** | Use existing staging Harbor | ❌ prod can reach staging |
-| **Local registry** | Deploy registry in production cluster | ✅ On-prem - adds operational overhead |
-| **Cloud registry (ACR)** | Azure Container Registry or similar | ✅ Cloud - native integration, managed service |
-| **Pre-built images** | Build images externally, deploy as Deployments | ✅ Either - loses Camel K operator benefits |
+| **Local registry** | IT managed internal registry | May already exists |
+| **Cloud registry (ACR)** | Azure Container Registry or similar | Would need to be on cloud |
+| **Pre-built images** | Build images externally, deploy as Deployments | Loses Camel K operator benefits |
 
 ### Backup & Disaster Recovery
 
@@ -366,7 +336,7 @@ Camel K operator requires a container registry to push built Integration images:
 
 ### Automated Testing
 
-Independent of hospital test environment, we need automated tests that run in CI/CD:
+We will need a variety of automated tests to validate the hl7-listener architecture:
 
 | Test Type | Scope | Environment |
 |-----------|-------|-------------|
@@ -377,7 +347,7 @@ Independent of hospital test environment, we need automated tests that run in CI
 | **Failure tests** | Component restarts, network partitions | Dev K8s cluster |
 
 Test infrastructure:
-- **hl7-test-sender** (Camel K) generates synthetic HL7 messages for testing
+- **hl7-test-sender (POC)** (Camel K) generates synthetic HL7 messages for testing
 - Dedicated test Kafka topics to isolate from production
 - Assertions on Kafka message counts, S3 object presence, Delta Lake row counts
 
@@ -387,7 +357,7 @@ Test infrastructure:
 - [ ] ADT message contents - what exactly is in A08, A31, A04, A01, A28?
 - [ ] Patient info table schema - what fields are needed beyond what ORU PID segment provides?
 - [ ] Test environment - when available? how to schedule testing?
-- [ ] Alerting - who should receive incident alerts?
+- [ ] Kafka configuration - what topics, how many partitions, retention settings?
 - [ ] hl7-transformer trigger mechanism - which option to pursue?
 
 ## Test Plan
@@ -416,7 +386,7 @@ Validate end-to-end message flow before production deployment.
 
 ### Hospital Test Environment (Pending)
 
-- [ ] Connect hl7-listener to hospital test HL7 feed
+- [ ] Connect hl7-listener to clinical test environment HL7 feed
 - [ ] Validate message flow with real HL7 messages:
   - Messages received and ACKs sent correctly
   - No upstream queue backup
@@ -451,9 +421,9 @@ Validate end-to-end message flow before production deployment.
 |-------|-------|--------|
 | **0: Design** | Finalize architecture | ✅ Complete |
 | **1: POC** | Camel K listener + batcher, Kafka, S3 integration | ✅ Complete |
-| **2: hl7-transformer Integration** | Decide and implement Kafka → hl7-transformer trigger | 🔄 In Progress |
+| **2: hl7-transformer Integration** | Decide and implement Kafka → hl7-transformer trigger | Pending |
 | **3: Internal Testing** | Automated tests for hl7-listener components | Pending |
-| **4: Hospital Test Environment** | Connect to hospital test HL7 feed, validate with real messages | Pending |
+| **4: Clinical Test Environment** | Connect to clinical test environment HL7 feed | Pending |
 | **5: Production** | Production connection, monitoring, alerting | Pending |
 | **6: Updates (v2)** | Handle report status updates with `reports_latest` view | Pending |
 | **7: Merges (v3)** | Patient ID mapping table for ADT^A40 processing | Pending |
