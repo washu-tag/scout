@@ -4,14 +4,20 @@ This document describes Scout's versioning strategy and the automated release wo
 
 ## Versioning Strategy
 
-Scout uses a **tag-triggered release workflow** with release candidates (RCs). Source files maintain development versions (`latest`, `0.0.0-dev`, `0.0.dev0`), and CI extracts the release version from git tags at build time.
+Scout uses a **tag-triggered release workflow** with release candidates (RCs). The workflow:
 
-### Key Principles
+1. **Source files maintain dev versions** - no manual version bumps for day-to-day development
+2. **RC tags trigger pre-releases** - with auto-generated changelogs
+3. **Human approval required** - reviewer can edit changelog before finalizing
+4. **Version bump commits created at release time** - the repo contains a commit with release versions
+5. **Automatic revert after release** - dev versions restored automatically
 
-1. **Source files always contain dev versions** - no manual version bumps needed
-2. **Git tags are the source of truth** for release versions
-3. **RC tags trigger builds** - final release tags are created by CI
-4. **Human approval required** before promoting RC to full release
+### Key Points
+
+- Git tags are the source of truth for release versions
+- Pre-releases use dev artifacts (tagged `latest`)
+- Final releases use properly versioned artifacts (tagged `X.Y.Z`)
+- The final `vX.Y.Z` tag points to the version bump commit, not the original RC commit
 
 ## Development Versions
 
@@ -35,202 +41,225 @@ CI publishes any changes to `main` with the `latest` Docker image tag.
 
 ## Release Process
 
-### Overview
+### Overview Diagram
 
 ```
-Developer                    GitHub                      CI
-    |                           |                         |
-    |-- git tag v2.1.0-rc1 ---->|                         |
-    |-- git push --tags ------->|                         |
-    |                           |-- trigger workflow ---->|
-    |                           |                         |
-    |                           |     Parse: v2.1.0-rc1 → 2.1.0
-    |                           |     Build all components with 2.1.0
-    |                           |     Push images tagged 2.1.0
-    |                           |     Create GitHub pre-release
-    |                           |                         |
-    |                           |     [Human approval step]
-    |                           |                         |
-    |                           |     Create tag v2.1.0
-    |                           |     Promote to full release
-    |                           |                         |
-    |<-- notification ----------|                         |
+Developer                    GitHub                        CI
+    |                           |                           |
+    |===== PHASE 1: RC Creation =====                       |
+    |                           |                           |
+    |-- git tag v2.1.0-rc1 ---->|                           |
+    |-- git push --tags ------->|                           |
+    |                           |                           |
+    |                           |-- RC Workflow triggers -->|
+    |                           |                           |
+    |                           |     Generate changelog    |
+    |                           |     Create pre-release    |
+    |                           |     (attach dev artifacts |
+    |                           |      if already built)    |
+    |                           |                           |
+    |                           |-- Build Workflow -------->|
+    |                           |   (if not already run)    |
+    |                           |                           |
+    |                           |     Build dev artifacts   |
+    |                           |     Publish with 'latest' |
+    |                           |     Attach to pre-release |
+    |                           |                           |
+    |<-- Pre-release ready -----|                           |
+    |                           |                           |
+    |===== PHASE 2: Human Review =====                      |
+    |                           |                           |
+    |-- Review pre-release ---->|                           |
+    |-- Edit changelog -------->|                           |
+    |                           |                           |
+    |===== PHASE 3: Finalize Release =====                  |
+    |                           |                           |
+    |-- Trigger Finalize ------>|                           |
+    |   (workflow_dispatch)     |                           |
+    |                           |-- Finalize Workflow ----->|
+    |                           |                           |
+    |                           |     Version bump commit   |
+    |                           |     (X.Y.Z in all files)  |
+    |                           |          |                |
+    |                           |          v                |
+    |                           |     Build Workflow runs   |
+    |                           |     (triggered by commit) |
+    |                           |          |                |
+    |                           |          v                |
+    |                           |     Publish X.Y.Z artifacts
+    |                           |          |                |
+    |                           |          v                |
+    |                           |     Create full release   |
+    |                           |     Tag commit as vX.Y.Z  |
+    |                           |          |                |
+    |                           |          v                |
+    |                           |     Revert commit         |
+    |                           |     (back to dev versions)|
+    |                           |                           |
+    |<-- Release complete ------|                           |
 ```
 
-### Step-by-Step
+### Phase 1: RC Creation
 
-1. **Tag an RC**: Create and push a release candidate tag
+1. **Tag an RC** on the commit you want to release:
    ```bash
    git tag v2.1.0-rc1
    git push origin v2.1.0-rc1
    ```
 
-2. **CI builds**: The RC tag triggers the release workflow, which:
+2. **RC Workflow triggers** and:
    - Parses the version from the tag (`v2.1.0-rc1` → `2.1.0`)
-   - Builds all components with version `2.1.0`
-   - Pushes Docker images tagged `2.1.0`
-   - Creates a GitHub pre-release
+   - Generates changelog from commits since the last release
+   - Creates a GitHub pre-release with the changelog
+   - Attaches dev artifacts if they're already built (see Race Condition Handling)
 
-3. **Human approval**: A reviewer:
-   - Reviews the pre-release and build artifacts
-   - Edits release notes if desired
-   - Approves the release (method depends on chosen option - see CI Components)
+3. **Build Workflow** (triggered by the commit, may run before or after RC Workflow):
+   - Builds and publishes artifacts with `latest` tag
+   - Checks if a pre-release exists for this commit
+   - If so, attaches artifact links to the pre-release
 
-4. **CI finalizes**: After approval, CI:
-   - Creates the final `v2.1.0` tag on the same commit
-   - Promotes the pre-release to a full release
+**Race Condition Handling**: The RC tag and Build workflows may run in either order. Both check for each other:
+- RC Workflow: looks for existing artifacts → attaches if found
+- Build Workflow: looks for existing pre-release → attaches artifacts if found
+- Whichever runs second completes the attachment
+
+### Phase 2: Human Review
+
+1. **Review the pre-release** in GitHub Releases
+2. **Edit the changelog** if needed (add context, fix formatting, highlight breaking changes)
+3. **Verify artifacts** are attached and builds succeeded
+
+### Phase 3: Finalize Release
+
+1. **Trigger the Finalize Workflow** via `workflow_dispatch` in GitHub Actions:
+   - Input `version`: `2.1.0`
+   - Input `rc_tag`: `v2.1.0-rc1`
+
+2. **Finalize Workflow** executes:
+   - Creates version bump commit (all version files updated to `2.1.0`)
+   - Waits for Build Workflow to complete (triggered by the commit)
+   - Creates full release with changelog copied from pre-release
+   - Tags the version bump commit as `v2.1.0`
+   - Creates revert commit (all version files back to dev versions)
+
+3. **Result**:
+   - Pre-release (`v2.1.0-rc1`) remains as historical record
+   - Full release (`v2.1.0`) is published
+   - Docker images tagged `2.1.0` are available
+   - `main` branch is back to dev versions
+
+## Triggering a Release
+
+### Via GitHub Actions UI
+
+1. Go to **Actions** → **Finalize Release** workflow
+2. Click **Run workflow**
+3. Fill in:
+   - `version`: The version to release (e.g., `2.1.0`)
+   - `rc_tag`: The RC tag to promote (e.g., `v2.1.0-rc1`)
+4. Click **Run workflow**
 
 ### Tag Patterns
 
 | Tag Pattern | CI Action |
 |-------------|-----------|
-| `vX.Y.Z-rcN` (e.g., `v2.1.0-rc1`) | Triggers release workflow |
+| `vX.Y.Z-rcN` (e.g., `v2.1.0-rc1`) | RC Workflow: creates pre-release |
 | `vX.Y.Z` (e.g., `v2.1.0`) | **Ignored** (created by CI, not manually) |
-| Push to `main` | Triggers dev build with `latest` tag |
+| Push to `main` | Build Workflow: builds and publishes `latest` |
 
-### Version Extraction
+## Failure and Recovery
 
-For tag `vX.Y.Z-rcN`:
-- Strip the `v` prefix and `-rcN` suffix
-- Build version = `X.Y.Z` (not `X.Y.Z-rcN`)
-- All packages and images use `X.Y.Z`
+### RC Workflow Fails
+- Pre-release not created (or partial)
+- **Recovery**: Fix the issue, push a new RC tag (`v2.1.0-rc2`)
 
-Examples:
-```
-v2.1.0-rc1  →  VERSION=2.1.0
-v2.1.0-rc12 →  VERSION=2.1.0
-v3.0.0-rc1  →  VERSION=3.0.0
-```
+### Build Workflow Fails (during RC phase)
+- Pre-release exists but no artifacts attached
+- **Recovery**: Fix build issue; artifacts will be attached when build succeeds. Or push new RC.
 
-### Failure and Retry
+### Finalize Workflow Fails (during version bump)
+- Version bump commit may or may not exist on `main`
+- **Recovery**: Check state, fix issue, re-run Finalize Workflow. May need to manually revert partial changes.
 
-If an RC build fails:
-1. The pre-release remains in failed state (or is not created)
-2. No final `vX.Y.Z` tag is created
-3. Fix the issue, then tag a new RC: `v2.1.0-rc2`
-4. The new RC triggers a fresh build attempt
+### Finalize Workflow Fails (after version bump, before release)
+- Version bump commit exists, artifacts may be published
+- **Recovery**: Re-run Finalize to complete release creation and revert
 
-Multiple RC tags for the same version are fine - only the successful one creates the final release.
+### Finalize Workflow Fails (after release, before revert)
+- Release exists and is valid
+- **Recovery**: Manually create revert commit, or re-run Finalize (should detect release exists and skip to revert)
 
-## Manual Release (workflow_dispatch)
+### General Recovery
 
-The release workflow can also be triggered manually for:
-- Re-running a failed release without pushing a new tag
-- Creating a release from a specific commit or branch
-- Testing the release process
+The Finalize Workflow is designed to be idempotent where possible:
+- Checks if version bump commit exists → skips if so
+- Checks if release exists → skips if so
+- Checks if revert commit exists → skips if so
 
-**Inputs**:
-| Input | Description | Required |
-|-------|-------------|----------|
-| `version` | Version to release (e.g., `2.1.0`) | Yes |
-| `ref` | Git ref to release (commit SHA, branch, or tag) | No (default: main) |
-| `create_rc_tag` | Create RC tag before building | No (default: false) |
-| `rc_number` | RC number if creating tag | No (default: 1) |
+This allows safe re-runs after partial failures.
 
 ## CI Components
 
 > **Note**: The CI workflows described below are planned but not yet implemented.
 
-### 1. Release Workflow
+### 1. Build Workflow (Existing, Minor Modification)
 
-**File**: `.github/workflows/release.yaml`
+**File**: Existing build workflows
 
-**Triggers**:
-- `push.tags`: `v*.*.*-rc*` (RC tags only)
-- `workflow_dispatch`: Manual trigger
+**Triggers**: Push to `main`
+
+**Current behavior**: Builds and publishes artifacts with `latest` tag
+
+**New behavior**: After publishing, check if a pre-release exists for this commit. If so, attach artifact links to the pre-release.
+
+### 2. RC Workflow (New)
+
+**File**: `.github/workflows/rc.yaml`
+
+**Triggers**: Push of tag matching `v*.*.*-rc*`
 
 **Responsibilities**:
-- Parse version from tag
-- Build all components with extracted version
-- Push Docker images
-- Create GitHub pre-release
-- After approval: create final tag, promote release
+1. Parse version from tag
+2. Generate changelog from commits since last release
+3. Create GitHub pre-release
+4. Attach dev artifacts if already built
 
-### 2. Version Parser
+### 3. Finalize Workflow (New)
 
-**Location**: Inline in workflow or `.github/scripts/parse-version.sh`
+**File**: `.github/workflows/finalize-release.yaml`
 
-**Output**:
-- `VERSION`: Clean version (e.g., `2.1.0`)
-- `IS_RC`: Boolean
-- `RC_NUMBER`: The RC number if applicable
+**Triggers**: `workflow_dispatch` (manual)
 
-### 3. Build Jobs
+**Inputs**:
+| Input | Description | Required |
+|-------|-------------|----------|
+| `version` | Version to release (e.g., `2.1.0`) | Yes |
+| `rc_tag` | RC tag to promote (e.g., `v2.1.0-rc1`) | Yes |
 
-Existing build workflows modified to accept a `version` input parameter:
-- `build-launchpad.yaml`
-- `build-hl7-transformer.yaml`
-- `build-hl7log-extractor.yaml`
-- `build-pyspark-notebook.yaml`
-- `build-keycloak-event-listener.yaml`
+**Responsibilities**:
+1. Version bump commit
+2. Wait for Build Workflow
+3. Create full release (copy changelog from pre-release)
+4. Tag version bump commit
+5. Revert commit
 
-### 4. Human Approval Step
+### 4. Version Update Script
 
-> **DECISION REQUIRED**: Choose Option A or Option B before implementing.
+**File**: `.github/scripts/update-versions.sh`
 
-#### Option A: Environment Protection Rules
+Updates all version files to either release version or dev versions.
 
-Single workflow with a `finalize-release` job that requires approval:
+### 5. Version Parser
 
-```yaml
-jobs:
-  build:
-    # ... builds and creates pre-release ...
-
-  finalize-release:
-    needs: build
-    environment: production  # Requires approval
-    steps:
-      # ... creates final tag, promotes release ...
+Extracts clean version from RC tag:
 ```
-
-**Setup**: Repository Settings → Environments → Create "production" → Add required reviewers
-
-**Flow**:
-1. RC tag pushed → workflow runs → pre-release created
-2. Workflow pauses at `finalize-release` job
-3. Reviewer gets GitHub notification, can edit release notes
-4. Reviewer clicks "Approve and deploy" in Actions UI
-5. `finalize-release` job runs → full release created
-
-**Pros**: Single workflow, built-in notifications, audit trail
-**Cons**: Approval UI in Actions tab (not Releases tab)
-
-#### Option B: Separate Finalization Workflow
-
-Two separate workflows:
-
-**Workflow 1: RC Build** (`.github/workflows/rc-build.yaml`)
-- Triggered by: `v*.*.*-rc*` tags
-- Does: Build, push images, create pre-release, then stops
-
-**Workflow 2: Finalize Release** (`.github/workflows/finalize-release.yaml`)
-- Triggered by: `workflow_dispatch` only
-- Does: Create final tag, promote pre-release
-
-**Flow**:
-1. RC tag pushed → RC Build runs → pre-release created
-2. Reviewer edits release notes in Releases UI
-3. Reviewer manually triggers Finalize Release workflow
-4. Full release created
-
-**Pros**: Edit release notes in familiar UI, clear separation
-**Cons**: Two workflows, manual trigger required, no automatic notification
-
-### 5. Release Finalizer
-
-**Triggered by**: Human approval (Option A) or manual dispatch (Option B)
-
-**Responsibilities**:
-1. Create `vX.Y.Z` tag on the same commit as the RC tag
-2. Update existing GitHub Release:
-   - Change tag from `vX.Y.Z-rcN` to `vX.Y.Z`
-   - Remove pre-release flag
-   - Keep release notes (may have been manually edited)
+v2.1.0-rc1  →  VERSION=2.1.0, RC_NUMBER=1
+v2.1.0-rc12 →  VERSION=2.1.0, RC_NUMBER=12
+```
 
 ## Version Files Reference
 
-This section documents all files containing version strings. With the automated release workflow, **you do not need to manually update these files** - CI handles version injection at build time. This list is maintained for reference and troubleshooting.
+This section documents all files containing version strings. With the automated release workflow, the Finalize Workflow handles updating these files. This list is maintained for reference and troubleshooting.
 
 ### Ansible Role Defaults (Docker Image Tags)
 
@@ -262,7 +291,7 @@ This section documents all files containing version strings. With the automated 
 |------|-------|
 | `launchpad/package.json` | `version` |
 
-**Note**: `package-lock.json` is auto-generated by npm. Do not edit manually.
+**Note**: `package-lock.json` is auto-generated by npm. The Finalize Workflow should run `npm install` after updating `package.json`.
 
 ### Helm Charts
 
@@ -312,4 +341,4 @@ The current GitHub Actions workflow uses `.github/actions/derive-version/action.
 3. `build.gradle` version field
 4. `pyproject.toml` version field
 
-This will be superseded by the tag-based version extraction in the new release workflow.
+This will continue to be used by the Build Workflow to determine artifact versions.
