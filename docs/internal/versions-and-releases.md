@@ -102,19 +102,15 @@ Developer                    GitHub                        CI
    - Parses the version from the tag (`v2.1.0-rc1` → `2.1.0`)
    - Generates changelog from commits since the last release
    - Creates a GitHub pre-release with the changelog
-   - Includes a link to the container registry where dev artifacts are published
 
 3. **Build Workflow** (runs independently on push to `main`):
    - Builds and publishes artifacts with `latest` tag to container registry
-   - No knowledge of the release process
-
-**Note**: Artifacts are not attached to the pre-release as GitHub Release assets. They live in the container registry and are referenced via links in the release notes. This keeps the workflows simple and decoupled.
 
 ### Phase 2: Human Review
 
 1. **Review the pre-release** in GitHub Releases
 2. **Edit the changelog** if needed (add context, fix formatting, highlight breaking changes)
-3. **Verify artifacts** are attached and builds succeeded
+3. **Verify** builds succeeded
 
 ### Phase 3: Finalize Release
 
@@ -202,7 +198,7 @@ This allows safe re-runs after partial failures.
 **Responsibilities**:
 1. Parse version from tag
 2. Generate changelog from commits since last release
-3. Create GitHub pre-release with changelog and link to container registry
+3. Create GitHub pre-release with changelog
 
 ### 3. Finalize Workflow (New)
 
