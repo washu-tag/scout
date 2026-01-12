@@ -90,20 +90,20 @@ Developer                    GitHub                        CI
 ### What the Workflow Does
 
 1. **Validates** the version format and checks the tag doesn't already exist
-2. **Generates changelog preview** from PRs since the last release
-3. **Updates version files** to the release version
-4. **Commits and pushes** the version bump to `main`
-5. **Waits for the Build Workflow** to complete (builds versioned artifacts)
+2. **Searches git history** for an existing version bump commit (for idempotent re-runs)
+3. **Generates changelog preview** from PRs since the last release
+4. **Updates version files** and commits the version bump to `main` (if not already done)
+5. **Waits for the Build Workflow** to complete on HEAD (builds versioned artifacts)
 6. **Creates the GitHub release** with auto-generated changelog
-7. **Creates the `vX.Y.Z` tag** pointing at the version bump commit
-8. **Reverts the version bump** via `git revert` to restore dev versions
+7. **Creates the `vX.Y.Z` tag** pointing at HEAD (the commit that was built)
+8. **Reverts the version bump commit** via `git revert` to restore dev versions
 
 ### Result
 
 - Release `v2.1.0` is published with changelog
 - Docker images tagged `2.1.0` are available
+- Tag `v2.1.0` points to the commit that was actually built and released
 - `main` branch is back to dev versions
-- Git history contains the version bump commit followed by its revert
 
 ## Dry Run Mode
 
@@ -126,7 +126,16 @@ Because the tag is created at the end of the workflow (after everything else suc
 
 ### Workflow Fails After Version Bump, Before Release
 - Version bump commit exists on `main`, but no tag or release
-- **Recovery**: Re-run the workflow. It detects the version bump commit already exists and skips to waiting for the build.
+- **Recovery**: Re-run the workflow. It searches git history for the version bump commit and skips to waiting for the build.
+
+### Build Fails Due to a Bug
+- Version bump commit exists, but build failed
+- **Recovery**: Push fix commits to `main`. Once the build passes, re-run the release workflow. It will:
+  - Find the existing version bump commit in git history
+  - Skip creating a new version bump
+  - Wait for the build on HEAD to succeed
+  - Create the release and tag pointing to HEAD (which includes your fixes)
+  - Revert the version bump commit (not HEAD) to restore dev versions
 
 ### Workflow Fails After Release, Before Revert
 - Release and tag exist and are valid
@@ -136,11 +145,16 @@ Because the tag is created at the end of the workflow (after everything else suc
 ### Idempotent Design
 
 The workflow checks state before each step:
-- Checks if version bump commit exists → skips version bump if so
+- Searches git history for version bump commit → skips version bump if found
 - Checks if release exists → skips release creation if so
-- Checks if revert commit exists → skips revert if so
+- Checks if revert of the version bump exists → skips revert if so
 
 This allows safe re-runs after partial failures without manual intervention.
+
+### Important Notes
+
+- The **tag points to HEAD** at release time, which may be the version bump commit or a later fix commit. This ensures the tag references the exact code that was built and released.
+- The **revert targets the version bump commit**, not HEAD. This correctly restores dev versions even if fix commits were added after the version bump.
 
 ## CI Components
 
