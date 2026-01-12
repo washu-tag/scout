@@ -9,7 +9,7 @@ Scout uses a **manual dispatch release workflow**. The workflow:
 1. **Source files maintain dev versions** - no manual version bumps for day-to-day development
 2. **Human triggers release via GitHub Actions** - specifying the version to release
 3. **Version bump commit created at release time** - the repo contains a commit with release versions
-4. **Automatic revert after release** - dev versions restored via `git revert`
+4. **Automatic reset after release** - dev versions restored by running the update script
 5. **Tag created on success** - the version tag only exists after everything succeeds
 
 ### Key Points
@@ -73,7 +73,7 @@ Developer                    GitHub                        CI
     |                           |     Create vX.Y.Z tag     |
     |                           |          |                |
     |                           |          v                |
-    |                           |     git revert HEAD       |
+    |                           |     Reset to dev versions |
     |                           |     Push to main          |
     |                           |                           |
     |<-- Release complete ------|                           |
@@ -91,12 +91,11 @@ Developer                    GitHub                        CI
 
 1. **Validates** the version format and checks the tag doesn't already exist
 2. **Searches git history** for an existing version bump commit (for idempotent re-runs)
-3. **Generates changelog preview** from PRs since the last release
-4. **Updates version files** and commits the version bump to `main` (if not already done)
-5. **Waits for the Build Workflow** to complete on HEAD (builds versioned artifacts)
-6. **Creates the GitHub release** with auto-generated changelog
-7. **Creates the `vX.Y.Z` tag** pointing at HEAD (the commit that was built)
-8. **Reverts the version bump commit** via `git revert` to restore dev versions
+3. **Updates version files** and commits the version bump to `main` (if not already done)
+4. **Waits for the Build Workflow** to complete on HEAD (builds versioned artifacts)
+5. **Creates the GitHub release** with auto-generated changelog
+6. **Creates the `vX.Y.Z` tag** pointing at HEAD (the commit that was built)
+7. **Resets to dev versions** by running the update script and committing
 
 ### Result
 
@@ -135,26 +134,25 @@ Because the tag is created at the end of the workflow (after everything else suc
   - Skip creating a new version bump
   - Wait for the build on HEAD to succeed
   - Create the release and tag pointing to HEAD (which includes your fixes)
-  - Revert the version bump commit (not HEAD) to restore dev versions
+  - Reset to dev versions
 
-### Workflow Fails After Release, Before Revert
+### Workflow Fails After Release, Before Reset
 - Release and tag exist and are valid
 - `main` still has release versions instead of dev versions
-- **Recovery**: Re-run the workflow. It detects the release exists and skips to the revert step.
+- **Recovery**: Re-run the workflow. It detects the release exists and skips to the reset step.
 
 ### Idempotent Design
 
 The workflow checks state before each step:
 - Searches git history for version bump commit → skips version bump if found
 - Checks if release exists → skips release creation if so
-- Checks if revert of the version bump exists → skips revert if so
+- Checks if reset to dev versions exists → skips reset if so
 
 This allows safe re-runs after partial failures without manual intervention.
 
 ### Important Notes
 
 - The **tag points to HEAD** at release time, which may be the version bump commit or a later fix commit. This ensures the tag references the exact code that was built and released.
-- The **revert targets the version bump commit**, not HEAD. This correctly restores dev versions even if fix commits were added after the version bump.
 
 ## CI Components
 
@@ -184,23 +182,25 @@ This allows safe re-runs after partial failures without manual intervention.
 
 **Responsibilities**:
 1. Validate version format and check tag doesn't exist
-2. Generate changelog from PRs since last release
-3. Update version files and commit
-4. Wait for Build Workflow to complete
-5. Create GitHub release with changelog
-6. Create version tag
-7. Revert version bump commit
+2. Update version files and commit
+3. Wait for Build Workflow to complete
+4. Create GitHub release with auto-generated changelog
+5. Create version tag
+6. Reset to dev versions and commit
 
 ### 3. Version Update Script
 
 **File**: `.github/scripts/update-versions.sh`
 
-Updates all version files to the specified release version. Called with:
-```bash
-.github/scripts/update-versions.sh 2.1.0
-```
+Updates all version files. Supports two modes:
 
-The revert to dev versions is handled by `git revert`, not by this script.
+```bash
+# Set release version
+.github/scripts/update-versions.sh 2.1.0
+
+# Reset to dev versions
+.github/scripts/update-versions.sh dev
+```
 
 ## GitHub App Setup
 
@@ -296,7 +296,7 @@ This section documents all files containing version strings. The Release Workflo
 |------|-------|
 | `launchpad/package.json` | `version` |
 
-**Note**: `package-lock.json` is auto-generated by npm. The Finalize Workflow should run `npm install` after updating `package.json`.
+**Note**: `package-lock.json` is auto-generated by npm. The Release Workflow runs `npm install` after updating `package.json`.
 
 ### Helm Charts
 
