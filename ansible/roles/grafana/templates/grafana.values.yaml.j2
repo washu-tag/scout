@@ -110,7 +110,7 @@ persistence:
 {% endif %}
   size: '{{ grafana_storage_size }}'
 
-resources: {{ grafana_resources | to_json }}
+resources: {{ grafana_resources_default | combine(grafana_resources | default({}), recursive=true) | to_json }}
 
 livenessProbe:
   initialDelaySeconds: 180

@@ -65,7 +65,7 @@
         storage:
           storageClass: '{{ postgres_storage_class | default(omit, true) }}'
           size: '{{ postgres_storage_size }}'
-        resources: '{{ postgres_resources }}'
+        resources: '{{ postgres_resources_default | combine(postgres_resources | default({}), recursive=true) }}'
         enableSuperuserAccess: true
         superuserSecret:
           name: superuser-secret

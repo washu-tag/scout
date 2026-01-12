@@ -21,7 +21,7 @@ hl7_transformer_cpu_request: 100m
 hl7_transformer_cpu_limit: 4
 
 # Resource configuration (dev defaults - CI friendly)
-hl7log_extractor_resources:
+hl7log_extractor_resources_default:
   requests:
     cpu: 100m
     memory: 1Gi

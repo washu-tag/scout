@@ -12,7 +12,7 @@ prometheus_storage_size: 10Gi
 prometheus_storage_class: ''
 
 # Resource configuration (dev defaults - CI friendly)
-prometheus_resources:
+prometheus_resources_default:
   requests:
     cpu: 250m
     memory: 1Gi

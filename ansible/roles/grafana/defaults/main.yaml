@@ -29,7 +29,7 @@ grafana_alerts_path: '{{ role_path }}/templates/alerts'
 grafana_contact_points_path: '{{ role_path }}/templates/contact-points'
 
 # Resource configuration (dev defaults)
-grafana_resources:
+grafana_resources_default:
   requests:
     cpu: 100m
     memory: 512Mi
