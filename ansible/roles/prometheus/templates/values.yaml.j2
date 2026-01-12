@@ -20,7 +20,7 @@ server:
     storageClass: '{{ prometheus_storage_class }}'
 {% endif %}
   retention: 15d
-  resources: {{ prometheus_resources | to_json }}
+  resources: {{ prometheus_resources_default | combine(prometheus_resources | default({}), recursive=true) | to_json }}
   extraSecretMounts:
     - name: jupyterhub-metrics-api-token
       secretName: jupyterhub-metrics-api-token

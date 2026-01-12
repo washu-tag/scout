@@ -2,7 +2,7 @@
 # Default values for hive-metastore deployment
 
 # Resource configuration (dev defaults - CI friendly)
-hive_resources:
+hive_resources_default:
   requests:
     cpu: 100m
     memory: 1Gi

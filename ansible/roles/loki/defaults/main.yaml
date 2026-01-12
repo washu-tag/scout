@@ -16,7 +16,7 @@ s3_loki_writer: loki-writer
 s3_loki_writer_secret: changeme
 
 # Resource configuration (dev defaults - CI friendly)
-loki_resources:
+loki_resources_default:
   requests:
     cpu: 250m
     memory: 1Gi

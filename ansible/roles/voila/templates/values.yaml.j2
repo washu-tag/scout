@@ -5,7 +5,7 @@ image:
   repository: "{{ voila_image_name }}"
   tag: "{{ voila_image_tag }}"
 
-resources: {{ voila_resources | to_json }}
+resources: {{ voila_resources_default | combine(voila_resources | default({}), recursive=true) | to_json }}
 
 sparkConfigMapName: spark-defaults
 

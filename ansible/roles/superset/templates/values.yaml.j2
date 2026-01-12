@@ -33,7 +33,7 @@ supersetNode:
     # https://redis.io/kb/doc/2d6sxrbhhj/does-redis-enterprise-support-logical-databases-using-the-select-command
     redis_cache_db: "0"
     redis_celery_db: "0"
-  resources: {{ superset_resources | default({}) | to_json }}
+  resources: {{ superset_resources_default | combine(superset_resources | default({}), recursive=true) | to_json }}
   extraContainers:
     - name: statsd-exporter
       image: "{{ superset_statsd_exporter_image }}:{{ superset_statsd_exporter_tag }}"
@@ -49,7 +49,7 @@ supersetNode:
         - name: metrics
           containerPort: {{ superset_statsd_metrics_port }}
           protocol: TCP
-      resources: {{ superset_statsd_resources | default({}) | to_json }}
+      resources: {{ superset_statsd_resources_default | combine(superset_statsd_resources | default({}), recursive=true) | to_json }}
       volumeMounts:
         - name: statsd-mapping
           mountPath: /etc/statsd-exporter

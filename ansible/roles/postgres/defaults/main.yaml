@@ -7,7 +7,7 @@ postgres_storage_size: 1Gi
 postgres_storage_class: ''
 
 # Resource configuration (dev defaults - CI friendly)
-postgres_resources:
+postgres_resources_default:
   requests:
     cpu: 250m
     memory: 1Gi

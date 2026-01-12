@@ -8,7 +8,7 @@ temporal_server_replica_count: 1
 temporal_storage_class: ''
 
 # Resource configuration (dev defaults - CI friendly)
-temporal_resources:
+temporal_resources_default:
   requests:
     cpu: 100m
     memory: 512Mi

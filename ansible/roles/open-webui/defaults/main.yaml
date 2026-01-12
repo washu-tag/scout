@@ -72,7 +72,7 @@ open_webui_redis_url: 'redis://default:{{ open_webui_redis_password | urlencode 
 # For production LLMs (especially large models like gpt-oss:120b), you MUST
 # override these in inventory.yaml with significantly more resources.
 # Recommended production values: 32Gi+ memory for requests, 64Gi+ for limits.
-ollama_resources:
+ollama_resources_default:
   requests:
     cpu: 2
     memory: 4Gi
@@ -89,7 +89,7 @@ ollama_resources:
 # Set to 0 to disable GPU memory requirement (schedules on any GPU node)
 ollama_min_gpu_memory_gb: 80
 
-open_webui_resources:
+open_webui_resources_default:
   requests:
     cpu: 250m
     memory: 512Mi

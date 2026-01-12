@@ -3,7 +3,7 @@ proxy:
     type: ClusterIP
 
 hub:
-  resources: {{ jupyter_hub_resources | to_json }}
+  resources: {{ jupyter_hub_resources_default | combine(jupyter_hub_resources | default({}), recursive=true) | to_json }}
   shutdownOnLogout: true
   services:
     prometheus:

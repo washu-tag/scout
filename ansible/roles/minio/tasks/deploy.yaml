@@ -86,7 +86,7 @@
             volumesPerServer: '{{ minio_volumes_per_server | default(1) }}'
             size: '{{ minio_storage_size }}'
             storageClassName: '{{ minio_storage_class | default(omit, true) }}'
-            resources: '{{ minio_resources }}'
+            resources: '{{ minio_resources_default | combine(minio_resources | default({}), recursive=true) }}'
             tolerations:
               # Ensure MinIO pods can run on control plane nodes
               - key: 'node-role.kubernetes.io/control-plane'

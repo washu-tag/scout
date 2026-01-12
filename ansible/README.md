@@ -301,6 +301,48 @@ postgres_resources:
     memory: 128Gi
 ```
 
+**Partial resource overrides** (in `inventory.yaml`):
+
+Most services support partial resource overrides. You can override only the parts you want to change, and defaults will be used for the rest:
+
+```yaml
+# Override only limits, keep default requests
+temporal_resources:
+  limits:
+    cpu: 4
+    memory: 8Gi
+
+# Override only one value within limits
+prometheus_resources:
+  limits:
+    memory: 4Gi
+
+# Override both requests and limits (full override)
+grafana_resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 2
+    memory: 2Gi
+```
+
+This works through Ansible's `combine` filter with `recursive=true`. Role defaults define the base values (e.g., `temporal_resources_default`), and your inventory overrides (e.g., `temporal_resources`) are merged on top.
+
+**Services supporting partial resource overrides:**
+- temporal, postgres, minio, hive, prometheus, grafana, loki
+- superset, superset_statsd, jupyter_hub, hl7log_extractor
+- redis_operator, redis_cluster_node, voila, orthanc, dcm4chee
+- ollama, open_webui, mcp_trino
+
+**Services NOT supporting partial overrides** (use flattened variables instead):
+- `trino_coordinator_*`, `trino_worker_*` - Use `trino_coordinator_max_heap`, `trino_coordinator_cpu_limit`, etc.
+- `cassandra` - Use `cassandra_max_heap`, `cassandra_cpu_request`, etc.
+- `elasticsearch` - Use `elasticsearch_max_heap`, `elasticsearch_cpu_request`, etc.
+- `hl7_transformer` - Use `hl7_transformer_spark_memory`, `hl7_transformer_cpu_limit`, etc.
+
+These services use flattened variables because JVM heap sizes drive memory calculations with different multipliers for requests vs limits.
+
 **Jupyter profiles** (in `inventory.yaml`):
 
 See [Customizing JupyterHub Profiles](#customizing-jupyterhub-profiles) for profile configuration including GPU support.

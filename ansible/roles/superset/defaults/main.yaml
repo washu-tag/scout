@@ -50,7 +50,7 @@ superset_logo_path: '{{ scout_repo_dir }}/launchpad/public/scout.png'
 superset_favicon_path: '{{ scout_repo_dir }}/launchpad/public/favicon.ico'
 
 # Resource configuration (dev defaults - CI friendly)
-superset_resources:
+superset_resources_default:
   requests:
     cpu: 250m
     memory: 1Gi
@@ -65,7 +65,7 @@ superset_statsd_exporter_image: prom/statsd-exporter
 superset_statsd_port: 9125 # UDP port for StatsD metrics from Superset
 superset_statsd_metrics_port: 9102 # HTTP port for Prometheus scraping
 superset_statsd_prefix: superset # Prefix for all StatsD metrics
-superset_statsd_resources:
+superset_statsd_resources_default:
   requests:
     cpu: 50m
     memory: 64Mi

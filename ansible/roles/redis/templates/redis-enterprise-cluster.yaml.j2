@@ -12,7 +12,7 @@ spec:
     storageClassName: {{ redis_storage_class }}
 {% endif %}
     volumeSize: {{ redis_storage_size }}
-  redisEnterpriseNodeResources: {{ redis_cluster_node_resources | to_json }}
+  redisEnterpriseNodeResources: {{ redis_cluster_node_resources_default | combine(redis_cluster_node_resources | default({}), recursive=true) | to_json }}
   # Use preferred anti-affinity to allow pods to co-locate if needed
   # This is more flexible than required anti-affinity
   podAntiAffinity:

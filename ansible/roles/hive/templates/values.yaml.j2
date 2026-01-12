@@ -32,7 +32,7 @@ service:
 ingress:
   enabled: false
 
-resources: {{ hive_resources | to_json }}
+resources: {{ hive_resources_default | combine(hive_resources | default({}), recursive=true) | to_json }}
 
 autoscaling:
   enabled: false

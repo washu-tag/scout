@@ -18,7 +18,7 @@ elasticsearch:
   logLevel: 'error'
 server:
   replicaCount: '{{ temporal_server_replica_count | default(1) }}'
-  resources: {{ temporal_resources | to_json }}
+  resources: {{ temporal_resources_default | combine(temporal_resources | default({}), recursive=true) | to_json }}
   internalFrontend:
     enabled: true
   config:

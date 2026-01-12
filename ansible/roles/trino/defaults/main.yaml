@@ -50,7 +50,7 @@ mcp_trino_chart_path: /tmp/mcp-trino-chart
 mcp_trino_release_name: mcp-trino
 
 # MCP Trino resources (dev defaults - CI friendly)
-mcp_trino_resources:
+mcp_trino_resources_default:
   requests:
     cpu: 100m
     memory: 128Mi
