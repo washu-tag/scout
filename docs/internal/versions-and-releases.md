@@ -55,15 +55,6 @@ Developer                    GitHub                        CI
     |                           |                           |
     |                           |     Generate changelog    |
     |                           |     Create pre-release    |
-    |                           |     (attach dev artifacts |
-    |                           |      if already built)    |
-    |                           |                           |
-    |                           |-- Build Workflow -------->|
-    |                           |   (if not already run)    |
-    |                           |                           |
-    |                           |     Build dev artifacts   |
-    |                           |     Publish with 'latest' |
-    |                           |     Attach to pre-release |
     |                           |                           |
     |<-- Pre-release ready -----|                           |
     |                           |                           |
@@ -111,17 +102,13 @@ Developer                    GitHub                        CI
    - Parses the version from the tag (`v2.1.0-rc1` → `2.1.0`)
    - Generates changelog from commits since the last release
    - Creates a GitHub pre-release with the changelog
-   - Attaches dev artifacts if they're already built (see Race Condition Handling)
+   - Includes a link to the container registry where dev artifacts are published
 
-3. **Build Workflow** (triggered by the commit, may run before or after RC Workflow):
-   - Builds and publishes artifacts with `latest` tag
-   - Checks if a pre-release exists for this commit
-   - If so, attaches artifact links to the pre-release
+3. **Build Workflow** (runs independently on push to `main`):
+   - Builds and publishes artifacts with `latest` tag to container registry
+   - No knowledge of the release process
 
-**Race Condition Handling**: The RC tag and Build workflows may run in either order. Both check for each other:
-- RC Workflow: looks for existing artifacts → attaches if found
-- Build Workflow: looks for existing pre-release → attaches artifacts if found
-- Whichever runs second completes the attachment
+**Note**: Artifacts are not attached to the pre-release as GitHub Release assets. They live in the container registry and are referenced via links in the release notes. This keeps the workflows simple and decoupled.
 
 ### Phase 2: Human Review
 
@@ -173,10 +160,6 @@ Developer                    GitHub                        CI
 - Pre-release not created (or partial)
 - **Recovery**: Fix the issue, push a new RC tag (`v2.1.0-rc2`)
 
-### Build Workflow Fails (during RC phase)
-- Pre-release exists but no artifacts attached
-- **Recovery**: Fix build issue; artifacts will be attached when build succeeds. Or push new RC.
-
 ### Finalize Workflow Fails (during version bump)
 - Version bump commit may or may not exist on `main`
 - **Recovery**: Check state, fix issue, re-run Finalize Workflow. May need to manually revert partial changes.
@@ -202,15 +185,13 @@ This allows safe re-runs after partial failures.
 
 > **Note**: The CI workflows described below are planned but not yet implemented.
 
-### 1. Build Workflow (Existing, Minor Modification)
+### 1. Build Workflow (Existing, Unchanged)
 
 **File**: Existing build workflows
 
 **Triggers**: Push to `main`
 
-**Current behavior**: Builds and publishes artifacts with `latest` tag
-
-**New behavior**: After publishing, check if a pre-release exists for this commit. If so, attach artifact links to the pre-release.
+**Behavior**: Builds and publishes artifacts with `latest` tag to container registry. No knowledge of the release process.
 
 ### 2. RC Workflow (New)
 
@@ -221,8 +202,7 @@ This allows safe re-runs after partial failures.
 **Responsibilities**:
 1. Parse version from tag
 2. Generate changelog from commits since last release
-3. Create GitHub pre-release
-4. Attach dev artifacts if already built
+3. Create GitHub pre-release with changelog and link to container registry
 
 ### 3. Finalize Workflow (New)
 
