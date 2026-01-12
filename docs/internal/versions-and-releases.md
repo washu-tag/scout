@@ -98,7 +98,7 @@ Developer                    GitHub                        CI
    git push origin v2.1.0-rc1
    ```
 
-2. **RC Workflow triggers** and:
+2. **RC Workflow** triggers on tags `v*-rc*`:
    - Parses the version from the tag (`v2.1.0-rc1` → `2.1.0`)
    - Generates changelog from commits since the last release
    - Creates a GitHub pre-release with the changelog
@@ -197,7 +197,7 @@ This allows safe re-runs after partial failures.
 
 **File**: `.github/workflows/rc.yaml`
 
-**Triggers**: Push of tag matching `v*.*.*-rc*`
+**Triggers**: Push of tag matching `v*-rc*`
 
 **Responsibilities**:
 1. Parse version from tag
