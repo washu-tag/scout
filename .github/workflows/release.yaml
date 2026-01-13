@@ -1,0 +1,345 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 2.1.0)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Preview changelog without releasing'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: read
+  actions: read
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    outputs:
+      version_bump_exists: ${{ steps.check_commits.outputs.version_bump_exists }}
+      version_bump_sha: ${{ steps.check_commits.outputs.version_bump_sha }}
+      release_exists: ${{ steps.check_release.outputs.release_exists }}
+      reset_exists: ${{ steps.check_commits.outputs.reset_exists }}
+    steps:
+      - name: Validate version format
+        run: |
+          VERSION="${{ inputs.version }}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format. Expected X.Y.Z (e.g., 2.1.0)"
+            exit 1
+          fi
+          echo "Version format is valid: $VERSION"
+
+      - name: Generate token from GitHub App
+        id: app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app_token.outputs.token }}
+
+      - name: Check if tag already exists
+        run: |
+          if git tag -l "v${{ inputs.version }}" | grep -q .; then
+            echo "::error::Tag v${{ inputs.version }} already exists"
+            exit 1
+          fi
+          echo "Tag v${{ inputs.version }} does not exist"
+
+      - name: Check for existing commits
+        id: check_commits
+        run: |
+          VERSION="${{ inputs.version }}"
+
+          # Check for version bump commit
+          VERSION_BUMP_SHA=$(git log --oneline --grep="^Update to version $VERSION$" --format="%H" | head -1)
+          if [[ -n "$VERSION_BUMP_SHA" ]]; then
+            echo "Found existing version bump commit: $VERSION_BUMP_SHA"
+            echo "version_bump_exists=true" >> "$GITHUB_OUTPUT"
+            echo "version_bump_sha=$VERSION_BUMP_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "No existing version bump commit found"
+            echo "version_bump_exists=false" >> "$GITHUB_OUTPUT"
+            echo "version_bump_sha=" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Check for reset commit (after version bump)
+          if [[ -n "$VERSION_BUMP_SHA" ]]; then
+            RESET_SHA=$(git log --oneline --grep="^Reset to dev versions$" --format="%H" "$VERSION_BUMP_SHA..HEAD" | head -1)
+            if [[ -n "$RESET_SHA" ]]; then
+              echo "Found existing reset commit: $RESET_SHA"
+              echo "reset_exists=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "No reset commit found after version bump"
+              echo "reset_exists=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "reset_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check if release exists
+        id: check_release
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          if gh release view "v${{ inputs.version }}" &>/dev/null; then
+            echo "Release v${{ inputs.version }} already exists"
+            echo "release_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Release v${{ inputs.version }} does not exist"
+            echo "release_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Preview changelog (dry run)
+        if: inputs.dry_run
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          echo "## Changelog Preview for v${{ inputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "")
+
+          if [[ -n "$PREV_TAG" ]]; then
+            echo "Generating changelog since $PREV_TAG..." >> "$GITHUB_STEP_SUMMARY"
+
+            # Use GitHub API to generate release notes preview
+            NOTES=$(gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              "/repos/${{ github.repository }}/releases/generate-notes" \
+              -f tag_name="v${{ inputs.version }}" \
+              -f target_commitish="${{ github.sha }}" \
+              -f previous_tag_name="$PREV_TAG" \
+              --jq '.body')
+
+            echo "$NOTES" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No previous tag found. This will be the first release." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo ""
+          echo "::notice::Dry run complete. No commits, tags, or releases were created."
+
+  version-bump:
+    name: Version Bump
+    runs-on: ubuntu-latest
+    needs: validate
+    if: ${{ !inputs.dry_run && needs.validate.outputs.version_bump_exists != 'true' }}
+    outputs:
+      commit_sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - name: Generate token from GitHub App
+        id: app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app_token.outputs.token }}
+
+      - name: Configure git
+        run: |
+          git config user.name "scout-release[bot]"
+          git config user.email "scout-release[bot]@users.noreply.github.com"
+
+      - name: Update version files
+        run: |
+          bash .github/scripts/update-versions.sh "${{ inputs.version }}"
+
+      - name: Update package-lock.json
+        run: |
+          cd launchpad
+          npm install --package-lock-only
+
+      - name: Commit and push
+        id: commit
+        run: |
+          git add -A
+          git commit -m "Update to version ${{ inputs.version }}"
+          git push origin main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  wait-for-build:
+    name: Wait for Build
+    runs-on: ubuntu-latest
+    needs: [validate, version-bump]
+    if: ${{ !inputs.dry_run && always() && !cancelled() && (needs.version-bump.result == 'success' || needs.version-bump.result == 'skipped') }}
+    steps:
+      - name: Generate token from GitHub App
+        id: app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app_token.outputs.token }}
+
+      - name: Determine target commit
+        id: target
+        run: |
+          # If version bump was skipped, find the existing commit
+          if [[ "${{ needs.version-bump.result }}" == "skipped" ]]; then
+            SHA=$(git log --oneline --grep="^Update to version ${{ inputs.version }}$" --format="%H" | head -1)
+            if [[ -z "$SHA" ]]; then
+              echo "::error::Could not find version bump commit"
+              exit 1
+            fi
+          else
+            SHA="${{ needs.version-bump.outputs.commit_sha }}"
+          fi
+
+          # Get HEAD SHA to wait for build
+          git pull origin main
+          HEAD_SHA=$(git rev-parse HEAD)
+          echo "Waiting for build on commit: $HEAD_SHA"
+          echo "sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for CI workflow
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          TARGET_SHA="${{ steps.target.outputs.sha }}"
+          echo "Waiting for CI workflow to complete on $TARGET_SHA..."
+
+          # Wait up to 30 minutes for build to appear and complete
+          MAX_ATTEMPTS=60
+          SLEEP_SECONDS=30
+
+          for ((i=1; i<=MAX_ATTEMPTS; i++)); do
+            echo "Attempt $i/$MAX_ATTEMPTS..."
+
+            # Find workflow run for target SHA
+            RUN_ID=$(gh run list \
+              --workflow=ci.yaml \
+              --branch=main \
+              --json databaseId,headSha,status \
+              --jq ".[] | select(.headSha == \"$TARGET_SHA\") | .databaseId" \
+              | head -1)
+
+            if [[ -n "$RUN_ID" ]]; then
+              echo "Found workflow run: $RUN_ID"
+
+              # Wait for it to complete
+              if gh run watch "$RUN_ID" --exit-status; then
+                echo "CI workflow completed successfully"
+                exit 0
+              else
+                echo "::error::CI workflow failed"
+                exit 1
+              fi
+            fi
+
+            echo "No workflow run found yet, waiting ${SLEEP_SECONDS}s..."
+            sleep "$SLEEP_SECONDS"
+          done
+
+          echo "::error::Timed out waiting for CI workflow"
+          exit 1
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [validate, wait-for-build]
+    if: ${{ !inputs.dry_run && needs.validate.outputs.release_exists != 'true' }}
+    steps:
+      - name: Generate token from GitHub App
+        id: app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app_token.outputs.token }}
+
+      - name: Pull latest
+        run: git pull origin main
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          gh release create "v${{ inputs.version }}" \
+            --title "Scout v${{ inputs.version }}" \
+            --generate-notes \
+            --target HEAD
+
+          echo "::notice::Created release v${{ inputs.version }}"
+
+  reset-dev:
+    name: Reset to Dev Versions
+    runs-on: ubuntu-latest
+    needs: [validate, release]
+    if: ${{ !inputs.dry_run && always() && !cancelled() && (needs.release.result == 'success' || needs.release.result == 'skipped') && needs.validate.outputs.reset_exists != 'true' }}
+    steps:
+      - name: Generate token from GitHub App
+        id: app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app_token.outputs.token }}
+
+      - name: Pull latest
+        run: git pull origin main
+
+      - name: Configure git
+        run: |
+          git config user.name "scout-release[bot]"
+          git config user.email "scout-release[bot]@users.noreply.github.com"
+
+      - name: Reset to dev versions
+        run: |
+          bash .github/scripts/update-versions.sh dev
+
+      - name: Update package-lock.json
+        run: |
+          cd launchpad
+          npm install --package-lock-only
+
+      - name: Commit and push
+        run: |
+          git add -A
+
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit (already at dev versions)"
+          else
+            git commit -m "Reset to dev versions"
+            git push origin main
+            echo "::notice::Reset to dev versions complete"
+          fi
