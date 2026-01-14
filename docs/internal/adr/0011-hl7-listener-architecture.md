@@ -96,6 +96,25 @@ Use **Kafka** as durable buffer between listener and extractor:
 
 ### hl7-batcher Integration
 
+**Why batching?** Individual HL7 messages are small (typically a few KB). Writing ~220k individual files per day to object storage creates:
+- Poor filesystem performance with lots of small files
+- Excessive S3 API calls, more per-object overhead and cost
+
+Batching aggregates messages into ZIP files, reducing file count while preserving individual message boundaries. Users can still extract individual HL7 messages from ZIPs as needed.
+
+**Batching configuration:**
+
+The POC demonstrates two options for batch completion:
+
+| Parameter | Example Value | Description |
+|-----------|---------------|-------------|
+| `completionSize` | 100 | Batch closes after N messages |
+| `completionTimeout` | 30000 | Batch closes after N seconds of **inactivity** (no new messages) |
+
+There was a suggestion for batching by file size. There is no clear built-in Camel option for size-based batching. Implementing this would require custom Camel `completionPredicate` to track aggregated size. This was not tested in the POC but should be considedred. The exact batching stragegy is adjustable later.
+
+** hl7-batcher Integration example: **
+
 Consumes from Kafka, batches messages into ZIPs, uploads to S3, publishes manifest to Kafka:
 
 ```yaml
@@ -182,7 +201,29 @@ Running the HL7 listener in the cloud (e.g., Azure) would provide durability ben
 - **Higher availability** than on-prem K3s cluster which experiences periodic outages
 - **Isolated infrastructure** reduces risk of local network issues affecting HL7 ingestion
 
-However, our air-gapped deployment prevents this approach. The on-prem network cannot be opened to external cloud services.
+However, the current air-gapped deployment prevents direct cloud connectivity. A **VPN** would be required to enable this architecture.
+
+**Network architecture options:**
+
+| Option | Description | Complexity |
+|--------|-------------|------------|
+| **Fully on-prem** | All components run on-prem K3s | Low |
+| **Hybrid (cloud listener)** | hl7-listener + Kafka in cloud, VPN to on-prem Scout | Medium |
+| **Hybrid (cloud listener + batcher)** | hl7-listener + Kafka + batcher in cloud, VPN to on-prem Scout | Medium-High |
+
+**VPN requirements for hybrid deployment:**
+
+If pursuing cloud deployment, a site-to-site VPN would need to connect:
+- Cloud hl7-listener ← HL7 interface engine for MLLP traffic
+- Cloud Kafka/S3 → On-prem Scout (for hl7-transformer to read batches, grafana/prometheus to read metrics, postgres for status tracking)
+
+**Considerations:**
+- Adds operational complexity
+- Need small amount of IT involvement to establish/maintain VPN
+- Tracking messages across network boundary and clusters adds complexity
+- Should we batch message on-prem or in cloud? This needs evaluation.
+
+**Recommendation:** Two pronged approach, first implement core Camel K + Kafka architecture on-prem. In parallel, work on cloud deployment spike (VPN and additional Ansible/Terraform(?)) to evaluate feasibility. If successful, consider moving listener and/or batcher to cloud before moving to test environment.
 
 ## Architecture
 
@@ -216,25 +257,53 @@ HL7 Source ──► hl7-listener ──► Kafka ──► hl7-batcher ──�
 | hl7log-extractor | No changes needed for real-time flow; retained for legacy file-based ingestion |
 | hl7-transformer | Trigger mechanism TBD (see hl7-transformer Integration section); write ADT messages to `adt_messages` table |
 | Delta Lake schema | Add `adt_messages` table for raw ADT storage; future phases add patient_id_mapping table |
+| Ingest status database | Adapt schema for streaming |
 
-### hl7-transformer Integration (Investigation Required)
+### Monitoring and Pipeline Tracking
 
-The hl7-batcher publishes batch manifest paths to Kafka (`hl7-batches` topic). A mechanism is needed to trigger the hl7-transformer to process these batches. Options under investigation:
+The current Scout deployment uses a postgres ingest status database to track individual messages through pipeline stages. This provides Grafana dashboard visibility into message processing status and failures.
 
-| Option | Description | Pros | Cons |
-|--------|-------------|------|------|
-| **Spark Structured Streaming** | Transformer runs continuously, consumes from Kafka | Low latency, eliminates Temporal | Always-running job, requires refactor |
-| **Temporal + Kafka Trigger** | Kafka consumer triggers Temporal workflow | Minimal transformer changes | Additional component, higher latency |
-| **Kubernetes CronJob** | Scheduled job triggers transformer | Simple, no new dependencies | Fixed latency, not event-driven |
-| **Camel K → Temporal API** | Camel K route triggers Temporal | Keeps logic in Camel K | Still requires Temporal |
+For the streaming architecture, we will adapt this approach:
 
-**Recommendation:** Further investigation required. The choice depends on whether to keep or eliminate Temporal from the real-time ingestion flow.
+**Pipeline stages to track:**
+| Stage | Component | Description |
+|-------|-----------|-------------|
+| `received` | hl7-listener | Message received via MLLP, written to Kafka |
+| `staged` | hl7-batcher | Message uploaded to S3 |
+| `ingested` | hl7-transformer | Message written to Delta Lake |
+| `failed` | Any | Processing failed with error details |
 
-## Database End State
+**Observability stack:**
+- **Postgres**: Individual message tracking, error details, Grafana dashboards
+- **Prometheus**: Kafka metrics via Strimzi (lag, throughput, partition offsets)
+- **Prometheus**: Camel K route metrics (message counts, latencies, success/failure rates)
+- **Grafana**: Dashboards query both postgres (message fate) and Prometheus (system health)
 
-### The Problem
+**Implementation consideration:** The hl7-listener could write `received` status to postgres before or after writing to Kafka and sending ACK. Writing to postgres before Kafka adds latency to the ACK path. If postgres is unavailable, the route fails and no ACK is sent—the message remains in the upstream queue for retry. This behavior may be desirable (don't ACK what we can't track).
 
-**Report Updates:** Same report arrives multiple times as status changes:
+### hl7-transformer Integration
+
+The POC hl7-batcher publishes batch manifest paths to Kafka (`hl7-batches` topic). A mechanism is needed to trigger the hl7-transformer to process these batches.
+
+**Options:**
+
+| Option | Description | Effort | Risk |
+|--------|-------------|--------|------|
+| **Spark Structured Streaming** | Transformer runs continuously, consumes directly from Kafka | Med/High (refactor) | High |
+| **Temporal trigger** | Kafka consumer or Camel K route triggers Temporal workflow | Low | Low |
+| **Kubernetes CronJob** | Scheduled job polls for new batches | Low | Low |
+
+- **Spark Structured Streaming** eliminates Temporal from the real-time flow entirely. The transformer becomes a long-running job that continuously consumes from Kafka and writes to Delta Lake. This offers lower latency but requires significant refactoring of the current batch-oriented transformer code.
+
+**Recommendation:** Spike on Spark Structured Streaming to evaluate effort and risk. If feasible, this provides the cleanest real-time architecture. If not, implement a Temporal trigger with minimal changes to existing transformer code.
+
+## Data Model Considerations
+
+This section identifies some data modeling challenges we will encounter.
+
+### Known Challenges
+
+**Report Updates:** The same report arrives multiple times as its status changes:
 
 ```
 08:00  ORU^R01  Report 123  Status: P (Preliminary)
@@ -246,33 +315,19 @@ The hl7-batcher publishes batch manifest paths to Kafka (`hl7-batches` topic). A
 
 ```
 ADT^A40: Patient 78901 merged into Patient 78900
-→ Historical reports filed under 78901 are orphaned
+→ Historical reports filed under 78901 become orphaned
 → Query for Patient 78900 misses historical data
 ```
 
-### Phased Approach
+### Preliminary Approach
 
-**v1: Accept Duplicate Reports , Ignore ADTs (current state)**
+**Phase 1 (v1):** Ingest all ORU^R01 messages as new rows. Users may see multiple versions of the same report (Preliminary, Final, Corrected). Store ADT messages for future processing. Close to what we currently do except with new table for ADT messages to be processed later.
 
-- Ingest all ORU^R01 messages as new rows
-- Users may see multiple rows per report (Preliminary, Final, Corrected versions)
+**Phase 2 (v2):** Handle report updates. We are currently working on adding a view that surfaces the "latest" version. This is being developed seperately from the real-time listener.
 
-**v2: Handle Report Updates**
+**Phase 3 (v3):** Handle patient merges from ADT^A40. Likely requires a patient ID mapping table to link old MRNs to surviving MRNs.
 
-- Add `reports_latest` view with status hierarchy (Corrected > Final > Preliminary)
-- Users query view for current report version, base table for full history
-
-**v3: Handle Patient Merges**
-
-- New table: `patient_id_mapping` populated from ADT^A40 messages
-- Maps old MRN → surviving MRN with effective date
-- Views and queries join through mapping table for accurate patient-centric results
-
-**Future: Patient Info Table**
-
-- Dedicated table for patient demographics sourced from ADT messages
-- Separate from reports table, linked by patient identifiers
-- Scope TBD - need to research exact contents of ADT^A08, A31, A04, A01, A28
+**Future:** Dedicated patient demographics table sourced from ADT messages (A08, A31, A04, A01, A28). Scope TBD pending research into message contents.
 
 ## Production Considerations
 
