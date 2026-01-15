@@ -80,7 +80,7 @@ Developer                    GitHub                        CI
     |<-- Release complete ------|                           |
 ```
 
-> **Note**: The reset to dev versions step runs regardless of whether the build succeeded or failed. See [Design Decision: Reset Timing](#design-decision-reset-timing) for rationale.
+> **Note**: The reset to dev versions step runs regardless of whether the build succeeded or failed. The only exception is if the release job itself fails (e.g., `gh release create` errors) — in that case, reset is skipped to allow a simple retry. See [Design Decision: Reset Timing](#design-decision-reset-timing) for rationale.
 
 ### Triggering a Release
 
@@ -126,10 +126,6 @@ Because the tag is created at the end of the workflow (after everything else suc
 - Nothing has changed
 - **Recovery**: Fix the issue, re-run the workflow
 
-### Workflow Fails After Version Bump, Before Release
-- Version bump commit exists on `main`, but no tag or release
-- **Recovery**: Re-run the workflow. It searches git history for the version bump commit and skips to waiting for the build.
-
 ### Build Fails Due to a Bug
 - Version bump commit exists, but build failed
 - Reset to dev versions has already happened (see [Design Decision: Reset Timing](#design-decision-reset-timing))
@@ -137,6 +133,15 @@ Because the tag is created at the end of the workflow (after everything else suc
   - Create a new version bump commit (since the previous one is no longer at HEAD)
   - Wait for the build on HEAD to succeed
   - Create the release and tag pointing to HEAD (which includes your fixes)
+  - Reset to dev versions
+
+### Release Creation Fails (Rare)
+- Version bump commit exists on `main`, build succeeded, but `gh release create` failed
+- Reset has **not** happened (reset only runs when release succeeds or is skipped, not when it fails)
+- **Recovery**: Re-run the workflow. It will:
+  - Skip version bump (reuses the existing commit)
+  - Find the existing successful build
+  - Retry release creation
   - Reset to dev versions
 
 ### Workflow Fails After Release, Before Reset
@@ -147,9 +152,9 @@ Because the tag is created at the end of the workflow (after everything else suc
 ### Idempotent Design
 
 The workflow checks state before each step:
-- Searches git history for version bump commit → skips version bump if found
-- Checks if release exists → skips release creation if so
-- Checks if reset to dev versions exists → skips reset if so
+- **Version bump**: Skips if a version bump commit exists AND no reset commit followed it. Creates a new bump if a reset exists (meaning we need to start fresh after a previous build failure).
+- **Release**: Skips if the GitHub release already exists.
+- **Reset**: Skips if a reset commit already exists after the version bump.
 
 This allows safe re-runs after partial failures without manual intervention.
 
@@ -170,6 +175,8 @@ After the version bump commit is pushed, the reset to dev versions happens regar
 3. Reset to dev versions happens anyway
 4. `main` is back to dev versions
 5. To release, you must re-run the workflow (which creates a new version bump)
+
+**Exception**: If the release job itself fails (not skipped due to build failure, but actually runs and fails), reset does not happen. This allows a simple retry that reuses the existing version bump commit and successful build. This is a rare scenario that would only occur if `gh release create` fails due to a transient error.
 
 **Advantages:**
 - The repository stays in a consistent, expected state (dev versions)

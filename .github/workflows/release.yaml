@@ -291,6 +291,12 @@ jobs:
     name: Reset to Dev Versions
     runs-on: ubuntu-latest
     needs: [validate, release]
+    # Run this job if:
+    # - release succeeded (normal completion), OR
+    # - release was skipped (upstream job failed, e.g., build failed)
+    # Does NOT run if release actually failed (e.g., gh release create error),
+    # allowing a retry that reuses the existing version bump commit.
+    # always() is required for the same reason as wait-for-build (see comment above).
     if: ${{ !inputs.dry_run && always() && !cancelled() && (needs.release.result == 'success' || needs.release.result == 'skipped') && needs.validate.outputs.reset_exists != 'true' }}
     steps:
       - name: Generate token from GitHub App
