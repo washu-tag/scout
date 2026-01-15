@@ -142,6 +142,8 @@ jobs:
     name: Version Bump
     runs-on: ubuntu-latest
     needs: validate
+    # Create version bump if: (1) no bump exists, OR (2) a bump exists but was
+    # followed by a reset (meaning a previous release failed and we're retrying)
     if: ${{ !inputs.dry_run && (needs.validate.outputs.version_bump_exists != 'true' || needs.validate.outputs.reset_exists == 'true') }}
     outputs:
       commit_sha: ${{ steps.commit.outputs.sha }}
