@@ -205,18 +205,6 @@ jobs:
       - name: Determine target commit
         id: target
         run: |
-          # If version bump was skipped, find the existing commit
-          if [[ "${{ needs.version-bump.result }}" == "skipped" ]]; then
-            SHA=$(git log --oneline --grep="^Update to version ${{ inputs.version }}$" --format="%H" | head -1)
-            if [[ -z "$SHA" ]]; then
-              echo "::error::Could not find version bump commit"
-              exit 1
-            fi
-          else
-            SHA="${{ needs.version-bump.outputs.commit_sha }}"
-          fi
-
-          # Get HEAD SHA to wait for build
           git pull origin main
           HEAD_SHA=$(git rev-parse HEAD)
           echo "Waiting for build on commit: $HEAD_SHA"
