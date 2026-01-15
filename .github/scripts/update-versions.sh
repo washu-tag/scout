@@ -51,8 +51,17 @@ update_file() {
     fi
 
     # BSD sed (macOS) requires a backup extension with -i; GNU sed (Linux) doesn't.
-    # Using -i.bak then removing the backup works on both.
+    # Using -i.bak creates a backup we can compare against to verify the change.
     sed -i.bak -E "s|$pattern|$replacement|" "$file"
+
+    # Fail if sed didn't change anything (pattern may not have matched)
+    if cmp -s "$file" "${file}.bak"; then
+        echo "  ERROR: No changes made to $file for $description"
+        echo "         Pattern may not have matched: $pattern"
+        rm -f "${file}.bak"
+        exit 1
+    fi
+
     rm -f "${file}.bak"
     echo "  - $description: $file"
 }
