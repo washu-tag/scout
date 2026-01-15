@@ -50,7 +50,8 @@ update_file() {
         exit 1
     fi
 
-    # Use sed with extended regex (-E) for portability
+    # BSD sed (macOS) requires a backup extension with -i; GNU sed (Linux) doesn't.
+    # Using -i.bak then removing the backup works on both.
     sed -i.bak -E "s|$pattern|$replacement|" "$file"
     rm -f "${file}.bak"
     echo "  - $description: $file"

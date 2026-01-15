@@ -187,6 +187,8 @@ jobs:
     name: Wait for Build
     runs-on: ubuntu-latest
     needs: [validate, version-bump]
+    # always() is required so this job runs even when version-bump is skipped;
+    # without it, the 'skipped' result check would never be evaluated
     if: ${{ !inputs.dry_run && always() && !cancelled() && (needs.version-bump.result == 'success' || needs.version-bump.result == 'skipped') }}
     steps:
       - name: Generate token from GitHub App
