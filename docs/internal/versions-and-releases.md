@@ -65,19 +65,22 @@ Developer                    GitHub                        CI
     |                           |     (triggered by commit) |
     |                           |          |                |
     |                           |          v                |
-    |                           |     Wait for build        |
-    |                           |          |                |
-    |                           |          v                |
-    |                           |     Create release        |
-    |                           |     (auto-gen changelog)  |
-    |                           |     Create vX.Y.Z tag     |
-    |                           |          |                |
+    |                           |     Wait for build -------+---> [Build fails]
+    |                           |          |                |           |
+    |                           |          v                |           |
+    |                           |     Create release        |           |
+    |                           |     (auto-gen changelog)  |           |
+    |                           |     Create vX.Y.Z tag     |           |
+    |                           |          |                |           |
+    |                           |          +<---------------+-----------+
     |                           |          v                |
     |                           |     Reset to dev versions |
     |                           |     Push to main          |
     |                           |                           |
     |<-- Release complete ------|                           |
 ```
+
+> **Note**: The reset to dev versions step runs regardless of whether the build succeeded or failed. See [Design Decision: Reset Timing](#design-decision-reset-timing) for rationale.
 
 ### Triggering a Release
 
@@ -93,9 +96,9 @@ Developer                    GitHub                        CI
 2. **Searches git history** for an existing version bump commit (for idempotent re-runs)
 3. **Updates version files** and commits the version bump to `main` (if not already done)
 4. **Waits for the Build Workflow** to complete on HEAD (builds versioned artifacts)
-5. **Creates the GitHub release** with auto-generated changelog
-6. **Creates the `vX.Y.Z` tag** pointing at HEAD (the commit that was built)
-7. **Resets to dev versions** by running the update script and committing
+5. **Creates the GitHub release** with auto-generated changelog (if build succeeded)
+6. **Creates the `vX.Y.Z` tag** pointing at HEAD (if build succeeded)
+7. **Resets to dev versions** by running the update script and committing (always, regardless of build result)
 
 ### Result
 
@@ -129,9 +132,9 @@ Because the tag is created at the end of the workflow (after everything else suc
 
 ### Build Fails Due to a Bug
 - Version bump commit exists, but build failed
-- **Recovery**: Push fix commits to `main`. Once the build passes, re-run the release workflow. It will:
-  - Find the existing version bump commit in git history
-  - Skip creating a new version bump
+- Reset to dev versions has already happened (see [Design Decision: Reset Timing](#design-decision-reset-timing))
+- **Recovery**: Push fix commits to `main`, then re-run the release workflow. It will:
+  - Create a new version bump commit (since the previous one is no longer at HEAD)
   - Wait for the build on HEAD to succeed
   - Create the release and tag pointing to HEAD (which includes your fixes)
   - Reset to dev versions
@@ -153,6 +156,59 @@ This allows safe re-runs after partial failures without manual intervention.
 ### Important Notes
 
 - The **tag points to HEAD** at release time, which may be the version bump commit or a later fix commit. This ensures the tag references the exact code that was built and released.
+
+## Design Decision: Reset Timing
+
+The workflow always resets to dev versions after the version bump, regardless of whether the build and release succeeded. This is a deliberate design choice with trade-offs worth understanding.
+
+### Current Behavior (Always Reset)
+
+After the version bump commit is pushed, the reset to dev versions happens regardless of the build outcome. If the build fails:
+
+1. Version bump commit is on `main`
+2. Build fails
+3. Reset to dev versions happens anyway
+4. `main` is back to dev versions
+5. To release, you must re-run the workflow (which creates a new version bump)
+
+**Advantages:**
+- The repository stays in a consistent, expected state (dev versions)
+- Simpler mental model: dev versions are always the "normal" state on `main`
+- No ambiguity about what versions are currently on `main`
+
+**Disadvantages:**
+- Re-running the release requires creating a new version bump commit
+- If you push fixes to `main`, they won't be built with release versions until you re-run the workflow
+
+### Alternative: Reset Only After Success
+
+An alternative approach would reset to dev versions only after the release succeeds:
+
+1. Version bump commit is on `main`
+2. Build fails
+3. `main` stays at release versions
+4. You push a fix commit
+5. Build runs again with release versions
+6. Re-run the workflow, which skips to waiting for the build, then releases
+
+**Advantages:**
+- Any fix commits are immediately built with release versions
+- The moment the build succeeds, you have versioned artifacts ready
+- Re-running the workflow just waits for an existing successful build
+
+**Disadvantages:**
+- `main` stays at release versions during the "broken" period, which could be confusing
+- Multiple commits may have release versions in their files
+- If you abandon the release, you must manually reset to dev versions
+
+### Rationale for Current Choice
+
+The current "always reset" behavior was chosen because:
+- It keeps the repository in a predictable state
+- It avoids the scenario where `main` has release versions for an extended period
+- The extra version bump commit on retry is a minor cost for clearer repository state
+
+Both approaches are valid. If the alternative behavior is preferred, the `reset-dev` job condition could be changed to only run when `release.result == 'success'` (removing the `|| needs.release.result == 'skipped'` clause).
 
 ## CI Components
 
