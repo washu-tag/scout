@@ -68,7 +68,7 @@ jobs:
           VERSION="${{ inputs.version }}"
 
           # Check for version bump commit
-          VERSION_BUMP_SHA=$(git log --oneline --grep="^Update to version $VERSION$" --format="%H" | head -1)
+          VERSION_BUMP_SHA=$(git log --grep="^Update to version $VERSION$" --format="%H" | head -1)
           if [[ -n "$VERSION_BUMP_SHA" ]]; then
             echo "Found existing version bump commit: $VERSION_BUMP_SHA"
             echo "version_bump_exists=true" >> "$GITHUB_OUTPUT"
@@ -81,7 +81,7 @@ jobs:
 
           # Check for reset commit (after version bump)
           if [[ -n "$VERSION_BUMP_SHA" ]]; then
-            RESET_SHA=$(git log --oneline --grep="^Reset to dev versions$" --format="%H" "$VERSION_BUMP_SHA..HEAD" | head -1)
+            RESET_SHA=$(git log --grep="^Reset to dev versions$" --format="%H" "$VERSION_BUMP_SHA..HEAD" | head -1)
             if [[ -n "$RESET_SHA" ]]; then
               echo "Found existing reset commit: $RESET_SHA"
               echo "reset_exists=true" >> "$GITHUB_OUTPUT"
