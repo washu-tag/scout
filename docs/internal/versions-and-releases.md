@@ -212,8 +212,6 @@ Both approaches are valid. If the alternative behavior is preferred, the `reset-
 
 ## CI Components
 
-> **Note**: The CI workflows described below are planned but not yet implemented.
-
 ### 1. Build Workflow (Existing, Unchanged)
 
 **File**: Existing build workflows
