@@ -87,6 +87,11 @@
               port: 9092
               type: internal
               tls: false
+          metricsConfig:
+            type: strimziMetricsReporter
+            values:
+              allowList:
+                - '.*'
           config:
             offsets.topic.replication.factor: 1
             transaction.state.log.replication.factor: 1
@@ -182,6 +187,10 @@
           registry:
             address: '{{ camel_k_registry_address }}'
             insecure: '{{ camel_k_registry_insecure }}'
+        traits:
+          prometheus:
+            enabled: true
+            podMonitor: false
 
 - name: Wait for IntegrationPlatform to be ready
   kubernetes.core.k8s_info:
@@ -235,6 +244,9 @@
             configuration:
               enabled: true
               nodePort: '{{ hl7_listener_service_type == "NodePort" }}'
+          prometheus:
+            enabled: true
+            podMonitor: false
         flows:
           - route:
               id: hl7Listener
@@ -464,6 +476,9 @@
           mount:
             configs:
               - 'secret:{{ hl7_batcher_name }}-s3-creds'
+          prometheus:
+            enabled: true
+            podMonitor: false
         flows:
           - beans:
               - name: zipAggregator
@@ -556,6 +571,9 @@
               requestMemory: '{{ hl7_test_sender_memory_request }}'
               limitCPU: '{{ hl7_test_sender_cpu_limit }}'
               limitMemory: '{{ hl7_test_sender_memory_limit }}'
+          prometheus:
+            enabled: true
+            podMonitor: false
         flows:
           - route:
               id: sendTestHl7
