@@ -1,0 +1,7 @@
+---
+- name: Install HL7 Listener (Kafka + Camel K)
+  hosts: server
+  gather_facts: false
+  environment: '{{ cluster_k8s_environment }}'
+  roles:
+    - role: hl7-listener
