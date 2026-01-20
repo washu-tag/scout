@@ -377,7 +377,7 @@ Camel K operator requires a container registry to push built Integration images:
 | Option | Description | Deployment |
 |--------|-------------|------------|
 | **ttl.sh** | Anonymous ephemeral registry (POC default) | ❌ Not for production, useful for testing |
-| **Harbor on staging** | Use existing staging Harbor | ❌ prod can reach staging |
+| **Harbor on staging** | Use existing staging Harbor | prod can push to staging, would require security analysis |
 | **Local registry** | IT managed internal registry | May already exists |
 | **Cloud registry (ACR)** | Azure Container Registry or similar | Would need to be on cloud |
 | **Pre-built images** | Build images externally, deploy as Deployments | Loses Camel K operator benefits |
