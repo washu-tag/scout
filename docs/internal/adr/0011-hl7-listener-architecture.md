@@ -470,20 +470,6 @@ Validate end-to-end message flow before production deployment.
 | On-prem infrastructure outages | Medium | High | Kafka provides buffering; request replay as last resort |
 | ADT^A40 merge complexity | High | Medium | Defer to v3; research thoroughly before implementing |
 
-## Implementation Phases
-
-| Phase | Scope | Status |
-|-------|-------|--------|
-| **0: Design** | Finalize architecture | ✅ Complete |
-| **1: POC** | Camel K listener + batcher, Kafka, S3 integration | ✅ Complete |
-| **2: hl7-transformer Integration** | Decide and implement Kafka → hl7-transformer trigger | Pending |
-| **3: Internal Testing** | Automated tests for hl7-listener components | Pending |
-| **4: Clinical Test Environment** | Connect to clinical test environment HL7 feed | Pending |
-| **5: Production** | Production connection, monitoring, alerting | Pending |
-| **6: Updates (v2)** | Handle report status updates with `reports_latest` view | Pending |
-| **7: Merges (v3)** | Patient ID mapping table for ADT^A40 processing | Pending |
-| **8: Patient Info** | Dedicated patient demographics table from ADT messages | Pending |
-
 ## References
 
 - [Apache Camel K GitHub](https://github.com/apache/camel-k)
