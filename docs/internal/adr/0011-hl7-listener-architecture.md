@@ -414,57 +414,11 @@ Test infrastructure:
 - [ ] Kafka configuration - what topics, how many partitions, retention settings?
 - [ ] hl7-transformer trigger mechanism - which option to pursue?
 
-## Test Plan
-
-### Goal
-
-Validate end-to-end message flow before production deployment.
-
-### POC Validation (Complete)
-
-- [x] Deploy Camel K operator to cluster
-- [x] Deploy Strimzi Kafka operator and cluster
-- [x] Create Kafka topics: `hl7-messages`, `hl7-batches`
-- [x] Apply `hl7-listener` Integration CR
-- [x] Apply `hl7-batcher` Integration CR
-- [x] Apply `hl7-test-sender` Integration CR (for testing)
-- [x] Validate message flow: listener → Kafka → batcher → S3 → Kafka manifest
-
-### Internal Testing (Pending)
-
-- [ ] Automated unit tests for Camel K integrations
-- [ ] Integration tests with test Kafka cluster
-- [ ] End-to-end tests with synthetic HL7 messages
-- [ ] Failure scenario tests (component restarts, network issues)
-- [ ] Performance/load testing with expected message volumes
-
-### Hospital Test Environment (Pending)
-
-- [ ] Connect hl7-listener to clinical test environment HL7 feed
-- [ ] Validate message flow with real HL7 messages:
-  - Messages received and ACKs sent correctly
-  - No upstream queue backup
-  - Messages appear in Kafka with correct parsing
-  - Batcher creates ZIPs with proper structure
-  - ZIPs written to object storage
-- [ ] Validate end-to-end to Delta Lake (requires hl7-transformer integration)
-- [ ] Test failure scenarios:
-  - Listener restart - verify no message loss (Kafka durability)
-  - Batcher restart - verify Kafka replay works
-  - Transformer failure - verify retry mechanism works
-
-### Success Criteria
-
-- All messages ACK'd promptly (no upstream queue backup)
-- ORU data lands in Delta Lake with correct parsing
-- System recovers from component restarts without data loss
-- End-to-end latency within acceptable range (minutes, not hours)
-
 ## Risks
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
-| Camel MLLP edge cases | Low | High | Thorough testing with real messages; fallback to hl7-to-kafka (or fork) |
+| Camel MLLP edge cases | Low | High | Thorough testing with real messages |
 | Kafka operational complexity | Medium | Medium | Document runbooks |
 | On-prem infrastructure outages | Medium | High | Kafka provides buffering; request replay as last resort |
 | ADT^A40 merge complexity | High | Medium | Defer to v3; research thoroughly before implementing |
