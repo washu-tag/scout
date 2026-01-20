@@ -8,7 +8,7 @@ from .sparkutils import (
     create_table_from_df,
 )
 
-from pyspark.sql import functions as F
+from pyspark.sql import functions as F, Column
 
 
 def curated_table(base_report_table_name: str) -> DerivativeTable:
@@ -28,6 +28,12 @@ def curate_silver_table(batch_df, spark, table_name):
     if filtered_df is None:
         return
 
+    def extract_patient_id(id_column: str) -> Column:
+        return F.when(
+            F.col(id_column).isNotNull(),
+            F.concat_ws("_", F.lit(id_column), F.col(id_column)),
+        )
+
     curated_df = (
         filtered_df.withColumnRenamed("source_file", "primary_report_identifier")
         .withColumns(
@@ -38,9 +44,25 @@ def curate_silver_table(batch_df, spark, table_name):
                 "filler_order_number": empty_string_coalesce(
                     "orc_3_filler_order_number", "obr_3_filler_order_number"
                 ),
-                "primary_patient_identifier": F.expr(
-                    "uuid()"
-                ),  # TODO : this obviously doesn't work
+                "primary_patient_identifier": F.when(
+                    F.col("version_id") == "2.7",
+                    F.coalesce(
+                        *[
+                            extract_patient_id(pat_id)
+                            for pat_id in ["epic_mrn", "mbmc_mr", "empi_mr"]
+                        ]
+                    ),
+                )
+                .when(
+                    F.col("version_id") == "2.4",
+                    F.coalesce(
+                        *[
+                            extract_patient_id(f"{authority}_mr")
+                            for authority in ["bjh", "bjwc", "slch"]
+                        ]
+                    ),
+                )
+                .otherwise(extract_patient_id("mpi")),
             }
         )
         .withColumns(
@@ -54,6 +76,7 @@ def curate_silver_table(batch_df, spark, table_name):
             "obr_2_placer_order_number",
             "orc_3_filler_order_number",
             "obr_3_filler_order_number",
+            "filler_order_number",
         )
     )
 

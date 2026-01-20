@@ -1,8 +1,7 @@
-from dataclasses import dataclass, field
-from typing import Callable, Optional, Dict
+from typing import Dict
 from temporalio import activity
 
-from pyspark.sql import SparkSession, DataFrame, Window
+from pyspark.sql import SparkSession
 
 from .curatedtable import curated_table
 from .diagnosistable import diagnosis_table
