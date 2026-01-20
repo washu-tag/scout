@@ -290,12 +290,11 @@ The POC hl7-batcher publishes batch manifest paths to Kafka (`hl7-batches` topic
 | Option | Description | Effort | Risk |
 |--------|-------------|--------|------|
 | **Spark Structured Streaming** | Transformer runs continuously, consumes directly from Kafka | Med/High (refactor) | High |
-| **Temporal trigger** | Kafka consumer or Camel K route triggers Temporal workflow | Low | Low |
-| **Kubernetes CronJob** | Scheduled job polls for new batches | Low | Low |
+| **Temporal trigger** | Kafka consumer, Camel K route, or Temporal scheduled job triggers transformer workflow | Low | Low |
 
 - **Spark Structured Streaming** eliminates Temporal from the real-time flow entirely. The transformer becomes a long-running job that continuously consumes from Kafka and writes to Delta Lake. This offers lower latency but requires significant refactoring of the current batch-oriented transformer code.
 
-**Recommendation:** Spike on Spark Structured Streaming to evaluate effort and risk. If feasible, this provides the cleanest real-time architecture. If not, implement a Temporal trigger with minimal changes to existing transformer code.
+**Recommendation:** Spike on Spark Structured Streaming to evaluate effort and risk. If feasible, this provides the cleanest real-time architecture. If not, implement one of Temporal triggers with minimal changes to existing transformer code to read from S3 based on Kafka manifests.
 
 ## Data Model Considerations
 
