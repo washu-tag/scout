@@ -77,6 +77,20 @@ This matches the current approach for the staging node.
 
 **Rationale**: Multi-cluster monitoring (centralized Grafana with distributed Prometheus, cross-cluster scraping, etc.) is a complex topic that warrants its own ADR. Deferring allows progress on core Ollama sharing functionality without blocking on monitoring architecture decisions.
 
+### Decision 6: Network-Level Access Control for Shared Ollama
+
+Ollama's API has no built-in authentication. Access control for shared Ollama clusters is enforced through **network-level firewall rules**, not application-level authentication.
+
+Scout's authentication infrastructure (Keycloak, oauth2proxy) runs within Scout clusters and cannot practically protect an external Ollama cluster. Cross-cluster authentication adds complexity, and multiple Scout instances sharing one Ollama cluster would require arbitrating which Keycloak authorizes requests.
+
+**Requirements** (configured externally, not by Ansible):
+- Firewall rules restrict Ollama cluster access to authorized Scout cluster IPs only
+- Shared Ollama is not exposed to VPN or broader internal networks
+
+**MCP tools placement**: MCP tools (e.g., Trino query tool) should run on the Scout cluster where they benefit from Scout's authentication layer, not on the shared Ollama cluster.
+
+**Rationale**: Network-level isolation is simpler and more robust than cross-cluster authentication. Keeping MCP tools on Scout prevents unauthorized PHI access if firewall rules are misconfigured.
+
 ## Consequences
 
 ### Positive
@@ -91,6 +105,7 @@ This matches the current approach for the staging node.
 1. **Cross-cluster dependency**: Scout depends on external Ollama availability
 2. **No model isolation**: All consumers see same model versions (accepted trade-off)
 3. **Monitoring gap**: No visibility into Ollama cluster health initially
+4. **External firewall dependency**: Security relies on network-level controls configured outside Ansible
 
 ## Layer Classification (per ADR 0011)
 
