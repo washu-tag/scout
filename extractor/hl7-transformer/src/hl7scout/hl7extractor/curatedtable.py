@@ -53,7 +53,7 @@ def curate_silver_table(batch_df, spark, table_name):
                     F.col("version_id") == "2.7",
                     F.coalesce(
                         *[
-                            extract_patient_id(pat_id)
+                            extract_patient_id(pat_id, filtered_df)
                             for pat_id in ["epic_mrn", "mbmc_mr", "empi_mr"]
                         ]
                     ),
@@ -62,12 +62,12 @@ def curate_silver_table(batch_df, spark, table_name):
                     F.col("version_id") == "2.4",
                     F.coalesce(
                         *[
-                            extract_patient_id(f"{authority}_mr")
+                            extract_patient_id(f"{authority}_mr", filtered_df)
                             for authority in ["bjh", "bjwc", "slch"]
                         ]
                     ),
                 )
-                .otherwise(extract_patient_id("mpi")),
+                .otherwise(extract_patient_id("mpi", filtered_df)),
             }
         )
         .withColumns(
