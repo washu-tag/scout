@@ -29,15 +29,13 @@ def curate_silver_table(batch_df, spark, table_name):
         return
 
     def extract_patient_id(id_column: str, df: DataFrame) -> Column:
-        def defensive_null_check():
-            if id_column in df.columns:
-                return F.col(id_column).isNotNull()
-            return F.lit(False)
-
-        return F.when(
-            defensive_null_check(),  # particular patient id may not have been seen yet
-            F.concat_ws("_", F.lit(id_column), F.col(id_column)),
-        )
+        if id_column in df.columns:
+            return F.when(
+                F.col(id_column).isNotNull(),
+                F.concat_ws("_", F.lit(id_column), F.col(id_column)),
+            )
+        else:  # particular patient id may not have been seen yet
+            return F.lit(None)
 
     curated_df = (
         filtered_df.withColumnRenamed("source_file", "primary_report_identifier")
