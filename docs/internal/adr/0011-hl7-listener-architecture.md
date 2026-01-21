@@ -1,6 +1,6 @@
 # ADR 0011: Real-Time HL7 Listener Architecture
 
-**Date:** 2025-01-09
+**Date:** 2025-01
 **Status:** Proposed
 **Decision Owner:** TAG Team
 
