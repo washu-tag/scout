@@ -1,7 +1,7 @@
 # ADR 0011: Deployment Portability via Layered Architecture and Service-Mode Configuration
 
 **Date**: 2026-01  
-**Status**: Proposed  
+**Status**: Accepted  
 **Decision Owner**: TAG Team
 
 ## Context
