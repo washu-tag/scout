@@ -86,6 +86,7 @@ Scout's authentication infrastructure (Keycloak, oauth2proxy) runs within Scout 
 **Requirements** (configured externally, not by Ansible):
 - Firewall rules restrict Ollama cluster access to authorized Scout cluster IPs only
 - Shared Ollama is not exposed to VPN or broader internal networks
+- TLS certificates must be provided for Ollama cluster ingress; cross-cluster traffic must be encrypted (certificate generation is out of scope for Scout deployment)
 
 **MCP tools placement**: MCP tools (e.g., Trino query tool) should run on the Scout cluster where they benefit from Scout's authentication layer, not on the shared Ollama cluster.
 
