@@ -1,4 +1,4 @@
-# ADR 0012: Deployment Portability via Layered Architecture and Service-Mode Configuration
+# ADR 0011: Deployment Portability via Layered Architecture and Service-Mode Configuration
 
 **Date**: 2026-01  
 **Status**: Proposed  
