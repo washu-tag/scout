@@ -1,0 +1,108 @@
+# ADR 0012: Shared Ollama Architecture
+
+**Date**: 2026-01-21
+**Status**: Proposed
+**Decision Owner**: TAG Team
+
+## Context
+
+Scout's optional Chat feature deploys Ollama alongside Open WebUI within each Scout cluster. The infrastructure plan calls for **shared Ollama clusters** serving multiple Scout installations:
+
+- **PHI environments**: 3-node GPU cluster serving production and pre-production Scout
+- **Non-PHI environments**: Single-node GPU cluster serving dev and demo Scout installations
+
+This requires separating two concerns:
+
+1. **Scout configuration**: How Scout connects to Ollama (internal or external)
+2. **Ollama cluster deployment**: How to set up dedicated Ollama infrastructure
+
+These changes build on ADR 0008 (air-gapped model distribution) and ADR 0011 (layered architecture and service-mode variables).
+
+## Decisions
+
+### Decision 1: Ollama Service Mode Variable
+
+Introduce an `ollama_mode` variable to the ansible deployment following ADR 0011's service-mode pattern:
+
+| Mode | Description |
+|------|-------------|
+| `disabled` | Ollama not used; chat functionality unavailable (default) |
+| `deploy` | Ollama deployed as a separate service within the Scout cluster (current behavior when enabled) |
+| `external` | Scout connects to an externally-provided Ollama endpoint |
+
+When `ollama_mode: external`, the inventory must specify `ollama_url`.
+
+**Rationale**: This pattern enables independent variation—a Scout cluster can use shared Ollama while another uses internal Ollama, without environment-specific conditionals throughout the codebase.
+
+### Decision 2: Decouple Ollama from Open WebUI
+
+Rather than the current deployment where Ollama is installed using an embedded configuration in the Open WebUI chart, we extract Ollama deployment into a dedicated Ansible role deployed using an Ollama-specific Helm chart. Open WebUI always connects to an Ollama endpoint via the computed `ollama_host` variable—it never embeds Ollama directly.
+
+The embedded Ollama deployment mode (Ollama bundled inside Open WebUI's Helm chart) is explicitly not supported going forward.
+
+**Rationale**: Clean separation allows:
+- Reuse the Ollama role for deployments outside the lifecycle of a single Scout instance
+- Independent management of Ollama and Open WebUI
+- Simpler Open WebUI role focused solely on the chat interface, not the underlying models
+
+### Decision 3: Ollama Cluster Owns Model Management
+
+When deploying a shared Ollama cluster, the Ollama cluster is solely responsible for model pulls and versioning. Models are pulled during Ollama cluster installation/configuration.
+
+Scout deployments connecting to an external Ollama (`ollama_mode: external`) will have whatever models are available without coordinating pulls. All Scout instances sharing an Ollama cluster have access to the same models.
+
+**Consequences accepted**:
+- Model updates affect all consumers simultaneously
+- No version isolation between environments sharing an Ollama cluster (if isolation is needed, deploy separate Ollama clusters)
+
+**Rationale**: Distributed model management across multiple Scout deployments introduces race conditions, version coordination complexity, and unclear ownership. Centralizing responsibility on the Ollama cluster simplifies operations.
+
+### Decision 4: Air-Gapped Ollama Requires Pre-existing Staging
+
+An air-gapped Ollama cluster deployment does not set up its own staging infrastructure. It requires a `staging_kubeconfig` pointing to an already-deployed staging cluster with:
+- Harbor registry accessible
+- NFS storage mounted
+
+The staging cluster is set up independently—typically via Scout's `staging.yaml` playbook or a prior Scout deployment. A single staging cluster can serve both a Scout cluster and an Ollama cluster.
+
+ADR 0008 patterns apply: staging pulls models to shared NFS; the Ollama cluster mounts NFS read-only.
+
+**Rationale**: Reusing existing staging infrastructure avoids duplication and leverages proven air-gapped patterns. Separating staging setup from Ollama deployment clarifies responsibilities.
+
+### Decision 5: Defer Ollama Cluster Monitoring
+
+The shared Ollama cluster will not have a dedicated monitoring stack initially. Operators use `kubectl` and basic cluster tools for troubleshooting.
+
+This matches the current approach for the staging node.
+
+**Rationale**: Multi-cluster monitoring (centralized Grafana with distributed Prometheus, cross-cluster scraping, etc.) is a complex topic that warrants its own ADR. Deferring allows progress on core Ollama sharing functionality without blocking on monitoring architecture decisions.
+
+## Consequences
+
+### Positive
+
+1. **Shared GPU resources**: Multiple Scout clusters share expensive GPU infrastructure
+2. **Consistent patterns**: Follows ADR 0011 service-mode variable pattern
+3. **Independent lifecycles**: Ollama cluster can be updated without touching Scout deployments
+4. **Reusable role**: Ollama role can deploy to any cluster, not just Scout
+
+### Negative
+
+1. **Cross-cluster dependency**: Scout depends on external Ollama availability
+2. **No model isolation**: All consumers see same model versions (accepted trade-off)
+3. **Monitoring gap**: No visibility into Ollama cluster health initially
+
+## Layer Classification (per ADR 0011)
+
+| Layer | Scout Cluster | Ollama Cluster |
+|-------|---------------|----------------|
+| **Layer 0** | K3s, storage, ingress, TLS | K3s, GPU operator, ingress |
+| **Layer 1** | PostgreSQL, Redis, MinIO, Keycloak | Ollama service |
+| **Layer 2** | Superset, JupyterHub, Open WebUI | (none) |
+
+Ollama as a service is Layer 1 on the Ollama cluster. When consumed externally by Scout, it appears as an external Layer 1 service.
+
+## References
+
+- ADR 0008: Ollama Model Distribution in Air-Gapped Environments
+- ADR 0011: Deployment Portability via Layered Architecture and Service-Mode Configuration
