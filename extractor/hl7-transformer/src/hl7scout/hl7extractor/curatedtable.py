@@ -8,7 +8,7 @@ from .sparkutils import (
     create_table_from_df,
 )
 
-from pyspark.sql import functions as F, Column
+from pyspark.sql import functions as F, Column, DataFrame
 
 
 def curated_table(base_report_table_name: str) -> DerivativeTable:
@@ -28,9 +28,14 @@ def curate_silver_table(batch_df, spark, table_name):
     if filtered_df is None:
         return
 
-    def extract_patient_id(id_column: str) -> Column:
+    def extract_patient_id(id_column: str, df: DataFrame) -> Column:
+        def defensive_null_check():
+            if id_column in df.columns:
+                return F.col(id_column).isNotNull()
+            return F.lit(False)
+
         return F.when(
-            F.col(id_column).isNotNull(),
+            defensive_null_check(),  # particular patient id may not have been seen yet
             F.concat_ws("_", F.lit(id_column), F.col(id_column)),
         )
 
