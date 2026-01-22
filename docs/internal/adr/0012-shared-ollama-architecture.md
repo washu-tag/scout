@@ -108,6 +108,18 @@ Scout's authentication infrastructure (Keycloak, oauth2proxy) runs within Scout 
 3. **Monitoring gap**: No visibility into Ollama cluster health initially
 4. **External firewall dependency**: Security relies on network-level controls configured outside Ansible
 
+## Alternatives Considered
+
+### WashU AI API
+For the TAG team's internal development use, we considered the [WashU AI API](https://it.wustl.edu/items/secure-api-access-to-ai-endpoints/). This would give us access to hosted AI models in a HIPAA-compliant environment, obviating our immediate need to share Ollama models. Though certainly not available to everyone using open-source Scout, it could have given us access to LLM APIs in our development environments without the complexity of standing up a shared Ollama cluster.
+
+However, the WashU AI API endpoints are only available within the WashU internal network / VPN. This conflicts with the Tailscale network that our makes up our internal development environment; our development VMs cannot access the WashU AI API endpoints. 
+
+### Cloud-Hosted Models
+We could point our internal Open WebUI to a cloud-hosted model, for instance on [Azure AI Foundry](https://ai.azure.com). A POC integration we performed in a development environment did work as expected. However, our production Scout instances at WashU are air-gapped in such a way that makes it challenging to permit external traffic to a cloud model. We aren't able to rely on cloud-hosted models for our needs, so must implement another solution. 
+
+This alternative may be viable for Scouts installations at other places with different networking configurations.
+
 ## Layer Classification (per ADR 0011)
 
 | Layer | Scout Cluster | Ollama Cluster |
