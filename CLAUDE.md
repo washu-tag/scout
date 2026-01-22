@@ -466,6 +466,32 @@ See `ansible/filter_plugins/` and `ansible/README.md` for details and testing.
 - **JupyterHub**: https://jupyterhub.readthedocs.io/
 - **PySpark**: https://spark.apache.org/docs/latest/api/python/
 
+## Architecture Decision Records (ADRs)
+
+ADRs in `docs/internal/adr/` document significant architectural decisions. Consult these when working in relevant areas:
+
+- **ADR 0001: Helm Deployment for Air-Gapped Environments** — Uses remote Helm deployment via kubeconfig rather than OCI registry caching or local template rendering. Consult when modifying air-gapped deployment patterns or Helm chart installations.
+
+- **ADR 0002: K3s Air-Gapped Deployment Strategy** — K3s installation in air-gapped environments uses Harbor pull-through proxy for images and a Kubernetes Job on staging to download SELinux RPMs. Consult when modifying k3s installation or the `air_gapped` feature flag behavior.
+
+- **ADR 0003: OAuth2 Proxy as Authentication Middleware** — Implements hybrid authentication: OAuth2 Proxy enforces user approval at the ingress layer, while services maintain their own Keycloak OAuth clients for authorization. Consult when modifying authentication flows, adding new protected services, or working with the user approval workflow.
+
+- **ADR 0004: Storage Provisioning Approach** — Migrated from static hostPath PVs to dynamic provisioning with platform-native storage classes. Supports optional multi-disk configurations via `onprem_local_path_multidisk_storage_classes`. Consult when modifying storage configuration or adding persistent services. Note: Jupyter-specific sections superseded by ADR 0006.
+
+- **ADR 0005: MinIO STS Authentication Decision** — Documents why Scout uses static access keys for MinIO instead of STS authentication—Hadoop S3A connector cannot use custom STS endpoints for WebIdentity tokens. Consult when considering credential management changes for S3-compatible storage.
+
+- **ADR 0006: Jupyter Node Pinning and Storage Approach** — Jupyter pods are pinned to GPU nodes (when available) and use local storage instead of NFS because SQLite file locking fails on network filesystems. Consult when modifying JupyterHub storage or scheduling configuration.
+
+- **ADR 0007: Jump Node Architecture** — Separates the Ansible control node (jump node) from the staging node in air-gapped deployments for security—only the jump node has both internet access and production cluster credentials. Consult when modifying air-gapped deployment architecture or firewall requirements.
+
+- **ADR 0008: Ollama Model Distribution in Air-Gapped Environments** — Pre-stages Ollama models to shared NFS storage from the staging cluster; production mounts NFS read-only. Consult when modifying the Chat feature deployment or model management in air-gapped environments.
+
+- **ADR 0009: Open WebUI Content Security Policy** — Implements CSP via Traefik middleware to prevent LLM-generated external resource URLs from exfiltrating data through the user's browser. Consult when modifying Open WebUI security or Traefik middleware configuration.
+
+- **ADR 0010: Open WebUI Link Exfiltration Filter** — Implements an Open WebUI filter function to sanitize external URLs in LLM responses during streaming, preventing link-based data exfiltration that CSP cannot block. Consult when modifying Open WebUI security or filter function configuration.
+
+- **ADR 0011: Deployment Portability via Layered Architecture** — Introduces a three-layer model (Infrastructure, Platform Services, Applications) and service-mode variables (examples: `postgres_mode`, `object_storage_mode`, `redis_mode`) for cross-platform deployment. Consult when adding new services, modifying deployment patterns, or supporting new platforms.
+
 ## Key Concepts for AI Assistants
 
 ### Architecture Understanding
