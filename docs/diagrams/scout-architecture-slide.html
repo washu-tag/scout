@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scout Architecture - Slide</title>
+    <style>
+        :root {
+            --scout-purple: #6366f1;
+            --scout-purple-dark: #4f46e5;
+            --scout-teal: #14b8a6;
+            --scout-teal-light: #5eead4;
+            --scout-gradient: linear-gradient(135deg, #6366f1 0%, #14b8a6 100%);
+            --scout-gradient-light: linear-gradient(135deg, #eef2ff 0%, #ccfbf1 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .slide {
+            width: 1280px;
+            height: 720px;
+            background: white;
+            display: flex;
+            gap: 20px;
+            padding: 28px;
+        }
+
+        /* Data Sources */
+        .data-sources {
+            background: white;
+            border: 2px solid var(--scout-purple);
+            border-radius: 12px;
+            padding: 16px;
+            width: 160px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 12px rgba(99, 102, 241, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-self: center;
+        }
+
+        .section-header {
+            font-size: 0.78em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .data-sources .section-header {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            color: var(--scout-purple-dark);
+        }
+
+        .data-sources .items {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Arrow */
+        .main-arrow {
+            display: flex;
+            align-items: center;
+            color: #a5b4fc;
+            font-size: 2em;
+            flex-shrink: 0;
+        }
+
+        /* Scout Platform */
+        .platform {
+            flex: 1;
+            min-width: 0;
+            background: var(--scout-gradient-light);
+            border: 2px solid var(--scout-teal);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Platform header */
+        .platform-header-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        .platform-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            padding: 8px 18px;
+            border-radius: 10px;
+            border: 2px solid var(--scout-teal);
+            box-shadow: 0 2px 8px rgba(20, 184, 166, 0.15);
+        }
+
+        .platform-logo {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+        }
+
+        .platform-title {
+            font-weight: 700;
+            font-size: 1.15em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            background: var(--scout-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .platform-legend {
+            position: absolute;
+            right: 0;
+            font-size: 0.75em;
+            color: #64748b;
+            background: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .legend-asterisk {
+            color: #9333ea;
+            font-weight: bold;
+        }
+
+        /* Data Flow */
+        .data-flow {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .flow-column {
+            background: white;
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .flow-column .section-header {
+            margin-bottom: 8px;
+        }
+
+        .flow-column .items {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .col-ingestion .section-header {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            color: var(--scout-purple-dark);
+        }
+        .col-storage .section-header {
+            background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%);
+            color: #0f766e;
+        }
+        .col-processing .section-header {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #b45309;
+        }
+        .col-query .section-header {
+            background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%);
+            color: #0e7490;
+        }
+        .col-llm .section-header {
+            background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+            color: #6d28d9;
+        }
+        .col-analytics .section-header {
+            background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+            color: #be185d;
+        }
+
+        .flow-arrow {
+            display: flex;
+            align-items: center;
+            align-self: center;
+            color: #a5b4fc;
+            font-size: 1.4em;
+            flex-shrink: 0;
+            padding: 0 4px;
+        }
+
+        .stacked-columns {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-self: center;
+        }
+
+        .stacked-arrow {
+            display: flex;
+            justify-content: center;
+            color: #a5b4fc;
+            font-size: 1em;
+        }
+
+        /* Tech items */
+        .tech-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+
+        .tech-item .logo {
+            width: 26px;
+            height: 26px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .tech-item .info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tech-item .name {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #1e293b;
+            line-height: 1.2;
+        }
+
+        .tech-item .desc {
+            font-size: 0.65em;
+            color: #64748b;
+        }
+
+        /* Cross-cutting sections at bottom */
+        .cross-cutting {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .cross-section {
+            flex: 1;
+            background: rgba(255,255,255,0.7);
+            border-radius: 8px;
+            padding: 6px 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cross-section .section-label {
+            font-size: 0.5em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+        }
+
+        .cross-section .section-items {
+            display: flex;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .cross-section .section-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 6px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+        }
+
+        .cross-section .section-item .logo {
+            width: 16px;
+            height: 16px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .cross-section .section-item .name {
+            font-size: 0.6em;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .section-governance { border-left: 3px solid var(--scout-purple); }
+        .section-monitoring { border-left: 3px solid #f59e0b; }
+        .section-infra { border-left: 3px solid var(--scout-teal); }
+
+        /* Roadmap indicator */
+        .roadmap {
+            font-size: 0.8em;
+            color: #9333ea;
+            margin-left: 3px;
+            font-weight: bold;
+        }
+
+        /* Icon styles */
+        .icon-clinical {
+            background: var(--scout-gradient);
+            border-radius: 5px;
+            padding: 4px;
+        }
+        .icon-datalake {
+            background: linear-gradient(135deg, var(--scout-teal), #0d9488);
+            border-radius: 5px;
+            padding: 4px;
+        }
+        .icon-extractor {
+            background: linear-gradient(135deg, var(--scout-purple), var(--scout-purple-dark));
+            border-radius: 5px;
+            padding: 4px;
+        }
+        .icon-launchpad {
+            background: var(--scout-gradient);
+            border-radius: 5px;
+            padding: 4px;
+        }
+        .icon-playbooks {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            border-radius: 5px;
+            padding: 4px;
+        }
+        .icon-pipelines {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-radius: 5px;
+            padding: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide">
+        <!-- Data Sources -->
+        <div class="data-sources">
+            <div class="section-header">Data Sources</div>
+            <div class="items">
+                <div class="tech-item">
+                    <svg class="logo icon-clinical" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                    </svg>
+                    <div class="info">
+                        <div class="name">Clinical Sources</div>
+                        <div class="desc">PACS, VNA, Epic</div>
+                    </div>
+                </div>
+                <div class="tech-item">
+                    <svg class="logo icon-datalake" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
+                    <div class="info">
+                        <div class="name">Research Data Lake</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-arrow">→</div>
+
+        <!-- Scout Platform -->
+        <div class="platform">
+            <div class="platform-header-row">
+                <div class="platform-header">
+                    <img src="logos/scout.png" alt="Scout" class="platform-logo">
+                    <div class="platform-title">Scout Platform</div>
+                </div>
+                <div class="platform-legend"><span class="legend-asterisk">*</span> On the Roadmap</div>
+            </div>
+
+            <!-- Data Flow -->
+            <div class="data-flow">
+                <div class="flow-column col-ingestion">
+                    <div class="section-header">Ingestion</div>
+                    <div class="items">
+                        <div class="tech-item">
+                            <img class="logo" src="logos/temporal.png" alt="Temporal">
+                            <div class="info">
+                                <div class="name">Temporal</div>
+                                <div class="desc">Orchestration</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <img class="logo" src="logos/kafka.svg" alt="Kafka">
+                            <div class="info">
+                                <div class="name">Kafka<span class="roadmap">*</span></div>
+                                <div class="desc">Streaming</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <svg class="logo icon-extractor" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <polyline points="16 3 21 3 21 8"/>
+                                <line x1="4" y1="20" x2="21" y2="3"/>
+                                <polyline points="21 16 21 21 16 21"/>
+                                <line x1="15" y1="15" x2="21" y2="21"/>
+                                <line x1="4" y1="4" x2="9" y2="9"/>
+                            </svg>
+                            <div class="info">
+                                <div class="name">Extractor</div>
+                                <div class="desc">HL7/DICOM parser</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-arrow">→</div>
+
+                <div class="stacked-columns">
+                    <div class="flow-column col-storage">
+                        <div class="section-header">Storage</div>
+                        <div class="items">
+                            <div class="tech-item">
+                                <img class="logo" src="logos/minio.svg" alt="MinIO">
+                                <div class="info">
+                                    <div class="name">MinIO</div>
+                                    <div class="desc">Object storage</div>
+                                </div>
+                            </div>
+                            <div class="tech-item">
+                                <img class="logo" src="logos/deltalake.png" alt="Delta Lake">
+                                <div class="info">
+                                    <div class="name">Delta Lake</div>
+                                    <div class="desc">Lakehouse</div>
+                                </div>
+                            </div>
+                            <div class="tech-item">
+                                <img class="logo" src="logos/hive.svg" alt="Hive">
+                                <div class="info">
+                                    <div class="name">Hive Metastore</div>
+                                    <div class="desc">Catalog</div>
+                                </div>
+                            </div>
+                            <div class="tech-item">
+                                <img class="logo" src="logos/milvus.png" alt="Milvus">
+                                <div class="info">
+                                    <div class="name">Milvus<span class="roadmap">*</span></div>
+                                    <div class="desc">Vector database</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stacked-arrow">⇅</div>
+
+                    <div class="flow-column col-processing">
+                        <div class="section-header">Processing</div>
+                        <div class="items">
+                            <div class="tech-item">
+                                <img class="logo" src="logos/spark.svg" alt="Spark">
+                                <div class="info">
+                                    <div class="name">Spark</div>
+                                    <div class="desc">Compute engine</div>
+                                </div>
+                            </div>
+                            <div class="tech-item">
+                                <svg class="logo icon-pipelines" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                </svg>
+                                <div class="info">
+                                    <div class="name">Data Pipelines</div>
+                                    <div class="desc">Transformation</div>
+                                </div>
+                            </div>
+                            <div class="tech-item">
+                                <img class="logo" src="logos/kserve.png" alt="KServe">
+                                <div class="info">
+                                    <div class="name">KServe<span class="roadmap">*</span></div>
+                                    <div class="desc">Inference</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-arrow">→</div>
+
+                <div class="stacked-columns">
+                    <div class="flow-column col-query">
+                        <div class="section-header">Query Engine</div>
+                        <div class="items">
+                            <div class="tech-item">
+                                <img class="logo" src="logos/trino.svg" alt="Trino">
+                                <div class="info">
+                                    <div class="name">Trino</div>
+                                    <div class="desc">Distributed SQL</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flow-column col-llm">
+                        <div class="section-header">LLM</div>
+                        <div class="items">
+                            <div class="tech-item">
+                                <img class="logo" src="logos/ollama.png" alt="Ollama">
+                                <div class="info">
+                                    <div class="name">Ollama</div>
+                                    <div class="desc">API layer</div>
+                                </div>
+                            </div>
+                            <div class="tech-item">
+                                <img class="logo" src="logos/huggingface.svg" alt="Hugging Face">
+                                <div class="info">
+                                    <div class="name">HuggingFace</div>
+                                    <div class="desc">Open models</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-arrow">→</div>
+
+                <div class="flow-column col-analytics">
+                    <div class="section-header">Analytics</div>
+                    <div class="items">
+                        <div class="tech-item">
+                            <svg class="logo icon-launchpad" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                <rect x="14" y="14" width="7" height="7" rx="1"/>
+                            </svg>
+                            <div class="info">
+                                <div class="name">Launchpad</div>
+                                <div class="desc">Portal</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <img class="logo" src="logos/superset.png" alt="Superset">
+                            <div class="info">
+                                <div class="name">Superset</div>
+                                <div class="desc">Dashboards</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <img class="logo" src="logos/jupyter.svg" alt="Jupyter">
+                            <div class="info">
+                                <div class="name">JupyterHub</div>
+                                <div class="desc">Notebooks</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <img class="logo" src="logos/openwebui.png" alt="Open WebUI">
+                            <div class="info">
+                                <div class="name">Open WebUI</div>
+                                <div class="desc">AI Chat</div>
+                            </div>
+                        </div>
+                        <div class="tech-item">
+                            <svg class="logo icon-playbooks" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                                <line x1="9" y1="7" x2="16" y2="7"/>
+                                <line x1="9" y1="11" x2="16" y2="11"/>
+                                <line x1="9" y1="15" x2="13" y2="15"/>
+                            </svg>
+                            <div class="info">
+                                <div class="name">Playbooks</div>
+                                <div class="desc">Guided workflows</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cross-cutting concerns -->
+            <div class="cross-cutting">
+                <div class="cross-section section-governance">
+                    <span class="section-label">Gov</span>
+                    <div class="section-items">
+                        <div class="section-item">
+                            <img class="logo" src="logos/postgresql.svg" alt="PostgreSQL">
+                            <span class="name">PostgreSQL</span>
+                        </div>
+                        <div class="section-item">
+                            <img class="logo" src="logos/keycloak.svg" alt="Keycloak">
+                            <span class="name">Keycloak</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cross-section section-monitoring">
+                    <span class="section-label">Obs</span>
+                    <div class="section-items">
+                        <div class="section-item">
+                            <img class="logo" src="logos/grafana.svg" alt="Grafana">
+                            <span class="name">Grafana</span>
+                        </div>
+                        <div class="section-item">
+                            <img class="logo" src="logos/prometheus.svg" alt="Prometheus">
+                            <span class="name">Prometheus</span>
+                        </div>
+                        <div class="section-item">
+                            <img class="logo" src="logos/loki.svg" alt="Loki">
+                            <span class="name">Loki</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cross-section section-infra">
+                    <span class="section-label">Infra</span>
+                    <div class="section-items">
+                        <div class="section-item">
+                            <img class="logo" src="logos/kubernetes.svg" alt="K8s">
+                            <span class="name">Kubernetes</span>
+                        </div>
+                        <div class="section-item">
+                            <img class="logo" src="logos/helm.svg" alt="Helm">
+                            <span class="name">Helm</span>
+                        </div>
+                        <div class="section-item">
+                            <img class="logo" src="logos/ansible.svg" alt="Ansible">
+                            <span class="name">Ansible</span>
+                        </div>
+                        <div class="section-item">
+                            <img class="logo" src="logos/traefik.svg" alt="Traefik">
+                            <span class="name">Traefik</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
