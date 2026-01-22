@@ -8,7 +8,7 @@ Scout consists of several services that work together to process medical imaging
 
 ## Architecture
 
-The Scout platform is built on modern cloud-native technologies, deployed on Kubernetes (K3s).
+Scout is a modern, distributed data platform deployed on Kubernetes.
 
 ![Scout Architecture](images/ScoutArchitecture.png)
 
