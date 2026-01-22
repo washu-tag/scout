@@ -23,7 +23,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            background: white;
             padding: 24px;
             min-height: 100vh;
         }
@@ -43,11 +43,12 @@
         /* Data Sources */
         .data-sources {
             background: white;
+            border: 2px solid var(--scout-purple);
             border-radius: 16px;
             padding: 16px;
             width: 160px;
             flex-shrink: 0;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            box-shadow: 0 2px 12px rgba(99, 102, 241, 0.15);
             display: flex;
             flex-direction: column;
             align-self: center;
@@ -88,7 +89,8 @@
 
         /* Scout Platform */
         .platform {
-            flex: 1;
+            width: fit-content;
+            min-width: 0;
             background: var(--scout-gradient-light);
             border: 2px solid var(--scout-teal);
             border-radius: 20px;
@@ -134,13 +136,11 @@
         .data-flow {
             display: flex;
             gap: 6px;
-            align-items: stretch;
+            align-items: center;
             margin-bottom: 12px;
-            flex: 1;
         }
 
         .flow-column {
-            flex: 1;
             background: white;
             border-radius: 12px;
             padding: 12px;
@@ -153,7 +153,6 @@
         }
 
         .flow-column .items {
-            flex: 1;
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -183,6 +182,7 @@
         .flow-arrow {
             display: flex;
             align-items: center;
+            align-self: center;
             color: #a5b4fc;
             font-size: 1.6em;
             flex-shrink: 0;
@@ -193,10 +193,11 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+            align-self: center;
         }
 
         .stacked-columns .flow-column {
-            flex: 1;
+            flex: none;
         }
 
         .stacked-arrow {
@@ -206,9 +207,11 @@
             font-size: 1.4em;
         }
 
-        .col-query {
+        .col-query,
+        .col-ingestion,
+        .col-llm,
+        .col-analytics {
             flex: none !important;
-            align-self: center;
         }
 
         /* Tech items - full width */
@@ -220,7 +223,6 @@
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 10px;
-            flex: 1;
             transition: all 0.15s ease;
         }
 
@@ -260,6 +262,8 @@
             border-radius: 12px;
             padding: 12px 16px;
             margin-bottom: 10px;
+            min-width: 0;
+            overflow: hidden;
         }
 
         .platform-section:last-child {
@@ -291,10 +295,13 @@
         .section-items {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
+            min-width: 0;
         }
 
         .section-item {
-            flex: 1;
+            flex: 1 1 0;
+            min-width: 0;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -386,6 +393,46 @@
             border-radius: 8px;
             padding: 6px;
         }
+        /* LLM column styling */
+        .col-llm .section-header {
+            background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+            color: #6d28d9;
+        }
+
+        /* Roadmap indicator */
+        .roadmap {
+            font-size: 0.7em;
+            color: #9333ea;
+            margin-left: 2px;
+            font-weight: bold;
+        }
+
+        /* Platform header row */
+        .platform-header-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        /* Legend inside platform */
+        .platform-legend {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.75em;
+            color: #64748b;
+            background: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .legend-asterisk {
+            color: #9333ea;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -423,9 +470,12 @@
 
             <!-- Scout Platform -->
             <div class="platform">
-                <div class="platform-header">
-                    <img src="logos/scout.png" alt="Scout" class="platform-logo">
-                    <div class="platform-title">Scout Platform</div>
+                <div class="platform-header-row">
+                    <div class="platform-header">
+                        <img src="logos/scout.png" alt="Scout" class="platform-logo">
+                        <div class="platform-title">Scout Platform</div>
+                    </div>
+                    <div class="platform-legend"><span class="legend-asterisk">*</span> On the Roadmap</div>
                 </div>
 
                 <!-- Data Flow Row -->
@@ -437,13 +487,13 @@
                                 <img class="logo" src="logos/temporal.png" alt="Temporal">
                                 <div class="info">
                                     <div class="name">Temporal</div>
-                                    <div class="desc">Workflow engine</div>
+                                    <div class="desc">Orchestration</div>
                                 </div>
                             </div>
                             <div class="tech-item">
                                 <img class="logo" src="logos/kafka.svg" alt="Kafka">
                                 <div class="info">
-                                    <div class="name">Kafka</div>
+                                    <div class="name">Kafka<span class="roadmap">*</span></div>
                                     <div class="desc">Streaming</div>
                                 </div>
                             </div>
@@ -457,7 +507,7 @@
                                 </svg>
                                 <div class="info">
                                     <div class="name">Extractor</div>
-                                    <div class="desc">HL7 parser</div>
+                                    <div class="desc">HL7/DICOM parser</div>
                                 </div>
                             </div>
                         </div>
@@ -490,6 +540,13 @@
                                         <div class="desc">Catalog</div>
                                     </div>
                                 </div>
+                                <div class="tech-item">
+                                    <img class="logo" src="logos/milvus.png" alt="Milvus">
+                                    <div class="info">
+                                        <div class="name">Milvus<span class="roadmap">*</span></div>
+                                        <div class="desc">Vector database</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -514,20 +571,49 @@
                                         <div class="desc">Transformation</div>
                                     </div>
                                 </div>
+                                <div class="tech-item">
+                                    <img class="logo" src="logos/kserve.png" alt="KServe">
+                                    <div class="info">
+                                        <div class="name">KServe<span class="roadmap">*</span></div>
+                                        <div class="desc">Inference</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="flow-arrow">→</div>
 
-                    <div class="flow-column col-query">
-                        <div class="section-header">Query Engine</div>
-                        <div class="items">
-                            <div class="tech-item">
-                                <img class="logo" src="logos/trino.svg" alt="Trino">
-                                <div class="info">
-                                    <div class="name">Trino</div>
-                                    <div class="desc">Distributed SQL</div>
+                    <div class="stacked-columns">
+                        <div class="flow-column col-query">
+                            <div class="section-header">Query Engine</div>
+                            <div class="items">
+                                <div class="tech-item">
+                                    <img class="logo" src="logos/trino.svg" alt="Trino">
+                                    <div class="info">
+                                        <div class="name">Trino</div>
+                                        <div class="desc">Distributed SQL</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flow-column col-llm">
+                            <div class="section-header">LLM</div>
+                            <div class="items">
+                                <div class="tech-item">
+                                    <img class="logo" src="logos/ollama.png" alt="Ollama">
+                                    <div class="info">
+                                        <div class="name">Ollama</div>
+                                        <div class="desc">API layer</div>
+                                    </div>
+                                </div>
+                                <div class="tech-item">
+                                    <img class="logo" src="logos/huggingface.svg" alt="Hugging Face">
+                                    <div class="info">
+                                        <div class="name">HuggingFace</div>
+                                        <div class="desc">Open models</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -662,7 +748,7 @@
                         <div class="section-item">
                             <img class="logo" src="logos/kubernetes.svg" alt="K8s">
                             <div class="info">
-                                <div class="name">Kubernetes (K3s)</div>
+                                <div class="name">Kubernetes</div>
                                 <div class="desc">Container orchestration</div>
                             </div>
                         </div>
