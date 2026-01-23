@@ -31,6 +31,9 @@
         nextAuthUrl: 'https://{{ server_hostname }}/api/auth'
         nextAuthSecret: '{{ launchpad_nextauth_secret }}'
         oauth2ProxySignOutUrl: '{{ oauth2_proxy_signout_url }}'
+      playbooksRegistry:
+        enabled: '{{ launchpad_playbooks_registry_enabled | default(true) }}'
+        playbooks: '{{ launchpad_dynamic_playbooks | default([]) }}'
       ingress:
         enabled: true
         className: traefik

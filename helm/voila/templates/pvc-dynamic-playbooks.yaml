@@ -1,0 +1,17 @@
+{{- if .Values.dynamicPlaybooks.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "voila.fullname" . }}-dynamic-playbooks
+  labels:
+    {{- include "voila.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.dynamicPlaybooks.storageSize | default "1Gi" }}
+  {{- if .Values.dynamicPlaybooks.storageClassName }}
+  storageClassName: {{ .Values.dynamicPlaybooks.storageClassName }}
+  {{- end }}
+{{- end }}

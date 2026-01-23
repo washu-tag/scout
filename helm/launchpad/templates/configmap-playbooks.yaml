@@ -1,0 +1,11 @@
+{{- if .Values.playbooksRegistry.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "launchpad.fullname" . }}-playbooks
+  labels:
+    {{- include "launchpad.labels" . | nindent 4 }}
+data:
+  playbooks.json: |
+    {{ .Values.playbooksRegistry.playbooks | toJson }}
+{{- end }}

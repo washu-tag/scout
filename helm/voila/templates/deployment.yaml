@@ -70,6 +70,10 @@ spec:
               mountPath: /home/jovyan/notebooks/{{ . }}
               readOnly: true
             {{- end }}
+            {{- if .Values.dynamicPlaybooks.enabled }}
+            - name: dynamic-playbooks
+              mountPath: /home/jovyan/notebooks/dynamic
+            {{- end }}
             - name: spark-config
               mountPath: /usr/local/spark/conf/spark-defaults.conf
               subPath: spark-defaults.conf
@@ -80,6 +84,11 @@ spec:
         - name: playbook-{{ . }}
           configMap:
             name: voila-playbook-{{ . }}
+        {{- end }}
+        {{- if .Values.dynamicPlaybooks.enabled }}
+        - name: dynamic-playbooks
+          persistentVolumeClaim:
+            claimName: {{ include "voila.fullname" . }}-dynamic-playbooks
         {{- end }}
         - name: spark-config
           configMap:

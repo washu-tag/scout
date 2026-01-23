@@ -11,6 +11,11 @@ sparkConfigMapName: {{ voila_spark_defaults_configmap_name }}
 
 playbooks: {{ voila_playbooks | to_json }}
 
+# Dynamic playbooks PVC for publishing via Claude Code skill
+dynamicPlaybooks:
+  enabled: {{ voila_dynamic_playbooks_enabled | default(true) | lower }}
+  storageSize: "{{ voila_dynamic_playbooks_storage_size | default('1Gi') }}"
+
 env:
   TRINO_HOST: "trino.{{ trino_namespace }}"
   TRINO_PORT: "8080"

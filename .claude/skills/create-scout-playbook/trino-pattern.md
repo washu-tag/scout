@@ -54,6 +54,13 @@ WHERE message_dt >= TIMESTAMP '{cutoff_date}'
 WHERE COALESCE(results_report_status_change_dt, message_dt) >= TIMESTAMP '{cutoff_date}'
 ```
 
+### Radiologist Filtering (REQUIRED)
+```sql
+-- ALWAYS exclude reports with blank radiologist names
+WHERE principal_result_interpreter IS NOT NULL
+  AND TRIM(principal_result_interpreter) <> ''
+```
+
 ### Modality Filtering
 ```sql
 WHERE modality = 'CT'
@@ -77,11 +84,12 @@ GROUP BY DATE_TRUNC('week', message_dt)
 
 ### TAT Calculations
 ```sql
--- Exam-to-Report TAT in hours
+-- REQUIRED: Order-to-Report TAT in hours
+-- ALWAYS use COALESCE(requested_dt, observation_dt) - without fallback, TAT will be NULL for most reports
 CAST(DATE_DIFF('second',
-    COALESCE(observation_dt, requested_dt),
+    COALESCE(requested_dt, observation_dt),
     COALESCE(results_report_status_change_dt, message_dt)
-) AS DOUBLE) / 3600.0 AS exam_to_report_hours
+) AS DOUBLE) / 3600.0 AS order_to_report_hours
 ```
 
 ### Text Analysis
@@ -133,8 +141,9 @@ def _load_volume_data(table_name="default.reports", date_range_days=360):
 
 ## Tips
 
-1. **Use COALESCE for fallbacks** - Many timestamp fields may be NULL
-2. **Filter outliers** - TAT values can have extreme outliers (filter > 720 hours)
-3. **Use DATE_TRUNC for time series** - Aggregating by week/month is common
-4. **Limit results for testing** - Use LIMIT during development
-5. **Close connections** - Always close cursor and connection after use
+1. **REQUIRED: TAT with fallback** - Always use `COALESCE(requested_dt, observation_dt)` for TAT start time. Without this, TAT will be NULL for most reports.
+2. **REQUIRED: Filter blank radiologists** - Always exclude NULL/empty `principal_result_interpreter` in WHERE clause.
+3. **Filter outliers** - TAT values can have extreme outliers (filter > 720 hours)
+4. **Use DATE_TRUNC for time series** - Aggregating by week/month is common
+5. **Limit results for testing** - Use LIMIT during development
+6. **Close connections** - Always close cursor and connection after use

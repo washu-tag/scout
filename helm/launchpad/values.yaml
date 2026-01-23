@@ -127,3 +127,11 @@ auth:
 
 # Additional environment variables
 env: []
+
+# Dynamic playbooks registry configuration
+# This ConfigMap holds the list of dynamically-published playbooks
+playbooksRegistry:
+  enabled: false
+  # Array of playbook definitions to populate the registry
+  # Each playbook should have: id, title, description, notebook, icon, color
+  playbooks: []

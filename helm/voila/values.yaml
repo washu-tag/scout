@@ -51,6 +51,13 @@ resources:
 # List of playbook names to mount from ConfigMaps (created externally by Ansible with the name format playbook-<name>)
 playbooks: []
 
+# Dynamic playbooks configuration
+# When enabled, creates a PVC for dynamically-published playbooks
+dynamicPlaybooks:
+  enabled: false
+  storageSize: 1Gi
+  # storageClassName: ""  # Optional: use default if not specified
+
 # Name of the ConfigMap containing spark-defaults.conf (created externally by Ansible)
 sparkConfigMapName: spark-defaults
 

@@ -11,3 +11,7 @@ launchpad_image_tag: latest
 
 # Launchpad nextauth cookie secret, override from inventory for production
 launchpad_nextauth_secret: changeme-nextauth-secret
+
+# Dynamic playbooks registry settings (for publishing via Claude Code skill)
+launchpad_playbooks_registry_enabled: true
+launchpad_dynamic_playbooks: []

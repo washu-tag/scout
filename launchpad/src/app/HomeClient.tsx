@@ -13,8 +13,8 @@ import {
   HiUserGroup,
   HiChartBar,
   HiSparkles,
-  HiClipboardCheck,
 } from 'react-icons/hi';
+import { getPlaybookIcon, getPlaybookColors } from '@/lib/playbook-config';
 import TopBar from '@/components/TopBar';
 import AdminSection from '@/components/AdminSection';
 
@@ -120,8 +120,18 @@ const ToolsGrid = ({ subdomainUrls, enableChat }: ToolsGridProps) => {
   );
 };
 
-// Playbook definitions with icons and colors
-const PLAYBOOKS = [
+// Type for dynamic playbooks loaded from API
+interface DynamicPlaybook {
+  id: string;
+  title: string;
+  description: string;
+  notebook: string;
+  icon: string;
+  color: string;
+}
+
+// Playbook definitions with icons and colors (hardcoded/static playbooks)
+const STATIC_PLAYBOOKS = [
   {
     id: 'cohort',
     title: 'Research Cohorting',
@@ -167,31 +177,18 @@ const PLAYBOOKS = [
       arrow: 'group-hover:text-cyan-600 dark:group-hover:text-cyan-400',
     },
   },
-  {
-    id: 'quality-metrics',
-    title: 'Quality Metrics',
-    description: 'Analyze report quality and compliance metrics',
-    notebook: 'QualityMetrics.ipynb',
-    icon: HiClipboardCheck,
-    colors: {
-      gradient: 'from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/10',
-      border: 'border-emerald-200/50 dark:border-emerald-800/50',
-      hoverBorder: 'hover:border-emerald-400 dark:hover:border-emerald-500',
-      shadow: 'hover:shadow-emerald-200/50 dark:hover:shadow-emerald-500/30',
-      icon: 'text-emerald-600 dark:text-emerald-400',
-      arrow: 'group-hover:text-emerald-600 dark:group-hover:text-emerald-400',
-    },
-  },
 ];
 
 interface PlaybooksGridProps {
   playbooksUrl: string;
+  dynamicPlaybooks: DynamicPlaybook[];
 }
 
-const PlaybooksGrid = ({ playbooksUrl }: PlaybooksGridProps) => {
+const PlaybooksGrid = ({ playbooksUrl, dynamicPlaybooks }: PlaybooksGridProps) => {
   return (
     <div className="space-y-3">
-      {PLAYBOOKS.map((playbook) => {
+      {/* Render static playbooks */}
+      {STATIC_PLAYBOOKS.map((playbook) => {
         const IconComponent = playbook.icon;
         return (
           <a
@@ -219,6 +216,37 @@ const PlaybooksGrid = ({ playbooksUrl }: PlaybooksGridProps) => {
           </a>
         );
       })}
+
+      {/* Render dynamic playbooks from API */}
+      {dynamicPlaybooks.map((playbook) => {
+        const IconComponent = getPlaybookIcon(playbook.icon);
+        const colors = getPlaybookColors(playbook.color);
+        return (
+          <a
+            key={playbook.id}
+            href={`${playbooksUrl}/voila/render/${playbook.id}/${playbook.notebook}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`group relative flex items-center gap-3 p-4 bg-gradient-to-r ${colors.gradient} border ${colors.border} ${colors.hoverBorder} rounded-xl hover:shadow-xl ${colors.shadow} hover:-translate-y-1 transition-all duration-300 no-underline overflow-hidden`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-transparent group-hover:from-white/5 group-hover:to-white/10 dark:group-hover:from-white/5 dark:group-hover:to-white/10 transition-all duration-300"></div>
+            <div className="relative w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform duration-300">
+              <IconComponent className={`text-xl ${colors.icon}`} />
+            </div>
+            <div className="relative flex-1 min-w-0">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                {playbook.title}
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                {playbook.description}
+              </p>
+            </div>
+            <HiArrowRight
+              className={`relative text-xl text-gray-300 dark:text-gray-600 ${colors.arrow} group-hover:translate-x-1 transition-all duration-300 flex-shrink-0`}
+            />
+          </a>
+        );
+      })}
     </div>
   );
 };
@@ -230,6 +258,7 @@ interface ContentGridProps {
 
 const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
   const [subdomainUrls, setSubdomainUrls] = useState<Record<string, string>>({});
+  const [dynamicPlaybooks, setDynamicPlaybooks] = useState<DynamicPlaybook[]>([]);
 
   useEffect(() => {
     // Generate all subdomain URLs once on client side where window is available
@@ -256,6 +285,26 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
     console.debug('[Scout] Subdomain URLs generated', { protocol, host });
     console.debug('[Scout] Feature flags:', { enableChat, enablePlaybooks });
   }, [enableChat, enablePlaybooks]);
+
+  // Fetch dynamic playbooks from API
+  useEffect(() => {
+    if (!enablePlaybooks) return;
+
+    const fetchPlaybooks = async () => {
+      try {
+        const response = await fetch('/api/playbooks');
+        if (response.ok) {
+          const playbooks = await response.json();
+          setDynamicPlaybooks(playbooks);
+          console.debug('[Scout] Loaded dynamic playbooks:', playbooks.length);
+        }
+      } catch (error) {
+        console.error('[Scout] Failed to fetch dynamic playbooks:', error);
+      }
+    };
+
+    fetchPlaybooks();
+  }, [enablePlaybooks]);
 
   // Don't render until subdomain URLs are set on client side
   if (Object.keys(subdomainUrls).length === 0) {
@@ -326,7 +375,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
                   Pluggable workflows and dashboards
                 </p>
               </div>
-              <PlaybooksGrid playbooksUrl={subdomainUrls.playbooks} />
+              <PlaybooksGrid playbooksUrl={subdomainUrls.playbooks} dynamicPlaybooks={dynamicPlaybooks} />
             </div>
           ) : null
         }
@@ -349,7 +398,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
                   Pluggable workflows and dashboards
                 </p>
               </div>
-              <PlaybooksGrid playbooksUrl={subdomainUrls.playbooks} />
+              <PlaybooksGrid playbooksUrl={subdomainUrls.playbooks} dynamicPlaybooks={dynamicPlaybooks} />
             </div>
           )}
 
@@ -500,12 +549,10 @@ export default function HomeClient({ enableChat, enablePlaybooks }: HomeClientPr
             Welcome to Scout
           </h1>
           <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed font-light">
-            A data exploration and clinical insights platform brought to you by the <br />{' '}
-            Mallinckrodt Institute of Radiology&apos;s{' '}
+            A data exploration and clinical insights platform brought to you by <br />{' '}
             <span className="font-semibold text-gray-800 dark:text-gray-100">
-              Translational AI Group
-            </span>{' '}
-            <br /> at Washington University in St. Louis.
+              Embark Labs.
+            </span>
           </p>
         </div>
 
@@ -516,8 +563,7 @@ export default function HomeClient({ enableChat, enablePlaybooks }: HomeClientPr
         <div className="text-center mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
           <p className="text-sm text-gray-500 dark:text-gray-400 font-light">
             © {new Date().getFullYear()}{' '}
-            <span className="font-medium">Translational AI Group</span> • Mallinckrodt Institute of
-            Radiology • Washington University in St. Louis
+            <span className="font-medium">Embark Labs</span>
           </p>
         </div>
       </div>

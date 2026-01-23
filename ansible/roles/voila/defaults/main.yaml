@@ -30,3 +30,7 @@ voila_resources_default:
 # Spark memory settings for notebooks
 voila_spark_driver_memory: '4g'
 voila_spark_executor_memory: '4g'
+
+# Dynamic playbooks PVC settings (for publishing via Claude Code skill)
+voila_dynamic_playbooks_enabled: true
+voila_dynamic_playbooks_storage_size: '1Gi'
