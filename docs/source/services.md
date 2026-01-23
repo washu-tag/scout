@@ -6,6 +6,12 @@ Scout consists of several services that work together to process medical imaging
 
 **Current version:** Scout currently ingests HL7 radiology reports. Future versions will incorporate DICOM metadata, pathology reports, and extracted features in concert with XNAT.
 
+## Architecture
+
+Scout is a modern, distributed data platform deployed on Kubernetes.
+
+![Scout Architecture](images/ScoutArchitecture.png)
+
 ## User Services
 
 Scout provides three primary user-facing services for data exploration and analysis. These are accessible from the Scout Launchpad after [authentication](authentication.md).
