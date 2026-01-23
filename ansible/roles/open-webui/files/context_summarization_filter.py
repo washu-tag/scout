@@ -94,7 +94,9 @@ class Filter:
                         preview += "..."
                     lines.append(f"  [{i}] {role}: {tokens} tokens - {preview}")
             else:
-                lines.append(f"  [{i}] {role}: {tokens} tokens - [{type(content).__name__}]")
+                lines.append(
+                    f"  [{i}] {role}: {tokens} tokens - [{type(content).__name__}]"
+                )
         return "\n".join(lines)
 
     def count_tokens(self, text: str) -> int:
@@ -154,12 +156,12 @@ class Filter:
         # 2. Double-escaped JSON: \"results\" or \\&quot;
         # 3. Raw JSON patterns at start: {"results" or [{"
         patterns = [
-            r'&quot;results&quot;',
-            r'&quot;error&quot;',
-            r'\\&quot;results\\&quot;',
+            r"&quot;results&quot;",
+            r"&quot;error&quot;",
+            r"\\&quot;results\\&quot;",
             r'\\"results\\"',
             r'^[\s\n]*\{["\']results',
-            r'^[\s\n]*\[\{',
+            r"^[\s\n]*\[\{",
             r'^[\s\n]*"&quot;',  # Starts with escaped quote (common pattern)
         ]
 
@@ -195,23 +197,25 @@ class Filter:
         try:
             decoded = html.unescape(content)
             # Also handle escaped quotes and newlines from JSON serialization
-            decoded = decoded.replace('\\"', '"').replace('\\n', '\n')
+            decoded = decoded.replace('\\"', '"').replace("\\n", "\n")
         except Exception:
             decoded = content
 
         # Count error messages (query execution failed patterns)
-        error_matches = re.findall(r'query execution failed', decoded, re.IGNORECASE)
+        error_matches = re.findall(r"query execution failed", decoded, re.IGNORECASE)
         if error_matches:
             info["has_error"] = True
-            info["error_count"] = len(error_matches) // 2  # Usually duplicated in message
+            info["error_count"] = (
+                len(error_matches) // 2
+            )  # Usually duplicated in message
 
         # Try to find and parse the successful result JSON
         # Look for {"results": [...]} pattern
         results_match = re.search(r'\{\s*"results"\s*:\s*\[([\s\S]*?)\]\s*\}', decoded)
         if results_match:
             try:
-                json_str = '{"results": [' + results_match.group(1) + ']}'
-                json_str = json_str.replace('\\"', '"').replace('\\n', '\n')
+                json_str = '{"results": [' + results_match.group(1) + "]}"
+                json_str = json_str.replace('\\"', '"').replace("\\n", "\n")
                 data = json.loads(json_str)
 
                 if "results" in data and isinstance(data["results"], list):
@@ -233,10 +237,12 @@ class Filter:
 
         # Fallback: try to find raw JSON array
         if not info["has_results"]:
-            array_match = re.search(r'\[\s*\{[\s\S]*?\}\s*\]', decoded)
+            array_match = re.search(r"\[\s*\{[\s\S]*?\}\s*\]", decoded)
             if array_match:
                 try:
-                    json_str = array_match.group(0).replace('\\"', '"').replace('\\n', '\n')
+                    json_str = (
+                        array_match.group(0).replace('\\"', '"').replace("\\n", "\n")
+                    )
                     data = json.loads(json_str)
                     if isinstance(data, list) and data:
                         info["has_results"] = True
@@ -308,9 +314,9 @@ class Filter:
                 decoded.rfind('}]"'),
             )
             if last_json_end > 0:
-                after_json = decoded[last_json_end + 2:].strip()
+                after_json = decoded[last_json_end + 2 :].strip()
                 # Check if there's meaningful commentary (not just whitespace or quotes)
-                cleaned = re.sub(r'^[\s"\'\n]+', '', after_json)
+                cleaned = re.sub(r'^[\s"\'\n]+', "", after_json)
                 if len(cleaned) > 30:
                     # Truncate if too long
                     if len(cleaned) > 500:
@@ -351,7 +357,9 @@ class Filter:
         keep_count = initial_keep
 
         while keep_count >= min_keep:
-            old_messages, recent_messages = self.split_conversation(messages, keep_count)
+            old_messages, recent_messages = self.split_conversation(
+                messages, keep_count
+            )
             if old_messages:
                 return old_messages, recent_messages
             keep_count = keep_count // 2
@@ -395,7 +403,7 @@ class Filter:
                         prepared.append(compacted)
                         # Extract just the tool summary line for separate inclusion
                         compacted_content = compacted.get("content", "")
-                        tool_match = re.match(r'(\[Tool:[^\]]+\])', compacted_content)
+                        tool_match = re.match(r"(\[Tool:[^\]]+\])", compacted_content)
                         if tool_match:
                             tool_summaries.append(tool_match.group(1))
                     else:
@@ -455,12 +463,16 @@ Provide a clear, factual summary in 2-3 paragraphs."""
             return body
 
         token_count = self.count_all_tokens(messages)
-        self._debug(f"=== INLET START === Total tokens: {token_count:,}, Threshold: {self.valves.token_threshold:,}")
+        self._debug(
+            f"=== INLET START === Total tokens: {token_count:,}, Threshold: {self.valves.token_threshold:,}"
+        )
         self._debug(self._format_messages_summary(messages, "INPUT"))
 
         # Dump full message content if enabled (for debugging message format)
         if self.valves.dump_full_messages:
-            print(f"[ContextSummarization] === FULL MESSAGE DUMP ({len(messages)} messages) ===")
+            print(
+                f"[ContextSummarization] === FULL MESSAGE DUMP ({len(messages)} messages) ==="
+            )
             for i, msg in enumerate(messages):
                 role = msg.get("role", "unknown")
                 content = msg.get("content", "")
@@ -470,10 +482,14 @@ Provide a clear, factual summary in 2-3 paragraphs."""
             print(f"[ContextSummarization] === END FULL MESSAGE DUMP ===")
 
         if token_count < self.valves.token_threshold:
-            self._debug(f"Under threshold ({token_count:,} < {self.valves.token_threshold:,}), passing through")
+            self._debug(
+                f"Under threshold ({token_count:,} < {self.valves.token_threshold:,}), passing through"
+            )
             return body  # No summarization needed
 
-        self._debug(f"TRIGGERED: {token_count:,} tokens >= {self.valves.token_threshold:,} threshold")
+        self._debug(
+            f"TRIGGERED: {token_count:,} tokens >= {self.valves.token_threshold:,} threshold"
+        )
 
         # Show status to user
         if __event_emitter__:
@@ -489,7 +505,9 @@ Provide a clear, factual summary in 2-3 paragraphs."""
 
         # Step 1: Extract base system prompt only (let RAG re-retrieve knowledge)
         system_messages, conversation = self.extract_base_system_prompt(messages)
-        self._debug(f"Extracted {len(system_messages)} system message(s), {len(conversation)} conversation messages")
+        self._debug(
+            f"Extracted {len(system_messages)} system message(s), {len(conversation)} conversation messages"
+        )
         if system_messages:
             system_tokens = self.count_all_tokens(system_messages)
             self._debug(f"System prompt tokens: {system_tokens:,}")
@@ -500,11 +518,15 @@ Provide a clear, factual summary in 2-3 paragraphs."""
             self.valves.messages_to_keep,
             self.valves.min_messages_to_keep,
         )
-        self._debug(f"Split: {len(old_messages)} old messages, {len(recent_messages)} recent messages")
+        self._debug(
+            f"Split: {len(old_messages)} old messages, {len(recent_messages)} recent messages"
+        )
 
         if not old_messages:
             # Can't summarize - warn user and pass through
-            self._debug("WARNING: No old messages to summarize, passing through unchanged")
+            self._debug(
+                "WARNING: No old messages to summarize, passing through unchanged"
+            )
             if __event_emitter__:
                 await __event_emitter__(
                     {
@@ -523,7 +545,9 @@ Provide a clear, factual summary in 2-3 paragraphs."""
         # Step 3: Prepare old messages for summarization (compacts tool results)
         prepared_messages, tool_summaries = self.prepare_for_summarization(old_messages)
         prepared_tokens = self.count_all_tokens(prepared_messages)
-        self._debug(f"Prepared {len(prepared_messages)} messages for summarization ({prepared_tokens:,} tokens)")
+        self._debug(
+            f"Prepared {len(prepared_messages)} messages for summarization ({prepared_tokens:,} tokens)"
+        )
         self._debug(f"Extracted {len(tool_summaries)} tool summaries to append")
         self._debug(self._format_messages_summary(prepared_messages, "PREPARED"))
 
@@ -543,11 +567,15 @@ Provide a clear, factual summary in 2-3 paragraphs."""
                 self._debug("WARNING: Summarization prompt is empty!")
             summary = await self.summarize_messages(prepared_messages, model)
             if summary:
-                self._debug(f"Summarization complete: {len(summary)} chars, {self.count_tokens(summary):,} tokens")
+                self._debug(
+                    f"Summarization complete: {len(summary)} chars, {self.count_tokens(summary):,} tokens"
+                )
                 if not self.valves.dump_full_messages:
                     self._debug(f"Summary:\n{summary}")
             else:
-                self._debug(f"WARNING: Summarization returned empty (prompt was {len(prompt)} chars)")
+                self._debug(
+                    f"WARNING: Summarization returned empty (prompt was {len(prompt)} chars)"
+                )
         except Exception as e:
             summarization_failed = True
             self._debug(f"ERROR: Summarization failed: {type(e).__name__}: {e}")
@@ -590,7 +618,9 @@ Provide a clear, factual summary in 2-3 paragraphs."""
         # Log final state
         new_token_count = self.count_all_tokens(new_messages)
         self._debug(f"=== INLET COMPLETE ===")
-        self._debug(f"Token reduction: {token_count:,} → {new_token_count:,} ({token_count - new_token_count:,} tokens saved)")
+        self._debug(
+            f"Token reduction: {token_count:,} → {new_token_count:,} ({token_count - new_token_count:,} tokens saved)"
+        )
         self._debug(f"Message reduction: {len(messages)} → {len(new_messages)}")
         self._debug(self._format_messages_summary(new_messages, "OUTPUT"))
 

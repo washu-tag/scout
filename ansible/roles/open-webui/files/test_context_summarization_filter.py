@@ -35,15 +35,15 @@ def filter_with_low_threshold():
 
 
 # Sample embedded tool result content (matches actual Open WebUI format)
-SAMPLE_TOOL_RESULT_CONTENT = '''
+SAMPLE_TOOL_RESULT_CONTENT = """
 "&quot;{\\n  \\&quot;results\\&quot;: [\\n    {\\n      \\&quot;epic_mrn\\&quot;: \\&quot;EPIC123\\&quot;,\\n      \\&quot;report_text\\&quot;: \\&quot;Sample report\\&quot;\\n    },\\n    {\\n      \\&quot;epic_mrn\\&quot;: \\&quot;EPIC456\\&quot;,\\n      \\&quot;report_text\\&quot;: \\&quot;Another report\\&quot;\\n    }\\n  ]\\n}&quot;"
 
 Here are the results from the database query.
-'''
+"""
 
-SAMPLE_ERROR_CONTENT = '''
+SAMPLE_ERROR_CONTENT = """
 "&quot;{\\n  \\&quot;error\\&quot;: \\&quot;Connection timeout to database server\\&quot;\\n}&quot;"
-'''
+"""
 
 
 class TestTokenCounting:
@@ -63,7 +63,9 @@ class TestTokenCounting:
     def test_count_tokens_longer_text(self, filter_instance):
         """Longer text returns higher token count."""
         short = filter_instance.count_tokens("Hi")
-        long = filter_instance.count_tokens("This is a much longer sentence with many more words.")
+        long = filter_instance.count_tokens(
+            "This is a much longer sentence with many more words."
+        )
         assert long > short
 
     def test_count_message_tokens_string_content(self, filter_instance):
@@ -84,8 +86,11 @@ class TestTokenCounting:
             "role": "user",
             "content": [
                 {"type": "text", "text": "Describe this image"},
-                {"type": "image_url", "image_url": {"url": "data:image/png;base64,..."}}
-            ]
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "data:image/png;base64,..."},
+                },
+            ],
         }
         result = filter_instance.count_message_tokens(msg)
         assert result > 0
@@ -154,12 +159,12 @@ class TestHasEmbeddedToolResult:
 
     def test_detect_html_escaped_results(self, filter_instance):
         """Detect HTML-escaped JSON with results."""
-        content = '&quot;results&quot;: [{...}]'
+        content = "&quot;results&quot;: [{...}]"
         assert filter_instance.has_embedded_tool_result(content) is True
 
     def test_detect_double_escaped_results(self, filter_instance):
         """Detect double-escaped JSON."""
-        content = '\\&quot;results\\&quot;: [{...}]'
+        content = "\\&quot;results\\&quot;: [{...}]"
         assert filter_instance.has_embedded_tool_result(content) is True
 
     def test_detect_quoted_results(self, filter_instance):
@@ -189,7 +194,9 @@ class TestHasEmbeddedToolResult:
 
     def test_detect_actual_format(self, filter_instance):
         """Detect actual Open WebUI format."""
-        assert filter_instance.has_embedded_tool_result(SAMPLE_TOOL_RESULT_CONTENT) is True
+        assert (
+            filter_instance.has_embedded_tool_result(SAMPLE_TOOL_RESULT_CONTENT) is True
+        )
 
 
 class TestExtractToolResultInfo:
@@ -225,14 +232,14 @@ class TestExtractToolResultInfo:
     def test_extract_error(self, filter_instance):
         """Extract error information from query execution failed pattern."""
         # Need duplicated pattern since real messages have it twice
-        content = 'query execution failed: query execution failed: Connection failed to database'
+        content = "query execution failed: query execution failed: Connection failed to database"
         info = filter_instance.extract_tool_result_info(content)
         assert info["has_error"] is True
         assert info["error_count"] >= 1
 
     def test_extract_from_html_escaped(self, filter_instance):
         """Extract from HTML-escaped content."""
-        content = '&quot;results&quot;: [1, 2, 3]'
+        content = "&quot;results&quot;: [1, 2, 3]"
         info = filter_instance.extract_tool_result_info(content)
         # May or may not parse depending on exact format, but should detect
         assert info["has_results"] is True
@@ -241,7 +248,7 @@ class TestExtractToolResultInfo:
         """Fall back to pattern counting when JSON parsing fails."""
         # Content that matches detection patterns but contains invalid JSON
         # This has the &quot;results&quot; pattern but the JSON is malformed
-        content = '&quot;results&quot;: [not valid json &quot;epic_mrn&quot;: &quot;123&quot;, &quot;message_dt&quot;: &quot;2023&quot;'
+        content = "&quot;results&quot;: [not valid json &quot;epic_mrn&quot;: &quot;123&quot;, &quot;message_dt&quot;: &quot;2023&quot;"
         info = filter_instance.extract_tool_result_info(content)
         assert info["has_results"] is True
 
@@ -251,7 +258,10 @@ class TestCompactAssistantWithToolResult:
 
     def test_compact_with_count_and_sample(self, filter_instance):
         """Compact message showing row count and sample row."""
-        msg = {"role": "assistant", "content": '[{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}, {"name": "Carol", "age": 35}]'}
+        msg = {
+            "role": "assistant",
+            "content": '[{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}, {"name": "Carol", "age": 35}]',
+        }
         result = filter_instance.compact_assistant_with_tool_result(msg)
         assert result["role"] == "assistant"
         assert "[Tool:" in result["content"]
@@ -261,7 +271,10 @@ class TestCompactAssistantWithToolResult:
 
     def test_compact_with_error_count(self, filter_instance):
         """Compact message showing failed query count."""
-        msg = {"role": "assistant", "content": 'query execution failed: Database error\nquery execution failed: Another error'}
+        msg = {
+            "role": "assistant",
+            "content": "query execution failed: Database error\nquery execution failed: Another error",
+        }
         result = filter_instance.compact_assistant_with_tool_result(msg)
         assert "[Tool:" in result["content"]
         assert "failed" in result["content"]
@@ -285,7 +298,7 @@ class TestCompactAssistantWithToolResult:
         """Fall back to character count for unparseable content."""
         content = "x" * 10000  # Large unparseable content
         # Manually make it detectable as tool result
-        content = '&quot;results&quot;' + content
+        content = "&quot;results&quot;" + content
         msg = {"role": "assistant", "content": content}
         result = filter_instance.compact_assistant_with_tool_result(msg)
         assert "[Tool:" in result["content"]
@@ -379,7 +392,9 @@ class TestPrepareForSummarization:
     def test_prepare_compacts_large_tool_results(self, filter_instance):
         """Large embedded tool results are compacted and tool summaries extracted."""
         # Create a message with embedded tool result exceeding threshold
-        large_result = '[' + ','.join(['{"x": ' + str(i) + '}' for i in range(100)]) + ']'
+        large_result = (
+            "[" + ",".join(['{"x": ' + str(i) + "}" for i in range(100)]) + "]"
+        )
         messages = [
             {"role": "assistant", "content": large_result},
         ]
@@ -486,7 +501,9 @@ class TestInlet:
     async def test_inlet_above_threshold_summarizes(self, filter_with_low_threshold):
         """Messages above threshold trigger summarization."""
         # Create enough messages to exceed low threshold
-        messages = [{"role": "user", "content": f"Message {i} " * 20} for i in range(10)]
+        messages = [
+            {"role": "user", "content": f"Message {i} " * 20} for i in range(10)
+        ]
         body = {"messages": messages, "model": "test-model"}
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -534,7 +551,9 @@ class TestInlet:
     @pytest.mark.asyncio
     async def test_inlet_emits_status_events(self, filter_with_low_threshold):
         """Status events are emitted during summarization."""
-        messages = [{"role": "user", "content": f"Message {i} " * 30} for i in range(10)]
+        messages = [
+            {"role": "user", "content": f"Message {i} " * 30} for i in range(10)
+        ]
         body = {"messages": messages, "model": "test-model"}
         event_emitter = AsyncMock()
 
@@ -545,9 +564,7 @@ class TestInlet:
                 return_value=mock_response
             )
 
-            await filter_with_low_threshold.inlet(
-                body, __event_emitter__=event_emitter
-            )
+            await filter_with_low_threshold.inlet(body, __event_emitter__=event_emitter)
 
             # Should have emitted at least 2 status events (start and done)
             assert event_emitter.call_count >= 2
@@ -556,7 +573,9 @@ class TestInlet:
     async def test_inlet_uses_summarizer_model_if_set(self, filter_with_low_threshold):
         """Uses summarizer_model valve if set."""
         filter_with_low_threshold.valves.summarizer_model = "summarizer-model"
-        messages = [{"role": "user", "content": f"Message {i} " * 30} for i in range(10)]
+        messages = [
+            {"role": "user", "content": f"Message {i} " * 30} for i in range(10)
+        ]
         body = {"messages": messages, "model": "chat-model"}
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -577,7 +596,9 @@ class TestInlet:
     ):
         """Uses chat model if summarizer_model not set."""
         filter_with_low_threshold.valves.summarizer_model = ""
-        messages = [{"role": "user", "content": f"Message {i} " * 30} for i in range(10)]
+        messages = [
+            {"role": "user", "content": f"Message {i} " * 30} for i in range(10)
+        ]
         body = {"messages": messages, "model": "chat-model"}
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -670,9 +691,13 @@ class TestEdgeCases:
         assert result > 1000
 
     @pytest.mark.asyncio
-    async def test_summarization_api_error_graceful_degradation(self, filter_with_low_threshold):
+    async def test_summarization_api_error_graceful_degradation(
+        self, filter_with_low_threshold
+    ):
         """Handle API errors gracefully with fallback to truncation."""
-        messages = [{"role": "user", "content": f"Message {i} " * 30} for i in range(10)]
+        messages = [
+            {"role": "user", "content": f"Message {i} " * 30} for i in range(10)
+        ]
         body = {"messages": messages, "model": "test-model"}
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -687,8 +712,7 @@ class TestEdgeCases:
             assert len(result["messages"]) < len(messages)
             # Should have fallback note about truncation
             has_truncation_note = any(
-                "truncated" in m.get("content", "").lower()
-                for m in result["messages"]
+                "truncated" in m.get("content", "").lower() for m in result["messages"]
             )
             assert has_truncation_note
 
@@ -712,11 +736,11 @@ class TestActualOpenWebUIFormat:
     def test_detect_actual_tool_result(self, filter_instance):
         """Detect tool result in actual Open WebUI format."""
         # Actual format from captured inlet body
-        content = '''
+        content = """
 "&quot;{\\n  \\&quot;results\\&quot;: [\\n    {\\n      \\&quot;epic_mrn\\&quot;: \\&quot;EPIC9262860\\&quot;,\\n      \\&quot;message_dt\\&quot;: \\&quot;2023-05-16T15:16:42Z\\&quot;,\\n      \\&quot;report_text\\&quot;: \\&quot;EXAMINATION: MRI...\\&quot;\\n    }\\n  ]\\n}&quot;"
 
 Here are ten reports with typos.
-'''
+"""
         assert filter_instance.has_embedded_tool_result(content) is True
 
     def test_extract_info_from_actual_format(self, filter_instance):
@@ -741,7 +765,12 @@ class TestRealWorldFormat:
     def test_extract_from_real_trino_response(self, filter_instance):
         """Extract info from real Trino MCP response with errors and results."""
         # Actual format uses \&quot; not \\&quot; (single backslash in raw string)
-        content = r'"&quot;[{&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;query execution failed: query execution failed: trino: query failed&#x27;}]&quot;"' + '\n\n' + r'"&quot;{\n  \&quot;results\&quot;: [\n    {\n      \&quot;diagnosis\&quot;: \&quot;Malignant neoplasm of lung\&quot;,\n      \&quot;patient_count\&quot;: 5\n    },\n    {\n      \&quot;diagnosis\&quot;: \&quot;Brain tumor\&quot;,\n      \&quot;patient_count\&quot;: 3\n    }\n  ]\n}&quot;"' + '\n\n**Results table here**'
+        content = (
+            r'"&quot;[{&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;query execution failed: query execution failed: trino: query failed&#x27;}]&quot;"'
+            + "\n\n"
+            + r'"&quot;{\n  \&quot;results\&quot;: [\n    {\n      \&quot;diagnosis\&quot;: \&quot;Malignant neoplasm of lung\&quot;,\n      \&quot;patient_count\&quot;: 5\n    },\n    {\n      \&quot;diagnosis\&quot;: \&quot;Brain tumor\&quot;,\n      \&quot;patient_count\&quot;: 3\n    }\n  ]\n}&quot;"'
+            + "\n\n**Results table here**"
+        )
 
         info = filter_instance.extract_tool_result_info(content)
         assert info["has_error"] is True
@@ -753,7 +782,11 @@ class TestRealWorldFormat:
 
     def test_compact_real_trino_response(self, filter_instance):
         """Compact real Trino response with errors, results, and commentary."""
-        content = r'"&quot;[{&#x27;text&#x27;: &#x27;query execution failed: query execution failed: error&#x27;}]&quot;"' + '\n\n' + r'"&quot;{\n  \&quot;results\&quot;: [\n    {\n      \&quot;modality\&quot;: \&quot;CT\&quot;,\n      \&quot;count\&quot;: 1234\n    },\n    {\n      \&quot;modality\&quot;: \&quot;MRI\&quot;,\n      \&quot;count\&quot;: 567\n    }\n  ]\n}&quot;"' + '''
+        content = (
+            r'"&quot;[{&#x27;text&#x27;: &#x27;query execution failed: query execution failed: error&#x27;}]&quot;"'
+            + "\n\n"
+            + r'"&quot;{\n  \&quot;results\&quot;: [\n    {\n      \&quot;modality\&quot;: \&quot;CT\&quot;,\n      \&quot;count\&quot;: 1234\n    },\n    {\n      \&quot;modality\&quot;: \&quot;MRI\&quot;,\n      \&quot;count\&quot;: 567\n    }\n  ]\n}&quot;"'
+            + """
 
 **Most common modalities:**
 
@@ -763,7 +796,8 @@ class TestRealWorldFormat:
 | MRI | 567 |
 
 The data shows CT is most common.
-'''
+"""
+        )
         msg = {"role": "assistant", "content": content}
         result = filter_instance.compact_assistant_with_tool_result(msg)
 
@@ -781,7 +815,9 @@ class TestGracefulDegradation:
     @pytest.mark.asyncio
     async def test_empty_summary_triggers_fallback(self, filter_with_low_threshold):
         """Empty summary from API triggers fallback to truncation."""
-        messages = [{"role": "user", "content": f"Message {i} " * 30} for i in range(10)]
+        messages = [
+            {"role": "user", "content": f"Message {i} " * 30} for i in range(10)
+        ]
         body = {"messages": messages, "model": "test-model"}
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -795,8 +831,7 @@ class TestGracefulDegradation:
 
             # Should have fallback note
             has_truncation_note = any(
-                "truncated" in m.get("content", "").lower()
-                for m in result["messages"]
+                "truncated" in m.get("content", "").lower() for m in result["messages"]
             )
             assert has_truncation_note
 
@@ -805,7 +840,9 @@ class TestGracefulDegradation:
         """API timeout triggers fallback to truncation."""
         import httpx
 
-        messages = [{"role": "user", "content": f"Message {i} " * 30} for i in range(10)]
+        messages = [
+            {"role": "user", "content": f"Message {i} " * 30} for i in range(10)
+        ]
         body = {"messages": messages, "model": "test-model"}
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -818,22 +855,25 @@ class TestGracefulDegradation:
             # Should have truncated messages
             assert len(result["messages"]) < len(messages)
             has_truncation_note = any(
-                "truncated" in m.get("content", "").lower()
-                for m in result["messages"]
+                "truncated" in m.get("content", "").lower() for m in result["messages"]
             )
             assert has_truncation_note
 
     @pytest.mark.asyncio
-    async def test_fallback_preserves_system_and_recent(self, filter_with_low_threshold):
+    async def test_fallback_preserves_system_and_recent(
+        self, filter_with_low_threshold
+    ):
         """Fallback preserves system prompt and recent messages."""
-        messages = [
-            {"role": "system", "content": "System prompt"},
-        ] + [
-            {"role": "user", "content": f"Old message {i} " * 30} for i in range(5)
-        ] + [
-            {"role": "user", "content": "Recent user"},
-            {"role": "assistant", "content": "Recent assistant"},
-        ]
+        messages = (
+            [
+                {"role": "system", "content": "System prompt"},
+            ]
+            + [{"role": "user", "content": f"Old message {i} " * 30} for i in range(5)]
+            + [
+                {"role": "user", "content": "Recent user"},
+                {"role": "assistant", "content": "Recent assistant"},
+            ]
+        )
         body = {"messages": messages, "model": "test-model"}
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -852,7 +892,9 @@ class TestGracefulDegradation:
     @pytest.mark.asyncio
     async def test_fallback_emits_status_events(self, filter_with_low_threshold):
         """Fallback emits appropriate status events."""
-        messages = [{"role": "user", "content": f"Message {i} " * 30} for i in range(10)]
+        messages = [
+            {"role": "user", "content": f"Message {i} " * 30} for i in range(10)
+        ]
         body = {"messages": messages, "model": "test-model"}
         event_emitter = AsyncMock()
 
@@ -932,7 +974,9 @@ class TestDebugLogging:
         assert "[ContextSummarization]" in captured.out
 
     @pytest.mark.asyncio
-    async def test_no_debug_output_when_disabled(self, filter_with_low_threshold, capsys):
+    async def test_no_debug_output_when_disabled(
+        self, filter_with_low_threshold, capsys
+    ):
         """No debug output when disabled."""
         filter_with_low_threshold.valves.debug_logging = False
         messages = [{"role": "user", "content": "Hi"}]
@@ -951,7 +995,16 @@ class TestToolSummariesInOutput:
     async def test_tool_summaries_appended_to_summary(self, filter_with_low_threshold):
         """Tool summaries are appended after the LLM-generated summary."""
         # Create messages with a large tool result
-        large_result = '[' + ','.join(['{"patient": "P' + str(i) + '", "count": ' + str(i) + '}' for i in range(50)]) + ']'
+        large_result = (
+            "["
+            + ",".join(
+                [
+                    '{"patient": "P' + str(i) + '", "count": ' + str(i) + "}"
+                    for i in range(50)
+                ]
+            )
+            + "]"
+        )
         messages = [
             {"role": "user", "content": "Query the database " * 20},
             {"role": "assistant", "content": large_result},
@@ -962,7 +1015,9 @@ class TestToolSummariesInOutput:
 
         with patch("httpx.AsyncClient") as mock_client:
             mock_response = MagicMock()
-            mock_response.json.return_value = {"response": "Summary of the conversation."}
+            mock_response.json.return_value = {
+                "response": "Summary of the conversation."
+            }
             mock_client.return_value.__aenter__.return_value.post = AsyncMock(
                 return_value=mock_response
             )
@@ -992,14 +1047,16 @@ class TestMessageReconstruction:
     @pytest.mark.asyncio
     async def test_message_order_preserved(self, filter_with_low_threshold):
         """Message order is preserved after summarization."""
-        messages = [
-            {"role": "system", "content": "System prompt"},
-        ] + [
-            {"role": "user", "content": f"User {i} " * 30} for i in range(5)
-        ] + [
-            {"role": "user", "content": "Final user message"},
-            {"role": "assistant", "content": "Final assistant response"},
-        ]
+        messages = (
+            [
+                {"role": "system", "content": "System prompt"},
+            ]
+            + [{"role": "user", "content": f"User {i} " * 30} for i in range(5)]
+            + [
+                {"role": "user", "content": "Final user message"},
+                {"role": "assistant", "content": "Final assistant response"},
+            ]
+        )
         body = {"messages": messages, "model": "test-model"}
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -1020,7 +1077,9 @@ class TestMessageReconstruction:
     @pytest.mark.asyncio
     async def test_summary_format(self, filter_with_low_threshold):
         """Summary message has correct format."""
-        messages = [{"role": "user", "content": f"Message {i} " * 30} for i in range(10)]
+        messages = [
+            {"role": "user", "content": f"Message {i} " * 30} for i in range(10)
+        ]
         body = {"messages": messages, "model": "test-model"}
 
         with patch("httpx.AsyncClient") as mock_client:
