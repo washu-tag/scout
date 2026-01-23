@@ -120,6 +120,24 @@ We could point our internal Open WebUI to a cloud-hosted model, for instance on 
 
 This alternative may be viable for Scouts installations at other places with different networking configurations.
 
+### Co-located Ollama on a Scout Cluster
+
+Rather than deploying a dedicated Ollama cluster, we considered hosting Ollama on one Scout cluster and having other Scout clusters connect to it. This would reduce the number of clusters to manage and potentially simplify infrastructure.
+
+However, this approach introduces significant complexity around ingress and authentication. Scout uses Traefik with oauth2-proxy middleware to protect user-facing services. To make Ollama accessible to other Scout clusters without authentication (since Ollama has no auth), we would need one of:
+
+1. **Separate Ingress without oauth2-proxy**: Exposes Ollama to anyone who can reach the hostname; still requires external firewall rules but now the security boundary is less clear (same ingress controller serving both protected and unprotected endpoints)
+
+2. **LoadBalancer service with firewall**: Requires MetalLB or similar for on-prem K3s, adding operational complexity; firewall rules are at the same level as the dedicated cluster approach but with more moving parts
+
+3. **Tailscale/VPN internal routing**: Requires Tailscale deployment in each Scout cluster and coordination of ACLs, adding another networking layer
+
+None of these options eliminate the need for network-level firewall rules—they just move where those rules apply. Meanwhile, they add complexity inside the Scout cluster by requiring careful management of which services get oauth2-proxy protection and which don't. A misconfigured Ingress annotation could inadvertently expose Ollama publicly.
+
+The co-located approach also creates lifecycle entanglement: the Ollama service becomes tied to a specific Scout cluster's upgrade and maintenance schedule, whereas a dedicated cluster can be managed independently.
+
+We chose the dedicated Ollama cluster approach because it provides cleaner separation of concerns with security enforced at the VM/cluster level rather than the Ingress level. The additional infrastructure is primarily the K3s control plane—the GPU resources would be dedicated regardless of which architecture we chose.
+
 ## Layer Classification (per ADR 0011)
 
 | Layer | Scout Cluster | Ollama Cluster |
