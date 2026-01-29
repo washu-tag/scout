@@ -101,7 +101,7 @@
             notification-policy.yaml: '{{ notification_policy_content_b64 }}'
       when: >
         (grafana_alert_contact_point == 'slack' and slack_channel_id != '' and slack_token != '') or
-        (grafana_alert_contact_point == 'email' and grafana_smtp_host != '' and grafana_smtp_user != '')
+        (grafana_alert_contact_point == 'email' and grafana_smtp_host != '')
 
     - name: Find all Grafana contact points
       ansible.builtin.find:
@@ -132,7 +132,7 @@
         grafana_alert_contact_point in (item.path | basename) and
         (
           ('slack' in (item.path | basename) and slack_channel_id != '' and slack_token != '') or
-          ('email' in (item.path | basename) and grafana_smtp_host != '' and grafana_smtp_user != '')
+          ('email' in (item.path | basename) and grafana_smtp_host != '')
         )
       loop_control:
         label: '{{ item.path | basename }}'
