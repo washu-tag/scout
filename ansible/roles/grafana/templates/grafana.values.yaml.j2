@@ -35,6 +35,15 @@ grafana.ini:
     from_name: "{{ grafana_smtp_from_name | default('Scout') }}"
     skip_verify: "{{ grafana_smtp_skip_verify | default(false) }}"
 {% endif %}
+{% if air_gapped | default(false) %}
+  analytics:
+    reporting_enabled: false
+    check_for_updates: false
+    check_for_plugin_updates: false
+  plugins:
+    preinstall_disabled: true
+    public_key_retrieval_disabled: true
+{% endif %}
 
 env:
   GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION: true
