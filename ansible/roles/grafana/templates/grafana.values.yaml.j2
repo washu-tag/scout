@@ -64,6 +64,94 @@ extraSecretMounts:
     subPath: ""
 {% endif %}
 
+{% if air_gapped | default(false) %}
+# Air-gapped plugin installation via ORAS init container
+extraInitContainers:
+  - name: plugin-installer
+    image: '{{ oras_image }}:v{{ oras_version }}'
+    env:
+      - name: HOME
+        value: /tmp
+      - name: REGISTRY_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: grafana-plugin-registry-credentials
+            key: username
+      - name: REGISTRY_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: grafana-plugin-registry-credentials
+            key: password
+    volumeMounts:
+      - name: plugins
+        mountPath: /var/lib/grafana/plugins
+      - name: plugin-config
+        mountPath: /config
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        echo "Starting Grafana plugin installation from Harbor..."
+
+        # Read configuration
+        REGISTRY=$(cat /config/registry)
+        PROJECT=$(cat /config/project)
+
+        # Login to Harbor registry
+        echo "Logging into Harbor registry..."
+        oras login "${REGISTRY}" \
+          --username "${REGISTRY_USERNAME}" \
+          --password "${REGISTRY_PASSWORD}" \
+          --insecure
+
+        # Parse and install each plugin
+        echo "Installing plugins..."
+        PLUGINS=$(cat /config/plugins)
+        echo "${PLUGINS}" | sed 's/\[//g' | sed 's/\]//g' | sed 's/},{/}\n{/g' | while read -r plugin_json; do
+          # Extract id and version using simple string manipulation
+          PLUGIN_ID=$(echo "${plugin_json}" | sed 's/.*"id": *"\([^"]*\)".*/\1/')
+          PLUGIN_VERSION=$(echo "${plugin_json}" | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+
+          if [ -n "${PLUGIN_ID}" ] && [ -n "${PLUGIN_VERSION}" ]; then
+            echo "Installing plugin: ${PLUGIN_ID} version ${PLUGIN_VERSION}"
+
+            # Pull plugin from Harbor
+            PLUGIN_DIR="/var/lib/grafana/plugins/${PLUGIN_ID}"
+            mkdir -p "${PLUGIN_DIR}"
+            cd /tmp
+
+            oras pull "${REGISTRY}/${PROJECT}/${PLUGIN_ID}:${PLUGIN_VERSION}" \
+              --insecure \
+              --output /tmp
+
+            # Extract plugin
+            PLUGIN_ZIP=$(ls /tmp/*.zip 2>/dev/null | head -1)
+            if [ -n "${PLUGIN_ZIP}" ]; then
+              unzip -o "${PLUGIN_ZIP}" -d "${PLUGIN_DIR}"
+              rm -f "${PLUGIN_ZIP}"
+              echo "Successfully installed ${PLUGIN_ID}"
+            else
+              echo "WARNING: No ZIP file found for ${PLUGIN_ID}"
+            fi
+          fi
+        done
+
+        echo "Plugin installation complete!"
+        ls -la /var/lib/grafana/plugins/
+
+extraContainerVolumes:
+  - name: plugins
+    emptyDir: {}
+  - name: plugin-config
+    configMap:
+      name: grafana-plugin-config
+
+extraVolumeMounts:
+  - name: plugins
+    mountPath: /var/lib/grafana/plugins
+{% endif %}
+
 ingress:
   enabled: true
   ingressClassName: traefik

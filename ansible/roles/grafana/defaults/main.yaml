@@ -36,3 +36,20 @@ grafana_resources_default:
   limits:
     cpu: 1
     memory: 1Gi
+
+# Plugin configuration for air-gapped deployments
+# Plugins are downloaded and pushed to Harbor via ORAS, then pulled by init container
+grafana_plugins:
+  - id: grafana-lokiexplore-app
+    version: 1.0.34
+  - id: grafana-metricsdrilldown-app
+    version: 1.0.29
+
+# Harbor configuration for Grafana plugins (air-gapped only)
+grafana_plugins_harbor_project: grafana-plugins
+grafana_plugins_harbor_robot_name: robot$grafana-plugin-puller
+
+# ORAS image for plugin push/pull operations
+# This image is pulled through Harbor's ghcr proxy in air-gapped mode
+oras_version: 1.3.0
+oras_image: ghcr.io/oras-project/oras

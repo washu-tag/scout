@@ -6,6 +6,29 @@
   vars:
     ns: '{{ grafana_namespace }}'
 
+- name: Set harbor variables from staging host for air-gapped deployments
+  ansible.builtin.set_fact:
+    # Get harbor config from staging host where Harbor is deployed
+    _staging_host: "{{ groups['staging'][0] }}"
+    _staging_vars: "{{ hostvars[groups['staging'][0]] }}"
+  when: air_gapped | default(false)
+
+- name: Compute harbor URL from staging host variables
+  vars:
+    _harbor_expose_type: "{{ _staging_vars.harbor_expose_type | default('ingress') }}"
+    _harbor_subdomain: "{{ _staging_vars.harbor_subdomain | default('harbor') }}"
+    _harbor_nodeport_https: '{{ _staging_vars.harbor_nodeport_https | default(30443) }}'
+    _external_url: '{{ _staging_vars.external_url | default(_staging_host) }}'
+  ansible.builtin.set_fact:
+    harbor_hostname: "{% if _harbor_expose_type == 'ingress' and _harbor_subdomain | length > 0 %}{{ _harbor_subdomain }}.{% endif %}{{ _external_url }}"
+    harbor_registry_url: "https://{% if _harbor_expose_type == 'ingress' and _harbor_subdomain | length > 0 %}{{ _harbor_subdomain }}.{% endif %}{{ _external_url }}{% if _harbor_expose_type == 'nodePort' %}:{{ _harbor_nodeport_https }}{% endif %}"
+    harbor_admin_password: '{{ _staging_vars.harbor_admin_password }}'
+  when: air_gapped | default(false)
+
+- name: Stage Grafana plugins to Harbor (air-gapped only)
+  ansible.builtin.include_tasks: stage_plugins.yaml
+  when: air_gapped | default(false)
+
 - name: Create SMTP secret
   no_log: true
   kubernetes.core.k8s:
