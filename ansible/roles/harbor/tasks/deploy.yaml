@@ -204,6 +204,22 @@
   register: project_create_result
   changed_when: project_create_result.status == 201
 
+- name: Make default library project private (security hardening)
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/projects/library'
+    validate_certs: false
+    method: PUT
+    user: admin
+    password: '{{ harbor_admin_password }}'
+    force_basic_auth: true
+    body_format: json
+    status_code: [200]
+    body:
+      metadata:
+        public: 'false'
+  register: library_update_result
+  changed_when: library_update_result.status == 200
+
 - name: Display Harbor deployment status
   ansible.builtin.debug:
     msg: 'Harbor deployed successfully at {{ harbor_registry_url }}'
