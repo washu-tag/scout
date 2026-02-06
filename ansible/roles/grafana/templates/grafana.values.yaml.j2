@@ -108,7 +108,7 @@ extraInitContainers:
         # Parse and install each plugin
         echo "Installing plugins..."
         PLUGINS=$(cat /config/plugins)
-        echo "${PLUGINS}" | sed 's/\[//g' | sed 's/\]//g' | sed 's/},{/}\n{/g' | while read -r plugin_json; do
+        echo "${PLUGINS}" | sed 's/\[//g' | sed 's/\]//g' | sed 's/}, *{/}\n{/g' | while read -r plugin_json; do
           # Extract id and version using simple string manipulation
           PLUGIN_ID=$(echo "${plugin_json}" | sed 's/.*"id": *"\([^"]*\)".*/\1/')
           PLUGIN_VERSION=$(echo "${plugin_json}" | sed 's/.*"version": *"\([^"]*\)".*/\1/')
