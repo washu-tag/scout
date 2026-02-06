@@ -42,7 +42,7 @@ grafana.ini:
     check_for_plugin_updates: false
   plugins:
     public_key_retrieval_disabled: true
-    preinstall: "{% for p in grafana_plugins %}{{ p.id }}@{{ p.version }}{% if not loop.last %},{% endif %}{% endfor %}"
+    preinstall_disabled: true
 {% endif %}
 
 env:
