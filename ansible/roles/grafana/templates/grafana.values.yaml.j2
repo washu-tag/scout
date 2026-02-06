@@ -209,5 +209,18 @@ persistence:
 
 resources: {{ grafana_resources_default | combine(grafana_resources | default({}), recursive=true) | to_json }}
 
+# The chart drops all capabilities from init-chown-data except CHOWN, but it
+# also needs DAC_OVERRIDE to traverse directories Grafana creates with mode 2700.
+# Without DAC_OVERRIDE init-chown-data crashes on redeploy.
+# See https://github.com/grafana/helm-charts/issues/752
+initChownData:
+  securityContext:
+    capabilities:
+      add:
+        - CHOWN
+        - DAC_OVERRIDE
+      drop:
+        - ALL
+
 livenessProbe:
   initialDelaySeconds: 180
