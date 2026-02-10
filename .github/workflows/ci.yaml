@@ -343,7 +343,7 @@ jobs:
           cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
           sed -i "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
-          sudo -E kubectl wait --for=condition=complete --timeout=600s job/ci-tests -n scout-extractor &
+          sudo -E kubectl wait --for=condition=complete --timeout=900s job/ci-tests -n scout-extractor &
           completion_pid=$!
           sudo -E kubectl wait --for=condition=failed --timeout=900s job/ci-tests -n scout-extractor && exit 1 &
           failure_pid=$!

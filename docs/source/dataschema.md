@@ -1,10 +1,13 @@
 # Data Schema
 
 Scout is backed by [Delta Lake](https://delta.io/) and [MinIO](https://min.io/) to store 
-and manage HL7 radiology reports and other data and metadata. There is one main table that contains the report data. 
-Below is a description of the report table schema and the mapping of HL7 fields to the report table columns. Note that 
-some fields are derived from others, and some fields may not be directly mapped to HL7 fields.
+and manage HL7 radiology reports and other data and metadata. There is one main table that contains the report data,
+along with several downstream tables that contain results derived from the primary table. These additional tables
+are documented in {ref}`Downstream Tables <downstream_tables_ref>`. Below is a description of the report table schema
+and the mapping of HL7 fields to the report table columns. Note that some fields are derived from others, and some fields
+may not be directly mapped to HL7 fields.
 
+(schema_table_ref)=
 | Column Name                         | HL7 Report Field | Data Type       | Nullable | Description/Notes                                                                                                                                                                                                          |
 |-------------------------------------|------------------|-----------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `source_file`                       |                  | string          | No       | The location of the report file.                                                                                                                                                                                           |
@@ -213,3 +216,11 @@ We also allow a nonstandard `ADN` suffix to match what our 2.3 reports seem to u
 | `GDT`                 | `report_section_findings`        |
 | `IMP`                 | `report_section_impression`      |
 | `TCM`                 | `report_section_technician_note` |
+
+(downstream_tables_ref)=
+# Downstream Tables
+
+In addition to the primary reports table, Scout contains several derived tables to provide additional information.
+
+## reports_curated
+
