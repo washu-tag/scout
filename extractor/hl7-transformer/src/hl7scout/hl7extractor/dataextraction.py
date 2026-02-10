@@ -27,6 +27,8 @@ def perform_table_operations(
         for name, table in tables.items():
             table.process_source_data(batch_df, spark, f"default.{name}")
 
+    warehouse_dir = spark.conf.get("spark.sql.warehouse.dir")
+
     full_table = (
         spark.readStream.format("delta")
         .option("readChangeFeed", "true")
@@ -34,7 +36,7 @@ def perform_table_operations(
     )
     latest_table_operation = (
         full_table.writeStream.foreachBatch(streaming_function)
-        .option("checkpointLocation", f"s3a://scratch/checkpoints/{source_table}")
+        .option("checkpointLocation", f"{warehouse_dir}/checkpoints/{source_table}")
         .trigger(availableNow=True)
         .start()
     )
