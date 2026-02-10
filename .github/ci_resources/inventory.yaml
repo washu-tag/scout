@@ -77,7 +77,7 @@ k3s_cluster:
     extractor_data_dir: '{{ scout_repo_dir }}/tests/staging_test_data'
 
     # Object storage paths
-    lake_bucket: ci-lake
+    lake_bucket: lake
     scratch_bucket: ci-scratch
 
     # Resources
