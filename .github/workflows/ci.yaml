@@ -345,7 +345,7 @@ jobs:
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
           sudo -E kubectl wait --for=condition=complete --timeout=600s job/ci-tests -n scout-extractor &
           completion_pid=$!
-          sudo -E kubectl wait --for=condition=failed --timeout=600s job/ci-tests -n scout-extractor && exit 1 &
+          sudo -E kubectl wait --for=condition=failed --timeout=900s job/ci-tests -n scout-extractor && exit 1 &
           failure_pid=$!
           wait -n $completion_pid $failure_pid
       - name: Test Logs
