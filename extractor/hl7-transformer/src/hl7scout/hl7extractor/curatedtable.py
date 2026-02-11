@@ -39,7 +39,7 @@ def curate_silver_table(batch_df, spark, table_name):
     to link the small amount of 2.3 reports to 2.7 reports (and leave 2.4 reports isolated).
 
     To derive a patient ID, this process is designed from assumptions/inferences and
-    a good deal of manual inspection of the data. The empirical data is all follows:
+    a good deal of manual inspection of the data. The empirical data is as follows:
     * We have 3 HL7 versions represented in our data: 2.3, 2.4, and 2.7. The IDs look
       different corresponding to their HL7 version.
     * In 2.3, reports have an ID in PID-2 (the legacy field), and sometimes an ID in PID-3.
