@@ -55,14 +55,11 @@ def process_derivative_data(spark: SparkSession, report_table_name: str):
     activity.logger.info(
         f"Processing derivative data tables: {[table.table_name for table in derivative_tables.values()]}"
     )
-    # noinspection PyTypeChecker
-    root_table = DerivativeTable(
-        source_table=None,
-        table_name=report_table_name,
-        process_source_data=None,
-    )
-    derivative_tables[report_table_name] = root_table
+
+    root_table_children = {}
     for name, table in derivative_tables.items():
-        if table.source_table is not None:
+        if table.source_table == report_table_name:
+            root_table_children[name] = table
+        else:
             derivative_tables[table.source_table].children_tables[name] = table
-    perform_table_operations(spark, report_table_name, root_table.children_tables)
+    perform_table_operations(spark, report_table_name, root_table_children)
