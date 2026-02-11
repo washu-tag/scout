@@ -54,7 +54,6 @@
 - name: Install packages (air-gapped mode)
   when:
     - air_gapped | default(false) | bool
-    - packages_check.rc != 0
   block:
     - name: Create temp directory on control node for RPM artifacts
       ansible.builtin.tempfile:
@@ -89,6 +88,7 @@
       vars:
         rpm_staging_dir: '{{ target_node_staging_dir.path }}'
         rpm_artifact_dir: '{{ control_node_rpm_archive_dir }}'
+        rpm_package_names: '{{ package_names }}'
 
   always:
     - name: Clean up target node staging directory
