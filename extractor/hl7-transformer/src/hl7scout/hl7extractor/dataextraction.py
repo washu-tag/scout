@@ -1,4 +1,3 @@
-from typing import Dict
 from temporalio import activity
 
 from pyspark.sql import SparkSession
@@ -9,7 +8,7 @@ from .latesttable import latest_table
 from .derivativetable import DerivativeTable
 
 
-def define_derivative_tables(report_table_name: str) -> Dict[str, DerivativeTable]:
+def define_derivative_tables(report_table_name: str) -> dict[str, DerivativeTable]:
     return {
         table.table_name: table
         for table in [
@@ -21,7 +20,7 @@ def define_derivative_tables(report_table_name: str) -> Dict[str, DerivativeTabl
 
 
 def perform_table_operations(
-    spark: SparkSession, source_table: str, tables: Dict[str, DerivativeTable]
+    spark: SparkSession, source_table: str, tables: dict[str, DerivativeTable]
 ):
     def streaming_function(batch_df, batch_id):
         for name, table in tables.items():
