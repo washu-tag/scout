@@ -5,7 +5,7 @@ from pyspark.sql import DataFrame, Column, Window
 from pyspark.sql import functions as F
 
 
-def merge_df_into_dt_on_source_file(dt: DeltaTable, df: DataFrame, merge_col: str):
+def merge_df_into_dt_on_column(dt: DeltaTable, df: DataFrame, merge_col: str):
     (
         dt.alias("s")
         .merge(

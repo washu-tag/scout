@@ -3,7 +3,7 @@ from delta import DeltaTable
 from .derivativetable import DerivativeTable
 from .sparkutils import (
     filter_df_for_update_inserts,
-    merge_df_into_dt_on_source_file,
+    merge_df_into_dt_on_column,
     empty_string_coalesce,
     create_table_from_df,
 )
@@ -118,7 +118,7 @@ def curate_silver_table(batch_df, spark, table_name):
 
     # Update existing curated table or create it if it does not yet exist
     if spark.catalog.tableExists(table_name):
-        merge_df_into_dt_on_source_file(
+        merge_df_into_dt_on_column(
             DeltaTable.forName(spark, table_name),
             curated_df,
             "primary_report_identifier",
