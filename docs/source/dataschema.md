@@ -246,14 +246,14 @@ actually correspond to the same patient as Scout does not have the information t
 (latest_table_ref)=
 ### reports_latest
 
-In practice, the report messages contain several versions of a single report, which are all captured as individual rows
+In practice, the report messages contain several versions of a single report which are all captured as individual rows
 in the base report table and {ref}`curated table <curated_table_ref>`. For many purposes, it is significantly easier to
 work with only the canonical "latest" version of each report without needing to worry about deduplication. The "latest" table
-provides that as the subset of the curated table where only the most recent (defined by `message_dt`) report is kept.
+provides this as the subset of the curated table where only the most recent (defined by `message_dt`) report is kept.
 
-_Warning_: while working with data in the latest table, it is important to understand the consequences. While most of the reports
+_Warning_: while working with data in the latest table, it is important to understand the consequences. Most of the reports
 that have been dropped in moving from the curated table to the latest table are earlier copies of a report missing some
-data added later, there _are_ some types of studies where the study is read in parts such that analysis of the study is broken
+data added later. However, there _are_ some types of studies where the study is read in parts such that analysis of the study is broken
 up into two distinct reports. In these scenarios, one of the distinct reports will be treated as a preliminary copy
 and therefore not be included in the latest table.
 
