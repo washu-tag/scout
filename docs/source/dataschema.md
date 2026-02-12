@@ -258,5 +258,15 @@ up into two distinct reports. In these scenarios, one of the distinct reports wi
 and therefore not be included in the latest table.
 
 ## reports_dx
-... explain column chnges id col, dx exp
-... 
+
+The "dx" table (for "diagnosis") builds on the {ref}`latest table <latest_table_ref>`. Therefore, users should be aware
+of the warning listed in the latest table documentation. Rather than a row in the dx table representing a report, each row
+represents one of the diagnoses contained in the report. As such, a report in the latest table containing no diagnoses will
+have _no_ corresponding rows in the dx table while a report with 3 diagnoses will be represented as 3 rows.
+
+In translating the information from the latest table to the dx table, the `diagnoses` and `diagnoses_consolidated` columns which represent
+all the diagnoses in the report are dropped. Each dx row will have a unique ID in `diagnosis_id` in the form of the unique
+ID for the report and an index starting from 0 per report, separated by an underscore. Note that this means that updates to
+the latest table with new diagnostic information may overwrite and/or delete rows in this table when looking by id. Additionally,
+each row contains a diagnosis with the columns `diagnosis_code`, `diagnosis_code_text`, and `diagnosis_code_coding_system`, matching
+the earlier structs.
