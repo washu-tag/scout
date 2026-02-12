@@ -218,12 +218,12 @@ We also allow a nonstandard `ADN` suffix to match what our 2.3 reports seem to u
 | `TCM`                 | `report_section_technician_note` |
 
 (downstream_tables_ref)=
-# Downstream Tables
+## Downstream Tables
 
 In addition to the primary reports table, Scout contains several derived tables to provide additional information.
 
 (curated_table_ref)=
-## reports_curated
+### reports_curated
 
 The "curated" reports table contains a few changes targeted at smoothing out some of the WashU-specific eccentricities
 in the base report table. A row in the curated table looks exactly the same as a row in the {ref}`base reports table <schema_table_ref>`
@@ -244,7 +244,7 @@ that will hopefully be consistent for reports in a given HL7 version. In other w
 actually correspond to the same patient as Scout does not have the information to disambiguate in all cases.
 
 (latest_table_ref)=
-## reports_latest
+### reports_latest
 
 In practice, the report messages contain several versions of a single report, which are all captured as individual rows
 in the base report table and {ref}`curated table <curated_table_ref>`. For many purposes, it is significantly easier to
@@ -257,7 +257,7 @@ data added later, there _are_ some types of studies where the study is read in p
 up into two distinct reports. In these scenarios, one of the distinct reports will be treated as a preliminary copy
 and therefore not be included in the latest table.
 
-## reports_dx
+### reports_dx
 
 The "dx" table (for "diagnosis") builds on the {ref}`latest table <latest_table_ref>`. Therefore, users should be aware
 of the warning listed in the latest table documentation. Rather than a row in the dx table representing a report, each row
