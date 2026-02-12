@@ -68,7 +68,13 @@
                           echo "ERROR: No RPM files found to archive!"
                           exit 1
                         fi
-                        tar czf rpms.tar.gz *.rpm
+
+                        echo "Generating repository metadata..."
+                        dnf install -y createrepo_c
+                        createrepo_c /downloads
+                        echo "Repository metadata created"
+
+                        tar czf rpms.tar.gz *.rpm repodata/
                         echo "Archive created: $(ls -lh rpms.tar.gz)"
                         echo "Archive contains $(tar tzf rpms.tar.gz | wc -l) files"
                 containers:
