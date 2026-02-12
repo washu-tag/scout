@@ -222,5 +222,41 @@ We also allow a nonstandard `ADN` suffix to match what our 2.3 reports seem to u
 
 In addition to the primary reports table, Scout contains several derived tables to provide additional information.
 
+(curated_table_ref)=
 ## reports_curated
 
+The "curated" reports table contains a few changes targeted at smoothing out some of the WashU-specific eccentricities
+in the base report table. A row in the curated table looks exactly the same as a row in the {ref}`base reports table <schema_table_ref>`
+(and there is a 1-1 mapping between them), except for the following changes:
+
+| Base report table Column                                  | Curated report table Column                                                                                                                                                                                                                                                             |
+|-----------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `source_file`                                             | Renamed to `primary_report_identifier`                                                                                                                                                                                                                                                  |
+| `orc_2_placer_order_number` & `obr_2_placer_order_number` | Replaced with `placer_order_number`, containing the first non-empty value from the source columns                                                                                                                                                                                       |
+| `orc_3_filler_order_number` & `obr_3_filler_order_number` | Replaced with `accession_number` and `primary_study_identifier`, containing the first non-empty value from the source columns. For our data, `accession_number` and `primary_study_identifier` will be duplicates, but they exist as separate columns for sites where that is not true. |
+| `patient_ids`                                             | See note below about `primary_patient_identifier`                                                                                                                                                                                                                                       |
+
+In practice, the Patient IDs available to Scout in the reports are rather messy and have some consistency problems. In the curated
+table, Scout persists the {ref}`patient_ids <patient_ids_ref>` column as-is, but it also derives a patient ID to store in
+`primary_patient_identifier`. Due to limitations in the data available to Scout, this will not allow a user to perform longitudinal
+queries that can track an individual patient over all HL7 versions in the delta lake. Rather, it should provide a single column
+that will hopefully be consistent for reports in a given HL7 version. In other words, two values of `primary_patient_identifier` may
+actually correspond to the same patient as Scout does not have the information to disambiguate in all cases.
+
+(latest_table_ref)=
+## reports_latest
+
+In practice, the report messages contain several versions of a single report, which are all captured as individual rows
+in the base report table and {ref}`curated table <curated_table_ref>`. For many purposes, it is significantly easier to
+work with only the canonical "latest" version of each report without needing to worry about deduplication. The "latest" table
+provides that as the subset of the curated table where only the most recent (defined by `message_dt`) report is kept.
+
+_Warning_: while working with data in the latest table, it is important to understand the consequences. While most of the reports
+that have been dropped in moving from the curated table to the latest table are earlier copies of a report missing some
+data added later, there _are_ some types of studies where the study is read in parts such that analysis of the study is broken
+up into two distinct reports. In these scenarios, one of the distinct reports will be treated as a preliminary copy
+and therefore not be included in the latest table.
+
+## reports_dx
+... explain column chnges id col, dx exp
+... 

@@ -262,7 +262,7 @@ public class TestScoutQueries extends BaseTest {
     private void queryAndValidate(TestQuery<?> query, String tableName) {
         final String sql = query.getSql().replace(TestQuerySuite.TABLE_PLACEHOLDER, tableName);
         logger.info("Performing query with spark: {}", sql);
-        query.getExpectedQueryResult().validateResult(spark.sql(sql));
+        query.getExpectedQueryResult().validateResult(spark.sql(sql), config.getTestContext());
     }
 
     private String curatedTable(String baseTableName) {

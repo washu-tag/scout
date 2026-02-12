@@ -75,10 +75,10 @@ def curate_silver_table(batch_df, spark, table_name):
         .withColumns(
             {
                 "placer_order_number": empty_string_coalesce(
-                    "orc_2_placer_order_number", "obr_2_placer_order_number"
+                    "obr_2_placer_order_number", "orc_2_placer_order_number"
                 ),
                 "filler_order_number": empty_string_coalesce(
-                    "orc_3_filler_order_number", "obr_3_filler_order_number"
+                    "obr_3_filler_order_number", "orc_3_filler_order_number"
                 ),
                 "primary_patient_identifier": F.when(
                     F.col("version_id") == "2.7",
