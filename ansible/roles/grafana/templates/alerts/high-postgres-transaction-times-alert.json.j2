@@ -76,7 +76,8 @@
           "for": "1m",
           "annotations": {
             "description": "High Postgres transaction times for user {{ $labels.usename }} and database {{ $labels.datname }}",
-            "summary": "High Postgres transaction times for user {{ $labels.usename }} and database {{ $labels.datname }}. Longest transaction time currently {{ printf \"%.2f\" $values.A.Value }} seconds."
+            "summary": "High Postgres transaction times for user {{ $labels.usename }} and database {{ $labels.datname }}. Longest transaction time currently {{ printf \"%.2f\" $values.A.Value }} seconds.",
+            "URL": "[% server_hostname %]"
           },
           "labels": {},
           "isPaused": false,
