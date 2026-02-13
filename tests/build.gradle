@@ -22,7 +22,7 @@ repositories {
     }
 }
 
-final String vQuerySpec = '1.1-SNAPSHOT'
+final String vQuerySpec = '1.2-SNAPSHOT'
 final String vCheckstyle = '10.21.2'
 final String vLog4j2Bridge = '2.24.2'
 final String vSparkSql = '3.5.4'

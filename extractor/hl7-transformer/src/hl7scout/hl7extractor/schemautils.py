@@ -27,13 +27,14 @@ person_name_schema = StructType(shared_name_components)
 person_name_and_id_schema = StructType(name_with_id_components)
 
 
-def struct_with_nulls(**column_mapping: Column) -> Column:
-    def empty_to_null(column: Column) -> Column:
-        return F.when(F.trim(column) == "", None).otherwise(column)
+def empty_to_null(column: Column, column_alias: str) -> Column:
+    return (F.when(F.trim(column) == "", None).otherwise(column)).alias(column_alias)
 
+
+def struct_with_nulls(**column_mapping: Column) -> Column:
     return F.struct(
         *[
-            empty_to_null(column).alias(struct_field_name)
+            empty_to_null(column, struct_field_name)
             for struct_field_name, column in column_mapping.items()
         ]
     )

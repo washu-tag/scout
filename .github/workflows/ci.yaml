@@ -24,6 +24,7 @@ jobs:
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
       pyspark-notebook: ${{ steps.filter.outputs.pyspark-notebook }}
+      embedding-notebook: ${{ steps.filter.outputs.embedding-notebook }}
       launchpad: ${{ steps.filter.outputs.launchpad }}
       superset: ${{ steps.filter.outputs.superset }}
       keycloak: ${{ steps.filter.outputs.keycloak }}
@@ -40,6 +41,8 @@ jobs:
               - 'extractor/hl7-transformer/**'
             pyspark-notebook:
               - 'helm/jupyter/notebook/**'
+            embedding-notebook:
+              - 'helm/jupyter/embedding-notebook/**'
             launchpad:
               - 'launchpad/**'
             superset:
@@ -125,6 +128,27 @@ jobs:
         with:
           subproject: helm/jupyter/notebook
           image-name: pyspark-notebook
+  build-and-upload-embedding-notebook:
+    runs-on: ubuntu-latest
+    needs: changes
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4.2.1
+      - name: 'Check if image exists'
+        id: check-image
+        uses: ./.github/actions/check-image-exists
+        with:
+          subproject: helm/jupyter/embedding-notebook
+          image-name: embedding-notebook
+      - name: 'Build/Cache Image - embedding-notebook'
+        if: needs.changes.outputs.embedding-notebook == 'true' || steps.check-image.outputs.exists == 'false'
+        uses: ./.github/actions/docker-build-cache
+        with:
+          subproject: helm/jupyter/embedding-notebook
+          image-name: embedding-notebook
   build-and-upload-launchpad:
     runs-on: ubuntu-latest
     needs: changes
@@ -233,6 +257,7 @@ jobs:
       - build-and-upload-hl7log-extractor
       - build-and-upload-hl7-transformer
       - build-and-upload-pyspark-notebook
+      - build-and-upload-embedding-notebook
       - build-and-upload-launchpad
       - build-and-upload-superset
       - build-and-upload-keycloak
@@ -318,9 +343,9 @@ jobs:
           cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
           sed -i "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
-          sudo -E kubectl wait --for=condition=complete --timeout=600s job/ci-tests -n scout-extractor &
+          sudo -E kubectl wait --for=condition=complete --timeout=900s job/ci-tests -n scout-extractor &
           completion_pid=$!
-          sudo -E kubectl wait --for=condition=failed --timeout=600s job/ci-tests -n scout-extractor && exit 1 &
+          sudo -E kubectl wait --for=condition=failed --timeout=900s job/ci-tests -n scout-extractor && exit 1 &
           failure_pid=$!
           wait -n $completion_pid $failure_pid
       - name: Test Logs
@@ -394,6 +419,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: pyspark-notebook
+      - name: 'Push Image - embedding-notebook'
+        if: needs.changes.outputs.embedding-notebook == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: embedding-notebook
       - name: 'Push Image - launchpad'
         if: needs.changes.outputs.launchpad == 'true'
         uses: ./.github/actions/docker-push
