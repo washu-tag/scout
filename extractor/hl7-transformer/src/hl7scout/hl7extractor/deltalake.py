@@ -8,7 +8,7 @@ from pathlib import Path
 
 from delta.tables import DeltaTable
 from py4j.protocol import Py4JError
-from pyspark.sql import SparkSession, Column
+from pyspark.sql import SparkSession, Column, Window
 from pyspark.sql import functions as F
 from s3fs import S3FileSystem
 from temporalio import activity
@@ -24,6 +24,8 @@ from .schemautils import (
     read_struct_of_names_friendly,
     struct_with_nulls,
 )
+from .dataextraction import process_derivative_data
+from .sparkutils import merge_df_into_dt_on_column
 
 import os
 import shutil
@@ -487,6 +489,7 @@ def import_hl7_files_to_deltalake(
         dt = (
             DeltaTable.createIfNotExists(spark)
             .tableName(f"default.{report_table_name}")
+            .property("delta.enableChangeDataFeed", "true")
             .addColumns(df.schema)
             .partitionedBy("year")
             .execute()
@@ -494,21 +497,14 @@ def import_hl7_files_to_deltalake(
 
         activity.heartbeat()
         activity.logger.info("Writing data to Delta Lake table %s", report_table_name)
-        (
-            dt.alias("s")
-            .merge(
-                df.alias("t"),
-                "s.source_file = t.source_file AND s.year = t.year",
-            )
-            .whenMatchedUpdateAll()
-            .whenNotMatchedInsertAll()
-            .execute()
-        )
+        merge_df_into_dt_on_column(dt, df, "source_file")
 
-        activity.logger.info("Finished writing to delta lake")
+        activity.logger.info(f"Finished writing {report_table_name} to delta lake")
 
         activity.heartbeat()
         success_paths = [row.source_file for row in df.select("source_file").collect()]
+
+        process_derivative_data(spark, report_table_name)
 
     except (Py4JError, ConnectionError) as e:
         activity.logger.error(

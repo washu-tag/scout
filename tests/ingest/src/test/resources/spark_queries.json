@@ -564,6 +564,74 @@
       },
       "sql": "SELECT * FROM %TABLE_PLACEHOLDER% WHERE message_control_id IN ('2.25.83733773296604060316231433263389742135', '2.25.86894298082825883439238171253269619380', '2.25.296476389772545408330432299707949012627')",
       "id": "extended_metadata"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".ExactNumberObjectsResult",
+        "expectedNumResults": 40,
+        "additionalValidation": null
+      },
+      "sql": "SELECT * FROM %TABLE_PLACEHOLDER%_dx",
+      "id": "dx_count"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".ExactRowsResult",
+        "uniqueIdColumnName": "message_control_id",
+        "rowAssertions": {
+          "2.25.255447108864050578016103835923469143730": {
+            "primary_study_identifier": "620943134",
+            "accession_number": "620943134"
+          }
+        },
+        "columnTypes": []
+      },
+      "sql": "SELECT * FROM %TABLE_PLACEHOLDER%_curated WHERE message_control_id IN ('2.25.255447108864050578016103835923469143730')",
+      "id": "basic_curation"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".ExactRowsResult",
+        "uniqueIdColumnName": "message_control_id",
+        "rowAssertions": {
+          "2.25.255447108864050578016103835923469143730": {
+            "primary_study_identifier": "620943134",
+            "accession_number": "620943134"
+          }
+        },
+        "columnTypes": []
+      },
+      "sql": "SELECT * FROM %TABLE_PLACEHOLDER%_latest WHERE message_control_id IN ('2.25.255447108864050578016103835923469143730')",
+      "id": "basic_latest"
+    },
+    {
+      "expectedQueryResult": {
+        "type": ".ExactRowsResult",
+        "uniqueIdColumnName": "diagnosis_code",
+        "rowAssertions": {
+          "J18.9": {
+            "primary_study_identifier": "620943134",
+            "accession_number": "620943134",
+            "diagnosis_code_text": "Pneumonia, unspecified organism",
+            "diagnosis_code_coding_system": "I10"
+          },
+          "R04.2": {
+            "primary_study_identifier": "620943134",
+            "accession_number": "620943134",
+            "diagnosis_code_text": "Hemoptysis",
+            "diagnosis_code_coding_system": "I10"
+          },
+          "R91.8": {
+            "primary_study_identifier": "620943134",
+            "accession_number": "620943134",
+            "diagnosis_code_text": "Other nonspecific abnormal finding of lung field",
+            "diagnosis_code_coding_system": "I10"
+          }
+        },
+        "columnTypes": []
+      },
+      "sql": "SELECT * FROM %TABLE_PLACEHOLDER%_dx WHERE message_control_id IN ('2.25.255447108864050578016103835923469143730')",
+      "id": "basic_dx"
     }
   ]
 }
