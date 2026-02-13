@@ -38,6 +38,11 @@ def dedupe_df_on_accession_number(batch_df: DataFrame) -> Optional[DataFrame]:
     if updates_insert_df is None:
         return None
 
+    updates_insert_df = updates_insert_df.filter(
+        (F.col("accession_number").isNotNull())
+        & (F.trim(F.col("accession_number")) != "")
+    )
+
     # First, make sure our new data only has the newest report per accession number
     dedupe_window = Window.partitionBy("accession_number").orderBy(F.desc("message_dt"))
     # We have to create an explicit column instead of filtering by window function
