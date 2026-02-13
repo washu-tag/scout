@@ -23,6 +23,11 @@ grafana_email_recipients: ['']
 slack_token: ''
 slack_channel_id: ''
 
+# Alert selection - list alert filenames (without .json.j2) to disable
+# Default: empty list (all alerts enabled)
+# Example: ['no-hl7-processed-alert', 'temporal-workflow-failure-alert']
+grafana_disabled_alerts: []
+
 # Dashboard and alert paths
 grafana_dashboards_path: '{{ role_path }}/templates/dashboards'
 grafana_alerts_path: '{{ role_path }}/templates/alerts'

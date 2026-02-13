@@ -3,25 +3,25 @@
   "groups": [
     {
       "orgId": 1,
-      "name": "1h-evaluations",
+      "name": "1m-evaluations",
       "folder": "Scout",
-      "interval": "1h",
+      "interval": "1m",
       "rules": [
         {
-          "uid": "temporal_workflow_failure_01",
-          "title": "Temporal Workflow Failure",
-          "condition": "C",
+          "uid": "oauth2_proxy_pod_not_ready_alert_01",
+          "title": "OAuth2 Proxy Pod Not Ready",
+          "condition": "B",
           "data": [
             {
               "refId": "A",
               "relativeTimeRange": {
-                "from": 10800,
+                "from": 600,
                 "to": 0
               },
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "sum by (namespace) (rate(workflow_failed{operation=\"CompletionStats\", job=\"kubernetes-pods\"}[1h]))",
+                "expr": "min(kube_pod_container_status_ready{namespace=\"kube-system\", pod=~\"oauth2-proxy-.*\"})",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
@@ -31,7 +31,7 @@
               }
             },
             {
-              "refId": "C",
+              "refId": "B",
               "relativeTimeRange": {
                 "from": 0,
                 "to": 0
@@ -41,18 +41,14 @@
                 "conditions": [
                   {
                     "evaluator": {
-                      "params": [
-                        0
-                      ],
-                      "type": "gt"
+                      "params": [1],
+                      "type": "lt"
                     },
                     "operator": {
                       "type": "and"
                     },
                     "query": {
-                      "params": [
-                        "C"
-                      ]
+                      "params": []
                     },
                     "reducer": {
                       "params": [],
@@ -68,16 +64,17 @@
                 "expression": "A",
                 "intervalMs": 1000,
                 "maxDataPoints": 43200,
-                "refId": "C",
+                "refId": "B",
                 "type": "threshold"
               }
             }
           ],
-          "noDataState": "NoData",
-          "execErrState": "Error",
+          "noDataState": "Alerting",
+          "execErrState": "Alerting",
+          "for": "5m",
           "annotations": {
-            "description": "Temporal workflow failed",
-            "summary": "At least one Temporal workflow failed since last check (Temporal namespace: {{ $labels.namespace }})",
+            "summary": "OAuth2 Proxy pod is not ready, authentication may be impacted.",
+            "description": "The OAuth2 Proxy container readiness probe is failing. This may indicate Redis connectivity issues or upstream Keycloak problems.",
             "URL": "[% server_hostname %]"
           },
           "labels": {},

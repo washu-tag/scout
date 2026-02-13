@@ -39,8 +39,6 @@
       metadata:
         name: smtp-grafana
         namespace: '{{ grafana_namespace }}'
-        labels:
-          grafana_alert: '1'
       type: Opaque
       stringData:
         user: '{{ grafana_smtp_user }}'
@@ -105,6 +103,16 @@
       loop: '{{ alert_templates.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
+      when: (item.path | basename | regex_replace('.json.j2$', '')) not in grafana_disabled_alerts
+
+    - name: Remove ConfigMaps for disabled Grafana alerts
+      kubernetes.core.k8s:
+        state: absent
+        kind: ConfigMap
+        name: '{{ item }}'
+        namespace: '{{ grafana_namespace }}'
+      loop: '{{ grafana_disabled_alerts }}'
+      when: grafana_disabled_alerts | length > 0
 
     - name: Create Grafana notification policy as ConfigMap
       vars:
@@ -170,8 +178,6 @@
           metadata:
             name: keycloak-grafana-client-secret
             namespace: '{{ grafana_namespace }}'
-            labels:
-              grafana_alert: '1'
           type: Opaque
           stringData:
             client-secret: '{{ keycloak_grafana_client_secret }}'

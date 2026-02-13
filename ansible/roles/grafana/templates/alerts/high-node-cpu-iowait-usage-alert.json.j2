@@ -74,7 +74,8 @@
           "for": "10m",
           "annotations": {
             "summary": "Node {{ $labels.node }} has high IOwait CPU usage",
-            "description": "IOwait CPU usage is above 70% on node {{ $labels.node }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
+            "description": "IOwait CPU usage is above 70% on node {{ $labels.node }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%",
+            "URL": "[% server_hostname %]"
           },
           "labels": {},
           "isPaused": false,

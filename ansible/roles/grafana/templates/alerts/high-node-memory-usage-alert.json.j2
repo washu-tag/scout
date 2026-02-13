@@ -74,7 +74,8 @@
           "for": "10m",
           "annotations": {
             "summary": "Node {{ $labels.node }} has high memory usage",
-            "description": "Memory usage is above 90% on node {{ $labels.node }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%"
+            "description": "Memory usage is above 90% on node {{ $labels.node }}. Current usage: {{ printf \"%.3f\" $values.A.Value }}%",
+            "URL": "[% server_hostname %]"
           },
           "labels": {},
           "isPaused": false,
