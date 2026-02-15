@@ -1,0 +1,86 @@
+---
+# Default values for HL7 Listener deployment
+# Deploys Strimzi Kafka, Camel K operator, and HL7 listener integration
+
+# Namespace configuration
+hl7_listener_namespace: '{{ scout_extractor_namespace }}'
+strimzi_operator_namespace: '{{ scout_operators_namespace }}'
+
+# Kafka configuration
+kafka_cluster_name: kafka
+kafka_replicas: 1
+kafka_storage_size: 10Gi
+kafka_storage_class: ''
+
+# Kafka retention (7 days per ADR)
+kafka_retention_ms: 604800000
+kafka_retention_bytes: -1
+
+# Kafka resource configuration
+kafka_cpu_request: 100m
+kafka_cpu_limit: 1
+kafka_memory_request: 1Gi
+kafka_memory_limit: 2Gi
+
+# Kafka topic configuration
+kafka_hl7_topic: hl7-messages
+kafka_hl7_topic_partitions: 3
+kafka_hl7_topic_replicas: 1
+
+# HL7 Listener configuration
+hl7_listener_name: hl7-listener
+hl7_listener_port: 2575
+
+# HL7 Listener resource configuration
+hl7_listener_cpu_request: 100m
+hl7_listener_cpu_limit: 500m
+hl7_listener_memory_request: 256Mi
+hl7_listener_memory_limit: 512Mi
+
+# Service type for external access (LoadBalancer, NodePort, or ClusterIP)
+hl7_listener_service_type: LoadBalancer
+# Optional: NodePort if service_type is NodePort
+hl7_listener_node_port: ''
+
+# Camel K IntegrationPlatform registry configuration
+# Default uses ttl.sh - anonymous ephemeral registry for testing (images expire after 24h)
+# For production, override with your container registry (e.g., Harbor, Docker Hub, etc.)
+camel_k_registry_address: 'ttl.sh'
+camel_k_registry_insecure: false
+
+# HL7 Batcher configuration
+# Aggregates HL7 messages from Kafka, zips them, uploads to S3, publishes manifest to Kafka
+hl7_batcher_name: hl7-batcher
+hl7_batcher_enabled: true
+
+# Batching parameters
+hl7_batcher_completion_size: 10
+hl7_batcher_completion_timeout: 30000
+
+# Batcher resource configuration
+hl7_batcher_cpu_request: 100m
+hl7_batcher_cpu_limit: 500m
+hl7_batcher_memory_request: 256Mi
+hl7_batcher_memory_limit: 512Mi
+
+# Kafka topic for batch manifests (output)
+kafka_hl7_batches_topic: hl7-batches
+kafka_hl7_batches_topic_partitions: 1
+kafka_hl7_batches_topic_replicas: 1
+
+# S3/MinIO configuration for batch uploads
+hl7_batcher_s3_bucket: '{{ hl7_raw_bucket | default("hl7-raw") }}'
+hl7_batcher_s3_endpoint: 'http://minio.{{ minio_tenant_namespace | default("minio-tenant") }}.svc.cluster.local:80'
+hl7_batcher_s3_region: us-east-1
+hl7_batcher_s3_access_key: '{{ s3_lake_writer | default("lake-writer") }}'
+hl7_batcher_s3_secret_key: '{{ s3_lake_writer_secret | default("") }}'
+
+# HL7 Test Sender configuration
+# Sends test HL7 messages to the listener for testing/demo purposes
+hl7_test_sender_name: hl7-test-sender
+hl7_test_sender_enabled: true
+hl7_test_sender_period: 5000
+hl7_test_sender_cpu_request: 50m
+hl7_test_sender_cpu_limit: 200m
+hl7_test_sender_memory_request: 128Mi
+hl7_test_sender_memory_limit: 256Mi

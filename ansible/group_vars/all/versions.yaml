@@ -86,3 +86,8 @@ dcm4chee_ldap_version: 2.6.8-34.0
 # Medical Imaging - Orthanc
 orthanc_image: jodogne/orthanc-plugins
 orthanc_version: latest
+
+# HL7 Listener - Kafka & Camel K
+strimzi_operator_version: ~0.49.0
+kafka_version: 4.1.1
+camel_k_version: ~2.5.0

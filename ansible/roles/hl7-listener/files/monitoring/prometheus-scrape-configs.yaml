@@ -1,0 +1,74 @@
+# HL7 Listener Prometheus Scrape Configs (POC)
+#
+# Add these jobs to ansible/roles/prometheus/templates/values.yaml.j2
+# under the `extraScrapeConfigs` section.
+#
+# Note: These configs use Jinja2 variables that must be defined in your inventory:
+#   - strimzi_operator_namespace (defaults to scout_operators_namespace)
+#   - hl7_listener_namespace (defaults to scout_extractor_namespace)
+#   - kafka_cluster_name (defaults to "kafka")
+
+- job_name: strimzi-operator
+  metrics_path: /metrics
+  kubernetes_sd_configs:
+    - role: pod
+  relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: keep
+      regex: { { strimzi_operator_namespace | default(scout_operators_namespace) } }
+    - source_labels: [__meta_kubernetes_pod_label_name]
+      action: keep
+      regex: strimzi-cluster-operator
+    - source_labels: [__address__]
+      action: replace
+      regex: ([^:]+)(?::\d+)?
+      replacement: $1:8080
+      target_label: __address__
+    - source_labels: [__meta_kubernetes_pod_name]
+      target_label: pod
+    - source_labels: [__meta_kubernetes_namespace]
+      target_label: namespace
+
+- job_name: kafka
+  metrics_path: /metrics
+  kubernetes_sd_configs:
+    - role: pod
+  relabel_configs:
+    # Keep only pods in the hl7-listener namespace
+    - source_labels: [__meta_kubernetes_namespace]
+      action: keep
+      regex: { { hl7_listener_namespace | default(scout_extractor_namespace) } }
+    # Keep only Kafka broker pods (Strimzi labels)
+    - source_labels: [__meta_kubernetes_pod_label_strimzi_io_kind]
+      action: keep
+      regex: Kafka
+    - source_labels: [__meta_kubernetes_pod_label_strimzi_io_cluster]
+      action: keep
+      regex: { { kafka_cluster_name | default("kafka") } }
+    # Replace port with 9404 (metrics port)
+    - source_labels: [__address__]
+      action: replace
+      regex: ([^:]+)(?::\d+)?
+      replacement: $1:9404
+      target_label: __address__
+    # Add useful labels
+    - source_labels: [__meta_kubernetes_pod_name]
+      target_label: pod
+    - source_labels: [__meta_kubernetes_namespace]
+      target_label: namespace
+
+- job_name: camel-k
+  metrics_path: /q/metrics
+  kubernetes_sd_configs:
+    - role: pod
+  relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: keep
+      regex: { { hl7_listener_namespace | default(scout_extractor_namespace) } }
+    - source_labels: [__meta_kubernetes_pod_label_camel_apache_org_integration]
+      action: keep
+      regex: .+
+    - source_labels: [__meta_kubernetes_pod_name]
+      target_label: pod
+    - source_labels: [__meta_kubernetes_pod_label_camel_apache_org_integration]
+      target_label: integration
