@@ -1,6 +1,7 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
     install-postgres install-redis install-auth install-lake install-analytics install-orchestrator \
-    install-extractor install-monitor install-jupyter install-launchpad install-voila install-staging echo
+    install-extractor install-monitor install-jupyter install-launchpad install-voila install-staging \
+    verify-node echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -101,3 +102,14 @@ install-dcm4chee:
 
 install-mailhog:
 	$(ANSIBLE_CMD) playbooks/mailhog.yaml
+
+# Node verification - validates mounts, connectivity, and resources on cluster nodes.
+# Unlike deployment targets, this runs against ALL cluster nodes by default (no -l FQDN limit).
+# To limit to a specific node:   make verify-node ADD="-l tagprod-gpu-xl-01"
+# To limit to a group:           make verify-node ADD="-l gpu_workers"
+# To run a single check category: make verify-node ADD='-e verify_node_command=mounts'
+VERIFY_CMD := $(ANSIBLE_DEBUG_ENV) ansible-playbook -v -i $(INVENTORY_FILE) \
+              $(DIFF_FLAG) $(VAULT_PASSWORD_ARG) $(ANSIBLE_STEP) $(ANSIBLE_ADDITIONAL_FLAGS)
+
+verify-node:
+	$(VERIFY_CMD) playbooks/verify-node.yaml
