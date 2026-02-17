@@ -36,9 +36,10 @@ minio_ingress_config:
     path: '/'
     pathType: Prefix
     annotations:
-      traefik.ingress.kubernetes.io/router.middlewares: >
+      traefik.ingress.kubernetes.io/router.middlewares: >-
         kube-system-oauth2-proxy-error@kubernetescrd,
-        kube-system-oauth2-proxy-auth@kubernetescrd
+        kube-system-oauth2-proxy-auth@kubernetescrd,
+        kube-system-security-headers@kubernetescrd
 
 # Bucket definitions
 minio_buckets:

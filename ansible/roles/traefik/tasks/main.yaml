@@ -80,3 +80,33 @@
                   to: websecure
                   scheme: https
                   permanent: true
+
+- name: Apply global security headers middleware
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.io/v1alpha1
+      kind: Middleware
+      metadata:
+        name: security-headers
+        namespace: '{{ traefik_namespace }}'
+      spec:
+        headers:
+          stsSeconds: 31536000
+          stsIncludeSubdomains: true
+          frameDeny: true
+          contentTypeNosniff: true
+          contentSecurityPolicy: >-
+            default-src 'self';
+            script-src 'self' 'unsafe-inline' 'unsafe-eval';
+            style-src 'self' 'unsafe-inline';
+            img-src 'self' data: blob:;
+            font-src 'self' data:;
+            connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+            form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+            frame-ancestors 'none'
+          customResponseHeaders:
+            Permissions-Policy: 'camera=(), microphone=(), geolocation=(), payment=()'
+            Cross-Origin-Opener-Policy: 'same-origin'
+            X-Powered-By: ''
+            Server: ''
