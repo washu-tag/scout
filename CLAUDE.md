@@ -492,6 +492,8 @@ ADRs in `docs/internal/adr/` document significant architectural decisions. Consu
 
 - **ADR 0011: Deployment Portability via Layered Architecture** — Introduces a three-layer model (Infrastructure, Platform Services, Applications) and service-mode variables (examples: `postgres_mode`, `object_storage_mode`, `redis_mode`) for cross-platform deployment. Consult when adding new services, modifying deployment patterns, or supporting new platforms.
 
+- **ADR 0012: Security Scan Response and Hardening** — Consolidates findings from Tenable Nessus and OWASP ZAP scans, implementing a global Traefik security headers middleware (HSTS, CSP, X-Frame-Options, etc.) to address the majority of findings. Consult when modifying security headers, Traefik middleware configuration, or evaluating future scan results.
+
 ## Key Concepts for AI Assistants
 
 ### Architecture Understanding

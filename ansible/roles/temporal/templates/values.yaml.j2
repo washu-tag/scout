@@ -62,11 +62,14 @@ web:
     ingressClassName: traefik
     hosts:
       - 'temporal.{{ server_hostname }}'
-{% if temporal_oidc_enabled %}
     annotations:
-      traefik.ingress.kubernetes.io/router.middlewares: >
+      traefik.ingress.kubernetes.io/router.middlewares: >-
+{% if temporal_oidc_enabled %}
         kube-system-oauth2-proxy-error@kubernetescrd,
-        kube-system-oauth2-proxy-auth@kubernetescrd
+        kube-system-oauth2-proxy-auth@kubernetescrd,
+{% endif %}
+        kube-system-security-headers@kubernetescrd
+{% if temporal_oidc_enabled %}
   additionalEnv:
     - name: TEMPORAL_AUTH_ENABLED
       value: 'true'
