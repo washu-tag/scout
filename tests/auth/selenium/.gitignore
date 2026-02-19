@@ -1,0 +1,18 @@
+# Gradle
+.gradle/
+build/
+bin/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Auth state
+.auth/
+
+# Environment
+.env
+
+# Java
+*.class

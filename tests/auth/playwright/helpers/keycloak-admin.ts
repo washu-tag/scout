@@ -219,6 +219,73 @@ export class KeycloakAdmin {
     console.log(`Added user ${userId} to group ${groupId}`);
   }
 
+  /**
+   * Disable the identity-provider-redirector execution in the browser
+   * authentication flow so Keycloak shows the login form instead of
+   * auto-redirecting to the default IdP (e.g. GitHub).
+   */
+  async disableIdpRedirect(): Promise<void> {
+    await this.setIdpRedirectRequirement('DISABLED');
+  }
+
+  /**
+   * Re-enable the identity-provider-redirector execution in the browser
+   * authentication flow (restores auto-redirect to the default IdP).
+   */
+  async enableIdpRedirect(): Promise<void> {
+    await this.setIdpRedirectRequirement('ALTERNATIVE');
+  }
+
+  private async setIdpRedirectRequirement(requirement: string): Promise<void> {
+    await this.ensureAuthenticated();
+
+    // Get all executions in the browser flow
+    const execUrl = `${this.baseUrl}/admin/realms/scout/authentication/flows/browser/executions`;
+    const res = await fetch(execUrl, {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Failed to get browser flow executions (${res.status}): ${text}`);
+    }
+
+    const executions = (await res.json()) as {
+      id: string;
+      providerId: string;
+      requirement: string;
+    }[];
+    const idpExecution = executions.find((e) => e.providerId === 'identity-provider-redirector');
+
+    if (!idpExecution) {
+      throw new Error('identity-provider-redirector execution not found in browser flow');
+    }
+
+    if (idpExecution.requirement === requirement) {
+      console.log(`identity-provider-redirector already ${requirement}`);
+      return;
+    }
+
+    // Update the execution requirement
+    const updateRes = await fetch(execUrl, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ...idpExecution, requirement }),
+    });
+
+    if (!updateRes.ok) {
+      const text = await updateRes.text();
+      throw new Error(
+        `Failed to update identity-provider-redirector (${updateRes.status}): ${text}`,
+      );
+    }
+
+    console.log(`Set identity-provider-redirector to ${requirement}`);
+  }
+
   private async ensureAuthenticated(): Promise<void> {
     if (!this.accessToken) {
       await this.authenticate();

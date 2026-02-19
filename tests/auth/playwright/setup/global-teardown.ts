@@ -18,6 +18,14 @@ async function globalTeardown(): Promise<void> {
 
   const keycloak = new KeycloakAdmin();
 
+  // Re-enable the IdP auto-redirect that was disabled during setup
+  try {
+    console.log('Re-enabling IdP auto-redirect in Keycloak browser flow');
+    await keycloak.enableIdpRedirect();
+  } catch (err) {
+    console.error('Warning: failed to re-enable IdP redirect:', err);
+  }
+
   // Delete test users — try saved JSON first, fall back to username lookup
   if (fs.existsSync(USERS_FILE)) {
     const records: TestUserRecord[] = JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));

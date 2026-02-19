@@ -26,6 +26,12 @@ async function globalSetup(): Promise<void> {
   fs.mkdirSync(AUTH_DIR, { recursive: true });
 
   const keycloak = new KeycloakAdmin();
+
+  // Disable the IdP auto-redirect so tests can use the Keycloak login form
+  // directly with username/password instead of being redirected to GitHub/Microsoft.
+  console.log('Disabling IdP auto-redirect in Keycloak browser flow');
+  await keycloak.disableIdpRedirect();
+
   const users: TestUserRecord[] = [];
 
   // --- Unauthorized user (no group membership) ---
