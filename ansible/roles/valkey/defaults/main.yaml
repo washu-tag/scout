@@ -1,0 +1,26 @@
+---
+# Defaults for valkey role
+# User-configurable settings are in inventory.yaml
+
+# Valkey Helm chart configuration
+valkey_helm_repo_url: https://valkey-io.github.io/valkey-helm/
+valkey_helm_repo_name: valkey
+valkey_helm_chart_name: valkey
+valkey_helm_release_name: valkey
+
+# Storage
+valkey_storage_class: ''
+valkey_storage_size: 8Gi
+
+# Resources
+valkey_resources_default:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1
+    memory: 2Gi
+
+# Persistence (AOF)
+valkey_persistence_enabled: true
+# valkey_password: defined in inventory.yaml (use vault encryption)

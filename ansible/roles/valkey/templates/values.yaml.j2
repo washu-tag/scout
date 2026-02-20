@@ -1,0 +1,28 @@
+auth:
+  enabled: true
+  aclConfig: |
+    user default on >{{ valkey_password }} ~* &* +@all
+
+service:
+  type: ClusterIP
+  port: 6379
+
+dataStorage:
+  enabled: {{ valkey_persistence_enabled | lower }}
+{% if valkey_storage_size %}
+  requestedSize: {{ valkey_storage_size }}
+{% endif %}
+{% if valkey_storage_class %}
+  className: {{ valkey_storage_class }}
+{% endif %}
+
+resources: {{ valkey_resources_default | combine(valkey_resources | default({}), recursive=true) | to_json }}
+
+valkeyConfig: |
+  appendonly yes
+  appendfsync everysec
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true

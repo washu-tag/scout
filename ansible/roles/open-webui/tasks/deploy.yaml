@@ -37,18 +37,6 @@
     sql_script: 'ALTER SCHEMA public OWNER TO {{ open_webui_postgres_user }};'
     sql_dbname: '{{ open_webui_database }}'
 
-- name: Create Redis database for Open WebUI
-  ansible.builtin.include_role:
-    name: redis
-    tasks_from: create_database
-  vars:
-    redis_db_name: '{{ open_webui_redis_database_name }}'
-    redis_db_port: '{{ open_webui_redis_database_port }}'
-    redis_db_memory_size: '{{ open_webui_redis_database_memory_size }}'
-    redis_db_password: '{{ open_webui_redis_password }}'
-    redis_db_persistence_enabled: '{{ open_webui_redis_database_persistence_enabled }}'
-    redis_db_replication: false
-
 - name: Create Kubernetes Secret for sensitive env vars
   ansible.builtin.include_tasks: create_secret.yaml
 

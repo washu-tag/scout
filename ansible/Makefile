@@ -1,5 +1,5 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
-    install-postgres install-redis install-auth install-lake install-analytics install-orchestrator \
+    install-postgres install-valkey install-auth install-lake install-analytics install-orchestrator \
     install-extractor install-monitor install-jupyter install-launchpad install-voila install-staging \
     verify-node echo
 
@@ -60,8 +60,8 @@ setup-k3s: install-k3s config-traefik install-gpu-op
 install-postgres:
 	$(ANSIBLE_CMD) playbooks/postgres.yaml
 
-install-redis:
-	$(ANSIBLE_CMD) playbooks/redis.yaml
+install-valkey:
+	$(ANSIBLE_CMD) playbooks/valkey.yaml
 
 install-auth:
 	$(ANSIBLE_CMD) playbooks/auth.yaml
