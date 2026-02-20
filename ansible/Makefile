@@ -127,7 +127,7 @@ install-mailhog:
 #
 #   # Override ansible_user
 #   make verify-node ADD="-e ansible_user=$USER"
-VERIFY_CMD := $(ANSIBLE_DEBUG_ENV) ANSIBLE_STDOUT_CALLBACK=default ANSIBLE_CALLBACK_RESULT_FORMAT=yaml \
+VERIFY_CMD := $(ANSIBLE_DEBUG_ENV) ANSIBLE_CALLBACK_RESULT_FORMAT=yaml \
               ansible-playbook -v -i $(INVENTORY_FILE) \
               --diff $(VAULT_PASSWORD_ARG) -e ansible_become=false \
               $(ANSIBLE_STEP) $(ANSIBLE_ADDITIONAL_FLAGS)
