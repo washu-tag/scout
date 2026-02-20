@@ -12,7 +12,12 @@
   "connectivity": {
     "timeout_seconds": 5,
     "checks": [
-      { "description": "SMTP relay", "host": "smtp.example.com", "port": 25, "expect": "reachable" },
+      {
+        "description": "SMTP relay",
+        "host": "smtp.example.com",
+        "port": 25,
+        "expect": "reachable"
+      },
       {
         "description": "Internet (air-gap)",
         "host": "8.8.8.8",
