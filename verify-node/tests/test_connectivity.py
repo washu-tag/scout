@@ -15,13 +15,13 @@ class TestTCPReachable:
         ) as mock_create:
             result = checker.check_tcp(
                 {
-                    "host": "example.com",
+                    "host": "testhost.local",
                     "port": 443,
                     "expect": "reachable",
                     "description": "HTTPS",
                 }
             )
-            mock_create.assert_called_once_with(("example.com", 443), timeout=1.0)
+            mock_create.assert_called_once_with(("testhost.local", 443), timeout=1.0)
         assert result.status == CheckStatus.PASS
         assert "reachable" in result.message
 
@@ -33,7 +33,7 @@ class TestTCPReachable:
         ):
             result = checker.check_tcp(
                 {
-                    "host": "example.com",
+                    "host": "testhost.local",
                     "port": 443,
                     "expect": "reachable",
                     "description": "HTTPS",
@@ -50,7 +50,7 @@ class TestTCPReachable:
         ):
             result = checker.check_tcp(
                 {
-                    "host": "example.com",
+                    "host": "testhost.local",
                     "port": 443,
                     "expect": "reachable",
                 }
@@ -65,7 +65,7 @@ class TestTCPReachable:
         ):
             result = checker.check_tcp(
                 {
-                    "host": "example.com",
+                    "host": "testhost.local",
                     "port": 443,
                     "expect": "reachable",
                 }
@@ -131,7 +131,7 @@ class TestDNSResolvable:
             ]
             result = checker.check_dns(
                 {
-                    "hostname": "scout.washu.edu",
+                    "hostname": "dns.testhost.local",
                     "expect": "resolvable",
                     "description": "Scout DNS",
                 }
@@ -145,7 +145,7 @@ class TestDNSResolvable:
             mock_getaddrinfo.side_effect = socket.gaierror("Name resolution failed")
             result = checker.check_dns(
                 {
-                    "hostname": "scout.washu.edu",
+                    "hostname": "dns.testhost.local",
                     "expect": "resolvable",
                     "description": "Scout DNS",
                 }
@@ -160,7 +160,7 @@ class TestDNSUnresolvable:
             mock_getaddrinfo.side_effect = socket.gaierror("Name resolution failed")
             result = checker.check_dns(
                 {
-                    "hostname": "internal.example.com",
+                    "hostname": "internal.testhost.local",
                     "expect": "unresolvable",
                 }
             )
@@ -174,7 +174,7 @@ class TestDNSUnresolvable:
             ]
             result = checker.check_dns(
                 {
-                    "hostname": "internal.example.com",
+                    "hostname": "internal.testhost.local",
                     "expect": "unresolvable",
                 }
             )
@@ -191,12 +191,12 @@ class TestCustomTimeout:
         ) as mock_create:
             checker.check_tcp(
                 {
-                    "host": "example.com",
+                    "host": "testhost.local",
                     "port": 80,
                     "expect": "reachable",
                 }
             )
-            mock_create.assert_called_once_with(("example.com", 80), timeout=2.5)
+            mock_create.assert_called_once_with(("testhost.local", 80), timeout=2.5)
 
     def test_explicit_timeout_overrides_default(self):
         checker = ConnectivityChecker(default_timeout=5.0)
@@ -205,10 +205,10 @@ class TestCustomTimeout:
             "verify_node.socket.create_connection", return_value=mock_sock
         ) as mock_create:
             checker.check_tcp(
-                {"host": "example.com", "port": 80, "expect": "reachable"},
+                {"host": "testhost.local", "port": 80, "expect": "reachable"},
                 timeout=1.0,
             )
-            mock_create.assert_called_once_with(("example.com", 80), timeout=1.0)
+            mock_create.assert_called_once_with(("testhost.local", 80), timeout=1.0)
 
 
 class TestDefaultDescription:
@@ -218,12 +218,12 @@ class TestDefaultDescription:
         with patch("verify_node.socket.create_connection", return_value=mock_sock):
             result = checker.check_tcp(
                 {
-                    "host": "example.com",
+                    "host": "testhost.local",
                     "port": 443,
                     "expect": "reachable",
                 }
             )
-        assert "example.com:443" in result.message
+        assert "testhost.local:443" in result.message
 
     def test_dns_default_description(self):
         checker = ConnectivityChecker()
@@ -233,8 +233,8 @@ class TestDefaultDescription:
             ]
             result = checker.check_dns(
                 {
-                    "hostname": "scout.washu.edu",
+                    "hostname": "dns.testhost.local",
                     "expect": "resolvable",
                 }
             )
-        assert "scout.washu.edu" in result.message
+        assert "dns.testhost.local" in result.message
