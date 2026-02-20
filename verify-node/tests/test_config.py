@@ -3,10 +3,6 @@ from __future__ import annotations
 import json
 import pytest
 
-import sys, os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
 from verify_node import ConfigError, load_config, build_parser
 
 
@@ -144,6 +140,23 @@ class TestValidation:
                     )
                 )
 
+    def test_connectivity_invalid_port(self):
+        with pytest.raises(ConfigError, match="port must be an integer"):
+            load_config(
+                _make_args(
+                    config_json=json.dumps(
+                        {
+                            "hostname": "test",
+                            "connectivity": {
+                                "checks": [
+                                    {"host": "h", "port": "abc", "expect": "reachable"}
+                                ]
+                            },
+                        }
+                    )
+                )
+            )
+
     def test_connectivity_invalid_expect(self):
         with pytest.raises(ConfigError, match="'reachable' or 'unreachable'"):
             load_config(
@@ -189,6 +202,66 @@ class TestValidation:
                     )
                 )
             )
+
+    def test_mount_invalid_min_size_gb(self):
+        with pytest.raises(ConfigError, match="min_size_gb must be a positive number"):
+            load_config(
+                _make_args(
+                    config_json=json.dumps(
+                        {
+                            "hostname": "test",
+                            "mounts": [
+                                {
+                                    "path": "/data",
+                                    "state": "mounted",
+                                    "writable": True,
+                                    "min_size_gb": "abc",
+                                }
+                            ],
+                        }
+                    )
+                )
+            )
+
+    def test_mount_negative_min_size_gb(self):
+        with pytest.raises(ConfigError, match="min_size_gb must be a positive number"):
+            load_config(
+                _make_args(
+                    config_json=json.dumps(
+                        {
+                            "hostname": "test",
+                            "mounts": [
+                                {
+                                    "path": "/data",
+                                    "state": "mounted",
+                                    "writable": True,
+                                    "min_size_gb": -100,
+                                }
+                            ],
+                        }
+                    )
+                )
+            )
+
+    def test_mount_valid_min_size_gb(self):
+        config = load_config(
+            _make_args(
+                config_json=json.dumps(
+                    {
+                        "hostname": "test",
+                        "mounts": [
+                            {
+                                "path": "/data",
+                                "state": "mounted",
+                                "writable": True,
+                                "min_size_gb": 9000,
+                            }
+                        ],
+                    }
+                )
+            )
+        )
+        assert config["mounts"][0]["min_size_gb"] == 9000
 
     def test_gpu_missing_count(self):
         with pytest.raises(ConfigError, match="count"):

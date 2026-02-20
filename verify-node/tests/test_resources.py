@@ -3,10 +3,6 @@ from __future__ import annotations
 import subprocess
 from unittest.mock import patch, MagicMock
 
-import sys, os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
 from verify_node import CheckStatus, ResourceChecker
 
 NVIDIA_SMI_4GPU = """\

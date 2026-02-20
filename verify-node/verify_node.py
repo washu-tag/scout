@@ -24,7 +24,6 @@ import os
 import socket
 import subprocess
 import sys
-import tempfile
 from typing import Any
 
 
@@ -149,12 +148,28 @@ def _validate_config(config: dict[str, Any]) -> None:
             raise ConfigError(
                 f"Mount '{mount['path']}' with state 'mounted' must include 'writable'"
             )
+        if "min_size_gb" in mount:
+            try:
+                val = float(mount["min_size_gb"])
+                if val <= 0:
+                    raise ValueError
+            except (ValueError, TypeError):
+                raise ConfigError(
+                    f"Mount '{mount['path']}' min_size_gb must be a positive number, "
+                    f"got '{mount['min_size_gb']}'"
+                )
 
     connectivity = config.get("connectivity", {})
     for check in connectivity.get("checks", []):
         for field in ("host", "port", "expect"):
             if field not in check:
                 raise ConfigError(f"Connectivity check must include '{field}'")
+        try:
+            int(check["port"])
+        except (ValueError, TypeError):
+            raise ConfigError(
+                f"Connectivity check port must be an integer, got '{check['port']}'"
+            )
         if check["expect"] not in ("reachable", "unreachable"):
             raise ConfigError(
                 f"Connectivity check expect must be 'reachable' or 'unreachable', "
@@ -263,63 +278,53 @@ class MountChecker:
                 detail=f"Mount options: {','.join(sorted(options))}",
             )
 
-        # Attempt actual write test
-        try:
-            self._write_test(path)
-        except OSError as e:
-            return CheckResult(
-                category=self.CATEGORY,
-                status=CheckStatus.FAIL,
-                message=f"{path} expected writable but write test failed",
-                detail=str(e),
-            )
-
         return CheckResult(
             category=self.CATEGORY,
             status=CheckStatus.PASS,
             message=f"{path} is mounted (rw)",
         )
 
-    def _check_readonly(self, path: str, options: set[str]) -> CheckResult:
-        if "ro" not in options:
-            # Mount options say rw; try a write test to confirm
-            write_succeeded = False
-            try:
-                self._write_test(path)
-                write_succeeded = True
-            except OSError:
-                pass
+    def check_disk_size(self, path: str, min_size_gb: float) -> CheckResult:
+        """Check that the filesystem at path has at least min_size_gb total size."""
+        try:
+            st = os.statvfs(path)
+            total_bytes = st.f_blocks * st.f_frsize
+            total_gb = total_bytes / (1024**3)
 
-            if write_succeeded:
+            if total_gb >= min_size_gb:
                 return CheckResult(
                     category=self.CATEGORY,
-                    status=CheckStatus.FAIL,
-                    message=f"{path} expected read-only but is writable",
-                    detail=f"Mount options: {','.join(sorted(options))}",
+                    status=CheckStatus.PASS,
+                    message=f"{path} disk size: {total_gb:.0f} GB (minimum: {min_size_gb:.0f} GB)",
                 )
+            return CheckResult(
+                category=self.CATEGORY,
+                status=CheckStatus.FAIL,
+                message=f"{path} disk size: {total_gb:.0f} GB (minimum: {min_size_gb:.0f} GB)",
+                detail=f"Expected at least {min_size_gb:.0f} GB, found {total_gb:.0f} GB",
+            )
+        except OSError as e:
+            return CheckResult(
+                category=self.CATEGORY,
+                status=CheckStatus.ERROR,
+                message=f"{path} disk size: unable to determine",
+                detail=str(e),
+            )
+
+    def _check_readonly(self, path: str, options: set[str]) -> CheckResult:
+        if "ro" not in options:
+            return CheckResult(
+                category=self.CATEGORY,
+                status=CheckStatus.FAIL,
+                message=f"{path} expected read-only but mounted read-write",
+                detail=f"Mount options: {','.join(sorted(options))}",
+            )
 
         return CheckResult(
             category=self.CATEGORY,
             status=CheckStatus.PASS,
             message=f"{path} is mounted (ro)",
         )
-
-    @staticmethod
-    def _write_test(path: str) -> None:
-        """Attempt to create and remove a temp file at the given path."""
-        fd = -1
-        tmp_path = ""
-        try:
-            fd, tmp_path = tempfile.mkstemp(prefix=".scout_verify_", dir=path)
-            os.write(fd, b"test")
-        finally:
-            if fd >= 0:
-                os.close(fd)
-            if tmp_path:
-                try:
-                    os.unlink(tmp_path)
-                except OSError:
-                    pass
 
 
 # ---------------------------------------------------------------------------
@@ -347,9 +352,7 @@ class ConnectivityChecker:
         reachable = False
         error_detail = ""
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.settimeout(timeout)
-                sock.connect((host, port))
+            with socket.create_connection((host, port), timeout=timeout) as sock:
                 reachable = True
         except (socket.timeout, TimeoutError):
             error_detail = "Connection timed out"
@@ -653,6 +656,12 @@ def run_checks(config: dict[str, Any], subcommand: str) -> Reporter:
         mount_checker = MountChecker()
         for mount_config in config.get("mounts", []):
             reporter.add(mount_checker.check(mount_config))
+            if mount_config.get("state") == "mounted" and "min_size_gb" in mount_config:
+                reporter.add(
+                    mount_checker.check_disk_size(
+                        mount_config["path"], mount_config["min_size_gb"]
+                    )
+                )
 
     if run_all or subcommand == "connectivity":
         connectivity = config.get("connectivity", {})

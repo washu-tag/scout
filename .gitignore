@@ -1,5 +1,6 @@
 .idea/
 .venv/
+uv.lock
 __pycache__/
 *.egg-info/
 .gradle/

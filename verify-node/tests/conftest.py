@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import os
+import sys
+
 import pytest
+
+# Add the verify-node package root to the path so tests can import verify_node
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 PROC_MOUNTS_BASIC = """\

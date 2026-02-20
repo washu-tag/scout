@@ -1,14 +1,21 @@
 ---
 - name: Verify cluster node state
-  hosts: k3s_cluster
+  hosts: remotes
+  become: false
   gather_facts: false
   any_errors_fatal: false
   tasks:
+    - name: Create secure temporary directory
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: scout_verify_
+      register: _verify_tmpdir
+
     - name: Copy verification script
       ansible.builtin.copy:
-        src: '{{ scout_repo_dir }}/verify-node/verify_node.py'
-        dest: /tmp/verify_node.py
-        mode: '0755'
+        src: '{{ (playbook_dir ~ "/../../verify-node/verify_node.py") | realpath }}'
+        dest: '{{ _verify_tmpdir.path }}/verify_node.py'
+        mode: '0700'
 
     - name: Build verification config
       ansible.builtin.set_fact:
@@ -18,31 +25,45 @@
           connectivity: '{{ verify_node_connectivity | default({}) }}'
           resources: '{{ verify_node_resources | default({}) }}'
 
-    - name: Run node verification
-      ansible.builtin.command:
-        cmd: >-
-          python3 /tmp/verify_node.py
-          {{ verify_node_command | default('all') }}
-          --config-json '{{ _verify_config | to_json }}'
-      register: verify_result
-      changed_when: false
-      failed_when: false
+    - name: Write verification config file
+      ansible.builtin.copy:
+        content: '{{ _verify_config | to_json }}'
+        dest: '{{ _verify_tmpdir.path }}/config.json'
+        mode: '0600'
 
-    - name: Show verification results
-      ansible.builtin.debug:
-        msg: '{{ verify_result.stdout_lines }}'
+    - name: Run and report verification
+      block:
+        - name: Run node verification
+          ansible.builtin.command:
+            argv:
+              - python3
+              - '{{ _verify_tmpdir.path }}/verify_node.py'
+              - '{{ verify_node_command | default("all") }}'
+              - --config
+              - '{{ _verify_tmpdir.path }}/config.json'
+          register: verify_result
+          changed_when: false
+          failed_when: false
 
-    - name: Show errors if tool failed
-      ansible.builtin.debug:
-        msg: '{{ verify_result.stderr_lines }}'
-      when: verify_result.stderr_lines | length > 0
+        - name: Show verification results
+          ansible.builtin.debug:
+            msg: '{{ verify_result.stdout_lines }}'
+          when: verify_result.rc == 0
 
-    - name: Fail if checks failed or errored
-      ansible.builtin.fail:
-        msg: "Node verification {{ 'errored (exit 2)' if verify_result.rc == 2 else 'failed (exit 1)' }}"
-      when: verify_result.rc != 0
+        - name: Fail with verification report
+          ansible.builtin.fail:
+            msg: |-
+              {{ verify_result.stdout }}
+              {% if verify_result.stderr %}
 
-    - name: Clean up verification script
-      ansible.builtin.file:
-        path: /tmp/verify_node.py
-        state: absent
+              STDERR:
+              {{ verify_result.stderr }}
+              {% endif %}
+          when: verify_result.rc != 0
+
+      always:
+        - name: Clean up temporary directory
+          ansible.builtin.file:
+            path: '{{ _verify_tmpdir.path }}'
+            state: absent
+          diff: false

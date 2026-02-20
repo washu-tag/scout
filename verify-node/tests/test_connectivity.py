@@ -3,22 +3,16 @@ from __future__ import annotations
 from unittest.mock import patch, MagicMock
 import socket
 
-import sys, os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
 from verify_node import CheckStatus, ConnectivityChecker
 
 
 class TestTCPReachable:
     def test_reachable_success(self):
         checker = ConnectivityChecker(default_timeout=1.0)
-        with patch("verify_node.socket.socket") as mock_socket_cls:
-            mock_sock = MagicMock()
-            mock_socket_cls.return_value.__enter__ = MagicMock(return_value=mock_sock)
-            mock_socket_cls.return_value.__exit__ = MagicMock(return_value=False)
-            mock_sock.connect.return_value = None
-
+        mock_sock = MagicMock()
+        with patch(
+            "verify_node.socket.create_connection", return_value=mock_sock
+        ) as mock_create:
             result = checker.check_tcp(
                 {
                     "host": "example.com",
@@ -27,17 +21,18 @@ class TestTCPReachable:
                     "description": "HTTPS",
                 }
             )
+            mock_create.assert_called_once_with(
+                ("example.com", 443), timeout=1.0
+            )
         assert result.status == CheckStatus.PASS
         assert "reachable" in result.message
 
     def test_reachable_timeout(self):
         checker = ConnectivityChecker(default_timeout=1.0)
-        with patch("verify_node.socket.socket") as mock_socket_cls:
-            mock_sock = MagicMock()
-            mock_socket_cls.return_value.__enter__ = MagicMock(return_value=mock_sock)
-            mock_socket_cls.return_value.__exit__ = MagicMock(return_value=False)
-            mock_sock.connect.side_effect = socket.timeout("timed out")
-
+        with patch(
+            "verify_node.socket.create_connection",
+            side_effect=socket.timeout("timed out"),
+        ):
             result = checker.check_tcp(
                 {
                     "host": "example.com",
@@ -51,12 +46,10 @@ class TestTCPReachable:
 
     def test_reachable_connection_refused(self):
         checker = ConnectivityChecker(default_timeout=1.0)
-        with patch("verify_node.socket.socket") as mock_socket_cls:
-            mock_sock = MagicMock()
-            mock_socket_cls.return_value.__enter__ = MagicMock(return_value=mock_sock)
-            mock_socket_cls.return_value.__exit__ = MagicMock(return_value=False)
-            mock_sock.connect.side_effect = ConnectionRefusedError()
-
+        with patch(
+            "verify_node.socket.create_connection",
+            side_effect=ConnectionRefusedError(),
+        ):
             result = checker.check_tcp(
                 {
                     "host": "example.com",
@@ -68,12 +61,10 @@ class TestTCPReachable:
 
     def test_reachable_os_error(self):
         checker = ConnectivityChecker(default_timeout=1.0)
-        with patch("verify_node.socket.socket") as mock_socket_cls:
-            mock_sock = MagicMock()
-            mock_socket_cls.return_value.__enter__ = MagicMock(return_value=mock_sock)
-            mock_socket_cls.return_value.__exit__ = MagicMock(return_value=False)
-            mock_sock.connect.side_effect = OSError("Network unreachable")
-
+        with patch(
+            "verify_node.socket.create_connection",
+            side_effect=OSError("Network unreachable"),
+        ):
             result = checker.check_tcp(
                 {
                     "host": "example.com",
@@ -87,12 +78,10 @@ class TestTCPReachable:
 class TestTCPUnreachable:
     def test_unreachable_timeout(self):
         checker = ConnectivityChecker(default_timeout=1.0)
-        with patch("verify_node.socket.socket") as mock_socket_cls:
-            mock_sock = MagicMock()
-            mock_socket_cls.return_value.__enter__ = MagicMock(return_value=mock_sock)
-            mock_socket_cls.return_value.__exit__ = MagicMock(return_value=False)
-            mock_sock.connect.side_effect = socket.timeout("timed out")
-
+        with patch(
+            "verify_node.socket.create_connection",
+            side_effect=socket.timeout("timed out"),
+        ):
             result = checker.check_tcp(
                 {
                     "host": "8.8.8.8",
@@ -106,12 +95,10 @@ class TestTCPUnreachable:
 
     def test_unreachable_but_connects(self):
         checker = ConnectivityChecker(default_timeout=1.0)
-        with patch("verify_node.socket.socket") as mock_socket_cls:
-            mock_sock = MagicMock()
-            mock_socket_cls.return_value.__enter__ = MagicMock(return_value=mock_sock)
-            mock_socket_cls.return_value.__exit__ = MagicMock(return_value=False)
-            mock_sock.connect.return_value = None
-
+        mock_sock = MagicMock()
+        with patch(
+            "verify_node.socket.create_connection", return_value=mock_sock
+        ):
             result = checker.check_tcp(
                 {
                     "host": "8.8.8.8",
@@ -125,12 +112,10 @@ class TestTCPUnreachable:
 
     def test_unreachable_connection_refused(self):
         checker = ConnectivityChecker(default_timeout=1.0)
-        with patch("verify_node.socket.socket") as mock_socket_cls:
-            mock_sock = MagicMock()
-            mock_socket_cls.return_value.__enter__ = MagicMock(return_value=mock_sock)
-            mock_socket_cls.return_value.__exit__ = MagicMock(return_value=False)
-            mock_sock.connect.side_effect = ConnectionRefusedError()
-
+        with patch(
+            "verify_node.socket.create_connection",
+            side_effect=ConnectionRefusedError(),
+        ):
             result = checker.check_tcp(
                 {
                     "host": "8.8.8.8",
@@ -202,14 +187,12 @@ class TestDNSUnresolvable:
 
 
 class TestCustomTimeout:
-    def test_timeout_passed_to_socket(self):
+    def test_timeout_passed_to_create_connection(self):
         checker = ConnectivityChecker(default_timeout=2.5)
-        with patch("verify_node.socket.socket") as mock_socket_cls:
-            mock_sock = MagicMock()
-            mock_socket_cls.return_value.__enter__ = MagicMock(return_value=mock_sock)
-            mock_socket_cls.return_value.__exit__ = MagicMock(return_value=False)
-            mock_sock.connect.return_value = None
-
+        mock_sock = MagicMock()
+        with patch(
+            "verify_node.socket.create_connection", return_value=mock_sock
+        ) as mock_create:
             checker.check_tcp(
                 {
                     "host": "example.com",
@@ -217,32 +200,32 @@ class TestCustomTimeout:
                     "expect": "reachable",
                 }
             )
-            mock_sock.settimeout.assert_called_with(2.5)
+            mock_create.assert_called_once_with(
+                ("example.com", 80), timeout=2.5
+            )
 
     def test_explicit_timeout_overrides_default(self):
         checker = ConnectivityChecker(default_timeout=5.0)
-        with patch("verify_node.socket.socket") as mock_socket_cls:
-            mock_sock = MagicMock()
-            mock_socket_cls.return_value.__enter__ = MagicMock(return_value=mock_sock)
-            mock_socket_cls.return_value.__exit__ = MagicMock(return_value=False)
-            mock_sock.connect.return_value = None
-
+        mock_sock = MagicMock()
+        with patch(
+            "verify_node.socket.create_connection", return_value=mock_sock
+        ) as mock_create:
             checker.check_tcp(
                 {"host": "example.com", "port": 80, "expect": "reachable"},
                 timeout=1.0,
             )
-            mock_sock.settimeout.assert_called_with(1.0)
+            mock_create.assert_called_once_with(
+                ("example.com", 80), timeout=1.0
+            )
 
 
 class TestDefaultDescription:
     def test_tcp_default_description(self):
         checker = ConnectivityChecker(default_timeout=1.0)
-        with patch("verify_node.socket.socket") as mock_socket_cls:
-            mock_sock = MagicMock()
-            mock_socket_cls.return_value.__enter__ = MagicMock(return_value=mock_sock)
-            mock_socket_cls.return_value.__exit__ = MagicMock(return_value=False)
-            mock_sock.connect.return_value = None
-
+        mock_sock = MagicMock()
+        with patch(
+            "verify_node.socket.create_connection", return_value=mock_sock
+        ):
             result = checker.check_tcp(
                 {
                     "host": "example.com",

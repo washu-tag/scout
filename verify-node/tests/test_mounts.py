@@ -1,12 +1,7 @@
 from __future__ import annotations
 
+import os
 from unittest.mock import patch
-
-import pytest
-
-import sys, os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from verify_node import CheckStatus, MountChecker
 
@@ -34,19 +29,15 @@ class TestMountCheckerParsing:
 
 
 class TestMountCheckerMounted:
-    def test_rw_mount_present_and_writable(self, proc_mounts_file, tmp_path):
-        # Point checker at our fake /proc/mounts
+    def test_rw_mount_present_and_writable(self, proc_mounts_file):
         checker = MountChecker(proc_mounts_path=proc_mounts_file)
-
-        # Mock _write_test to succeed (no exception)
-        with patch.object(checker, "_write_test"):
-            result = checker.check(
-                {
-                    "path": "/scout/data",
-                    "state": "mounted",
-                    "writable": True,
-                }
-            )
+        result = checker.check(
+            {
+                "path": "/scout/data",
+                "state": "mounted",
+                "writable": True,
+            }
+        )
         assert result.status == CheckStatus.PASS
         assert "rw" in result.message
 
@@ -74,21 +65,6 @@ class TestMountCheckerMounted:
         assert result.status == CheckStatus.FAIL
         assert "read-only" in result.message
 
-    def test_rw_mount_write_test_fails(self, proc_mounts_file):
-        checker = MountChecker(proc_mounts_path=proc_mounts_file)
-        with patch.object(
-            checker, "_write_test", side_effect=OSError("Permission denied")
-        ):
-            result = checker.check(
-                {
-                    "path": "/scout/data",
-                    "state": "mounted",
-                    "writable": True,
-                }
-            )
-        assert result.status == CheckStatus.FAIL
-        assert "write test failed" in result.message
-
     def test_ro_mount_present_and_readonly(self, proc_mounts_file):
         checker = MountChecker(proc_mounts_path=proc_mounts_file)
         result = checker.check(
@@ -101,32 +77,18 @@ class TestMountCheckerMounted:
         assert result.status == CheckStatus.PASS
         assert "ro" in result.message
 
-    def test_ro_mount_but_actually_writable(self, proc_mounts_file):
+    def test_ro_mount_but_options_say_rw(self, proc_mounts_file):
         checker = MountChecker(proc_mounts_path=proc_mounts_file)
-        # /rad is mounted rw; write test should succeed, meaning it fails the ro check
-        with patch.object(checker, "_write_test"):
-            result = checker.check(
-                {
-                    "path": "/rad",
-                    "state": "mounted",
-                    "writable": False,
-                }
-            )
+        # /rad is mounted rw in the test fixture
+        result = checker.check(
+            {
+                "path": "/rad",
+                "state": "mounted",
+                "writable": False,
+            }
+        )
         assert result.status == CheckStatus.FAIL
-        assert "writable" in result.message
-
-    def test_ro_mount_options_say_rw_but_write_fails(self, proc_mounts_file):
-        """Mount options say rw but actual write fails - treat as read-only (pass)."""
-        checker = MountChecker(proc_mounts_path=proc_mounts_file)
-        with patch.object(checker, "_write_test", side_effect=OSError("Read-only")):
-            result = checker.check(
-                {
-                    "path": "/rad",
-                    "state": "mounted",
-                    "writable": False,
-                }
-            )
-        assert result.status == CheckStatus.PASS
+        assert "read-write" in result.message
 
 
 class TestMountCheckerAbsent:
@@ -143,12 +105,43 @@ class TestMountCheckerAbsent:
         assert "expected absent" in result.message
 
 
-class TestWriteTest:
-    def test_write_test_succeeds(self, tmp_path):
-        """Write test should succeed on a writable directory."""
-        MountChecker._write_test(str(tmp_path))
+def _make_statvfs(total_gb):
+    """Create a mock statvfs result with the given total size in GB."""
+    block_size = 4096
+    total_bytes = int(total_gb * 1024**3)
+    total_blocks = total_bytes // block_size
+    result = os.statvfs_result(
+        (block_size, block_size, total_blocks, total_blocks, total_blocks, 0, 0, 0, 0, 255)
+    )
+    return result
 
-    def test_write_test_fails_on_nonexistent(self):
-        """Write test should fail on a nonexistent directory."""
-        with pytest.raises(OSError):
-            MountChecker._write_test("/nonexistent/path/that/does/not/exist")
+
+class TestDiskSize:
+    def test_disk_size_sufficient(self):
+        checker = MountChecker()
+        with patch("verify_node.os.statvfs", return_value=_make_statvfs(10000)):
+            result = checker.check_disk_size("/scout/data", 9000)
+        assert result.status == CheckStatus.PASS
+        assert "10000" in result.message
+        assert "9000" in result.message
+
+    def test_disk_size_exact(self):
+        checker = MountChecker()
+        with patch("verify_node.os.statvfs", return_value=_make_statvfs(1000)):
+            result = checker.check_disk_size("/var/lib/rancher", 1000)
+        assert result.status == CheckStatus.PASS
+
+    def test_disk_size_insufficient(self):
+        checker = MountChecker()
+        with patch("verify_node.os.statvfs", return_value=_make_statvfs(500)):
+            result = checker.check_disk_size("/scout/data", 9000)
+        assert result.status == CheckStatus.FAIL
+        assert "500" in result.message
+        assert "9000" in result.message
+
+    def test_disk_size_path_not_found(self):
+        checker = MountChecker()
+        with patch("verify_node.os.statvfs", side_effect=OSError("No such file or directory")):
+            result = checker.check_disk_size("/nonexistent", 1000)
+        assert result.status == CheckStatus.ERROR
+        assert "unable to determine" in result.message
