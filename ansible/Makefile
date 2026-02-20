@@ -1,6 +1,7 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
     install-postgres install-redis install-auth install-lake install-analytics install-orchestrator \
-    install-extractor install-monitor install-jupyter install-launchpad install-voila install-staging echo
+    install-extractor install-monitor install-jupyter install-launchpad install-voila install-staging \
+    verify-node echo
 
 # Variables
 VAULT_PASSWORD_ARG  ?= --vault-password-file vault/pwd.sh
@@ -101,3 +102,35 @@ install-dcm4chee:
 
 install-mailhog:
 	$(ANSIBLE_CMD) playbooks/mailhog.yaml
+
+# Node verification - validates mounts, connectivity, and resources on cluster nodes.
+# Unlike deployment targets, this runs against ALL cluster nodes (no -l FQDN limit)
+# and does not use become (no sudo required).
+#
+# Usage:
+#   make verify-node INVENTORY_FILE=/path/to/inventory.yaml
+#
+# Options:
+#   VAULT_PASSWORD_ARG  Vault password flag (default: --vault-password-file vault/pwd.sh)
+#   ADD                 Additional ansible-playbook flags
+#
+# Examples:
+#   # Run against a specific inventory with vault prompt
+#   make verify-node INVENTORY_FILE=../inventory/prod/demo01.yaml VAULT_PASSWORD_ARG="--ask-vault-pass"
+#
+#   # Limit to a specific node or group
+#   make verify-node ADD="-l gpu_workers"
+#   make verify-node ADD="-l tagprod-big-01"
+#
+#   # Run only one check category (mounts, connectivity, or resources)
+#   make verify-node ADD="-e verify_node_command=mounts"
+#
+#   # Override ansible_user
+#   make verify-node ADD="-e ansible_user=$USER"
+VERIFY_CMD := $(ANSIBLE_DEBUG_ENV) ANSIBLE_CALLBACK_RESULT_FORMAT=yaml \
+              ansible-playbook -v -i $(INVENTORY_FILE) \
+              --diff $(VAULT_PASSWORD_ARG) -e ansible_become=false \
+              $(ANSIBLE_STEP) $(ANSIBLE_ADDITIONAL_FLAGS)
+
+verify-node:
+	$(VERIFY_CMD) playbooks/verify-node.yaml
