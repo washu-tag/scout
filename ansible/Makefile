@@ -104,12 +104,33 @@ install-mailhog:
 	$(ANSIBLE_CMD) playbooks/mailhog.yaml
 
 # Node verification - validates mounts, connectivity, and resources on cluster nodes.
-# Unlike deployment targets, this runs against ALL cluster nodes by default (no -l FQDN limit).
-# To limit to a specific node:   make verify-node ADD="-l tagprod-gpu-xl-01"
-# To limit to a group:           make verify-node ADD="-l gpu_workers"
-# To run a single check category: make verify-node ADD='-e verify_node_command=mounts'
-VERIFY_CMD := $(ANSIBLE_DEBUG_ENV) ansible-playbook -v -i $(INVENTORY_FILE) \
-              $(DIFF_FLAG) $(VAULT_PASSWORD_ARG) $(ANSIBLE_STEP) $(ANSIBLE_ADDITIONAL_FLAGS)
+# Unlike deployment targets, this runs against ALL cluster nodes (no -l FQDN limit)
+# and does not use become (no sudo required).
+#
+# Usage:
+#   make verify-node INVENTORY_FILE=/path/to/inventory.yaml
+#
+# Options:
+#   VAULT_PASSWORD_ARG  Vault password flag (default: --vault-password-file vault/pwd.sh)
+#   ADD                 Additional ansible-playbook flags
+#
+# Examples:
+#   # Run against a specific inventory with vault prompt
+#   make verify-node INVENTORY_FILE=../inventory/prod/demo01.yaml VAULT_PASSWORD_ARG="--ask-vault-pass"
+#
+#   # Limit to a specific node or group
+#   make verify-node ADD="-l gpu_workers"
+#   make verify-node ADD="-l tagprod-big-01"
+#
+#   # Run only one check category (mounts, connectivity, or resources)
+#   make verify-node ADD="-e verify_node_command=mounts"
+#
+#   # Override ansible_user
+#   make verify-node ADD="-e ansible_user=$USERNAME"
+VERIFY_CMD := $(ANSIBLE_DEBUG_ENV) ANSIBLE_STDOUT_CALLBACK=default ANSIBLE_CALLBACK_RESULT_FORMAT=yaml \
+              ansible-playbook -v -i $(INVENTORY_FILE) \
+              --diff $(VAULT_PASSWORD_ARG) -e ansible_become=false \
+              $(ANSIBLE_STEP) $(ANSIBLE_ADDITIONAL_FLAGS)
 
 verify-node:
 	$(VERIFY_CMD) playbooks/verify-node.yaml

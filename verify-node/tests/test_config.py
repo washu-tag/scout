@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+import io
 import json
 import pytest
+from unittest.mock import patch
 
 from verify_node import ConfigError, load_config, build_parser
 
 
 def _make_args(**kwargs):
     """Create a namespace mimicking parsed CLI args."""
-    defaults = {"config": None, "config_json": None, "subcommand": "all"}
+    defaults = {"config": None, "config_json": None, "config_stdin": False, "subcommand": "all"}
     defaults.update(kwargs)
 
     class Args:
@@ -44,6 +46,16 @@ class TestLoadConfig:
         config_file.write_text("{bad json")
         with pytest.raises(ConfigError, match="Invalid JSON"):
             load_config(_make_args(config=str(config_file)))
+
+    def test_load_from_stdin(self):
+        with patch("verify_node.sys.stdin", io.StringIO('{"hostname": "test"}')):
+            config = load_config(_make_args(config_stdin=True))
+        assert config["hostname"] == "test"
+
+    def test_invalid_json_stdin(self):
+        with patch("verify_node.sys.stdin", io.StringIO("{bad json")):
+            with pytest.raises(ConfigError, match="Invalid JSON from stdin"):
+                load_config(_make_args(config_stdin=True))
 
     def test_no_config_provided(self):
         with pytest.raises(ConfigError, match="required"):
@@ -327,6 +339,13 @@ class TestBuildParser:
         for cmd in ("all", "mounts", "connectivity", "resources"):
             args = parser.parse_args([cmd, "--config-json", "{}"])
             assert args.subcommand == cmd
+
+    def test_config_stdin_flag(self):
+        parser = build_parser()
+        args = parser.parse_args(["all", "--config-stdin"])
+        assert args.config_stdin is True
+        assert args.config is None
+        assert args.config_json is None
 
     def test_mutually_exclusive_config(self):
         parser = build_parser()
