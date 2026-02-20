@@ -1,9 +1,9 @@
 {
-  "hostname": "tagprod-gpu-xl-01",
+  "hostname": "my-gpu-node-01",
 
   "mounts": [
     { "path": "/scout/data", "state": "mounted", "writable": true, "min_size_gb": 9000 },
-    { "path": "/home_prod", "state": "mounted", "writable": true },
+    { "path": "/home", "state": "mounted", "writable": true },
     { "path": "/shared", "state": "mounted", "writable": false },
     { "path": "/rad", "state": "mounted", "writable": false },
     { "path": "/staging_only_mount", "state": "absent" }
@@ -12,7 +12,7 @@
   "connectivity": {
     "timeout_seconds": 5,
     "checks": [
-      { "description": "SMTP relay", "host": "osmtp.wustl.edu", "port": 25, "expect": "reachable" },
+      { "description": "SMTP relay", "host": "smtp.example.com", "port": 25, "expect": "reachable" },
       {
         "description": "Internet (air-gap)",
         "host": "8.8.8.8",
@@ -20,7 +20,7 @@
         "expect": "unreachable"
       }
     ],
-    "dns": [{ "description": "Scout DNS", "hostname": "scout.washu.edu", "expect": "resolvable" }]
+    "dns": [{ "description": "Scout DNS", "hostname": "scout.example.com", "expect": "resolvable" }]
   },
 
   "resources": {

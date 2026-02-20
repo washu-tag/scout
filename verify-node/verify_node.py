@@ -17,6 +17,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import collections
 import dataclasses
 import enum
 import json
@@ -74,9 +75,10 @@ class Reporter:
                 for detail_line in r.detail.splitlines():
                     lines.append(f"         {detail_line}")
 
-        passed = sum(1 for r in self.results if r.status == CheckStatus.PASS)
-        failed = sum(1 for r in self.results if r.status == CheckStatus.FAIL)
-        errors = sum(1 for r in self.results if r.status == CheckStatus.ERROR)
+        counts = collections.Counter(r.status for r in self.results)
+        passed = counts[CheckStatus.PASS]
+        failed = counts[CheckStatus.FAIL]
+        errors = counts[CheckStatus.ERROR]
         total = len(self.results)
 
         lines.append(
