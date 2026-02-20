@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from verify_node import CheckStatus, CheckResult, Reporter
 
 
