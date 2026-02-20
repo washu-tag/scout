@@ -500,6 +500,8 @@ ADRs in `docs/internal/adr/` document significant architectural decisions. Consu
 
 - **ADR 0012: Security Scan Response and Hardening** — Consolidates findings from Tenable Nessus and OWASP ZAP scans, implementing a global Traefik security headers middleware (HSTS, CSP, X-Frame-Options, etc.) to address the majority of findings. Consult when modifying security headers, Traefik middleware configuration, or evaluating future scan results.
 
+- **ADR 0013: Redis Enterprise to Valkey Migration** — Replaces Redis Enterprise Cluster (commercial, 4 pods, 12.5Gi memory) with a single standalone Valkey instance (BSD-3, Linux Foundation, 1 pod, 2Gi memory). All Scout Redis usage is ephemeral (sessions, cache, pub/sub), so no data migration is needed. Valkey is a Redis OSS 7.2.4 fork with full RESP protocol compatibility — no application code changes required. Implements `redis_mode: standalone` as the new default per ADR 0011. Consult when modifying Redis/Valkey configuration, caching infrastructure, or the `redis_mode` service-mode variable.
+
 ## Key Concepts for AI Assistants
 
 ### Architecture Understanding
