@@ -131,7 +131,6 @@ The script can also be run directly (without Ansible):
 ```bash
 python3 verify_node.py all --config config.json
 python3 verify_node.py mounts --config-json '{"hostname": "node1", ...}'
-python3 verify_node.py connectivity --config-stdin < config.json
 ```
 
 See `config.example.json` for a complete config example.

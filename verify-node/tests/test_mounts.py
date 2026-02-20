@@ -111,7 +111,18 @@ def _make_statvfs(total_gb):
     total_bytes = int(total_gb * 1024**3)
     total_blocks = total_bytes // block_size
     result = os.statvfs_result(
-        (block_size, block_size, total_blocks, total_blocks, total_blocks, 0, 0, 0, 0, 255)
+        (
+            block_size,
+            block_size,
+            total_blocks,
+            total_blocks,
+            total_blocks,
+            0,
+            0,
+            0,
+            0,
+            255,
+        )
     )
     return result
 
@@ -141,7 +152,9 @@ class TestDiskSize:
 
     def test_disk_size_path_not_found(self):
         checker = MountChecker()
-        with patch("verify_node.os.statvfs", side_effect=OSError("No such file or directory")):
+        with patch(
+            "verify_node.os.statvfs", side_effect=OSError("No such file or directory")
+        ):
             result = checker.check_disk_size("/nonexistent", 1000)
         assert result.status == CheckStatus.ERROR
         assert "unable to determine" in result.message

@@ -7,7 +7,6 @@ network connectivity, and hardware resources before Scout deployment.
 Usage:
     python3 verify_node.py {all|mounts|connectivity|resources} --config /path/to/config.json
     python3 verify_node.py {all|mounts|connectivity|resources} --config-json '<json>'
-    python3 verify_node.py {all|mounts|connectivity|resources} --config-stdin < config.json
 
 Exit codes:
     0 = all checks passed
@@ -120,13 +119,8 @@ def load_config(args: argparse.Namespace) -> dict[str, Any]:
             raise ConfigError(f"Config file not found: {args.config}")
         except json.JSONDecodeError as e:
             raise ConfigError(f"Invalid JSON in {args.config}: {e}") from e
-    elif args.config_stdin:
-        try:
-            config = json.load(sys.stdin)
-        except json.JSONDecodeError as e:
-            raise ConfigError(f"Invalid JSON from stdin: {e}") from e
     else:
-        raise ConfigError("One of --config, --config-json, or --config-stdin is required")
+        raise ConfigError("One of --config or --config-json is required")
 
     if not isinstance(config, dict):
         raise ConfigError("Config must be a JSON object")
@@ -723,12 +717,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--config-json",
         help="Inline JSON config string",
     )
-    config_group.add_argument(
-        "--config-stdin",
-        action="store_true",
-        help="Read JSON config from stdin",
-    )
-
     return parser
 
 

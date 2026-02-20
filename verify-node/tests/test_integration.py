@@ -146,9 +146,7 @@ class TestRunChecks:
                     or setattr(self, "_mounts", None)
                 ),
             ),
-            patch(
-                "verify_node.socket.create_connection", return_value=mock_sock
-            ),
+            patch("verify_node.socket.create_connection", return_value=mock_sock),
             patch("verify_node.socket.getaddrinfo") as mock_dns,
             patch(
                 "verify_node.ResourceChecker.__init__",

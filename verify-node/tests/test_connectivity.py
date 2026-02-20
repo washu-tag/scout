@@ -21,9 +21,7 @@ class TestTCPReachable:
                     "description": "HTTPS",
                 }
             )
-            mock_create.assert_called_once_with(
-                ("example.com", 443), timeout=1.0
-            )
+            mock_create.assert_called_once_with(("example.com", 443), timeout=1.0)
         assert result.status == CheckStatus.PASS
         assert "reachable" in result.message
 
@@ -96,9 +94,7 @@ class TestTCPUnreachable:
     def test_unreachable_but_connects(self):
         checker = ConnectivityChecker(default_timeout=1.0)
         mock_sock = MagicMock()
-        with patch(
-            "verify_node.socket.create_connection", return_value=mock_sock
-        ):
+        with patch("verify_node.socket.create_connection", return_value=mock_sock):
             result = checker.check_tcp(
                 {
                     "host": "8.8.8.8",
@@ -200,9 +196,7 @@ class TestCustomTimeout:
                     "expect": "reachable",
                 }
             )
-            mock_create.assert_called_once_with(
-                ("example.com", 80), timeout=2.5
-            )
+            mock_create.assert_called_once_with(("example.com", 80), timeout=2.5)
 
     def test_explicit_timeout_overrides_default(self):
         checker = ConnectivityChecker(default_timeout=5.0)
@@ -214,18 +208,14 @@ class TestCustomTimeout:
                 {"host": "example.com", "port": 80, "expect": "reachable"},
                 timeout=1.0,
             )
-            mock_create.assert_called_once_with(
-                ("example.com", 80), timeout=1.0
-            )
+            mock_create.assert_called_once_with(("example.com", 80), timeout=1.0)
 
 
 class TestDefaultDescription:
     def test_tcp_default_description(self):
         checker = ConnectivityChecker(default_timeout=1.0)
         mock_sock = MagicMock()
-        with patch(
-            "verify_node.socket.create_connection", return_value=mock_sock
-        ):
+        with patch("verify_node.socket.create_connection", return_value=mock_sock):
             result = checker.check_tcp(
                 {
                     "host": "example.com",
