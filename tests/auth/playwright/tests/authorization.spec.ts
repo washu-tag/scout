@@ -38,7 +38,7 @@ const protectedServices = [
   },
 ];
 
-test.describe('Unauthorized User — Access Pending', () => {
+test.describe('Unauthorized User', () => {
   for (const { name, url } of protectedServices) {
     test(`${name} returns 403 Access Pending`, async ({ page }) => {
       await signInToScout(page, url, unauthorizedUser);
@@ -52,7 +52,7 @@ test.describe('Unauthorized User — Access Pending', () => {
 
 // Authorized user (scout-user, non-admin): denied access to admin services
 
-test.describe('Scout User — No Admin Access', () => {
+test.describe('Authorized Non-Admin User', () => {
   test('Launchpad hides admin links', async ({ page }) => {
     const url = `https://${hostname}/`;
     await signInToScout(page, url, authorizedUser);
@@ -94,6 +94,34 @@ test.describe('Scout User — No Admin Access', () => {
       page.locator(
         'text=Policy claim missing from the JWT token, credentials will not be generated',
       ),
+    ).toBeVisible({ timeout: 60000 });
+  });
+
+  test('Grafana Authentication dashboard returns 403', async ({ page }) => {
+    const url = `https://grafana.${hostname}/d/auth_dashboard_01`;
+    await signInToScout(page, url, authorizedUser);
+
+    await expect(page.locator('text=Failed to load dashboard')).toBeVisible({ timeout: 60000 });
+    await expect(page.getByText('"status":403')).toBeVisible({ timeout: 60000 });
+  });
+
+  test('Grafana Kubernetes dashboard returns 403', async ({ page }) => {
+    const url = `https://grafana.${hostname}/d/scout_kubernetes_dashboard_01/`;
+    await signInToScout(page, url, authorizedUser);
+
+    await expect(page.locator('text=Failed to load dashboard')).toBeVisible({ timeout: 60000 });
+    await expect(page.getByText('"status":403')).toBeVisible({ timeout: 60000 });
+  });
+
+  // Note: The admin console SPA itself loads with 200; the 403 is on the
+  // /admin/serverinfo XHR, so we only assert the visible error message here.
+  test('Keycloak Admin Console denies access', async ({ page }) => {
+    await signInToScout(page, `https://${hostname}/`, authorizedUser);
+
+    await page.goto(`https://keycloak.${hostname}/admin/scout/console/`);
+
+    await expect(
+      page.locator('text=You do not have permission to access this resource'),
     ).toBeVisible({ timeout: 60000 });
   });
 });

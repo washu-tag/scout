@@ -80,4 +80,45 @@ class AuthorizedUserTest {
                 .until(ExpectedConditions.presenceOfElementLocated(
                         By.xpath("//*[contains(., 'Policy claim missing')]")));
     }
+
+    @Test
+    void grafanaAuthDashboardDeniesAccess(WebDriver driver, @Authorized TestLifecycle.TestUser authorizedUser) {
+        String url = "https://grafana." + HOSTNAME + "/d/auth_dashboard_01";
+        ScoutAuth.signInToScout(driver, url, authorizedUser.username(), authorizedUser.password());
+
+        new WebDriverWait(driver, Duration.ofSeconds(60))
+                .until(ExpectedConditions.presenceOfElementLocated(
+                        By.xpath("//*[contains(., 'Failed to load dashboard')]")));
+        new WebDriverWait(driver, Duration.ofSeconds(60))
+                .until(ExpectedConditions.presenceOfElementLocated(
+                        By.xpath("//*[contains(., '\"status\":403')]")));
+    }
+
+    @Test
+    void grafanaKubernetesDashboardDeniesAccess(WebDriver driver, @Authorized TestLifecycle.TestUser authorizedUser) {
+        String url = "https://grafana." + HOSTNAME + "/d/scout_kubernetes_dashboard_01/";
+        ScoutAuth.signInToScout(driver, url, authorizedUser.username(), authorizedUser.password());
+
+        new WebDriverWait(driver, Duration.ofSeconds(60))
+                .until(ExpectedConditions.presenceOfElementLocated(
+                        By.xpath("//*[contains(., 'Failed to load dashboard')]")));
+        new WebDriverWait(driver, Duration.ofSeconds(60))
+                .until(ExpectedConditions.presenceOfElementLocated(
+                        By.xpath("//*[contains(., '\"status\":403')]")));
+    }
+
+    @Test
+    void keycloakAdminConsoleDeniesAccess(WebDriver driver, @Authorized TestLifecycle.TestUser authorizedUser) {
+        // Sign into Scout to establish a Keycloak session
+        ScoutAuth.signInToScout(driver, "https://" + HOSTNAME + "/",
+                authorizedUser.username(), authorizedUser.password());
+
+        // Navigate to the Keycloak admin console — existing session authenticates
+        // via SSO, but non-admin users are denied access
+        driver.get("https://keycloak." + HOSTNAME + "/admin/scout/console/");
+
+        new WebDriverWait(driver, Duration.ofSeconds(60))
+                .until(ExpectedConditions.presenceOfElementLocated(
+                        By.xpath("//*[contains(., 'do not have permission to access this resource')]")));
+    }
 }
