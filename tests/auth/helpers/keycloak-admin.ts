@@ -87,9 +87,20 @@ export class KeycloakAdmin {
     });
 
     if (res.status === 409) {
-      // User already exists — look up and return their ID
+      // User already exists — reconfigure and return their ID
       console.log(`User "${config.username}" already exists, reusing.`);
-      return this.getUserByUsername(config.username);
+      const userId = await this.getUserByUsername(config.username);
+
+      await this.resetUserPassword(userId, config.password);
+
+      if (config.groups?.length) {
+        for (const groupName of config.groups) {
+          const groupId = await this.getGroupByName(groupName);
+          await this.addUserToGroup(userId, groupId);
+        }
+      }
+
+      return userId;
     }
 
     if (!res.ok) {
@@ -217,6 +228,86 @@ export class KeycloakAdmin {
     }
 
     console.log(`Added user ${userId} to group ${groupId}`);
+  }
+
+  /** Reset a user's password. */
+  async resetUserPassword(userId: string, password: string): Promise<void> {
+    await this.ensureAuthenticated();
+
+    const url = `${this.baseUrl}/admin/realms/scout/users/${userId}/reset-password`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'password',
+        value: password,
+        temporary: false,
+      }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Failed to reset password for user ${userId} (${res.status}): ${text}`);
+    }
+
+    console.log(`Reset password for user ${userId}`);
+  }
+
+  /** Remove all credentials from a user. */
+  async removeUserCredentials(userId: string): Promise<void> {
+    await this.ensureAuthenticated();
+
+    const listUrl = `${this.baseUrl}/admin/realms/scout/users/${userId}/credentials`;
+    const listRes = await fetch(listUrl, {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+
+    if (!listRes.ok) {
+      const text = await listRes.text();
+      throw new Error(`Failed to list credentials for user ${userId} (${listRes.status}): ${text}`);
+    }
+
+    const credentials = (await listRes.json()) as { id: string; type: string }[];
+
+    for (const cred of credentials) {
+      const delUrl = `${this.baseUrl}/admin/realms/scout/users/${userId}/credentials/${cred.id}`;
+      const delRes = await fetch(delUrl, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${this.accessToken}` },
+      });
+
+      if (!delRes.ok) {
+        const text = await delRes.text();
+        throw new Error(
+          `Failed to delete credential ${cred.id} for user ${userId} (${delRes.status}): ${text}`,
+        );
+      }
+
+      console.log(`Removed ${cred.type} credential from user ${userId}`);
+    }
+  }
+
+  /** Remove a user from a group. */
+  async removeUserFromGroup(userId: string, groupId: string): Promise<void> {
+    await this.ensureAuthenticated();
+
+    const url = `${this.baseUrl}/admin/realms/scout/users/${userId}/groups/${groupId}`;
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(
+        `Failed to remove user ${userId} from group ${groupId} (${res.status}): ${text}`,
+      );
+    }
+
+    console.log(`Removed user ${userId} from group ${groupId}`);
   }
 
   /**

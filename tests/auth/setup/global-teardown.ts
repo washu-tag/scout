@@ -26,31 +26,30 @@ async function globalTeardown(): Promise<void> {
     console.error('Warning: failed to re-enable IdP redirect:', err);
   }
 
-  // Delete test users — try saved JSON first, fall back to username lookup
+  // Strip credentials and group membership from test users (but keep the
+  // users themselves so Grafana's cached user records don't conflict on
+  // the next run when Keycloak assigns new UUIDs).
   if (fs.existsSync(USERS_FILE)) {
     const records: TestUserRecord[] = JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
+    const authorizedUsername = process.env.AUTHORIZED_USER_USERNAME ?? 'scout-authorized-test-user';
 
     for (const { id, username } of records) {
       try {
-        console.log(`Deleting test user "${username}" (${id})`);
-        await keycloak.deleteUser(id);
+        console.log(`Removing credentials for test user "${username}" (${id})`);
+        await keycloak.removeUserCredentials(id);
       } catch (err) {
-        console.error(`Warning: failed to delete user "${username}":`, err);
+        console.error(`Warning: failed to remove credentials for "${username}":`, err);
       }
-    }
-  } else {
-    // Fallback: delete by username
-    const usernames = [
-      process.env.UNAUTHORIZED_USER_USERNAME ?? 'scout-unauthorized-test-user',
-      process.env.AUTHORIZED_USER_USERNAME ?? 'scout-authorized-test-user',
-    ];
 
-    for (const username of usernames) {
-      try {
-        console.log(`No saved user ID — deleting by username: ${username}`);
-        await keycloak.deleteUserByUsername(username);
-      } catch (err) {
-        console.error(`Warning: failed to delete user "${username}":`, err);
+      // Revoke scout-user group from the authorized user
+      if (username === authorizedUsername) {
+        try {
+          const groupId = await keycloak.getGroupByName('scout-user');
+          console.log(`Removing "${username}" from scout-user group`);
+          await keycloak.removeUserFromGroup(id, groupId);
+        } catch (err) {
+          console.error(`Warning: failed to remove "${username}" from group:`, err);
+        }
       }
     }
   }
