@@ -14,13 +14,15 @@ Two security scans were performed against Scout in February 2026 to assess the p
 
 **OWASP ZAP v2.17.0** (2026-02-16) was run internally against all service subdomains: root/Launchpad, Superset, Grafana, JupyterHub, Temporal, and Chat. Both baseline (passive) and full (active + passive) scans were performed with authenticated scanning via an OAuth2 Proxy session cookie injected through a hook script (see Appendix A). Keycloak was also tested (discovered via OAuth redirects). 25+ distinct findings were reported, including one high-risk alert (confirmed false positive).
 
+**OWASP ZAP v2.17.0** (2026-02-20) additional baseline scans were run against two subdomains missed in the initial scan: MinIO Console (`minio.`) and Playbooks/Voilà (`playbooks.`). These are passive-only scans. Findings are consistent with the initial scan — primarily missing security headers — plus one new finding: Sub Resource Integrity (SRI) attributes missing on external CDN resources loaded by Voilà.
+
 ### Scan Coverage Comparison
 
 | | Tenable Nessus | OWASP ZAP |
 |---|---|---|
 | **Type** | Commercial vulnerability scanner | Open-source web app scanner |
 | **Access** | External (unauthenticated) | Internal (authenticated) |
-| **Services reached** | Launchpad only (root domain) | All 6 services + Keycloak |
+| **Services reached** | Launchpad only (root domain) | All 8 services + Keycloak |
 | **Scan depth** | Active probing (host injection, TLS) | Passive + active (spidering, fuzzing) |
 | **Strengths** | TLS/SSL analysis, host-level checks | HTTP header analysis, application-layer checks, CSP analysis |
 | **Blind spots** | Couldn't reach internal services | No TLS cipher testing, limited injection testing |
@@ -48,25 +50,26 @@ Findings from both scans are merged below, organized by priority.
 | Priority | Category | Finding | Services Affected | Source |
 |----------|----------|---------|-------------------|--------|
 | Medium | Injection | Host Header Injection | root | Tenable |
-| Medium | Headers | Missing HSTS | root, grafana, jupyter, temporal, chat | Both |
+| Medium | Headers | Missing HSTS | root, grafana, jupyter, temporal, chat, minio, playbooks | Both |
 | Medium | Headers | Missing X-Frame-Options / Anti-clickjacking | root, chat | Both |
-| Medium | Headers | Missing CSP | root, jupyter, temporal, chat | Both |
-| Medium | Headers | CSP quality issues (unsafe-inline, missing directives) | keycloak, superset, jupyter, temporal, chat | ZAP |
+| Medium | Headers | Missing CSP | root, jupyter, temporal, chat, playbooks (static routes) | Both |
+| Medium | Headers | CSP quality issues (unsafe-inline, missing directives) | keycloak, superset, jupyter, temporal, chat, minio, playbooks | ZAP |
+| Medium | Application | Sub Resource Integrity missing | playbooks | ZAP |
 | Medium | Application | Proxy Disclosure | all services | ZAP |
-| Low | Headers | Missing X-Content-Type-Options | root, grafana, jupyter, chat | Both |
-| Low | Headers | Missing Permissions Policy | root, keycloak, jupyter, temporal, chat | ZAP |
-| Low | Headers | Missing Spectre isolation headers | root, keycloak, grafana, jupyter, temporal, chat | ZAP |
+| Low | Headers | Missing X-Content-Type-Options | root, grafana, jupyter, chat, playbooks | Both |
+| Low | Headers | Missing Permissions Policy | root, keycloak, jupyter, temporal, chat, minio, playbooks | ZAP |
+| Low | Headers | Missing Spectre isolation headers | root, keycloak, grafana, jupyter, temporal, chat, minio, playbooks | ZAP |
 | Low | TLS | Weak TLS cipher suites (CBC mode) | all (Traefik-level) | Tenable |
-| Low | Disclosure | Server/framework version leaks | root, jupyter | ZAP |
-| Low | Cookies | Cookie attribute issues (Secure, HttpOnly, SameSite) | keycloak, superset, grafana, jupyter, temporal | ZAP |
+| Low | Disclosure | Server/framework version leaks | root, jupyter, playbooks | ZAP |
+| Low | Cookies | Cookie attribute issues (Secure, HttpOnly, SameSite) | keycloak, superset, grafana, jupyter, temporal, playbooks | ZAP |
 | Very Low | Headers | Missing Content-Type on HTTP redirect | root | Tenable |
 | Very Low | Application | Relative Path Confusion | jupyter, temporal, chat | ZAP |
 | Very Low | Application | Big Redirect info leak | superset | ZAP |
 | No action | Application | Source Code Disclosure - File Inclusion (false positive) | grafana | ZAP |
 | No action | Application | Keycloak anti-CSRF tokens (false positive) | keycloak | ZAP |
-| No action | Application | Dangerous JS functions | jupyter | ZAP |
+| No action | Application | Dangerous JS functions | jupyter, minio | ZAP |
 | No action | Cookies | Keycloak SameSite=None | keycloak | ZAP |
-| No action | Disclosure | Timestamp disclosure | jupyter | ZAP |
+| No action | Disclosure | Timestamp disclosure | jupyter, minio, playbooks | ZAP |
 
 The following sections detail each finding category.
 
@@ -78,7 +81,7 @@ The most common findings across both scans. Most can be addressed with a single 
 
 **Missing HSTS (Strict-Transport-Security)**
 Scanners: Tenable (plugin 98056) + ZAP (10035)
-Services affected: root/Launchpad, Grafana, JupyterHub, Temporal, Chat. Superset and Keycloak already set HSTS.
+Services affected: root/Launchpad, Grafana, JupyterHub, Temporal, Chat, MinIO Console, Playbooks. Superset and Keycloak already set HSTS.
 
 Scout already redirects HTTP→HTTPS at the Traefik level (permanent 308 redirect). HSTS tells browsers to never even attempt an HTTP connection, providing defense-in-depth against SSL stripping attacks. Low actual risk given the existing redirect, but trivial to add.
 
@@ -92,7 +95,7 @@ Neither `X-Frame-Options` nor CSP `frame-ancestors` is set on these services, ma
 Scanners: Tenable (plugin 112551) + ZAP (10038)
 Services affected: root/Launchpad, JupyterHub, Temporal, Chat (missing entirely). Superset, Grafana, and Keycloak have CSP but with quality issues (see below).
 
-CSP is already configured for Open WebUI (via Traefik middleware, see ADR 0009) and JupyterHub (partial, `frame-ancestors` only via Tornado settings). Launchpad and Temporal have no CSP at all.
+CSP is already configured for Open WebUI (via Traefik middleware, see ADR 0009) and JupyterHub (partial, `frame-ancestors` only via Tornado settings). MinIO Console sets its own CSP (`default-src 'self' 'unsafe-eval' 'unsafe-inline'` with `script-src` and `connect-src` allowances for `https://unpkg.com`). Playbooks/Voilà sets a minimal CSP (`frame-ancestors 'self'; report-uri ...`) with no `default-src`, leaving most directives unrestricted. Launchpad and Temporal have no CSP at all. Playbooks is additionally missing CSP entirely on static routes (robots.txt, sitemap.xml).
 
 **CSP Quality Issues**
 Scanner: ZAP only (10055 family)
@@ -100,29 +103,29 @@ Services affected: Services that have CSP headers.
 
 | Issue | Services | Notes |
 |-------|----------|-------|
-| Missing directives (no fallback) | keycloak, superset, jupyter, temporal, chat | `form-action` and `frame-ancestors` don't fall back to `default-src` |
-| Wildcard directive | keycloak, jupyter, temporal, chat | Overly broad source allowances |
-| `script-src 'unsafe-inline'` | keycloak, jupyter, chat | Weakens XSS protection |
-| `style-src 'unsafe-inline'` | keycloak, superset, jupyter, temporal, chat | Allows inline styles |
-| `script-src 'unsafe-eval'` | chat | Allows `eval()` calls |
+| Missing directives (no fallback) | keycloak, superset, jupyter, temporal, chat, minio, playbooks | `form-action` and `frame-ancestors` don't fall back to `default-src` |
+| Wildcard directive | keycloak, jupyter, temporal, chat, playbooks | Overly broad source allowances |
+| `script-src 'unsafe-inline'` | keycloak, jupyter, chat, playbooks | Weakens XSS protection |
+| `style-src 'unsafe-inline'` | keycloak, superset, jupyter, temporal, chat, minio | Allows inline styles |
+| `script-src 'unsafe-eval'` | chat, minio | Allows `eval()` calls |
 
 The `unsafe-inline` and `unsafe-eval` directives are required by upstream applications (Keycloak, JupyterHub, Open WebUI) for their JavaScript/CSS to function. Tightening further would require nonce-based or hash-based CSP, which these applications don't support.
 
 **Missing X-Content-Type-Options**
 Scanners: Tenable (plugin 112529) + ZAP (10021)
-Services affected: root/Launchpad, Grafana, JupyterHub, Chat.
+Services affected: root/Launchpad, Grafana, JupyterHub, Chat, Playbooks (on Voilà static assets).
 
 Prevents browsers from MIME-sniffing responses away from the declared Content-Type. Very low risk, trivial to add.
 
 **Missing Permissions Policy**
 Scanner: ZAP only (10063)
-Services affected: root/Launchpad, Keycloak, JupyterHub, Temporal, Chat.
+Services affected: root/Launchpad, Keycloak, JupyterHub, Temporal, Chat, MinIO Console, Playbooks.
 
 The `Permissions-Policy` header restricts browser features (camera, microphone, geolocation, payment). Scout doesn't use any of these, so the header is purely defensive.
 
 **Missing Spectre Isolation Headers**
 Scanner: ZAP only (90004)
-Services affected: root/Launchpad, Keycloak, Grafana, JupyterHub, Temporal, Chat.
+Services affected: root/Launchpad, Keycloak, Grafana, JupyterHub, Temporal, Chat, MinIO Console, Playbooks.
 
 Missing `Cross-Origin-Resource-Policy`, `Cross-Origin-Embedder-Policy`, and `Cross-Origin-Opener-Policy` headers. These mitigate Spectre-class side-channel attacks. Very low actual risk — Spectre attacks require specific conditions and Scout runs on dedicated infrastructure behind authentication. `Cross-Origin-Opener-Policy` can be safely added globally, but `COEP` and `CORP` can break cross-origin OAuth flows and should not be set globally without per-service testing.
 
@@ -135,6 +138,12 @@ Scanner: Tenable only (plugin 98623)
 Services affected: root (Traefik-level).
 
 Traefik accepted a request with a spoofed `Host` header and returned a response. This can enable cache poisoning or password reset link manipulation if the application uses the Host header to generate URLs. Traefik IngressRoutes match on specific hostnames, but the default Traefik backend still responds to unmatched hosts. OAuth2 Proxy's `whitelist_domains` and `cookie_domains` settings limit exploitability.
+
+**Sub Resource Integrity Attribute Missing**
+Scanner: ZAP only (90003)
+Services affected: Playbooks only.
+
+Voilà loads external resources from CDN without Subresource Integrity (SRI) attributes — specifically `font-awesome@4.5.0` from `cdn.jsdelivr.net`. Without SRI, a compromised CDN could serve malicious content. This is an upstream Voilà application issue; the external stylesheet is embedded in Voilà's HTML templates. Low actual risk — all services are behind authentication and the global CSP may restrict external resource loading regardless.
 
 **Source Code Disclosure - File Inclusion**
 Scanner: ZAP only (43, High)
@@ -189,7 +198,7 @@ The HTTP→HTTPS 308 redirect response has no Content-Type header. The response 
 
 **Server / Framework Version Leaks**
 Scanner: ZAP only (10036, 10037)
-Services affected: JupyterHub (`Server` header), root/Launchpad (`X-Powered-By: Next.js`).
+Services affected: JupyterHub (`Server` header), root/Launchpad (`X-Powered-By: Next.js`), Playbooks (`Server: TornadoServer/6.4.1`).
 
 Version information helps attackers identify known vulnerabilities, but all services are behind authentication. Very low risk.
 
@@ -202,10 +211,10 @@ Services affected: Various.
 
 | Issue | Services | Cookies Affected |
 |-------|----------|-----------------|
-| No HttpOnly flag | keycloak, temporal, jupyter | `KC_AUTH_SESSION_HASH`, `_csrf`, various |
-| No Secure flag | superset, grafana, jupyter | Session cookies, `oauth_state`, `redirectTo` |
+| No HttpOnly flag | keycloak, temporal, jupyter, playbooks | `KC_AUTH_SESSION_HASH`, `_csrf`, `_xsrf`, various |
+| No Secure flag | superset, grafana, jupyter, playbooks | Session cookies, `oauth_state`, `redirectTo`, `_xsrf` |
 | SameSite=None | keycloak | `AUTH_SESSION_ID`, `KC_AUTH_SESSION_HASH`, `KC_RESTART` |
-| No SameSite attribute | jupyter | Various |
+| No SameSite attribute | jupyter, playbooks | Various, `_xsrf` |
 
 All traffic is HTTPS-only (Traefik enforces TLS), so the missing Secure flag is mitigated at the transport level. The HttpOnly and SameSite issues are on third-party application cookies (Keycloak, JupyterHub) that we don't directly control. Keycloak's `SameSite=None` is required for cross-origin OAuth flows.
 
@@ -218,9 +227,9 @@ These findings require no action:
 | Finding | Scanner | Service | Why No Action Needed |
 |---------|---------|---------|---------------------|
 | Absence of Anti-CSRF Tokens (10202) | ZAP | Keycloak | Keycloak uses `session_code` for CSRF protection |
-| Dangerous JS Functions (10110) | ZAP | JupyterHub | JupyterHub executes user-provided code by design |
+| Dangerous JS Functions (10110) | ZAP | JupyterHub, MinIO Console | JupyterHub executes user-provided code by design; MinIO Console uses `eval()` in bundled JavaScript |
 | Keycloak SameSite=None cookies (10054) | ZAP | Keycloak | Required for cross-origin OAuth flows |
-| Timestamp Disclosure (10096) | ZAP | JupyterHub | Minimal information disclosure |
+| Timestamp Disclosure (10096) | ZAP | JupyterHub, MinIO Console, Playbooks | Minimal information disclosure |
 | CSP unsafe-inline/unsafe-eval (10055) | ZAP | Various | Required by upstream apps (Keycloak, JupyterHub, Open WebUI) |
 | Missing Content-Type on redirect (98648) | Tenable | root | Redirect response has no body |
 | Source Code Disclosure - File Inclusion (43) | ZAP | Grafana | False positive: `redirectTo` param on `/login` is a redirect path, not file inclusion; 74% similarity was below ZAP's 75% threshold; no source code in evidence |
@@ -229,14 +238,14 @@ These findings require no action:
 
 | ZAP ID | Finding | Services |
 |--------|---------|----------|
-| 10015 | Re-examine Cache-control Directives | keycloak, grafana, temporal, chat |
-| 10027 | Information Disclosure - Suspicious Comments | root, jupyter, temporal, chat |
+| 10015 | Re-examine Cache-control Directives | keycloak, grafana, temporal, chat, minio, playbooks |
+| 10027 | Information Disclosure - Suspicious Comments | root, jupyter, temporal, chat, minio |
 | 10029 | Cookie Poisoning | grafana |
 | 10049 | Non-Storable Content | all services |
 | 10049 | Storable and Cacheable Content | all services |
 | 10104 | User Agent Fuzzer | root, superset, grafana |
-| 10109 | Modern Web Application | root, jupyter, temporal, chat |
-| 10112 | Session Management Response Identified | keycloak, superset, grafana, jupyter, temporal |
+| 10109 | Modern Web Application | root, jupyter, temporal, chat, minio, playbooks |
+| 10112 | Session Management Response Identified | keycloak, superset, grafana, jupyter, temporal, playbooks |
 | 90027 | Cookie Slack Detector | all services |
 
 ---
@@ -261,6 +270,12 @@ The most impactful single change. A Traefik `Middleware` resource applied to all
 
 The middleware will be chained with the existing OAuth2 Proxy middlewares on all IngressRoutes, following the same pattern established in ADR 0003 and ADR 0009.
 
+#### Playbooks Middleware Chain
+
+The Playbooks (Voilà) IngressRoute was missing the security headers middleware. Adding `kube-system-security-headers@kubernetescrd` to the middleware chain addresses missing HSTS, X-Content-Type-Options, Permissions-Policy, Cross-Origin-Opener-Policy, and suppresses the `TornadoServer/6.4.1` Server header leak. MinIO Console already had the security headers middleware configured.
+
+Note: The global middleware's CSP interacts with backend-set CSP headers. When both the middleware and the backend set `Content-Security-Policy`, browsers apply the most restrictive combination of all CSP headers. MinIO Console's CSP allows `https://unpkg.com` (for script-src and connect-src), and Voilà's HTML loads `font-awesome` from `cdn.jsdelivr.net` — neither CDN is in the global CSP's allowlist. If these external resources are actively used, per-service CSP overrides (following the Open WebUI pattern from ADR 0009) may be needed.
+
 #### Application-Level Fixes
 
 - Disable the `X-Powered-By: Next.js` header in Launchpad's Next.js configuration. While the Traefik middleware will clear this header at the ingress layer, disabling it at the source is defense-in-depth.
@@ -277,11 +292,15 @@ Two CBC-mode cipher suites are enabled at the Traefik level. These are AES-CBC w
 
 #### Cookie Attribute Issues (Low)
 
-Missing `Secure`, `HttpOnly`, and `SameSite` attributes on various cookies are primarily set by upstream applications (Keycloak, JupyterHub, Superset, Grafana) that we don't directly control. All traffic is HTTPS-only, mitigating the missing `Secure` flag at the transport level. Keycloak's `SameSite=None` is required for cross-origin OAuth flows. Cookies set by OAuth2 Proxy already have appropriate attributes.
+Missing `Secure`, `HttpOnly`, and `SameSite` attributes on various cookies are primarily set by upstream applications (Keycloak, JupyterHub, Superset, Grafana, Voilà) that we don't directly control. Voilà/Tornado sets `_xsrf` and username cookies without `Secure`, `HttpOnly`, or `SameSite` attributes. All traffic is HTTPS-only, mitigating the missing `Secure` flag at the transport level. Keycloak's `SameSite=None` is required for cross-origin OAuth flows. Cookies set by OAuth2 Proxy already have appropriate attributes.
 
 #### Spectre Isolation — COEP and CORP (Low)
 
 The global middleware will set `Cross-Origin-Opener-Policy: same-origin` but will intentionally omit `Cross-Origin-Embedder-Policy` and `Cross-Origin-Resource-Policy`. Setting these globally breaks cross-origin Keycloak OAuth flows across subdomains. The actual risk from Spectre attacks is very low given that Scout runs on dedicated infrastructure behind authentication.
+
+#### Sub Resource Integrity Missing (Medium)
+
+Voilà loads `font-awesome@4.5.0` from `cdn.jsdelivr.net` without SRI integrity attributes. This is embedded in Voilà's upstream HTML templates and cannot be fixed without patching the Voilà Docker image. The risk is low: all services are behind OAuth2 Proxy authentication, and a CDN compromise affecting a widely-used library would have broad impact beyond Scout.
 
 #### Application-Level Findings (Very Low to No Action)
 
@@ -292,7 +311,7 @@ The following are accepted as false positives, by-design behavior, or very low r
 - **Big Redirect Detection**: Normal Superset/Keycloak redirect behavior; response content is not rendered.
 - **Proxy Disclosure**: Minimal value to an attacker; suppressing the `Server` header (above) reduces this signal.
 - **Keycloak anti-CSRF tokens**: False positive — Keycloak uses `session_code` for CSRF protection.
-- **Dangerous JS Functions**: JupyterHub is a code execution environment by design.
+- **Dangerous JS Functions**: JupyterHub is a code execution environment by design; MinIO Console uses `eval()` in its bundled JavaScript.
 - **Timestamp Disclosure**: Minimal information disclosure.
 - **CSP `unsafe-inline`/`unsafe-eval`**: Required by upstream applications; cannot be tightened without nonce/hash CSP support.
 
@@ -308,6 +327,7 @@ The following are accepted as false positives, by-design behavior, or very low r
 | Missing Spectre COOP | Fix: global middleware |
 | Proxy/Server/framework disclosure | Fix: global middleware |
 | X-Powered-By: Next.js | Fix: Launchpad config |
+| Sub Resource Integrity missing | Accept: upstream Voilà issue (CDN resources) |
 | Host Header Injection | Accept: low exploitability behind OAuth2 Proxy |
 | Weak TLS ciphers (CBC) | Defer: safe with TLS 1.2; needs client testing |
 | Cookie attribute issues | Accept: upstream application defaults |
@@ -386,7 +406,7 @@ Fix headers within each application (Next.js config, Grafana INI, JupyterHub Tor
 
 ### Positive
 
-- Addresses ~15 findings from both scans with a single infrastructure change
+- Addresses the majority of findings from all scans with a single infrastructure change
 - Consistent security headers across all current and future services
 - Follows the established Traefik middleware pattern used for OAuth2 Proxy (ADR 0003) and Open WebUI CSP (ADR 0009)
 - Defense-in-depth for Scout's existing TLS and authentication controls
@@ -427,7 +447,7 @@ docker run -v $(pwd)/zap:/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable \
 Scan all service subdomains:
 
 ```bash
-for sub in "" "superset." "grafana." "jupyter." "temporal." "chat."; do
+for sub in "" "superset." "grafana." "jupyter." "temporal." "chat." "minio." "playbooks."; do
   docker run -v $(pwd)/zap:/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable \
     zap-baseline.py -t "https://${sub}scout.example.com/" \
       -c /zap/wrk/rules.conf \
