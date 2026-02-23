@@ -87,9 +87,18 @@ export class KeycloakAdmin {
     });
 
     if (res.status === 409) {
-      // User already exists — reconfigure and return their ID
+      // 409 can mean duplicate username OR duplicate email.
       console.log(`User "${config.username}" already exists, reusing.`);
-      const userId = await this.getUserByUsername(config.username);
+      let userId: string;
+      try {
+        userId = await this.getUserByUsername(config.username);
+      } catch {
+        throw new Error(
+          `409 Conflict creating user "${config.username}" but no user with that username exists. ` +
+            `Another Keycloak user likely has the email "${config.email}". ` +
+            `Ensure test user emails are unique across the realm.`,
+        );
+      }
 
       await this.resetUserPassword(userId, config.password);
 
