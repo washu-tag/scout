@@ -16,3 +16,4 @@ build/
 **/.claude/settings.local.json
 .worktrees/
 **/*.iml
+zap/*.json
