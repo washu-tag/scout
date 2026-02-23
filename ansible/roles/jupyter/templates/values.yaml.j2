@@ -179,6 +179,8 @@ singleuser:
 
         # Enable custom CSS loading for Scout branding
         c.LabApp.custom_css = True
+
+        c.ResourceUseDisplay.track_cpu_percent = True
 {% if jupyter_extension_manager_mode == 'readonly' %}
 
         # Configure Extension Manager to readonly mode (view installed extensions only)
