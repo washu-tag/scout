@@ -149,6 +149,11 @@ update_file "helm/voila/Chart.yaml" \
     "\\1 $HELM_VERSION" \
     "voila chart version"
 
+update_file "helm/keycloak-config-cli/Chart.yaml" \
+    "^(version:) .+$" \
+    "\\1 $HELM_VERSION" \
+    "keycloak-config-cli chart version"
+
 echo ""
 echo "Helm values.yaml files (image.tag)..."
 update_file "helm/launchpad/values.yaml" \
@@ -165,6 +170,9 @@ echo ""
 echo "VERSION files..."
 echo "$DOCKER_TAG" > "helm/jupyter/notebook/VERSION"
 echo "  - VERSION file: helm/jupyter/notebook/VERSION"
+
+echo "$DOCKER_TAG" > "helm/jupyter/embedding-notebook/VERSION"
+echo "  - VERSION file: helm/jupyter/embedding-notebook/VERSION"
 
 echo ""
 echo "Version update complete!"

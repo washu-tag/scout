@@ -56,8 +56,9 @@ package_download_timeout: 300
 package_download_image: rockylinux/rockylinux:9.6
 
 # Package installation timeout (seconds) - applies to dnf/yum install operations
+# SELinux policy compilation (semodule) can be slow on first install
 # Set to 0 to disable timeout
-package_install_timeout: 300
+package_install_timeout: 600
 
 # Consolidated Namespaces (6 primary namespaces)
 scout_core_namespace: scout-core

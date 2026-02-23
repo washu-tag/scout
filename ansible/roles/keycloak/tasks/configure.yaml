@@ -20,7 +20,7 @@
     tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: keycloak-config-cli
-    helm_chart_ref: '{{ keycloak_config_cli_helm_chart_url }}'
+    helm_chart_ref: '{{ keycloak_config_cli_helm_chart_ref }}'
     helm_chart_namespace: '{{ keycloak_namespace }}'
     helm_chart_create_namespace: true
     helm_chart_wait: true

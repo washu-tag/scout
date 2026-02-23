@@ -74,7 +74,8 @@
           "for": "10m",
           "annotations": {
             "summary": "Node {{ $labels.node }} has high system load",
-            "description": "System load is above 1000 on node {{ $labels.node }}. Current load: {{ printf \"%.3f\" $values.A.Value }}%"
+            "description": "System load is above 1000 on node {{ $labels.node }}. Current load: {{ printf \"%.3f\" $values.A.Value }}%",
+            "URL": "[% server_hostname %]"
           },
           "labels": {},
           "isPaused": false,

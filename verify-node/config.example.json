@@ -1,0 +1,36 @@
+{
+  "hostname": "my-gpu-node-01",
+
+  "mounts": [
+    { "path": "/scout/data", "state": "mounted", "writable": true, "min_size_gb": 9000 },
+    { "path": "/home", "state": "mounted", "writable": true },
+    { "path": "/shared", "state": "mounted", "writable": false },
+    { "path": "/rad", "state": "mounted", "writable": false },
+    { "path": "/staging_only_mount", "state": "absent" }
+  ],
+
+  "connectivity": {
+    "timeout_seconds": 5,
+    "checks": [
+      {
+        "description": "SMTP relay",
+        "host": "smtp.example.com",
+        "port": 25,
+        "expect": "reachable"
+      },
+      {
+        "description": "Internet (air-gap)",
+        "host": "8.8.8.8",
+        "port": 443,
+        "expect": "unreachable"
+      }
+    ],
+    "dns": [{ "description": "Scout DNS", "hostname": "scout.example.com", "expect": "resolvable" }]
+  },
+
+  "resources": {
+    "min_cpu_cores": 32,
+    "min_memory_gb": 256,
+    "gpus": { "count": 4, "min_vram_gb": 80 }
+  }
+}

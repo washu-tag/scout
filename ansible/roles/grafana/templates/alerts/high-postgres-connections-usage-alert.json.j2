@@ -76,7 +76,8 @@
           "for": "10m",
           "annotations": {
             "description": "High Postgres connections usage for pod {{ $labels.pod }}",
-            "summary": "Pod {{ $labels.pod }} has connection usage above 90% of max_connections. Current usage is {{ printf \"%.1f\" $values.A.Value }}%"
+            "summary": "Pod {{ $labels.pod }} has connection usage above 90% of max_connections. Current usage is {{ printf \"%.1f\" $values.A.Value }}%",
+            "URL": "[% server_hostname %]"
           },
           "labels": {},
           "isPaused": false,

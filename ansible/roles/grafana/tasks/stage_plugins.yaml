@@ -1,0 +1,301 @@
+---
+# Stage Grafana plugins to Harbor for air-gapped deployments
+# This task file:
+# 1. Creates a private Harbor project for Grafana plugins
+# 2. Creates a pull-only robot account for the Grafana init container
+# 3. Runs a K8s Job on staging to download plugins and push to Harbor via ORAS
+# 4. Creates K8s resources (secret and ConfigMap) in the Grafana namespace
+#
+# Only runs when air_gapped: true
+# Requires: harbor variables to be set (done in deploy.yaml)
+
+- name: Create Grafana plugins Harbor project
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/projects'
+    validate_certs: false
+    method: POST
+    user: admin
+    password: '{{ harbor_admin_password }}'
+    force_basic_auth: true
+    body_format: json
+    status_code: [201, 409]
+    body:
+      project_name: '{{ grafana_plugins_harbor_project }}'
+      public: false
+  register: project_create_result
+  changed_when: project_create_result.status == 201
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+
+# Robot account and K8s secret must be in sync - if either is missing, recreate both
+- name: Check if robot account exists in Harbor
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/projects/{{ grafana_plugins_harbor_project }}/robots'
+    validate_certs: false
+    user: admin
+    password: '{{ harbor_admin_password }}'
+    force_basic_auth: true
+  register: existing_robots
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+
+- name: Check if credentials secret exists in Kubernetes
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: grafana-plugin-registry-credentials
+    namespace: '{{ grafana_namespace }}'
+  delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml }}'
+  run_once: true
+  register: existing_secret
+
+- name: Set existence flags
+  ansible.builtin.set_fact:
+    _robot_exists: "{{ existing_robots.json | selectattr('name', 'search', 'grafana-plugin-puller') | list | length > 0 }}"
+    _secret_exists: '{{ existing_secret.resources | length > 0 }}'
+
+- name: Determine if we need to create robot and secret
+  ansible.builtin.set_fact:
+    _need_to_create: '{{ not (_robot_exists and _secret_exists) }}'
+
+# Clean up orphaned resources if out of sync
+- name: Delete orphaned K8s secret (robot missing)
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Secret
+    name: grafana-plugin-registry-credentials
+    namespace: '{{ grafana_namespace }}'
+  delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml }}'
+  run_once: true
+  when: _secret_exists and not _robot_exists
+
+- name: Delete orphaned robot account (secret missing)
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/robots/{{ item.id }}'
+    validate_certs: false
+    method: DELETE
+    user: admin
+    password: '{{ harbor_admin_password }}'
+    force_basic_auth: true
+    status_code: [200, 404]
+  loop: "{{ existing_robots.json | selectattr('name', 'search', 'grafana-plugin-puller') | list }}"
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  when: _robot_exists and not _secret_exists
+
+# Create both robot and secret together
+- name: Create robot account for Grafana
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/robots'
+    validate_certs: false
+    method: POST
+    user: admin
+    password: '{{ harbor_admin_password }}'
+    force_basic_auth: true
+    body_format: json
+    status_code: [201]
+    body:
+      name: grafana-plugin-puller
+      description: 'Pull-only robot for Grafana plugins init container'
+      duration: -1
+      level: project
+      permissions:
+        - namespace: '{{ grafana_plugins_harbor_project }}'
+          kind: project
+          access:
+            - resource: repository
+              action: pull
+            - resource: artifact
+              action: read
+  register: robot_create_result
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  when: _need_to_create
+
+- name: Create registry credentials secret for Grafana init container
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: grafana-plugin-registry-credentials
+        namespace: '{{ grafana_namespace }}'
+      type: Opaque
+      stringData:
+        username: '{{ robot_create_result.json.name }}'
+        password: '{{ robot_create_result.json.secret }}'
+  delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml }}'
+  run_once: true
+  no_log: true
+  when: _need_to_create
+
+# Stage plugins to Harbor
+- name: Deploy plugin staging Job to staging cluster
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: grafana-plugin-stager
+        namespace: '{{ package_download_namespace }}'
+        labels:
+          app: grafana-plugin-stager
+          managed-by: ansible
+      spec:
+        ttlSecondsAfterFinished: 300
+        backoffLimit: 3
+        template:
+          metadata:
+            labels:
+              app: grafana-plugin-stager
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: stager
+                image: '{{ oras_image }}:v{{ oras_version }}'
+                workingDir: /workspace
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    set -e
+                    echo "Starting Grafana plugin staging..."
+
+                    # Install curl (ORAS image is Alpine-based but minimal)
+                    apk add --no-cache curl
+
+                    # Login to Harbor
+                    echo "Logging into Harbor..."
+                    oras login {{ harbor_hostname }} \
+                      --username admin \
+                      --password '{{ harbor_admin_password }}' \
+                      --insecure
+
+                    {% for plugin in grafana_plugins %}
+                    echo "Processing plugin: {{ plugin.id }} version {{ plugin.version }}"
+
+                    # Download plugin ZIP from Grafana (use relative path for ORAS compatibility)
+                    PLUGIN_FILE="{{ plugin.id }}-{{ plugin.version }}.zip"
+                    PLUGIN_URL="https://grafana.com/api/plugins/{{ plugin.id }}/versions/{{ plugin.version }}/download"
+                    echo "Downloading from: ${PLUGIN_URL}"
+                    curl -L -o "${PLUGIN_FILE}" "${PLUGIN_URL}"
+
+                    # Verify download
+                    if [ ! -s "${PLUGIN_FILE}" ]; then
+                      echo "ERROR: Failed to download plugin {{ plugin.id }}"
+                      exit 1
+                    fi
+
+                    # Push to Harbor as OCI artifact (relative path avoids ORAS path validation issues)
+                    echo "Pushing {{ plugin.id }}:{{ plugin.version }} to Harbor..."
+                    oras push {{ harbor_hostname }}/{{ grafana_plugins_harbor_project }}/{{ plugin.id }}:{{ plugin.version }} \
+                      --insecure \
+                      "${PLUGIN_FILE}":application/vnd.grafana.plugin.zip
+
+                    # Clean up to save space for next plugin
+                    rm -f "${PLUGIN_FILE}"
+
+                    echo "Successfully staged {{ plugin.id }}:{{ plugin.version }}"
+                    {% endfor %}
+
+                    echo "All plugins staged successfully!"
+                volumeMounts:
+                  - name: workspace
+                    mountPath: /workspace
+            volumes:
+              - name: workspace
+                emptyDir: {}
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  register: job_created
+
+- name: Wait for staging Job Pod to be created
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: '{{ package_download_namespace }}'
+    label_selectors:
+      - 'job-name=grafana-plugin-stager'
+    kubeconfig: '{{ kubeconfig_yaml }}'
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  register: job_pods
+  until: job_pods.resources | length > 0
+  retries: 30
+  delay: 2
+
+- name: Wait for plugin staging Job to complete
+  kubernetes.core.k8s_info:
+    api_version: batch/v1
+    kind: Job
+    name: grafana-plugin-stager
+    namespace: '{{ package_download_namespace }}'
+    kubeconfig: '{{ kubeconfig_yaml }}'
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  register: job_status
+  until: >
+    job_status.resources | length > 0 and
+    (job_status.resources[0].status.succeeded is defined and job_status.resources[0].status.succeeded > 0) or
+    (job_status.resources[0].status.failed is defined and job_status.resources[0].status.failed > 0)
+  retries: 60
+  delay: 10
+  failed_when: false
+
+- name: Check if staging Job failed
+  ansible.builtin.fail:
+    msg: >
+      Grafana plugin staging Job failed.
+      Check logs with: kubectl logs {{ job_pods.resources[0].metadata.name }} -n {{ package_download_namespace }}
+  when: >
+    job_status.resources | length == 0 or
+    (job_status.resources[0].status.failed is defined and job_status.resources[0].status.failed > 0)
+  delegate_to: localhost
+  run_once: true
+
+- name: Display plugin staging success
+  ansible.builtin.debug:
+    msg: 'Successfully staged {{ grafana_plugins | length }} Grafana plugins to Harbor'
+  delegate_to: localhost
+  run_once: true
+
+- name: Delete plugin staging Job
+  kubernetes.core.k8s:
+    state: absent
+    api_version: batch/v1
+    kind: Job
+    name: grafana-plugin-stager
+    namespace: '{{ package_download_namespace }}'
+    kubeconfig: '{{ kubeconfig_yaml }}'
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+  when: job_created is changed
+
+# Create plugin configuration ConfigMap
+- name: Create plugin configuration ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: grafana-plugin-config
+        namespace: '{{ grafana_namespace }}'
+      data:
+        registry: '{{ harbor_hostname }}'
+        project: '{{ grafana_plugins_harbor_project }}'
+        plugins: '{{ grafana_plugins | to_json }}'
+  delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: '{{ local_kubeconfig_yaml }}'
+  run_once: true

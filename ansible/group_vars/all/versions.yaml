@@ -31,7 +31,6 @@ redis_enterprise_operator_chart_version: 8.0.2-2
 oauth2_proxy_chart_version: ~10.0.0
 
 # Keycloak Config CLI
-keycloak_config_cli_helm_chart_version: 6.4.1-SNAPSHOT
 keycloak_config_cli_image: docker.io/adorsys/keycloak-config-cli
 keycloak_config_cli_image_tag: 6.4.0-26
 

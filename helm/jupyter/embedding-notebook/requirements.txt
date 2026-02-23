@@ -1,0 +1,40 @@
+# Pin Jupyter core apps so Notebook matches Lab 4.4.x
+notebook>=7.4,<7.5
+jupyterlab>=4.4,<4.5
+
+# RTC / collaboration (meta-package; brings in jupyter-server-ydoc)
+jupyter-collaboration==4.0.2
+datalayer_pycrdt==0.12.17
+
+# Voila: use 0.5.x so it's compatible with jupyter-server 2.x
+voila>=0.5.8
+
+# --- everything else ---
+delta-spark
+jupyterlab-git
+langextract
+scikit-learn
+pyarrow==17.0.0
+datasets==2.20.0
+torch==2.0.1
+seaborn
+pandas
+numpy
+matplotlib
+requests
+trino
+plotly
+s3fs
+boto3
+jupyter-server-proxy
+jupyterlab-nvdashboard 
+jupyter-resource-usage
+
+transformers[torch]==4.45.2
+deepspeed==0.12.6
+FlagEmbedding==1.1
+huggingface-hub==0.23.2
+mteb==1.14.5
+peft==0.8.2
+sentence-transformers==3.3.1
+tqdm==4.66.3

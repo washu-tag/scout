@@ -77,7 +77,8 @@
           "execErrState": "Error",
           "annotations": {
             "description": "Temporal workflow failed",
-            "summary": "At least one Temporal workflow failed since last check (Temporal namespace: {{ $labels.namespace }})"
+            "summary": "At least one Temporal workflow failed since last check (Temporal namespace: {{ $labels.namespace }})",
+            "URL": "[% server_hostname %]"
           },
           "labels": {},
           "isPaused": false,

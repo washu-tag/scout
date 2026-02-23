@@ -1,12 +1,17 @@
 ---
-# Generic RPM Installation from Artifacts
+# Generic RPM Installation from Artifacts via Local Repository
 # Installs RPM packages from the artifact directory to target nodes
 # Used for air-gapped installation of packages that were downloaded via Kubernetes Job
+#
+# Creates a temporary local dnf repo from the downloaded RPMs and installs packages
+# by name, allowing dnf to resolve dependencies against the target node's actual
+# package state. This avoids conflicts from unnecessary dependency upgrades.
 #
 # Required parameters:
 #   - rpm_artifact_dir: Directory path on control node containing RPMs to install
 #   - rpm_staging_dir: Directory path on target node where RPMs will be staged
 #   - rpm_package_type: Description of package type for logging (e.g., "SELinux", "GPU")
+#   - rpm_package_names: List of package names to install (e.g., ["k3s-selinux"])
 
 - block:
     - name: Copy {{ rpm_package_type }} RPM archive to node
@@ -21,50 +26,43 @@
         dest: '{{ rpm_staging_dir }}/'
         remote_src: true
 
-    - name: Find all RPM files on node
-      ansible.builtin.find:
-        paths: '{{ rpm_staging_dir }}'
-        patterns: '*.rpm'
-      register: rpm_files_on_node
+    - name: Verify repodata was extracted
+      ansible.builtin.stat:
+        path: '{{ rpm_staging_dir }}/repodata'
+      register: repodata_dir
 
-    - name: Verify RPMs were extracted
+    - name: Fail if repodata not found
       ansible.builtin.fail:
-        msg: 'No RPM files found after extracting {{ rpm_package_type }} archive'
-      when: rpm_files_on_node.files | length == 0
+        msg: 'No repodata/ found in {{ rpm_package_type }} archive. Was createrepo_c run during download?'
+      when: not repodata_dir.stat.exists
 
-    - name: Get names of already installed packages
-      ansible.builtin.shell: rpm -qa --queryformat '%{NAME}\n' | sort -u
-      register: installed_package_names
-      changed_when: false
+    - name: Configure temporary local {{ rpm_package_type }} repository
+      ansible.builtin.copy:
+        content: |
+          [local-{{ rpm_package_type | lower }}-rpms]
+          name=Local {{ rpm_package_type }} RPM packages
+          baseurl=file://{{ rpm_staging_dir }}
+          enabled=1
+          gpgcheck=0
+        dest: '/etc/yum.repos.d/local-{{ rpm_package_type | lower }}-rpms.repo'
+        mode: '0644'
 
-    - name: Filter RPMs to exclude already installed packages
-      ansible.builtin.shell: |
-        for rpm_file in {{ rpm_files_on_node.files | map(attribute='path') | join(' ') }}; do
-          pkg_name=$(rpm -qp --queryformat '%{NAME}' "$rpm_file" 2>/dev/null)
-          if ! echo "{{ installed_package_names.stdout }}" | grep -qx "$pkg_name"; then
-            echo "$rpm_file"
-          fi
-        done
-      register: rpms_to_install
-      changed_when: false
-
-    - name: Display RPMs to be installed (excluding already installed)
-      ansible.builtin.debug:
-        msg: "{{ rpms_to_install.stdout_lines | map('basename') | list if rpms_to_install.stdout_lines else 'None - all packages already installed' }}"
-
-    - name: Install {{ rpm_package_type }} packages (skipping already installed)
+    - name: Install {{ rpm_package_type }} packages from local repository
       ansible.builtin.dnf:
-        name: '{{ rpms_to_install.stdout_lines }}'
+        name: '{{ rpm_package_names }}'
         state: present
-        disable_gpg_check: true
         disablerepo: '*'
-        # Disable all repos to prevent metadata refresh in air-gapped environment
+        enablerepo: 'local-{{ rpm_package_type | lower }}-rpms'
       register: rpm_install_result
       async: '{{ package_install_timeout }}'
       poll: 5
-      when: rpms_to_install.stdout_lines | length > 0
 
   always:
+    - name: Remove temporary repository configuration
+      ansible.builtin.file:
+        path: '/etc/yum.repos.d/local-{{ rpm_package_type | lower }}-rpms.repo'
+        state: absent
+
     - name: Clean up staging directory
       ansible.builtin.file:
         path: '{{ rpm_staging_dir }}'

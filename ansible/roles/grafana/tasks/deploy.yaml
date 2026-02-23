@@ -6,6 +6,29 @@
   vars:
     ns: '{{ grafana_namespace }}'
 
+- name: Set harbor variables from staging host for air-gapped deployments
+  ansible.builtin.set_fact:
+    # Get harbor config from staging host where Harbor is deployed
+    _staging_host: "{{ groups['staging'][0] }}"
+    _staging_vars: "{{ hostvars[groups['staging'][0]] }}"
+  when: air_gapped | default(false)
+
+- name: Compute harbor URL from staging host variables
+  vars:
+    _harbor_expose_type: "{{ _staging_vars.harbor_expose_type | default('ingress') }}"
+    _harbor_subdomain: "{{ _staging_vars.harbor_subdomain | default('harbor') }}"
+    _harbor_nodeport_https: '{{ _staging_vars.harbor_nodeport_https | default(30443) }}'
+    _external_url: '{{ _staging_vars.external_url | default(_staging_host) }}'
+  ansible.builtin.set_fact:
+    harbor_hostname: "{% if _harbor_expose_type == 'ingress' and _harbor_subdomain | length > 0 %}{{ _harbor_subdomain }}.{% endif %}{{ _external_url }}"
+    harbor_registry_url: "https://{% if _harbor_expose_type == 'ingress' and _harbor_subdomain | length > 0 %}{{ _harbor_subdomain }}.{% endif %}{{ _external_url }}{% if _harbor_expose_type == 'nodePort' %}:{{ _harbor_nodeport_https }}{% endif %}"
+    harbor_admin_password: '{{ _staging_vars.harbor_admin_password }}'
+  when: air_gapped | default(false)
+
+- name: Stage Grafana plugins to Harbor (air-gapped only)
+  ansible.builtin.include_tasks: stage_plugins.yaml
+  when: air_gapped | default(false)
+
 - name: Create SMTP secret
   no_log: true
   kubernetes.core.k8s:
@@ -16,8 +39,6 @@
       metadata:
         name: smtp-grafana
         namespace: '{{ grafana_namespace }}'
-        labels:
-          grafana_alert: '1'
       type: Opaque
       stringData:
         user: '{{ grafana_smtp_user }}'
@@ -82,6 +103,16 @@
       loop: '{{ alert_templates.files }}'
       loop_control:
         label: '{{ item.path | basename }}'
+      when: (item.path | basename | regex_replace('.json.j2$', '')) not in grafana_disabled_alerts
+
+    - name: Remove ConfigMaps for disabled Grafana alerts
+      kubernetes.core.k8s:
+        state: absent
+        kind: ConfigMap
+        name: '{{ item }}'
+        namespace: '{{ grafana_namespace }}'
+      loop: '{{ grafana_disabled_alerts }}'
+      when: grafana_disabled_alerts | length > 0
 
     - name: Create Grafana notification policy as ConfigMap
       vars:
@@ -101,7 +132,7 @@
             notification-policy.yaml: '{{ notification_policy_content_b64 }}'
       when: >
         (grafana_alert_contact_point == 'slack' and slack_channel_id != '' and slack_token != '') or
-        (grafana_alert_contact_point == 'email' and grafana_smtp_host != '' and grafana_smtp_user != '')
+        (grafana_alert_contact_point == 'email' and grafana_smtp_host != '')
 
     - name: Find all Grafana contact points
       ansible.builtin.find:
@@ -132,7 +163,7 @@
         grafana_alert_contact_point in (item.path | basename) and
         (
           ('slack' in (item.path | basename) and slack_channel_id != '' and slack_token != '') or
-          ('email' in (item.path | basename) and grafana_smtp_host != '' and grafana_smtp_user != '')
+          ('email' in (item.path | basename) and grafana_smtp_host != '')
         )
       loop_control:
         label: '{{ item.path | basename }}'
@@ -147,8 +178,6 @@
           metadata:
             name: keycloak-grafana-client-secret
             namespace: '{{ grafana_namespace }}'
-            labels:
-              grafana_alert: '1'
           type: Opaque
           stringData:
             client-secret: '{{ keycloak_grafana_client_secret }}'
