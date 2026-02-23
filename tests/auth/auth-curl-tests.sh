@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# authz-curl-test.sh — AuthZ QA: Unauthenticated Access Verification
+# auth-curl-tests.sh — Auth QA: Unauthenticated Access Verification
 #
 # Verifies that all protected Scout endpoints reject unauthenticated requests
 # (no cookies, no tokens) and that unprotected endpoints remain accessible.
 # Tests run over both HTTPS and HTTP for the full test matrix.
 #
 # Usage:
-#   ./authz-curl-test.sh scout.example.com
-#   ./authz-curl-test.sh scout.example.com --timeout 15
+#   ./auth-curl-tests.sh scout.example.com
+#   ./auth-curl-tests.sh scout.example.com --timeout 15
 
 set -euo pipefail
 
