@@ -51,7 +51,7 @@ class Filter:
             description="Compact tool results in assistant messages exceeding this token count",
         )
         debug_logging: bool = Field(
-            default=True,
+            default=False,
             description="Enable detailed debug logging (visible in container logs)",
         )
         dump_full_messages: bool = Field(
