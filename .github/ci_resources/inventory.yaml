@@ -74,7 +74,7 @@ k3s_cluster:
     loki_dir: '{{ base_dir }}/loki'
     grafana_dir: '{{ base_dir }}/grafana'
     jupyter_dir: '{{ base_dir }}/jupyter'
-    extractor_data_dir: '{{ scout_repo_dir }}/tests/staging_test_data'
+    extractor_data_dir: '{{ scout_repo_dir }}/tests/ingest/staging_test_data'
 
     # Object storage paths
     lake_bucket: ci-lake

@@ -100,6 +100,8 @@ scout/
 ├── helm/                      # Helm chart configurations
 ├── terraform/                 # Infrastructure as Code (optional)
 └── tests/                     # Integration and unit tests
+    ├── auth/                  # Playwright auth tests (TypeScript/Node.js)
+    └── ingest/                # HL7 ingestion integration tests (Java/Gradle)
 ```
 
 ## Key Technologies
@@ -381,8 +383,11 @@ make install-analytics
 
 ## Testing
 
-### Integration Tests
-Located in `tests/` - test end-to-end ingestion workflows with Temporal
+### Ingest Tests
+Located in `tests/ingest/` - test end-to-end ingestion workflows with Temporal
+
+### Auth Tests
+Located in `tests/auth/` - Playwright browser-based authorization tests for OAuth2 Proxy + Keycloak
 
 ### Unit Tests
 - **Python** (hl7-transformer): `pytest` in `extractor/hl7-transformer/`

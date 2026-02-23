@@ -110,7 +110,7 @@ update_file "keycloak/event-listener/build.gradle" \
     "\\1$DOCKER_TAG\\2" \
     "keycloak event-listener version"
 
-update_file "tests/build.gradle" \
+update_file "tests/ingest/build.gradle" \
     "^(version = ')[^']+(')" \
     "\\1$DOCKER_TAG\\2" \
     "tests version"

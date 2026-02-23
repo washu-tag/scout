@@ -93,5 +93,5 @@ java {
 
 checkstyle {
     toolVersion vCheckstyle
-    configFile = file('../linting_java_checkstyle.xml')
+    configFile = file('../../linting_java_checkstyle.xml')
 }

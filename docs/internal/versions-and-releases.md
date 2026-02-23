@@ -349,7 +349,7 @@ This section documents all files containing version strings. The Release Workflo
 |------|-------|
 | `extractor/hl7log-extractor/build.gradle` | `version` |
 | `keycloak/event-listener/build.gradle` | `version` |
-| `tests/build.gradle` | `version` |
+| `tests/ingest/build.gradle` | `version` |
 
 ### npm Packages
 

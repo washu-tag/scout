@@ -340,7 +340,7 @@ jobs:
       - name: 'Run tests'
         shell: bash
         run: |
-          cp .github/ci_resources/test_config_template.json tests/src/test/resources/config/local.json
+          cp .github/ci_resources/test_config_template.json tests/ingest/src/test/resources/config/local.json
           sed -i "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
           sudo -E kubectl wait --for=condition=complete --timeout=600s job/ci-tests -n scout-extractor &
@@ -357,7 +357,7 @@ jobs:
         uses: test-summary/action@v2.4
         if: always()
         with:
-          paths: 'tests/**/TEST-*.xml'
+          paths: 'tests/ingest/**/TEST-*.xml'
           show: 'fail, skip'
       - name: Logging (hl7log-extractor)
         shell: bash
