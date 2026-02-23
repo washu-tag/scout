@@ -77,6 +77,34 @@ k3s_package_download_timeout: 300
 
 # Rocky Linux container image used for package download jobs
 k3s_package_download_image: rockylinux/rockylinux:9.6
+
+################################################################################
+# CoreDNS Customization
+################################################################################
+
+# Domains to forward to /etc/resolv.conf (e.g., Tailscale, VPN domains)
+# Used in air-gapped mode to selectively allow external DNS resolution
+# Example: ["ts.net", "rcif.io"]
+coredns_forward_domains: []
+
+# Domains to resolve via /etc/coredns/NodeHosts (K3s-managed hosts file)
+# Example: ["nrg.wustl.edu"]
+coredns_host_domains: []
+
+# Arbitrary CoreDNS server blocks (dict of name -> raw Corefile content)
+# Keys become ConfigMap data keys with ".server" suffix auto-appended
+# Works independently of air_gapped mode
+# NOTE: Values containing Go template syntax (e.g. {{ .Name }}) must use
+# the !unsafe YAML tag to prevent Ansible from interpreting them as Jinja2
+# Example:
+#   coredns_extra_server_blocks:
+#     scout-override: !unsafe |
+#       scout.washu.edu:53 {
+#         template IN A scout.washu.edu {
+#           answer "{{ .Name }} 60 IN A 10.27.107.4"
+#         }
+#       }
+coredns_extra_server_blocks: {}
 ################################################################################
 # Internal Variables (set at runtime)
 ################################################################################

@@ -41,3 +41,9 @@
       failed_when: >
         not kubeconfig.stat.exists or
         kubeconfig.stat.mode != '0640'
+
+    - name: Verify CoreDNS is running
+      ansible.builtin.command: k3s kubectl get deployment coredns -n kube-system
+      register: coredns_status
+      changed_when: false
+      failed_when: coredns_status.rc != 0

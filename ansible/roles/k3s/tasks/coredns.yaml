@@ -1,0 +1,73 @@
+---
+# CoreDNS Customization
+# Manages the coredns-custom ConfigMap in kube-system namespace
+# to override CoreDNS behavior (deny-all in air-gapped mode,
+# selective domain forwarding, arbitrary server blocks)
+
+- name: Determine if CoreDNS customization is needed
+  ansible.builtin.set_fact:
+    _coredns_custom_needed: >-
+      {{
+        (air_gapped | default(false) | bool) or
+        (coredns_forward_domains | default([]) | length > 0) or
+        (coredns_host_domains | default([]) | length > 0) or
+        (coredns_extra_server_blocks | default({}) | length > 0)
+      }}
+
+- name: Apply CoreDNS custom ConfigMap
+  when: _coredns_custom_needed | bool
+  block:
+    - name: Render CoreDNS custom ConfigMap data
+      ansible.builtin.set_fact:
+        _coredns_custom_data: >-
+          {{ lookup('template', 'coredns-custom-data.yaml.j2') | from_yaml }}
+
+    - name: Create coredns-custom ConfigMap
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: coredns-custom
+            namespace: kube-system
+          data: '{{ _coredns_custom_data }}'
+      register: _coredns_configmap_result
+
+    - name: Restart CoreDNS to pick up custom configuration
+      when: _coredns_configmap_result.changed
+      block:
+        - name: Rollout restart CoreDNS deployment
+          ansible.builtin.command:
+            cmd: kubectl rollout restart deployment/coredns -n kube-system
+          changed_when: true
+
+        - name: Wait for CoreDNS rollout to complete
+          ansible.builtin.command:
+            cmd: kubectl rollout status deployment/coredns -n kube-system --timeout=120s
+          changed_when: false
+
+- name: Remove CoreDNS custom ConfigMap when not needed
+  when: not (_coredns_custom_needed | bool)
+  block:
+    - name: Delete coredns-custom ConfigMap
+      kubernetes.core.k8s:
+        state: absent
+        api_version: v1
+        kind: ConfigMap
+        name: coredns-custom
+        namespace: kube-system
+      register: _coredns_configmap_removed
+
+    - name: Restart CoreDNS after removing custom configuration
+      when: _coredns_configmap_removed.changed
+      block:
+        - name: Rollout restart CoreDNS deployment
+          ansible.builtin.command:
+            cmd: kubectl rollout restart deployment/coredns -n kube-system
+          changed_when: true
+
+        - name: Wait for CoreDNS rollout to complete
+          ansible.builtin.command:
+            cmd: kubectl rollout status deployment/coredns -n kube-system --timeout=120s
+          changed_when: false

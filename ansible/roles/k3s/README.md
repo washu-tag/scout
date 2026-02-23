@@ -33,8 +33,60 @@ The role is organized into focused task files:
 - `selinux.yaml`: SELinux auto-detection and package installation
 - `registry.yaml`: Harbor registry mirror configuration
 - `server.yaml`: k3s server (control plane) installation
+- `coredns.yaml`: CoreDNS customization (deny-all for air-gapped, domain forwarding, custom server blocks)
 - `agent.yaml`: k3s agent (worker) installation
 - `gpu.yaml`: GPU worker configuration
+
+**Templates:**
+- `templates/coredns-custom-data.yaml.j2`: Generates the `data:` section for the `coredns-custom` ConfigMap
+
+## CoreDNS Customization
+
+The role manages a `coredns-custom` ConfigMap in `kube-system` that overrides CoreDNS behavior. This uses a three-layer configuration model:
+
+### Layer 1: Air-Gap Deny-All (automatic)
+
+When `air_gapped: true`, the role automatically creates:
+- A deny-all override that returns NXDOMAIN for all unknown domains (prevents DNS flooding of upstream resolvers like Tailscale MagicDNS)
+- Server blocks for `cluster.local` and reverse DNS so internal Kubernetes resolution continues to work
+
+### Layer 2: Structured Domain Lists
+
+Two variables for common DNS patterns:
+
+- **`coredns_forward_domains`**: List of domains to forward to `/etc/resolv.conf` (e.g., Tailscale, VPN domains)
+- **`coredns_host_domains`**: List of domains to resolve via `/etc/coredns/NodeHosts` (K3s-managed hosts file)
+
+```yaml
+coredns_forward_domains:
+  - ts.net
+  - rcif.io
+
+coredns_host_domains:
+  - nrg.wustl.edu
+```
+
+### Layer 3: Arbitrary Server Blocks
+
+`coredns_extra_server_blocks` is a dict of name -> raw Corefile content for full flexibility. Works independently of air-gapped mode. Keys become ConfigMap data keys with `.server` suffix auto-appended.
+
+```yaml
+coredns_extra_server_blocks:
+  scout-override: !unsafe |
+    scout.washu.edu:53 {
+      template IN A scout.washu.edu {
+        answer "{{ .Name }} 60 IN A 10.27.107.4"
+      }
+    }
+```
+
+**Important:** Values containing Go template syntax (e.g., `{{ .Name }}`) must use the `!unsafe` YAML tag to prevent Ansible from interpreting them as Jinja2 expressions.
+
+### Behavior
+
+- Only runs on server nodes (not staging)
+- When no customization is needed, the ConfigMap is removed (idempotent)
+- CoreDNS is restarted only when the ConfigMap actually changes
 
 ## Testing
 

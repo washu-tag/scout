@@ -38,6 +38,14 @@
   when: "'server' in group_names or 'staging' in group_names"
 
 ################################################################################
+# CoreDNS Customization - Only on server nodes (after server is ready)
+################################################################################
+
+- name: Configure CoreDNS custom settings
+  ansible.builtin.include_tasks: coredns.yaml
+  when: "'server' in group_names"
+
+################################################################################
 # GPU Worker Configuration - Only on GPU worker nodes
 ################################################################################
 

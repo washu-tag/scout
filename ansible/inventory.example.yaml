@@ -209,6 +209,27 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
+    # CoreDNS custom DNS configuration (see docs/source/technical/inventory.md)
+    # When air_gapped: true, CoreDNS automatically gets deny-all + cluster.local blocks
+    #
+    # Domains to forward to /etc/resolv.conf (e.g., Tailscale, VPN):
+    # coredns_forward_domains:
+    #   - ts.net
+    #   - rcif.io
+    #
+    # Domains to resolve via /etc/coredns/NodeHosts:
+    # coredns_host_domains:
+    #   - nrg.wustl.edu
+    #
+    # Arbitrary CoreDNS server blocks (works with or without air_gapped):
+    # coredns_extra_server_blocks:
+    #   scout-override: !unsafe |
+    #     scout.washu.edu:53 {
+    #       template IN A scout.washu.edu {
+    #         answer "{{ .Name }} 60 IN A 10.27.107.4"
+    #       }
+    #     }
+
     #---------------------------------------------------------------------------
     # OAuth2 Proxy
     #---------------------------------------------------------------------------

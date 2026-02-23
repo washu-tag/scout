@@ -1,0 +1,49 @@
+{# Layer 1: Air-gap base (when air_gapped is true) #}
+{% if air_gapped | default(false) | bool %}
+airgap.override: |
+  log {
+    class denial
+  }
+  template ANY ANY {
+    rcode NXDOMAIN
+    authority ". 60 IN SOA ns.denied. hostmaster.denied. (1 60 60 60 60)"
+  }
+airgap.server: |
+  cluster.local:53 {
+    kubernetes cluster.local {
+      pods insecure
+    }
+    cache 30
+  }
+  in-addr.arpa ip6.arpa:53 {
+    kubernetes cluster.local in-addr.arpa ip6.arpa {
+      pods insecure
+      fallthrough in-addr.arpa ip6.arpa
+    }
+    cache 30
+  }
+{% endif %}
+{# Layer 2a: Forward domains #}
+{% if coredns_forward_domains | default([]) | length > 0 %}
+forward-domains.server: |
+  {{ coredns_forward_domains | join(' ') }}:53 {
+    forward . /etc/resolv.conf
+    cache 300
+  }
+{% endif %}
+{# Layer 2b: Host domains #}
+{% if coredns_host_domains | default([]) | length > 0 %}
+host-domains.server: |
+  {{ coredns_host_domains | join(' ') }}:53 {
+    hosts /etc/coredns/NodeHosts {
+      ttl 60
+      reload 15s
+    }
+    cache 30
+  }
+{% endif %}
+{# Layer 3: Extra server blocks (keys get .server suffix appended) #}
+{% for name, content in (coredns_extra_server_blocks | default({})).items() %}
+{{ name }}.server: |
+{{ content | indent(2, first=true) }}
+{% endfor %}
