@@ -10,6 +10,9 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   update-copyright:
     runs-on: ubuntu-latest
