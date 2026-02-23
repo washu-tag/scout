@@ -4,9 +4,14 @@
   "description": "Playwright AuthZ QA tests for Scout",
   "main": "index.js",
   "scripts": {
+    "postinstall": "npx playwright install chromium",
     "test": "npx playwright test",
     "test:headed": "npx playwright test --headed",
-    "test:debug": "npx playwright test --debug"
+    "test:debug": "npx playwright test --debug",
+    "test:unauthorized": "npx playwright test --grep 'Unauthorized'",
+    "test:authorized": "npx playwright test --grep 'Authorized Non-Admin'",
+    "report": "npx playwright show-report",
+    "trace": "npx playwright show-trace"
   },
   "keywords": [],
   "author": "",
