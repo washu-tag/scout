@@ -173,6 +173,8 @@ jobs:
         run: |
           cd launchpad
           npm install --package-lock-only
+          cd ../tests/auth
+          npm install --package-lock-only
 
       - name: Commit and push
         id: commit
@@ -327,6 +329,8 @@ jobs:
       - name: Update package-lock.json
         run: |
           cd launchpad
+          npm install --package-lock-only
+          cd ../tests/auth
           npm install --package-lock-only
 
       - name: Commit and push

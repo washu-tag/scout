@@ -116,11 +116,16 @@ update_file "tests/ingest/build.gradle" \
     "tests version"
 
 echo ""
-echo "npm package..."
+echo "npm packages..."
 update_file "launchpad/package.json" \
     '("version": ")[^"]+(")'  \
     "\\1$DOCKER_TAG\\2" \
     "package.json version"
+
+update_file "tests/auth/package.json" \
+    '("version": ")[^"]+(")'  \
+    "\\1$DOCKER_TAG\\2" \
+    "auth tests package.json version"
 
 echo ""
 echo "Helm charts (Scout applications - version + appVersion)..."

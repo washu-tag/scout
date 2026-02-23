@@ -1,6 +1,6 @@
 {
   "name": "scout-auth-tests",
-  "version": "1.0.0",
+  "version": "latest",
   "description": "Playwright AuthZ QA tests for Scout",
   "main": "index.js",
   "scripts": {
