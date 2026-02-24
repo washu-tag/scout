@@ -27,7 +27,7 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") <hostname> [OPTIONS]
 
-AuthZ QA: Verify unauthenticated users cannot access protected Scout endpoints.
+Scout Auth Curl Tests: Verify unauthenticated users cannot access protected Scout endpoints.
 
 Arguments:
   hostname            Scout base hostname (e.g., scout.example.com)
@@ -104,8 +104,8 @@ TESTS=(
   chat GET / 401 "Open WebUI root"
   chat GET /oauth/oidc/callback 401 "Open WebUI OIDC callback"
   chat GET /api/v1/chats/ 401 "Open WebUI chats API"
-  chat POST /api/v1/chats/g8814hty-a8ae-4bd7-864c-11712g739f52  401 "Open WebUI API create chat"
-  chat DELETE /api/v1/chats/g8814hty-a8ae-4bd7-864c-11712g739f52 401 "Open WebUI API delete specific chat"
+  chat POST /api/v1/chats/00000000-0000-0000-0000-000000000000  401 "Open WebUI API create chat"
+  chat DELETE /api/v1/chats/00000000-0000-0000-0000-000000000000 401 "Open WebUI API delete specific chat"
 
   # Grafana
   grafana GET / 401 "Grafana root"

@@ -10,14 +10,14 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.WORKERS ? parseInt(process.env.WORKERS, 3) : 1,
+  workers: process.env.WORKERS ? parseInt(process.env.WORKERS) : 1,
   reporter: 'html',
 
   globalSetup: './setup/global-setup.ts',
   globalTeardown: './setup/global-teardown.ts',
 
   use: {
-    ignoreHTTPSErrors: true,
+    ignoreHTTPSErrors: false,
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
   },

@@ -383,10 +383,12 @@ make install-analytics
 
 ## Testing
 
-### Ingest Tests
+### Integration Tests
+
+#### Ingest Tests
 Located in `tests/ingest/` - test end-to-end ingestion workflows with Temporal
 
-### Auth Tests
+#### Auth Tests
 Located in `tests/auth/` - Playwright browser-based authorization tests for OAuth2 Proxy + Keycloak
 
 ### Unit Tests

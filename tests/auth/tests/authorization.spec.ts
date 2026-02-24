@@ -100,14 +100,12 @@ test.describe('Authorized Non-Admin User', () => {
     expect(response.status()).toBe(403);
   });
 
-  test('Grafana Authentication dashboard API returns 403', async ({ page }) => {
+  test('Grafana datasources API returns 403', async ({ page }) => {
     await signInToScout(page, `https://grafana.${hostname}/`, authorizedUser);
 
     // Grafana allows entry to the UI but gives the user no permissions, so we hit the
-    // dashboard API directly and assert the 403 status code instead of loading the UI.
-    const response = await page.request.get(
-      `https://grafana.${hostname}/api/dashboards/uid/auth_dashboard_01`,
-    );
+    // datasources API directly and assert the 403 status code instead of loading the UI.
+    const response = await page.request.get(`https://grafana.${hostname}/api/datasources/`);
     expect(response.status()).toBe(403);
   });
 

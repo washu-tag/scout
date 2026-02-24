@@ -16,7 +16,7 @@ For comprehensive documentation, see the [Testing](../../docs/internal/authentic
 
 ```bash
 cp .env.example .env
-# Edit .env — set SCOUT_HOSTNAME and KEYCLOAK_ADMIN_PASSWORD
+# Edit .env
 npm install
 npm test
 ```

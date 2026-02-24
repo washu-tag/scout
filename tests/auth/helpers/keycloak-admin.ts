@@ -60,13 +60,10 @@ export class KeycloakAdmin {
 
   /** Create a user in the Scout realm. Returns the new user's ID. */
   async createUser(config: UserConfig): Promise<string> {
-    await this.ensureAuthenticated();
-
     const url = `${this.baseUrl}/admin/realms/scout/users`;
-    const res = await fetch(url, {
+    const res = await this.fetchWithAuth(url, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -140,12 +137,8 @@ export class KeycloakAdmin {
 
   /** Look up a user by exact username. Returns the user ID. */
   async getUserByUsername(username: string): Promise<string> {
-    await this.ensureAuthenticated();
-
     const url = `${this.baseUrl}/admin/realms/scout/users?username=${encodeURIComponent(username)}&exact=true`;
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${this.accessToken}` },
-    });
+    const res = await this.fetchWithAuth(url);
 
     if (!res.ok) {
       const text = await res.text();
@@ -162,12 +155,8 @@ export class KeycloakAdmin {
 
   /** Look up a group by exact name. Returns the group ID. */
   async getGroupByName(name: string): Promise<string> {
-    await this.ensureAuthenticated();
-
     const url = `${this.baseUrl}/admin/realms/scout/groups?search=${encodeURIComponent(name)}&exact=true`;
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${this.accessToken}` },
-    });
+    const res = await this.fetchWithAuth(url);
 
     if (!res.ok) {
       const text = await res.text();
@@ -184,13 +173,8 @@ export class KeycloakAdmin {
 
   /** Add a user to a group. */
   async addUserToGroup(userId: string, groupId: string): Promise<void> {
-    await this.ensureAuthenticated();
-
     const url = `${this.baseUrl}/admin/realms/scout/users/${userId}/groups/${groupId}`;
-    const res = await fetch(url, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${this.accessToken}` },
-    });
+    const res = await this.fetchWithAuth(url, { method: 'PUT' });
 
     if (!res.ok) {
       const text = await res.text();
@@ -202,13 +186,10 @@ export class KeycloakAdmin {
 
   /** Reset a user's password. */
   async resetUserPassword(userId: string, password: string): Promise<void> {
-    await this.ensureAuthenticated();
-
     const url = `${this.baseUrl}/admin/realms/scout/users/${userId}/reset-password`;
-    const res = await fetch(url, {
+    const res = await this.fetchWithAuth(url, {
       method: 'PUT',
       headers: {
-        Authorization: `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -228,12 +209,8 @@ export class KeycloakAdmin {
 
   /** Remove all credentials from a user. */
   async removeUserCredentials(userId: string): Promise<void> {
-    await this.ensureAuthenticated();
-
     const listUrl = `${this.baseUrl}/admin/realms/scout/users/${userId}/credentials`;
-    const listRes = await fetch(listUrl, {
-      headers: { Authorization: `Bearer ${this.accessToken}` },
-    });
+    const listRes = await this.fetchWithAuth(listUrl);
 
     if (!listRes.ok) {
       const text = await listRes.text();
@@ -244,10 +221,7 @@ export class KeycloakAdmin {
 
     for (const cred of credentials) {
       const delUrl = `${this.baseUrl}/admin/realms/scout/users/${userId}/credentials/${cred.id}`;
-      const delRes = await fetch(delUrl, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${this.accessToken}` },
-      });
+      const delRes = await this.fetchWithAuth(delUrl, { method: 'DELETE' });
 
       if (!delRes.ok) {
         const text = await delRes.text();
@@ -262,12 +236,8 @@ export class KeycloakAdmin {
 
   /** Get all groups a user belongs to. */
   async getUserGroups(userId: string): Promise<{ id: string; name: string }[]> {
-    await this.ensureAuthenticated();
-
     const url = `${this.baseUrl}/admin/realms/scout/users/${userId}/groups`;
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${this.accessToken}` },
-    });
+    const res = await this.fetchWithAuth(url);
 
     if (!res.ok) {
       const text = await res.text();
@@ -279,13 +249,8 @@ export class KeycloakAdmin {
 
   /** Remove a user from a group. */
   async removeUserFromGroup(userId: string, groupId: string): Promise<void> {
-    await this.ensureAuthenticated();
-
     const url = `${this.baseUrl}/admin/realms/scout/users/${userId}/groups/${groupId}`;
-    const res = await fetch(url, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${this.accessToken}` },
-    });
+    const res = await this.fetchWithAuth(url, { method: 'DELETE' });
 
     if (!res.ok) {
       const text = await res.text();
@@ -315,13 +280,9 @@ export class KeycloakAdmin {
   }
 
   private async setIdpRedirectRequirement(requirement: string): Promise<void> {
-    await this.ensureAuthenticated();
-
     // Get all executions in the browser flow
     const execUrl = `${this.baseUrl}/admin/realms/scout/authentication/flows/browser/executions`;
-    const res = await fetch(execUrl, {
-      headers: { Authorization: `Bearer ${this.accessToken}` },
-    });
+    const res = await this.fetchWithAuth(execUrl);
 
     if (!res.ok) {
       const text = await res.text();
@@ -345,10 +306,9 @@ export class KeycloakAdmin {
     }
 
     // Update the execution requirement
-    const updateRes = await fetch(execUrl, {
+    const updateRes = await this.fetchWithAuth(execUrl, {
       method: 'PUT',
       headers: {
-        Authorization: `Bearer ${this.accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ ...idpExecution, requirement }),
@@ -368,5 +328,32 @@ export class KeycloakAdmin {
     if (!this.accessToken) {
       await this.authenticate();
     }
+  }
+
+  /**
+   * Authenticated fetch with automatic 401 retry.
+   * Ensures a valid token, makes the request, and if the response is 401,
+   * re-authenticates and retries once to handle token expiry transparently.
+   */
+  private async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+    await this.ensureAuthenticated();
+
+    const makeRequest = () =>
+      fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+      });
+
+    const res = await makeRequest();
+
+    if (res.status === 401) {
+      await this.authenticate();
+      return makeRequest();
+    }
+
+    return res;
   }
 }
