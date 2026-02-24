@@ -13,8 +13,8 @@ async function globalTeardown(): Promise<void> {
   try {
     console.log('Re-enabling IdP auto-redirect in Keycloak browser flow');
     await keycloak.enableIdpRedirect();
-  } catch (err) {
-    console.error('Warning: failed to re-enable IdP redirect:', err);
+  } catch {
+    console.error('Warning: failed to re-enable IdP redirect');
   }
 
   // Strip credentials and group membership from test users (but keep the
@@ -33,8 +33,8 @@ async function globalTeardown(): Promise<void> {
       for (const group of groups) {
         await keycloak.removeUserFromGroup(userId, group.id);
       }
-    } catch (err) {
-      console.error('Warning: failed to clean up test user:', err);
+    } catch {
+      console.error('Warning: failed to clean up test user');
     }
   }
 
