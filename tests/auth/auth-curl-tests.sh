@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# auth-curl-tests.sh — Auth QA: Unauthenticated Access Verification
+# auth-curl-tests.sh — Unauthenticated Access Verification
 #
 # Verifies that all protected Scout endpoints reject unauthenticated requests
 # (no cookies, no tokens) and that unprotected endpoints remain accessible.
@@ -37,8 +37,8 @@ Options:
   --help              Show this help message
 
 Examples:
-  $(basename "$0") scout.tag.rcif.io
-  $(basename "$0") scout.tag.rcif.io --timeout 15
+  $(basename "$0") scout.example.com
+  $(basename "$0") scout.example.com --timeout 15
 EOF
   exit 1
 }
@@ -104,7 +104,7 @@ TESTS=(
   chat GET / 401 "Open WebUI root"
   chat GET /oauth/oidc/callback 401 "Open WebUI OIDC callback"
   chat GET /api/v1/chats/ 401 "Open WebUI chats API"
-  chat POST /api/v1/chats/00000000-0000-0000-0000-000000000000  401 "Open WebUI API create chat"
+  chat POST /api/v1/chats/00000000-0000-0000-0000-000000000000 401 "Open WebUI API create chat"
   chat DELETE /api/v1/chats/00000000-0000-0000-0000-000000000000 401 "Open WebUI API delete specific chat"
 
   # Grafana
