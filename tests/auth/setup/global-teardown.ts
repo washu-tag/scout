@@ -1,17 +1,8 @@
-import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import { KeycloakAdmin } from '../helpers/keycloak-admin';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
-
-const AUTH_DIR = path.resolve(__dirname, '..', '.auth');
-const USERS_FILE = path.join(AUTH_DIR, 'test-users.json');
-
-interface TestUserRecord {
-  id: string;
-  username: string;
-}
 
 async function globalTeardown(): Promise<void> {
   console.log('\n--- Global Teardown ---');
@@ -27,37 +18,24 @@ async function globalTeardown(): Promise<void> {
   }
 
   // Strip credentials and group membership from test users (but keep the
-  // users themselves so Grafana's cached user records don't conflict on
-  // the next run when Keycloak assigns new UUIDs).
-  if (fs.existsSync(USERS_FILE)) {
-    const records: TestUserRecord[] = JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
-    const authorizedUsername = process.env.AUTHORIZED_USER_USERNAME ?? 'scout-authorized-test-user';
+  // users themselves so old user records don't conflict on the next run).
+  const testUsernames = [
+    process.env.UNAUTHORIZED_USER_USERNAME,
+    process.env.AUTHORIZED_USER_USERNAME,
+  ].filter(Boolean) as string[];
 
-    for (const { id, username } of records) {
-      try {
-        console.log(`Removing credentials for test user "${username}" (${id})`);
-        await keycloak.removeUserCredentials(id);
-      } catch (err) {
-        console.error(`Warning: failed to remove credentials for "${username}":`, err);
+  for (const username of testUsernames) {
+    try {
+      const userId = await keycloak.getUserByUsername(username);
+      console.log(`Cleaning up test user "${username}" (${userId})`);
+      await keycloak.removeUserCredentials(userId);
+      const groups = await keycloak.getUserGroups(userId);
+      for (const group of groups) {
+        await keycloak.removeUserFromGroup(userId, group.id);
       }
-
-      // Revoke scout-user group from the authorized user
-      if (username === authorizedUsername) {
-        try {
-          const groupId = await keycloak.getGroupByName('scout-user');
-          console.log(`Removing "${username}" from scout-user group`);
-          await keycloak.removeUserFromGroup(id, groupId);
-        } catch (err) {
-          console.error(`Warning: failed to remove "${username}" from group:`, err);
-        }
-      }
+    } catch (err) {
+      console.error(`Warning: failed to clean up "${username}":`, err);
     }
-  }
-
-  // Clean up .auth directory
-  if (fs.existsSync(AUTH_DIR)) {
-    fs.rmSync(AUTH_DIR, { recursive: true });
-    console.log('Cleaned up .auth/ directory');
   }
 
   console.log('--- Teardown Complete ---\n');

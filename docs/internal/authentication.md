@@ -351,15 +351,14 @@ Install the [Playwright Test for VS Code](https://playwright.dev/docs/getting-st
 
 1. Connects to the Keycloak Admin API using admin credentials
 2. Disables the identity-provider-redirector in the browser authentication flow so tests can use the Keycloak username/password form directly (instead of auto-redirecting to GitHub/Microsoft)
-3. Creates 2 ephemeral users — one with no groups (unauthorized), one in `scout-user` (authorized non-admin)
-4. Writes user records to `.auth/test-users.json` for teardown
+3. Cleans up stale state from any previous failed teardown by looking up test users by username and stripping their credentials and group memberships
+4. Creates 2 ephemeral users — one with no groups (unauthorized), one in `scout-user` (authorized non-admin)
 
 **Global Teardown** (`setup/global-teardown.ts`):
 
 1. Re-enables the identity-provider-redirector (restores production auto-redirect behavior)
-2. Strips credentials and group membership from test users
+2. Looks up test users by username (from env vars) and strips their credentials and group memberships
 3. Users are **kept** (not deleted) to avoid conflicts with user records in downstream services (see [Why users are not deleted](#why-test-users-are-not-deleted) below)
-4. Cleans up the `.auth/` directory
 
 **Helpers**:
 

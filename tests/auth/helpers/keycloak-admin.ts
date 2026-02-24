@@ -160,45 +160,6 @@ export class KeycloakAdmin {
     return users[0].id;
   }
 
-  /** Delete a user by ID. */
-  async deleteUser(userId: string): Promise<void> {
-    await this.ensureAuthenticated();
-
-    const url = `${this.baseUrl}/admin/realms/scout/users/${userId}`;
-    const res = await fetch(url, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${this.accessToken}` },
-    });
-
-    if (res.status === 404) {
-      console.log(`User ${userId} already deleted.`);
-      return;
-    }
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Failed to delete user (${res.status}): ${text}`);
-    }
-
-    console.log(`Deleted user ${userId}`);
-  }
-
-  /** Delete a user by username (idempotent — no error if user doesn't exist). */
-  async deleteUserByUsername(username: string): Promise<void> {
-    await this.ensureAuthenticated();
-
-    try {
-      const userId = await this.getUserByUsername(username);
-      await this.deleteUser(userId);
-    } catch (err) {
-      if (err instanceof Error && err.message.includes('not found')) {
-        console.log(`User "${username}" not found — nothing to delete.`);
-        return;
-      }
-      throw err;
-    }
-  }
-
   /** Look up a group by exact name. Returns the group ID. */
   async getGroupByName(name: string): Promise<string> {
     await this.ensureAuthenticated();
@@ -297,6 +258,23 @@ export class KeycloakAdmin {
 
       console.log(`Removed ${cred.type} credential from user ${userId}`);
     }
+  }
+
+  /** Get all groups a user belongs to. */
+  async getUserGroups(userId: string): Promise<{ id: string; name: string }[]> {
+    await this.ensureAuthenticated();
+
+    const url = `${this.baseUrl}/admin/realms/scout/users/${userId}/groups`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Failed to get groups for user ${userId} (${res.status}): ${text}`);
+    }
+
+    return (await res.json()) as { id: string; name: string }[];
   }
 
   /** Remove a user from a group. */

@@ -1,17 +1,8 @@
-import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import { KeycloakAdmin } from '../helpers/keycloak-admin';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
-
-const AUTH_DIR = path.resolve(__dirname, '..', '.auth');
-const USERS_FILE = path.join(AUTH_DIR, 'test-users.json');
-
-interface TestUserRecord {
-  id: string;
-  username: string;
-}
 
 async function globalSetup(): Promise<void> {
   console.log('\n--- Global Setup ---');
@@ -22,9 +13,6 @@ async function globalSetup(): Promise<void> {
   const password = process.env.TEST_USER_PASSWORD;
   if (!password) throw new Error('TEST_USER_PASSWORD is not set');
 
-  // Ensure .auth directory exists
-  fs.mkdirSync(AUTH_DIR, { recursive: true });
-
   const keycloak = new KeycloakAdmin();
 
   // Disable the IdP auto-redirect so tests can use the Keycloak login form
@@ -32,26 +20,44 @@ async function globalSetup(): Promise<void> {
   console.log('Disabling IdP auto-redirect in Keycloak browser flow');
   await keycloak.disableIdpRedirect();
 
-  const users: TestUserRecord[] = [];
+  // Clean up stale state from any previous failed teardown so tests start
+  // from a known baseline. If the users don't exist yet this is a no-op.
+  const testUsernames = [
+    process.env.UNAUTHORIZED_USER_USERNAME,
+    process.env.AUTHORIZED_USER_USERNAME,
+  ].filter(Boolean) as string[];
+
+  for (const username of testUsernames) {
+    try {
+      const userId = await keycloak.getUserByUsername(username);
+      console.log(`Cleaning stale state for existing user "${username}"`);
+      await keycloak.removeUserCredentials(userId);
+      const groups = await keycloak.getUserGroups(userId);
+      for (const group of groups) {
+        await keycloak.removeUserFromGroup(userId, group.id);
+      }
+    } catch {
+      // User doesn't exist yet, nothing to clean up
+    }
+  }
 
   // --- Unauthorized user (no group membership) ---
   const unauthorizedUsername = process.env.UNAUTHORIZED_USER_USERNAME;
   if (!unauthorizedUsername) throw new Error('UNAUTHORIZED_USER_USERNAME is not set');
 
-  const unauthorizedId = await keycloak.createUser({
+  await keycloak.createUser({
     username: unauthorizedUsername,
     password,
     email: process.env.UNAUTHORIZED_USER_EMAIL ?? `${unauthorizedUsername}@example.com`,
     firstName: process.env.UNAUTHORIZED_USER_FIRST_NAME ?? 'Unauthorized',
     lastName: process.env.UNAUTHORIZED_USER_LAST_NAME ?? 'TestUser',
   });
-  users.push({ id: unauthorizedId, username: unauthorizedUsername });
 
   // --- Authorized user (scout-user group) ---
   const authorizedUsername = process.env.AUTHORIZED_USER_USERNAME;
   if (!authorizedUsername) throw new Error('AUTHORIZED_USER_USERNAME is not set');
 
-  const authorizedId = await keycloak.createUser({
+  await keycloak.createUser({
     username: authorizedUsername,
     password,
     email: process.env.AUTHORIZED_USER_EMAIL ?? `${authorizedUsername}@example.com`,
@@ -59,11 +65,6 @@ async function globalSetup(): Promise<void> {
     lastName: process.env.AUTHORIZED_USER_LAST_NAME ?? 'TestUser',
     groups: ['scout-user'],
   });
-  users.push({ id: authorizedId, username: authorizedUsername });
-
-  // Save user records for teardown
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
-  console.log(`Saved ${users.length} user records to ${USERS_FILE}`);
 
   console.log('--- Setup Complete ---\n');
 }
