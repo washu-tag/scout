@@ -1,6 +1,7 @@
 ---
 # Molecule Integration Test Configuration for k3s Role
 # Uses Docker driver to test actual k3s installation in containers with systemd
+role_name_check: 2
 dependency:
   name: galaxy
 driver:

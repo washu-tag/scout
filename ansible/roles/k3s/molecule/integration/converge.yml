@@ -4,6 +4,7 @@
 - name: Converge
   hosts: all
   gather_facts: true
+  environment: '{{ cluster_k8s_environment }}'
 
   roles:
     - role: k3s

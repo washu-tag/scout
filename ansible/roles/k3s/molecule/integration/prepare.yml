@@ -1,0 +1,9 @@
+---
+# Molecule Integration Test - Prepare
+# Installs dependencies needed by the k3s role that aren't in the base image
+- name: Prepare
+  hosts: all
+  tasks:
+    - name: Install kubernetes Python library for kubernetes.core module
+      ansible.builtin.pip:
+        name: kubernetes
