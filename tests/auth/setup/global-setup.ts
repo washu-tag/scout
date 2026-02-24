@@ -27,10 +27,10 @@ async function globalSetup(): Promise<void> {
     process.env.AUTHORIZED_USER_USERNAME,
   ].filter(Boolean) as string[];
 
+  console.log('Cleaning up stale state for test users if they already exist');
   for (const username of testUsernames) {
     try {
       const userId = await keycloak.getUserByUsername(username);
-      console.log(`Cleaning stale state for existing user "${username}"`);
       await keycloak.removeUserCredentials(userId);
       const groups = await keycloak.getUserGroups(userId);
       for (const group of groups) {
@@ -45,6 +45,7 @@ async function globalSetup(): Promise<void> {
   const unauthorizedUsername = process.env.UNAUTHORIZED_USER_USERNAME;
   if (!unauthorizedUsername) throw new Error('UNAUTHORIZED_USER_USERNAME is not set');
 
+  console.log('Creating unauthorized test user');
   await keycloak.createUser({
     username: unauthorizedUsername,
     password,
@@ -57,6 +58,7 @@ async function globalSetup(): Promise<void> {
   const authorizedUsername = process.env.AUTHORIZED_USER_USERNAME;
   if (!authorizedUsername) throw new Error('AUTHORIZED_USER_USERNAME is not set');
 
+  console.log('Creating authorized test user');
   await keycloak.createUser({
     username: authorizedUsername,
     password,

@@ -24,17 +24,17 @@ async function globalTeardown(): Promise<void> {
     process.env.AUTHORIZED_USER_USERNAME,
   ].filter(Boolean) as string[];
 
+  console.log('Cleaning up test users by removing credentials and group memberships');
   for (const username of testUsernames) {
     try {
       const userId = await keycloak.getUserByUsername(username);
-      console.log(`Cleaning up test user "${username}" (${userId})`);
       await keycloak.removeUserCredentials(userId);
       const groups = await keycloak.getUserGroups(userId);
       for (const group of groups) {
         await keycloak.removeUserFromGroup(userId, group.id);
       }
     } catch (err) {
-      console.error(`Warning: failed to clean up "${username}":`, err);
+      console.error('Warning: failed to clean up test user:', err);
     }
   }
 

@@ -85,7 +85,7 @@ export class KeycloakAdmin {
 
     if (res.status === 409) {
       // 409 can mean duplicate username OR duplicate email.
-      console.log(`User "${config.username}" already exists, reusing.`);
+      console.log('User already exists, reusing.');
       let userId: string;
       try {
         userId = await this.getUserByUsername(config.username);
@@ -122,7 +122,7 @@ export class KeycloakAdmin {
     }
 
     const userId = location.split('/').pop()!;
-    console.log(`Created user "${config.username}" (${userId})`);
+    console.log('Created user');
 
     // Assign groups if specified
     if (config.groups?.length) {
@@ -181,7 +181,7 @@ export class KeycloakAdmin {
       throw new Error(`Failed to add user ${userId} to group ${groupId} (${res.status}): ${text}`);
     }
 
-    console.log(`Added user ${userId} to group ${groupId}`);
+    console.log('Added user to group');
   }
 
   /** Reset a user's password. */
@@ -204,7 +204,7 @@ export class KeycloakAdmin {
       throw new Error(`Failed to reset password for user ${userId} (${res.status}): ${text}`);
     }
 
-    console.log(`Reset password for user ${userId}`);
+    console.log('Reset password for user');
   }
 
   /** Remove all credentials from a user. */
@@ -230,7 +230,7 @@ export class KeycloakAdmin {
         );
       }
 
-      console.log(`Removed ${cred.type} credential from user ${userId}`);
+      console.log('Removed credential from user');
     }
   }
 
@@ -259,7 +259,7 @@ export class KeycloakAdmin {
       );
     }
 
-    console.log(`Removed user ${userId} from group ${groupId}`);
+    console.log('Removed user from group');
   }
 
   /**
