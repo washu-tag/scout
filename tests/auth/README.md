@@ -1,55 +1,22 @@
-# Auth QA Tests
+# Auth Tests
 
-Authorization QA tests for Scout services.
+Authorization tests for Scout with curl-based unauthenticated access tests and Playwright browser-based authorization tests that verify OAuth2 Proxy + Keycloak across all Scout services.
 
-## Unauthenticated Access Tests
+For comprehensive documentation, see the [Testing](../../docs/internal/authentication.md#testing) section of the authentication documentation.
 
-Curl-based tests that verify all protected Scout endpoints reject unauthenticated requests (no cookies, no tokens) and that unprotected endpoints (Keycloak, OAuth2 Proxy sign-in) remain accessible. Runs the full test matrix over both HTTPS and HTTP.
+## Quick Start
 
-### Prerequisites
-
-- `curl` installed
-- Network access to the target Scout deployment
-
-### Usage
+**Curl tests** (unauthenticated access):
 
 ```bash
-# Basic usage
-./authz-curl-test.sh scout.example.com
-
-# With custom timeout
-./authz-curl-test.sh scout.example.com --timeout 15
-
+./auth-curl-tests.sh scout.example.com
 ```
 
-### Options
-
-| Argument/Flag | Required | Default | Description |
-|---------------|----------|---------|-------------|
-| `<hostname>` | Yes | — | Scout base hostname (first argument) |
-| `--timeout` | No | 10 | curl timeout in seconds |
-| `--help` | No | — | Show usage |
-
-### Adding Tests
-
-Edit the `TESTS` array in `authz-curl-test.sh` and add a line with 5 space-separated fields:
+**Playwright tests** (browser-based authorization):
 
 ```bash
-subdomain /path METHOD expected_status "Description"
+cp .env.example .env
+# Edit .env — set SCOUT_HOSTNAME and KEYCLOAK_ADMIN_PASSWORD
+npm install
+npm test
 ```
-
-For example:
-
-```bash
-superset POST /api/v1/query/ 401 "Superset query API"
-```
-
-- Use empty string `""` for the root hostname (Launchpad)
-- `401` — protected endpoint, must reject with exact status code (no redirects, no content)
-- `200` — unprotected endpoint, must be directly accessible
-
-### Exit Codes
-
-- `0` — All tests passed
-- `1` — One or more tests failed
-- `2` — Configuration error (e.g., malformed test definitions)

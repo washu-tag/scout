@@ -18,8 +18,10 @@ This document provides technical details about Scout's authentication and author
 - [Configuration](#configuration)
   - [Required Inventory Variables](#required-inventory-variables)
   - [Optional Configuration](#optional-configuration)
-  - [Client IDs](#client-ids)
   - [Post-Deployment Configuration](#post-deployment-configuration)
+- [Testing](#testing)
+  - [Curl Tests](#curl-tests)
+  - [Playwright Browser Tests](#playwright-browser-tests)
 
 ## Architecture Overview
 
@@ -55,9 +57,13 @@ Scout services are accessed via subdomains. Each ingress is configured in Traefi
 | `grafana.{server_hostname}` | Grafana monitoring | Yes |
 | `temporal.{server_hostname}` | Temporal workflow UI | Yes |
 | `minio.{server_hostname}` | MinIO console | Yes |
+| `chat.{server_hostname}` | Open WebUI (optional) | Yes |
+| `playbooks.{server_hostname}` | Voila Playbooks (optional) | Yes |
+| `auth.{server_hostname}` | OAuth2 Proxy | No* |
 | `keycloak.{server_hostname}` | Keycloak admin console | No* |
+| `*.{server_hostname}` | Catch-all | Yes (Redirect to Launchpad) |
 
-*Keycloak endpoints must remain publicly accessible for services to use OAuth/OIDC flows.
+*OAuth2 Proxy and Keycloak endpoints must remain publicly accessible for authentication and OAuth/OIDC flows.
 
 ### Middleware Stack
 
@@ -104,7 +110,9 @@ Add this middleware stack to any new service ingress to enable authentication wi
 
 ## Service Integrations
 
-Each Scout service integrates with Keycloak for authentication and authorization. Ideally, the services would all be able to use headers set by OAuth2 Proxy to get the users JWT token, but due to limitations in some services, implementing OAuth/OIDC clients with Keycloak for each service is necessary.
+Scout uses two layers of authentication. **OAuth2 Proxy** acts as a gatekeeper at the Traefik ingress layer ensuring only approved users (those in the `scout-user` group) can reach any service. Behind that gate, **each service maintains its own Keycloak OAuth/OIDC client** to establish the user's identity and roles within that service.
+
+This double authentication exists because most services need more than a pass/fail access check, needing to know _who_ the user is and what roles they have. Ideally services would read this from headers set by OAuth2 Proxy, but most services require their own OAuth client to populate their internal user and role models. The result is that a user authenticates with Keycloak twice on first access to a service: once through OAuth2 Proxy (ingress), and once through the service's own OAuth flow.
 
 ## Roles & Permissions
 
@@ -194,9 +202,10 @@ keycloak_minio_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_str
 keycloak_launchpad_client_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 ```
 
-**OAuth2 Proxy Cookie Secret**:
+**OAuth2 Proxy Secrets**:
 ```yaml
 oauth2_proxy_cookie_secret: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+oauth2_proxy_redis_password: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 ```
 
 **Launchpad NextAuth Cookie Secret**:
@@ -238,3 +247,155 @@ In development environments, omit these settings to use the defaults configured 
 - Return to Launchpad at `https://{server_hostname}` and login again through your institutional identity provider
 - You should now have access to all Scout services
 - Admin services will appear on the Launchpad only if you were added to the `scout-admin` group
+
+## Testing
+
+Located in [tests/auth](../../tests/auth), Playwright browser tests and curl-based endpoint tests verify OAuth2 Proxy + Keycloak authorization across all Scout services.
+
+### Prerequisites
+
+- Network access to a running Scout deployment
+- `curl` (for curl tests)
+- Node.js 18+ and npm (for Playwright tests)
+- Keycloak admin credentials (for Playwright tests)
+
+### Curl Tests
+
+Verifies all protected endpoints reject unauthenticated requests (no cookies, no tokens) and that Keycloak/OAuth2 Proxy endpoints remain accessible.
+
+#### Usage
+
+```bash
+./auth-curl-tests.sh scout.example.com
+./auth-curl-tests.sh scout.example.com --timeout 15
+```
+
+#### Options
+
+| Argument / Flag | Required | Default | Description |
+|---|---|---|---|
+| `<hostname>` | Yes | — | Scout base hostname (first positional argument) |
+| `--timeout` | No | `10` | curl timeout in seconds |
+| `--help` | No | — | Show usage |
+
+#### Adding Tests
+
+Edit the `TESTS` array in `auth-curl-tests.sh` and add a line with 5 space-separated fields:
+
+```bash
+subdomain METHOD /path expected_status "Description"
+```
+
+- Use empty string `""` for the root hostname (Launchpad)
+- `401` — protected endpoint, must reject with exact status code
+- `200` — unprotected endpoint, must be directly accessible
+
+#### Exit Codes
+
+| Code | Meaning |
+|---|---|
+| `0` | All tests passed |
+| `1` | One or more tests failed |
+| `2` | Configuration error (e.g., malformed test definitions) |
+
+### Playwright Browser Tests
+
+Drives Chromium through the full OAuth2 Proxy → Keycloak sign-in flow, authenticates as ephemeral Keycloak test users, and verifies authorization behavior.
+
+#### Configuration
+
+```bash
+cd tests/auth
+cp .env.example .env
+# Edit .env — set SCOUT_HOSTNAME and KEYCLOAK_ADMIN_PASSWORD at minimum
+npm install
+```
+
+| Variable | Required | Description |
+|---|---|---|
+| `SCOUT_HOSTNAME` | Yes | Scout base hostname (e.g., `scout.example.com`) |
+| `KEYCLOAK_ADMIN_USER` | No | Keycloak admin username (default: `admin`) |
+| `KEYCLOAK_ADMIN_PASSWORD` | Yes | Keycloak admin password |
+| `WORKERS` | No | Parallel Playwright workers (default: `1`) |
+| `TEST_USER_PASSWORD` | Yes | Shared password for ephemeral test users |
+| `UNAUTHORIZED_USER_*` | No | Username, email, first/last name for the unauthorized test user (all have defaults). Username and email must be unique across the Keycloak realm. |
+| `AUTHORIZED_USER_*` | No | Username, email, first/last name for the authorized test user (all have defaults). Username and email must be unique across the Keycloak realm. |
+
+#### Running Tests — Command Line
+
+```bash
+npm test                                           # run all tests
+npm run test:headed                                # run with visible browser
+npm run test:debug                                 # debug mode
+npm run test:unauthorized                          # run Unauthorized suite only
+npm run test:authorized                            # run Authorized Non-Admin suite only
+npm run report                                     # view HTML report after run
+npm run trace -- <trace.zip>                       # inspect a test trace
+```
+
+Failed tests record a [Playwright trace](https://playwright.dev/docs/trace-viewer-intro) that captures DOM snapshots, network requests, and console logs for each action.
+
+#### Running Tests — VS Code Playwright Extension
+
+Install the [Playwright Test for VS Code](https://playwright.dev/docs/getting-started-vscode) extension and add `tests/auth` to the VS Code project workspace. Create `.env` from `.env.example` and fill in credentials before running tests.
+
+#### Test Suites
+
+**Unauthorized User** — signs in as a user with no `scout-user` group membership. All protected services/paths return 403 (Access Pending).
+
+**Authorized Non-Admin User** — signs in as a user in `scout-user` group (no admin roles) and verifies restrictions on admin-only pages.
+
+#### Test Infrastructure
+
+**Global Setup** (`setup/global-setup.ts`):
+
+1. Connects to the Keycloak Admin API using admin credentials
+2. Disables the identity-provider-redirector in the browser authentication flow so tests can use the Keycloak username/password form directly (instead of auto-redirecting to GitHub/Microsoft)
+3. Creates 2 ephemeral users — one with no groups (unauthorized), one in `scout-user` (authorized non-admin)
+4. Writes user records to `.auth/test-users.json` for teardown
+
+**Global Teardown** (`setup/global-teardown.ts`):
+
+1. Re-enables the identity-provider-redirector (restores production auto-redirect behavior)
+2. Strips credentials and group membership from test users
+3. Users are **kept** (not deleted) to avoid conflicts with user records in downstream services (see [Why users are not deleted](#why-test-users-are-not-deleted) below)
+4. Cleans up the `.auth/` directory
+
+**Helpers**:
+
+- `helpers/scout-auth.ts` — `signInToScout()`: automates the full OAuth2 Proxy → Keycloak sign-in flow
+- `helpers/keycloak-admin.ts` — `KeycloakAdmin` class: Keycloak Admin API client for user CRUD, group management, and IdP redirect toggling
+
+#### Troubleshooting
+
+##### Slow first run
+
+The first time tests run against a deployment, services like Grafana, Superset, JupyterHub, etc. create internal users for the test users on first sign-in. This user provisioning makes the initial run slower than subsequent runs. Test timeouts have been increased to account for this, but if you see timeout failures on a first run that pass on retry, this is could be the cause.
+
+##### IdP auto-redirect disabled after failed teardown
+
+Global setup disables the Keycloak identity-provider-redirector so tests can log in with username/password. If teardown fails or is interrupted, Keycloak will show the username/password login form to all users instead of auto-redirecting to the institutional identity provider (e.g., GitHub, Microsoft).
+
+**To manually re-enable**:
+1. Log in to the Keycloak Admin Console (`https://keycloak.<hostname>/admin/scout/console/`)
+2. Navigate to **Authentication** → **browser** flow
+3. Find the **Identity Provider Redirector** execution
+4. Change its requirement from **Disabled** to **Alternative**
+
+##### Stale test users after failed teardown
+
+If teardown fails, ephemeral test users will remain in Keycloak with their passwords and group membership intact. This is a minor security concern since they have known credentials.
+
+**To manually clean up**:
+1. Log in to the Keycloak Admin Console
+2. Navigate to **Users** in the Scout realm
+3. Search for the test usernames (default: `scout-unauthorized-test-user` and `scout-authorized-test-user`)
+4. For each user: remove credentials (Credentials tab → delete), remove from groups (Groups tab → leave), or delete the user entirely
+
+##### Why test users are not deleted
+
+When a user signs in through OAuth2 Proxy, several Scout services create their own user records in their own databases (Grafana, Superset, JupyterHub, etc.). Deleting a user from Keycloak does not remove these records, they remain as users in each service.
+
+If a test user is deleted from Keycloak and the tests run again, Keycloak assigns a new UUID to the recreated user. This new UUID conflicts with the existing user records that reference the old UUID. Grafana in particular fails on this mismatch.
+
+To avoid this, teardown strips credentials and group membership but **keeps the Keycloak user** so the UUID remains stable across test runs. If you do need to delete test users from Keycloak, you may also need to remove their user records from downstream services (e.g., Grafana, Superset user management UIs).
