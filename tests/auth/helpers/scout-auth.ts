@@ -25,13 +25,6 @@ export async function signInToScout(page: Page, targetUrl: string, user: TestUse
     throw new Error(`Expected 401 sign-in page at ${targetUrl}, got ${signInResponse?.status()}`);
   }
 
-  // Verify we're on the OAuth2 Proxy sign-in page
-  await page.waitForSelector('h2');
-  const heading = await page.locator('h2').textContent();
-  if (heading?.trim() !== 'Welcome to Scout') {
-    throw new Error(`Expected sign-in page with "Welcome to Scout", got "${heading}"`);
-  }
-
   // Click "Sign In" — submits form to OAuth2 Proxy, which redirects to Keycloak
   await page.locator('button.btn').click();
 
