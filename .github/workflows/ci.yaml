@@ -244,6 +244,9 @@ jobs:
       - name: 'Unit tests: Open WebUI link sanitizer filter'
         shell: bash
         run: cd ansible/roles/open-webui/files && pytest test_link_sanitizer_filter.py -v
+      - name: 'Unit tests: verify-node'
+        shell: bash
+        run: cd verify-node && pytest tests/ -v
       - name: 'Molecule tests: postgres role'
         shell: bash
         run: cd ansible/roles/postgres && molecule test -s default

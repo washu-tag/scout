@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
 
 project = "Scout"
-copyright = "2025, Washington University in St. Louis"
+copyright = "2026, Washington University in St. Louis"
 author = "TAG@WashU"
 
 release = "0.1"

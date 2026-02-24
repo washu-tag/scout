@@ -1,0 +1,86 @@
+name: Update Copyright Year
+
+on:
+  schedule:
+    - cron: '0 9 1 1 *' # Jan 1 at 09:00 UTC
+  workflow_dispatch:
+    inputs:
+      year:
+        description: 'Copyright year to set (defaults to current year)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  update-copyright:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token from GitHub App
+        id: app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.COPYRIGHT_APP_ID }}
+          private-key: ${{ secrets.COPYRIGHT_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4.2.1
+        with:
+          token: ${{ steps.app_token.outputs.token }}
+
+      - name: Determine year
+        id: year
+        env:
+          INPUT_YEAR: ${{ inputs.year }}
+        run: |
+          if [ -n "$INPUT_YEAR" ]; then
+            YEAR="$INPUT_YEAR"
+          else
+            YEAR="$(date +%Y)"
+          fi
+          if ! [[ "$YEAR" =~ ^[0-9]{4}$ ]]; then
+            echo "::error::Invalid year format: $YEAR"
+            exit 1
+          fi
+          echo "value=$YEAR" >> "$GITHUB_OUTPUT"
+
+      - name: Update copyright years
+        env:
+          YEAR: ${{ steps.year.outputs.value }}
+        run: |
+          sed -i -E "s/Copyright \(c\) ([0-9]{4})(-[0-9]{4})?/Copyright (c) \1-${YEAR}/" LICENSE
+          sed -i -E "s/copyright = \"[0-9]{4},/copyright = \"${YEAR},/" docs/source/conf.py
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create pull request
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          YEAR: ${{ steps.year.outputs.value }}
+        run: |
+          BRANCH="chore/copyright-year-${YEAR}"
+          if git ls-remote --exit-code origin "refs/heads/${BRANCH}" >/dev/null 2>&1; then
+            echo "::error::Branch ${BRANCH} already exists. Delete it or merge the existing PR first."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${BRANCH}"
+          git add LICENSE docs/source/conf.py
+          git commit -m "chore: update copyright year to ${YEAR}"
+          git push origin "${BRANCH}"
+          gh pr create \
+            --title "chore: update copyright year to ${YEAR}" \
+            --body "Automated update of copyright year to ${YEAR} in:
+          - \`LICENSE\`
+          - \`docs/source/conf.py\`" \
+            --base main \
+            --head "${BRANCH}"

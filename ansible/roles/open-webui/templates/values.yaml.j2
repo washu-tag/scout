@@ -92,12 +92,13 @@ ingress:
     # Middleware order matters for CSP:
     # 1. Error first: catches 401 and serves sign_in page (bypasses CSP)
     # 2. Auth second: checks authentication
-    # 3. CSP last: only applied to authenticated responses
+    # 3. CSP third: sets stricter CSP for Open WebUI (overrides global baseline)
+    # 4. Security headers last: sets baseline security headers for all responses
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd{% if open_webui_csp_enabled %},
-      {{ chatbot_namespace }}-open-webui-csp@kubernetescrd
-{% endif %}
+      {{ chatbot_namespace }}-open-webui-csp@kubernetescrd{% endif %},
+      kube-system-security-headers@kubernetescrd
   host: chat.{{ server_hostname }}
 
 persistence:

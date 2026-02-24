@@ -1,0 +1,26 @@
+---
+- name: Verify cluster node state
+  hosts: remotes
+  become: false
+  gather_facts: false
+  any_errors_fatal: false
+  tasks:
+    - name: Build verification config
+      ansible.builtin.set_fact:
+        _verify_config:
+          hostname: '{{ inventory_hostname }}'
+          mounts: '{{ verify_node_mounts | default([]) }}'
+          connectivity: '{{ verify_node_connectivity | default({}) }}'
+          resources: '{{ verify_node_resources | default({}) }}'
+
+    - name: Run node verification
+      ansible.builtin.script:
+        cmd: >-
+          {{ (playbook_dir ~ "/../../verify-node/verify_node.py") | realpath }}
+          {{ verify_node_command | default("all") }}
+          --config-json
+          {{ _verify_config | to_json | quote }}
+        executable: python3
+      register: verify_result
+      changed_when: false
+      failed_when: verify_result.rc != 0

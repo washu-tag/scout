@@ -265,63 +265,93 @@ Updates all version files. Supports two modes:
 
 ## GitHub App Setup
 
-The Release Workflow needs to push commits to `main`, which is a protected branch. A GitHub App provides a bot identity that can bypass branch protection without being tied to a personal account.
+GitHub Actions workflows that need to push commits or create pull requests on protected branches use GitHub Apps for authentication. Apps provide bot identities with scoped permissions that aren't tied to personal accounts.
 
-### Creating the GitHub App
+### Why GitHub Apps?
+
+- **Branch protection bypass**: `GITHUB_TOKEN` cannot push to protected branches. A GitHub App can be added as an allowed actor in branch protection rules.
+- **Pull request creation**: `GITHUB_TOKEN` cannot create PRs unless the repo-wide "Allow GitHub Actions to create and approve pull requests" setting is enabled. This setting affects all workflows, so using an App is more targeted.
+- **Bot identity**: Commits appear as authored by `<app-name>[bot]` rather than a personal account.
+
+### Current Apps
+
+| App | Secrets | Purpose | Permissions | Branch protection bypass |
+|-----|---------|---------|-------------|--------------------------|
+| `scout-release` | `RELEASE_APP_ID`, `RELEASE_APP_PRIVATE_KEY` | Release workflow: pushes version bump/reset commits directly to `main` | Contents: Read and write | Yes |
+| `scout-copyright` | `COPYRIGHT_APP_ID`, `COPYRIGHT_APP_PRIVATE_KEY` | Copyright year workflow: pushes a feature branch and creates a PR | Contents: Read and write, Pull requests: Read and write | No |
+
+### Creating a GitHub App
 
 1. Go to **Settings** → **Developer settings** → **GitHub Apps** → **New GitHub App**
 2. Configure:
-   - **Name**: `scout-release` (or similar)
+   - **Name**: e.g., `scout-release`, `scout-copyright`
    - **Homepage URL**: Repository URL (required but not used)
    - **Webhook**: Uncheck "Active"
-   - **Permissions**:
-     - Repository → Contents: **Read and write**
-     - Repository → Metadata: **Read-only** (auto-selected)
+   - **Permissions**: Set repository permissions as needed (see table above)
    - **Where can this app be installed?**: Only on this account
 3. Click **Create GitHub App**
 
 ### Generating Credentials
 
-1. On the app's settings page, note the **App ID**
+1. On the app's settings page, note the **App ID** (numeric, not the Client ID)
 2. Scroll to **Private keys** → **Generate a private key**
-3. Download the `.pem` file
+3. A `.pem` file will be downloaded
 
 ### Installing the App
 
 1. Go to the app's settings → **Install App**
-2. Select your repository
-3. Note the **Installation ID** from the URL (`/installations/<ID>`)
+2. Select your organization
+3. Choose **Only select repositories** and select the repos that need it
 
-### Repository Configuration
+### Adding Secrets
 
-1. Add repository secrets:
-   - `RELEASE_APP_ID`: The App ID
-   - `RELEASE_APP_PRIVATE_KEY`: Contents of the `.pem` file
+Secrets can be set at the org level to share across repos:
 
-2. Update branch protection for `main`:
-   - Go to **Settings** → **Branches** → **main** → **Edit**
-   - Under "Allow specified actors to bypass required pull requests"
-   - Add the `scout-release` app
+```bash
+gh secret set <APP_ID_SECRET> --org <org> --visibility selected --repos repo1,repo2 --body "<app-id>"
+gh secret set <PRIVATE_KEY_SECRET> --org <org> --visibility selected --repos repo1,repo2 < /path/to/private-key.pem
+```
+
+Or at the repo level:
+
+```bash
+gh secret set <APP_ID_SECRET> --body "<app-id>"
+gh secret set <PRIVATE_KEY_SECRET> < /path/to/private-key.pem
+```
+
+### Branch Protection (Direct Push Apps Only)
+
+For apps that push directly to `main` (e.g., `scout-release`):
+
+1. Go to **Settings** → **Branches** → **main** → **Edit**
+2. Under "Allow specified actors to bypass required pull requests"
+3. Add the app
+
+Apps that only create PRs (e.g., `scout-copyright`) do not need this.
 
 ### Workflow Authentication
 
-The Release Workflow uses the GitHub App to authenticate:
+Workflows use `actions/create-github-app-token` to generate a short-lived installation token:
 
 ```yaml
 - name: Generate token from GitHub App
   id: app_token
   uses: actions/create-github-app-token@v1
   with:
-    app-id: ${{ secrets.RELEASE_APP_ID }}
-    private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+    app-id: ${{ secrets.<APP_ID_SECRET> }}
+    private-key: ${{ secrets.<PRIVATE_KEY_SECRET> }}
 
 - uses: actions/checkout@v4
   with:
-    fetch-depth: 0
     token: ${{ steps.app_token.outputs.token }}
 ```
 
-Commits will appear as authored by `scout-release[bot]`.
+The checkout `token` ensures `git push` uses the App's credentials. For API calls (e.g., `gh pr create`), set `GH_TOKEN`:
+
+```yaml
+env:
+  GH_TOKEN: ${{ steps.app_token.outputs.token }}
+```
 
 ## Version Files Reference
 

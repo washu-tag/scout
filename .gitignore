@@ -1,5 +1,6 @@
 .idea/
 .venv/
+uv.lock
 __pycache__/
 *.egg-info/
 .gradle/
@@ -15,3 +16,4 @@ build/
 **/.claude/settings.local.json
 .worktrees/
 **/*.iml
+zap/*.json

@@ -178,12 +178,51 @@ Install a security filter to prevent data exfiltration via external links in LLM
 - Handles both markdown links `[text](url)` and raw URLs
 - Prevents HIPAA violations from PHI being transmitted via clicked links
 
-#### 6. Disable Arena Model
+#### 6. Install Context Summarization Filter
+
+Install a filter to handle long conversations that approach the 128K context window limit. Without this filter, Ollama silently truncates older messages, causing conversations to "fall apart." See [ADR 0013](../../../docs/internal/adr/0013-open-webui-context-summarization-filter.md) for details.
+
+1. Navigate to **Admin Panel → Functions** (requires admin access)
+2. Click **+ (New Function)**
+3. Set Name to "Context Summarization Filter"
+4. Set Description to "Summarizes older conversation history when approaching context limits."
+5. Copy the contents of `ansible/roles/open-webui/files/context_summarization_filter.py` into the code editor and click **Save**
+6. Click the **gear icon** next to the new function to configure Valves:
+   - **token_threshold**: `100000` (triggers at ~77% of 128K context)
+   - **messages_to_keep**: `10` (recent messages to preserve intact)
+   - **min_messages_to_keep**: `2` (minimum to keep when dynamically reducing)
+   - **tool_result_token_threshold**: `500` (compact tool results exceeding this in old messages)
+   - **ollama_url**: `http://ollama:11434` (default is correct for most deployments)
+   - **summarizer_model**: Leave empty to use chat model, or specify a smaller/faster model
+   - **debug_logging**: `true` (enable detailed logging for troubleshooting)
+7. Enable the filter globally:
+   - Click the **"..." menu** next to the function
+   - Toggle **Global** to enable for all models
+
+**What the filter does:**
+- Detects when conversation approaches context limit (100K tokens by default)
+- Shows status message: "Summarizing conversation (X tokens)..."
+- Preserves base system prompt (Scout query instructions)
+- Summarizes older user/assistant messages via Ollama API call
+- Compacts old tool results to brief descriptions with sample data (e.g., "[Tool: 10 rows | {"diagnosis": "Malignant neoplasm...", "count": 5}]")
+- Keeps recent messages intact for accurate context
+- Lets RAG re-retrieve fresh knowledge per query
+- Shows completion status: "Summarized: X → Y tokens"
+- Falls back gracefully to truncation if summarization fails (API errors, timeouts)
+
+**Note:** Summarization adds ~5-10 seconds of latency when triggered. The filter only activates when the token threshold is exceeded.
+
+**Debugging:** When `debug_logging` is enabled, detailed logs are printed showing before/after message counts, token counts, and message previews. View logs with:
+```bash
+kubectl logs -n ollama deploy/open-webui -f | grep "\[ContextSummarization\]"
+```
+
+#### 7. Disable Arena Model
 
 1. Navigate to **Admin Panel → Settings → Evaluations**
 2. Disable Arena Model
 
-#### 7. Verify Configuration
+#### 8. Verify Configuration
 
 Test the configuration to ensure everything is working:
 
@@ -264,6 +303,8 @@ kubectl exec -n ollama deploy/ollama -- ollama list
 - **Open WebUI Docs**: https://docs.openwebui.com/
 - **Scout Query Prompt**: `files/gpt-oss-scout-query-prompt.md`
 - **Link Sanitizer Filter**: `files/link_sanitizer_filter.py`
-- **Security ADRs**:
+- **Context Summarization Filter**: `files/context_summarization_filter.py`
+- **ADRs**:
   - [ADR 0009: Content Security Policy](../../../docs/internal/adr/0009-open-webui-content-security-policy.md)
   - [ADR 0010: Link Exfiltration Filter](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)
+  - [ADR 0013: Context Summarization Filter](../../../docs/internal/adr/0013-open-webui-context-summarization-filter.md)

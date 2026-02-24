@@ -22,3 +22,4 @@ spec:
       connect-src 'self' ws: wss: {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
       frame-src 'self';
       form-action 'self' {{ keycloak_base_url }} {{ oauth2_proxy_base_url }};
+      frame-ancestors 'none'
