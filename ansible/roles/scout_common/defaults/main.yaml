@@ -82,6 +82,7 @@ staging_self_signed_tls_key_path: /etc/rancher/k3s/tls/staging-tls.key
 postgres_cluster_namespace: '{{ scout_core_namespace }}'
 keycloak_namespace: '{{ scout_core_namespace }}'
 valkey_namespace: '{{ scout_core_namespace }}'
+valkey_helm_release_name: valkey
 launchpad_namespace: '{{ scout_core_namespace }}'
 
 # Data layer
