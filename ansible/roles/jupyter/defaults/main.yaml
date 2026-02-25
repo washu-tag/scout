@@ -90,6 +90,11 @@ jupyter_cpu_profile:
 jupyter_profiles:
   - '{{ jupyter_cpu_profile }}'
 
+  # Jupyter OpenCode configuration
+jupyter_opencode_model: '{{ scout_model_name | default("gpt-oss-120b-long:latest") }}'
+jupyter_opencode_model_display_name: 'Scout LLM'
+jupyter_opencode_model_context_limit: '{{ scout_model_num_ctx | default(131072) }}'
+
 # jupyterhub-idle-culler settings
 jupyter_cull_enabled: true
 jupyter_cull_every: 600

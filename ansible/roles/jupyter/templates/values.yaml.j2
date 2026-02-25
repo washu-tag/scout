@@ -166,6 +166,10 @@ singleuser:
     TRINO_USER: '{{ trino_user }}'
     TRINO_CATALOG: 'delta'
     TRINO_SCHEMA: 'default'
+{% if enable_chat | bool %}
+    # OpenCode AI coding agent configuration
+    OPENCODE_CONFIG: '/etc/opencode/opencode.json'
+{% endif %}
   extraFiles:
     jupyter-server-config:
       mountPath: /etc/jupyter/jupyter_server_config.py
@@ -193,6 +197,33 @@ singleuser:
 {% if jupyter_extension_manager_mode == 'disabled' %}
           # Disable Extension Manager UI (prevent users from installing extensions)
           "@jupyterlab/extensionmanager-extension": true
+{% endif %}
+{% if enable_chat | bool %}
+    opencode-config:
+      mountPath: /etc/opencode/opencode.json
+      stringData: |
+        {
+          "$schema": "https://opencode.ai/config.json",
+          "provider": {
+            "ollama": {
+              "npm": "@ai-sdk/openai-compatible",
+              "name": "Scout Ollama",
+              "options": {
+                "baseURL": "http://ollama.{{ chatbot_namespace }}:11434/v1"
+              },
+              "models": {
+                "{{ jupyter_opencode_model }}": {
+                  "name": "{{ jupyter_opencode_model_display_name }}",
+                  "limit": {
+                    "context": {{ jupyter_opencode_model_context_limit }},
+                    "output": 65536
+                  }
+                }
+              }
+            }
+          },
+          "model": "ollama/{{ jupyter_opencode_model }}"
+        }
 {% endif %}
 
   storage:

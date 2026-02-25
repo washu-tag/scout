@@ -19,4 +19,12 @@ RUN python3 -m pip install --no-cache-dir -r /tmp/requirements.txt && \
     fix-permissions "/home/${NB_USER}" && \
     rm /tmp/requirements.txt
 
+# Install OpenCode AI coding agent (https://opencode.ai)
+# Install to a temp location then move to $CONDA_DIR/bin because the default install
+# location ($HOME/.opencode/bin) is masked when JupyterHub mounts persistent storage
+# over /home/jovyan at runtime
+RUN curl -fsSL https://opencode.ai/install | HOME=/tmp/opencode-install bash && \
+    mv /tmp/opencode-install/.opencode/bin/opencode ${CONDA_DIR}/bin/opencode && \
+    rm -rf /tmp/opencode-install
+
 ADD --chown=${NB_UID}:${NB_GID} samples /opt/scout/samples

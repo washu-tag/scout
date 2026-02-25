@@ -29,4 +29,12 @@ RUN mamba install -y -n base nb_conda_kernels faiss-gpu && \
 # Configure conda to store user environments in home directory (persisted via PVC)
 RUN printf "envs_dirs:\n  - /home/jovyan/envs\n  - /opt/conda/envs\n" >> /opt/conda/.condarc
 
+# Install OpenCode AI coding agent (https://opencode.ai)
+# Install to a temp location then move to $CONDA_DIR/bin because the default install
+# location ($HOME/.opencode/bin) is masked when JupyterHub mounts persistent storage
+# over /home/jovyan at runtime
+RUN curl -fsSL https://opencode.ai/install | HOME=/tmp/opencode-install bash && \
+    mv /tmp/opencode-install/.opencode/bin/opencode ${CONDA_DIR}/bin/opencode && \
+    rm -rf /tmp/opencode-install
+
 ADD --chown=${NB_UID}:${NB_GID} samples /opt/scout/samples
