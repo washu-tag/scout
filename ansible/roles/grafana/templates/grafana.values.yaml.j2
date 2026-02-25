@@ -35,11 +35,11 @@ grafana.ini:
     from_name: "{{ grafana_smtp_from_name | default('Scout') }}"
     skip_verify: "{{ grafana_smtp_skip_verify | default(false) }}"
 {% endif %}
-{% if air_gapped | default(false) %}
   analytics:
     reporting_enabled: false
     check_for_updates: false
     check_for_plugin_updates: false
+{% if air_gapped | default(false) %}
   plugins:
     public_key_retrieval_disabled: true
     preinstall_disabled: true
