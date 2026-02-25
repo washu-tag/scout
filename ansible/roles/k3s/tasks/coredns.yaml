@@ -3,6 +3,12 @@
 # Manages the coredns-custom ConfigMap in kube-system namespace
 # to override CoreDNS behavior (deny-all in air-gapped mode,
 # selective domain forwarding, arbitrary server blocks)
+#
+# Uses force replacement (not strategic merge or server-side apply)
+# to ensure the ConfigMap exactly matches the rendered template.
+# Strategic merge patch won't remove stale keys when variables are
+# removed from inventory, and server-side apply has field ownership
+# issues when transitioning from other apply methods.
 
 - name: Determine if CoreDNS customization is needed
   ansible.builtin.set_fact:
@@ -13,6 +19,14 @@
         (coredns_extra_server_blocks | default({}) | length > 0)
       }}
 
+- name: Get current coredns-custom ConfigMap
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    name: coredns-custom
+    namespace: kube-system
+  register: _coredns_current_configmap
+
 - name: Apply CoreDNS custom ConfigMap
   when: _coredns_custom_needed | bool
   block:
@@ -21,9 +35,17 @@
         _coredns_custom_data: >-
           {{ lookup('template', 'coredns-custom-data.yaml.j2') | from_yaml }}
 
-    - name: Create coredns-custom ConfigMap
+    - name: Check if CoreDNS ConfigMap needs updating
+      ansible.builtin.set_fact:
+        _coredns_configmap_changed: >-
+          {{ (_coredns_current_configmap.resources | length == 0) or
+             (_coredns_current_configmap.resources[0].data | default({}) != _coredns_custom_data) }}
+
+    - name: Replace coredns-custom ConfigMap
+      when: _coredns_configmap_changed | bool
       kubernetes.core.k8s:
         state: present
+        force: true
         definition:
           apiVersion: v1
           kind: ConfigMap
@@ -31,10 +53,9 @@
             name: coredns-custom
             namespace: kube-system
           data: '{{ _coredns_custom_data }}'
-      register: _coredns_configmap_result
 
     - name: Restart CoreDNS to pick up custom configuration
-      when: _coredns_configmap_result.changed
+      when: _coredns_configmap_changed | bool
       block:
         - name: Rollout restart CoreDNS deployment
           ansible.builtin.command:
@@ -47,7 +68,8 @@
           changed_when: false
 
 - name: Remove CoreDNS custom ConfigMap when not needed
-  when: not (_coredns_custom_needed | bool)
+  when: not (_coredns_custom_needed | bool) and
+    (_coredns_current_configmap.resources | length > 0)
   block:
     - name: Delete coredns-custom ConfigMap
       kubernetes.core.k8s:
@@ -56,10 +78,8 @@
         kind: ConfigMap
         name: coredns-custom
         namespace: kube-system
-      register: _coredns_configmap_removed
 
     - name: Restart CoreDNS after removing custom configuration
-      when: _coredns_configmap_removed.changed
       block:
         - name: Rollout restart CoreDNS deployment
           ansible.builtin.command:
