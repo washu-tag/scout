@@ -123,7 +123,7 @@
       spec:
         redirectRegex:
           regex: '^https?://[^/]+(.*)'
-          replacement: 'https://{{ server_hostname }}${1}'
+          replacement: 'https://{{ server_hostname }}/'
           permanent: false
 
 - name: Create catch-all Ingress for unknown subdomains
@@ -138,10 +138,10 @@
         annotations:
           traefik.ingress.kubernetes.io/router.priority: '1'
           traefik.ingress.kubernetes.io/router.middlewares: >-
-            {{ traefik_namespace }}-security-headers@kubernetescrd,
             {{ traefik_namespace }}-oauth2-proxy-error@kubernetescrd,
             {{ traefik_namespace }}-oauth2-proxy-auth@kubernetescrd,
-            {{ traefik_namespace }}-redirect-to-launchpad@kubernetescrd
+            {{ traefik_namespace }}-redirect-to-launchpad@kubernetescrd,
+            {{ traefik_namespace }}-security-headers@kubernetescrd
       spec:
         ingressClassName: traefik
         rules:

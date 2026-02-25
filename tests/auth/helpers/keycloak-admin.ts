@@ -247,6 +247,16 @@ export class KeycloakAdmin {
     return (await res.json()) as { id: string; name: string }[];
   }
 
+  /** Remove credentials and group memberships from a user. */
+  async cleanupUser(username: string): Promise<void> {
+    const userId = await this.getUserByUsername(username);
+    await this.removeUserCredentials(userId);
+    const groups = await this.getUserGroups(userId);
+    for (const group of groups) {
+      await this.removeUserFromGroup(userId, group.id);
+    }
+  }
+
   /** Remove a user from a group. */
   async removeUserFromGroup(userId: string, groupId: string): Promise<void> {
     const url = `${this.baseUrl}/admin/realms/scout/users/${userId}/groups/${groupId}`;

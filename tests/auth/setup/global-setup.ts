@@ -30,12 +30,7 @@ async function globalSetup(): Promise<void> {
   console.log('Cleaning up stale state for test users if they already exist');
   for (const username of testUsernames) {
     try {
-      const userId = await keycloak.getUserByUsername(username);
-      await keycloak.removeUserCredentials(userId);
-      const groups = await keycloak.getUserGroups(userId);
-      for (const group of groups) {
-        await keycloak.removeUserFromGroup(userId, group.id);
-      }
+      await keycloak.cleanupUser(username);
     } catch {
       // User doesn't exist yet, nothing to clean up
     }
