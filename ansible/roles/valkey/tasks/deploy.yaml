@@ -29,7 +29,7 @@
 - name: Wait for Valkey to be ready
   kubernetes.core.k8s_info:
     api_version: apps/v1
-    kind: StatefulSet
+    kind: Deployment
     name: '{{ valkey_helm_release_name }}'
     namespace: '{{ valkey_namespace }}'
     wait: true
