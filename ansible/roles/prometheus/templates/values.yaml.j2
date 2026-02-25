@@ -67,7 +67,7 @@ extraScrapeConfigs: |
     bearer_token_file: /etc/secrets/jupyterhub/metrics-api-token
     scheme: http
     static_configs:
-      - targets: ['proxy-public.jupyter']
+      - targets: ['proxy-public.{{ jupyter_namespace }}']
 
   - job_name: hl7log-extractor
     metrics_path: /actuator/prometheus
