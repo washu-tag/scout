@@ -193,7 +193,7 @@
             serviceAccountName: '{{ minio_tenant_name }}-sa'
             containers:
               - name: mc
-                image: '{{ minio_client_image }}'
+                image: '{{ minio_client_image }}:{{ minio_client_image_tag }}'
                 command: ['/bin/sh', '-c']
                 args:
                   - |

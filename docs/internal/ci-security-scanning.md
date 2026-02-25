@@ -10,7 +10,8 @@ Scout's CI pipeline includes several layers of automated security scanning. This
 | **Trivy image scan** | Container images built in CI | `ci.yaml` (scan-images job) | Yes (configurable per image via `allow-failure`) | Security tab > Code scanning |
 | **Semgrep** | K8s, YAML, Dockerfiles, secrets, OWASP | `security.yaml` | Yes (new findings only, via Require code scanning results) | Security tab, PR annotations |
 | **Dependency review** | New dependencies introduced in a PR | `dependency-review.yaml` | Yes (critical vulns only) | PR comment |
-| **Dependabot** | GitHub Actions version updates | `dependabot.yml` | N/A (opens PRs) | Pull requests |
+| **Dependabot** | GitHub Actions, npm, pip, gradle, Docker base images | `dependabot.yml` | N/A (opens PRs) | Pull requests |
+| **Renovate** | `versions.yaml` — Helm charts, Docker images, GitHub releases | `renovate.yaml` | N/A (opens PRs) | Pull requests, Dependency Dashboard issue |
 
 ## Files
 
@@ -23,8 +24,10 @@ Scout's CI pipeline includes several layers of automated security scanning. This
 │   ├── ci.yaml                  # build-and-upload + scan-images matrices, publish gated on scans
 │   ├── codeql.yml               # CodeQL with security-extended queries
 │   ├── dependency-review.yaml   # GitHub-native dependency diff on PRs
-│   └── security.yaml            # Semgrep
-├── dependabot.yml               # GitHub Actions version update PRs
+│   ├── security.yaml            # Semgrep
+│   └── renovate.yaml            # Self-hosted Renovate for versions.yaml
+├── dependabot.yml               # Dependabot: Actions, npm, pip, gradle, Docker
+renovate.json5                   # Renovate config (custom regex manager for versions.yaml)
 .semgrepignore                   # Excluded paths for Semgrep
 ```
 
@@ -121,9 +124,43 @@ This only reviews **newly added or changed** dependencies — existing dependenc
 
 ### Dependabot
 
-Configured in `.github/dependabot.yml` for **GitHub Actions version updates only** (weekly). This keeps pinned action commit hashes current.
+Configured in `.github/dependabot.yml` to open PRs for available updates across all application dependency ecosystems (weekly):
 
-Dependency vulnerability alerts (npm, pip, gradle, Docker base images) are handled separately via **Dependabot security updates** enabled in the GitHub UI, which only opens PRs when a known CVE is found — not for every new version.
+| Ecosystem | Directories |
+|---|---|
+| `github-actions` | `/` |
+| `npm` | `/launchpad` |
+| `pip` | `/extractor/hl7-transformer`, `/helm/jupyter/notebook`, `/helm/jupyter/embedding-notebook`, `/helm/superset` |
+| `gradle` | `/extractor/hl7log-extractor`, `/keycloak/event-listener`, `/tests` |
+| `docker` | `/extractor/hl7-transformer`, `/extractor/hl7log-extractor`, `/launchpad`, `/helm/jupyter/notebook`, `/helm/jupyter/embedding-notebook`, `/helm/superset`, `/keycloak` |
+
+Dependabot security updates are also enabled in the GitHub UI, which opens PRs when a known CVE is found in any supported ecosystem — even if the directory isn't listed in `dependabot.yml`.
+
+Dependabot does **not** monitor `ansible/group_vars/all/versions.yaml` — that is handled by Renovate (see below).
+
+### Renovate
+
+Configured in `renovate.json5` and runs as a self-hosted GitHub Action (`.github/workflows/renovate.yaml`) weekly on Mondays at 06:00 UTC.
+
+Renovate monitors `ansible/group_vars/all/versions.yaml` for available updates to infrastructure dependencies: Helm charts, Docker images, and GitHub releases (~40 pinned versions). It uses a custom regex manager that reads `# renovate:` annotation comments above each version line to determine the datasource, package name, and registry URL.
+
+**Key configuration:**
+- `osvVulnerabilityAlerts: true` — flags dependencies with known CVEs via OSV.dev
+- `dependencyDashboard: true` — creates a "Dependency Dashboard" GitHub issue listing all detected dependencies and their update status
+- `prConcurrentLimit: 5` — limits concurrent open PRs
+- `automerge: false` — all updates require human review
+- `enabledManagers: ["custom.regex"]` — only manages `versions.yaml`; standard ecosystems are handled by Dependabot
+
+**Authentication:** Uses a dedicated GitHub App (`scout-renovate`) via `RENOVATE_APP_ID` and `RENOVATE_APP_PRIVATE_KEY` repository secrets. The app needs Contents (R/W), Issues (R/W), Pull requests (R/W), and Metadata (R) permissions.
+
+**Adding a new dependency to `versions.yaml`:** Add a `# renovate:` comment above the version line:
+
+```yaml
+# renovate: datasource=helm registryUrl=https://example.com/charts depName=my-chart
+my_chart_version: ~1.2.0
+```
+
+See `renovate.json5` for the full regex pattern and ADR 0014 for the design decision.
 
 ## Reviewing findings
 
@@ -264,5 +301,7 @@ In `.github/workflows/codeql.yml`, the `queries` field controls the query pack. 
 
 - **CodeQL**: Tuesdays at 01:36 UTC (configured in `codeql.yml`)
 - **Semgrep**: Mondays at 06:00 UTC (configured in `security.yaml`)
+- **Renovate**: Mondays at 06:00 UTC (configured in `renovate.yaml`)
+- **Dependabot**: Weekly (configured in `dependabot.yml`; exact day managed by GitHub)
 
-Scheduled scans catch newly disclosed CVEs and rule updates between code changes.
+Scheduled scans catch newly disclosed CVEs and rule updates between code changes. Renovate and Dependabot check for available dependency updates on the same cadence.

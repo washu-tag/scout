@@ -1,0 +1,54 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+
+  // Self-hosted: skip onboarding PR, config is already here
+  "onboarding": false,
+  "requireConfig": "optional",
+
+  // Don't auto-merge — test automation isn't robust enough
+  "automerge": false,
+
+  // CVE detection via OSV.dev
+  "osvVulnerabilityAlerts": true,
+
+  // Dependency dashboard (GitHub issue) for overview of all pending updates
+  "dependencyDashboard": true,
+  "dependencyDashboardOSVVulnerabilitySummary": true,
+
+  // Limit concurrent PRs to avoid noise
+  "prConcurrentLimit": 5,
+
+  // Labels
+  "labels": ["dependencies"],
+  "vulnerabilityAlerts": {
+    "labels": ["dependencies", "security"],
+    "enabled": true
+  },
+
+  // Remind reviewers about coupled dependencies
+  "packageRules": [
+    {
+      "matchDepNames": ["cass-operator"],
+      "prBodyNotes": [
+        "**Reminder:** Check if `cassandra_server_version` in `versions.yaml` needs updating for compatibility with this cass-operator version. See [K8ssandra release notes](https://github.com/k8ssandra/cass-operator/releases)."
+      ]
+    }
+  ],
+
+  // Only manage versions.yaml (leave npm/pip/gradle to Dependabot)
+  "enabledManagers": ["custom.regex"],
+
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["ansible/group_vars/all/versions.yaml"],
+      "matchStrings": [
+        // Generic annotated pattern:
+        //   # renovate: datasource=helm registryUrl=https://... depName=chart/name
+        //   some_version: ~1.2.3
+        "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+(?:registryUrl=(?<registryUrl>[^\\s]+)\\s+)?depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\n[a-z0-9_]+(?:_version|_tag|_image_tag):\\s*[~']?(?<currentValue>[^\\s']+)"
+      ]
+    }
+  ]
+}

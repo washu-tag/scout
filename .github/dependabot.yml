@@ -1,5 +1,6 @@
 version: 2
 updates:
+  # GitHub Actions versions
   - package-ecosystem: 'github-actions'
     directories:
       - '/'
@@ -10,3 +11,87 @@ updates:
       github-actions:
         patterns:
           - '*'
+
+  # Launchpad (Next.js/React)
+  - package-ecosystem: 'npm'
+    directory: '/launchpad'
+    schedule:
+      interval: 'weekly'
+
+  # HL7 Transformer (Python/PySpark)
+  - package-ecosystem: 'pip'
+    directory: '/extractor/hl7-transformer'
+    schedule:
+      interval: 'weekly'
+
+  # HL7 Log Extractor (Java/Gradle)
+  - package-ecosystem: 'gradle'
+    directory: '/extractor/hl7log-extractor'
+    schedule:
+      interval: 'weekly'
+
+  # PySpark Notebook
+  - package-ecosystem: 'pip'
+    directory: '/helm/jupyter/notebook'
+    schedule:
+      interval: 'weekly'
+
+  # Embedding Notebook
+  - package-ecosystem: 'pip'
+    directory: '/helm/jupyter/embedding-notebook'
+    schedule:
+      interval: 'weekly'
+
+  # Keycloak Event Listener (Java/Gradle)
+  - package-ecosystem: 'gradle'
+    directory: '/keycloak/event-listener'
+    schedule:
+      interval: 'weekly'
+
+  # Integration tests (Java/Gradle)
+  - package-ecosystem: 'gradle'
+    directory: '/tests'
+    schedule:
+      interval: 'weekly'
+
+  # Superset (Python dependencies)
+  - package-ecosystem: 'pip'
+    directory: '/helm/superset'
+    schedule:
+      interval: 'weekly'
+
+  # Dockerfile base images
+  - package-ecosystem: 'docker'
+    directory: '/extractor/hl7-transformer'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/extractor/hl7log-extractor'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/launchpad'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/helm/jupyter/notebook'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/helm/jupyter/embedding-notebook'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/helm/superset'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/keycloak'
+    schedule:
+      interval: 'weekly'
