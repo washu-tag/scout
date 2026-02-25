@@ -84,7 +84,7 @@ k3s_package_download_image: rockylinux/rockylinux:9.6
 
 # Domains to forward to /etc/resolv.conf (e.g., Tailscale, VPN domains)
 # Used in air-gapped mode to selectively allow external DNS resolution
-# Example: ["ts.net", "rcif.io"]
+# Example: ["ts.net"]
 coredns_forward_domains: []
 
 # Arbitrary CoreDNS server blocks (dict of name -> raw Corefile content)
@@ -95,9 +95,9 @@ coredns_forward_domains: []
 # Example:
 #   coredns_extra_server_blocks:
 #     scout-override: !unsafe |
-#       scout.washu.edu:53 {
-#         template IN A scout.washu.edu {
-#           answer "{{ .Name }} 60 IN A 10.27.107.4"
+#       app.example.com:53 {
+#         template IN A app.example.com {
+#           answer "{{ .Name }} 60 IN A 198.51.100.10"
 #         }
 #       }
 coredns_extra_server_blocks: {}

@@ -688,7 +688,6 @@ The configuration uses a three-layer model:
 # Domains to forward to /etc/resolv.conf (e.g., Tailscale, VPN domains)
 coredns_forward_domains:
   - ts.net
-  - rcif.io
 ```
 
 **Layer 3 (escape hatch):** Use `coredns_extra_server_blocks` for arbitrary CoreDNS server blocks. This works with or without air-gapped mode. Keys are descriptive names; the `.server` suffix is auto-appended to form the ConfigMap data key.
@@ -696,9 +695,9 @@ coredns_forward_domains:
 ```yaml
 coredns_extra_server_blocks:
   scout-override: !unsafe |
-    scout.washu.edu:53 {
-      template IN A scout.washu.edu {
-        answer "{{ .Name }} 60 IN A 10.27.107.4"
+    app.example.com:53 {
+      template IN A app.example.com {
+        answer "{{ .Name }} 60 IN A 198.51.100.10"
       }
     }
 ```

@@ -57,7 +57,6 @@ When `air_gapped: true`, the role automatically creates:
 ```yaml
 coredns_forward_domains:
   - ts.net
-  - rcif.io
 ```
 
 ### Layer 3: Arbitrary Server Blocks
@@ -67,9 +66,9 @@ coredns_forward_domains:
 ```yaml
 coredns_extra_server_blocks:
   scout-override: !unsafe |
-    scout.washu.edu:53 {
-      template IN A scout.washu.edu {
-        answer "{{ .Name }} 60 IN A 10.27.107.4"
+    app.example.com:53 {
+      template IN A app.example.com {
+        answer "{{ .Name }} 60 IN A 198.51.100.10"
       }
     }
 ```
