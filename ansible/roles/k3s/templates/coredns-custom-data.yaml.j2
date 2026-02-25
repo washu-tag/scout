@@ -23,23 +23,12 @@ airgap.server: |
     cache 30
   }
 {% endif %}
-{# Layer 2a: Forward domains #}
+{# Layer 2: Forward domains #}
 {% if coredns_forward_domains | default([]) | length > 0 %}
 forward-domains.server: |
   {{ coredns_forward_domains | join(' ') }}:53 {
     forward . /etc/resolv.conf
     cache 300
-  }
-{% endif %}
-{# Layer 2b: Host domains #}
-{% if coredns_host_domains | default([]) | length > 0 %}
-host-domains.server: |
-  {{ coredns_host_domains | join(' ') }}:53 {
-    hosts /etc/coredns/NodeHosts {
-      ttl 60
-      reload 15s
-    }
-    cache 30
   }
 {% endif %}
 {# Layer 3: Extra server blocks (keys get .server suffix appended) #}

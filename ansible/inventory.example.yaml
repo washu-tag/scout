@@ -217,10 +217,6 @@ k3s_cluster:
     #   - ts.net
     #   - rcif.io
     #
-    # Domains to resolve via /etc/coredns/NodeHosts:
-    # coredns_host_domains:
-    #   - nrg.wustl.edu
-    #
     # Arbitrary CoreDNS server blocks (works with or without air_gapped):
     # coredns_extra_server_blocks:
     #   scout-override: !unsafe |

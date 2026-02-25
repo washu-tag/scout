@@ -10,7 +10,6 @@
       {{
         (air_gapped | default(false) | bool) or
         (coredns_forward_domains | default([]) | length > 0) or
-        (coredns_host_domains | default([]) | length > 0) or
         (coredns_extra_server_blocks | default({}) | length > 0)
       }}
 

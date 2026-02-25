@@ -87,10 +87,6 @@ k3s_package_download_image: rockylinux/rockylinux:9.6
 # Example: ["ts.net", "rcif.io"]
 coredns_forward_domains: []
 
-# Domains to resolve via /etc/coredns/NodeHosts (K3s-managed hosts file)
-# Example: ["nrg.wustl.edu"]
-coredns_host_domains: []
-
 # Arbitrary CoreDNS server blocks (dict of name -> raw Corefile content)
 # Keys become ConfigMap data keys with ".server" suffix auto-appended
 # Works independently of air_gapped mode

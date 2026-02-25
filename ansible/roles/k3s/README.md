@@ -50,20 +50,14 @@ When `air_gapped: true`, the role automatically creates:
 - A deny-all override that returns NXDOMAIN for all unknown domains (prevents DNS flooding of upstream resolvers like Tailscale MagicDNS)
 - Server blocks for `cluster.local` and reverse DNS so internal Kubernetes resolution continues to work
 
-### Layer 2: Structured Domain Lists
-
-Two variables for common DNS patterns:
+### Layer 2: Forward Domains
 
 - **`coredns_forward_domains`**: List of domains to forward to `/etc/resolv.conf` (e.g., Tailscale, VPN domains)
-- **`coredns_host_domains`**: List of domains to resolve via `/etc/coredns/NodeHosts` (K3s-managed hosts file)
 
 ```yaml
 coredns_forward_domains:
   - ts.net
   - rcif.io
-
-coredns_host_domains:
-  - nrg.wustl.edu
 ```
 
 ### Layer 3: Arbitrary Server Blocks
