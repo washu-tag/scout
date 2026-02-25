@@ -119,6 +119,20 @@
         selector:
           app: superset
 
+- name: Create Secret with Valkey password for Superset
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: superset-valkey-auth
+        namespace: '{{ superset_namespace }}'
+      type: Opaque
+      stringData:
+        REDIS_PASSWORD: '{{ valkey_password }}'
+
 - name: Parse Superset Helm values
   ansible.builtin.set_fact:
     superset_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

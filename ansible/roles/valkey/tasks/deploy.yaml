@@ -9,6 +9,21 @@
   vars:
     ns: '{{ valkey_namespace }}'
 
+- name: Create Valkey auth secret
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ valkey_helm_release_name }}-auth'
+        namespace: '{{ valkey_namespace }}'
+      type: Opaque
+      stringData:
+        password: '{{ valkey_password }}'
+        password-file: '{{ {"redis://localhost:6379": valkey_password} | to_json }}'
+
 - name: Parse Valkey Helm values
   ansible.builtin.set_fact:
     valkey_helm_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

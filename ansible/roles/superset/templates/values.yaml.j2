@@ -4,6 +4,12 @@ image:
 redis:
   # Disable embedded Redis - using centralized Valkey instance instead
   enabled: false
+extraEnvRaw:
+  - name: REDIS_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: superset-valkey-auth
+        key: REDIS_PASSWORD
 extraSecretEnv:
   SUPERSET_SECRET_KEY: "{{ superset_secret }}"
 ingress:
@@ -28,7 +34,7 @@ supersetNode:
     db_name: "{{ superset_database }}"
     redis_host: "{{ valkey_helm_release_name }}.{{ valkey_namespace }}"
     redis_port: "6379"
-    redis_password: "{{ valkey_password }}"
+    redis_password: "placeholder"
     redis_cache_db: "0"
     redis_celery_db: "0"
   resources: {{ superset_resources_default | combine(superset_resources | default({}), recursive=true) | to_json }}

@@ -1,7 +1,10 @@
 auth:
   enabled: true
-  aclConfig: |
-    user default on >{{ valkey_password }} ~* &* +@all
+  usersExistingSecret: '{{ valkey_helm_release_name }}-auth'
+  aclUsers:
+    default:
+      permissions: "~* &* +@all"
+      passwordKey: password
 
 service:
   type: ClusterIP
@@ -24,5 +27,14 @@ valkeyConfig: |
 
 metrics:
   enabled: true
+  exporter:
+    extraExporterSecrets:
+      - name: '{{ valkey_helm_release_name }}-auth'
+    extraVolumeMounts:
+      - name: '{{ valkey_helm_release_name }}-auth-exporter'
+        mountPath: /valkey-auth
+        readOnly: true
+    args:
+      - '--redis.password-file=/valkey-auth/password-file'
   serviceMonitor:
     enabled: false
