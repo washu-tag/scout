@@ -33,12 +33,21 @@ The role is organized into focused task files:
 - `selinux.yaml`: SELinux auto-detection and package installation
 - `registry.yaml`: Harbor registry mirror configuration
 - `server.yaml`: k3s server (control plane) installation
+- `resolv_conf.yaml`: Filtered resolv.conf for stripping host search domains
 - `coredns.yaml`: CoreDNS customization (deny-all for air-gapped, domain forwarding, custom server blocks)
 - `agent.yaml`: k3s agent (worker) installation
 - `gpu.yaml`: GPU worker configuration
 
 **Templates:**
 - `templates/coredns-custom-data.yaml.j2`: Generates the `data:` section for the `coredns-custom` ConfigMap
+
+## Pod DNS Configuration
+
+By default, k3s copies the host's `/etc/resolv.conf` into pod DNS configuration. If the host has extra search domains (e.g., Tailscale MagicDNS adds `.ts.net`), these leak into pods. With Kubernetes's default `ndots:5`, every DNS lookup generates extra queries with these suffixes appended, which can cause resolution failures and DNS query floods.
+
+Set `k3s_strip_host_search_domains: true` to create a filtered `/etc/rancher/k3s/resolv.conf` containing only `nameserver` lines (no `search` or `domain` directives) and pass `--resolv-conf` to k3s. This ensures pods only have standard Kubernetes search domains (`<ns>.svc.cluster.local svc.cluster.local cluster.local`).
+
+**Task file:** `resolv_conf.yaml` — runs on all nodes (server and agent) before k3s installation.
 
 ## CoreDNS Customization
 

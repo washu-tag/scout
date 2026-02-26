@@ -674,6 +674,17 @@ base_dir: /var/lib/rancher/k3s/storage
 kubeconfig_group: docker
 ```
 
+##### Pod DNS Configuration
+
+By default, k3s copies the host's `/etc/resolv.conf` into pod DNS configuration. If the host has extra search domains (e.g., Tailscale MagicDNS adds `.ts.net`), these leak into pods. With Kubernetes's default `ndots:5`, every DNS lookup generates extra queries with these suffixes appended, which can cause resolution failures and DNS query floods.
+
+```yaml
+# Strip host search domains from pod DNS config
+k3s_strip_host_search_domains: true
+```
+
+When enabled, k3s receives a filtered resolv.conf containing only `nameserver` lines, so pods get only the standard Kubernetes search domains.
+
 ##### CoreDNS Customization
 
 Scout can customize CoreDNS behavior by managing a `coredns-custom` ConfigMap in `kube-system`. This is primarily needed in air-gapped deployments where CoreDNS forwards unknown domains to `/etc/resolv.conf`, which may point to an upstream resolver (e.g., Tailscale MagicDNS) that gets overwhelmed with failing requests. It can also be used in non-air-gapped environments for DNS overrides.
