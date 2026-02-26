@@ -325,8 +325,7 @@ If configured with `external_url` in `inventory.yaml` and DNS/TLS setup:
 ### From Within Cluster
 Services communicate via Kubernetes service names:
 - `superset.<namespace>.svc.cluster.local`
-- `proxy-public.jupyter.svc.cluster.local`
-- `grafana.grafana.svc.cluster.local`
+- `grafana.<namespace>.svc.cluster.local`
 - etc.
 
 ## Common Tasks
