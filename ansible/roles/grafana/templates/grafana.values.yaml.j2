@@ -19,6 +19,8 @@ grafana.ini:
     role_attribute_strict: true
     allow_assign_grafana_admin: true
     signout_redirect_url: '{{ oauth2_proxy_signout_url }}'
+  security:
+    disable_gravatar: true
   server:
     root_url: 'https://grafana.{{ server_hostname }}'
   metrics:
