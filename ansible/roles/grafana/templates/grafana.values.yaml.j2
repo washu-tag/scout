@@ -170,14 +170,14 @@ datasources:
       - name: Prometheus
         type: prometheus
         uid: prometheus_datasource_01
-        url: 'http://prometheus-server.{{ prometheus_namespace }}.svc.cluster.local:9090'
+        url: 'http://prometheus-server.{{ prometheus_namespace }}:9090'
         editable: false
         isDefault: true
 
       - name: Loki
         type: loki
         uid: loki_datasource_01
-        url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local/'
+        url: 'http://loki-gateway.{{ loki_namespace }}/'
         editable: false
         isDefault: false
         jsonData:

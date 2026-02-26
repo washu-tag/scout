@@ -65,7 +65,7 @@ open_webui_redis_database_persistence_enabled: true
 open_webui_redis_password: ''
 
 # Redis connection URL (computed from above settings)
-open_webui_redis_url: 'redis://default:{{ open_webui_redis_password | urlencode }}@{{ open_webui_redis_database_name }}.{{ redis_namespace }}.svc.cluster.local:{{ open_webui_redis_database_port }}'
+open_webui_redis_url: 'redis://default:{{ open_webui_redis_password | urlencode }}@{{ open_webui_redis_database_name }}.{{ redis_namespace }}:{{ open_webui_redis_database_port }}'
 
 # Resource configuration (dev defaults)
 # WARNING: These are minimal defaults suitable for small models only.

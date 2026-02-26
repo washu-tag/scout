@@ -24,3 +24,136 @@
       register: verify_result
       changed_when: false
       failed_when: verify_result.rc != 0
+
+- name: Verify pod DNS configuration
+  hosts: server
+  gather_facts: false
+  environment: '{{ cluster_k8s_environment }}'
+  roles:
+    - role: scout_common
+  tasks:
+    - name: Check if kubeconfig exists
+      ansible.builtin.stat:
+        path: '{{ kubeconfig_yaml }}'
+      register: _kubeconfig_stat
+
+    - name: Check if any DNS verification is needed
+      ansible.builtin.set_fact:
+        _dns_verify_needed: >-
+          {{ _kubeconfig_stat.stat.exists and
+             ((k3s_strip_host_search_domains | default(false) | bool) or
+              (coredns_forward_domains | default([]) | length > 0) or
+              (air_gapped | default(false) | bool)) }}
+
+    - name: Run pod DNS checks
+      when: _dns_verify_needed | bool
+      block:
+        - name: Create temporary busybox pod for DNS testing
+          kubernetes.core.k8s:
+            state: present
+            definition:
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                name: dns-verify
+                namespace: default
+              spec:
+                containers:
+                  - name: busybox
+                    image: busybox:1.37
+                    command: ['sleep', '300']
+                restartPolicy: Never
+            wait: true
+            wait_timeout: 120
+            wait_condition:
+              type: Ready
+              status: 'True'
+
+        - name: Verify pod resolv.conf has no host search domains
+          when: k3s_strip_host_search_domains | default(false) | bool
+          block:
+            - name: Read pod resolv.conf
+              ansible.builtin.command:
+                cmd: kubectl exec dns-verify -- cat /etc/resolv.conf
+              register: _pod_resolv_conf
+              changed_when: false
+
+            - name: Extract search line from pod resolv.conf
+              ansible.builtin.set_fact:
+                _pod_search_line: "{{ _pod_resolv_conf.stdout | regex_search('(?m)^search\\s+(.*)$', '\\1') | default([''], true) | first }}"
+
+            - name: Assert only Kubernetes search domains present
+              ansible.builtin.assert:
+                that:
+                  - _pod_search_line is regex('^(\\S+\\.svc\\.cluster\\.local\\s+svc\\.cluster\\.local\\s+cluster\\.local\\s*)?$')
+                fail_msg: >-
+                  Host search domains leaked into pod DNS config.
+                  Search line: {{ _pod_search_line }}
+                  Full resolv.conf: {{ _pod_resolv_conf.stdout }}
+                success_msg: Pod resolv.conf contains only Kubernetes search domains
+
+        - name: Verify CoreDNS forwarding for configured domains
+          when: coredns_forward_domains | default([]) | length > 0
+          block:
+            - name: Test DNS resolution for forwarded domains
+              ansible.builtin.command:
+                cmd: 'kubectl exec dns-verify -- nslookup {{ item }}'
+              loop: '{{ coredns_forward_domains }}'
+              register: _forward_dns_results
+              changed_when: false
+              failed_when: _forward_dns_results.rc != 0
+
+        - name: Verify air-gapped DNS deny-all is working
+          when: air_gapped | default(false) | bool
+          block:
+            - name: Test that external DNS is blocked
+              ansible.builtin.command:
+                cmd: kubectl exec dns-verify -- nslookup example.com
+              register: _external_dns_result
+              changed_when: false
+              failed_when: false
+
+            - name: Assert external DNS resolution fails
+              ansible.builtin.assert:
+                that:
+                  - _external_dns_result.rc != 0
+                fail_msg: >-
+                  External DNS resolution should be blocked in air-gapped mode,
+                  but example.com resolved successfully.
+                success_msg: External DNS correctly blocked in air-gapped mode
+
+        - name: Check CoreDNS logs for host search domain queries
+          when: air_gapped | default(false) | bool
+          block:
+            - name: Get CoreDNS pod name
+              ansible.builtin.command:
+                cmd: >-
+                  kubectl get pods -n kube-system -l k8s-app=kube-dns
+                  -o jsonpath='{.items[0].metadata.name}'
+              register: _coredns_pod
+              changed_when: false
+
+            - name: Fetch recent CoreDNS logs
+              ansible.builtin.command:
+                cmd: 'kubectl logs -n kube-system {{ _coredns_pod.stdout }} --tail=500'
+              register: _coredns_logs
+              changed_when: false
+
+            - name: Warn if excessive host search domain queries in CoreDNS
+              ansible.builtin.debug:
+                msg: >-
+                  WARNING: Found {{ _ts_net_count }} queries containing '.ts.net'
+                  in recent CoreDNS logs. This may indicate host search domains
+                  are still leaking into pod DNS.
+              vars:
+                _ts_net_count: "{{ _coredns_logs.stdout_lines | select('search', '\\.ts\\.net') | list | length }}"
+              when: (_coredns_logs.stdout_lines | select('search', '\\.ts\\.net') | list | length) > 10
+
+      always:
+        - name: Clean up temporary DNS test pod
+          kubernetes.core.k8s:
+            state: absent
+            kind: Pod
+            name: dns-verify
+            namespace: default
+          ignore_errors: true

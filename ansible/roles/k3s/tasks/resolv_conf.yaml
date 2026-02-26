@@ -1,0 +1,27 @@
+---
+# Create a filtered resolv.conf for k3s that strips host search domains
+# This prevents host DNS search domains (e.g., Tailscale MagicDNS) from
+# leaking into pod DNS configuration and causing DNS query floods.
+#
+# When k3s_strip_host_search_domains is true:
+#   1. Reads the node's /etc/resolv.conf
+#   2. Writes a filtered copy to /etc/rancher/k3s/resolv.conf (nameserver lines only)
+#   3. Sets _k3s_resolv_conf_path for use by server.yaml and agent.yaml
+
+- name: Create filtered resolv.conf for k3s
+  when: k3s_strip_host_search_domains | default(false) | bool
+  block:
+    - name: Read node resolv.conf
+      ansible.builtin.slurp:
+        src: /etc/resolv.conf
+      register: _node_resolv_conf
+
+    - name: Write filtered resolv.conf (nameserver lines only)
+      ansible.builtin.copy:
+        content: "{{ _node_resolv_conf.content | b64decode | regex_replace('(?m)^(search|domain)\\s+.*\\n?', '') }}"
+        dest: /etc/rancher/k3s/resolv.conf
+        mode: '0644'
+
+    - name: Set resolv-conf path fact
+      ansible.builtin.set_fact:
+        _k3s_resolv_conf_path: /etc/rancher/k3s/resolv.conf

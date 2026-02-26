@@ -18,6 +18,7 @@
     INSTALL_K3S_EXEC: >-
       --default-local-storage-path={{ base_dir }}
       {% if use_staging_node | default(false) %}--disable-default-registry-endpoint{% endif %}
+      {% if _k3s_resolv_conf_path | default('') %}--resolv-conf {{ _k3s_resolv_conf_path }}{% endif %}
       {{ k3s_extra_args }}
     INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
     K3S_TOKEN: '{{ k3s_token }}'

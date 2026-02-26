@@ -79,6 +79,17 @@ k3s_package_download_timeout: 300
 k3s_package_download_image: rockylinux/rockylinux:9.6
 
 ################################################################################
+# Pod DNS Configuration
+################################################################################
+
+# Strip host search domains from pod DNS configuration.
+# When true, creates a filtered resolv.conf (nameserver-only, no search line)
+# and passes --resolv-conf to k3s, preventing host search domains
+# (e.g., Tailscale MagicDNS) from leaking into pods.
+# See: https://docs.k3s.io/advanced#configuring-dns-resolution
+k3s_strip_host_search_domains: false
+
+################################################################################
 # CoreDNS Customization
 ################################################################################
 

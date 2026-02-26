@@ -23,6 +23,13 @@
   when: air_gapped | default(false) | bool
 
 ################################################################################
+# Pod DNS Configuration - Strip Host Search Domains
+################################################################################
+
+- name: Create filtered resolv.conf for k3s
+  ansible.builtin.include_tasks: resolv_conf.yaml
+
+################################################################################
 # Registry Mirror Configuration - Air-Gapped Only
 ################################################################################
 

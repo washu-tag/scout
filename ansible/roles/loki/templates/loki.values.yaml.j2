@@ -27,7 +27,7 @@ loki:
       admin: '{{ loki_admin_bucket }}'
     s3:
 {% if not aws_deployment %}
-      endpoint: 'minio.{{ minio_tenant_namespace }}.svc.cluster.local'
+      endpoint: 'minio.{{ minio_tenant_namespace }}'
       insecure: true
       s3ForcePathStyle: true
 {% endif %}
