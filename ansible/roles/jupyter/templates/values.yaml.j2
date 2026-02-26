@@ -184,6 +184,7 @@ singleuser:
       data:
         "@jupyter-server/resource-usage:topbar-item":
           enable: true
+          refreshRate: 1000
 {% if jupyter_extension_manager_mode == 'readonly' %}
 
         # Configure Extension Manager to readonly mode (view installed extensions only)
