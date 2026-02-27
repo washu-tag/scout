@@ -23,7 +23,15 @@
         executable: python3
       register: verify_result
       changed_when: false
-      failed_when: verify_result.rc != 0
+      failed_when: false
+
+    - name: Show verification results
+      ansible.builtin.debug:
+        msg: '{{ verify_result.stdout }}'
+
+    - name: Record verification failure
+      ansible.builtin.set_fact:
+        _verify_failed: '{{ verify_result.rc != 0 }}'
 
 - name: Verify pod DNS configuration
   hosts: server
@@ -157,3 +165,16 @@
             name: dns-verify
             namespace: default
           ignore_errors: true
+
+- name: Assert node verification results
+  hosts: remotes
+  become: false
+  gather_facts: false
+  any_errors_fatal: false
+  tasks:
+    - name: Fail if node verification found issues
+      ansible.builtin.assert:
+        that:
+          - not (_verify_failed | default(false) | bool)
+        fail_msg: 'Node verification failed (see results above)'
+        success_msg: Node verification passed
