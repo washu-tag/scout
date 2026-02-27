@@ -34,6 +34,8 @@ supersetNode:
     db_name: "{{ superset_database }}"
     redis_host: "{{ valkey_helm_release_name }}.{{ valkey_namespace }}"
     redis_port: "6379"
+    # This is needed to trigger the chart's template condition that includes the password in Redis URLs
+    # It will get overwritten at runtime with the REDIS_PASSWORD env from the secret
     redis_password: "placeholder"
     redis_cache_db: "0"
     redis_celery_db: "0"
