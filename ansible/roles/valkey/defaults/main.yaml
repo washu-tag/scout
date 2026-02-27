@@ -2,6 +2,8 @@
 # Defaults for valkey role
 # User-configurable settings are in inventory.yaml
 
+# valkey_password: defined in inventory.yaml (use vault encryption)
+
 # Valkey Helm chart configuration
 valkey_helm_repo_url: https://valkey-io.github.io/valkey-helm/
 valkey_helm_repo_name: valkey
@@ -22,4 +24,3 @@ valkey_resources_default:
 
 # Persistence (AOF)
 valkey_persistence_enabled: true
-# valkey_password: defined in inventory.yaml (use vault encryption)
