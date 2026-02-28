@@ -29,7 +29,7 @@ jobs:
       superset: ${{ steps.filter.outputs.superset }}
       keycloak: ${{ steps.filter.outputs.keycloak }}
     steps:
-      - uses: actions/checkout@v4.2.1
+      - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -54,7 +54,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4.2.1
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5.2.0
         with:
           python-version: '3.12'
@@ -92,7 +92,7 @@ jobs:
           - image-name: keycloak
             subproject: keycloak
     steps:
-      - uses: actions/checkout@v4.2.1
+      - uses: actions/checkout@v6
       - name: 'Check if image exists'
         id: check-image
         uses: ./.github/actions/check-image-exists
@@ -110,7 +110,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4.2.1
+      - uses: actions/checkout@v6
       - uses: actions/setup-java@v4
         with:
           distribution: ${{ ENV.JAVA_DIST }}
@@ -124,7 +124,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4.2.1
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5.2.0
         with:
           python-version: '3.12'
@@ -161,7 +161,7 @@ jobs:
       matrix:
         include: *image-matrix
     steps:
-      - uses: actions/checkout@v4.2.1
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/trivy-scan-image
         with:
           image-name: ${{ matrix.image-name }}
@@ -180,7 +180,7 @@ jobs:
     env:
       KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     steps:
-      - uses: actions/checkout@v4.2.1
+      - uses: actions/checkout@v6
       - name: 'Free up disk space'
         shell: bash
         run: |
@@ -291,7 +291,7 @@ jobs:
     needs: [changes, deploy-and-test, scan-images]
     steps:
       - name: Checkout GitHub Action
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@v6
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3.3.0
         with:
@@ -361,7 +361,7 @@ jobs:
     needs: [changes, deploy-and-test, scan-images]
     steps:
       - name: Checkout GitHub Action
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@v6
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3.3.0
         with:

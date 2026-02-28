@@ -18,7 +18,7 @@ jobs:
     container:
       image: semgrep/semgrep:1.152.0
     steps:
-      - uses: actions/checkout@v4.2.1
+      - uses: actions/checkout@v6
 
       - name: Run Semgrep
         run: semgrep scan --config p/default --config p/secrets --config p/docker --config p/kubernetes --config p/owasp-top-ten --sarif --output semgrep.sarif
