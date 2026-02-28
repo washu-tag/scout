@@ -1,4 +1,4 @@
-# ADR 0014: Dependency Version Monitoring via Renovate and Dependabot
+# ADR 0014: Dependency CVE Monitoring via Renovate and Dependabot
 
 **Date**: 2026-02
 **Status**: Proposed
@@ -33,14 +33,14 @@ The `appsec` branch (ADR pending) adds Dependabot for GitHub Actions version pin
 
 ## Decision
 
-**Use two complementary tools, each handling what it does best:**
+**Use two complementary tools, each handling what it does best, scoped to CVE-only PRs:**
 
 | Tool | Scope | Why this tool |
 |---|---|---|
 | **Renovate** (self-hosted GitHub Action) | `versions.yaml` — Helm charts, Docker images, GitHub releases | Only tool that can parse custom YAML files via regex managers |
 | **Dependabot** (expand existing config) | Application dependencies — npm, pip, gradle, Docker base images | Native support for standard package ecosystems; already in use for GitHub Actions |
 
-Neither tool auto-merges. PRs are opened for human review.
+Both tools are configured to only open PRs for dependencies with known CVEs — not for routine version updates. Neither tool auto-merges; all PRs require human review.
 
 ### Renovate Configuration
 
@@ -54,30 +54,31 @@ The Renovate config (`renovate.json5`) uses a single custom regex manager scoped
 - `extractVersion` — (optional) regex to extract version from tag (e.g., K3s `v1.34.1+k3s1`)
 
 Renovate is configured with:
-- `osvVulnerabilityAlerts: true` — flags dependencies with known CVEs via OSV.dev
+- `enabled: false` + `vulnerabilityAlerts.enabled: true` — only opens PRs for dependencies with known CVEs via OSV.dev; the Dependency Dashboard still lists all available updates for visibility
 - `dependencyDashboard: true` — creates a GitHub issue listing all detected dependencies and pending updates
 - `prConcurrentLimit: 5` — limits open PRs to avoid noise
 - `enabledManagers: ["custom.regex"]` — only manages `versions.yaml`; standard ecosystems are handled by Dependabot
 
-### Dependabot Expansion
+### Dependabot Configuration
 
-The existing `dependabot.yml` (GitHub Actions only) is expanded to cover all application dependency ecosystems:
+Dependabot handles two concerns with different mechanisms:
 
-| Ecosystem | Directories |
-|---|---|
-| `github-actions` | `/` (existing) |
-| `npm` | `/launchpad` |
-| `pip` | `/extractor/hl7-transformer`, `/helm/jupyter/notebook`, `/helm/jupyter/embedding-notebook`, `/helm/superset` |
-| `gradle` | `/extractor/hl7log-extractor`, `/keycloak/event-listener`, `/tests` |
-| `docker` | `/extractor/hl7-transformer`, `/extractor/hl7log-extractor`, `/launchpad`, `/helm/jupyter/notebook`, `/helm/jupyter/embedding-notebook`, `/helm/superset`, `/keycloak` |
+1. **Application dependency CVEs** — configured via GitHub UI settings, not `dependabot.yml`. GitHub automatically detects manifest files (`package.json`, `pyproject.toml`, `requirements.txt`, `build.gradle`, `Dockerfile`) and builds the dependency graph. Dependabot alerts and security updates then open PRs for known CVEs.
 
-The Superset Dockerfile's inline `uv pip install` packages are extracted to a `requirements.txt` to enable Dependabot pip monitoring.
+   **Required GitHub settings** (**Settings > Security > Advanced Security**):
+   - **Dependency graph** — enabled (foundation for all Dependabot features)
+   - **Dependabot alerts** — enabled (matches dependency graph against GitHub Advisory Database)
+   - **Dependabot security updates** — enabled for automatic PRs, or use **Dependabot rules** for granular control
+
+2. **GitHub Actions version updates** — configured in `.github/dependabot.yml` with only the `github-actions` ecosystem. Actions pinned to commit hashes aren't tracked by the Advisory Database, so version-update PRs are needed to keep them current.
+
+The Superset Dockerfile's inline `uv pip install` packages are extracted to a `requirements.txt` so the dependency graph can detect them.
 
 ### Scope Separation
 
 Renovate and Dependabot manage disjoint scopes with no overlap:
-- **Renovate**: `versions.yaml` only (custom regex manager)
-- **Dependabot**: Standard package manifests only (`package.json`, `pyproject.toml`, `requirements.txt`, `build.gradle`, `Dockerfile`)
+- **Renovate**: `versions.yaml` only (custom regex manager, CVE-only PRs via OSV.dev)
+- **Dependabot**: Application dependency CVEs (via GitHub UI settings) + GitHub Actions version updates (via `dependabot.yml`)
 
 ### Dependencies Not Monitored
 
@@ -164,24 +165,25 @@ Write a custom GitHub Action that parses `versions.yaml`, checks registries for 
 
 ### Positive
 
-- All ~40 infrastructure dependencies in `versions.yaml` are monitored for available updates and known CVEs
-- All application dependencies (npm, pip, gradle) are monitored for available updates
-- Dockerfile base images are monitored for available updates
-- The Dependency Dashboard provides a single overview of all pending infrastructure updates
-- CVE detection via OSV.dev (Renovate) and GitHub Advisory Database (Dependabot) provides comprehensive vulnerability coverage
+- All ~40 infrastructure dependencies in `versions.yaml` are monitored for known CVEs via OSV.dev (Renovate)
+- All application dependencies (npm, pip, gradle) and Dockerfile base images are monitored for known CVEs via GitHub Advisory Database (Dependabot security updates)
+- PRs are only opened for dependencies with fixable CVEs — no noise from routine version updates
+- The Dependency Dashboard provides a single overview of all detected infrastructure dependencies and available updates (for manual review)
 - No auto-merge — all updates require human review and testing
 
 ### Negative
 
 - Two dependency monitoring tools to understand and maintain
 - Self-hosted Renovate requires a GitHub App and repository secrets (`RENOVATE_APP_ID`, `RENOVATE_APP_PRIVATE_KEY`)
-- Weekly PR volume may increase significantly when dependencies are behind; `prConcurrentLimit: 5` mitigates this
+- Dependabot security updates require the feature to be enabled in the GitHub UI (**Settings > Security > Advanced Security > Dependabot security updates**)
+- PR volume is limited to CVE-affected dependencies; `prConcurrentLimit: 5` further mitigates noise for Renovate
 - `# renovate:` annotations in `versions.yaml` add visual noise; they also must be kept in sync when adding new dependencies
 
 ### Operational
 
 - **Adding a new dependency to `versions.yaml`**: Add a `# renovate:` comment above the version line with the appropriate `datasource`, `depName`, and optional `registryUrl`/`versioning`/`extractVersion`
-- **Adding a new application dependency directory**: Add entries to `.github/dependabot.yml` for the appropriate ecosystem(s) and Dockerfile
+- **Adding a new application dependency**: No config changes needed — GitHub's dependency graph automatically detects standard manifest files. Verify the dependency appears under **Insights > Dependency graph**.
+- **GitHub UI setup**: Enable Dependency graph, Dependabot alerts, and Dependabot security updates (or configure Dependabot rules) under **Settings > Security > Advanced Security**
 - **GitHub App setup**: Create the `scout-renovate` GitHub App, install on the repository, and add `RENOVATE_APP_ID` and `RENOVATE_APP_PRIVATE_KEY` as repository secrets (see setup instructions in this ADR's parent PR)
 - **Verifying Renovate**: After merging, trigger the workflow manually via `workflow_dispatch` and verify the Dependency Dashboard issue is created
 
@@ -190,5 +192,5 @@ Write a custom GitHub Action that parses `versions.yaml`, checks registries for 
 - **ADR 0012**: Security Scan Response and Hardening — security headers and scan findings
 - `docs/internal/ci-security-scanning.md` — CI security scanning overview (Trivy, CodeQL, Semgrep, Dependabot)
 - `renovate.json5` — Renovate configuration
-- `.github/dependabot.yml` — Dependabot configuration
+- `.github/dependabot.yml` — Dependabot configuration (GitHub Actions version updates only)
 - `.github/workflows/renovate.yaml` — Renovate GitHub Actions workflow

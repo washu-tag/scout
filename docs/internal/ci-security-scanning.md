@@ -10,8 +10,8 @@ Scout's CI pipeline includes several layers of automated security scanning. This
 | **Trivy image scan** | Container images built in CI | `ci.yaml` (scan-images job) | Yes (configurable per image via `allow-failure`) | Security tab > Code scanning |
 | **Semgrep** | K8s, YAML, Dockerfiles, secrets, OWASP | `security.yaml` | Yes (new findings only, via Require code scanning results) | Security tab, PR annotations |
 | **Dependency review** | New dependencies introduced in a PR | `dependency-review.yaml` | Yes (critical vulns only) | PR comment |
-| **Dependabot** | GitHub Actions, npm, pip, gradle, Docker base images | `dependabot.yml` | N/A (opens PRs) | Pull requests |
-| **Renovate** | `versions.yaml` — Helm charts, Docker images, GitHub releases | `renovate.yaml` | N/A (opens PRs) | Pull requests, Dependency Dashboard issue |
+| **Dependabot** | Application deps (npm, pip, gradle, Docker) via GitHub UI; GitHub Actions via `dependabot.yml` | GitHub UI + `dependabot.yml` | N/A (security-only PRs; version updates for Actions only) | Pull requests |
+| **Renovate** | `versions.yaml` — Helm charts, Docker images, GitHub releases | `renovate.yaml` | N/A (security-only PRs) | Pull requests, Dependency Dashboard issue |
 
 ## Files
 
@@ -26,7 +26,7 @@ Scout's CI pipeline includes several layers of automated security scanning. This
 │   ├── dependency-review.yaml   # GitHub-native dependency diff on PRs
 │   ├── security.yaml            # Semgrep
 │   └── renovate.yaml            # Self-hosted Renovate for versions.yaml
-├── dependabot.yml               # Dependabot: Actions, npm, pip, gradle, Docker
+├── dependabot.yml               # Dependabot: GitHub Actions version updates only
 renovate.json5                   # Renovate config (custom regex manager for versions.yaml)
 .semgrepignore                   # Excluded paths for Semgrep
 ```
@@ -37,13 +37,13 @@ renovate.json5                   # Renovate config (custom regex manager for ver
 
 The `codeql.yml` workflow is an "advanced setup". If the repository also has CodeQL's **default setup** enabled in the GitHub UI, SARIF uploads will fail with: _"CodeQL analyses from advanced configurations cannot be processed when the default setup is enabled"_.
 
-To fix: **Settings > Code security > Code scanning > CodeQL analysis** — switch from "Default" to "Not set".
+To fix: **Settings > Security > Advanced Security > Code scanning > CodeQL analysis** — switch from "Default" to "Not set".
 
 ### GitHub Advanced Security (private repos)
 
 Third-party SARIF uploads (Trivy, Semgrep) require **GitHub Advanced Security** to be enabled for private repos. Without it, uploads succeed silently but findings don't appear in the Security tab. CodeQL is exempt since it's GitHub-native.
 
-Check: **Settings > Code security > GitHub Advanced Security**.
+Check: **Settings > Security > Advanced Security**.
 
 ### Rulesets: require status checks
 
@@ -98,7 +98,7 @@ The composite action (`.github/actions/trivy-scan-image/action.yaml`) does a sin
 
 The `publish` and `publish-demo` jobs require `scan-images` in their `needs:` array, so a failed or cancelled scan blocks publishing.
 
-All third-party action references are pinned to commit hashes (not tags) to prevent supply chain attacks. Dependabot's `github-actions` ecosystem keeps these pins current.
+All third-party action references are pinned to commit hashes (not tags) to prevent supply chain attacks. Dependabot's `github-actions` ecosystem in `dependabot.yml` keeps these pins current.
 
 **Images scanned**: `hl7log-extractor`, `hl7-transformer`, `pyspark-notebook`, `embedding-notebook` (`allow-failure`), `launchpad`, `superset`, `keycloak`.
 
@@ -124,28 +124,29 @@ This only reviews **newly added or changed** dependencies — existing dependenc
 
 ### Dependabot
 
-Configured in `.github/dependabot.yml` to open PRs for available updates across all application dependency ecosystems (weekly):
+Dependabot handles two concerns:
 
-| Ecosystem | Directories |
-|---|---|
-| `github-actions` | `/` |
-| `npm` | `/launchpad` |
-| `pip` | `/extractor/hl7-transformer`, `/helm/jupyter/notebook`, `/helm/jupyter/embedding-notebook`, `/helm/superset` |
-| `gradle` | `/extractor/hl7log-extractor`, `/keycloak/event-listener`, `/tests` |
-| `docker` | `/extractor/hl7-transformer`, `/extractor/hl7log-extractor`, `/launchpad`, `/helm/jupyter/notebook`, `/helm/jupyter/embedding-notebook`, `/helm/superset`, `/keycloak` |
+1. **Application dependency CVEs** — configured via GitHub UI settings (not `dependabot.yml`). Dependabot automatically detects manifest files, builds the dependency graph, and opens PRs for dependencies with known CVEs.
+2. **GitHub Actions version updates** — configured in `.github/dependabot.yml`. Actions pinned to commit hashes aren't tracked by the Advisory Database, so version updates are needed to keep them current. This is the only ecosystem with version-update PRs enabled.
 
-Dependabot security updates are also enabled in the GitHub UI, which opens PRs when a known CVE is found in any supported ecosystem — even if the directory isn't listed in `dependabot.yml`.
+**Required GitHub settings** (**Settings > Security > Advanced Security**):
 
-Dependabot does **not** monitor `ansible/group_vars/all/versions.yaml` — that is handled by Renovate (see below).
+1. **Dependency graph** — must be enabled. GitHub automatically detects manifest files (`package.json`, `pyproject.toml`, `requirements.txt`, `build.gradle`, `Dockerfile`, etc.) and builds the dependency graph. This is the foundation for all Dependabot features.
+2. **Dependabot alerts** — must be enabled. Matches the dependency graph against the GitHub Advisory Database and creates alerts for known CVEs.
+3. **Dependabot security updates** — enable this to have Dependabot automatically open PRs to fix every alert with an available patch. For more granular control (e.g., auto-dismiss low-severity alerts, target specific ecosystems), leave this disabled and configure **Dependabot rules** instead (**Settings > Security > Advanced Security > Dependabot rules**).
+
+Dependabot does **not** monitor `ansible/group_vars/all/versions.yaml` — that file uses custom YAML keys that no standard package ecosystem can parse, so it is handled by Renovate (see below).
 
 ### Renovate
 
 Configured in `renovate.json5` and runs as a self-hosted GitHub Action (`.github/workflows/renovate.yaml`) weekly on Mondays at 06:00 UTC.
 
-Renovate monitors `ansible/group_vars/all/versions.yaml` for available updates to infrastructure dependencies: Helm charts, Docker images, and GitHub releases (~40 pinned versions). It uses a custom regex manager that reads `# renovate:` annotation comments above each version line to determine the datasource, package name, and registry URL.
+Renovate monitors `ansible/group_vars/all/versions.yaml` for infrastructure dependencies with known CVEs: Helm charts, Docker images, and GitHub releases (~40 pinned versions). It uses a custom regex manager that reads `# renovate:` annotation comments above each version line to determine the datasource, package name, and registry URL.
+
+PRs are only opened for dependencies with known CVEs (`enabled: false` globally, `vulnerabilityAlerts.enabled: true`). The Dependency Dashboard issue still lists all detected dependencies and available updates for visibility.
 
 **Key configuration:**
-- `osvVulnerabilityAlerts: true` — flags dependencies with known CVEs via OSV.dev
+- `enabled: false` + `vulnerabilityAlerts.enabled: true` — only opens PRs for dependencies with known CVEs (via OSV.dev)
 - `dependencyDashboard: true` — creates a "Dependency Dashboard" GitHub issue listing all detected dependencies and their update status
 - `prConcurrentLimit: 5` — limits concurrent open PRs
 - `automerge: false` — all updates require human review
@@ -302,6 +303,7 @@ In `.github/workflows/codeql.yml`, the `queries` field controls the query pack. 
 - **CodeQL**: Tuesdays at 01:36 UTC (configured in `codeql.yml`)
 - **Semgrep**: Mondays at 06:00 UTC (configured in `security.yaml`)
 - **Renovate**: Mondays at 06:00 UTC (configured in `renovate.yaml`)
-- **Dependabot**: Weekly (configured in `dependabot.yml`; exact day managed by GitHub)
+- **Dependabot security updates**: Run continuously as new advisories are published (managed by GitHub)
+- **Dependabot version updates**: Weekly for GitHub Actions only (configured in `dependabot.yml`)
 
-Scheduled scans catch newly disclosed CVEs and rule updates between code changes. Renovate and Dependabot check for available dependency updates on the same cadence.
+Scheduled scans catch newly disclosed CVEs and rule updates between code changes.

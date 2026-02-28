@@ -9,10 +9,15 @@
   // Don't auto-merge — test automation isn't robust enough
   "automerge": false,
 
-  // CVE detection via OSV.dev
+  // Only open PRs for dependencies with known CVEs (via OSV.dev)
   "osvVulnerabilityAlerts": true,
+  "enabled": false,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["dependencies", "security"]
+  },
 
-  // Dependency dashboard (GitHub issue) for overview of all pending updates
+  // Dependency dashboard (GitHub issue) for overview of all detected dependencies
   "dependencyDashboard": true,
   "dependencyDashboardOSVVulnerabilitySummary": true,
 
@@ -21,10 +26,6 @@
 
   // Labels
   "labels": ["dependencies"],
-  "vulnerabilityAlerts": {
-    "labels": ["dependencies", "security"],
-    "enabled": true
-  },
 
   // Remind reviewers about coupled dependencies
   "packageRules": [
