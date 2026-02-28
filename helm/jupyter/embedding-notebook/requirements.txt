@@ -16,7 +16,7 @@ langextract
 scikit-learn
 pyarrow==17.0.0
 datasets==2.20.0
-torch==2.0.1
+torch==2.8.0
 seaborn
 pandas
 numpy
