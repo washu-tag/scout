@@ -1,7 +1,0 @@
-authlib
-psycopg2-binary
-pyhive
-trino
-pillow
-prometheus_client
-statsd

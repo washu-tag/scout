@@ -27,6 +27,11 @@
   // Labels
   "labels": ["dependencies"],
 
+  // Remind reviewers to check Trivy ignore files
+  "prBodyNotes": [
+    "**Reminder:** Review `.trivyignore.yaml` files for suppressed CVEs that may no longer be needed after this upgrade."
+  ],
+
   // Remind reviewers about coupled dependencies
   "packageRules": [
     {
