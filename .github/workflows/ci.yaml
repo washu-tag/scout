@@ -55,7 +55,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5.2.0
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -125,7 +125,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5.2.0
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: '3.12'
       - name: Install Molecule and dependencies
