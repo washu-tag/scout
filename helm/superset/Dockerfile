@@ -3,9 +3,8 @@ FROM apache/superset:6.0.0
 
 USER root
 
-# Apply OS security patches and install system-level dependencies
-RUN apt-get update && apt-get upgrade -y \
-    && apt-get install -y \
+# Install system-level dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-dev \
     build-essential \
     pkg-config \
