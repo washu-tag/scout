@@ -24,4 +24,6 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
         env:
           LOG_LEVEL: info
+          RENOVATE_ONBOARDING: 'false'
+          RENOVATE_REQUIRE_CONFIG: optional
           RENOVATE_REPOSITORIES: '["washu-tag/scout"]'

@@ -1,17 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-
-  // Self-hosted: skip onboarding PR, config is already here
-  "onboarding": false,
-  "requireConfig": "optional",
+  "extends": ["config:recommended", "security:only-security-updates"],
 
   // Don't auto-merge — test automation isn't robust enough
   "automerge": false,
 
-  // Only open PRs for dependencies with known CVEs (via OSV.dev)
-  "osvVulnerabilityAlerts": true,
-  "enabled": false,
+  // Override vulnerability alert labels (preset only enables; we add labels)
   "vulnerabilityAlerts": {
     "enabled": true,
     "labels": ["dependencies", "security"]
@@ -19,7 +13,7 @@
 
   // Dependency dashboard (GitHub issue) for overview of all detected dependencies
   "dependencyDashboard": true,
-  "dependencyDashboardOSVVulnerabilitySummary": true,
+  "dependencyDashboardOSVVulnerabilitySummary": "all",
 
   // Limit concurrent PRs to avoid noise
   "prConcurrentLimit": 5,
