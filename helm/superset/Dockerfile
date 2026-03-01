@@ -3,8 +3,9 @@ FROM apache/superset:5.0.0
 
 USER root
 
-# Install system-level dependencies
-RUN apt-get update && apt-get install -y \
+# Apply OS security patches and install system-level dependencies
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y \
     python3-dev \
     build-essential \
     pkg-config \
@@ -13,14 +14,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /tmp/* /var/tmp/*
 
 # Install required Python packages using uv
-RUN uv pip install --no-cache \
-    authlib \
-    psycopg2-binary \
-    pyhive \
-    trino \
-    pillow \
-    prometheus_client \
-    statsd
+COPY requirements.txt /tmp/requirements.txt
+RUN uv pip install --no-cache -r /tmp/requirements.txt
 
 # Switch to user that runs Superset
 USER superset
