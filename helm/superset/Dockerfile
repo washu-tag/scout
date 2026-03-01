@@ -1,5 +1,5 @@
 # See https://github.com/apache/superset/blob/master/Dockerfile
-FROM apache/superset:5.0.0
+FROM apache/superset:6.0.0
 
 USER root
 

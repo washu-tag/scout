@@ -10,7 +10,7 @@ superset_helm_timeout: 15m
 
 # Custom Superset image (override from inventory for CI/CD)
 superset_image_repository: ghcr.io/washu-tag/superset
-superset_image_tag: 5.0.0
+superset_image_tag: 6.0.0
 
 # Redis session storage and caching configuration
 superset_redis_database_name: superset-cache

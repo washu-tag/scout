@@ -52,7 +52,7 @@ mcp_trino_version: 4.1.0
 hive_image_tag: 3.1.3-e.14
 
 # Data Visualization & BI - Superset
-superset_helm_chart_version: 0.15.0
+superset_helm_chart_version: 0.15.4
 superset_statsd_exporter_tag: v0.28.0
 
 # Data Visualization & BI - Grafana
