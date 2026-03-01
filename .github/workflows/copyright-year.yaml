@@ -19,12 +19,12 @@ jobs:
     steps:
       - name: Generate token from GitHub App
         id: app_token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.COPYRIGHT_APP_ID }}
           private-key: ${{ secrets.COPYRIGHT_APP_PRIVATE_KEY }}
 
-      - uses: actions/checkout@v4.2.1
+      - uses: actions/checkout@v6
         with:
           token: ${{ steps.app_token.outputs.token }}
 
