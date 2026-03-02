@@ -31,6 +31,25 @@ k3s_cluster:
     k3s_token: K3S_TOKEN
     kubeconfig_group: root
 
+    # CoreDNS: resolve *.scout.test to the node IP inside the cluster
+    coredns_extra_server_blocks:
+      scout-test: |
+        scout.test:53 {
+          hosts {
+            NODE_IP scout.test
+            NODE_IP superset.scout.test
+            NODE_IP jupyter.scout.test
+            NODE_IP grafana.scout.test
+            NODE_IP keycloak.scout.test
+            NODE_IP auth.scout.test
+            NODE_IP temporal.scout.test
+            NODE_IP minio.scout.test
+            NODE_IP chat.scout.test
+            NODE_IP playbooks.scout.test
+            fallthrough
+          }
+        }
+
     # OIDC config
     minio_oidc_enabled: false
     temporal_oidc_enabled: false
