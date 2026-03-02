@@ -462,9 +462,13 @@ jobs:
         shell: bash
         run: |
           for ns in $(sudo -E kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
-            for pod in $(sudo -E kubectl get pods -n "$ns" --field-selector=status.phase!=Running,status.phase!=Succeeded -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
-              echo "=== $ns/$pod ==="
-              sudo -E kubectl logs -n "$ns" "$pod" --tail=50 2>/dev/null || true
+            for pod in $(sudo -E kubectl get pods -n "$ns" -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.status.phase}{" "}{range .status.containerStatuses[*]}{.state.waiting.reason}{.state.terminated.reason}{end}{"\n"}{end}' 2>/dev/null); do
+              echo "$pod"
+            done | grep -E "CrashLoopBackOff|Error|OOMKilled|CreateContainerError" | while read -r line; do
+              pod_name=$(echo "$line" | awk '{print $1}')
+              echo "=== $ns/$pod_name ==="
+              sudo -E kubectl logs -n "$ns" "$pod_name" --tail=100 --previous 2>/dev/null || \
+              sudo -E kubectl logs -n "$ns" "$pod_name" --tail=100 2>/dev/null || true
             done
           done
   publish:
