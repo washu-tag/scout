@@ -129,6 +129,12 @@ kubectl delete pvc -l app=redis-enterprise -n <namespace>
 
 **Rejected**: Redict has no Kubernetes Helm chart — deployment manifests would need to be created from scratch. The project has a small community (primarily one maintainer) and low development activity. The LGPL license may raise concerns for some organizations.
 
+### DandyDeveloper redis-ha Helm Chart
+
+The [redis-ha](https://artifacthub.io/packages/helm/dandydev-charts/redis-ha) chart is a community-maintained Helm chart originally migrated from the deprecated `helm/stable` repository. It deploys a Redis high-availability setup with Sentinel sidecars for automatic failover.
+
+**Rejected**: The chart deploys official Redis (currently 8.2.4), which carries the same licensing concerns as Redis CE (RSALv2/SSPLv1/AGPLv3 tri-license). Additionally, the chart is maintained by a single individual ([DandyDeveloper](https://github.com/DandyDeveloper/charts)), not an organization or foundation, which presents long-term maintenance risk. Scout's ephemeral data does not require the HA/Sentinel architecture the chart provides, and the three-pod deployment would negate much of the resource savings from leaving Redis Enterprise.
+
 ### Redis Community Edition (Redis Open Source)
 
 [Redis](https://redis.io/) is the original project, now maintained by Redis Ltd. After the March 2024 license change from BSD to RSALv2/SSPLv1, Redis 8.0 (May 2025) added AGPLv3 as a third licensing option.
@@ -137,16 +143,16 @@ kubectl delete pvc -l app=redis-enterprise -n <namespace>
 
 ### Comparative Summary
 
-| Criterion | Valkey | KeyDB | Dragonfly | Garnet | Kvrocks | Redict | Redis CE |
-|-----------|--------|-------|-----------|--------|---------|--------|----------|
-| License | BSD-3 | BSD-3 | BSL 1.1 | MIT | Apache 2.0 | LGPL-3.0 | AGPL/RSALv2/SSPLv1 |
-| Governance | Linux Foundation | Snap Inc. | DragonflyDB Inc. | Microsoft | Apache SF | BDFL | Redis Ltd. |
-| Celery compatible | Yes | Yes | Active testing | Unverified | Unverified | Yes | Yes (primary) |
-| AOF persistence | Yes | Yes | **No** | Own format | N/A (RocksDB) | Yes | Yes |
-| Official Helm chart | Yes | No | Yes | Basic | Operator-based | **None** | Bitnami (paid) |
-| Project activity | Very high | **Stale** | Very high | Very high | High | Low | Very high |
+| Criterion | Valkey | KeyDB | Dragonfly | Garnet | Kvrocks | Redict | DandyDev redis-ha | Redis CE |
+|-----------|--------|-------|-----------|--------|---------|--------|-------------------|----------|
+| License | BSD-3 | BSD-3 | BSL 1.1 | MIT | Apache 2.0 | LGPL-3.0 | AGPL/RSALv2/SSPLv1 (Redis) | AGPL/RSALv2/SSPLv1 |
+| Governance | Linux Foundation | Snap Inc. | DragonflyDB Inc. | Microsoft | Apache SF | BDFL | Individual | Redis Ltd. |
+| Celery compatible | Yes | Yes | Active testing | Unverified | Unverified | Yes | Yes (Redis) | Yes (primary) |
+| AOF persistence | Yes | Yes | **No** | Own format | N/A (RocksDB) | Yes | Yes | Yes |
+| Official Helm chart | Yes | No | Yes | Basic | Operator-based | **None** | Community | Bitnami (paid) |
+| Project activity | Very high | **Stale** | Very high | Very high | High | Low | Active | Very high |
 
-For Scout's requirements, Celery broker compatibility eliminates Garnet and Kvrocks, absence of AOF persistence eliminates Dragonfly, lack of a Helm chart eliminates Redict, and project dormancy eliminates KeyDB. This leaves Valkey and Redis CE. Valkey's permissive BSD-3 license, multi-vendor Linux Foundation governance, and active innovation (Valkey 8.0 demonstrated a 230% throughput improvement over the 7.2 baseline) make it the stronger choice over Redis CE's uncertain licensing trajectory.
+For Scout's requirements, Celery broker compatibility eliminates Garnet and Kvrocks, absence of AOF persistence eliminates Dragonfly, lack of a Helm chart eliminates Redict, and project dormancy eliminates KeyDB. The DandyDeveloper redis-ha chart provides a ready-made Helm deployment but inherits Redis's licensing concerns and depends on a single individual maintainer. This leaves Valkey and Redis CE. Valkey's permissive BSD-3 license, multi-vendor Linux Foundation governance, and active innovation (Valkey 8.0 demonstrated a 230% throughput improvement over the 7.2 baseline) make it the stronger choice over Redis CE's uncertain licensing trajectory.
 
 ## Consequences
 
