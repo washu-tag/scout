@@ -402,24 +402,20 @@ jobs:
         with:
           subproject: helm/jupyter/notebook
           image-name: pyspark-notebook
-      - name: 'Push image to k3s - hl7log-extractor'
-        uses: ./.github/actions/k3s-image-import-or-pull
-        with:
-          subproject: extractor/hl7log-extractor
-          image-name: hl7log-extractor
-      - name: 'Push image to k3s - hl7-transformer'
-        uses: ./.github/actions/k3s-image-import-or-pull
-        with:
-          subproject: extractor/hl7-transformer
-          image-name: hl7-transformer
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
-      # Deploy full stack via main.yaml
-      # Auto-skipped: staging (no staging group), gpu (no gpu_workers), chatbot (enable_chat: false), voila (enable_playbooks: false)
-      - name: 'Deploy full Scout stack'
+      # Deploy services not covered by deploy-and-test job
+      # Skipped: orchestrator (Cassandra+ES+Temporal) and extractor — tested in deploy-and-test
+      # Auto-skipped by missing config: staging, gpu, scout clone
+      - name: 'Deploy Scout services'
         shell: bash
-        run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/main.yaml
+        run: |
+          cd ansible
+          for playbook in k3s traefik postgres valkey auth lake chatbot voila analytics jupyter monitor launchpad; do
+            echo "=== Deploying $playbook ==="
+            sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff "playbooks/${playbook}.yaml"
+          done
       # Health checks — verify all services rolled out
       - name: 'Service health checks'
         shell: bash
@@ -457,18 +453,15 @@ jobs:
         run: |
           sudo -E kubectl get pods -A
           sudo -E kubectl get events -A --sort-by='.lastTimestamp' | tail -50
-      - name: 'Debug - crashing pod logs'
+      - name: 'Debug - all pod logs'
         if: failure()
         shell: bash
         run: |
           for ns in $(sudo -E kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
-            for pod in $(sudo -E kubectl get pods -n "$ns" -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.status.phase}{" "}{range .status.containerStatuses[*]}{.state.waiting.reason}{.state.terminated.reason}{end}{"\n"}{end}' 2>/dev/null); do
-              echo "$pod"
-            done | grep -E "CrashLoopBackOff|Error|OOMKilled|CreateContainerError" | while read -r line; do
-              pod_name=$(echo "$line" | awk '{print $1}')
-              echo "=== $ns/$pod_name ==="
-              sudo -E kubectl logs -n "$ns" "$pod_name" --tail=100 --previous 2>/dev/null || \
-              sudo -E kubectl logs -n "$ns" "$pod_name" --tail=100 2>/dev/null || true
+            for pod in $(sudo -E kubectl get pods -n "$ns" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+              echo "=== $ns/$pod ==="
+              sudo -E kubectl logs -n "$ns" "$pod" --all-containers --tail=30 --previous 2>/dev/null || \
+              sudo -E kubectl logs -n "$ns" "$pod" --all-containers --tail=30 2>/dev/null || true
             done
           done
   publish:
