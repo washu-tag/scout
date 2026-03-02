@@ -35,6 +35,9 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# npm is not needed at runtime and its bundled dependencies may introduce vulnerabilities
+RUN npm uninstall -g npm
+
 COPY --from=builder /app/public ./public
 
 # Automatically leverage output traces to reduce image size
