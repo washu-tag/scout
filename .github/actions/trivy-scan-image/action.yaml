@@ -58,6 +58,7 @@ runs:
         severity: '${{ inputs.severity }}'
         exit-code: '0'
         trivy-config: trivy-config.yaml
+        version: 'v0.69.2'
 
     - name: Convert JSON to SARIF
       if: steps.download.outcome == 'success'
