@@ -2,8 +2,14 @@ image:
   repository: "{{ superset_image_repository }}"
   tag: "{{ superset_image_tag }}"
 redis:
-  # Disable embedded Redis - using centralized Redis Enterprise instead
+  # Disable embedded Redis - using centralized Valkey instance instead
   enabled: false
+extraEnvRaw:
+  - name: REDIS_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: superset-valkey-auth
+        key: REDIS_PASSWORD
 extraSecretEnv:
   SUPERSET_SECRET_KEY: "{{ superset_secret }}"
 ingress:
@@ -26,12 +32,11 @@ supersetNode:
     db_user: "{{ superset_postgres_user }}"
     db_pass: "{{ superset_postgres_password }}"
     db_name: "{{ superset_database }}"
-    redis_host: "{{ superset_redis_database_name }}.{{ redis_namespace }}"
-    redis_port: "{{ superset_redis_database_port }}"
-    redis_password: "{{ superset_redis_password }}"
-    # Redis Enterprise doesn't support logical databases within an existing database and Superset doesn't support
-    # multiple Redis databases
-    # https://redis.io/kb/doc/2d6sxrbhhj/does-redis-enterprise-support-logical-databases-using-the-select-command
+    redis_host: "{{ valkey_helm_release_name }}.{{ valkey_namespace }}"
+    redis_port: "6379"
+    # This is needed to trigger the chart's template condition that includes the password in Redis URLs
+    # It will get overwritten at runtime with the REDIS_PASSWORD env from the secret
+    redis_password: "placeholder"
     redis_cache_db: "0"
     redis_celery_db: "0"
   resources: {{ superset_resources_default | combine(superset_resources | default({}), recursive=true) | to_json }}

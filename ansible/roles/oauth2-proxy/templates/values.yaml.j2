@@ -28,7 +28,7 @@ sessionStorage:
     passwordKey: redis-password
     clientType: standalone
     standalone:
-      connectionUrl: "redis://{{ oauth2_proxy_redis_database_name }}.{{ redis_namespace }}:{{ oauth2_proxy_redis_database_port }}"
+      connectionUrl: "redis://{{ valkey_helm_release_name }}.{{ valkey_namespace }}:6379"
 ingress:
   enabled: true
   className: traefik

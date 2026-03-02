@@ -24,8 +24,8 @@ cassandra_server_version: 5.0.3
 # Databases & Data Storage - PostgreSQL
 cnpg_version: ~0.27.0
 
-# Databases & Data Storage - Redis
-redis_enterprise_operator_chart_version: 8.0.2-2
+# Databases & Data Storage - Valkey
+valkey_chart_version: 0.9.3
 
 # OAuth2 Proxy
 oauth2_proxy_chart_version: ~10.0.0
