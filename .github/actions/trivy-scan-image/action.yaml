@@ -58,6 +58,9 @@ runs:
         severity: '${{ inputs.severity }}'
         exit-code: '0'
         trivy-config: trivy-config.yaml
+        # Pin version: trivy-action 0.34.1 defaults to v0.69.1 which was deleted
+        # after the March 2026 supply chain attack on the Trivy repository.
+        # See: https://github.com/aquasecurity/trivy/discussions/10265
         version: 'v0.69.2'
 
     - name: Convert JSON to SARIF

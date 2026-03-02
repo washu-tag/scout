@@ -82,7 +82,6 @@ jobs:
         include: &image-matrix
           - image-name: hl7log-extractor
             subproject: extractor/hl7log-extractor
-            allow-failure: true
           - image-name: hl7-transformer
             subproject: extractor/hl7-transformer
             allow-failure: true
