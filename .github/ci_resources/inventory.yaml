@@ -20,6 +20,7 @@ k3s_cluster:
     # Custom image repositories (for k3s-image-import-or-pull)
     superset_image_repository: docker.io/local/washu-tag/superset
     keycloak_image_repository: docker.io/local/washu-tag/keycloak
+    keycloak_image_pull_policy: IfNotPresent
     jupyter_singleuser_image_name: docker.io/local/washu-tag/pyspark-notebook
 
     # TLS (self-signed certs generated in CI step)
