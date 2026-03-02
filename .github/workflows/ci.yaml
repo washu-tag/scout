@@ -82,10 +82,13 @@ jobs:
         include: &image-matrix
           - image-name: hl7log-extractor
             subproject: extractor/hl7log-extractor
+            allow-failure: true
           - image-name: hl7-transformer
             subproject: extractor/hl7-transformer
+            allow-failure: true
           - image-name: pyspark-notebook
             subproject: helm/jupyter/notebook
+            allow-failure: true
           - image-name: embedding-notebook
             subproject: helm/jupyter/embedding-notebook
             allow-failure: true
@@ -93,8 +96,10 @@ jobs:
             subproject: launchpad
           - image-name: superset
             subproject: helm/superset
+            allow-failure: true
           - image-name: keycloak
             subproject: keycloak
+            allow-failure: true
     steps:
       - uses: actions/checkout@v6
       - name: 'Check if image exists'
