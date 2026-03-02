@@ -1,7 +1,6 @@
 ---
 # Playbook to deploy Valkey for session storage and caching
 # This deploys a standalone Valkey instance shared by all Scout services
-# Storage is dynamically provisioned using the default storage class (local-path)
 
 - name: Deploy Valkey
   hosts: server
