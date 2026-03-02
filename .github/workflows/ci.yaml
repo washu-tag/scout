@@ -223,7 +223,7 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3.3.0
+        uses: docker/login-action@v3.7.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -303,7 +303,7 @@ jobs:
       - name: Checkout GitHub Action
         uses: actions/checkout@v6
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3.3.0
+        uses: docker/login-action@v3.7.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -373,7 +373,7 @@ jobs:
       - name: Checkout GitHub Action
         uses: actions/checkout@v6
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3.3.0
+        uses: docker/login-action@v3.7.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
