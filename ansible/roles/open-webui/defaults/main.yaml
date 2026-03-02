@@ -55,7 +55,7 @@ open_webui_postgres_password: ''
 open_webui_secret_key: ''
 
 # Valkey connection URL for websocket coordination and distributed state management
-open_webui_redis_url: 'redis://default:{{ valkey_password | urlencode }}@{{ valkey_helm_release_name }}.{{ valkey_namespace }}.svc.cluster.local:6379'
+open_webui_redis_url: 'redis://default:{{ valkey_password | urlencode }}@{{ valkey_helm_release_name }}.{{ valkey_namespace }}:6379'
 
 # Resource configuration (dev defaults)
 # WARNING: These are minimal defaults suitable for small models only.
