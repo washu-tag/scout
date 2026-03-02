@@ -370,6 +370,37 @@ jobs:
       - name: 'Install k3s'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
+      - name: 'Add scout.test DNS to CoreDNS'
+        shell: bash
+        run: |
+          NODE_IP=$(sudo -E kubectl get node -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+          echo "Node IP: $NODE_IP"
+          sudo -E kubectl apply -f - <<EOF
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: coredns-custom
+            namespace: kube-system
+          data:
+            scout-test.server: |
+              scout.test:53 {
+                hosts {
+                  $NODE_IP scout.test
+                  $NODE_IP superset.scout.test
+                  $NODE_IP jupyter.scout.test
+                  $NODE_IP grafana.scout.test
+                  $NODE_IP keycloak.scout.test
+                  $NODE_IP auth.scout.test
+                  $NODE_IP temporal.scout.test
+                  $NODE_IP minio.scout.test
+                  $NODE_IP chat.scout.test
+                  $NODE_IP playbooks.scout.test
+                  fallthrough
+                }
+              }
+          EOF
+          sudo -E kubectl rollout restart deployment/coredns -n kube-system
+          sudo -E kubectl rollout status deployment/coredns -n kube-system --timeout=60s
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3.3.0
         with:
@@ -452,6 +483,16 @@ jobs:
         run: |
           sudo -E kubectl get pods -A
           sudo -E kubectl get events -A --sort-by='.lastTimestamp' | tail -50
+      - name: 'Debug - crashing pod logs'
+        if: failure()
+        shell: bash
+        run: |
+          for ns in $(sudo -E kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
+            for pod in $(sudo -E kubectl get pods -n "$ns" --field-selector=status.phase!=Running,status.phase!=Succeeded -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+              echo "=== $ns/$pod ==="
+              sudo -E kubectl logs -n "$ns" "$pod" --tail=50 2>/dev/null || true
+            done
+          done
   publish:
     if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.scan-images.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
