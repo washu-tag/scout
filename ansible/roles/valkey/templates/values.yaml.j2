@@ -3,6 +3,11 @@ auth:
   usersExistingSecret: '{{ valkey_helm_release_name }}-auth'
   aclUsers:
     default:
+      # ACL permissions meaning: ~* = all keys, &* = all pub/sub channels, +@all = all commands
+      # This is combined with the password to generate the final ACL:
+      #   user {{ $username }} on #$PASSHASH {{ $user.permissions }}
+      # Essentially it means "this user with this password has full permissions to everything"
+      # See https://valkey.io/topics/acl/
       permissions: "~* &* +@all"
       passwordKey: password
 
