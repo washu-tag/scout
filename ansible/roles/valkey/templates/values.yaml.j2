@@ -1,0 +1,44 @@
+auth:
+  enabled: true
+  usersExistingSecret: '{{ valkey_helm_release_name }}-auth'
+  aclUsers:
+    default:
+      # ACL permissions string is combined with the password to generate the final ACL:
+      #   user <username> on #<password_hash> <permissions_string>
+      # Essentially what we have set means "this user with this password has full permissions to everything"
+      # See https://valkey.io/topics/acl/
+      permissions: "allkeys allchannels allcommands"
+      passwordKey: password
+
+service:
+  type: ClusterIP
+  port: 6379
+
+dataStorage:
+  enabled: {{ valkey_persistence_enabled | lower }}
+{% if valkey_storage_size %}
+  requestedSize: {{ valkey_storage_size }}
+{% endif %}
+{% if valkey_storage_class %}
+  className: {{ valkey_storage_class }}
+{% endif %}
+
+resources: {{ valkey_resources_default | combine(valkey_resources | default({}), recursive=true) | to_json }}
+
+valkeyConfig: |
+  appendonly yes
+  appendfsync everysec
+
+metrics:
+  enabled: true
+  exporter:
+    extraExporterSecrets:
+      - name: '{{ valkey_helm_release_name }}-auth'
+    extraVolumeMounts:
+      - name: '{{ valkey_helm_release_name }}-auth-exporter'
+        mountPath: /valkey-auth
+        readOnly: true
+    args:
+      - '--redis.password-file=/valkey-auth/password-file'
+  serviceMonitor:
+    enabled: false

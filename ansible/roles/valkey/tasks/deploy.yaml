@@ -1,0 +1,60 @@
+---
+# Kubernetes deployment tasks for Valkey
+# Deploys a standalone Valkey instance using the official Valkey Helm chart
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ valkey_namespace }}'
+
+- name: Create Valkey auth secret
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: '{{ valkey_helm_release_name }}-auth'
+        namespace: '{{ valkey_namespace }}'
+      type: Opaque
+      stringData:
+        password: '{{ valkey_password }}'
+        password-file: '{{ {"redis://localhost:6379": valkey_password} | to_json }}'
+
+- name: Parse Valkey Helm values
+  ansible.builtin.set_fact:
+    valkey_helm_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
+- name: Deploy Valkey using Helm
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ valkey_helm_release_name }}'
+    helm_chart_ref: '{{ valkey_helm_repo_name }}/{{ valkey_helm_chart_name }}'
+    helm_chart_namespace: '{{ valkey_namespace }}'
+    helm_chart_version: '{{ valkey_chart_version }}'
+    helm_repo_name: '{{ valkey_helm_repo_name }}'
+    helm_repo_url: '{{ valkey_helm_repo_url }}'
+    helm_chart_values: '{{ valkey_helm_values }}'
+
+- name: Wait for Valkey to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: '{{ valkey_helm_release_name }}'
+    namespace: '{{ valkey_namespace }}'
+    wait: true
+    wait_condition:
+      type: Available
+      status: 'True'
+    wait_timeout: 300
+
+- name: Display Valkey deployment information
+  ansible.builtin.debug:
+    msg: |
+      Valkey deployed successfully!
+      Service: {{ valkey_helm_release_name }}.{{ valkey_namespace }}:6379
