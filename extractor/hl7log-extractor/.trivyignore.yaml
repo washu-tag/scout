@@ -1,0 +1,5 @@
+vulnerabilities:
+  # Transitive dependency from Temporal SDK — awaiting upstream fix
+  - id: CVE-2025-55163 # grpc-netty-shaded
+  # Transitive dependency from Spring Boot BOM — awaiting upstream fix
+  - id: GHSA-72hv-8253-57qq # jackson-core

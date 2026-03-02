@@ -1,5 +1,5 @@
-# Use Node.js 24 Alpine as the base image
-FROM node:24-alpine AS base
+# Use Node.js 25 Alpine as the base image
+FROM node:25-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -34,6 +34,9 @@ ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+
+# npm is not needed at runtime and its bundled dependencies may introduce vulnerabilities
+RUN npm uninstall -g npm
 
 COPY --from=builder /app/public ./public
 

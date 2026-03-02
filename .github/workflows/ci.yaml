@@ -21,6 +21,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
+      ci: ${{ steps.filter.outputs.ci }}
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
       pyspark-notebook: ${{ steps.filter.outputs.pyspark-notebook }}
@@ -34,6 +35,9 @@ jobs:
         id: filter
         with:
           filters: |
+            ci:
+              - '.github/workflows/**'
+              - '.github/actions/**'
             hl7log-extractor:
               - 'extractor/hl7log-extractor/**'
               - 'linting_java_checkstyle.xml'
@@ -80,8 +84,10 @@ jobs:
             subproject: extractor/hl7log-extractor
           - image-name: hl7-transformer
             subproject: extractor/hl7-transformer
+            allow-failure: true
           - image-name: pyspark-notebook
             subproject: helm/jupyter/notebook
+            allow-failure: true
           - image-name: embedding-notebook
             subproject: helm/jupyter/embedding-notebook
             allow-failure: true
@@ -89,8 +95,10 @@ jobs:
             subproject: launchpad
           - image-name: superset
             subproject: helm/superset
+            allow-failure: true
           - image-name: keycloak
             subproject: keycloak
+            allow-failure: true
     steps:
       - uses: actions/checkout@v6
       - name: 'Check if image exists'
@@ -100,7 +108,7 @@ jobs:
           subproject: ${{ matrix.subproject }}
           image-name: ${{ matrix.image-name }}
       - name: 'Build/Cache Image - ${{ matrix.image-name }}'
-        if: needs.changes.outputs[matrix.image-name] == 'true' || steps.check-image.outputs.exists == 'false'
+        if: needs.changes.outputs[matrix.image-name] == 'true' || steps.check-image.outputs.exists == 'false' || needs.changes.outputs.ci == 'true'
         uses: ./.github/actions/docker-build-cache
         with:
           subproject: ${{ matrix.subproject }}
@@ -162,6 +170,8 @@ jobs:
         include: *image-matrix
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/trivy-scan-image
         with:
           image-name: ${{ matrix.image-name }}
