@@ -81,6 +81,22 @@ Valkey is an open-source, high-performance key-value datastore forked from Redis
 
 Because all Redis data in Scout is ephemeral, the migration is a clean cutover with no data migration required. Valkey is deployed alongside the existing REC, consuming services are reconfigured to point at Valkey, and the REC resources are removed. The only user-visible impact is a one-time re-authentication (OAuth2 Proxy sessions are cleared).
 
+After services have been cutover to Valkey, remove the Redis Enterprise Cluster resources in this order:
+
+```bash
+# 1. Remove RedisEnterpriseDatabase custom resources
+kubectl delete redisenterprisedatabase --all -n <namespace>
+
+# 2. Remove the RedisEnterpriseCluster custom resource
+kubectl delete redisenterprisecluster --all -n <namespace>
+
+# 3. Remove the Redis Enterprise Operator (installed via Helm)
+helm uninstall redis-enterprise -n <namespace>
+
+# 4. Remove persistent volume claims
+kubectl delete pvc -l app=redis-enterprise -n <namespace>
+```
+
 ## Alternatives Considered
 
 ### KeyDB
