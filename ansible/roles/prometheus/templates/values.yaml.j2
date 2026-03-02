@@ -90,6 +90,11 @@ extraScrapeConfigs: |
       - source_labels: [__meta_kubernetes_pod_name]
         target_label: pod
 
+  - job_name: valkey
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['{{ valkey_helm_release_name }}-metrics.{{ valkey_namespace }}:9121']
+
   - job_name: keycloak
     metrics_path: /metrics
     static_configs:

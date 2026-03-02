@@ -20,8 +20,8 @@
 - name: Install Postgres
   import_playbook: postgres.yaml
 
-- name: Install Redis
-  import_playbook: redis.yaml
+- name: Install Valkey
+  import_playbook: valkey.yaml
 
 - name: Install Auth
   import_playbook: auth.yaml
