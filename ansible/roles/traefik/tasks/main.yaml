@@ -70,6 +70,9 @@
         namespace: '{{ traefik_namespace }}'
       spec:
         valuesContent: |-
+          # In v34.2.0, defaults to globalArguments: ["--global.checknewversion","--global.sendanonymoususage"]
+          # We want to turn those off.
+          globalArguments: []
           ports:
             websecure:
               tls:
