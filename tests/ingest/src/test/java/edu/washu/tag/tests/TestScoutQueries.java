@@ -226,7 +226,10 @@ public class TestScoutQueries extends BaseTest {
             "obr_2_placer_order_number",
             "orc_3_filler_order_number",
             COLUMN_FILLER_ORDER,
-            "filler_order_number"
+            "filler_order_number",
+            "bjh_ss",
+            "bjwc_ss",
+            "slch_ss"
         ));
     }
 

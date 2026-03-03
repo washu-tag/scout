@@ -49,9 +49,10 @@ def curate_silver_table(batch_df, spark, table_name):
       Because the PID-3 IDs seem unreliable here, we extract a patient ID therefore from only PID-2
     * In 2.4, PID-2 is unused, and each report has up to three IDs. These IDs correspond to exactly
       one of the assigning authorities "BJH", "BJWC", or "SLCH" with the three identifier type codes
-      "MR", "EE", or "SS. Because we see data integrity issues again with disagreeing IDs (for example,
+      "MR", "EE", or "SS". Because we see data integrity issues again with disagreeing IDs (for example,
       1 value of bjh_ee with 2 different values for bjh_ss and 5 different values for bjh_mr), we pick
-      only the particular "MR" ID found in the report.
+      only the particular "MR" ID found in the report. Additionally, we are now filtering out "SS" ids
+      because they appear to likely be SSNs which we do not want in the delta lake.
     * In 2.7, PID-2 has a value, but does not seem like one that users are interested in searching on.
       Reports have an MBMC ID, or an EPIC MRN and optional EMPI ID (corresponding to the 2.3 MPI). Because
       exactly one of the MBMC ID and EPIC MRN seems to be present, we can use that ID for the patient.
