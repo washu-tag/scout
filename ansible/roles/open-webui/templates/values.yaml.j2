@@ -7,7 +7,7 @@ ollama:
   fullnameOverride: ollama
   ollama:
     gpu:
-      enabled: true
+      enabled: {{ ollama_gpu_enabled | to_json }}
       type: 'nvidia'
       number: 1
     models:

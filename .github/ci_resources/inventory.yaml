@@ -147,6 +147,7 @@ k3s_cluster:
     open_webui_secret_key: ciopenwebuisecretkeyvalue12345678
     scout_model_create: false
     ollama_models: []
+    ollama_gpu_enabled: false
     ollama_min_gpu_memory_gb: 0
     ollama_resources:
       requests:

@@ -70,6 +70,10 @@ ollama_resources_default:
     cpu: 8
     memory: 16Gi
 
+# Whether to request an NVIDIA GPU for Ollama
+# Set to false for CPU-only environments (e.g., CI, dev without GPU)
+ollama_gpu_enabled: true
+
 # Minimum GPU VRAM required for Ollama (in GB)
 # Used in node affinity to ensure Ollama is scheduled on nodes with sufficient GPU memory
 # Default: 80GB (required for default Scout base model gpt-oss:120b at full precision)
