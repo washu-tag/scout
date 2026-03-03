@@ -96,7 +96,7 @@ ingress:
 
 prePuller:
   hook:
-    enabled: true
+    enabled: {{ jupyter_prepuller_hook | default(true) }}
   continuous:
     enabled: {{ jupyter_prepuller_continuous | default(false) }}
 
