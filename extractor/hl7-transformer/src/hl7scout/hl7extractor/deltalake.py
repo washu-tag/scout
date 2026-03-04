@@ -375,8 +375,9 @@ def import_hl7_files_to_deltalake(
                         identifier_type_code=parts[4],
                         assigning_facility=parts[5],
                     ),
-                    lambda patient_id: patient_id["identifier_type_code"]
-                    != "SS",  # no SSNs please
+                    lambda patient_id: ~patient_id["identifier_type_code"].eqNullSafe(
+                        "SS"
+                    ),  # no SSNs please
                 ),
             )
             .drop("pid-3")
