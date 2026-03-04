@@ -506,6 +506,8 @@ ADRs in `docs/internal/adr/` document significant architectural decisions. Consu
 
 - **ADR 0015: Staging Node Certificate Distribution** — Distributes the staging node's self-signed TLS certificate to the production cluster via Ansible, replacing `insecure_skip_verify: true` with explicit CA trust. For containerd/K3s, the cert is placed on host nodes and referenced via `ca_file` in `registries.yaml`. For future containerized services, the cert is mounted from a Kubernetes Secret. Consult when adding services that contact the staging node or modifying air-gapped TLS configuration.
 
+- **ADR 0016: Squid Forward Proxy for Air-Gapped Authentication** — Installs Squid forward proxy as a system package on the staging node with a strict domain allowlist, enabling Keycloak on air-gapped production clusters to reach external IdP OAuth endpoints (Microsoft, GitHub). Uses Keycloak's `spi-connections-http-client-default-proxy-mappings` SPI, configured conditionally when `air_gapped: true` and an external IdP is present. Consult when modifying air-gapped authentication, adding external IdP providers, or extending outbound access from air-gapped clusters.
+
 ## Key Concepts for AI Assistants
 
 ### Architecture Understanding

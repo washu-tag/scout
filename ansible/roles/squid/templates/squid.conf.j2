@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+# Squid forward proxy for air-gapped outbound access
+
+acl SSL_ports port 443
+acl CONNECT method CONNECT
+http_access deny CONNECT !SSL_ports
+
+acl allowed_domains dstdomain{% for domain in _squid_allowed_domains %} .{{ domain }}{% endfor %}
+
+http_access allow CONNECT allowed_domains
+http_access allow allowed_domains
+http_access deny all
+
+http_port {{ squid_port }}

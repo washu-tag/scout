@@ -94,3 +94,4 @@
     - role: traefik
       when: harbor_expose_type == 'ingress'
     - role: harbor
+    - role: squid
