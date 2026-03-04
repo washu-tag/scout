@@ -430,7 +430,7 @@ jobs:
           echo "=== Checking Grafana ==="
           sudo -E kubectl rollout status deployment/grafana -n scout-monitoring --timeout=180s
           echo "=== Checking Loki ==="
-          sudo -E kubectl rollout status deployment/loki -n scout-monitoring --timeout=180s
+          sudo -E kubectl rollout status statefulset/loki -n scout-monitoring --timeout=180s
           echo "=== All pods ==="
           sudo -E kubectl get pods -A
       # Trino connectivity check
