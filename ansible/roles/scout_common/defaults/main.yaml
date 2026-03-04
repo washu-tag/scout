@@ -71,6 +71,7 @@ scout_monitoring_namespace: scout-monitoring
 # System namespaces (kept separate)
 traefik_namespace: kube-system
 harbor_namespace: harbor
+squid_port: 3128
 
 # Staging node self-signed TLS certificate paths
 # Used when tls_cert_path/tls_key_path not provided in inventory
