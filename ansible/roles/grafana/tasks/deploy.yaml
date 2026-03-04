@@ -77,11 +77,22 @@
       loop_control:
         label: '{{ item.path | basename }}'
 
+    # Alerting resources are only provisioned when a contact point is fully configured.
+    # Without credentials, Grafana crashes: "receiver <name> does not exist".
+    - name: Determine if alerting contact point is configured
+      ansible.builtin.set_fact:
+        _grafana_alerting_configured: >-
+          {{
+            (grafana_alert_contact_point == 'slack' and slack_channel_id != '' and slack_token != '') or
+            (grafana_alert_contact_point == 'email' and grafana_smtp_host != '')
+          }}
+
     - name: Find all Grafana alerts
       ansible.builtin.find:
         paths: '{{ grafana_alerts_path }}'
         patterns: '*.json.j2'
       register: alert_templates
+      when: _grafana_alerting_configured | bool
 
     - name: Create ConfigMap for each Grafana alert
       no_log: true
@@ -100,10 +111,12 @@
             labels:
               grafana_alert: '1'
           binaryData: '{{ {alert_filename: alert_content_b64} }}'
-      loop: '{{ alert_templates.files }}'
+      loop: '{{ alert_templates.files | default([]) }}'
       loop_control:
         label: '{{ item.path | basename }}'
-      when: (item.path | basename | regex_replace('.json.j2$', '')) not in grafana_disabled_alerts
+      when:
+        - _grafana_alerting_configured | bool
+        - (item.path | basename | regex_replace('.json.j2$', '')) not in grafana_disabled_alerts
 
     - name: Remove ConfigMaps for disabled Grafana alerts
       kubernetes.core.k8s:
@@ -130,15 +143,14 @@
               grafana_alert: '1'
           binaryData:
             notification-policy.yaml: '{{ notification_policy_content_b64 }}'
-      when: >
-        (grafana_alert_contact_point == 'slack' and slack_channel_id != '' and slack_token != '') or
-        (grafana_alert_contact_point == 'email' and grafana_smtp_host != '')
+      when: _grafana_alerting_configured | bool
 
     - name: Find all Grafana contact points
       ansible.builtin.find:
         paths: '{{ grafana_contact_points_path }}'
         patterns: '*.json.j2'
       register: contact_point_templates
+      when: _grafana_alerting_configured | bool
 
     - name: Create Secret for each Grafana contact point
       no_log: true
@@ -158,13 +170,15 @@
               grafana_alert: '1'
           type: Opaque
           data: '{{ {contact_point_filename: contact_point_content_b64} }}'
-      loop: '{{ contact_point_templates.files }}'
-      when: >-
-        grafana_alert_contact_point in (item.path | basename) and
-        (
-          ('slack' in (item.path | basename) and slack_channel_id != '' and slack_token != '') or
-          ('email' in (item.path | basename) and grafana_smtp_host != '')
-        )
+      loop: '{{ contact_point_templates.files | default([]) }}'
+      when:
+        - _grafana_alerting_configured | bool
+        - >-
+          grafana_alert_contact_point in (item.path | basename) and
+          (
+            ('slack' in (item.path | basename) and slack_channel_id != '' and slack_token != '') or
+            ('email' in (item.path | basename) and grafana_smtp_host != '')
+          )
       loop_control:
         label: '{{ item.path | basename }}'
 

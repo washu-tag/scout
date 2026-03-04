@@ -189,7 +189,7 @@ datasources:
 
 sidecar:
   alerts:
-    enabled: true
+    enabled: {{ _grafana_alerting_configured | default(false) | bool | lower }}
     label: grafana_alert
     labelValue: '1'
     watchMethod: SLEEP
