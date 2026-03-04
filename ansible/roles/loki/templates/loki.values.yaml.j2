@@ -100,9 +100,9 @@ bloomGateway:
 # - resultsCache: Caches query results for repeated queries
 # Override in inventory.yaml if needed (e.g., production may need larger caches)
 chunksCache:
-  enabled: true
+  enabled: {{ loki_chunks_cache_enabled | default(true) }}
   allocatedMemory: {{ loki_chunks_cache_allocated_memory }}  # MB, default 8192
 
 resultsCache:
-  enabled: true
+  enabled: {{ loki_results_cache_enabled | default(true) }}
   allocatedMemory: {{ loki_results_cache_allocated_memory }}  # MB, default 1024
