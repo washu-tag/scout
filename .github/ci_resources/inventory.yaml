@@ -165,8 +165,18 @@ k3s_cluster:
     loki_chunks_cache_enabled: false
     loki_results_cache_enabled: false
 
+    # Helm timeout (increased for CI resource pressure)
+    helm_chart_timeout: '10m'
+
     # Resources (reduced for 7GB CI runner)
     hl7_transformer_spark_memory: 1G
     cassandra_init_heap: 1G
     cassandra_max_heap: 1G
     elasticsearch_max_heap: 256M
+    grafana_resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
