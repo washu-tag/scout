@@ -43,7 +43,7 @@ Production Cluster (air-gapped)          Staging Node (internet access)
 
 ### Security Model
 
-**Domain allowlist without proxy authentication**. Squid is configured to only permit HTTPS CONNECT requests to explicitly listed domains. All other traffic is denied.
+**Domain allowlist without proxy authentication**. Squid is configured to only permit HTTPS CONNECT requests to explicitly listed domains (exact match, no subdomain wildcards). All other traffic — including plain HTTP — is denied.
 
 Allowed domains are computed automatically from the configured IdPs by reading `keycloak_microsoft_client_id` and `keycloak_gh_client_id` from the production cluster's inventory vars:
 

@@ -85,6 +85,12 @@
 - name: Compute proxy mappings for air-gapped IdP access
   when: air_gapped | default(false) | bool
   block:
+    - name: Verify staging group exists
+      ansible.builtin.assert:
+        that:
+          - groups.get('staging', []) | length > 0
+        fail_msg: "air_gapped is true but no hosts are defined in the 'staging' inventory group"
+
     - name: Resolve staging hostname and proxy port
       ansible.builtin.set_fact:
         _staging_hostname: "{{ hostvars[groups['staging'][0]].external_url | default(groups['staging'][0]) }}"

@@ -71,6 +71,9 @@ scout_monitoring_namespace: scout-monitoring
 # System namespaces (kept separate)
 traefik_namespace: kube-system
 harbor_namespace: harbor
+
+# Squid forward proxy port (on staging node for air-gapped IdP access)
+# Also referenced by: roles/squid/defaults/main.yaml
 squid_port: 3128
 
 # Staging node self-signed TLS certificate paths
