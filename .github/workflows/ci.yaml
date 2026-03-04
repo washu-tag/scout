@@ -423,10 +423,10 @@ jobs:
           echo "=== Checking Hive Metastore ==="
           sudo -E kubectl rollout status deployment/hive-metastore -n scout-data --timeout=180s
           echo "=== Checking Trino ==="
-          sudo -E kubectl rollout status statefulset/trino-coordinator -n scout-analytics --timeout=180s
-          sudo -E kubectl rollout status statefulset/trino-worker -n scout-analytics --timeout=180s
+          sudo -E kubectl rollout status deployment/trino-coordinator -n scout-analytics --timeout=180s
+          sudo -E kubectl rollout status deployment/trino-worker -n scout-analytics --timeout=180s
           echo "=== Checking Prometheus ==="
-          sudo -E kubectl rollout status statefulset/prometheus-kube-prometheus-prometheus -n scout-monitoring --timeout=180s
+          sudo -E kubectl rollout status deployment/prometheus-server -n scout-monitoring --timeout=180s
           echo "=== Checking Grafana ==="
           sudo -E kubectl rollout status deployment/grafana -n scout-monitoring --timeout=180s
           echo "=== Checking Loki ==="
