@@ -20,7 +20,7 @@
 - name: Skip Squid when no domains need proxying
   when: _squid_allowed_domains | length == 0
   ansible.builtin.debug:
-    msg: "No IdP domains configured and no extra domains specified — skipping Squid deployment"
+    msg: 'No IdP domains configured and no extra domains specified — skipping Squid deployment'
 
 - name: Install and configure Squid
   when: _squid_allowed_domains | length > 0
