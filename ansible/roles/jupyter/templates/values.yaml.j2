@@ -179,6 +179,12 @@ singleuser:
 
         # Enable custom CSS loading for Scout branding
         c.LabApp.custom_css = True
+    jupyter-resource-usage-overrides:
+      mountPath: /opt/conda/share/jupyter/lab/settings/overrides.json
+      data:
+        "@jupyter-server/resource-usage:topbar-item":
+          enable: true
+          refreshRate: 1000
 {% if jupyter_extension_manager_mode == 'readonly' %}
 
         # Configure Extension Manager to readonly mode (view installed extensions only)
