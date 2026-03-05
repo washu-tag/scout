@@ -10,7 +10,7 @@ enablePlaybooks: false
 
 image:
   repository: ghcr.io/washu-tag/launchpad
-  tag: latest
+  tag: 2.1.0
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

@@ -4,6 +4,6 @@ description: Voilà Playbooks - Interactive notebook dashboards for Scout
 
 type: application
 
-version: 0.0.0-dev
+version: 2.1.0
 
 appVersion: "0.5.11"

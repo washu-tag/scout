@@ -4,7 +4,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/washu-tag/pyspark-notebook
-  tag: latest
+  tag: 2.1.0
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
