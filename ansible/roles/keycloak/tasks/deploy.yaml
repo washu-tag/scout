@@ -199,7 +199,7 @@
           enabled: false
         proxy:
           headers: xforwarded
-        additionalOptions: "{{ _keycloak_base_options + _keycloak_proxy_options }}"
+        additionalOptions: '{{ _keycloak_base_options + _keycloak_proxy_options }}'
 
 # The operator wants to use a subdomain and does not appear to support a path-based ingress
 - name: Create Keycloak Ingress
