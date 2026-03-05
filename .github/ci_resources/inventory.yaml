@@ -46,6 +46,7 @@ k3s_cluster:
             NODE_IP minio.scout.test
             NODE_IP chat.scout.test
             NODE_IP playbooks.scout.test
+            NODE_IP testuser.jupyter.scout.test
             fallthrough
           }
         }
@@ -118,6 +119,10 @@ k3s_cluster:
 
     # Valkey (single shared password for all services)
     valkey_password: valkey123
+
+    # OAuth2 Proxy forwardAuth: use internal service URL to avoid TLS
+    # verification issues with self-signed certs inside the Traefik container
+    oauth2_proxy_auth_url: 'http://oauth2-proxy.kube-system/oauth2/auth'
 
     # Keycloak + OAuth
     keycloak_postgres_password: keycloak123

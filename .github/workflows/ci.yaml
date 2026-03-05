@@ -348,14 +348,14 @@ jobs:
           openssl req -x509 -newkey rsa:2048 -keyout /tmp/scout-ci-tls/key.pem \
             -out /tmp/scout-ci-tls/cert.pem -days 1 -nodes \
             -subj "/CN=scout.test" \
-            -addext "subjectAltName=DNS:scout.test,DNS:*.scout.test"
+            -addext "subjectAltName=DNS:scout.test,DNS:*.scout.test,DNS:*.jupyter.scout.test"
           # Trust the self-signed cert so curl validates it in auth tests
           sudo cp /tmp/scout-ci-tls/cert.pem /usr/local/share/ca-certificates/scout-ci.crt
           sudo update-ca-certificates
           # Add /etc/hosts entries for subdomain routing (BEFORE deployment)
           {
             echo "127.0.0.1 scout.test"
-            for sub in superset jupyter grafana keycloak auth temporal minio chat playbooks; do
+            for sub in superset jupyter grafana keycloak auth temporal minio chat playbooks testuser.jupyter; do
               echo "127.0.0.1 ${sub}.scout.test"
             done
           } | sudo tee -a /etc/hosts
