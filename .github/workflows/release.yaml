@@ -197,13 +197,6 @@ jobs:
     outputs:
       commit_sha: ${{ steps.target.outputs.sha }}
     steps:
-      - name: Generate token from GitHub App
-        id: app_token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.RELEASE_APP_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-
       - name: Checkout
         uses: actions/checkout@v6
         with:
@@ -222,7 +215,7 @@ jobs:
 
       - name: Wait for CI workflow
         env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           TARGET_SHA="${{ steps.target.outputs.sha }}"
           echo "Waiting for CI workflow to complete on $TARGET_SHA..."
