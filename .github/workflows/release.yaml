@@ -194,6 +194,8 @@ jobs:
     # always() is required because GitHub Actions skips downstream jobs by default when
     # upstream jobs are skipped; without it, the 'skipped' result check would never be evaluated
     if: ${{ !inputs.dry_run && always() && !cancelled() && (needs.version-bump.result == 'success' || needs.version-bump.result == 'skipped') }}
+    outputs:
+      commit_sha: ${{ steps.target.outputs.sha }}
     steps:
       - name: Generate token from GitHub App
         id: app_token
@@ -210,6 +212,9 @@ jobs:
       - name: Determine target commit
         id: target
         run: |
+          # The release should include everything on main at this point — not just
+          # the version bump commit, but also any fixes pushed after it (e.g., if a
+          # previous release attempt failed and we pushed a fix before re-running).
           git pull origin main
           HEAD_SHA=$(git rev-parse HEAD)
           echo "Waiting for build on commit: $HEAD_SHA"
@@ -270,22 +275,15 @@ jobs:
           app-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Pull latest
-        run: git pull origin main
-
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           gh release create "v${{ inputs.version }}" \
+            --repo "${{ github.repository }}" \
             --title "Scout v${{ inputs.version }}" \
             --generate-notes \
-            --target HEAD
+            --target "${{ needs.wait-for-build.outputs.commit_sha }}"
 
           echo "::notice::Created release v${{ inputs.version }}"
 
