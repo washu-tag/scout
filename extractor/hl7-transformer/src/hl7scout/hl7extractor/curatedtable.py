@@ -32,11 +32,7 @@ def curate_silver_table(batch_df, spark, table_name):
     for other sites.
 
     The patient ID is the most complex derivation here and must be noted that this
-    scheme does NOT support linking a patient's reports over multiple versions of
-    HL7. That is a decision we could revisit at a later date, but the primary reason
-    is that doing so would be incredibly complex to write from needing to handle
-    patient ID merges and concurrency problems, and it would only be a small win anyway
-    to link the small amount of 2.3 reports to 2.7 reports (and leave 2.4 reports isolated).
+    scheme does NOT support linking a patient's reports over multiple versions of HL7.
 
     To derive a patient ID, this process is designed from assumptions/inferences and
     a good deal of manual inspection of the data. The empirical data is as follows:
@@ -56,6 +52,18 @@ def curate_silver_table(batch_df, spark, table_name):
     * In 2.7, PID-2 has a value, but does not seem like one that users are interested in searching on.
       Reports have an MBMC ID, or an EPIC MRN and optional EMPI ID (corresponding to the 2.3 MPI). Because
       exactly one of the MBMC ID and EPIC MRN seems to be present, we can use that ID for the patient.
+
+      Derivation of the "patient_mpi" represents an early effort to support linking a patient's reports
+      over multiple versions of HL7. From some manual inspection of the data, the "EE" identifier type
+      patient IDs in the 2.4 reports seem to usually correspond to the 2.3 MPI. Given the 2.3 MPI <-> 2.7
+      EMPI link, this gives a reasonably reliable way to identify a patient for any version of HL7.
+
+      This column does NOT attempt to bite off the complexity of trying to bridge the IDs when they are specified
+      only in parts. By this, I mean that we could have 2.3 report A with an MPI and 2.7 report B with
+      only an EPIC_MRN. If we receive 2.7 report C later with an EMPI_MR matching report A and EPIC_MRN
+      matching report B, we could theoretically go back and update report B with the MPI that it didn't know
+      about, but this only works if the IDs can be treated as transitive, and would necessitate a much
+      more complex workflow to implement.
     """
 
     filtered_df = filter_df_for_update_inserts(batch_df)
@@ -100,6 +108,12 @@ def curate_silver_table(batch_df, spark, table_name):
                     ),
                 )
                 .otherwise(extract_patient_id("mpi", filtered_df)),
+                "patient_mpi": F.when(F.col("version_id") == "2.7", "empi_mr")
+                .when(
+                    F.col("version_id") == "2.4",
+                    F.coalesce("bjh_ee", "bjwc_ee", "slch_ee"),
+                )
+                .otherwise("mpi"),
             }
         )
         .withColumns(
