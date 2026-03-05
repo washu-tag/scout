@@ -194,14 +194,9 @@ jobs:
     # always() is required because GitHub Actions skips downstream jobs by default when
     # upstream jobs are skipped; without it, the 'skipped' result check would never be evaluated
     if: ${{ !inputs.dry_run && always() && !cancelled() && (needs.version-bump.result == 'success' || needs.version-bump.result == 'skipped') }}
+    outputs:
+      commit_sha: ${{ steps.target.outputs.sha }}
     steps:
-      - name: Generate token from GitHub App
-        id: app_token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.RELEASE_APP_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-
       - name: Checkout
         uses: actions/checkout@v6
         with:
@@ -210,6 +205,9 @@ jobs:
       - name: Determine target commit
         id: target
         run: |
+          # The release should include everything on main at this point — not just
+          # the version bump commit, but also any fixes pushed after it (e.g., if a
+          # previous release attempt failed and we pushed a fix before re-running).
           git pull origin main
           HEAD_SHA=$(git rev-parse HEAD)
           echo "Waiting for build on commit: $HEAD_SHA"
@@ -217,7 +215,7 @@ jobs:
 
       - name: Wait for CI workflow
         env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           TARGET_SHA="${{ steps.target.outputs.sha }}"
           echo "Waiting for CI workflow to complete on $TARGET_SHA..."
@@ -270,22 +268,15 @@ jobs:
           app-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Pull latest
-        run: git pull origin main
-
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           gh release create "v${{ inputs.version }}" \
+            --repo "${{ github.repository }}" \
             --title "Scout v${{ inputs.version }}" \
             --generate-notes \
-            --target HEAD
+            --target "${{ needs.wait-for-build.outputs.commit_sha }}"
 
           echo "::notice::Created release v${{ inputs.version }}"
 
@@ -293,13 +284,10 @@ jobs:
     name: Reset to Dev Versions
     runs-on: ubuntu-latest
     needs: [validate, release]
-    # Run this job if:
-    # - release succeeded (normal completion), OR
-    # - release was skipped (upstream job failed, e.g., build failed)
-    # Does NOT run if release actually failed (e.g., gh release create error),
-    # allowing a retry that reuses the existing version bump commit.
-    # always() is required for the same reason as wait-for-build (see comment above).
-    if: ${{ !inputs.dry_run && always() && !cancelled() && (needs.release.result == 'success' || needs.release.result == 'skipped') && needs.validate.outputs.reset_exists != 'true' }}
+    # Only reset after a successful release. If the release was skipped (e.g., build
+    # failed) or failed (e.g., gh release create error), we preserve the version bump
+    # commit so a re-run can reuse it.
+    if: ${{ !inputs.dry_run && needs.release.result == 'success' && needs.validate.outputs.reset_exists != 'true' }}
     steps:
       - name: Generate token from GitHub App
         id: app_token
