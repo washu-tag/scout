@@ -99,7 +99,10 @@ No new feature flag is introduced — the existing `air_gapped` flag and IdP cli
 
 Deploy Squid as a Kubernetes pod on the staging cluster using a local Helm chart and the `ubuntu/squid` Docker image, exposed via NodePort.
 
-**Rejected**: The `ubuntu/squid` Docker Hub image has no stable-channel tags — only `_edge` and `_beta` variants. There is no official Docker Hub `squid` image either. A system package uses the distro-maintained version with standard security update channels, avoiding container image management concerns entirely. The added complexity of a Helm chart, container image, and NodePort service is unnecessary for a single-process daemon on a node that Ansible already manages directly.
+**Rejected** for three reasons:
+1. **No supported container image or Helm chart**: The `ubuntu/squid` Docker Hub image has no stable-channel tags — only `_edge` and `_beta` variants. There is no official Docker Hub `squid` image or maintained Helm chart. A system package uses the distro-maintained version with standard security update channels.
+2. **Networking complexity**: Keycloak on the production cluster connects to the proxy by the staging node's hostname and port. A ClusterIP service on the staging K3s cluster would not be reachable from the production cluster. Standard Traefik ingress operates at L7 (HTTP/HTTPS routing), but Squid needs raw TCP to handle HTTPS CONNECT tunneling — this would require a dedicated TCP entrypoint on Traefik or a NodePort, adding K8s networking layers for no benefit over binding directly to the host.
+3. **Unnecessary overhead**: The added complexity of a Helm chart, container image management, and K8s networking configuration is unjustified for a single-process daemon on a node that Ansible already manages directly.
 
 ### Direct Network Route
 
