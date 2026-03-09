@@ -91,7 +91,7 @@ public class TestScoutQueries extends BaseTest {
         final Function<String, Map<String, String>> baseAssertionMap = (messageId) -> {
             final Map<String, String> map = new HashMap<>();
             rowAssertions.put(messageId, map);
-            for (String id : Arrays.asList("mpi", "slch_mr", "bjwc_mr", "bjh_mr", "epic_mrn", "mbmc_mr")) {
+            for (String id : Arrays.asList("mpi", "slch_mr", "bjwc_mr", "bjh_mr", "epic_mrn", "mbmc_mr", "patient_mpi")) {
                 map.put(id, null);
             }
             return map;
@@ -101,27 +101,38 @@ public class TestScoutQueries extends BaseTest {
         final Map<String, String> legacyReport = baseAssertionMap.apply("1.2.3.4.5");
         legacyReport.put("mpi", "999999-001");
         legacyReport.put(patientIdColumn, "mpi_999999-001");
+        legacyReport.put("patient_mpi", "999999-001");
 
         final Map<String, String> slchReport = baseAssertionMap.apply("1.2.3.4.6");
         slchReport.put("slch_mr", "999999-S001");
         slchReport.put(patientIdColumn, "slch_mr_999999-S001");
+        slchReport.put("patient_ids", "[[999999-W126,SLCH,EE,null], [999999-S001,SLCH,MR,null]]");
+        slchReport.put("patient_mpi", "999999-W126");
 
         final Map<String, String> bjwcReport = baseAssertionMap.apply("1.2.3.4.7");
         bjwcReport.put("bjwc_mr", "999999-B001");
         bjwcReport.put(patientIdColumn, "bjwc_mr_999999-B001");
+        bjwcReport.put("patient_ids", "[[999999-W127,BJWC,EE,null], [999999-B001,BJWC,MR,null]]");
+        bjwcReport.put("patient_mpi", "999999-W127");
 
         final Map<String, String> bjhReport = baseAssertionMap.apply("1.2.3.4.8");
         bjhReport.put("bjh_mr", "999999-H001");
         bjhReport.put(patientIdColumn, "bjh_mr_999999-H001");
+        bjhReport.put("patient_ids", "[[999999-W128,BJH,EE,null], [999999-H001,BJH,MR,null]]");
+        bjhReport.put("patient_mpi", "999999-W128");
 
         final Map<String, String> epicReport = baseAssertionMap.apply("1.2.3.4.9");
         epicReport.put("epic_mrn", "999999-EPIC0001");
         epicReport.put("empi_mr", "999999-001");
         epicReport.put(patientIdColumn, "epic_mrn_999999-EPIC0001");
+        epicReport.put("patient_ids", "[[999999-001,EMPI,MR,null], [999999-EPIC0001,EPIC,MRN,null]]");
+        epicReport.put("patient_mpi", "999999-001");
 
         final Map<String, String> mbmcReport = baseAssertionMap.apply("1.2.3.4.10");
         mbmcReport.put("mbmc_mr", "999999-M00001");
         mbmcReport.put(patientIdColumn, "mbmc_mr_999999-M00001");
+        mbmcReport.put("patient_ids", "[[999999-M00001,MBMC,MR,null]]");
+        mbmcReport.put("patient_mpi", null);
 
         final ExactRowsResult expected = new ExactRowsResult();
         expected.setRowAssertions(rowAssertions);
