@@ -11,7 +11,9 @@ import edu.washu.tag.TestQuerySuite;
 import edu.washu.tag.model.IngestJobInput;
 import edu.washu.tag.util.FileIOUtils;
 import edu.washu.tag.validation.ExactRowsResult;
+import edu.washu.tag.validation.column.ArrayType;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -137,6 +139,7 @@ public class TestScoutQueries extends BaseTest {
         final ExactRowsResult expected = new ExactRowsResult();
         expected.setRowAssertions(rowAssertions);
         expected.setUniqueIdColumnName(COLUMN_MESSAGE_CONTROL_ID);
+        expected.setColumnTypes(Collections.singleton(new ArrayType("patient_ids")));
         final TestQuery<?> testQuery = new TestQuery<>("processed_patient_ids", SELECT_ALL_SQL);
         testQuery.setExpectedQueryResult(expected);
         queryAndValidate(testQuery, curatedTable(baseTableName));
