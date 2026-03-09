@@ -113,7 +113,7 @@ def curate_silver_table(batch_df, spark, table_name):
                     ),
                 )
                 .otherwise(extract_labeled_patient_id("mpi", filtered_df)),
-                "patient_mpi": F.when(F.col("version_id") == "2.7", "empi_mr")
+                "patient_mpi": F.when(F.col("version_id") == "2.7", F.col("empi_mr"))
                 .when(
                     F.col("version_id") == "2.4",
                     F.coalesce(
