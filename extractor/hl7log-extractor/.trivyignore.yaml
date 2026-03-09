@@ -3,3 +3,5 @@ vulnerabilities:
   - id: CVE-2025-55163 # grpc-netty-shaded
   # Transitive dependency from Spring Boot BOM — awaiting upstream fix
   - id: GHSA-72hv-8253-57qq # jackson-core
+  # Alpine base image not yet rebuilt with zlib 1.3.2-r0 — check amazoncorretto:21-alpine on Docker Hub for rebuild after 2026-03-05
+  - id: CVE-2026-22184 # zlib
