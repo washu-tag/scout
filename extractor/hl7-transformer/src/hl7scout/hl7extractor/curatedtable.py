@@ -70,14 +70,19 @@ def curate_silver_table(batch_df, spark, table_name):
     if filtered_df is None:
         return
 
-    def extract_patient_id(id_column: str, df: DataFrame) -> Column:
+    def extract_patient_id(id_column: str, extraction: Column, df: DataFrame) -> Column:
         if id_column in df.columns:
             return F.when(
                 F.col(id_column).isNotNull(),
-                F.concat_ws("_", F.lit(id_column), F.col(id_column)),
+                extraction,
             )
         else:  # particular patient id may not have been seen yet
             return F.lit(None)
+
+    def extract_labeled_patient_id(id_column: str, df: DataFrame) -> Column:
+        return extract_patient_id(
+            id_column, F.concat_ws("_", F.lit(id_column), F.col(id_column)), df
+        )
 
     curated_df = (
         filtered_df.withColumnRenamed("source_file", "primary_report_identifier")
@@ -93,7 +98,7 @@ def curate_silver_table(batch_df, spark, table_name):
                     F.col("version_id") == "2.7",
                     F.coalesce(
                         *[
-                            extract_patient_id(pat_id, filtered_df)
+                            extract_labeled_patient_id(pat_id, filtered_df)
                             for pat_id in ["epic_mrn", "mbmc_mr", "empi_mr"]
                         ]
                     ),
@@ -102,18 +107,25 @@ def curate_silver_table(batch_df, spark, table_name):
                     F.col("version_id") == "2.4",
                     F.coalesce(
                         *[
-                            extract_patient_id(f"{authority}_mr", filtered_df)
+                            extract_labeled_patient_id(f"{authority}_mr", filtered_df)
                             for authority in ["bjh", "bjwc", "slch"]
                         ]
                     ),
                 )
-                .otherwise(extract_patient_id("mpi", filtered_df)),
+                .otherwise(extract_labeled_patient_id("mpi", filtered_df)),
                 "patient_mpi": F.when(F.col("version_id") == "2.7", "empi_mr")
                 .when(
                     F.col("version_id") == "2.4",
-                    F.coalesce("bjh_ee", "bjwc_ee", "slch_ee"),
+                    F.coalesce(
+                        *[
+                            extract_patient_id(
+                                f"{authority}_ee", F.col(f"{authority}_ee"), filtered_df
+                            )
+                            for authority in ["bjh", "bjwc", "slch"]
+                        ]
+                    ),
                 )
-                .otherwise("mpi"),
+                .otherwise(F.col("mpi")),
             }
         )
         .withColumns(
