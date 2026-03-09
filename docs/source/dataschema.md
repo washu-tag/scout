@@ -244,7 +244,7 @@ queries that can track an individual patient over all HL7 versions in the delta 
 that will hopefully be consistent for reports in a given HL7 version. In other words, two values of `primary_patient_identifier` may
 actually correspond to the same patient as Scout does not have the information to disambiguate in all cases.
 
-Users wanting to use the entire dataset longitudinally may find the derivation of the `patient_mpi` column available in the curated table.
+Users wanting to use the entire dataset longitudinally may find useful the derivation of the `patient_mpi` column available in the curated table.
 From some manual inspection of the data, the "EE" identifier type patient IDs in the HL7 2.4 reports seem to usually correspond to the HL7
 2.3 MPI. Given the 2.3 MPI <-> 2.7 EMPI_MR link, this gives a reasonably reliable way to identify a patient for any version of HL7. As such,
 the `patient_mpi` column will be assigned the `mpi` for a 2.3 report, the available "EE" identifier for a 2.4 report, and the EMPI_MR identifier
