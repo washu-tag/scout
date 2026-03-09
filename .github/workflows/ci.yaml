@@ -412,7 +412,7 @@ jobs:
         shell: bash
         run: |
           cd ansible
-          for playbook in k3s traefik postgres valkey auth lake chatbot voila analytics jupyter monitor launchpad; do
+          for playbook in k3s traefik postgres valkey auth lake chatbot voila trino superset jupyter monitor launchpad; do
             echo "=== Deploying $playbook ==="
             sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff "playbooks/${playbook}.yaml"
           done

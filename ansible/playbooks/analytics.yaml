@@ -1,8 +1,6 @@
 ---
-- name: Install components for Analytics service
-  hosts: server
-  gather_facts: false
-  environment: '{{ cluster_k8s_environment }}'
-  roles:
-    - role: trino
-    - role: superset
+- name: Install Trino
+  import_playbook: trino.yaml
+
+- name: Install Superset
+  import_playbook: superset.yaml

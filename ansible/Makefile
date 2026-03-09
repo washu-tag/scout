@@ -1,5 +1,6 @@
 .PHONY: all deps setup-k3s config-traefik install-helm install-k3s clone-scout install-gpu-op \
-    install-postgres install-valkey install-auth install-lake install-analytics install-orchestrator \
+    install-postgres install-valkey install-auth install-lake install-trino install-superset \
+    install-analytics install-orchestrator \
     install-extractor install-monitor install-jupyter install-launchpad install-voila install-staging \
     verify-node echo
 
@@ -72,8 +73,13 @@ install-lake:
 install-chat:
 	$(ANSIBLE_CMD) playbooks/chatbot.yaml
 
-install-analytics:
-	$(ANSIBLE_CMD) playbooks/analytics.yaml
+install-trino:
+	$(ANSIBLE_CMD) playbooks/trino.yaml
+
+install-superset:
+	$(ANSIBLE_CMD) playbooks/superset.yaml
+
+install-analytics: install-trino install-superset
 
 install-orchestrator:
 	$(ANSIBLE_CMD) playbooks/orchestrator.yaml

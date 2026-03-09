@@ -35,8 +35,11 @@
 - name: Install Voila
   import_playbook: voila.yaml
 
-- name: Install Analytics
-  import_playbook: analytics.yaml
+- name: Install Trino
+  import_playbook: trino.yaml
+
+- name: Install Superset
+  import_playbook: superset.yaml
 
 - name: Install Orchestrator
   import_playbook: orchestrator.yaml
