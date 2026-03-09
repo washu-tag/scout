@@ -235,6 +235,7 @@ in the base report table. A row in the curated table looks exactly the same as a
 | `obr_2_placer_order_number` & `orc_2_placer_order_number` | Replaced with `placer_order_number`, containing the first non-empty value from the source columns                                                                                                                                                                                       |
 | `obr_3_filler_order_number` & `orc_3_filler_order_number` | Replaced with `accession_number` and `primary_study_identifier`, containing the first non-empty value from the source columns. For our data, `accession_number` and `primary_study_identifier` will be duplicates, but they exist as separate columns for sites where that is not true. |
 | `patient_ids`                                             | See note below about `primary_patient_identifier`                                                                                                                                                                                                                                       |
+| `patient_ids`                                             | See note below about `patient_mpi`                                                                                                                                                                                                                                                      |
 
 In practice, the Patient IDs available to Scout in the reports are rather messy and have some consistency problems. In the curated
 table, Scout persists the {ref}`patient_ids <patient_ids_ref>` column as-is, but it also derives a patient ID to store in
@@ -242,6 +243,13 @@ table, Scout persists the {ref}`patient_ids <patient_ids_ref>` column as-is, but
 queries that can track an individual patient over all HL7 versions in the delta lake. Rather, it should provide a single column
 that will hopefully be consistent for reports in a given HL7 version. In other words, two values of `primary_patient_identifier` may
 actually correspond to the same patient as Scout does not have the information to disambiguate in all cases.
+
+Users wanting to use the entire dataset longitudinally may find the derivation of the `patient_mpi` column available in the curated table.
+From some manual inspection of the data, the "EE" identifier type patient IDs in the HL7 2.4 reports seem to usually correspond to the HL7
+2.3 MPI. Given the 2.3 MPI <-> 2.7 EMPI_MR link, this gives a reasonably reliable way to identify a patient for any version of HL7. As such,
+the `patient_mpi` column will be assigned the `mpi` for a 2.3 report, the available "EE" identifier for a 2.4 report, and the EMPI_MR identifier
+for a 2.7 report. This gives us moderate confidence in an identifier that remains invariant for the patient over time, but it will not always
+be present (such as for 2.7 reports without an EMPI id).
 
 (latest_table_ref)=
 ### reports_latest
