@@ -3,6 +3,7 @@ package edu.washu.tag;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.washu.tag.util.FileIOUtils;
+import edu.washu.tag.validation.TestContext;
 import java.nio.file.Paths;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ public class TestConfig {
     private Map<String, Object> sparkConfig;
     private DatabaseConfig postgresConfig;
     private TemporalConfig temporalConfig = new TemporalConfig();
+    private TestContext testContext = new TestContext();
     private static final Logger logger = LoggerFactory.getLogger(TestConfig.class);
     public static final TestConfig instance = cache();
 
@@ -40,6 +42,15 @@ public class TestConfig {
 
     public TestConfig setTemporalConfig(TemporalConfig temporalConfig) {
         this.temporalConfig = temporalConfig;
+        return this;
+    }
+
+    public TestContext getTestContext() {
+        return testContext;
+    }
+
+    public TestConfig setTestContext(TestContext testContext) {
+        this.testContext = testContext;
         return this;
     }
 

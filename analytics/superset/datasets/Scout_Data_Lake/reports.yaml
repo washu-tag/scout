@@ -426,18 +426,6 @@ columns:
     description: null
     python_date_format: null
     extra: {}
-  - column_name: bjwc_ss
-    verbose_name: null
-    is_dttm: false
-    is_active: true
-    type: VARCHAR
-    advanced_data_type: null
-    groupby: true
-    filterable: true
-    expression: null
-    description: null
-    python_date_format: null
-    extra: {}
   - column_name: mbmc_mr
     verbose_name: null
     is_dttm: false
@@ -463,18 +451,6 @@ columns:
     python_date_format: null
     extra: {}
   - column_name: bjh_mr
-    verbose_name: null
-    is_dttm: false
-    is_active: true
-    type: VARCHAR
-    advanced_data_type: null
-    groupby: true
-    filterable: true
-    expression: null
-    description: null
-    python_date_format: null
-    extra: {}
-  - column_name: bjh_ss
     verbose_name: null
     is_dttm: false
     is_active: true
@@ -559,18 +535,6 @@ columns:
     python_date_format: null
     extra: {}
   - column_name: slch_mr
-    verbose_name: null
-    is_dttm: false
-    is_active: true
-    type: VARCHAR
-    advanced_data_type: null
-    groupby: true
-    filterable: true
-    expression: null
-    description: null
-    python_date_format: null
-    extra: {}
-  - column_name: slch_ss
     verbose_name: null
     is_dttm: false
     is_active: true

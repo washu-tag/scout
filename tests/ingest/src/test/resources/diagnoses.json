@@ -1,0 +1,74 @@
+{
+  "2.25.127224212738010575979308106797780351009": [
+    {
+      "diagnosis_code": "M47.26",
+      "diagnosis_code_text": "Other spondylosis with radiculopathy, lumbar region",
+      "diagnosis_code_coding_system": "I10"
+    },
+    {
+      "diagnosis_code": "M50.20",
+      "diagnosis_code_text": "Other cervical disc displacement, unspecified cervical region",
+      "diagnosis_code_coding_system": "I10"
+    }
+  ],
+  "2.25.137848733644981865581156124982221917438": [
+    {
+      "diagnosis_code": "R93.6",
+      "diagnosis_code_text": "Abnormal findings on diagnostic imaging of limbs",
+      "diagnosis_code_coding_system": "I10"
+    },
+    {
+      "diagnosis_code": "K35.80",
+      "diagnosis_code_text": "Unspecified acute appendicitis",
+      "diagnosis_code_coding_system": "I10"
+    }
+  ],
+  "2.25.296750342531641850427239772296772676108": [
+    {
+      "diagnosis_code": "J44.9",
+      "diagnosis_code_text": "Chronic obstructive pulmonary disease, unspecified",
+      "diagnosis_code_coding_system": "I10"
+    },
+    {
+      "diagnosis_code": "I25.10",
+      "diagnosis_code_text": "Atherosclerotic heart disease of native coronary artery without angina pectoris",
+      "diagnosis_code_coding_system": "I10"
+    },
+    {
+      "diagnosis_code": "R91.8",
+      "diagnosis_code_text": "Other nonspecific abnormal finding of lung field",
+      "diagnosis_code_coding_system": "I10"
+    }
+  ],
+  "1.2.4.8.16.1": [
+    {
+      "diagnosis_code": "M47.21",
+      "diagnosis_code_text": "Other spondylosis with radiculopathy, occipito-atlanto-axial region",
+      "diagnosis_code_coding_system": "I10"
+    },
+    {
+      "diagnosis_code": "E53.9",
+      "diagnosis_code_text": "Vitamin B deficiency, unspecified",
+      "diagnosis_code_coding_system": "I10"
+    }
+  ],
+  "1.2.4.8.16.4": [
+    {
+      "diagnosis_code": "H50.00",
+      "diagnosis_code_text": "Unspecified esotropia",
+      "diagnosis_code_coding_system": "I10"
+    }
+  ],
+  "1.2.4.8.16.6": [
+    {
+      "diagnosis_code": "D50.8",
+      "diagnosis_code_text": "Other iron deficiency anemias",
+      "diagnosis_code_coding_system": "I10"
+    },
+    {
+      "diagnosis_code": "W61.02XA",
+      "diagnosis_code_text": "Struck by parrot, initial encounter",
+      "diagnosis_code_coding_system": "I10"
+    }
+  ]
+}

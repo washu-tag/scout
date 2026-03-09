@@ -1,0 +1,50 @@
+{
+  "1.2.4.8.16.1": {
+    "version_id": "2.7",
+    "source_file": "s3://%LAKE_BUCKET%/hl7/2026/20260126.zip/2026/01/26/09/202601260910103399_0.hl7",
+    "obr_3_filler_order_number": "620943145",
+    "report_text": "EXAMINATION: SOMETHING\nIMPRESSION: ALSO SOMETHING",
+    "report_section_findings": "EXAMINATION: SOMETHING",
+    "report_section_impression": "IMPRESSION: ALSO SOMETHING"
+  },
+  "1.2.4.8.16.2": {
+    "version_id": "2.7",
+    "source_file": "s3://%LAKE_BUCKET%/hl7/2026/20260126.zip/2026/01/26/09/202601260910115087_1.hl7",
+    "obr_3_filler_order_number": "620943172",
+    "report_text": "EXAMINATION: Abdominal X-ray imaging study.\nIMP: ?",
+    "report_section_findings": "EXAMINATION: Abdominal X-ray imaging study.",
+    "report_section_impression": "IMP: ?"
+  },
+  "1.2.4.8.16.3": {
+    "version_id": "2.7",
+    "source_file": "s3://%LAKE_BUCKET%/hl7/2026/20260126.zip/2026/01/26/09/202601260910125170_2.hl7",
+    "obr_3_filler_order_number": "999-123-999",
+    "report_text": "EXAMINATION: Repeat chest X-ray for interval comparison.\nFINDINGS: lungs are present\nIMPRESSION: impressed",
+    "report_section_findings": "EXAMINATION: Repeat chest X-ray for interval comparison.\nFINDINGS: lungs are present",
+    "report_section_impression": "IMPRESSION: impressed"
+  },
+  "1.2.4.8.16.4": {
+    "version_id": "2.7",
+    "source_file": "s3://%LAKE_BUCKET%/hl7/2026/20260126.zip/2026/01/26/09/202601260910131880_3.hl7",
+    "obr_3_filler_order_number": "999-123-999",
+    "report_text": "EXAMINATION: imaging\nFINDINGS: stuff\nIMPRESSION: still impressed",
+    "report_section_findings": "EXAMINATION: imaging\nFINDINGS: stuff",
+    "report_section_impression": "IMPRESSION: still impressed"
+  },
+  "1.2.4.8.16.5": {
+    "version_id": "2.7",
+    "source_file": "s3://%LAKE_BUCKET%/hl7/2026/20260126.zip/2026/01/26/09/202601260910143681_4.hl7",
+    "obr_3_filler_order_number": "620943148",
+    "report_text": "EXAMINATION: ???\nIMPRESSION: ???",
+    "report_section_findings": "EXAMINATION: ???",
+    "report_section_impression": "IMPRESSION: ???"
+  },
+  "1.2.4.8.16.6": {
+    "version_id": "2.7",
+    "source_file": "s3://%LAKE_BUCKET%/hl7/2026/20260126.zip/2026/01/26/09/202601260910154431_5.hl7",
+    "obr_3_filler_order_number": "620943148",
+    "report_text": "EXAMINATION: !!!\nIMPRESSION: !!!",
+    "report_section_findings": "EXAMINATION: !!!",
+    "report_section_impression": "IMPRESSION: !!!"
+  }
+}
