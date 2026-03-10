@@ -1,7 +1,7 @@
 # ADR 0014: Dependency CVE Monitoring via Renovate and Dependabot
 
 **Date**: 2026-02
-**Status**: Proposed
+**Status**: Accepted
 **Decision Owner**: TAG Team
 
 ## Context
@@ -58,6 +58,8 @@ Renovate is configured with:
 - `dependencyDashboard: true` — creates a GitHub issue listing all detected dependencies and pending updates
 - `prConcurrentLimit: 5` — limits open PRs to avoid noise
 - `enabledManagers: ["custom.regex"]` — only manages `versions.yaml`; standard ecosystems are handled by Dependabot
+
+**Helm chart coverage limitation:** OSV.dev tracks CVEs against container images and libraries, not Helm chart packages. This means Renovate will rarely (if ever) open CVE-triggered PRs for Helm chart versions. The Dependency Dashboard still lists all available Helm chart updates, so the team can review and manually update as needed. If this visibility-only approach proves insufficient, a future `packageRule` can enable version-update PRs for the `helm` datasource specifically.
 
 ### Dependabot Configuration
 
@@ -178,6 +180,7 @@ Write a custom GitHub Action that parses `versions.yaml`, checks registries for 
 - Dependabot security updates require the feature to be enabled in the GitHub UI (**Settings > Security > Advanced Security > Dependabot security updates**)
 - PR volume is limited to CVE-affected dependencies; `prConcurrentLimit: 5` further mitigates noise for Renovate
 - `# renovate:` annotations in `versions.yaml` add visual noise; they also must be kept in sync when adding new dependencies
+- **Helm chart blind spot**: CVE-only mode effectively provides no automated PRs for Helm charts, since OSV.dev doesn't track CVEs at the chart level. Trivy in CI only scans Scout's own built images, not the upstream images deployed by Helm charts. Helm chart updates are visible on the Dependency Dashboard but require manual action. If this proves insufficient, a `packageRule` can enable version-update PRs for the `helm` datasource.
 
 ### Operational
 

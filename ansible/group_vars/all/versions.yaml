@@ -34,6 +34,7 @@ cassandra_server_version: 5.0.3
 cnpg_version: ~0.27.0
 
 # Databases & Data Storage - Valkey
+# renovate: datasource=helm registryUrl=https://valkey-io.github.io/valkey-helm/ depName=valkey
 valkey_chart_version: 0.9.3
 
 # OAuth2 Proxy

@@ -26,9 +26,9 @@ Scout's CI pipeline includes several layers of automated security scanning. This
 │   ├── dependency-review.yaml   # GitHub-native dependency diff on PRs
 │   ├── security.yaml            # Semgrep
 │   └── renovate.yaml            # Self-hosted Renovate for versions.yaml
-├── dependabot.yml               # Dependabot: GitHub Actions version updates only
-renovate.json5                   # Renovate config (custom regex manager for versions.yaml)
-.semgrepignore                   # Excluded paths for Semgrep
+└── dependabot.yml               # Dependabot: GitHub Actions version updates only
+renovate.json5                     # Renovate config (custom regex manager for versions.yaml)
+.semgrepignore                     # Excluded paths for Semgrep
 ```
 
 ## Prerequisites
