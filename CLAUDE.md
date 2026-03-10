@@ -502,6 +502,8 @@ ADRs in `docs/internal/adr/` document significant architectural decisions. Consu
 
 - **ADR 0013: Redis Enterprise to Valkey Migration** — Replaces Redis Enterprise Cluster (commercial license) with a single standalone Valkey instance (BSD-3, Linux Foundation). All Scout Redis usage is ephemeral (sessions, cache, pub/sub), so no data migration is needed. Valkey is a Redis OSS 7.2.4 fork with full RESP protocol compatibility — no application code changes required. Implements `redis_mode: standalone` as the new default per ADR 0011. Consult when modifying Redis/Valkey configuration, caching infrastructure, or the `redis_mode` service-mode variable.
 
+- **ADR 0014: Squid Forward Proxy for Air-Gapped Authentication** — Installs Squid forward proxy as a system package on the staging node with a strict domain allowlist, enabling Keycloak on air-gapped production clusters to reach external IdP OAuth endpoints (Microsoft, GitHub). Uses Keycloak's `spi-connections-http-client-default-proxy-mappings` SPI, configured conditionally when `air_gapped: true` and an external IdP is present. Consult when modifying air-gapped authentication, adding external IdP providers, or extending outbound access from air-gapped clusters.
+
 ## Key Concepts for AI Assistants
 
 ### Architecture Understanding

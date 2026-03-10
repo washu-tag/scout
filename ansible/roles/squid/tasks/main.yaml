@@ -1,0 +1,10 @@
+---
+# Main entry point for squid role
+# Delegates to specific task files based on tags
+
+- name: Include deployment tasks
+  when: air_gapped | default(false) | bool
+  ansible.builtin.include_tasks: deploy.yaml
+  tags:
+    - squid
+    - deploy

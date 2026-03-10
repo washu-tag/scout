@@ -1,0 +1,7 @@
+---
+# Defaults for squid role
+# Deploys Squid as a system package on the staging node
+# Domain lists (squid_microsoft_domains, squid_github_domains) are defined in scout_common
+
+# Additional domains to allow through the proxy (user-configurable)
+squid_extra_allowed_domains: []
