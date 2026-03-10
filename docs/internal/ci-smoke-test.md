@@ -6,8 +6,8 @@ The `smoke-test` CI job deploys the full Scout stack on a single-node K3s cluste
 
 | Job | Purpose |
 |-----|---------|
-| `deploy-and-test` | Deploys the data pipeline (postgres, lake, trino, orchestrator, extractor), runs ingest integration tests, then verifies Trino can query the ingested data. |
-| `smoke-test` | Deploys everything _except_ orchestrator and extractor (which are already covered by `deploy-and-test`). Deploys: k3s, traefik, postgres, valkey, auth (Keycloak + OAuth2 Proxy), lake, analytics (Trino + Superset), jupyter, monitor (Prometheus + Loki + Grafana), chat (Open WebUI + Ollama), playbooks (Voila), and launchpad. Runs health checks and auth-curl-tests. |
+| `deploy-and-test` | Deploys the data pipeline (postgres, lake, orchestrator, extractor) and runs ingest integration tests. |
+| `smoke-test` | Deploys everything _except_ orchestrator and extractor (which are already covered by `deploy-and-test`). Deploys: k3s, traefik, postgres, valkey, auth (Keycloak + OAuth2 Proxy), lake, analytics (Trino + Superset), jupyter, monitor (Prometheus + Loki + Grafana), chat (Open WebUI + Ollama), playbooks (Voila), and launchpad. Runs health checks, Trino connectivity check, and auth-curl-tests. |
 
 Both jobs share the same CI inventory (`.github/ci_resources/inventory.yaml`) and run in parallel after `lint` and `build-and-upload`.
 

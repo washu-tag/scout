@@ -252,10 +252,6 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/lake.yaml
           sudo -E kubectl describe pod -l v1.min.io/tenant=minio-scout -n scout-data
-      - name: 'Install trino'
-        shell: bash
-        run: |
-          cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/trino.yaml
       - name: 'Install orchestrator'
         shell: bash
         run: |
@@ -296,24 +292,6 @@ jobs:
         if: always()
         run: |
           sudo -E kubectl -n scout-extractor logs deployment/hl7-transformer
-      - name: 'Trino smoke test'
-        shell: bash
-        run: |
-          TRINO_POD=$(sudo -E kubectl get pod -n scout-analytics \
-            -l app.kubernetes.io/name=trino,app.kubernetes.io/component=coordinator \
-            -o jsonpath='{.items[0].metadata.name}')
-          echo "=== Trino catalog connectivity ==="
-          sudo -E kubectl exec -n scout-analytics "$TRINO_POD" -- trino --execute "SHOW CATALOGS"
-          sudo -E kubectl exec -n scout-analytics "$TRINO_POD" -- trino --execute "SHOW SCHEMAS FROM delta"
-          echo "=== Query ingested data ==="
-          sudo -E kubectl exec -n scout-analytics "$TRINO_POD" -- trino --execute \
-            "SELECT table_name FROM delta.information_schema.tables WHERE table_schema='default'"
-          TABLE=$(sudo -E kubectl exec -n scout-analytics "$TRINO_POD" -- trino \
-            --output-format CSV --execute \
-            "SELECT table_name FROM delta.information_schema.tables WHERE table_schema='default' LIMIT 1" | tr -d '"')
-          echo "=== Row count from $TABLE ==="
-          sudo -E kubectl exec -n scout-analytics "$TRINO_POD" -- trino --execute \
-            "SELECT count(*) FROM delta.default.\"$TABLE\""
   smoke-test:
     runs-on: ubuntu-latest
     needs:
@@ -412,7 +390,7 @@ jobs:
         shell: bash
         run: |
           cd ansible
-          for playbook in k3s traefik postgres valkey auth lake chatbot voila trino superset jupyter monitor launchpad; do
+          for playbook in k3s traefik postgres valkey auth lake chatbot voila analytics jupyter monitor launchpad; do
             echo "=== Deploying $playbook ==="
             sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff "playbooks/${playbook}.yaml"
           done
@@ -437,11 +415,8 @@ jobs:
       - name: 'Trino connectivity check'
         shell: bash
         run: |
-          TRINO_POD=$(sudo -E kubectl get pod -n scout-analytics \
-            -l app.kubernetes.io/name=trino,app.kubernetes.io/component=coordinator \
-            -o jsonpath='{.items[0].metadata.name}')
-          sudo -E kubectl exec -n scout-analytics "$TRINO_POD" -- trino --execute "SHOW CATALOGS"
-          sudo -E kubectl exec -n scout-analytics "$TRINO_POD" -- trino --execute "SHOW SCHEMAS FROM delta"
+          sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- trino \
+            --execute "SHOW CATALOGS; SHOW SCHEMAS FROM delta"
       # Auth tests — verify OAuth2 Proxy blocks unauthenticated access
       - name: 'Auth curl tests'
         shell: bash
