@@ -1,3 +1,5 @@
+from typing import Optional
+
 from delta import DeltaTable
 
 from .derivativetable import DerivativeTable
@@ -70,7 +72,11 @@ def curate_silver_table(batch_df, spark, table_name):
     if filtered_df is None:
         return
 
-    def extract_patient_id(id_column: str, extraction: Column, df: DataFrame) -> Column:
+    def extract_patient_id(
+        id_column: str, df: DataFrame, extraction: Optional[Column] = None
+    ) -> Column:
+        if extraction is None:
+            extraction = F.col(id_column)
         if id_column in df.columns:
             return F.when(
                 F.col(id_column).isNotNull(),
@@ -81,7 +87,7 @@ def curate_silver_table(batch_df, spark, table_name):
 
     def extract_labeled_patient_id(id_column: str, df: DataFrame) -> Column:
         return extract_patient_id(
-            id_column, F.concat_ws("_", F.lit(id_column), F.col(id_column)), df
+            id_column, df, F.concat_ws("_", F.lit(id_column), F.col(id_column))
         )
 
     curated_df = (
@@ -113,14 +119,15 @@ def curate_silver_table(batch_df, spark, table_name):
                     ),
                 )
                 .otherwise(extract_labeled_patient_id("mpi", filtered_df)),
-                "patient_mpi": F.when(F.col("version_id") == "2.7", F.col("empi_mr"))
+                "patient_mpi": F.when(
+                    F.col("version_id") == "2.7",
+                    extract_patient_id("empi_mr", filtered_df),
+                )
                 .when(
                     F.col("version_id") == "2.4",
                     F.coalesce(
                         *[
-                            extract_patient_id(
-                                f"{authority}_ee", F.col(f"{authority}_ee"), filtered_df
-                            )
+                            extract_patient_id(f"{authority}_ee", filtered_df)
                             for authority in ["bjh", "bjwc", "slch"]
                         ]
                     ),
