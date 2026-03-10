@@ -1,15 +1,7 @@
 ---
 # Defaults for squid role
 # Deploys Squid as a system package on the staging node
-
-# Domains required by each IdP — automatically included when the IdP is configured
-squid_microsoft_domains:
-  - login.microsoftonline.com
-  - graph.microsoft.com
-
-squid_github_domains:
-  - github.com
-  - api.github.com
+# Domain lists (squid_microsoft_domains, squid_github_domains) are defined in scout_common
 
 # Additional domains to allow through the proxy (user-configurable)
 squid_extra_allowed_domains: []

@@ -102,20 +102,14 @@
         - keycloak_microsoft_client_id is defined
         - keycloak_microsoft_client_id | length > 0
       ansible.builtin.set_fact:
-        _proxy_mappings: "{{ _proxy_mappings + [
-          'login\\.microsoftonline\\.com;http://' ~ _staging_hostname ~ ':' ~ _squid_port,
-          'graph\\.microsoft\\.com;http://' ~ _staging_hostname ~ ':' ~ _squid_port
-          ] }}"
+        _proxy_mappings: "{{ _proxy_mappings + squid_microsoft_domains | map('replace', '.', '\\.') | map('regex_replace', '(.+)', '\\1;http://' ~ _staging_hostname ~ ':' ~ _squid_port) | list }}"
 
     - name: Add GitHub IdP proxy mappings
       when:
         - keycloak_gh_client_id is defined
         - keycloak_gh_client_id | length > 0
       ansible.builtin.set_fact:
-        _proxy_mappings: "{{ _proxy_mappings + [
-          'github\\.com;http://' ~ _staging_hostname ~ ':' ~ _squid_port,
-          'api\\.github\\.com;http://' ~ _staging_hostname ~ ':' ~ _squid_port
-          ] }}"
+        _proxy_mappings: "{{ _proxy_mappings + squid_github_domains | map('replace', '.', '\\.') | map('regex_replace', '(.+)', '\\1;http://' ~ _staging_hostname ~ ':' ~ _squid_port) | list }}"
 
     - name: Build proxy-mappings option
       when: _proxy_mappings | length > 0
