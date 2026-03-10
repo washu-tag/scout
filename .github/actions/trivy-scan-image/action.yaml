@@ -47,7 +47,7 @@ runs:
 
     - name: Run Trivy (JSON — single scan)
       if: steps.download.outcome == 'success'
-      uses: aquasecurity/trivy-action@97e0b3872f55f89b95b2f65b3dbab56962816478 # v0.34.2
+      uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
       env:
         TRIVY_DISABLE_VEX_NOTICE: 'true'
       with:
