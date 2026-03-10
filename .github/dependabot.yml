@@ -1,7 +1,5 @@
 version: 2
 updates:
-  # GitHub Actions: keep commit-hash pins current (security updates
-  # don't cover Actions, so version updates are needed here)
   - package-ecosystem: 'github-actions'
     directories:
       - '/'
@@ -9,6 +7,6 @@ updates:
     schedule:
       interval: 'weekly'
     groups:
-      actions:
+      github-actions:
         patterns:
           - '*'
