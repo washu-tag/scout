@@ -1,6 +1,6 @@
 # ADR 0014: Dependency CVE Monitoring via Renovate and Dependabot
 
-**Date**: 2026-02
+**Date**: 2026-03
 **Status**: Accepted
 **Decision Owner**: TAG Team
 
@@ -10,7 +10,7 @@ Scout pins ~40 external dependency versions in `ansible/group_vars/all/versions.
 
 Scout also builds 7 custom Docker images with their own application dependencies (npm, pip, gradle) that are not monitored for available updates by any tool.
 
-The `appsec` branch (ADR pending) adds Dependabot for GitHub Actions version pinning, plus Trivy/Semgrep/CodeQL scanning for CVEs in built images and source code. However, none of these tools detect **available updates** for the specific versions pinned in `versions.yaml`, nor do they monitor application dependencies for available updates (only CVEs in built images via Trivy).
+CI security scanning (see `docs/internal/ci-security-scanning.md`) adds Dependabot for GitHub Actions version pinning, plus Trivy/Semgrep/CodeQL scanning for CVEs in built images and source code. However, none of these tools detect **available updates** for the specific versions pinned in `versions.yaml`, nor do they monitor application dependencies for available updates (only CVEs in built images via Trivy).
 
 ### Gap Analysis
 
@@ -87,7 +87,6 @@ Renovate and Dependabot manage disjoint scopes with no overlap:
 
 | Dependency | Reason |
 |---|---|
-| `cassandra_server_version` | Managed by K8ssandra cass-operator; not a direct image pull |
 | `orthanc_image` / `orthanc_version` | Pinned to `latest`; not a specific version Renovate can track |
 
 ## Alternatives Considered

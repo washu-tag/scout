@@ -45,6 +45,12 @@
       "prBodyNotes": [
         "**Reminder:** Check if `cassandra_server_version` in `versions.yaml` needs updating for compatibility with this cass-operator version. See [K8ssandra release notes](https://github.com/k8ssandra/cass-operator/releases)."
       ]
+    },
+    {
+      "matchDepNames": ["k8ssandra/cass-management-api"],
+      "prBodyNotes": [
+        "**Reminder:** Check that the pinned `cass_operator_version` supports this Cassandra version. See [K8ssandra release notes](https://github.com/k8ssandra/cass-operator/releases)."
+      ]
     }
   ],
 
