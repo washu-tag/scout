@@ -11,7 +11,7 @@ Scout's CI pipeline includes several layers of automated security scanning. This
 | **Semgrep** | K8s, YAML, Dockerfiles, secrets, OWASP | `security.yaml` | Yes (new findings only, via Require code scanning results) | Security tab, PR annotations |
 | **Dependency review** | New dependencies introduced in a PR | `dependency-review.yaml` | Yes (critical vulns only) | PR comment |
 | **Dependabot** | Application deps (npm, pip, gradle, Docker) via GitHub UI; GitHub Actions via `dependabot.yml` | GitHub UI + `dependabot.yml` | N/A (security-only PRs; version updates for Actions only) | Pull requests |
-| **Renovate** | `versions.yaml` — Helm charts, Docker images, GitHub releases | `renovate.yaml` | N/A (security-only PRs) | Pull requests, Dependency Dashboard issue |
+| **Renovate** | `versions.yaml` — Helm charts, Docker images, GitHub releases | `renovate.yaml` | N/A (auto PRs for CVEs; manual approval for others) | Pull requests, Dependency Dashboard issue |
 
 ## Files
 
@@ -141,13 +141,14 @@ Dependabot does **not** monitor `ansible/group_vars/all/versions.yaml` — that 
 
 Configured in `renovate.json5` and runs as a self-hosted GitHub Action (`.github/workflows/renovate.yaml`) weekly on Mondays at 06:00 UTC.
 
-Renovate monitors `ansible/group_vars/all/versions.yaml` for infrastructure dependencies with known CVEs: Helm charts, Docker images, and GitHub releases (~40 pinned versions). It uses a custom regex manager that reads `# renovate:` annotation comments above each version line to determine the datasource, package name, and registry URL.
+Renovate monitors `ansible/group_vars/all/versions.yaml` for infrastructure dependencies: Helm charts, Docker images, and GitHub releases (~40 pinned versions). It uses a custom regex manager that reads `# renovate:` annotation comments above each version line to determine the datasource, package name, and registry URL.
 
-PRs are only opened for dependencies with known CVEs (`enabled: false` globally, `vulnerabilityAlerts.enabled: true`). The Dependency Dashboard issue still lists all detected dependencies and available updates for visibility.
+CVE PRs are created automatically. All other available updates are listed on the Dependency Dashboard (a single GitHub issue updated on each run) but require manual approval before a PR is created.
 
 **Key configuration:**
-- `enabled: false` + `vulnerabilityAlerts.enabled: true` — only opens PRs for dependencies with known CVEs (via OSV.dev)
-- `dependencyDashboard: true` — creates a "Dependency Dashboard" GitHub issue listing all detected dependencies and their update status
+- `dependencyDashboardApproval: true` — all available updates listed on dashboard; PRs require manual approval (check the box on the dashboard issue)
+- `vulnerabilityAlerts.enabled: true` + `dependencyDashboardApproval: false` — CVE PRs bypass approval and are created automatically via OSV.dev
+- `dependencyDashboard: true` — creates a "Dependency Dashboard" GitHub issue listing all detected dependencies, available updates, and OSV vulnerability summary
 - `prConcurrentLimit: 5` — limits concurrent open PRs
 - `automerge: false` — all updates require human review
 - `enabledManagers: ["custom.regex"]` — only manages `versions.yaml`; standard ecosystems are handled by Dependabot

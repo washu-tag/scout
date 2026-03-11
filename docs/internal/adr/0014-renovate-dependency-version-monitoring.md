@@ -40,11 +40,11 @@ The `appsec` branch (ADR pending) adds Dependabot for GitHub Actions version pin
 | **Renovate** (self-hosted GitHub Action) | `versions.yaml` — Helm charts, Docker images, GitHub releases | Only tool that can parse custom YAML files via regex managers |
 | **Dependabot** (expand existing config) | Application dependencies — npm, pip, gradle, Docker base images | Native support for standard package ecosystems; already in use for GitHub Actions |
 
-Both tools are configured to only open PRs for dependencies with known CVEs — not for routine version updates. Neither tool auto-merges; all PRs require human review.
+Both tools are configured to minimize PR noise. Renovate lists all available updates on the Dependency Dashboard but only auto-creates PRs for CVEs; non-CVE update PRs require manual approval on the dashboard. Dependabot only opens PRs for application dependency CVEs (plus GitHub Actions version updates). Neither tool auto-merges; all PRs require human review.
 
 ### Renovate Configuration
 
-Renovate runs as a self-hosted GitHub Action (`renovate.yaml`) using a dedicated GitHub App (`scout-renovate`) for authentication, following the same pattern as existing apps (`scout-release`, `scout-copyright-updater`).
+Renovate runs as a self-hosted GitHub Action (`renovate.yaml`) using a dedicated GitHub App (`scout-renovate`) for authentication, following the same pattern as existing apps (`scout-release`, `scout-copyright-updater`). The workflow triggers on a weekly schedule, `workflow_dispatch`, and `issues: edited` events (filtered to the Dependency Dashboard issue) so that checking a dashboard checkbox immediately triggers a Renovate run to create the approved PR.
 
 The Renovate config (`renovate.json5`) uses a single custom regex manager scoped to `versions.yaml`. Each dependency in the file gets a standardized `# renovate:` comment annotation specifying:
 - `datasource` — `helm`, `docker`, or `github-releases`
@@ -54,12 +54,13 @@ The Renovate config (`renovate.json5`) uses a single custom regex manager scoped
 - `extractVersion` — (optional) regex to extract version from tag (e.g., K3s `v1.34.1+k3s1`)
 
 Renovate is configured with:
-- `enabled: false` + `vulnerabilityAlerts.enabled: true` — only opens PRs for dependencies with known CVEs via OSV.dev; the Dependency Dashboard still lists all available updates for visibility
-- `dependencyDashboard: true` — creates a GitHub issue listing all detected dependencies and pending updates
+- `dependencyDashboardApproval: true` — all available updates are listed on the Dependency Dashboard, but PRs are only created when manually approved by checking a box on the dashboard
+- `vulnerabilityAlerts.enabled: true` + `dependencyDashboardApproval: false` — CVE PRs bypass the approval requirement and are created automatically via OSV.dev
+- `dependencyDashboard: true` — creates a single GitHub issue (updated on each run) listing all detected dependencies, available updates, and OSV vulnerability summary
 - `prConcurrentLimit: 5` — limits open PRs to avoid noise
 - `enabledManagers: ["custom.regex"]` — only manages `versions.yaml`; standard ecosystems are handled by Dependabot
 
-**Helm chart coverage limitation:** OSV.dev tracks CVEs against container images and libraries, not Helm chart packages. This means Renovate will rarely (if ever) open CVE-triggered PRs for Helm chart versions. The Dependency Dashboard still lists all available Helm chart updates, so the team can review and manually update as needed. If this visibility-only approach proves insufficient, a future `packageRule` can enable version-update PRs for the `helm` datasource specifically.
+**Helm chart coverage limitation:** OSV.dev tracks CVEs against container images and libraries, not Helm chart packages. This means Renovate will rarely (if ever) open CVE-triggered PRs for Helm chart versions. However, the Dependency Dashboard lists all available Helm chart updates, and the team can create PRs on demand by checking the relevant box on the dashboard.
 
 ### Dependabot Configuration
 
@@ -169,8 +170,8 @@ Write a custom GitHub Action that parses `versions.yaml`, checks registries for 
 
 - All ~40 infrastructure dependencies in `versions.yaml` are monitored for known CVEs via OSV.dev (Renovate)
 - All application dependencies (npm, pip, gradle) and Dockerfile base images are monitored for known CVEs via GitHub Advisory Database (Dependabot security updates)
-- PRs are only opened for dependencies with fixable CVEs — no noise from routine version updates
-- The Dependency Dashboard provides a single overview of all detected infrastructure dependencies and available updates (for manual review)
+- CVE PRs are created automatically; routine version updates are visible on the Dependency Dashboard but require manual approval to create PRs — no noise from unwanted updates
+- The Dependency Dashboard provides a single overview of all detected infrastructure dependencies, available updates, and OSV vulnerability summary
 - No auto-merge — all updates require human review and testing
 
 ### Negative
@@ -178,7 +179,7 @@ Write a custom GitHub Action that parses `versions.yaml`, checks registries for 
 - Two dependency monitoring tools to understand and maintain
 - Self-hosted Renovate requires a GitHub App and repository secrets (`RENOVATE_APP_ID`, `RENOVATE_APP_PRIVATE_KEY`)
 - Dependabot security updates require the feature to be enabled in the GitHub UI (**Settings > Security > Advanced Security > Dependabot security updates**)
-- PR volume is limited to CVE-affected dependencies; `prConcurrentLimit: 5` further mitigates noise for Renovate
+- PR volume is limited to CVE-affected dependencies unless manually approved on the dashboard; `prConcurrentLimit: 5` further mitigates noise for Renovate
 - `# renovate:` annotations in `versions.yaml` add visual noise; they also must be kept in sync when adding new dependencies
 - **Helm chart blind spot**: CVE-only mode effectively provides no automated PRs for Helm charts, since OSV.dev doesn't track CVEs at the chart level. Trivy in CI only scans Scout's own built images, not the upstream images deployed by Helm charts. Helm chart updates are visible on the Dependency Dashboard but require manual action. If this proves insufficient, a `packageRule` can enable version-update PRs for the `helm` datasource.
 
@@ -186,6 +187,7 @@ Write a custom GitHub Action that parses `versions.yaml`, checks registries for 
 
 - **Adding a new dependency to `versions.yaml`**: Add a `# renovate:` comment above the version line with the appropriate `datasource`, `depName`, and optional `registryUrl`/`versioning`/`extractVersion`
 - **Adding a new application dependency**: No config changes needed — GitHub's dependency graph automatically detects standard manifest files. Verify the dependency appears under **Insights > Dependency graph**.
+- **GitHub Issues**: Must be enabled on the repository (**Settings > General > Features > Issues**). The Dependency Dashboard is a GitHub issue that Renovate creates and maintains; without Issues enabled, the dashboard will not appear.
 - **GitHub UI setup**: Enable Dependency graph, Dependabot alerts, and Dependabot security updates (or configure Dependabot rules) under **Settings > Security > Advanced Security**
 - **GitHub App setup**: Create the `scout-renovate` GitHub App, install on the repository, and add `RENOVATE_APP_ID` and `RENOVATE_APP_PRIVATE_KEY` as repository secrets (see setup instructions in this ADR's parent PR)
 - **Verifying Renovate**: After merging, trigger the workflow manually via `workflow_dispatch` and verify the Dependency Dashboard issue is created
