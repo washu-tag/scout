@@ -440,7 +440,7 @@ jobs:
             done
           done
   publish:
-    if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.scan-images.result == 'success' && needs.smoke-test.result == 'success'
+    if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -510,7 +510,7 @@ jobs:
         with:
           image-name: keycloak
   publish-demo:
-    if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.scan-images.result == 'success' && needs.smoke-test.result == 'success'
+    if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -77,14 +77,16 @@
       loop_control:
         label: '{{ item.path | basename }}'
 
-    # Alerting resources are only provisioned when a contact point is fully configured.
+    # Alerting resources are only provisioned when alerts are enabled and a contact point is fully configured.
     # Without credentials, Grafana crashes: "receiver <name> does not exist".
     - name: Determine if alerting contact point is configured
       ansible.builtin.set_fact:
         _grafana_alerting_configured: >-
           {{
-            (grafana_alert_contact_point == 'slack' and slack_channel_id != '' and slack_token != '') or
-            (grafana_alert_contact_point == 'email' and grafana_smtp_host != '')
+            grafana_alerts_enabled and (
+              (grafana_alert_contact_point == 'slack' and slack_channel_id != '' and slack_token != '') or
+              (grafana_alert_contact_point == 'email' and grafana_smtp_host != '')
+            )
           }}
 
     - name: Provision alerting resources
