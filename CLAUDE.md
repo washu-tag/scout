@@ -502,6 +502,8 @@ ADRs in `docs/internal/adr/` document significant architectural decisions. Consu
 
 - **ADR 0013: Redis Enterprise to Valkey Migration** — Replaces Redis Enterprise Cluster (commercial license) with a single standalone Valkey instance (BSD-3, Linux Foundation). All Scout Redis usage is ephemeral (sessions, cache, pub/sub), so no data migration is needed. Valkey is a Redis OSS 7.2.4 fork with full RESP protocol compatibility — no application code changes required. Implements `redis_mode: standalone` as the new default per ADR 0011. Consult when modifying Redis/Valkey configuration, caching infrastructure, or the `redis_mode` service-mode variable.
 
+- **ADR 0014: Dependency CVE Monitoring via Renovate and Dependabot** — Uses self-hosted Renovate (custom regex manager) and Dependabot to monitor dependencies for known CVEs only — not routine version updates. Renovate covers `versions.yaml` (Helm charts, Docker images, GitHub releases); Dependabot covers application dependencies (npm, pip, gradle, Dockerfile base images) via GitHub UI settings, plus GitHub Actions version updates via `dependabot.yml`. Consult when adding new dependencies to `versions.yaml` (add `# renovate:` annotation) or configuring Dependabot (GitHub UI: **Settings > Security > Advanced Security**).
+
 ## Key Concepts for AI Assistants
 
 ### Architecture Understanding
