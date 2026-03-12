@@ -12,6 +12,7 @@ grafana_storage_size: 5Gi
 grafana_storage_class: ''
 
 # Alert configuration
+grafana_alerts_enabled: true
 grafana_alert_contact_point: slack # email or slack
 grafana_smtp_host: '' # Include the port in the value
 grafana_smtp_user: ''

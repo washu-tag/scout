@@ -210,7 +210,9 @@ jobs:
       - name: 'Prepare inventory.yaml'
         shell: bash
         run: |
-          sed -e "s/HOSTNAME/$(hostname)/" -e "s/K3S_TOKEN/$(openssl rand -hex 16)/" -e "s:WORK_DIR:$(pwd):" \
+          NODE_IP=$(hostname -I | awk '{print $1}')
+          sed -e "s/HOSTNAME/$(hostname)/" -e "s/K3S_TOKEN/$(openssl rand -hex 16)/" \
+            -e "s:WORK_DIR:$(pwd):" -e "s/NODE_IP/$NODE_IP/g" \
             .github/ci_resources/inventory.yaml > ansible/inventory.yaml
       - name: 'ansible-galaxy dependencies'
         shell: bash
@@ -290,15 +292,162 @@ jobs:
         if: always()
         run: |
           sudo -E kubectl -n scout-extractor logs deployment/hl7-transformer
+  smoke-test:
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - build-and-upload
+    permissions:
+      contents: read
+      packages: read
+    env:
+      KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    steps:
+      - uses: actions/checkout@v6
+      - name: 'Free up disk space'
+        shell: bash
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          echo "Removing unnecessary tools to free up disk space..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf /opt/ghc
+          sudo apt-get clean
+          docker system prune -af --volumes
+          echo "Disk space after cleanup:"
+          df -h
+      - name: 'Generate TLS certificates and configure /etc/hosts'
+        shell: bash
+        run: |
+          # Generate self-signed wildcard cert for *.scout.test
+          mkdir -p /tmp/scout-ci-tls
+          openssl req -x509 -newkey rsa:2048 -keyout /tmp/scout-ci-tls/key.pem \
+            -out /tmp/scout-ci-tls/cert.pem -days 1 -nodes \
+            -subj "/CN=scout.test" \
+            -addext "subjectAltName=DNS:scout.test,DNS:*.scout.test,DNS:*.jupyter.scout.test"
+          # Trust the self-signed cert so curl validates it in auth tests
+          sudo cp /tmp/scout-ci-tls/cert.pem /usr/local/share/ca-certificates/scout-ci.crt
+          sudo update-ca-certificates
+          # Add /etc/hosts entries for subdomain routing (BEFORE deployment)
+          {
+            echo "127.0.0.1 scout.test"
+            for sub in superset jupyter grafana keycloak auth temporal minio chat playbooks testuser.jupyter; do
+              echo "127.0.0.1 ${sub}.scout.test"
+            done
+          } | sudo tee -a /etc/hosts
+      - name: 'Prepare inventory.yaml'
+        shell: bash
+        run: |
+          NODE_IP=$(hostname -I | awk '{print $1}')
+          echo "Node IP for CoreDNS: $NODE_IP"
+          sed -e "s/HOSTNAME/$(hostname)/" -e "s/K3S_TOKEN/$(openssl rand -hex 16)/" \
+            -e "s:WORK_DIR:$(pwd):" -e "s/NODE_IP/$NODE_IP/g" \
+            .github/ci_resources/inventory.yaml > ansible/inventory.yaml
+      - name: 'ansible-galaxy dependencies'
+        shell: bash
+        run: cd ansible && sudo -E /opt/pipx_bin/ansible-galaxy install -r collections/requirements.yaml
+      - name: Install Python dependencies for Ansible Kubernetes modules
+        run: /opt/pipx/venvs/ansible-core/bin/python -m pip install kubernetes
+      - name: 'Install k3s'
+        shell: bash
+        run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Import ALL custom images into k3s
+      - name: 'Push image to k3s - superset'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: helm/superset
+          image-name: superset
+      - name: 'Push image to k3s - keycloak'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: keycloak
+          image-name: keycloak
+      - name: 'Push image to k3s - launchpad'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: launchpad
+          image-name: launchpad
+      - name: 'Push image to k3s - pyspark-notebook'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: helm/jupyter/notebook
+          image-name: pyspark-notebook
+      - name: 'Install helm and helm diff'
+        shell: bash
+        run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
+      # Deploy services not covered by deploy-and-test job
+      # Skipped: orchestrator (Cassandra+ES+Temporal) and extractor — tested in deploy-and-test
+      # Auto-skipped by missing config: staging, gpu, scout clone
+      - name: 'Deploy Scout services'
+        shell: bash
+        run: |
+          cd ansible
+          for playbook in k3s traefik postgres valkey auth lake chatbot voila analytics jupyter monitor launchpad; do
+            echo "=== Deploying $playbook ==="
+            sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff "playbooks/${playbook}.yaml"
+          done
+      # Health checks — verify all services rolled out
+      - name: 'Service health checks'
+        shell: bash
+        run: |
+          echo "=== Checking Hive Metastore ==="
+          sudo -E kubectl rollout status deployment/hive-metastore -n scout-data --timeout=180s
+          echo "=== Checking Trino ==="
+          sudo -E kubectl rollout status deployment/trino-coordinator -n scout-analytics --timeout=180s
+          sudo -E kubectl rollout status deployment/trino-worker -n scout-analytics --timeout=180s
+          echo "=== Checking Prometheus ==="
+          sudo -E kubectl rollout status deployment/prometheus-server -n scout-monitoring --timeout=180s
+          echo "=== Checking Grafana ==="
+          sudo -E kubectl rollout status deployment/grafana -n scout-monitoring --timeout=180s
+          echo "=== Checking Loki ==="
+          sudo -E kubectl rollout status statefulset/loki -n scout-monitoring --timeout=180s
+          echo "=== All pods ==="
+          sudo -E kubectl get pods -A
+      # Trino connectivity check
+      - name: 'Trino connectivity check'
+        shell: bash
+        run: |
+          sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- trino \
+            --execute "SHOW CATALOGS; SHOW SCHEMAS FROM delta"
+      # Auth tests — verify OAuth2 Proxy blocks unauthenticated access
+      - name: 'Auth curl tests'
+        shell: bash
+        run: bash tests/auth/auth-curl-tests.sh scout.test
+      # Diagnostic logging on failure
+      - name: 'Debug - pod status'
+        if: failure()
+        shell: bash
+        run: |
+          sudo -E kubectl get pods -A
+          sudo -E kubectl get events -A --sort-by='.lastTimestamp' | tail -50
+      - name: 'Debug - all pod logs'
+        if: failure()
+        shell: bash
+        run: |
+          for ns in $(sudo -E kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
+            for pod in $(sudo -E kubectl get pods -n "$ns" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+              echo "=== $ns/$pod ==="
+              sudo -E kubectl logs -n "$ns" "$pod" --all-containers --tail=30 --previous 2>/dev/null || \
+              sudo -E kubectl logs -n "$ns" "$pod" --all-containers --tail=30 2>/dev/null || true
+            done
+          done
   publish:
-    if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.scan-images.result == 'success'
+    if: github.ref_name == 'main' && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
-    needs: [changes, deploy-and-test, scan-images]
+    needs: [changes, deploy-and-test, scan-images, smoke-test]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v6
@@ -361,14 +510,14 @@ jobs:
         with:
           image-name: keycloak
   publish-demo:
-    if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.scan-images.result == 'success'
+    if: startsWith(github.ref_name, 'demo') && needs.deploy-and-test.result == 'success' && needs.smoke-test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
-    needs: [changes, deploy-and-test, scan-images]
+    needs: [changes, deploy-and-test, scan-images, smoke-test]
     steps:
       - name: Checkout GitHub Action
         uses: actions/checkout@v6

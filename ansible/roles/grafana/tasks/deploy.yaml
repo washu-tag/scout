@@ -77,96 +77,96 @@
       loop_control:
         label: '{{ item.path | basename }}'
 
-    - name: Find all Grafana alerts
-      ansible.builtin.find:
-        paths: '{{ grafana_alerts_path }}'
-        patterns: '*.json.j2'
-      register: alert_templates
+    - name: Provision alerting resources
+      when: grafana_alerts_enabled | bool
+      block:
+        - name: Find all Grafana alerts
+          ansible.builtin.find:
+            paths: '{{ grafana_alerts_path }}'
+            patterns: '*.json.j2'
+          register: alert_templates
 
-    - name: Create ConfigMap for each Grafana alert
-      no_log: true
-      vars:
-        alert_filename: '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}'
-        alert_content_b64: >-
-          {{ (lookup("template", item.path, variable_start_string="[%", variable_end_string="%]") | b64encode) }}
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: ConfigMap
-          metadata:
-            name: '{{ item.path | basename | regex_replace(".json.j2$", "") }}'
+        - name: Create ConfigMap for each Grafana alert
+          no_log: true
+          vars:
+            alert_filename: '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}'
+            alert_content_b64: >-
+              {{ (lookup("template", item.path, variable_start_string="[%", variable_end_string="%]") | b64encode) }}
+          kubernetes.core.k8s:
+            state: present
+            definition:
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: '{{ item.path | basename | regex_replace(".json.j2$", "") }}'
+                namespace: '{{ grafana_namespace }}'
+                labels:
+                  grafana_alert: '1'
+              binaryData: '{{ {alert_filename: alert_content_b64} }}'
+          loop: '{{ alert_templates.files }}'
+          loop_control:
+            label: '{{ item.path | basename }}'
+          when: (item.path | basename | regex_replace('.json.j2$', '')) not in grafana_disabled_alerts
+
+        - name: Remove ConfigMaps for disabled Grafana alerts
+          kubernetes.core.k8s:
+            state: absent
+            kind: ConfigMap
+            name: '{{ item }}'
             namespace: '{{ grafana_namespace }}'
-            labels:
-              grafana_alert: '1'
-          binaryData: '{{ {alert_filename: alert_content_b64} }}'
-      loop: '{{ alert_templates.files }}'
-      loop_control:
-        label: '{{ item.path | basename }}'
-      when: (item.path | basename | regex_replace('.json.j2$', '')) not in grafana_disabled_alerts
+          loop: '{{ grafana_disabled_alerts }}'
+          when: grafana_disabled_alerts | length > 0
 
-    - name: Remove ConfigMaps for disabled Grafana alerts
-      kubernetes.core.k8s:
-        state: absent
-        kind: ConfigMap
-        name: '{{ item }}'
-        namespace: '{{ grafana_namespace }}'
-      loop: '{{ grafana_disabled_alerts }}'
-      when: grafana_disabled_alerts | length > 0
+        - name: Create Grafana notification policy as ConfigMap
+          vars:
+            notification_policy_content_b64: >-
+              {{ (lookup('template', 'notification-policy.yaml.j2', variable_start_string='[%', variable_end_string='%]') | b64encode) }}
+          kubernetes.core.k8s:
+            state: present
+            definition:
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: notification-policy
+                namespace: '{{ grafana_namespace }}'
+                labels:
+                  grafana_alert: '1'
+              binaryData:
+                notification-policy.yaml: '{{ notification_policy_content_b64 }}'
 
-    - name: Create Grafana notification policy as ConfigMap
-      vars:
-        notification_policy_content_b64: >-
-          {{ (lookup('template', 'notification-policy.yaml.j2', variable_start_string='[%', variable_end_string='%]') | b64encode) }}
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: ConfigMap
-          metadata:
-            name: notification-policy
-            namespace: '{{ grafana_namespace }}'
-            labels:
-              grafana_alert: '1'
-          binaryData:
-            notification-policy.yaml: '{{ notification_policy_content_b64 }}'
-      when: >
-        (grafana_alert_contact_point == 'slack' and slack_channel_id != '' and slack_token != '') or
-        (grafana_alert_contact_point == 'email' and grafana_smtp_host != '')
+        - name: Find all Grafana contact points
+          ansible.builtin.find:
+            paths: '{{ grafana_contact_points_path }}'
+            patterns: '*.json.j2'
+          register: contact_point_templates
 
-    - name: Find all Grafana contact points
-      ansible.builtin.find:
-        paths: '{{ grafana_contact_points_path }}'
-        patterns: '*.json.j2'
-      register: contact_point_templates
-
-    - name: Create Secret for each Grafana contact point
-      no_log: true
-      vars:
-        contact_point_filename: '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}'
-        contact_point_content_b64: >-
-          {{ (lookup("template", item.path, variable_start_string="[%", variable_end_string="%]") | b64encode) }}
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: '{{ item.path | basename | regex_replace(".json.j2$", "") }}'
-            namespace: '{{ grafana_namespace }}'
-            labels:
-              grafana_alert: '1'
-          type: Opaque
-          data: '{{ {contact_point_filename: contact_point_content_b64} }}'
-      loop: '{{ contact_point_templates.files }}'
-      when: >-
-        grafana_alert_contact_point in (item.path | basename) and
-        (
-          ('slack' in (item.path | basename) and slack_channel_id != '' and slack_token != '') or
-          ('email' in (item.path | basename) and grafana_smtp_host != '')
-        )
-      loop_control:
-        label: '{{ item.path | basename }}'
+        - name: Create Secret for each Grafana contact point
+          no_log: true
+          vars:
+            contact_point_filename: '{{ item.path | basename | regex_replace(".json.j2$", ".json") }}'
+            contact_point_content_b64: >-
+              {{ (lookup("template", item.path, variable_start_string="[%", variable_end_string="%]") | b64encode) }}
+          kubernetes.core.k8s:
+            state: present
+            definition:
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: '{{ item.path | basename | regex_replace(".json.j2$", "") }}'
+                namespace: '{{ grafana_namespace }}'
+                labels:
+                  grafana_alert: '1'
+              type: Opaque
+              data: '{{ {contact_point_filename: contact_point_content_b64} }}'
+          loop: '{{ contact_point_templates.files }}'
+          when: >-
+            grafana_alert_contact_point in (item.path | basename) and
+            (
+              ('slack' in (item.path | basename) and slack_channel_id != '' and slack_token != '') or
+              ('email' in (item.path | basename) and grafana_smtp_host != '')
+            )
+          loop_control:
+            label: '{{ item.path | basename }}'
 
     - name: Create OAuth2 Client Secret
       no_log: true

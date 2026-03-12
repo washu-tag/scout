@@ -1,0 +1,3 @@
+vulnerabilities:
+  # Alpine base image not yet rebuilt with zlib 1.3.2-r0 — check node:25-alpine on Docker Hub for rebuild
+  - id: CVE-2026-22184 # zlib

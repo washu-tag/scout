@@ -52,7 +52,7 @@
       loop:
         - blobs
         - manifests
-      delegate_to: '{{ groups["staging"][0] }}'
+      delegate_to: '{{ (groups["staging"] | default([inventory_hostname]))[0] }}'
   when:
     - air_gapped | default(false) | bool
     - ollama_nfs_path is defined and ollama_nfs_path | length > 0
