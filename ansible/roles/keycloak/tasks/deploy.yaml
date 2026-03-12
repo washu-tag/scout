@@ -30,6 +30,24 @@
         src: '{{ keycloak_operator_url }}'
         namespace: '{{ keycloak_namespace }}'
 
+- name: Override Keycloak operator image pull policy
+  when: keycloak_image_pull_policy is defined
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    kind: Deployment
+    name: keycloak-operator
+    definition:
+      spec:
+        template:
+          spec:
+            containers:
+              - name: keycloak-operator
+                env:
+                  - name: KC_OPERATOR_KEYCLOAK_IMAGE_PULL_POLICY
+                    value: '{{ keycloak_image_pull_policy }}'
+    merge_type: strategic-merge
+
 - name: Wait for Keycloak Operator to be ready
   kubernetes.core.k8s_info:
     api_version: apps/v1

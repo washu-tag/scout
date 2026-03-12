@@ -20,6 +20,9 @@ config:
     banner = "{{ oauth2_proxy_banner }}"
     footer = "{{ server_hostname }}" # Hacky way to pass server hostname to sign_in template
     upstreams = ["static://200"]
+{% if oauth2_proxy_ssl_insecure_skip_verify | default(false) | bool %}
+    ssl_insecure_skip_verify = true
+{% endif %}
 # Configure Redis session storage
 sessionStorage:
   type: redis

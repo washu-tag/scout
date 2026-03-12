@@ -5,6 +5,7 @@ server:
       ansible_connection: local
       ansible_python_interpreter: /usr/bin/python3
       k3s_control_node: true
+      external_url: scout.test
 minio_hosts:
   children:
     server:
@@ -16,9 +17,39 @@ k3s_cluster:
     hl7_transformer_image_repository: docker.io/local/washu-tag/hl7-transformer
     launchpad_image_repository: docker.io/local/washu-tag/launchpad
 
+    # Custom image repositories (for k3s-image-import-or-pull)
+    superset_image_repository: docker.io/local/washu-tag/superset
+    keycloak_image_repository: docker.io/local/washu-tag/keycloak
+    keycloak_image_pull_policy: IfNotPresent
+    jupyter_singleuser_image_name: docker.io/local/washu-tag/pyspark-notebook
+
+    # TLS (self-signed certs generated in CI step)
+    tls_cert_path: /tmp/scout-ci-tls/cert.pem
+    tls_key_path: /tmp/scout-ci-tls/key.pem
+
     # K3s config
     k3s_token: K3S_TOKEN
     kubeconfig_group: root
+
+    # CoreDNS: resolve *.scout.test to the node IP inside the cluster
+    coredns_extra_server_blocks:
+      scout-test: |
+        scout.test:53 {
+          hosts {
+            NODE_IP scout.test
+            NODE_IP superset.scout.test
+            NODE_IP jupyter.scout.test
+            NODE_IP grafana.scout.test
+            NODE_IP keycloak.scout.test
+            NODE_IP auth.scout.test
+            NODE_IP temporal.scout.test
+            NODE_IP minio.scout.test
+            NODE_IP chat.scout.test
+            NODE_IP playbooks.scout.test
+            NODE_IP testuser.jupyter.scout.test
+            fallthrough
+          }
+        }
 
     # OIDC config
     minio_oidc_enabled: false
@@ -41,10 +72,12 @@ k3s_cluster:
     prometheus_storage_size: 1Gi
     loki_storage_size: 1Gi
     grafana_storage_size: 1Gi
+    grafana_alerts_enabled: false
 
     # Jupyter config
     jupyter_hub_storage_size: 1Gi
     jupyter_singleuser_storage_size: 1Gi
+    jupyter_prepuller_hook: false
 
     # Postgres config
     postgres_user: scout
@@ -80,7 +113,75 @@ k3s_cluster:
     lake_bucket: ci-lake
     scratch_bucket: ci-scratch
 
-    # Resources
+    # Trino (reduce from defaults)
+    trino_worker_count: 1
+    trino_worker_max_heap: 512M
+    trino_coordinator_max_heap: 512M
+
+    # Valkey (single shared password for all services)
+    valkey_password: valkey123
+
+    # OAuth2 Proxy forwardAuth: use internal service URL to avoid TLS
+    # verification issues with self-signed certs inside the Traefik container
+    oauth2_proxy_auth_url: 'http://oauth2-proxy.kube-system/oauth2/auth'
+
+    # Keycloak + OAuth
+    keycloak_postgres_password: keycloak123
+    keycloak_bootstrap_admin_password: admin1234567890ab
+    # cookie_secret must be base64-encoded and decode to exactly 16, 24, or 32 bytes
+    oauth2_proxy_cookie_secret: Y2ktY29va2llLXNlY3JldA==
+    oauth2_proxy_ssl_insecure_skip_verify: true
+    keycloak_oauth2_proxy_client_secret: ci-secret-00000001
+    keycloak_superset_client_secret: ci-secret-00000002
+    keycloak_jupyterhub_client_secret: ci-secret-00000003
+    keycloak_grafana_client_secret: ci-secret-00000004
+    keycloak_temporal_client_secret: ci-secret-00000005
+    keycloak_minio_client_secret: ci-secret-00000006
+    keycloak_launchpad_client_secret: ci-secret-00000007
+    keycloak_open_webui_client_secret: ci-secret-00000008
+
+    # Superset
+    superset_secret: Y2ktc3VwZXJzZXQtc2VjcmV0LWtleS1mb3ItdGVzdGluZw==
+
+    # Jupyter
+    jupyter_metrics_api_token: cijupytermetricsapitokenvalue01
+
+    # Launchpad
+    launchpad_nextauth_secret: cilaunchpadnextauthsecretvalue1
+
+    # Chat (Open WebUI + Ollama)
+    enable_chat: true
+    open_webui_postgres_password: openwebui123
+    open_webui_secret_key: ciopenwebuisecretkeyvalue12345678
+    scout_model_create: false
+    ollama_models: []
+    ollama_gpu_enabled: false
+    ollama_min_gpu_memory_gb: 0
+    ollama_resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+    # Playbooks (Voilà)
+    enable_playbooks: true
+
+    # Loki (disable caches for CI)
+    loki_chunks_cache_enabled: false
+    loki_results_cache_enabled: false
+
+    # Helm config for CI
+    helm_chart_timeout: '10m'
+
+    # Resources (reduced for 7GB CI runner)
+    hive_resources:
+      requests:
+        memory: 256Mi
+      limits:
+        memory: 512Mi
     hl7_transformer_spark_memory: 1G
     cassandra_init_heap: 1G
     cassandra_max_heap: 1G
+    elasticsearch_max_heap: 256M
