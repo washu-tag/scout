@@ -387,20 +387,7 @@ singleuser:
         trusted-host = nexus.staging
 ```
 
-**Network policy**: The existing Jupyter network policy defines an explicit egress allowlist (MinIO, Hive, Trino, Ollama). Since specifying `egress` rules in a NetworkPolicy implicitly denies all non-matching traffic -- including traffic to external IPs -- an egress rule must be added for the staging node even though it's outside the cluster. The `namespaceSelector` approach won't work for cross-cluster traffic; use an `ipBlock` CIDR instead:
-
-```yaml
-singleuser:
-  networkPolicy:
-    egress:
-      - to:
-          - ipBlock:
-              cidr: <staging-node-ip>/32
-        ports:
-          - port: 443
-```
-
-This configuration would be templated into `ansible/roles/jupyter/templates/values.yaml.j2` and toggled with an inventory variable (e.g., `jupyter_package_proxy_url`).
+**Network policy**: No changes are needed. The default JupyterHub network policy already includes an `ipBlock` egress rule that allows traffic to `0.0.0.0/0` with exceptions for RFC 1918 private ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`). Since the staging node is reachable via its Tailscale IP (in the `100.64.0.0/10` CGNAT range), it falls outside the denied ranges and is already permitted. DNS resolution also works -- the default policy allows DNS (port 53) to `kube-system` and private ranges. This means proxy URLs using Tailnet hostnames (e.g., `http://nexus.staging.your-tailnet.ts.net:8081/`) will resolve and connect without any network policy modifications.
 
 ---
 
