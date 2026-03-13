@@ -2,6 +2,9 @@
 # Jupyter role defaults
 # User-configurable settings are in inventory.yaml
 
+# Spark ConfigMap name (unique per role to avoid collisions in shared namespaces)
+jupyter_spark_defaults_configmap_name: spark-defaults-jupyter
+
 # Helm configuration
 jupyter_helm_repo_name: jupyterhub
 jupyter_helm_repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
