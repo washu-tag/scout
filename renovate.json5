@@ -1,0 +1,72 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+
+  // Don't auto-merge — test automation isn't robust enough
+  "automerge": false,
+
+  // Require manual approval on the Dependency Dashboard before opening PRs.
+  // This lets the dashboard list all available updates (visibility) without
+  // creating PR noise. CVE PRs bypass this via vulnerabilityAlerts below.
+  "dependencyDashboardApproval": true,
+
+  // CVE PRs are created automatically (no dashboard approval needed)
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["dependencies", "security"],
+    "dependencyDashboardApproval": false
+  },
+
+  // Dependency dashboard (GitHub issue) for overview of all detected dependencies
+  "dependencyDashboard": true,
+  "dependencyDashboardOSVVulnerabilitySummary": "all",
+
+  // Limit concurrent PRs to avoid noise
+  "prConcurrentLimit": 5,
+
+  // Labels
+  "labels": ["dependencies"],
+
+  // Remind reviewers to check Trivy ignore files
+  "prBodyNotes": [
+    "**Reminder:** Review `.trivyignore.yaml` files for suppressed CVEs that may no longer be needed after this upgrade."
+  ],
+
+  // Remind reviewers about coupled dependencies
+  "packageRules": [
+    // k3s uses non-standard versioning (v1.34.1+k3s1); regex versioning
+    // keeps the +k3s suffix locked and tracks the build number
+    {
+      "matchDepNames": ["k3s-io/k3s"],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?<compatibility>\\+k3s)(?<build>\\d+)$"
+    },
+    {
+      "matchDepNames": ["cass-operator"],
+      "prBodyNotes": [
+        "**Reminder:** Check if `cassandra_server_version` in `versions.yaml` needs updating for compatibility with this cass-operator version. See [K8ssandra release notes](https://github.com/k8ssandra/cass-operator/releases)."
+      ]
+    },
+    {
+      "matchDepNames": ["k8ssandra/cass-management-api"],
+      "prBodyNotes": [
+        "**Reminder:** Check that the pinned `cass_operator_version` supports this Cassandra version. See [K8ssandra release notes](https://github.com/k8ssandra/cass-operator/releases)."
+      ]
+    }
+  ],
+
+  // Only manage versions.yaml (leave npm/pip/gradle to Dependabot)
+  "enabledManagers": ["custom.regex"],
+
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["ansible/group_vars/all/versions.yaml"],
+      "matchStrings": [
+        // Generic annotated pattern:
+        //   # renovate: datasource=helm registryUrl=https://... depName=chart/name
+        //   some_version: ~1.2.3
+        "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+(?:registryUrl=(?<registryUrl>[^\\s]+)\\s+)?depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\n[a-z0-9_]+(?:_version|_tag|_image_tag):\\s*[~']?(?<currentValue>[^\\s']+)"
+      ]
+    }
+  ]
+}
