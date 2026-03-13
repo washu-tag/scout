@@ -12,8 +12,9 @@ Scout's air-gapped deployment model requires all software artifacts -- container
 | **Python/conda packages** | Baked into Jupyter images at build time | Huge images, slow CI, version lock-in, no user agency |
 | **JVM JARs** | Hard-coded URLs in Dockerfiles | Version drift, manual updates, CVE exposure |
 | **System RPMs** | K8s Job downloads on staging, tar+ship to nodes | Time-consuming, no caching, brittle, wasteful |
+| **ML models** | NFS pre-staging (Ollama), baked into images (HuggingFace) | Manual process, no caching, limited to pre-selected models |
 
-The common thread: **we need pull-through proxies that cache artifacts on first request and serve them transparently to production nodes.** Harbor already does this for container images. This report investigates extending that pattern to Python/conda packages, Maven artifacts, and RPM repositories.
+The common thread: **we need pull-through proxies that cache artifacts on first request and serve them transparently to production nodes.** Harbor already does this for container images. This report investigates extending that pattern to Python/conda packages, Maven artifacts, RPM repositories, and ML model files.
 
 ### Jupyter-Specific Problems
 
@@ -99,18 +100,25 @@ These cannot be updated without manual testing because version incompatibilities
 
 #### Multi-Format Tools
 
-| Tool | Conda | PyPI | Maven | RPM/yum | Container Images | Free | Pull-Through |
-|------|-------|------|-------|---------|-----------------|------|-------------|
-| **Nexus CE** | Yes | Yes | Yes | Yes | Yes | Yes* | Yes |
-| **Pulp** | **No** | Yes | Yes | Yes | Yes | Yes | Yes |
-| **Artifactory Pro** | Yes | Yes | Yes | Yes | Yes | No ($6k+/yr) | Yes |
-| **Artifactory OSS** | No | No | Yes | No | No | Yes | Yes |
-| **ProGet** | Yes | Yes | Yes | Yes | Yes | Free tier† | Yes |
-| **Harbor** | No | No | No | No | Yes | Yes | Yes |
+| Tool | Conda | PyPI | Maven | RPM/yum | HuggingFace | Containers | Free | Pull-Through |
+|------|-------|------|-------|---------|-------------|------------|------|-------------|
+| **Nexus CE** | Yes | Yes | Yes | Yes | Yes‡ | Yes | Yes* | Yes |
+| **Pulp** | **No** | Yes | Yes | Yes | Plugin§ | Yes | Yes | Yes |
+| **Artifactory Pro** | Yes | Yes | Yes | Yes | No | Yes | No ($6k+/yr) | Yes |
+| **Artifactory OSS** | No | No | Yes | No | No | No | Yes | Yes |
+| **ProGet** | Yes | Yes | Yes | Yes | No | Yes | Free tier† | Yes |
+| **Harbor** | No | No | No | No | No | Yes | Yes | Yes |
+| **Squid** | HTTP‖ | HTTP‖ | HTTP‖ | HTTP‖ | **No** | No | Yes | Yes |
 
 \* Nexus CE has usage caps: **40,000 total components** and **100,000 requests/day**. When exceeded, new component additions are blocked.
 
 † ProGet is proprietary, not open source. Free edition has no feed/package/user limits but restricts connector filters, metadata caching, and security API to paid tiers.
+
+‡ Nexus CE HuggingFace proxy works for Git LFS-backed models but is at risk from HuggingFace's migration to Xet storage. No deduplication (cache bloat). Proxy only -- no hosted repos.
+
+§ Pulp's `pulp_hugging_face` plugin (v0.1.0, Aug 2025) is very early stage. Supports models, datasets, and Spaces. Requires full Pulp deployment.
+
+‖ Squid caches HTTP responses generically with SSL bumping. Works for package files but not format-aware (no metadata intelligence). Cannot cache HuggingFace (Git LFS signed URLs defeat URL-based caching).
 
 #### Single-Purpose Tools
 
@@ -122,6 +130,7 @@ These cannot be updated without manual testing because version incompatibilities
 | **bandersnatch** | PyPI | AFL 3.0 | No (mirror tool) | Batch job | Active (PyPA project) |
 | **Reposilite** | Maven | Apache 2.0 | Yes | Official Helm chart | Very active (3.5.x, 1.7k stars) |
 | **Quetz** | Conda | BSD-3 | Yes | No chart, needs PG | Stagnating (mamba-org) |
+| **Olah** | HuggingFace | MIT | Yes (+ offline mode) | Docker only | Active |
 | **nginx cache** | Any HTTP | BSD-2 | Yes (generic) | Standard | N/A (infrastructure) |
 
 ### Detailed Assessments
@@ -220,7 +229,7 @@ For a quick POC/evaluation, path 1 (image override on the deprecated chart) is a
 
 Originally developed by Red Hat; powers Red Hat Satellite and Microsoft's Linux repositories. Plugin-based architecture with excellent RPM support (its original purpose).
 
-**Supported formats:** RPM (very mature), containers, PyPI, Maven, Debian, Ansible, npm, Hugging Face models, and more via plugins. **No conda plugin exists.**
+**Supported formats:** RPM (very mature), containers, PyPI, Maven, Debian, Ansible, npm, Hugging Face models (via `pulp_hugging_face` plugin, v0.1.0), and more. **No conda plugin exists.**
 
 **Strengths:**
 - Best-in-class RPM repository management (on-demand sync, content versioning, rollback, import/export)
@@ -239,10 +248,6 @@ Originally developed by Red Hat; powers Red Hat Satellite and Microsoft's Linux 
 **OSS edition:** Only supports Maven/Gradle/Ivy. Useless for our multi-format needs.
 
 **Pro edition ($6k+/year):** Supports 30+ formats including all five we need. No usage caps. Full pull-through proxy. The most feature-complete option -- if you're willing to pay.
-
-#### ProGet (Inedo)
-
-Supports conda, PyPI, RPM, Docker, Maven, npm. Free tier available. .NET-based, which is unusual in Linux/K8s environments. Less ecosystem presence but functional. Worth considering as a Nexus alternative if the 40K cap becomes a problem.
 
 ### Single-Purpose Tool Assessments
 
@@ -340,10 +345,146 @@ Nginx configured as a reverse proxy with `proxy_cache` in front of upstream pack
 
 **Verdict overall:** Inferior to purpose-built repository proxies for any format, but workable as a fallback. Most useful for conda where dedicated OSS alternatives are weakest.
 
-#### Other generic caches (Squid, Varnish)
+#### Squid (forward caching proxy) -- Deep Dive
 
-- **Squid**: Widely used for caching RPM/APT repos. Supports large objects. For HTTPS repos, requires SSL bumping (MITM decryption) which is a security concern and requires CA cert distribution to all clients. Configuration is non-trivial.
-- **Varnish**: High-performance HTTP accelerator. The open-source version does not support HTTPS natively (needs a TLS terminator in front). VCL configuration language is powerful but has a learning curve. Varnish Enterprise supports TLS but is commercial.
+Squid is a general-purpose HTTP caching proxy that has been in production use for 30 years. It can cache any HTTP-based package repository (pip, conda, dnf, Maven) if properly configured. **Particularly relevant for Scout because Squid is also being considered as an authenticating forward proxy on the staging node** -- if already deployed, adding package caching is an incremental extension.
+
+**License:** GPL v2 | **Resources:** ~1-2 GB RAM (with 1 GB `cache_mem`) + disk for cache
+
+##### How Squid Caches Packages (SSL Bumping vs CONNECT Tunneling)
+
+This is the critical distinction. Nearly all modern package repositories use HTTPS.
+
+- **CONNECT tunneling (default for HTTPS)**: The client sends `CONNECT pypi.org:443` to Squid. Squid establishes a TCP tunnel -- an opaque, encrypted pipe. **Squid cannot see or cache anything inside the tunnel.** This is the default behavior. An HTTPS-only forward proxy with no SSL bump provides zero caching benefit.
+
+- **SSL bumping (MITM decryption)**: Squid terminates the client's TLS connection using a dynamically-generated certificate signed by a local CA, then opens its own TLS connection to the upstream. Between those two connections, Squid sees plaintext HTTP and can cache responses. **This is the only way Squid can cache HTTPS content.**
+
+- **Peek and splice (selective bumping)**: Squid 3.5+ can peek at the TLS Client Hello to read the SNI hostname, then decide per-domain whether to bump (MITM + cache) or splice (pass-through). This limits SSL bumping to known package repository domains:
+
+```squid
+acl step1 at_step SslBump1
+acl package_repos ssl::server_name .pypi.org .pythonhosted.org
+acl package_repos ssl::server_name .anaconda.org .conda.io .anaconda.com
+acl package_repos ssl::server_name .maven.org .repo1.maven.org
+acl package_repos ssl::server_name .rpm.rancher.io .download.nvidia.com .fedoraproject.org
+
+ssl_bump peek step1
+ssl_bump bump package_repos
+ssl_bump splice all
+```
+
+##### CA Certificate Distribution
+
+SSL bumping requires distributing a CA certificate to all clients:
+
+- **Linux nodes** (for dnf): Copy to `/etc/pki/ca-trust/source/anchors/`, run `update-ca-trust`
+- **Conda** (in Jupyter pods): `ssl_verify: /path/to/ca-bundle.crt` in `.condarc`
+- **pip** (in Jupyter pods): `cert = /path/to/ca-bundle.crt` in `pip.conf`, or install into system trust store
+- **Maven/Gradle**: Import into JVM keystore
+- **K8s pods**: Mount CA cert as a volume, configure trust store in the container
+
+This is operationally burdensome but manageable with Ansible. All Jupyter pods would need the CA cert mounted via the JupyterHub Helm chart's `extraFiles` or a ConfigMap.
+
+##### Client-Side Proxy Configuration
+
+Each package manager needs to know about the proxy:
+
+| Package Manager | Configuration |
+|----------------|---------------|
+| **pip** | `proxy = http://squid:3128` in `/etc/pip.conf`, or `http_proxy`/`https_proxy` env vars |
+| **conda** | `proxy_servers: {http: ..., https: ...}` in `.condarc`, or env vars (more reliable due to [conda proxy bugs](https://github.com/conda/conda/issues/5220)) |
+| **dnf/yum** | `proxy=http://squid:3128` in `/etc/dnf/dnf.conf` or per-repo in `/etc/yum.repos.d/*.repo` |
+| **Maven** | `<proxy>` section in `~/.m2/settings.xml`; Gradle uses `systemProp.http.proxyHost` |
+
+Note: with a forward proxy, clients use **upstream URLs directly** (e.g., `https://pypi.org/simple`). This differs from Nexus/devpi where clients point to the proxy's own URL. Forward proxy configuration is simpler conceptually but means every client must be configured with proxy settings.
+
+##### Cache Effectiveness by Content Type
+
+| Content | Cacheable? | Notes |
+|---------|-----------|-------|
+| Package files (.whl, .tar.gz, .conda, .rpm, .jar) | Excellent | Immutable at a given URL. Cache aggressively with long TTLs. |
+| PyPI `/simple/` index pages | Short TTL only | Change when new versions are published. 5-30 min TTL. |
+| Conda `repodata.json` | Short TTL only | Large (100+ MB for conda-forge), changes frequently. Stale metadata causes confusing errors. |
+| RPM `repomd.xml` | **Do not cache** | Points to other metadata files by checksum. Stale `repomd.xml` causes `dnf` to request files that no longer exist. |
+| Maven `maven-metadata.xml` | Short TTL only | Changes when new versions are published. |
+
+The metadata freshness problem is Squid's fundamental weakness vs format-aware proxies. Nexus/devpi understand when metadata has changed; Squid can only guess with TTLs.
+
+##### Example squid.conf for Package Caching
+
+```squid
+# === SSL Bump (requires custom Squid image with --enable-ssl-crtd) ===
+http_port 3128 ssl-bump generate-host-certificates=on \
+  cert=/etc/squid/ssl/squid-ca.crt key=/etc/squid/ssl/squid-ca.key
+sslcrtd_program /usr/lib/squid/security_file_certgen -s /var/lib/squid/ssl_db -M 16MB
+
+# === Selective SSL Bump ===
+acl step1 at_step SslBump1
+acl package_repos ssl::server_name .pypi.org .pythonhosted.org
+acl package_repos ssl::server_name .anaconda.org .conda.io .anaconda.com
+acl package_repos ssl::server_name .maven.org .repo1.maven.org
+acl package_repos ssl::server_name .rpm.rancher.io .download.nvidia.com .fedoraproject.org
+ssl_bump peek step1
+ssl_bump bump package_repos
+ssl_bump splice all
+
+# === Cache Storage ===
+cache_dir aufs /var/spool/squid 50000 16 256    # 50 GB on disk
+maximum_object_size 2 GB                          # PyTorch wheels are 700 MB-2 GB
+cache_mem 1024 MB
+maximum_object_size_in_memory 128 MB
+cache_replacement_policy heap LFUDA               # Keeps popular large objects
+
+# === Refresh Patterns ===
+# Immutable package files: cache 90 days
+refresh_pattern -i \.(rpm|drpm|whl|tar\.gz|tar\.bz2|conda|jar|pom)$ \
+  129600 100% 129600 override-expire override-lastmod reload-into-ims ignore-reload
+
+# RPM repomd.xml: NEVER cache (stale repomd causes broken dnf)
+acl repomd url_regex /repomd\.xml$
+cache deny repomd
+
+# Conda repodata, PyPI index, Maven metadata: short TTL (5-30 min)
+refresh_pattern -i repodata\.json$       5 20% 30 reload-into-ims
+refresh_pattern -i /simple/              5 20% 30 reload-into-ims
+refresh_pattern -i maven-metadata\.xml$  5 20% 30 reload-into-ims
+
+# Default
+refresh_pattern .  0 20% 4320
+```
+
+**Important gotcha**: The standard Squid Docker images (e.g., `ubuntu/squid`) do **not** include SSL bump support. You need a custom image built with `--enable-ssl-crtd`, or use pre-built options like `satishweb/squid-ssl-proxy` or `salrashid123/squidproxy`.
+
+##### K8s Deployment
+
+Several community Helm charts exist ([lifen/squid](https://artifacthub.io/packages/helm/lifen/squid), [holosix/squid-helm](https://github.com/holosix/squid-helm)) but none are mature or support SSL bumping out of the box. A custom chart or Ansible-managed deployment is more realistic. The core deployment is straightforward: StatefulSet + ConfigMap (squid.conf) + PVC (cache dir) + Secret (CA cert/key).
+
+##### If Squid Is Already Deployed as a Forward/Auth Proxy
+
+**If SSL bump is NOT yet enabled**: Adding caching requires a significant reconfiguration -- new image with SSL support, CA generation and distribution, `ssl_bump` directives, `sslcrtd_program` setup. This is not a trivial add-on.
+
+**If SSL bump IS already enabled** (e.g., for traffic inspection): Adding package caching is mostly additive -- add `cache_dir`, `maximum_object_size`, `refresh_pattern` rules, and `cache deny` rules for volatile metadata. This is a natural extension of the same Squid instance.
+
+The same Squid instance can serve both roles (auth proxy + package cache). Use ACLs to control what gets cached.
+
+##### Squid vs Purpose-Built Proxies
+
+| Dimension | Squid | Nexus CE / devpi / Reposilite |
+|-----------|-------|-------------------------------|
+| Formats | Any HTTP (universal) | Format-specific |
+| Caching intelligence | URL-based, TTL guessing | Format-aware, metadata-driven |
+| HTTPS caching | Requires SSL bump (MITM) + CA distribution | Native (clients point to proxy URL) |
+| Metadata freshness | Stale metadata causes real problems | Intelligent sync |
+| Resource usage | ~1-2 GB RAM | ~4-5 GB (Nexus) / ~0.5 GB (devpi) |
+| Usage caps | None | 40K components (Nexus CE) |
+| UI/Management | Access logs only | Web UI, REST API |
+| Vendor risk | GPL, community, stable | Nexus CE trending restrictive |
+
+**Verdict:** Squid is a viable package caching solution if SSL bumping is already in place for other reasons. The main weakness is metadata freshness -- stale `repomd.xml` and `repodata.json` cause operational pain that format-aware proxies handle automatically. Best used as: (1) a supplement alongside format-aware proxies, or (2) a "good enough" single solution if the operational overhead of Nexus is not justified and careful TTL tuning is acceptable.
+
+#### Varnish
+
+High-performance HTTP accelerator. The open-source version does not support HTTPS natively (needs a TLS terminator in front). VCL configuration language is powerful but has a learning curve. Varnish Enterprise supports TLS but is commercial. Less applicable than Squid for this use case because Squid's forward-proxy mode is a more natural fit for package managers (which expect to configure a proxy, not rewrite URLs to point at a reverse proxy).
 
 ### Emerging Developments (2024-2026)
 
@@ -354,6 +495,91 @@ Nginx configured as a reverse proxy with `proxy_cache` in front of upstream pack
 **Quetz stagnation:** The mamba-org conda server project has lost momentum. This was the only dedicated open-source conda proxy, and it appears to be fading.
 
 **No significant new entrants:** Despite the pain created by Nexus CE limits and Artifactory pricing, no significant new open-source multi-format repository proxy has emerged in 2024-2026. The space remains dominated by Nexus, Artifactory, and Pulp.
+
+**OCI registries for ML models:** Harbor 2.13+ has dedicated support for ML models as OCI artifacts (CNAI metadata annotations, replication from HuggingFace, P2P preheat). The CNCF [KitOps/ModelKit](https://kitops.org/) project and emerging [ModelPack specification](https://github.com/oras-project/modelpack) (backed by PayPal, ByteDance, Red Hat) are standardizing ML model packaging as OCI artifacts. If this trend matures, Harbor could serve as a unified cache for both container images and ML models.
+
+---
+
+## ML Model Proxying
+
+Scout's optional Chat feature (Open WebUI + Ollama) and the Jupyter embedding notebook already involve large ML model files. As AI/ML workloads grow, model distribution in air-gapped environments becomes another proxying need.
+
+### Current State
+
+- **Ollama models**: Distributed via NFS shared storage (ADR 0008). Models are pre-staged on staging cluster, mounted read-only on production. This works well.
+- **HuggingFace models**: Currently baked into Docker images or downloaded at runtime. No caching infrastructure.
+
+### Tool Landscape for Model Proxying
+
+#### Nexus CE HuggingFace Proxy
+
+Nexus CE added HuggingFace proxy support in version 3.77.0. Creates a `huggingface (proxy)` repository with remote URL `https://huggingface.co`. Requires PostgreSQL backend (not H2).
+
+**Strengths:**
+- If Nexus is already deployed for package proxying, adding a HuggingFace proxy repository is zero additional tools
+- Supports Bearer Token authentication for gated/private models
+- Available in CE (free), not Pro-only
+
+**Significant limitations:**
+- **Proxy only** -- no hosted or group repositories. Can cache upstream models but cannot host private models.
+- **Models only** -- datasets and Spaces are not supported.
+- **Cache bloat** -- different resolve operations for the same model re-download and cache identical files (no deduplication). [Open issue #698](https://github.com/sonatype/nexus-public/issues/698).
+- **Xet storage migration risk** -- HuggingFace is migrating from Git LFS to Xet storage (chunk-level deduplication). Xet became the default for new users in 2025. Reports of proxy failures for Xet-backed files ([issue #648](https://github.com/sonatype/nexus-public/issues/648)). **As more models migrate to Xet, this proxy may break for newer content.**
+- NFS/EFS storage recommended; S3 blob stores have performance problems with large model files.
+
+**Verdict:** Functional today for Git LFS-backed models, but the Xet migration trajectory is a significant risk. Worth using opportunistically if Nexus is already deployed, but not worth deploying Nexus *for*.
+
+#### Olah -- Lightweight HuggingFace Mirror
+
+[Olah](https://github.com/vtuber-plan/olah) is a self-hosted HuggingFace mirror. `pip install olah`, then `olah-cli` to start. MIT licensed.
+
+**Strengths:**
+- **Offline mode** -- serve cached content only, perfect for air-gapped production. Cache on staging with internet, serve offline on production.
+- **Chunk-level caching** -- partial downloads are cached, unlike Nexus which re-downloads full files per resolve
+- Supports models, datasets, and Spaces
+- LRU/FIFO/LARGE_FIRST eviction strategies, repository whitelist/blacklist
+- Lightweight -- single Python process
+- Clients configure `HF_ENDPOINT=http://olah:8090` and use standard `huggingface-cli` / `huggingface_hub` library
+
+**Limitations:**
+- Cache cannot migrate between Olah versions (must delete cache on upgrade)
+- Smaller community than Nexus
+- No Helm chart (but trivial to deploy as a single-container pod)
+
+**Verdict:** The most practical dedicated tool for air-gapped HuggingFace model distribution. The offline mode directly mirrors Scout's existing Ollama NFS pattern (ADR 0008).
+
+#### Shared NFS + `HF_HOME` (simplest approach)
+
+The `huggingface_hub` library supports redirecting its cache to a shared directory:
+
+```bash
+export HF_HOME=/shared/nfs/huggingface
+export HF_HUB_OFFLINE=1  # on air-gapped production nodes
+```
+
+Download models on staging (internet-connected), then mount the same NFS path read-only on production. The library uses file locking for concurrent access, which works on NFS (unlike SQLite).
+
+**Verdict:** Simplest possible approach. Directly analogous to the Ollama NFS pattern in ADR 0008. No proxy service needed -- just shared filesystem. Best for a small number of known models.
+
+#### Pulp HuggingFace Plugin
+
+[`pulp_hugging_face`](https://github.com/pulp/pulp_hugging_face) -- version 0.1.0 (August 2025). Pull-through caching for models, datasets, and Spaces. Supports Git LFS. GPL v2.0.
+
+**Verdict:** More comprehensive API than Nexus, but very early stage (73 commits, 1 star) and requires the full Pulp deployment stack. Overkill unless Pulp is already deployed for RPM proxying.
+
+#### Generic HTTP Proxies (Squid/nginx) for HuggingFace
+
+**Not effective.** HuggingFace model downloads use Git LFS (and increasingly Xet), which involves API calls that return signed, time-limited CDN URLs. The actual download URLs change per request, defeating cache key matching. A generic proxy would cache the redirect responses but not the actual model content in a useful way.
+
+### Recommendation for Model Proxying
+
+**Short-term:** Continue the NFS shared storage pattern from ADR 0008. For HuggingFace models, use `HF_HOME` on shared NFS + `HF_HUB_OFFLINE=1` on production. This is consistent, simple, and proven.
+
+**If model variety/frequency grows:** Deploy Olah on staging. Its offline mode, chunk-level caching, and lightweight footprint make it the best fit for Scout's air-gapped architecture. Clients need only `HF_ENDPOINT` set.
+
+**If Nexus is already deployed:** Add a HuggingFace proxy repository opportunistically, but monitor the Xet migration. Do not depend on it as the sole HuggingFace caching mechanism.
+
+**Longer-term:** Watch the OCI-based model distribution trend. Harbor 2.13+ can store ML models as OCI artifacts, and tools like ORAS and KitOps are standardizing this. If this matures, Harbor could serve as a unified cache for container images, conda packages (via conda-oci-mirror), and ML models -- consolidating three concerns into one existing tool.
 
 ---
 
@@ -434,7 +660,20 @@ Internet ← ProGet (staging) ← Production K3s (conda, PyPI, Maven, RPM)
 
 **Verdict: Worth evaluating if Nexus CE's 40K cap becomes a real problem.** The proprietary license is the main concern for a project that values open-source tooling. A good "Plan B" to keep in the back pocket.
 
-### Option F: Artifactory Pro (everything)
+### Option F: Harbor (containers) + Squid (everything else)
+
+```
+Internet ← Harbor (staging) ← Production K3s (container images)
+Internet ← Squid with SSL bump (staging) ← Production K3s (conda, PyPI, Maven, RPM)
+```
+
+**Pros:** If Squid is already being deployed on staging as a forward/auth proxy, adding package caching is incremental configuration (not a new tool). No usage caps. Universal -- works for any HTTP-based package manager without per-format repository setup. Lowest resource footprint (~1-2 GB RAM). No JVM, no database dependencies. GPL, community-maintained, no vendor risk.
+
+**Cons:** Requires SSL bumping (MITM decryption) to cache HTTPS content, which means CA cert distribution to all clients (production nodes, Jupyter pods). **Metadata freshness is the Achilles' heel** -- stale `repomd.xml` breaks dnf, stale `repodata.json` confuses conda. Requires careful per-format TTL tuning. No web UI, no package browsing, no cleanup policies beyond LRU eviction. No HuggingFace model caching (Git LFS/Xet signed URLs defeat URL-based caching). Standard Squid Docker images lack SSL bump support -- need a custom image.
+
+**Verdict: Compelling if Squid is already deployed with SSL bump for auth/inspection.** The marginal cost of adding package caching to an existing Squid instance is low. As a purpose-built package proxy replacement (deploying Squid *only* for caching), it's harder to justify vs Nexus CE because you accept metadata freshness problems and CA distribution overhead without the benefit of a shared auth proxy. Best paired with the understanding that metadata TTL tuning will need iteration and that some operational friction (stale metadata, no UI) is the trade-off for simplicity and zero vendor risk.
+
+### Option G: Artifactory Pro (everything)
 
 ```
 Internet ← Artifactory Pro (staging) ← Production K3s (everything)
@@ -448,15 +687,17 @@ Internet ← Artifactory Pro (staging) ← Production K3s (everything)
 
 ### Recommendation
 
-**Start with Option B (Harbor + Nexus CE)**, but with eyes open about Nexus CE's trajectory. It adds one new tool (Nexus) to handle four new proxy needs (conda, PyPI, Maven, RPM). Keep Harbor for containers. This is the minimum viable architecture.
+**If Squid is already being deployed on staging** (e.g., as a forward/auth proxy with SSL bump), **start with Option F (Harbor + Squid)**. The marginal cost of adding package caching to an existing Squid instance is very low -- it's additive configuration, not a new tool. Accept the metadata freshness trade-offs (careful TTL tuning for `repodata.json`, `repomd.xml`, PyPI index) and iterate. If the TTL-based approach causes too much operational friction, add Nexus CE or individual format-aware proxies alongside Squid.
 
-**Why Nexus is still the practical choice despite concerns:** Conda proxying is the constraining factor. No well-maintained, truly open-source conda pull-through proxy exists -- Quetz (mamba-org) is stagnating, and the only alternatives are Nexus CE, Artifactory Pro ($6k+/yr), or a generic nginx cache (workable but fragile). Until conda OCI distribution matures (which would let Harbor serve as a conda cache), Nexus CE is the least-bad option for conda.
+**If Squid is NOT already deployed**, **start with Option B (Harbor + Nexus CE)**. Deploying Squid solely for package caching (with the SSL bump + CA distribution overhead) is harder to justify vs Nexus, which handles HTTPS natively and understands package metadata.
 
-**Escalation path if Nexus CE becomes untenable:**
-1. First try: clean up unused cached components (Nexus has cleanup policies)
-2. If the 40K cap is hit: split RPM to Pulp (Option C), since RPM repos have the most packages and are the easiest to separate
+**Why conda constrains the choice:** No well-maintained, truly open-source conda pull-through proxy exists -- Quetz (mamba-org) is stagnating, and the only format-aware alternatives are Nexus CE, Artifactory Pro ($6k+/yr), or ProGet (proprietary). Squid and nginx can cache conda channels at the HTTP level (workable but not metadata-aware). Until conda OCI distribution matures (which would let Harbor serve as a conda cache), there is no clean single-purpose solution for conda.
+
+**Escalation path:**
+1. If Squid TTL issues cause operational pain: add Nexus CE for conda + PyPI (the most metadata-sensitive formats), keep Squid for RPM + Maven (simpler metadata)
+2. If Nexus CE's 40K cap is hit: clean up unused components (Nexus has cleanup policies), then split RPM to Pulp (Option C)
 3. If Sonatype further restricts CE: evaluate ProGet free edition (Option E) as a drop-in replacement -- same multi-format coverage, no usage caps, but proprietary
-4. If budget allows: Artifactory Pro (Option F) removes all constraints
+4. If budget allows: Artifactory Pro (Option G) removes all constraints
 5. Long-term: watch conda OCI distribution -- if it matures, Option D (single-purpose tools) becomes viable and eliminates the Nexus dependency entirely
 
 ---
@@ -820,3 +1061,11 @@ This is the easiest to validate and has immediate payoff:
 9. **Conda OCI distribution**: conda-forge is being mirrored to GHCR as OCI artifacts. If conda OCI distribution matures (standardized via Conda Enhancement Proposal + `conda-oci-forwarder` client compatibility), Harbor could serve as the conda cache. This would eliminate the main reason Nexus is hard to replace. Worth monitoring but too experimental to depend on today.
 
 10. **ProGet as a backup plan**: ProGet's free edition covers all formats with no usage caps. The main trade-off is proprietary license. Worth doing a quick evaluation to validate it works for Scout's specific repos, so it's ready as a fallback if Nexus CE becomes untenable.
+
+11. **Squid SSL bump scope**: If Squid is deployed as an auth proxy, will SSL bumping be enabled from the start? If so, adding package caching is straightforward. If not (CONNECT-only), the effort to enable SSL bump + CA distribution is significant and changes the cost/benefit calculus. This decision should be made early.
+
+12. **Squid + Nexus coexistence**: Could Squid handle RPM and Maven caching (where metadata is simpler) while Nexus handles conda and PyPI (where metadata intelligence matters most)? This would reduce pressure on Nexus's component cap while keeping format-aware proxying where it's most needed. The clients already need different configuration per format, so splitting across proxies is transparent to users.
+
+13. **HuggingFace Xet migration**: HuggingFace is migrating model storage from Git LFS to Xet (chunk-level deduplication). This breaks or degrades Nexus CE's HuggingFace proxy. The timeline and completeness of this migration is unclear. If Scout needs HuggingFace model caching, Olah or the shared NFS + `HF_HOME` approach are safer bets than Nexus for now.
+
+14. **Harbor as a future convergence point**: Harbor 2.13+ supports ML model artifacts (OCI), and conda OCI distribution is emerging. If both mature, Harbor could eventually cache container images + conda packages + ML models -- three of Scout's five proxy needs in one existing tool. This would significantly simplify the architecture but depends on upstream ecosystem maturity.
