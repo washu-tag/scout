@@ -7,7 +7,7 @@ image:
 
 resources: {{ voila_resources_default | combine(voila_resources | default({}), recursive=true) | to_json }}
 
-sparkConfigMapName: spark-defaults
+sparkConfigMapName: spark-defaults-voila
 
 playbooks: {{ voila_playbooks | to_json }}
 
