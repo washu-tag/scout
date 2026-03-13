@@ -32,7 +32,7 @@ volumes:
 {% endif %}
   - name: spark-defaults
     configMap:
-      name: spark-defaults
+      name: {{ extractor_spark_defaults_configmap_name }}
   - name: modality-mapping
     configMap:
       name: modality-mapping

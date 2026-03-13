@@ -1,5 +1,8 @@
 ---
 # Default values for Extractor deployment
+# Spark ConfigMap name (unique per role to avoid collisions in shared namespaces)
+extractor_spark_defaults_configmap_name: spark-defaults-extractor
+
 hl7log_extractor_timezone: '{{ timezone }}'
 
 # Custom extractor images (override from inventory for CI/CD)

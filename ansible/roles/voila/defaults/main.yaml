@@ -2,6 +2,9 @@
 # Voilà role defaults
 # User-configurable settings are in inventory.yaml
 
+# Spark ConfigMap name (unique per role to avoid collisions in shared namespaces)
+voila_spark_defaults_configmap_name: spark-defaults-voila
+
 # Namespace configuration
 voila_namespace: '{{ scout_analytics_namespace }}'
 

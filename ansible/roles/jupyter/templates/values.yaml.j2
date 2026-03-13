@@ -213,7 +213,7 @@ singleuser:
       spark-defaults:
         name: spark-defaults
         configMap:
-          name: spark-defaults
+          name: {{ jupyter_spark_defaults_configmap_name }}
       spark-config-writable:
         name: spark-config-writable
         emptyDir: {}
