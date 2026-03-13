@@ -846,15 +846,171 @@ singleuser:
 
 Spark is the most complex dependency and the hardest to move out of the image.
 
-### Option A: Keep Spark in the image (recommended short-term)
+### Current State
 
-Continue using `pyspark-notebook` as the base image. This provides JVM, PySpark, and Spark binaries.
+Both Jupyter Dockerfiles (`helm/jupyter/notebook/Dockerfile`, `helm/jupyter/embedding-notebook/Dockerfile`) and the HL7 transformer Dockerfile (`extractor/hl7-transformer/Dockerfile`) download the same 8 JARs into `${SPARK_HOME}/jars/` at build time via `ADD` directives pointing to Maven Central and GitHub:
 
-The custom JARs (Delta, Hadoop-AWS, smolder) still need to be present. Options:
-1. **Keep them in the Dockerfile** (status quo) -- simplest, but still hard-coded
-2. **Fetch via init container or postStart hook from the Maven proxy** -- more flexible, but adds startup latency
+| JAR | Source | Notes |
+|-----|--------|-------|
+| `delta-spark_2.12-3.3.0` | Maven Central | `io.delta:delta-spark_2.12:3.3.0` |
+| `delta-storage-3.3.0` | Maven Central | Transitive dep of delta-spark |
+| `hadoop-aws-3.2.2` | Maven Central | Very old; Spark 3.5.3 ships with Hadoop 3.3.6 |
+| `hadoop-common-3.2.2` | Maven Central | Already bundled with Spark (potential conflict) |
+| `hadoop-hdfs-3.2.2` | Maven Central | Already bundled with Spark (potential conflict) |
+| `antlr4-runtime-4.9.3` | Maven Central | Transitive dependency |
+| `aws-java-sdk-bundle-1.12.793` | Maven Central | AWS SDK v1 |
+| `smolder_2.12-0.1.0-SNAPSHOT` | GitHub release | Custom JAR; not on Maven Central |
 
-### Option B: Remove Spark from the base image (longer-term)
+The Spark defaults template (`ansible/roles/scout_common/templates/spark-defaults.conf.j2`) already sets `spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp`, which redirects Ivy's cache but uses an ephemeral directory that won't persist across pod restarts.
+
+### Spark's `spark.jars.packages`: Maven Coordinate Resolution
+
+Spark has a built-in mechanism for resolving JARs from Maven coordinates at startup, eliminating the need to download them at image build time.
+
+**How it works:** Spark uses **Apache Ivy** (not Maven directly) to resolve Maven coordinates. Setting:
+```properties
+spark.jars.packages=io.delta:delta-spark_2.12:3.3.0,org.apache.hadoop:hadoop-aws:3.2.2
+```
+causes Spark to download these JARs (plus all transitive dependencies) and add them to the classpath before the SparkSession is created.
+
+**Default resolver chain** (from `SparkSubmitUtils.buildIvySettings()`):
+1. Local Maven repository (`~/.m2/repository`)
+2. Maven Central (`https://repo1.maven.org/maven2/`)
+3. Additional repositories from `spark.jars.repositories`
+
+**Ivy cache location:** Defaults to `~/.ivy2/jars/` and `~/.ivy2/cache/`. Configurable via `spark.jars.ivy`. Currently our spark-defaults.conf sets `-Divy.cache.dir=/tmp -Divy.home=/tmp`, which would need to change to a persistent directory for caching to work across sessions.
+
+**Excluding transitive deps:** Use `spark.jars.excludes` (comma-separated `groupId:artifactId` pairs) to avoid conflicts with JARs already bundled in the Spark distribution:
+```properties
+spark.jars.excludes=org.apache.hadoop:hadoop-common,org.apache.hadoop:hadoop-hdfs
+```
+
+**Critical PySpark caveat ([SPARK-21752](https://issues.apache.org/jira/browse/SPARK-21752)):** Setting `spark.jars.packages` via `SparkSession.builder.config()` **does not work** -- package resolution happens during Spark launch, before `SparkSession` is created. The config is silently ignored. Packages must be set in `spark-defaults.conf` (our ConfigMap), via `PYSPARK_SUBMIT_ARGS` env var, or via a `SparkConf` object.
+
+Since Scout already deploys `spark-defaults.conf` as a ConfigMap mounted into all Spark-enabled pods, this is a natural fit.
+
+#### Configuring a Maven Proxy Repository
+
+**`spark.jars.repositories`** adds additional Maven repos:
+```properties
+spark.jars.repositories=http://nexus.staging:8081/repository/maven-central/
+```
+
+**`spark.jars.ivySettings`** provides full resolver chain control via a custom `ivysettings.xml` (replaces defaults):
+```xml
+<ivysettings>
+  <settings defaultResolver="main"/>
+  <resolvers>
+    <chain name="main" returnFirst="true">
+      <ibiblio name="nexus-proxy" m2compatible="true"
+               root="http://nexus.staging:8081/repository/maven-public/"/>
+    </chain>
+  </resolvers>
+</ivysettings>
+```
+
+This can include **multiple resolvers** (e.g., a Nexus hosted repo for custom JARs + a proxy for Maven Central):
+```xml
+<ivysettings>
+  <settings defaultResolver="main"/>
+  <resolvers>
+    <chain name="main" returnFirst="true">
+      <ibiblio name="nexus-hosted" m2compatible="true"
+               root="http://nexus.staging:8081/repository/maven-releases/"/>
+      <ibiblio name="nexus-central" m2compatible="true"
+               root="http://nexus.staging:8081/repository/maven-central/"/>
+    </chain>
+  </resolvers>
+</ivysettings>
+```
+
+**HTTP proxy (Squid) configuration** can also be set in `ivysettings.xml`:
+```xml
+<ivysettings>
+  <setproxy proxyhost="squid.staging" proxyport="3128"
+            nonproxyhosts="localhost|*.internal"/>
+  <!-- ... resolvers ... -->
+</ivysettings>
+```
+
+Or via JVM system properties in `spark.driver.extraJavaOptions`:
+```properties
+spark.driver.extraJavaOptions=-Dhttps.proxyHost=squid.staging -Dhttps.proxyPort=3128
+```
+
+**Authentication** is supported via Ivy credentials blocks or URL-embedded credentials.
+
+#### The Smolder Question
+
+Smolder is a custom JAR (`washu-tag/smolder`) not published to Maven Central. It provides the HL7 data source format for Spark (`.read.format("hl7").load()`). Options:
+
+**Option A: Hybrid approach (simplest)**
+
+Use `spark.jars.packages` for Maven Central JARs and `spark.jars` for smolder:
+```properties
+spark.jars.packages=io.delta:delta-spark_2.12:3.3.0,org.apache.hadoop:hadoop-aws:3.2.2,com.amazonaws:aws-java-sdk-bundle:1.12.793
+spark.jars=local:///opt/spark/jars/smolder_2.12-0.1.0-SNAPSHOT.jar
+```
+The `local://` scheme tells Spark the JAR is already on the node. Smolder stays in the Dockerfile (one `ADD` from the GitHub release); everything else is resolved at startup via the proxy. This is the least disruptive change.
+
+**Option B: Publish smolder to a private Maven repo**
+
+If Nexus or Reposilite is deployed, publish smolder to a hosted repository:
+```bash
+mvn deploy:deploy-file -DgroupId=edu.washu.tag -DartifactId=smolder_2.12 \
+  -Dversion=0.1.0-SNAPSHOT -Dpackaging=jar -Dfile=smolder_2.12-0.1.0-SNAPSHOT.jar \
+  -Durl=http://nexus.staging:8081/repository/maven-releases/
+```
+
+Then resolve it alongside everything else:
+```properties
+spark.jars.packages=io.delta:delta-spark_2.12:3.3.0,org.apache.hadoop:hadoop-aws:3.2.2,edu.washu.tag:smolder_2.12:0.1.0
+```
+with `spark.jars.ivySettings` pointing to a resolver chain that includes the Nexus hosted repo. This fully externalizes all JARs from the Dockerfile but requires maintaining the hosted repo and a publish step in the smolder CI.
+
+**Option C: Keep smolder in the image, externalize nothing**
+
+Status quo. Simplest, but hard-coded versions, large images, and the JAR duplication across three Dockerfiles remain.
+
+#### Ivy Cache Persistence
+
+For `spark.jars.packages` to avoid re-downloading on every pod start, the Ivy cache must persist. Options:
+
+1. **Persistent volume**: Mount a PVC at the Ivy cache path. Adds a PVC per user (Jupyter) or per pod (extractor).
+2. **Shared NFS**: Mount shared NFS at `spark.jars.ivy=/mnt/shared-ivy-cache`. All pods share the same cache. First session populates it; subsequent sessions use cached JARs.
+3. **Pre-warm during deployment**: An init container or Job runs once after deployment to populate the Ivy cache on shared storage.
+4. **Use the user's existing home PVC** (Jupyter only): Set `spark.jars.ivy=/home/jovyan/.ivy2`. The Jupyter user's persistent home directory already exists.
+
+For Jupyter, option 4 is the most natural -- the user's home PVC already persists across sessions. For the HL7 transformer (which runs as ephemeral pods), option 2 (shared NFS) or keeping JARs in the image is more practical.
+
+### Option A: Keep Spark JARs in the image (status quo)
+
+Continue using `pyspark-notebook` as the base image. Continue downloading all 8 JARs via `ADD` in the Dockerfile.
+
+**Pros:** No new infrastructure. No startup latency. Works in air-gapped environments because JARs are baked into the Harbor-cached image.
+
+**Cons:** Hard-coded versions. Large images. Three Dockerfiles to keep in sync. No user agency to change JAR versions without a new image build.
+
+### Option B: `spark.jars.packages` via proxy (recommended)
+
+Move from `ADD` directives in the Dockerfile to `spark.jars.packages` in `spark-defaults.conf`. JARs are resolved at Spark startup from a Maven proxy (Nexus, Reposilite, or Squid cache).
+
+**For Jupyter pods**, the spark-defaults.conf ConfigMap would include:
+```properties
+spark.jars.packages=io.delta:delta-spark_2.12:3.3.0,org.apache.hadoop:hadoop-aws:3.2.2,com.amazonaws:aws-java-sdk-bundle:1.12.793
+spark.jars.excludes=org.apache.hadoop:hadoop-common,org.apache.hadoop:hadoop-hdfs
+spark.jars=local:///opt/spark/jars/smolder_2.12-0.1.0-SNAPSHOT.jar
+spark.jars.repositories=http://nexus.staging:8081/repository/maven-central/
+spark.jars.ivy=/home/jovyan/.ivy2
+```
+
+**Pros:** JAR versions configurable via ConfigMap (no image rebuild). Transitive dependencies handled automatically. Smaller Jupyter image (removes ~500 MB of JARs). Users could add their own packages. Smolder stays in the image via `spark.jars` (hybrid approach -- least disruptive).
+
+**Cons:** First Spark session downloads JARs (~30-60s). Requires a Maven proxy (Nexus, Reposilite, or Squid). Requires persistent Ivy cache for subsequent sessions. Introduces a startup dependency on the proxy being available (mitigated by caching).
+
+**For the HL7 transformer**, keeping JARs in the image may be preferable since it runs as ephemeral Temporal activity pods with no persistent storage, and startup latency directly affects workflow execution time.
+
+### Option C: Remove Spark from the base image (longer-term)
 
 If users primarily need SQL access to the Delta Lake, **Trino via the `trino` Python package** is a lighter alternative:
 
@@ -872,9 +1028,9 @@ This eliminates PySpark, JVM, and all Spark JARs. The base image could be `jupyt
 
 **A middle path**: Offer Spark as an optional profile. Users who need it select a Spark profile; users who only need SQL get the lightweight Trino-only profile.
 
-### Option C: Spark JARs via Maven proxy
+### Option D: Spark JARs via init container with curl
 
-Nexus can proxy Maven Central. Instead of hard-coding JAR URLs in the Dockerfile, a startup script fetches them:
+The previous version of this section's "Option C". Fetch JARs from a Maven proxy via a startup script:
 
 ```bash
 #!/bin/bash
@@ -890,6 +1046,16 @@ done
 ```
 
 This makes JAR versions configurable via ConfigMap without rebuilding the image. Adds ~30-60s to pod startup (cached after first pull).
+
+**Compared to Option B (`spark.jars.packages`)**: This is a more manual approach that doesn't leverage Ivy's dependency resolution or caching. It requires manually specifying every JAR (including transitive deps) and writing download logic. Option B is preferred because Spark's built-in mechanism handles transitive dependencies, caching, and excludes automatically. However, this approach avoids the SPARK-21752 caveat entirely (no reliance on when config is loaded) and works in an init container (which runs before the notebook process starts, guaranteeing JARs are present).
+
+### Recommendation
+
+**For Jupyter: Option B** (`spark.jars.packages` with proxy). The `spark-defaults.conf` ConfigMap is already the natural place for this configuration. Use `spark.jars.ivy=/home/jovyan/.ivy2` for persistent caching in the user's home PVC. Keep smolder in the image via `spark.jars` (hybrid approach). This removes 7 of 8 JARs from the Dockerfile, shrinks the image, and makes JAR versions admin-configurable without rebuilds.
+
+**For HL7 transformer: Keep JARs in the image** (Option A). Ephemeral pods with no persistent storage and latency-sensitive workflow execution make runtime resolution less practical. The transformer image is not user-facing, so the image size trade-off is acceptable.
+
+**Spark version coupling remains a concern.** Spark, Delta Lake, Hadoop, and the AWS SDK have tight version interdependencies. Even with `spark.jars.packages`, the specific version combinations should be admin-controlled in the ConfigMap (or Ansible defaults), not user-configurable. The benefit is that admins can update versions in the ConfigMap without rebuilding images.
 
 ---
 
@@ -1027,10 +1193,13 @@ This is the easiest to validate and has immediate payoff:
 
 ### Phase 5 (optional): Externalize Spark JARs
 
-1. Configure Nexus Maven proxy (done in Phase 1)
-2. Create init container or startup script to fetch JARs from Maven proxy
-3. Make JAR versions configurable via ConfigMap
-4. Remove hardcoded JAR URLs from Dockerfile
+1. Configure Maven proxy (Nexus, Reposilite, or Squid -- done in Phase 1)
+2. Add `spark.jars.packages`, `spark.jars.repositories`, and `spark.jars.excludes` to the `spark-defaults.conf.j2` template
+3. Set `spark.jars.ivy=/home/jovyan/.ivy2` for persistent Ivy cache on the user's home PVC
+4. Keep smolder in the Jupyter Dockerfile via `spark.jars=local://` (hybrid approach)
+5. Remove the 7 Maven Central JAR `ADD` directives from the Jupyter Dockerfiles
+6. Optionally publish smolder to a Nexus hosted repo to fully externalize all JARs
+7. Leave the HL7 transformer Dockerfile unchanged (ephemeral pods, no persistent storage)
 
 ### Phase 6 (optional): Trino-only lightweight profile
 
@@ -1048,7 +1217,7 @@ This is the easiest to validate and has immediate payoff:
 
 3. **First-run experience**: If users need to create a conda environment before they can do anything, the first notebook experience degrades. The postStart script could auto-create a default environment, but `conda env create` for a full data science stack takes several minutes. Consider pre-warming the proxy cache during deployment.
 
-4. **Spark version coupling**: Spark, Delta Lake, Hadoop, and the AWS SDK have tight version interdependencies. Making these user-configurable risks subtle breakage. Spark JARs should probably remain admin-controlled even if Python packages become user-controlled.
+4. **Spark version coupling**: Spark, Delta Lake, Hadoop, and the AWS SDK have tight version interdependencies. `spark.jars.packages` can resolve these from a Maven proxy (see "The Spark Question" section), but version combinations should remain admin-controlled via the `spark-defaults.conf` ConfigMap. The current Hadoop JARs (3.2.2) are mismatched with the Spark 3.5.3 base image (which ships Hadoop 3.3.6) -- this should be addressed when migrating to `spark.jars.packages`.
 
 5. **Storage for user environments**: Conda environments can be large (several GB for ML stacks). The current default PVC may need to increase, or we need to document environment cleanup procedures.
 
