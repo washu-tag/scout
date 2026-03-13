@@ -97,17 +97,32 @@ These cannot be updated without manual testing because version incompatibilities
 
 ### Format Support Matrix
 
+#### Multi-Format Tools
+
 | Tool | Conda | PyPI | Maven | RPM/yum | Container Images | Free | Pull-Through |
 |------|-------|------|-------|---------|-----------------|------|-------------|
 | **Nexus CE** | Yes | Yes | Yes | Yes | Yes | Yes* | Yes |
 | **Pulp** | **No** | Yes | Yes | Yes | Yes | Yes | Yes |
 | **Artifactory Pro** | Yes | Yes | Yes | Yes | Yes | No ($6k+/yr) | Yes |
 | **Artifactory OSS** | No | No | Yes | No | No | Yes | Yes |
-| **ProGet** | Yes | Yes | Yes | Yes | Yes | Free tier | Yes |
+| **ProGet** | Yes | Yes | Yes | Yes | Yes | Free tier† | Yes |
 | **Harbor** | No | No | No | No | Yes | Yes | Yes |
-| **devpi** | No | Yes | No | No | No | Yes | Yes |
 
 \* Nexus CE has usage caps: **40,000 total components** and **100,000 requests/day**. When exceeded, new component additions are blocked.
+
+† ProGet is proprietary, not open source. Free edition has no feed/package/user limits but restricts connector filters, metadata caching, and security API to paid tiers.
+
+#### Single-Purpose Tools
+
+| Tool | Format | License | Pull-Through | K8s Story | Maintenance |
+|------|--------|---------|-------------|-----------|-------------|
+| **devpi** | PyPI | MIT | Yes | Community chart | Very active (6.19.x, Feb 2026) |
+| **proxpi** | PyPI | Apache 2.0 | Yes | Docker only | Active, small community |
+| **pypiserver** | PyPI | MIT/zlib | No (hosting only) | Helm chart | Active |
+| **bandersnatch** | PyPI | AFL 3.0 | No (mirror tool) | Batch job | Active (PyPA project) |
+| **Reposilite** | Maven | Apache 2.0 | Yes | Official Helm chart | Very active (3.5.x, 1.7k stars) |
+| **Quetz** | Conda | BSD-3 | Yes | No chart, needs PG | Stagnating (mamba-org) |
+| **nginx cache** | Any HTTP | BSD-2 | Yes (generic) | Standard | N/A (infrastructure) |
 
 ### Detailed Assessments
 
@@ -183,6 +198,24 @@ Use the **stevehipwell/nexus3** chart (path 3). The config-as-code feature align
 
 For a quick POC/evaluation, path 1 (image override on the deprecated chart) is acceptable.
 
+#### ProGet (Inedo)
+
+.NET-based universal package manager. Supports conda, PyPI, Maven, RPM, Docker, NuGet, npm, Helm, Debian, Alpine, and more. Pull-through proxying ("connectors") for all formats.
+
+**Strengths:**
+- Covers all five artifact types, like Nexus CE
+- Free edition has **no feed/package/user limits** (unlike Nexus CE's 40K cap)
+- Active development with regular releases (ProGet 2025.14 as of early 2026)
+
+**Limitations:**
+- **Proprietary software** (not open source) -- dependent on Inedo's continued goodwill for the free tier
+- **No official Helm chart** -- Inedo says "several customers" run it on K8s, but you'd write your own chart
+- .NET runtime on Linux/Docker -- unusual in the Linux/K8s ecosystem
+- Free edition restrictions: no connector filters (paid only), no metadata caching (paid only), no security API (paid only), API deletes limited to 10/hour
+- Less ecosystem presence and community support than Nexus/Artifactory
+
+**Verdict:** The most interesting Nexus CE alternative if the 40K component cap becomes a real problem. The free edition restrictions are likely acceptable for Scout's use case. The trade-offs are proprietary license and no official K8s deployment path.
+
 #### Pulp Project
 
 Originally developed by Red Hat; powers Red Hat Satellite and Microsoft's Linux repositories. Plugin-based architecture with excellent RPM support (its original purpose).
@@ -210,6 +243,117 @@ Originally developed by Red Hat; powers Red Hat Satellite and Microsoft's Linux 
 #### ProGet (Inedo)
 
 Supports conda, PyPI, RPM, Docker, Maven, npm. Free tier available. .NET-based, which is unusual in Linux/K8s environments. Less ecosystem presence but functional. Worth considering as a Nexus alternative if the 40K cap becomes a problem.
+
+### Single-Purpose Tool Assessments
+
+#### devpi (PyPI proxy)
+
+The most mature and feature-rich open-source PyPI proxy. Transparent pull-through caching: lazily fetches and caches packages on first request. Auto-updates its index via PyPI's changelog protocol.
+
+**License:** MIT | **Resources:** ~560 MB RAM in production
+
+**Strengths:**
+- True pull-through proxy -- caches packages lazily on first request (exact model Scout needs)
+- Private index support with inheritance (can layer private packages on top of PyPI cache)
+- PostgreSQL backend available via `devpi-postgresql` plugin for production
+- Very active: releases 6.17.0 (Aug 2025) through 6.19.1 (Feb 2026)
+
+**Limitations:**
+- Community Helm chart ([topiaruss/helm-devpi](https://github.com/topiaruss/helm-devpi)) described as early-stage
+- Heavier than alternatives (runs a full index, not just a cache)
+- PostgreSQL recommended for production (adds a dependency)
+
+**Verdict:** Best-in-class PyPI proxy. If decoupling from Nexus, this is the clear choice for PyPI. However, if Nexus is deployed for conda, its PyPI proxy makes devpi redundant.
+
+#### proxpi (PyPI proxy)
+
+Lightweight CI-focused caching proxy. Caches index requests + package files to a local directory.
+
+**License:** Apache 2.0 | **Resources:** Minimal (~32 MB RAM, 5 GB cache default)
+
+**Limitations:** Designed for ephemeral CI use, not persistent services. No package upload support. Small community (183 GitHub stars). No Helm chart.
+
+**Verdict:** Too lightweight for Scout's needs. devpi is the better choice.
+
+#### Other PyPI tools (not proxies)
+
+- **pypiserver**: Serves local packages from a directory but **does not cache upstream packages**. Has `--fallback-url` to redirect unfound packages to upstream PyPI, but the maintainer explicitly declined to add caching. Useful for hosting internal packages, not for proxying.
+- **bandersnatch**: Official PyPA tool for mirroring PyPI. Full mirror is ~20+ TB. Supports selective mirroring by allowlist/blocklist, but you must predict packages in advance. Not a transparent proxy -- sync first, serve the directory via nginx.
+
+#### Reposilite (Maven proxy)
+
+Lightweight Maven repository manager. Proxies Maven Central and other repositories with local caching. Written in Kotlin, runs on JVM.
+
+**License:** Apache 2.0 | **Resources:** ~20 MB RAM for personal use; scales up as needed
+
+**Strengths:**
+- Official Helm chart at [helm.reposilite.com](https://helm.reposilite.com/)
+- Remarkably lightweight compared to Nexus (~20 MB vs ~4 GB RAM)
+- Very active: 1.7k GitHub stars, latest release 3.5.26
+- Supports proxied artifact storage (must be explicitly enabled)
+- Configurable storage policies, allowed groups/extensions filtering
+
+**Limitations:**
+- Maven-only -- no PyPI, RPM, conda support
+- Smaller community than Nexus/Artifactory
+
+**Verdict:** Excellent if you need a standalone Maven proxy. Dramatically simpler and lighter than Nexus. However, if Nexus is already deployed for conda, adding Maven to Nexus costs nothing.
+
+#### Apache Archiva (Maven proxy) -- RETIRED
+
+Moved to Apache Attic in May 2024. No patches, no security updates. **Not a viable option.**
+
+#### Quetz (Conda proxy)
+
+The only open-source dedicated conda package server with proxy/pull-through support. Created by mamba-org. FastAPI-based Python app. Supports "proxy channels" that transparently cache packages on first request.
+
+**License:** BSD-3-Clause | **Resources:** Not well-documented; needs PostgreSQL
+
+**Strengths:**
+- True pull-through proxy for conda channels (conda-forge, defaults, etc.)
+- Fully open source, no usage caps
+
+**Limitations:**
+- **Maintenance is concerning**: Frontend declared "inactive" by Snyk. Core server has some activity but appears to be in maintenance mode, not active development.
+- No Helm chart -- only Docker Compose documented; would require writing K8s manifests
+- Limited community and documentation
+
+**Verdict:** The only dedicated open-source conda pull-through proxy, but the maintenance trajectory is worrying. Would be risky to depend on this for a production air-gapped deployment.
+
+#### Nginx Caching Proxy (generic HTTP cache for any format)
+
+Nginx configured as a reverse proxy with `proxy_cache` in front of upstream package repositories. Documented configurations exist for [conda channels](https://gist.github.com/ei-grad/2d70c40c7956939f2564b988025ed665), [PyPI](https://gist.github.com/dctrwatson/5785638), [Maven](https://weblog.lkiesow.de/20170413-nginx-as-fast-maven-repository-proxy.html), and [RPM repos](https://www.getpagespeed.com/server-setup/hosting-rpm-repositories-with-nginx-and-cdn-with-blazing-speed).
+
+**Strengths:**
+- Works for any HTTP-based package repository
+- Operationally simple -- nginx is already well-understood infrastructure
+- No new software to learn or deploy
+- Zero overhead beyond nginx itself
+
+**Limitations:**
+- **HTTPS handling**: Must terminate TLS to the upstream to cache responses. Clients must trust the proxy's cert or use HTTP.
+- **No format awareness**: Doesn't understand package metadata. Cache invalidation is time-based only. Stale metadata (e.g., `repodata.json` for conda, `simple/` index for PyPI) can cause confusing errors.
+- **Careful TTL tuning required**: Immutable content (package files) can be cached aggressively. Mutable content (index/metadata) needs short TTLs with periodic refresh.
+- Each upstream needs its own `location` block and `proxy_pass` directive
+
+**Verdict for conda specifically:** Conda channels are essentially static HTTP directories -- `repodata.json` (index) + `.tar.bz2`/`.conda` files (immutable packages). An nginx caching proxy is a viable low-tech fallback for conda if purpose-built tools are unavailable. Configure `channel_alias` or `custom_channels` in `.condarc` to point at the proxy.
+
+**Verdict overall:** Inferior to purpose-built repository proxies for any format, but workable as a fallback. Most useful for conda where dedicated OSS alternatives are weakest.
+
+#### Other generic caches (Squid, Varnish)
+
+- **Squid**: Widely used for caching RPM/APT repos. Supports large objects. For HTTPS repos, requires SSL bumping (MITM decryption) which is a security concern and requires CA cert distribution to all clients. Configuration is non-trivial.
+- **Varnish**: High-performance HTTP accelerator. The open-source version does not support HTTPS natively (needs a TLS terminator in front). VCL configuration language is powerful but has a learning curve. Varnish Enterprise supports TLS but is commercial.
+
+### Emerging Developments (2024-2026)
+
+**Conda OCI distribution:** conda-forge is being mirrored to GHCR as OCI artifacts via `conda-oci-mirror`. A Conda Enhancement Proposal is in progress to standardize OCI-based distribution. If this matures, Harbor (which Scout already has) could serve as a conda package cache. Still experimental -- needs `conda-oci-forwarder` compatibility layer on the client side.
+
+**Nexus CE trajectory:** Sonatype launched "Nexus One" (cloud-first AI-native platform) in Nov 2025. Community Edition received new format support (Hugging Face, Cargo, Conan v2) but component limits were reduced from 100K to 40K. The strategic direction is clearly toward commercial cloud services. CE continues to exist but may become more restrictive over time.
+
+**Quetz stagnation:** The mamba-org conda server project has lost momentum. This was the only dedicated open-source conda proxy, and it appears to be fading.
+
+**No significant new entrants:** Despite the pain created by Nexus CE limits and Artifactory pricing, no significant new open-source multi-format repository proxy has emerged in 2024-2026. The space remains dominated by Nexus, Artifactory, and Pulp.
 
 ---
 
@@ -261,7 +405,36 @@ Internet ← Pulp (staging) ← Production K3s (RPM/yum)
 
 **Verdict: Overkill unless RPM needs grow substantially.** If Scout eventually needs to proxy full RHEL/CentOS base repos for node provisioning, Pulp becomes more attractive. For three packages, Nexus's yum proxy is sufficient.
 
-### Option D: Artifactory Pro (everything)
+### Option D: Single-purpose tools (no Nexus)
+
+```
+Internet ← Harbor (staging) ← Production K3s (container images)
+Internet ← nginx cache (staging) ← Production K3s (conda channels)
+Internet ← devpi (staging) ← Production K3s (PyPI)
+Internet ← Reposilite (staging) ← Production K3s (Maven JARs)
+Internet ← nginx cache or Nexus CE (staging) ← Production K3s (RPM)
+```
+
+**Pros:** Each tool is best-of-breed (or at least purpose-built) for its format. devpi and Reposilite are well-maintained, truly open source, and lightweight. No single-tool usage caps to worry about. Total RAM for devpi (~560 MB) + Reposilite (~20 MB) + nginx (~50 MB) ≈ 630 MB, vs Nexus CE at ~4-5 GB.
+
+**Cons:** Three or four tools to deploy and maintain instead of one. The **conda story is the weakest link** -- no well-maintained dedicated conda proxy exists, so you're left with an nginx caching proxy (workable but lacks metadata awareness) or Quetz (maintenance concerns). Operational complexity of managing multiple services. RPM proxying via nginx cache is less clean than a purpose-built yum proxy (would need careful TTL tuning for repo metadata).
+
+**Verdict: Viable if Nexus's OSS trajectory is unacceptable**, but the conda gap is the main concern. If conda OCI distribution matures (allowing Harbor to serve as the conda cache), this option becomes much more attractive.
+
+### Option E: ProGet free edition (replacing Nexus CE)
+
+```
+Internet ← Harbor (staging) ← Production K3s (container images)
+Internet ← ProGet (staging) ← Production K3s (conda, PyPI, Maven, RPM)
+```
+
+**Pros:** Same architecture as Option B but with no usage caps. ProGet's free edition has no feed, package, or user limits. Covers all formats including conda. Active development.
+
+**Cons:** **Proprietary software** -- not open source. Dependent on Inedo's continued free-tier policy. No official Helm chart (must write your own). .NET runtime is unusual in Linux/K8s environments. Free edition lacks connector filters, metadata caching, and security API (paid features). Less community support and ecosystem presence than Nexus.
+
+**Verdict: Worth evaluating if Nexus CE's 40K cap becomes a real problem.** The proprietary license is the main concern for a project that values open-source tooling. A good "Plan B" to keep in the back pocket.
+
+### Option F: Artifactory Pro (everything)
 
 ```
 Internet ← Artifactory Pro (staging) ← Production K3s (everything)
@@ -275,12 +448,16 @@ Internet ← Artifactory Pro (staging) ← Production K3s (everything)
 
 ### Recommendation
 
-**Start with Option B (Harbor + Nexus CE).** It adds one new tool (Nexus) to handle four new proxy needs (conda, PyPI, Maven, RPM). Keep Harbor for containers. This is the minimum viable architecture.
+**Start with Option B (Harbor + Nexus CE)**, but with eyes open about Nexus CE's trajectory. It adds one new tool (Nexus) to handle four new proxy needs (conda, PyPI, Maven, RPM). Keep Harbor for containers. This is the minimum viable architecture.
 
-If the Nexus CE component limit becomes a problem:
+**Why Nexus is still the practical choice despite concerns:** Conda proxying is the constraining factor. No well-maintained, truly open-source conda pull-through proxy exists -- Quetz (mamba-org) is stagnating, and the only alternatives are Nexus CE, Artifactory Pro ($6k+/yr), or a generic nginx cache (workable but fragile). Until conda OCI distribution matures (which would let Harbor serve as a conda cache), Nexus CE is the least-bad option for conda.
+
+**Escalation path if Nexus CE becomes untenable:**
 1. First try: clean up unused cached components (Nexus has cleanup policies)
-2. If that's insufficient: split RPM to Pulp (Option C), since RPM repos have the most packages and are the easiest to separate
-3. If that's still insufficient: evaluate Nexus Pro or Artifactory Pro
+2. If the 40K cap is hit: split RPM to Pulp (Option C), since RPM repos have the most packages and are the easiest to separate
+3. If Sonatype further restricts CE: evaluate ProGet free edition (Option E) as a drop-in replacement -- same multi-format coverage, no usage caps, but proprietary
+4. If budget allows: Artifactory Pro (Option F) removes all constraints
+5. Long-term: watch conda OCI distribution -- if it matures, Option D (single-purpose tools) becomes viable and eliminates the Nexus dependency entirely
 
 ---
 
@@ -624,7 +801,7 @@ This is the easiest to validate and has immediate payoff:
 
 ## Open Questions
 
-1. **Nexus component cap**: The 40K component limit is the biggest risk. With pull-through proxying (only caching what's requested), we may stay under this for a long time, but it needs monitoring. If it becomes a problem, options are: cleanup policies, splitting RPM to Pulp, or upgrading to Nexus Pro.
+1. **Nexus component cap and OSS trajectory**: The 40K component limit is the biggest risk. With pull-through proxying (only caching what's requested), we may stay under this for a long time, but it needs monitoring. Sonatype's strategic direction (cloud-first "Nexus One", reduced CE limits from 100K to 40K) suggests CE may become more restrictive over time. If it becomes a problem, options are: cleanup policies, splitting RPM to Pulp, switching to ProGet free edition, or upgrading to Nexus Pro.
 
 2. **Proxy availability**: If the staging node or Nexus goes down, no new packages can be installed (existing cached packages are still served). Nexus stores its cache on disk (should use a persistent volume), and the staging node is already a single point of failure for Harbor. This doesn't change the risk profile much.
 
@@ -639,3 +816,7 @@ This is the easiest to validate and has immediate payoff:
 7. **Should Nexus replace Harbor?** Probably not. Harbor is purpose-built for containers (vulnerability scanning, content trust, CNCF graduated project) and is already deployed. The component cap concern also argues against consolidating Docker images into Nexus. But it's worth noting that Nexus *can* do it if simplification is ever prioritized over features.
 
 8. **Phase 2 scope**: The RPM proxy work could be done independently of the Jupyter work. It's a simpler, lower-risk change that immediately simplifies the Ansible codebase. Consider prioritizing it.
+
+9. **Conda OCI distribution**: conda-forge is being mirrored to GHCR as OCI artifacts. If conda OCI distribution matures (standardized via Conda Enhancement Proposal + `conda-oci-forwarder` client compatibility), Harbor could serve as the conda cache. This would eliminate the main reason Nexus is hard to replace. Worth monitoring but too experimental to depend on today.
+
+10. **ProGet as a backup plan**: ProGet's free edition covers all formats with no usage caps. The main trade-off is proprietary license. Worth doing a quick evaluation to validate it works for Scout's specific repos, so it's ready as a fallback if Nexus CE becomes untenable.
