@@ -135,20 +135,53 @@ The only free tool that covers **all five** artifact types (conda, PyPI, Maven, 
 
 Sonatype's Helm charts are in a transitional state that complicates Nexus CE deployment on Kubernetes:
 
-- **Legacy chart** (`sonatype/nexus-repository-manager` from `helm3-charts`): Deprecated, supports up to Nexus 64.2.0, uses an embedded OrientDB database. Works for CE but will not receive updates. Sonatype warns that the embedded database can corrupt under certain Kubernetes pod termination conditions.
+- **Legacy chart** (`sonatype/nexus-repository-manager` from `helm3-charts`): **Deprecated and vulnerable.** The chart tops out at Nexus 3.64.0, which is affected by [CVE-2024-4956](https://support.sonatype.com/hc/en-us/articles/29416509323923) -- a critical unauthenticated path traversal vulnerability that allows attackers to read arbitrary files on the system. Sonatype recommends upgrading to Nexus 3.68.1 or later. The chart will not receive updates.
 
-- **Current chart** (`sonatype/nxrm-ha` from `helm3-charts`): The only supported chart going forward. Requires an external PostgreSQL database. However, it **hardcodes** `-Dnexus.licenseFile=${LICENSE_FILE}` in the StatefulSet template, which causes CE to fail at startup because no license file exists.
+- **Current chart** (`sonatype/nxrm-ha` from `helm3-charts`): The only Sonatype-supported chart going forward (currently at appVersion 3.90.1). Requires an external PostgreSQL database and a **Nexus Pro license** -- it hardcodes `-Dnexus.licenseFile=${LICENSE_FILE}` in the StatefulSet template, which causes CE to fail at startup. A [community workaround](https://github.com/sonatype/nexus-public/issues/926) patches this, but vendoring and maintaining a fork of a Pro-oriented chart adds complexity.
 
-- **Workaround for CE on `nxrm-ha`** ([sonatype/nexus-public#926](https://github.com/sonatype/nexus-public/issues/926)): The StatefulSet template can be patched to conditionally include the license flag only when a license secret is configured. The fix checks `.Values.secret.license.licenseSecret.enabled`, `.Values.secret.license.existingSecret`, and cloud secret manager flags -- if none are true, the `-Dnexus.licenseFile` parameter is omitted. With this patch, CE starts successfully on the `nxrm-ha` chart with PostgreSQL.
+Since Scout needs the free CE edition, neither official chart works out of the box. There are three viable paths:
 
-**Recommended deployment approach for production:**
+**Path 1: Override the image tag on the deprecated chart**
 
-1. Vendor/fork the `nxrm-ha` chart into the Scout repo (e.g., `helm/nexus/`)
-2. Apply the license-conditional patch from issue #926
-3. Deploy a small PostgreSQL instance on the staging K3s cluster (via CloudNativePG, which Scout already uses for the production cluster, or a simple StatefulSet)
-4. This gives: supported chart, PostgreSQL-backed storage (no corruption risk), CE compatibility, and a clear upgrade path to Pro if the 40K component cap becomes a problem
+The deprecated chart is very simple -- it creates a Deployment, Service, PVC, and ServiceAccount with no version-coupled logic. Setting `image.tag=3.90.1` (or any current Nexus version) works with two minor adjustments:
 
-For POC/evaluation, the deprecated `nexus-repository-manager` chart is acceptable.
+- Replace the JVM flag `-XX:+UseCGroupMemoryLimitForHeap` (removed in newer JDKs) with `-XX:+UseContainerSupport` or remove it entirely
+- Remove `nexus.scripts.allowCreation` from properties if using the override (removed in Nexus 3.70+)
+
+*Pros:* Minimal effort, immediate CVE remediation, no new dependencies.
+*Cons:* No chart-level updates ever. If Sonatype changes the image's data path, default port, or UID in a future release, you must adjust Helm values manually. Uses an embedded database (OrientDB/H2) rather than PostgreSQL.
+
+**Path 2: Vendor and patch the `nxrm-ha` chart for CE**
+
+Fork the `nxrm-ha` chart into the Scout repo (e.g., `helm/nexus/`) and apply the license-conditional patch from [sonatype/nexus-public#926](https://github.com/sonatype/nexus-public/issues/926). Deploy a small PostgreSQL instance on the staging cluster.
+
+*Pros:* Sonatype-supported chart, PostgreSQL-backed storage (no embedded DB corruption risk), clear upgrade path to Pro.
+*Cons:* Requires maintaining a fork of a chart designed for Pro/HA. Adds a PostgreSQL dependency on the staging cluster. The patch may need updating as the chart evolves.
+
+**Path 3: Use the stevehipwell/nexus3 community chart (recommended)**
+
+[stevehipwell/nexus3](https://github.com/stevehipwell/helm-charts/tree/main/charts/nexus3) is the most widely used community chart for Nexus OSS on Kubernetes (165 stars, 90 forks, MIT license). It is actively maintained with roughly monthly releases tracking upstream Nexus versions. As of March 2026, the latest release is chart 5.19.0 / appVersion 3.89.0. Published to `ghcr.io/stevehipwell/helm-charts/nexus3` (OCI registry).
+
+Key advantages over the Sonatype charts:
+
+- **Designed for OSS**: No Pro license required, no patching needed
+- **StatefulSet-based**: More appropriate for stateful workloads than the deprecated chart's Deployment
+- **Config-as-code**: Declaratively configure proxy repositories, blob stores, cleanup policies, roles, users, and scheduled tasks via Helm values -- a Kubernetes Job calls the Nexus REST API post-install. This is particularly valuable for Scout's reproducible air-gapped deployments
+- **Security defaults**: Read-only root filesystem, non-root user (UID 200), seccomp profiles
+- **Custom CA certs**: Inject CA certificates into the JVM trust store via secret (useful for air-gapped TLS)
+- **Prometheus metrics**: ServiceMonitor support for Grafana integration
+- **Plugin installation**: Install Nexus plugins at startup via URL list
+
+*Pros:* Purpose-built for OSS, actively maintained, feature-rich, declarative repository setup reduces manual post-deploy configuration.
+*Cons:* Single maintainer (Steve Hipwell). Not an official Sonatype product. If the maintainer stops, you're in the same position as path 1 (working chart, no updates).
+
+Other community charts exist but are not competitive: [Scalified/nexus](https://github.com/Scalified/helm-nexus) (1 star, automated version bumps only, no persistence or config features built in) and the abandoned oteemo/sonatype-nexus.
+
+**Recommended deployment approach:**
+
+Use the **stevehipwell/nexus3** chart (path 3). The config-as-code feature aligns well with Scout's infrastructure-as-code approach -- proxy repositories for conda, PyPI, Maven, and yum can be declared in Helm values and version-controlled alongside other Scout configuration. The single-maintainer risk is mitigated by the chart's maturity (5.x, years of releases) and the fact that the worst case is freezing on a working version (equivalent to path 1).
+
+For a quick POC/evaluation, path 1 (image override on the deprecated chart) is acceptable.
 
 #### Pulp Project
 
@@ -538,17 +571,15 @@ The key difference: Domino rebuilds images; Scout avoids rebuilds entirely by us
 
 ### Phase 1: Deploy Nexus on staging
 
-1. Vendor the `nxrm-ha` Helm chart into the Scout repo and apply the CE license-conditional patch from [sonatype/nexus-public#926](https://github.com/sonatype/nexus-public/issues/926)
-2. Deploy a small PostgreSQL instance on the staging K3s cluster (required by the `nxrm-ha` chart)
-3. Deploy Nexus CE using the patched chart with Traefik ingress on the staging node
-4. Configure proxy repositories:
+1. Deploy Nexus CE using the [stevehipwell/nexus3](https://github.com/stevehipwell/helm-charts/tree/main/charts/nexus3) Helm chart (`ghcr.io/stevehipwell/helm-charts/nexus3`) with Traefik ingress on the staging node
+2. Configure proxy repositories declaratively via the chart's config-as-code values:
    - Conda: `conda-forge`, `conda-defaults`
    - PyPI: `pypi-proxy` → `https://pypi.org/`
    - Maven: `maven-central` → `https://repo1.maven.org/maven2/`
    - Yum: `rancher-k3s`, `nvidia-container`, `epel`
-5. Test connectivity from production cluster to staging proxy
-6. Add Ansible role for Nexus deployment (alongside existing Harbor staging role)
-7. Monitor component usage against the 40K cap
+3. Test connectivity from production cluster to staging proxy
+4. Add Ansible role for Nexus deployment (alongside existing Harbor staging role)
+5. Monitor component usage against the 40K cap
 
 ### Phase 2: RPM proxy (quick win)
 
