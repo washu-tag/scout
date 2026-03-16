@@ -28,7 +28,7 @@ The `staging_uses_self_signed_cert` variable (derived automatically by comparing
 ### Mechanism (self-signed cert only)
 
 1. **Fetch**: Ansible fetches the staging CA cert from the staging node to the jump node (using `ansible.builtin.fetch` or `ansible.builtin.slurp`)
-2. **Distribute**: Ansible copies the cert to production nodes at a well-known path (e.g., `/etc/rancher/k3s/agent/staging-ca.crt`) and into a Kubernetes Secret or ConfigMap for pod-mounted access
+2. **Distribute**: Ansible copies the cert to production nodes at a well-known path (e.g., `/etc/rancher/k3s/staging-ca.crt`) and into a Kubernetes Secret or ConfigMap for pod-mounted access
 3. **Configure**: Each service that contacts the staging node references the cert in its trust configuration
 
 ### Per-Service Configuration
@@ -40,7 +40,7 @@ The `staging_uses_self_signed_cert` variable (derived automatically by comparing
 configs:
   "<harbor-host>:443":
     tls:
-      ca_file: "/etc/rancher/k3s/agent/staging-ca.crt"
+      ca_file: "/etc/rancher/k3s/staging-ca.crt"
 ```
 
 This replaces the current `insecure_skip_verify: true`.
@@ -50,7 +50,7 @@ This replaces the current `insecure_skip_verify: true`.
 ```yaml
 # Create a secret from the cert
 kubectl create secret generic staging-ca-cert \
-  --from-file=staging-ca.crt=/etc/rancher/k3s/agent/staging-ca.crt
+  --from-file=staging-ca.crt=/etc/rancher/k3s/staging-ca.crt
 
 # Mount into pods that need it
 volumeMounts:
