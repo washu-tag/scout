@@ -82,10 +82,20 @@ k3s_package_download_image: rockylinux/rockylinux:9.6
 # CoreDNS Customization
 ################################################################################
 
+# DEPRECATED: Use coredns_forward_map instead. Will be removed in a future release.
 # Domains to forward to /etc/resolv.conf (e.g., Tailscale, VPN domains)
-# Used in air-gapped mode to selectively allow external DNS resolution
-# Example: ["ts.net"]
 coredns_forward_domains: []
+
+# Map of forwarding destinations to domain lists.
+# Each entry creates a CoreDNS server block forwarding the listed domains
+# to the specified destination (IP address or file path like /etc/resolv.conf).
+# Example:
+#   coredns_forward_map:
+#     /etc/resolv.conf:
+#       - wustl.edu
+#     100.100.100.100:
+#       - ts.net
+coredns_forward_map: {}
 
 # Arbitrary CoreDNS server blocks (dict of name -> raw Corefile content)
 # Keys become ConfigMap data keys with ".server" suffix auto-appended

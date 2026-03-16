@@ -10,12 +10,41 @@
 # removed from inventory, and server-side apply has field ownership
 # issues when transitioning from other apply methods.
 
+- name: Validate CoreDNS forward domain configuration
+  ansible.builtin.fail:
+    msg: >-
+      Both coredns_forward_domains and coredns_forward_map are set.
+      Please migrate to coredns_forward_map and remove coredns_forward_domains.
+  when:
+    - coredns_forward_domains | default([]) | length > 0
+    - coredns_forward_map | default({}) | length > 0
+
+- name: Warn about deprecated coredns_forward_domains variable
+  ansible.builtin.debug:
+    msg: >-
+      [DEPRECATED] coredns_forward_domains is deprecated. Please migrate to coredns_forward_map.
+      Example: coredns_forward_map: { '/etc/resolv.conf': {{ coredns_forward_domains }} }
+  when:
+    - coredns_forward_domains | default([]) | length > 0
+    - coredns_forward_map | default({}) | length == 0
+
+- name: Compute effective CoreDNS forward map
+  ansible.builtin.set_fact:
+    _coredns_effective_forward_map: >-
+      {%- if coredns_forward_map | default({}) | length > 0 -%}
+        {{ coredns_forward_map }}
+      {%- elif coredns_forward_domains | default([]) | length > 0 -%}
+        {{ {'/etc/resolv.conf': coredns_forward_domains} }}
+      {%- else -%}
+        {{ {} }}
+      {%- endif -%}
+
 - name: Determine if CoreDNS customization is needed
   ansible.builtin.set_fact:
     _coredns_custom_needed: >-
       {{
         (air_gapped | default(false) | bool) or
-        (coredns_forward_domains | default([]) | length > 0) or
+        (_coredns_effective_forward_map | default({}) | length > 0) or
         (coredns_extra_server_blocks | default({}) | length > 0)
       }}
 

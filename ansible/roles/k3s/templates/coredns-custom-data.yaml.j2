@@ -23,14 +23,16 @@ airgap.server: |
     cache 30
   }
 {% endif %}
-{# Layer 2: Forward domains #}
-{% if coredns_forward_domains | default([]) | length > 0 %}
-forward-domains.server: |
-  {{ coredns_forward_domains | join(' ') }}:53 {
-    forward . /etc/resolv.conf
+{# Layer 2: Forward domains (from effective forward map) #}
+{% for destination, domains in (_coredns_effective_forward_map | default({}) | dictsort) %}
+{% if domains | length > 0 %}
+forward-domains-{{ loop.index0 }}.server: |
+  {{ domains | join(' ') }}:53 {
+    forward . {{ destination }}
     cache 300
   }
 {% endif %}
+{% endfor %}
 {# Layer 3: Extra server blocks (keys get .server suffix appended) #}
 {% for name, content in (coredns_extra_server_blocks | default({})).items() %}
 {{ name }}.server: |
