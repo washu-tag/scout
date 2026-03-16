@@ -504,6 +504,8 @@ ADRs in `docs/internal/adr/` document significant architectural decisions. Consu
 
 - **ADR 0014: Dependency CVE Monitoring via Renovate and Dependabot** — Uses self-hosted Renovate (custom regex manager) and Dependabot to monitor dependencies for known CVEs only — not routine version updates. Renovate covers `versions.yaml` (Helm charts, Docker images, GitHub releases); Dependabot covers application dependencies (npm, pip, gradle, Dockerfile base images) via GitHub UI settings, plus GitHub Actions version updates via `dependabot.yml`. Consult when adding new dependencies to `versions.yaml` (add `# renovate:` annotation) or configuring Dependabot (GitHub UI: **Settings > Security > Advanced Security**).
 
+- **ADR 0015: Staging Node Certificate Distribution** — Distributes the staging node's self-signed TLS certificate to the production cluster via Ansible, replacing `insecure_skip_verify: true` with explicit CA trust. For containerd/K3s, the cert is placed on host nodes and referenced via `ca_file` in `registries.yaml`. For future containerized services, the cert is mounted from a Kubernetes Secret. Consult when adding services that contact the staging node or modifying air-gapped TLS configuration.
+
 ## Key Concepts for AI Assistants
 
 ### Architecture Understanding
