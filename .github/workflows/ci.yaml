@@ -31,7 +31,7 @@ jobs:
       keycloak: ${{ steps.filter.outputs.keycloak }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v4
+      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
         id: filter
         with:
           filters: |
@@ -68,7 +68,7 @@ jobs:
           distribution: ${{ ENV.JAVA_DIST }}
           java-version: ${{ ENV.JAVA_VERSION }}
           cache: 'gradle'
-      - uses: pre-commit/action@v3.0.1
+      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
   build-and-upload:
     runs-on: ubuntu-latest
     needs: changes
@@ -277,7 +277,7 @@ jobs:
         run: |
           sudo -E kubectl -n scout-extractor logs job/ci-tests
       - name: Test Summary
-        uses: test-summary/action@v2.4
+        uses: test-summary/action@31493c76ec9e7aa675f1585d3ed6f1da69269a86 # v2.4
         if: always()
         with:
           paths: 'tests/ingest/**/TEST-*.xml'
