@@ -212,9 +212,15 @@ k3s_cluster:
     # CoreDNS custom DNS configuration (see docs/source/technical/inventory.md)
     # When air_gapped: true, CoreDNS automatically gets deny-all + cluster.local blocks
     #
-    # Domains to forward to /etc/resolv.conf (e.g., Tailscale, VPN):
-    # coredns_forward_domains:
-    #   - ts.net
+    # Map forwarding destinations to domain lists:
+    # coredns_forward_map:
+    #   /etc/resolv.conf:
+    #     - wustl.edu
+    #   100.100.100.100:
+    #     - ts.net
+    #
+    # DEPRECATED: coredns_forward_domains (forwards all to /etc/resolv.conf)
+    # Migrate to coredns_forward_map instead.
     #
     # Arbitrary CoreDNS server blocks (works with or without air_gapped):
     # coredns_extra_server_blocks:

@@ -682,13 +682,21 @@ The configuration uses a three-layer model:
 
 **Layer 1 (automatic):** When `air_gapped: true`, CoreDNS automatically gets a deny-all NXDOMAIN default plus server blocks for `cluster.local` and reverse DNS, ensuring internal Kubernetes DNS resolution continues to work while blocking external lookups.
 
-**Layer 2 (structured variable):** Use `coredns_forward_domains` for domain forwarding:
+**Layer 2 (structured variable):** Use `coredns_forward_map` to forward domains to specific DNS destinations. Each entry creates a CoreDNS server block:
 
 ```yaml
-# Domains to forward to /etc/resolv.conf (e.g., Tailscale, VPN domains)
-coredns_forward_domains:
-  - ts.net
+# Map forwarding destinations to domain lists
+coredns_forward_map:
+  /etc/resolv.conf:
+    - wustl.edu
+    - wusm.wustl.edu
+  100.100.100.100:
+    - ts.net
 ```
+
+:::{deprecated} coredns_forward_domains
+`coredns_forward_domains` (list) is deprecated. It is automatically converted to forward all listed domains to `/etc/resolv.conf`. Setting both `coredns_forward_domains` and `coredns_forward_map` is an error.
+:::
 
 **Layer 3 (escape hatch):** Use `coredns_extra_server_blocks` for arbitrary CoreDNS server blocks. This works with or without air-gapped mode. Keys are descriptive names; the `.server` suffix is auto-appended to form the ConfigMap data key.
 
