@@ -71,7 +71,7 @@
     - name: Slurp staging self-signed certificate
       ansible.builtin.slurp:
         src: '{{ staging_self_signed_tls_cert_path }}'
-      delegate_to: "{{ groups['staging'][0] }}"
+      delegate_to: "{{ groups['staging'][0] | default('localhost') }}"
       register: slurped_staging_cert
       run_once: true
       when: staging_uses_self_signed_cert | bool
