@@ -49,16 +49,26 @@ Following the service-mode pattern from ADR 0011, we introduce a `package_proxy_
 
 ```yaml
 # Mode variable
-package_proxy_mode: nexus    # Options: nexus, external
+package_proxy_mode: none    # Options: none, nexus, external
 
-# Per-format proxy URLs (computed from Nexus endpoint by default)
-conda_proxy_url: "http://{{ nexus_host }}/repository/conda-forge/"
-pip_proxy_url: "http://{{ nexus_host }}/repository/pypi-proxy/simple"
-maven_proxy_url: "http://{{ nexus_host }}/repository/maven-central/"
-yum_proxy_url: "http://{{ nexus_host }}/repository/"
+# Nexus connection (used when mode is 'nexus'; TLS required per ADR-0015)
+nexus_host: "{{ staging_hostname }}:8081"  # derived from staging node
+
+# Per-format proxy URLs (computed from Nexus endpoint when mode is 'nexus')
+conda_proxy_url: "https://{{ nexus_host }}/repository/conda-forge-proxy"
+conda_defaults_proxy_url: "https://{{ nexus_host }}/repository/conda-defaults-proxy"
+pip_proxy_url: "https://{{ nexus_host }}/repository/pypi-proxy/simple"
+maven_proxy_url: "https://{{ nexus_host }}/repository/maven-central/"
+yum_proxy_url: "https://{{ nexus_host }}/repository/"
 ```
 
-When `package_proxy_mode: external`, operators provide their own proxy URLs via the per-format variables. This supports environments where an institutional package proxy already exists. The per-format granularity allows mixing sources — for example, using an institutional PyPI mirror while proxying conda through Nexus.
+The three modes are:
+
+- **`none`** (default): No proxy configured. Packages resolve directly from upstream repositories. This is appropriate for internet-connected deployments or environments where package access is not needed.
+- **`nexus`**: Nexus CE deployed on the staging node. Per-format proxy URLs are computed automatically from `nexus_host`. Operators only need to set `package_proxy_mode: nexus` in inventory; all URLs derive from the staging node's address.
+- **`external`**: Operator-provided proxy. Set per-format URLs (`conda_proxy_url`, `pip_proxy_url`, etc.) directly in inventory. This supports environments where an institutional package proxy already exists.
+
+The per-format URL granularity allows mixing sources — for example, using an institutional PyPI mirror while proxying conda through Nexus.
 
 ### Staging Certificate Trust (per ADR 0015)
 
