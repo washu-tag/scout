@@ -19,4 +19,5 @@ RUN python3 -m pip install --no-cache-dir -r /tmp/requirements.txt && \
     fix-permissions "/home/${NB_USER}" && \
     rm /tmp/requirements.txt
 
-ADD --chown=${NB_UID}:${NB_GID} samples /opt/scout/samples
+# Quickstart samples are mounted via ConfigMap at /opt/scout/samples
+# (see ansible/roles/jupyter/ — scout-quickstart-samples ConfigMap)
