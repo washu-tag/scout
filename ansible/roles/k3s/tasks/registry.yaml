@@ -68,6 +68,21 @@
       loop: '{{ harbor_registry_proxies }}'
       run_once: true
 
+    - name: Slurp staging self-signed certificate
+      ansible.builtin.slurp:
+        src: '{{ staging_self_signed_tls_cert_path }}'
+      delegate_to: "{{ groups['staging'][0] | default('localhost') }}"
+      register: slurped_staging_cert
+      run_once: true
+      when: staging_uses_self_signed_cert | bool
+
+    - name: Copy staging certificate to production node
+      ansible.builtin.copy:
+        content: '{{ slurped_staging_cert.content | b64decode }}'
+        dest: /etc/rancher/k3s/staging-ca.crt
+        mode: '0644'
+      when: staging_uses_self_signed_cert | bool
+
     - name: Configure registry mirrors
       ansible.builtin.copy:
         dest: /etc/rancher/k3s/registries.yaml
@@ -84,7 +99,7 @@
           configs:
             "{{ staging_harbor_host }}":
               tls:
-                insecure_skip_verify: true
+                ca_file: "/etc/rancher/k3s/staging-ca.crt"
           {% endif %}
         mode: '0644'
       register: registry_config_task_result
