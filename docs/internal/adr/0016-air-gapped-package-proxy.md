@@ -55,18 +55,25 @@ package_proxy_mode: none    # Options: none, nexus, external
 nexus_host: "{{ staging_hostname }}:8081"  # derived from staging node
 
 # Per-format proxy URLs (computed from Nexus endpoint when mode is 'nexus')
-conda_proxy_url: "https://{{ nexus_host }}/repository/conda-forge-proxy"
-conda_defaults_proxy_url: "https://{{ nexus_host }}/repository/conda-defaults-proxy"
+conda_channel_alias: "https://{{ nexus_host }}/repository"
 pip_proxy_url: "https://{{ nexus_host }}/repository/pypi-proxy/simple"
 maven_proxy_url: "https://{{ nexus_host }}/repository/maven-central/"
 yum_proxy_url: "https://{{ nexus_host }}/repository/"
 ```
 
+#### Conda Repository Naming Convention
+
+Nexus conda proxy repositories are named to match the upstream channel names that users already know (`conda-forge`, `defaults`). The `.condarc` sets `channel_alias` to the Nexus base URL (`https://nexus_host/repository`), so when a user references `conda-forge`, conda constructs `{channel_alias}/conda-forge/{subdir}` — which maps directly to the Nexus `conda-forge` repository. The special `defaults` channel is handled via `default_channels`, pointing to the Nexus `defaults` repository (which proxies `repo.anaconda.com/pkgs/main`).
+
+This means users interact with standard channel names (`conda-forge`, `defaults`) and standard commands (`conda install -c conda-forge pandas`) without awareness of the proxy.
+
+#### Modes
+
 The three modes are:
 
 - **`none`** (default): No proxy configured. Packages resolve directly from upstream repositories. This is appropriate for internet-connected deployments or environments where package access is not needed.
-- **`nexus`**: Nexus CE deployed on the staging node. Per-format proxy URLs are computed automatically from `nexus_host`. Operators only need to set `package_proxy_mode: nexus` in inventory; all URLs derive from the staging node's address.
-- **`external`**: Operator-provided proxy. Set per-format URLs (`conda_proxy_url`, `pip_proxy_url`, etc.) directly in inventory. This supports environments where an institutional package proxy already exists.
+- **`nexus`**: Nexus CE deployed on the staging node. Proxy URLs are computed automatically from `nexus_host`. Operators only need to set `package_proxy_mode: nexus` in inventory; all URLs derive from the staging node's address.
+- **`external`**: Operator-provided proxy. Set proxy URLs (`conda_channel_alias`, `pip_proxy_url`, etc.) directly in inventory. This supports environments where an institutional package proxy already exists.
 
 The per-format URL granularity allows mixing sources — for example, using an institutional PyPI mirror while proxying conda through Nexus.
 
