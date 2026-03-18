@@ -14,6 +14,12 @@ jupyter_helm_chart_name: jupyterhub
 jupyter_hub_storage_size: 1Gi
 jupyter_singleuser_storage_size: 10Gi
 
+# Ephemeral storage limit for singleuser pods
+# Prevents Spark shuffle/temp data from filling the node's disk (/var/lib/rancher)
+# When exceeded, the pod is evicted. Users who need more scratch space should
+# configure Spark to use their home directory (persistent storage) instead.
+jupyter_singleuser_ephemeral_storage_limit: 10Gi
+
 # Storage class for JupyterHub database
 # Leave empty to use cluster default storage class
 jupyterhub_storage_class: ''
