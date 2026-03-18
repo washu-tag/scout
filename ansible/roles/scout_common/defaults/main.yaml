@@ -219,6 +219,20 @@ nexus_host: >-
      else '' }}
 
 # Computed values (DO NOT CHANGE)
+#
+# Package proxy URLs (computed from nexus_host when package_proxy_mode is 'nexus').
+# When package_proxy_mode is 'external', override these in inventory.
+# conda_channel_alias is the base URL for conda channel resolution:
+#   channel_alias + channel_name → full repo URL (e.g. .../repository/conda-forge)
+# Nexus repos are named to match upstream channel names (conda-forge, defaults).
+conda_channel_alias: >-
+  {{ ('https://' ~ nexus_host ~ '/repository')
+     if package_proxy_mode == 'nexus'
+     else '' }}
+pip_proxy_url: >-
+  {{ ('https://' ~ nexus_host ~ '/repository/pypi-proxy/simple')
+     if package_proxy_mode == 'nexus'
+     else '' }}
 aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"
 s3_endpoint: "{{ aws_deployment | ternary('', 'http://minio.' ~ minio_tenant_namespace) }}"
 hive_metastore_endpoint: 'thrift://{{ hive_metastore_instance }}.{{ hive_namespace }}:9083'

@@ -1,0 +1,12 @@
+# Conda configuration — routes all package resolution through the package proxy.
+channels:
+  - conda-forge
+  - defaults
+channel_alias: {{ conda_channel_alias }}
+custom_channels:
+  conda-forge: {{ conda_channel_alias }}
+  defaults: {{ conda_channel_alias }}
+default_channels:
+  - {{ conda_channel_alias }}/defaults
+envs_dirs:
+  - /home/jovyan/envs

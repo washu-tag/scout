@@ -228,6 +228,13 @@ singleuser:
         name: jupyterlab-scout-logo
         configMap:
           name: scout-logo
+{% if (conda_channel_alias | default('') | length > 0) or (pip_proxy_url | default('') | length > 0) %}
+      package-proxy-config:
+        name: package-proxy-config
+        configMap:
+          name: jupyter-package-proxy-config
+          defaultMode: 0644
+{% endif %}
     extraVolumeMounts:
       spark-defaults:
         name: spark-config-writable
@@ -241,6 +248,20 @@ singleuser:
         name: jupyterlab-scout-logo
         mountPath: /home/jovyan/.jupyter/custom/scout.png
         subPath: scout.png
+{% if conda_channel_alias | default('') | length > 0 %}
+      package-proxy-condarc:
+        name: package-proxy-config
+        mountPath: /opt/conda/.condarc
+        subPath: .condarc
+        readOnly: true
+{% endif %}
+{% if pip_proxy_url | default('') | length > 0 %}
+      package-proxy-pip:
+        name: package-proxy-config
+        mountPath: /etc/pip.conf
+        subPath: pip.conf
+        readOnly: true
+{% endif %}
   networkPolicy:
     egress:
 {% if not aws_deployment %}
