@@ -243,7 +243,7 @@ cassandra_storage_size: 300Gi
 elasticsearch_storage_size: 100Gi
 jupyter_hub_storage_size: 15Gi
 jupyter_singleuser_storage_size: 250Gi
-jupyter_singleuser_ephemeral_storage_limit: 50Gi
+jupyter_singleuser_ephemeral_storage_limit: 10Gi
 prometheus_storage_size: 100Gi
 loki_storage_size: 100Gi
 grafana_storage_size: 50Gi
