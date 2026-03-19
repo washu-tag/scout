@@ -66,6 +66,10 @@ nexus_pypi_repos:
 # Same pattern as harbor_hostname in ansible/roles/harbor/defaults/main.yaml
 nexus_hostname: '{{ nexus_subdomain }}.{{ external_url | default(inventory_hostname) }}'
 
-# Health check URL — override when Ansible control node can't reach the ingress on port 443
-# (e.g., k3d with a non-standard port mapping)
-nexus_health_check_url: 'https://{{ nexus_hostname }}/service/rest/v1/status'
+# Base URL for Nexus API calls from the Ansible control node.
+# Override when the control node can't reach the ingress on port 443
+# (e.g., k3d with a non-standard port mapping: nexus.staging.local:9443)
+nexus_api_base_url: 'https://{{ nexus_hostname }}'
+
+# Health check URL — derived from nexus_api_base_url
+nexus_health_check_url: '{{ nexus_api_base_url }}/service/rest/v1/status'
