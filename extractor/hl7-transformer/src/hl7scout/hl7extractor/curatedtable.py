@@ -1,6 +1,7 @@
 from typing import Optional
 
 from delta import DeltaTable
+from temporalio import activity
 
 from .derivativetable import DerivativeTable
 from .sparkutils import (
@@ -8,6 +9,7 @@ from .sparkutils import (
     merge_df_into_dt_on_column,
     empty_string_coalesce,
     create_table_from_df,
+    extract_from_anticipated_column,
 )
 
 from pyspark.sql import functions as F, Column, DataFrame
@@ -72,21 +74,8 @@ def curate_silver_table(batch_df, spark, table_name):
     if filtered_df is None:
         return
 
-    def extract_patient_id(
-        id_column: str, df: DataFrame, extraction: Optional[Column] = None
-    ) -> Column:
-        if extraction is None:
-            extraction = F.col(id_column)
-        if id_column in df.columns:
-            return F.when(
-                F.col(id_column).isNotNull(),
-                extraction,
-            )
-        else:  # particular patient id may not have been seen yet
-            return F.lit(None)
-
     def extract_labeled_patient_id(id_column: str, df: DataFrame) -> Column:
-        return extract_patient_id(
+        return extract_from_anticipated_column(
             id_column, df, F.concat_ws("_", F.lit(id_column), F.col(id_column))
         )
 
@@ -121,13 +110,15 @@ def curate_silver_table(batch_df, spark, table_name):
                 .otherwise(extract_labeled_patient_id("mpi", filtered_df)),
                 "patient_mpi": F.when(
                     F.col("version_id") == "2.7",
-                    extract_patient_id("empi_mr", filtered_df),
+                    extract_from_anticipated_column("empi_mr", filtered_df),
                 )
                 .when(
                     F.col("version_id") == "2.4",
                     F.coalesce(
                         *[
-                            extract_patient_id(f"{authority}_ee", filtered_df)
+                            extract_from_anticipated_column(
+                                f"{authority}_ee", filtered_df
+                            )
                             for authority in ["bjh", "bjwc", "slch"]
                         ]
                     ),
@@ -149,6 +140,19 @@ def curate_silver_table(batch_df, spark, table_name):
             "filler_order_number",
         )
     )
+
+    batch_count = filtered_df.count()
+    curated_df = curated_df.filter(
+        (F.col("accession_number").isNotNull())
+        & (F.trim(F.col("accession_number")) != "")
+    )
+    dropped_reports = batch_count - curated_df.count()
+    if dropped_reports > 0:
+        activity.logger.warn(
+            "Dropped %d reports from %s because we could not compute an accession number",
+            dropped_reports,
+            table_name,
+        )
 
     # Update existing curated table or create it if it does not yet exist
     if spark.catalog.tableExists(table_name):

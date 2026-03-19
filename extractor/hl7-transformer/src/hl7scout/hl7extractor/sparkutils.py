@@ -71,3 +71,17 @@ def empty_string_coalesce(col1: str, col2: str) -> Column:
     c2 = F.col(col2)
 
     return F.when(c1 != "", c1).otherwise(c2)
+
+
+def extract_from_anticipated_column(
+    id_column: str, df: DataFrame, extraction: Optional[Column] = None
+) -> Column:
+    if extraction is None:
+        extraction = F.col(id_column)
+    if id_column in df.columns:
+        return F.when(
+            F.col(id_column).isNotNull(),
+            extraction,
+        )
+    else:  # particular column may not have been seen yet
+        return F.lit(None)
