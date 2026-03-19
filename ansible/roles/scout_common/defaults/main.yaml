@@ -202,6 +202,22 @@ keycloak_subdomain: keycloak
 enable_chat: false
 enable_playbooks: false
 
+# Package proxy configuration (per ADR-0016, following ADR-0011 service-mode pattern)
+# Options: none, nexus, external
+#   none     - No proxy; packages resolve directly from upstream (internet required)
+#   nexus    - Nexus CE on staging node; URLs computed from nexus_host
+#   external - Operator-provided proxy; set per-format URLs in inventory
+package_proxy_mode: none
+
+# Nexus connection (used when package_proxy_mode == 'nexus')
+# Override nexus_host in inventory if Nexus is on a non-default host/port.
+# Default derives from the staging node (where Nexus is deployed alongside Harbor).
+# TLS is required; staging cert is distributed per ADR-0015.
+nexus_host: >-
+  {{ ((hostvars[groups['staging'][0]].nexus_subdomain | default('nexus')) ~ '.' ~ (hostvars[groups['staging'][0]].external_url | default(groups['staging'][0])))
+     if (groups['staging'] is defined and groups['staging'] | length > 0)
+     else '' }}
+
 # Computed values (DO NOT CHANGE)
 aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"
 s3_endpoint: "{{ aws_deployment | ternary('', 'http://minio.' ~ minio_tenant_namespace) }}"

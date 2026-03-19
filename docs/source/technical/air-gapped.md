@@ -239,7 +239,7 @@ make all
 ```
 
 **What happens:**
-- `staging` play installs a single-node K3s cluster on the staging host (online mode) and deploys Traefik and Harbor (container image proxy) via Helm
+- `staging` play installs a single-node K3s cluster on the staging host (online mode) and deploys Traefik, Harbor (container image proxy), and Nexus (package proxy for conda/PyPI/Maven) via Helm
 - `k3s` play
   - Downloads K3s artifacts (binary, install script) to Ansible control node
   - Downloads SELinux packages via Kubernetes Job on staging cluster

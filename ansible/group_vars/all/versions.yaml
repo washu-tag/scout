@@ -104,6 +104,10 @@ promtail_helm_chart_version: ~6.17.0
 # renovate: datasource=helm registryUrl=https://helm.goharbor.io depName=harbor
 harbor_version: ~1.14.0
 
+# Package Proxy - Nexus Repository Manager
+# renovate: datasource=helm registryUrl=https://stevehipwell.github.io/helm-charts/ depName=nexus3
+nexus_helm_chart_version: 5.19.0
+
 # GPU Support
 # renovate: datasource=helm registryUrl=https://nvidia.github.io/gpu-operator depName=gpu-operator
 gpu_operator_version: ~25.10.1

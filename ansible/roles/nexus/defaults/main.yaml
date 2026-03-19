@@ -1,0 +1,71 @@
+---
+# Default configuration for nexus role
+# Override in inventory files as needed
+
+nexus_namespace: nexus
+
+# Helm chart (stevehipwell/nexus3)
+nexus_helm_repo_name: stevehipwell
+nexus_helm_repo_url: https://stevehipwell.github.io/helm-charts/
+nexus_helm_chart_name: nexus3
+
+# Admin password — REQUIRED, must be set in inventory (vault-encrypted)
+nexus_root_password: ''
+
+# Subdomain for ingress (results in nexus.{{ external_url }})
+nexus_subdomain: nexus
+
+# Storage
+nexus_storage_size: 20Gi
+nexus_storage_class: '' # empty = cluster default
+
+# Resources (JVM-based, needs substantial memory)
+nexus_resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 2
+    memory: 4Gi
+
+# Blob stores (separate storage areas for different package formats)
+nexus_blob_stores:
+  - name: conda-store
+    type: file
+    path: conda-store
+    softQuota:
+      type: spaceRemainingQuota
+      limit: 5368709120 # 5 GB
+  - name: pypi-store
+    type: file
+    path: pypi-store
+    softQuota:
+      type: spaceRemainingQuota
+      limit: 5368709120
+
+# Cleanup policy
+nexus_cleanup_last_downloaded: '7776000' # 90 days in seconds
+
+# Proxy repositories — lists so operators can add/remove proxied sources
+nexus_conda_repos:
+  - name: conda-forge
+    remoteUrl: https://conda.anaconda.org/conda-forge/
+    blobStoreName: conda-store
+  - name: defaults
+    remoteUrl: https://repo.anaconda.com/pkgs/main/
+    blobStoreName: conda-store
+
+nexus_pypi_repos:
+  - name: pypi-proxy
+    remoteUrl: https://pypi.org/
+    blobStoreName: pypi-store
+
+# maven-central ships pre-configured in Nexus CE — no need to create it
+
+# Computed — uses external_url/inventory_hostname of the staging host (where this role runs)
+# Same pattern as harbor_hostname in ansible/roles/harbor/defaults/main.yaml
+nexus_hostname: '{{ nexus_subdomain }}.{{ external_url | default(inventory_hostname) }}'
+
+# Health check URL — override when Ansible control node can't reach the ingress on port 443
+# (e.g., k3d with a non-standard port mapping)
+nexus_health_check_url: 'https://{{ nexus_hostname }}/service/rest/v1/status'

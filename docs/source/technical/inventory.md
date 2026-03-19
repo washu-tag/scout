@@ -195,7 +195,7 @@ minio_hosts:
 
 ### Staging Group
 
-For air-gapped deployments, define a staging node with internet access (Ansible automatically deploys K3s and Harbor on this node):
+For air-gapped deployments, define a staging node with internet access (Ansible automatically deploys K3s, Harbor, and Nexus on this node):
 
 ```yaml
 staging:
@@ -211,6 +211,9 @@ staging:
           $ANSIBLE_VAULT;1.1;AES256
           ...encrypted password...
     harbor_storage_size: 100Gi
+    nexus_root_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          ...encrypted password...
 ```
 
 See {ref}`Air-Gapped Deployment <air-gapped-deployment>` for details.

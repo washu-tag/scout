@@ -1,0 +1,152 @@
+---
+# Main Nexus deployment tasks
+- name: Validate nexus_root_password is set
+  ansible.builtin.assert:
+    that:
+      - nexus_root_password | length > 0
+    fail_msg: >-
+      nexus_root_password must be set in inventory (vault-encrypted).
+      See inventory.example.yaml for details.
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ nexus_namespace }}'
+
+- name: Create root password secret
+  block:
+    - name: Check if root password secret already exists
+      kubernetes.core.k8s_info:
+        kind: Secret
+        namespace: '{{ nexus_namespace }}'
+        name: nexus-root-password
+      register: existing_root_password_secret
+
+    - name: Create root password secret if it doesn't exist
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: nexus-root-password
+            namespace: '{{ nexus_namespace }}'
+          type: Opaque
+          stringData:
+            password: '{{ nexus_root_password }}'
+      when: existing_root_password_secret.resources | length == 0
+
+- name: Build proxy repo defaults
+  ansible.builtin.set_fact:
+    _nexus_proxy_defaults:
+      type: proxy
+      online: true
+      storage:
+        strictContentTypeValidation: true
+      cleanup:
+        policyNames:
+          - purge-unused-90d
+      proxy:
+        contentMaxAge: 1440
+        metadataMaxAge: 60
+      httpClient:
+        blocked: false
+        autoBlock: true
+      negativeCache:
+        enabled: true
+        timeToLive: 1440
+
+- name: Build conda repo entries
+  ansible.builtin.set_fact:
+    _nexus_conda_repos: >-
+      {{
+        _nexus_conda_repos | default([]) + [
+          _nexus_proxy_defaults | combine({
+            'name': item.name,
+            'format': 'conda',
+            'storage': _nexus_proxy_defaults.storage | combine({'blobStoreName': item.blobStoreName}),
+            'proxy': _nexus_proxy_defaults.proxy | combine({'remoteUrl': item.remoteUrl})
+          }, recursive=true)
+        ]
+      }}
+  loop: '{{ nexus_conda_repos }}'
+
+- name: Build PyPI repo entries
+  ansible.builtin.set_fact:
+    _nexus_pypi_repos: >-
+      {{
+        _nexus_pypi_repos | default([]) + [
+          _nexus_proxy_defaults | combine({
+            'name': item.name,
+            'format': 'pypi',
+            'storage': _nexus_proxy_defaults.storage | combine({'blobStoreName': item.blobStoreName}),
+            'proxy': _nexus_proxy_defaults.proxy | combine({'remoteUrl': item.remoteUrl})
+          }, recursive=true)
+        ]
+      }}
+  loop: '{{ nexus_pypi_repos }}'
+
+- name: Build persistence config
+  ansible.builtin.set_fact:
+    _nexus_persistence:
+      enabled: true
+      size: '{{ nexus_storage_size }}'
+      storageClass: '{{ nexus_storage_class | default(omit, true) }}'
+
+- name: Deploy Nexus
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ nexus_helm_chart_name }}'
+    helm_chart_ref: '{{ nexus_helm_repo_name }}/{{ nexus_helm_chart_name }}'
+    helm_chart_version: '{{ nexus_helm_chart_version }}'
+    helm_chart_namespace: '{{ nexus_namespace }}'
+    helm_repo_name: '{{ nexus_helm_repo_name }}'
+    helm_repo_url: '{{ nexus_helm_repo_url }}'
+    helm_chart_timeout: 15m
+    helm_chart_values:
+      service:
+        type: ClusterIP
+      resources: '{{ nexus_resources }}'
+      persistence: '{{ _nexus_persistence }}'
+      rootPassword:
+        secret: nexus-root-password
+        key: password
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        hosts:
+          - '{{ nexus_hostname }}'
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      config:
+        enabled: true
+        anonymous:
+          enabled: true
+        blobStores: '{{ nexus_blob_stores }}'
+        cleanup:
+          - name: purge-unused-90d
+            notes: 'Remove components not downloaded in 90 days'
+            format: ALL_FORMATS
+            mode: delete
+            criteria:
+              lastDownloaded: '{{ nexus_cleanup_last_downloaded }}'
+        repos: '{{ _nexus_conda_repos + _nexus_pypi_repos }}'
+
+- name: Wait for Nexus to be ready
+  ansible.builtin.uri:
+    url: '{{ nexus_health_check_url }}'
+    validate_certs: false
+    status_code: 200
+  register: nexus_health
+  until: nexus_health.status == 200
+  retries: 30
+  delay: 10
+
+- name: Display Nexus deployment status
+  ansible.builtin.debug:
+    msg: 'Nexus deployed successfully at https://{{ nexus_hostname }}'

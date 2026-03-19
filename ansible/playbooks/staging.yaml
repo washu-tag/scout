@@ -1,7 +1,7 @@
 ---
 # Staging Node Deployment Playbook
-# Installs k3s and deploys Harbor on the staging node
-# Used for air-gapped deployments with Harbor registry
+# Installs k3s and deploys Harbor and Nexus on the staging node
+# Used for air-gapped deployments with Harbor registry and Nexus package proxy
 #
 # Documentation: docs/source/technical/air-gapped.md
 #
@@ -10,7 +10,7 @@
 #   - air_gapped: true in inventory
 #
 # Notes:
-#   - Traefik provides TLS termination for Harbor
+#   - Traefik provides TLS termination for Harbor and Nexus ingresses
 #   - A self-signed cert is generated if tls_cert_path/tls_key_path not provided
 
 - name: Prepare staging node for K3s
@@ -93,3 +93,4 @@
     - role: k3s
     - role: traefik
     - role: harbor
+    - role: nexus
