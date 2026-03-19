@@ -96,7 +96,6 @@ Features:
 - Molecule tests for role validation
 
 Configuration:
-- `harbor_expose_type`: Set to 'ingress' or 'nodePort'
 - `external_url`: Optional Tailscale hostname or DNS name (overrides inventory_hostname)
 - `harbor_admin_password`: Admin password (vault-encrypted in inventory)
 

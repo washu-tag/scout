@@ -35,11 +35,3 @@
           - harbor_version is match('^~?\d+\.\d+\.\d+$')
         fail_msg: 'Harbor version must be in format X.Y.Z or ~X.Y.Z'
         success_msg: '✓ Harbor version format is valid'
-
-    - name: Verify TLS secret name is defined
-      ansible.builtin.assert:
-        that:
-          - harbor_tls_secret_name is defined
-          - harbor_tls_secret_name | length > 0
-        fail_msg: 'TLS secret name must be defined'
-        success_msg: '✓ TLS secret name is defined'

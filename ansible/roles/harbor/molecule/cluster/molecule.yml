@@ -36,8 +36,6 @@ provisioner:
         harbor_namespace: harbor-molecule-test
         harbor_admin_password: MoleculeTest123
         harbor_storage_size: 5Gi
-        harbor_expose_type: nodePort
-        harbor_nodeport_https: 30443
         use_staging_node: true
 
         # Set external_url for health checks

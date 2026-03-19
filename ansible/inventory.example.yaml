@@ -48,7 +48,6 @@ staging:
     staging_k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     harbor_admin_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     harbor_storage_size: 100Gi
-    # harbor_expose_type: nodePort
 
     # Traefik
     tls_cert_path: ''
