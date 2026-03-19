@@ -50,6 +50,9 @@ staging:
     harbor_storage_size: 100Gi
     nexus_root_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     # nexus_storage_size: 20Gi  # Optional override
+    # Accept the Sonatype Nexus CE EULA (https://links.sonatype.com/products/nxrm/ce-eula).
+    # If false, you must manually log in to Nexus and accept the EULA during setup.
+    accept_nexus_eula: true
 
     # Traefik
     tls_cert_path: ''

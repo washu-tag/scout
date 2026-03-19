@@ -147,6 +147,35 @@
   retries: 30
   delay: 10
 
+- name: Accept Nexus EULA
+  when: accept_nexus_eula | bool
+  block:
+    - name: Get EULA status
+      ansible.builtin.uri:
+        url: '{{ nexus_api_base_url }}/service/rest/v1/system/eula'
+        validate_certs: false
+        method: GET
+        user: admin
+        password: '{{ nexus_root_password }}'
+        force_basic_auth: true
+        status_code: 200
+      register: nexus_eula
+
+    - name: Accept EULA
+      ansible.builtin.uri:
+        url: '{{ nexus_api_base_url }}/service/rest/v1/system/eula'
+        validate_certs: false
+        method: POST
+        user: admin
+        password: '{{ nexus_root_password }}'
+        force_basic_auth: true
+        body_format: json
+        body:
+          disclaimer: '{{ nexus_eula.json.disclaimer }}'
+          accepted: true
+        status_code: [200, 204]
+      when: not nexus_eula.json.accepted
+
 - name: Display Nexus deployment status
   ansible.builtin.debug:
     msg: 'Nexus deployed successfully at https://{{ nexus_hostname }}'

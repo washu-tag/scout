@@ -12,6 +12,10 @@ nexus_helm_chart_name: nexus3
 # Admin password — REQUIRED, must be set in inventory (vault-encrypted)
 nexus_root_password: ''
 
+# Accept the Sonatype Nexus CE EULA (https://links.sonatype.com/products/nxrm/ce-eula).
+# If false, you must manually log in to Nexus and accept the EULA during setup.
+accept_nexus_eula: false
+
 # Subdomain for ingress (results in nexus.{{ external_url }})
 nexus_subdomain: nexus
 

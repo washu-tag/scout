@@ -214,6 +214,9 @@ staging:
     nexus_root_password: !vault |
           $ANSIBLE_VAULT;1.1;AES256
           ...encrypted password...
+    # Accept the Sonatype Nexus CE EULA (https://links.sonatype.com/products/nxrm/ce-eula).
+    # If false, you must manually log in to Nexus and accept the EULA during setup.
+    accept_nexus_eula: true
 ```
 
 See {ref}`Air-Gapped Deployment <air-gapped-deployment>` for details.
