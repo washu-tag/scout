@@ -5,6 +5,7 @@ from pyspark.sql import SparkSession
 from .curatedtable import curated_table
 from .diagnosistable import diagnosis_table
 from .latesttable import latest_table
+from .mappingtable import mapping_table
 from .derivativetable import DerivativeTable
 
 
@@ -14,6 +15,7 @@ def define_derivative_tables(report_table_name: str) -> dict[str, DerivativeTabl
         for table in [
             curated_table(report_table_name),
             latest_table(report_table_name),
+            mapping_table(report_table_name),
             diagnosis_table(report_table_name),
         ]
     }
