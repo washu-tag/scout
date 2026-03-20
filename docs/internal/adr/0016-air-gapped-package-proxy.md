@@ -212,8 +212,42 @@ Nexus CE supports Docker registry proxy repositories and could theoretically rep
 - **Storage**: Nexus proxy cache requires persistent storage on the staging node; size depends on the breadth of packages cached
 - **User PVC sizing**: User home directories may need larger persistent volumes to accommodate conda environments (ML stacks can be several GB)
 
+## Security Considerations
+
+### Threat Model
+
+The package proxy introduces a qualitatively different risk from the existing Harbor pull-through proxy. Container images pulled through Harbor are curated by the platform team. Packages installed through Nexus are chosen by end users — and in the primary use case (Jupyter notebooks), the user runs `pip install` or `conda install` for arbitrary packages from PyPI and conda-forge. If a user inadvertently installs a malicious or compromised package (via typosquatting, supply chain attack, or compromised maintainer), that code executes inside the Jupyter notebook pod with the same access as the user's own code.
+
+The threat we are concerned with is **inadvertent PHI egress** — a malicious package exfiltrating data from the data lake. We assume the user is not a malicious actor; the risk is that a legitimate user installs a package that contains malicious code they did not author.
+
+A compromised package running in a notebook pod has access to the full data lake via Trino and MinIO. The question is whether it can transmit that data outside the air gap.
+
+### Existing Mitigations
+
+Several layers of defense already constrain what malicious code in a notebook pod can do:
+
+- **Kubernetes network policies** restrict notebook pod egress to specific internal services (MinIO, Hive Metastore, Trino, Ollama) on specific ports. Arbitrary outbound connections from the pod are blocked.
+- **Firewall between production and staging** limits traffic to ports 80 and 443 (Traefik ingress). The Nexus egress rule should be scoped to these ports only, preventing malicious code from probing other services on the staging node.
+- **CoreDNS configuration** blocks resolution of external domains from within the production cluster. Only specific known domains are forwarded to upstream DNS. This prevents DNS-based data exfiltration from within the pod.
+- **Content Security Policy** (ADR 0012) on the Traefik ingress restricts browser-side network requests. `connect-src 'self'` prevents JavaScript running in the JupyterLab frontend from making `fetch()` or `XMLHttpRequest` calls to external servers.
+
+### Residual Risks
+
+**Browser-side exfiltration via JupyterLab frontend extensions.** A pip-installed package can bundle a JupyterLab frontend extension that auto-activates via Python entry points, bypassing the disabled Extension Manager UI. Frontend extensions execute as JavaScript in the user's browser — which is outside the air gap and may have unrestricted internet access. A malicious frontend extension could read notebook cell outputs (including PHI from query results) from the DOM or intercept kernel WebSocket messages containing execution results.
+
+The CSP `connect-src` directive blocks `fetch()` to external origins, but the current policy allows WebSocket connections to any host (`ws:` and `wss:` without host restriction). A malicious extension could open a WebSocket to an attacker-controlled server and stream data out through the user's browser. Tightening `connect-src` to scope WebSocket connections to the JupyterHub origin (e.g., replacing bare `ws: wss:` with `ws://<external_url> wss://<external_url>`) would close this gap.
+
+**Data encoded in package lookup requests.** Malicious code could encode small amounts of data in fabricated package names (e.g., `pip install <encoded-data>`), causing Nexus to forward the lookup to PyPI. This is a low-bandwidth, low-practicality vector — the attacker would need to monitor failed lookup requests on a public package index — but it exists as a theoretical channel. Monitoring Nexus audit logs for unusual volumes of failed package lookups would detect this pattern.
+
+### Recommended Mitigations
+
+1. **Tighten CSP WebSocket scope**: Restrict `ws:` and `wss:` in `connect-src` to the Scout deployment origin rather than allowing connections to arbitrary hosts. This closes the browser-side exfiltration path through frontend extensions.
+2. **Scope the Nexus egress rule**: The Kubernetes network policy allowing notebook pods to reach the staging node should be limited to ports 80/443 only, matching the firewall rules.
+3. **Nexus audit logging**: Consider monitoring Nexus request logs for anomalous patterns (high volumes of failed lookups, unusual package names) as an additional detection layer.
+
 ## Related
 
 - **ADR 0008**: Ollama Model Distribution in Air-Gapped Environments — NFS pre-staging pattern for ML models
 - **ADR 0011**: Deployment Portability via Layered Architecture — service-mode variable pattern
+- **ADR 0012**: Security Scan Response and Hardening — global CSP and security headers middleware
 - **ADR 0015**: Staging Node Certificate Distribution — TLS trust for staging-hosted services
