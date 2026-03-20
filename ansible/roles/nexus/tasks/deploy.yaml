@@ -39,62 +39,9 @@
             password: '{{ nexus_root_password }}'
       when: existing_root_password_secret.resources | length == 0
 
-- name: Build proxy repo defaults
+- name: Parse Nexus Helm values
   ansible.builtin.set_fact:
-    _nexus_proxy_defaults:
-      type: proxy
-      online: true
-      storage:
-        strictContentTypeValidation: true
-      cleanup:
-        policyNames:
-          - purge-unused-90d
-      proxy:
-        contentMaxAge: 1440
-        metadataMaxAge: 60
-      httpClient:
-        blocked: false
-        autoBlock: true
-      negativeCache:
-        enabled: true
-        timeToLive: 1440
-
-- name: Build conda repo entries
-  ansible.builtin.set_fact:
-    _nexus_conda_repos: >-
-      {{
-        _nexus_conda_repos | default([]) + [
-          _nexus_proxy_defaults | combine({
-            'name': item.name,
-            'format': 'conda',
-            'storage': _nexus_proxy_defaults.storage | combine({'blobStoreName': item.blobStoreName}),
-            'proxy': _nexus_proxy_defaults.proxy | combine({'remoteUrl': item.remoteUrl})
-          }, recursive=true)
-        ]
-      }}
-  loop: '{{ nexus_conda_repos }}'
-
-- name: Build PyPI repo entries
-  ansible.builtin.set_fact:
-    _nexus_pypi_repos: >-
-      {{
-        _nexus_pypi_repos | default([]) + [
-          _nexus_proxy_defaults | combine({
-            'name': item.name,
-            'format': 'pypi',
-            'storage': _nexus_proxy_defaults.storage | combine({'blobStoreName': item.blobStoreName}),
-            'proxy': _nexus_proxy_defaults.proxy | combine({'remoteUrl': item.remoteUrl})
-          }, recursive=true)
-        ]
-      }}
-  loop: '{{ nexus_pypi_repos }}'
-
-- name: Build persistence config
-  ansible.builtin.set_fact:
-    _nexus_persistence:
-      enabled: true
-      size: '{{ nexus_storage_size }}'
-      storageClass: '{{ nexus_storage_class | default(omit, true) }}'
+    nexus_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
 
 - name: Deploy Nexus
   ansible.builtin.include_role:
@@ -108,34 +55,7 @@
     helm_repo_name: '{{ nexus_helm_repo_name }}'
     helm_repo_url: '{{ nexus_helm_repo_url }}'
     helm_chart_timeout: 15m
-    helm_chart_values:
-      service:
-        type: ClusterIP
-      resources: '{{ nexus_resources }}'
-      persistence: '{{ _nexus_persistence }}'
-      rootPassword:
-        secret: nexus-root-password
-        key: password
-      ingress:
-        enabled: true
-        ingressClassName: traefik
-        hosts:
-          - '{{ nexus_hostname }}'
-        annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: websecure
-      config:
-        enabled: true
-        anonymous:
-          enabled: true
-        blobStores: '{{ nexus_blob_stores }}'
-        cleanup:
-          - name: purge-unused-90d
-            notes: 'Remove components not downloaded in 90 days'
-            format: ALL_FORMATS
-            mode: delete
-            criteria:
-              lastDownloaded: '{{ nexus_cleanup_last_downloaded }}'
-        repos: '{{ _nexus_conda_repos + _nexus_pypi_repos }}'
+    helm_chart_values: '{{ nexus_helm_chart_values }}'
 
 - name: Wait for Nexus to be ready
   ansible.builtin.uri:
