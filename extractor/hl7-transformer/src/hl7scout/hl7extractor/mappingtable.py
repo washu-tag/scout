@@ -190,7 +190,7 @@ def extract_mapping(batch_df, spark, table_name, source_table):
         )
 
         merge_df_into_dt_on_column(
-            dt, fully_disjoint_reports_df, "primary_report_identifier"
+            dt, fully_disjoint_reports_df, "primary_report_identifier", False
         )
         existing_mapping_df = spark.read.table(table_name)
 
@@ -222,6 +222,7 @@ def extract_mapping(batch_df, spark, table_name, source_table):
             DeltaTable.forName(spark, table_name),
             dupes_to_add_df,
             "primary_report_identifier",
+            False,
         )
 
     activity.logger.info("Mapping table derivation complete")
