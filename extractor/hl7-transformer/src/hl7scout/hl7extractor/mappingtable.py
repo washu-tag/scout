@@ -132,7 +132,6 @@ def extract_mapping(batch_df, spark, table_name, source_table):
     remaining_reports_ranked.unpersist()
 
     activity.logger.info("Stage 1 completed on mapping table derivation")
-    activity.heartbeat("Mapping table stage 1")
 
     # Stage 1 complete, begin stage 2
     remaining_reports_df = unique_ids_incoming_reports
@@ -198,7 +197,6 @@ def extract_mapping(batch_df, spark, table_name, source_table):
     # Stage 2 complete, begin stage 3
 
     activity.logger.info("Stage 2 completed on mapping table derivation")
-    activity.heartbeat("Mapping table stage 2")
 
     remaining_reports_df = incoming_reports_with_links_df.unionByName(
         partial_existing_mapping_match_df
@@ -227,7 +225,6 @@ def extract_mapping(batch_df, spark, table_name, source_table):
         )
 
     activity.logger.info("Mapping table derivation complete")
-    activity.heartbeat("Mapping table complete")
 
     spark.sql(
         f"""
