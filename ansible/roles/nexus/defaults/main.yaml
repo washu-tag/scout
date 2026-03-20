@@ -10,6 +10,9 @@ nexus_helm_repo_url: https://stevehipwell.github.io/helm-charts/
 nexus_helm_chart_name: nexus3
 
 # Admin password — REQUIRED, must be set in inventory (vault-encrypted)
+# NOTE: The role only writes the password secret if it doesn't already exist.
+# To rotate the password, manually update the nexus-root-password secret in the
+# nexus namespace and restart the Nexus pod.
 nexus_root_password: ''
 
 # Accept the Sonatype Nexus CE EULA (https://links.sonatype.com/products/nxrm/ce-eula).
