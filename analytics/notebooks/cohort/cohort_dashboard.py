@@ -432,9 +432,9 @@ def _create_search_form(container, config=None):
     )
 
     bjc_wusm_slch_button = widgets.Button(
-        description="BJC/WUSM/SLCH Facilities",
+        description="IRB Default",
         button_style="info",
-        tooltip="Select BJC/WUSM/SLCH institutions (common IRB-approved set)",
+        tooltip="Select default IRB-approved facilities",
         layout=widgets.Layout(width="auto"),
     )
 
@@ -597,13 +597,85 @@ def _create_search_form(container, config=None):
         layout=widgets.Layout(width="45%"),
     )
 
-    # Fake upload button for patient identifiers
-    upload_ids_button = widgets.Button(
-        description="📤 Upload Patient IDs CSV",
-        button_style="info",
-        tooltip="Upload a CSV file with patient identifiers to filter",
-        layout=widgets.Layout(width="50%"),
+    # Patient ID filtering
+    patient_ids_input = widgets.Textarea(
+        value=config.get("patient_ids", ""),
+        placeholder="Paste Epic MRNs (one per line or comma-separated)",
+        description="Epic MRNs:",
+        layout=widgets.Layout(width="98%", height="80px"),
+        style={"description_width": "100px"},
     )
+
+    upload_ids_widget = widgets.FileUpload(
+        accept=".csv",
+        multiple=False,
+        description="Upload CSV",
+        button_style="info",
+        layout=widgets.Layout(width="auto"),
+    )
+
+    upload_status = widgets.HTML()
+
+    def on_upload_change(change):
+        if not upload_ids_widget.value:
+            return
+        try:
+            import io
+
+            uploaded = upload_ids_widget.value[0]
+            content = bytes(uploaded["content"]).decode("utf-8")
+            csv_df = pd.read_csv(io.StringIO(content))
+
+            # Look for epic_mrn column (case-insensitive)
+            mrn_col = None
+            for col in csv_df.columns:
+                if col.strip().lower() in ("epic_mrn", "mrn", "epicmrn", "patient_id"):
+                    mrn_col = col
+                    break
+
+            if mrn_col is None:
+                upload_status.value = (
+                    "<div style='font-size: 11px; color: #dc2626; margin-top: 4px;'>"
+                    "No epic_mrn, mrn, or patient_id column found in CSV"
+                    "</div>"
+                )
+                return
+
+            mrns = csv_df[mrn_col].dropna().astype(str).str.strip().tolist()
+            mrns = [m for m in mrns if m]
+
+            # Append to existing text
+            existing = patient_ids_input.value.strip()
+            new_mrns = "\n".join(mrns)
+            patient_ids_input.value = (
+                f"{existing}\n{new_mrns}".strip() if existing else new_mrns
+            )
+            upload_status.value = (
+                f"<div style='font-size: 11px; color: #10b981; margin-top: 4px;'>"
+                f"Loaded {len(mrns)} MRNs from CSV"
+                f"</div>"
+            )
+        except Exception as e:
+            upload_status.value = (
+                f"<div style='font-size: 11px; color: #dc2626; margin-top: 4px;'>"
+                f"Error reading CSV: {str(e)}"
+                f"</div>"
+            )
+
+    upload_ids_widget.observe(on_upload_change, names="value")
+
+    clear_ids_button = widgets.Button(
+        description="Clear",
+        button_style="",
+        layout=widgets.Layout(width="auto"),
+    )
+
+    def on_clear_ids(b):
+        patient_ids_input.value = ""
+        upload_status.value = ""
+        upload_ids_widget.value = ()
+
+    clear_ids_button.on_click(on_clear_ids)
 
     right_column = widgets.VBox(
         [
@@ -659,7 +731,18 @@ def _create_search_form(container, config=None):
             widgets.HTML(
                 "<div style='font-weight: 600; font-size: 15px; margin-bottom: 10px; color: #1f2937; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb;'>Patient List <span style='font-weight: 400; font-style: italic; color: #6b7280;'>(optional)</span></div>"
             ),
-            upload_ids_button,
+            patient_ids_input,
+            widgets.HBox(
+                [upload_ids_widget, clear_ids_button, upload_status],
+                layout=widgets.Layout(
+                    align_items="center", gap="8px", margin="8px 0 0 0"
+                ),
+            ),
+            widgets.HTML(
+                "<div style='font-size: 11px; color: #6b7280; margin-top: 4px;'>"
+                "CSV must have an <code>epic_mrn</code> column"
+                "</div>"
+            ),
         ],
         layout=widgets.Layout(width="45%"),
     )
@@ -695,6 +778,7 @@ def _create_search_form(container, config=None):
             "sample_limit": (
                 sample_limit_input.value if sample_limit_input.value else None
             ),
+            "patient_ids": patient_ids_input.value,
             "apply_negation_filter": apply_negation_filter.value,
         }
 

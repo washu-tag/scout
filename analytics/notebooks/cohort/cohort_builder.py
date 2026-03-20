@@ -275,6 +275,17 @@ def build_cohort_query(config):
         conditions.append(f"requested_dt >= current_date - INTERVAL '{days}' DAY")
         criteria_summary.append(f"Date range: Last {days} days")
 
+    # Patient ID list filter
+    if config.get("patient_ids"):
+        raw = config["patient_ids"].strip()
+        if raw:
+            # Support comma-separated, newline-separated, or mixed
+            ids = [m.strip() for m in re.split(r"[,\n]+", raw) if m.strip()]
+            if ids:
+                ids_str = "', '".join(ids)
+                conditions.append(f"epic_mrn IN ('{ids_str}')")
+                criteria_summary.append(f"Patient list: {len(ids)} Epic MRNs")
+
     # Ensure we have patient ID
     conditions.append("(epic_mrn IS NOT NULL OR empi_mr IS NOT NULL)")
 
