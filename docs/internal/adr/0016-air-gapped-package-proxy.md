@@ -91,7 +91,7 @@ The trade-off is that packages cannot be shared across user spaces — if ten us
 
 ### Ansible Roles and Playbooks
 
-- A new Ansible role to deploy and configure Nexus on the staging node, integrated into the existing staging playbook
+- A new Ansible role to deploy and configure Nexus on the staging node, integrated into the existing staging playbook. With both Harbor and Nexus requiring ingress, Traefik is now always deployed on staging (the previous `harbor_expose_type: nodePort` mode is removed). This supersedes the conditional Traefik deployment described in ADR 0007.
 - The Jupyter role will be updated to inject proxy configuration (`.condarc` and `pip.conf`) into notebook pods so that conda and pip resolve packages through Nexus transparently
 - RPM installation on production nodes will be simplified: instead of the current multi-step process of downloading packages in a container, copying archives between nodes, and installing from a temporary local repository, production nodes will have standard yum repository configuration pointing to Nexus proxy repositories, and packages will be installed using ordinary `dnf install` commands
 - The `spark-defaults.conf` template and related configuration may be updated to resolve Spark JARs from the Maven proxy at startup rather than downloading them at image build time, though this is a potential future optimization rather than a requirement of the initial implementation
