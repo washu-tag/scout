@@ -5,12 +5,14 @@ from pyspark.sql import DataFrame, Column, Window
 from pyspark.sql import functions as F
 
 
-def merge_df_into_dt_on_column(dt: DeltaTable, df: DataFrame, merge_col: str):
+def merge_df_into_dt_on_column(
+    dt: DeltaTable, df: DataFrame, merge_col: str, include_year_condition: bool = True
+):
     (
         dt.alias("s")
         .merge(
             df.alias("t"),
-            f"s.{merge_col} = t.{merge_col} AND s.year = t.year",
+            f"s.{merge_col} = t.{merge_col}{' AND s.year = t.year' if include_year_condition else ''}",
         )
         .whenMatchedUpdateAll()
         .whenNotMatchedInsertAll()
