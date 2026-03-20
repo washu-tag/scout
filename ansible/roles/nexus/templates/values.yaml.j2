@@ -23,12 +23,12 @@ config:
     enabled: true
   blobStores: {{ nexus_blob_stores | to_json }}
   cleanup:
-    - name: purge-unused-90d
-      notes: Remove components not downloaded in 90 days
+    - name: purge-unused
+      notes: "Remove components not downloaded in {{ nexus_cleanup_last_downloaded_days }} days"
       format: ALL_FORMATS
       mode: delete
       criteria:
-        lastDownloaded: "{{ nexus_cleanup_last_downloaded }}"
+        lastDownloaded: "{{ nexus_cleanup_last_downloaded_days | int * 86400 }}" # API expects seconds
   repos:
 {% for repo in nexus_conda_repos %}
     - name: {{ repo.name }}
@@ -40,7 +40,7 @@ config:
         strictContentTypeValidation: true
       cleanup:
         policyNames:
-          - purge-unused-90d
+          - purge-unused
       proxy:
         remoteUrl: {{ repo.remoteUrl }}
         contentMaxAge: 1440
@@ -62,7 +62,7 @@ config:
         strictContentTypeValidation: true
       cleanup:
         policyNames:
-          - purge-unused-90d
+          - purge-unused
       proxy:
         remoteUrl: {{ repo.remoteUrl }}
         contentMaxAge: 1440

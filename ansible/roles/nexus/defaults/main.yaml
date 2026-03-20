@@ -51,8 +51,8 @@ nexus_blob_stores:
       type: spaceRemainingQuota
       limit: 5368709120
 
-# Cleanup policy
-nexus_cleanup_last_downloaded: '7776000' # 90 days in seconds
+# Cleanup policy — purge packages not downloaded in this many days
+nexus_cleanup_last_downloaded_days: 90
 
 # Proxy repositories — lists so operators can add/remove proxied sources
 nexus_conda_repos:
