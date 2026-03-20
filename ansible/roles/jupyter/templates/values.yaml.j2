@@ -108,6 +108,9 @@ singleuser:
     name: '{{ jupyter_singleuser_image_name }}'
     tag: '{{ jupyter_singleuser_image_tag }}'
     pullPolicy: IfNotPresent
+  extraResource:
+    limits:
+      ephemeral-storage: '{{ jupyter_singleuser_ephemeral_storage_limit }}'
   profileList: {{ jupyter_profiles | to_json }}
 {% if jupyter_target_node_name is defined %}
   nodeSelector:
