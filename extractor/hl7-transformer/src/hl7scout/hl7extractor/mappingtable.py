@@ -1,7 +1,7 @@
 from typing import Optional
 
 from delta import DeltaTable
-from pyspark.sql.types import StructType
+from pyspark.sql.types import StructType, StructField, StringType, BooleanType
 from temporalio import activity
 
 from .derivativetable import DerivativeTable
@@ -52,7 +52,18 @@ def extract_mapping(batch_df, spark, table_name, source_table):
             how="left_anti",
         )
     else:
-        existing_mapping_df = spark.createDataFrame([], StructType([]))
+        existing_mapping_df = spark.createDataFrame(
+            [],
+            StructType(
+                [
+                    StructField("scout_patient_id", StringType(), True),
+                    StructField("primary_report_identifier", StringType(), True),
+                    StructField("mpi", StringType(), True),
+                    StructField("epic_mrn", StringType(), True),
+                    StructField("consistent", BooleanType(), True),
+                ]
+            ),
+        )
 
     filtered_df = filtered_df.withColumns(
         {
