@@ -27,7 +27,8 @@ nexus_storage_size: 20Gi
 nexus_storage_class: '' # empty = cluster default
 
 # Resources (JVM-based, needs substantial memory)
-nexus_resources:
+# Override selectively in inventory with nexus_resources (e.g., nexus_resources: {limits: {memory: 8Gi}})
+nexus_resources_default:
   requests:
     cpu: 500m
     memory: 2Gi

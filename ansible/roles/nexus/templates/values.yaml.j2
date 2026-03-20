@@ -1,6 +1,6 @@
 service:
   type: ClusterIP
-resources: {{ nexus_resources | to_json }}
+resources: {{ nexus_resources_default | combine(nexus_resources | default({}), recursive=true) | to_json }}
 persistence:
   enabled: true
   size: "{{ nexus_storage_size }}"
