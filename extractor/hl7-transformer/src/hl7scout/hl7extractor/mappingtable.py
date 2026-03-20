@@ -209,14 +209,22 @@ def extract_mapping(batch_df, spark, table_name, source_table):
     # TODO: impl stages 3 & 4
 
     if not (deferred_reports_df.isEmpty()):
-        dupes_to_add_df = deferred_reports_df.select(
-            "primary_report_identifier"
-        ).join(  # take only the report ID from the incoming data
-            existing_mapping_df.drop(
-                "primary_report_identifier"
-            ),  # guaranteed a match, take everything from the match other than the report ID
-            on=create_exact_match_condition(deferred_reports_df, existing_mapping_df),
-            how="inner",
+        dupes_to_add_df = (
+            deferred_reports_df.alias("incoming")
+            .join(
+                existing_mapping_df.alias("existing"),
+                on=create_exact_match_condition(
+                    deferred_reports_df, existing_mapping_df
+                ),
+                how="inner",
+            )
+            .select(
+                "existing.scout_patient_id",
+                "incoming.primary_report_identifier",  # take only the report ID from the incoming data
+                "existing.mpi",  # guaranteed a match, take everything from the match other than the report ID
+                "existing.epic_mrn",
+                "existing.consistent",
+            )
         )
         merge_df_into_dt_on_column(
             DeltaTable.forName(spark, table_name),
