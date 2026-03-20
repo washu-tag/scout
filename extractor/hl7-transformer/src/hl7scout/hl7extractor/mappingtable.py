@@ -36,21 +36,6 @@ def mapping_table(base_report_table_name: str) -> DerivativeTable:
 
 
 def extract_mapping(batch_df, spark, table_name, source_table):
-    spark.sql(
-        f"""
-        CREATE OR REPLACE VIEW {source_table}_epic_view AS
-        SELECT 
-            r.*,
-            m.scout_patient_id,
-            m.epic_mrn AS resolved_epic_mrn,
-            m.mpi AS resolved_mpi
-        FROM {source_table} r
-        JOIN report_patient_mapping m
-          ON r.primary_report_identifier = m.primary_report_identifier
-        WHERE m.consistent = true
-    """
-    )
-
     filtered_df = filter_df_for_update_inserts(batch_df)
     if filtered_df is None:
         return
@@ -232,3 +217,18 @@ def extract_mapping(batch_df, spark, table_name, source_table):
 
     activity.logger.info("Mapping table derivation complete")
     activity.heartbeat("Mapping table complete")
+
+    spark.sql(
+        f"""
+        CREATE OR REPLACE VIEW {source_table}_epic_view AS
+        SELECT 
+            r.*,
+            m.scout_patient_id,
+            m.epic_mrn AS resolved_epic_mrn,
+            m.mpi AS resolved_mpi
+        FROM {source_table} r
+        JOIN report_patient_mapping m
+          ON r.primary_report_identifier = m.primary_report_identifier
+        WHERE m.consistent = true
+    """
+    )
