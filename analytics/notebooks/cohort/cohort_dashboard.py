@@ -431,7 +431,7 @@ def _create_search_form(container, config=None):
         style={"description_width": "100px"},
     )
 
-    bjc_wusm_slch_button = widgets.Button(
+    default_facilities_button = widgets.Button(
         description="IRB Default",
         button_style="info",
         tooltip="Select default IRB-approved facilities",
@@ -452,7 +452,7 @@ def _create_search_form(container, config=None):
         layout=widgets.Layout(width="auto"),
     )
 
-    def on_bjc_wusm_slch(b):
+    def on_default_facilities(b):
         facility_select.value = tuple(DEFAULT_FACILITIES)
 
     def on_select_all(b):
@@ -461,7 +461,7 @@ def _create_search_form(container, config=None):
     def on_clear_facilities(b):
         facility_select.value = ()
 
-    bjc_wusm_slch_button.on_click(on_bjc_wusm_slch)
+    default_facilities_button.on_click(on_default_facilities)
     select_all_button.on_click(on_select_all)
     clear_facilities_button.on_click(on_clear_facilities)
 
@@ -697,7 +697,7 @@ def _create_search_form(container, config=None):
             ),
             facility_select,
             widgets.HBox(
-                [bjc_wusm_slch_button, select_all_button, clear_facilities_button],
+                [default_facilities_button, select_all_button, clear_facilities_button],
                 layout=widgets.Layout(gap="8px", margin="4px 0 0 0"),
             ),
             widgets.HTML(

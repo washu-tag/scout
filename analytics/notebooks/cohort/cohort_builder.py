@@ -59,7 +59,6 @@ ALL_FACILITIES = [
     "WUCA",
 ]
 
-# Default facilities
 DEFAULT_FACILITIES = [
     "BJH",
     "WUSM",
@@ -269,12 +268,6 @@ def build_cohort_query(config):
             date_end = config["date_end"]
             conditions.append(f"requested_dt <= DATE '{date_end}'")
             criteria_summary.append(f"To: {date_end}")
-    elif config.get("date_range_days") and config["date_range_days"] != "all":
-        # Legacy support for date_range_days
-        days = int(config["date_range_days"])
-        conditions.append(f"requested_dt >= current_date - INTERVAL '{days}' DAY")
-        criteria_summary.append(f"Date range: Last {days} days")
-
     # Patient ID list filter
     if config.get("patient_ids"):
         raw = config["patient_ids"].strip()
