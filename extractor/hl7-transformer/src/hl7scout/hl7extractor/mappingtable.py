@@ -186,6 +186,7 @@ def extract_mapping(batch_df, spark, table_name, source_table):
             DeltaTable.createIfNotExists(spark)
             .tableName(table_name)
             .addColumns(fully_disjoint_reports_df.schema)
+            .property("delta.enableChangeDataFeed", "true")
             .execute()
         )
 
