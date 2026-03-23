@@ -52,17 +52,22 @@ def extract_mapping(batch_df, spark, table_name, source_table):
             how="left_anti",
         )
     else:
-        existing_mapping_df = spark.createDataFrame(
-            [],
-            StructType(
-                [
-                    StructField("scout_patient_id", StringType(), True),
-                    StructField("primary_report_identifier", StringType(), True),
-                    StructField("mpi", StringType(), True),
-                    StructField("epic_mrn", StringType(), True),
-                    StructField("consistent", BooleanType(), True),
-                ]
-            ),
+        schema = StructType(
+            [
+                StructField("scout_patient_id", StringType(), True),
+                StructField("primary_report_identifier", StringType(), True),
+                StructField("mpi", StringType(), True),
+                StructField("epic_mrn", StringType(), True),
+                StructField("consistent", BooleanType(), True),
+            ]
+        )
+        existing_mapping_df = spark.createDataFrame([], schema)
+        (
+            DeltaTable.createIfNotExists(spark)
+            .tableName(table_name)
+            .addColumns(schema)
+            .property("delta.enableChangeDataFeed", "true")
+            .execute()
         )
 
     filtered_df = filtered_df.withColumns(
@@ -182,16 +187,11 @@ def extract_mapping(batch_df, spark, table_name, source_table):
             F.lit(True).alias("consistent"),
         )
 
-        dt = (
-            DeltaTable.createIfNotExists(spark)
-            .tableName(table_name)
-            .addColumns(fully_disjoint_reports_df.schema)
-            .property("delta.enableChangeDataFeed", "true")
-            .execute()
-        )
-
         merge_df_into_dt_on_column(
-            dt, fully_disjoint_reports_df, "primary_report_identifier", False
+            DeltaTable.forName(spark, table_name),
+            fully_disjoint_reports_df,
+            "primary_report_identifier",
+            False,
         )
         existing_mapping_df = spark.read.table(table_name)
 
