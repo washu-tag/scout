@@ -100,7 +100,7 @@ The `publish` and `publish-demo` jobs require `scan-images` in their `needs:` ar
 
 All third-party action references are pinned to commit hashes (not tags) to prevent supply chain attacks. Dependabot's `github-actions` ecosystem in `dependabot.yml` keeps these pins current.
 
-**Images scanned**: `hl7log-extractor`, `hl7-transformer`, `pyspark-notebook`, `embedding-notebook` (`allow-failure`), `launchpad`, `superset`, `keycloak`.
+**Images scanned**: `hl7log-extractor`, `hl7-transformer`, `pyspark-notebook`, `launchpad`, `superset`, `keycloak`.
 
 ### Semgrep
 
@@ -214,9 +214,8 @@ When scanners are first enabled, expect a large initial set of findings from pre
 Each subproject can have its own `.trivyignore.yaml` alongside its `Dockerfile`. The composite action automatically detects and uses it if present. For example:
 
 ```
-helm/jupyter/embedding-notebook/
+helm/jupyter/notebook/
 ├── Dockerfile
-├── requirements.txt
 └── .trivyignore.yaml    # CVE suppressions for this image only
 ```
 
