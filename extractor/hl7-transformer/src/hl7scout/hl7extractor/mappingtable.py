@@ -174,11 +174,17 @@ def extract_mapping(batch_df, spark, table_name, source_table):
     fully_disjoint_reports_df = filter_no_existing_mapping_df(
         (F.col("mpi_count") <= 1) & (F.col("epic_mrn_count") <= 1)
     )
+    activity.logger.info("Calculated fully disjoint reports")
     incoming_reports_with_links_df = filter_no_existing_mapping_df(
         (F.col("mpi_count") > 1) | (F.col("epic_mrn_count") > 1)
     )
+    activity.logger.info("Calculated stage 2 incoming reports with links")
 
     if not (fully_disjoint_reports_df.isEmpty()):
+        activity.logger.info(
+            "Inserting mapping for %d fully disjoint reports",
+            fully_disjoint_reports_df.count(),
+        )
         fully_disjoint_reports_df = fully_disjoint_reports_df.select(
             F.expr("uuid()").alias("scout_patient_id"),
             "primary_report_identifier",
@@ -193,7 +199,9 @@ def extract_mapping(batch_df, spark, table_name, source_table):
             "primary_report_identifier",
             False,
         )
+        activity.logger.info("Fully disjoint reports inserted")
         existing_mapping_df = spark.read.table(table_name)
+        activity.logger.info("Updated existing mapping table reread")
 
     # Stage 2 complete, begin stage 3
 
@@ -208,6 +216,10 @@ def extract_mapping(batch_df, spark, table_name, source_table):
     )
 
     # TODO: impl stages 3 & 4
+
+    activity.logger.info(
+        "Beginning stage 5: adding back in reports with guaranteed existing matches"
+    )
 
     if not (deferred_reports_df.isEmpty()):
         dupes_to_add_df = (
