@@ -123,18 +123,16 @@ def extract_mapping(batch_df, spark, table_name, source_table):
         "_rank", F.row_number().over(incoming_report_dupe_id_window)
     ).cache()
 
-    unique_ids_incoming_reports = remaining_reports_ranked.filter(
-        F.col("_rank") == 1
-    ).drop("_rank")
-    duplicate_ids_incoming_reports = remaining_reports_ranked.filter(
-        F.col("_rank") > 1
-    ).drop("_rank")
+    unique_ids_incoming_reports = (
+        remaining_reports_ranked.filter(F.col("_rank") == 1).drop("_rank").cache()
+    )
+    duplicate_ids_incoming_reports = (
+        remaining_reports_ranked.filter(F.col("_rank") > 1).drop("_rank").cache()
+    )
 
     deferred_reports_df = exact_matches_df.unionByName(
         duplicate_ids_incoming_reports
     ).dropDuplicates()
-
-    remaining_reports_ranked.unpersist()
 
     activity.logger.info("Stage 1 completed on mapping table derivation")
 
@@ -261,6 +259,10 @@ def extract_mapping(batch_df, spark, table_name, source_table):
         fully_disjoint_reports_df,
         incoming_reports_with_links_df,
         partial_existing_mapping_match_df,
+        remaining_reports_ranked,
+        unique_ids_incoming_reports,
+        duplicate_ids_incoming_reports,
+        existing_mapping_df,
     ]:
         df.unpersist()
     activity.logger.info("Mapping table derivation complete")
