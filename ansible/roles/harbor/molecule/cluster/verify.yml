@@ -55,7 +55,7 @@
 
     - name: Verify Harbor API is accessible
       ansible.builtin.uri:
-        url: 'https://{{ external_url }}:{{ harbor_nodeport_https }}/api/v2.0/systeminfo'
+        url: 'https://{{ harbor_hostname }}/api/v2.0/systeminfo'
         validate_certs: false
         status_code: 200
       register: harbor_api_check
@@ -69,7 +69,7 @@
 
     - name: Get all registries
       ansible.builtin.uri:
-        url: 'https://{{ external_url }}:{{ harbor_nodeport_https }}/api/v2.0/registries'
+        url: 'https://{{ harbor_hostname }}/api/v2.0/registries'
         validate_certs: false
         user: admin
         password: '{{ harbor_admin_password }}'
@@ -78,7 +78,7 @@
 
     - name: Get all projects
       ansible.builtin.uri:
-        url: 'https://{{ external_url }}:{{ harbor_nodeport_https }}/api/v2.0/projects'
+        url: 'https://{{ harbor_hostname }}/api/v2.0/projects'
         validate_certs: false
         user: admin
         password: '{{ harbor_admin_password }}'
@@ -124,7 +124,7 @@
         verification_summary: >-
           {{ ['✓ Harbor namespace exists',
               '✓ ' + (harbor_pods.resources | length | string) + ' Harbor pods running',
-              '✓ Harbor service exposed on port ' + (harbor_nodeport_https | string),
+              '✓ Harbor service exposed via ingress',
               '✓ Harbor API accessible']
             + (harbor_registry_proxies_final | map('regex_replace', '^.*$', '✓ ' + item.registry_name + ' registry endpoint configured') | list)
             + (harbor_registry_proxies_final | map('regex_replace', '^.*$', '✓ ' + item.project_name + ' proxy project created') | list)

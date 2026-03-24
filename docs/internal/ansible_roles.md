@@ -80,27 +80,48 @@ Features:
 
 Deploys Harbor container registry as a proxy cache for air-gapped deployments:
 
-- **storage.yaml**: Creates host directories on staging node
-- **deploy.yaml**: Deploys Harbor via Helm chart, configures proxy cache projects
+- **deploy.yaml**: Deploys Harbor via Helm chart with Traefik ingress, configures proxy cache projects
 
 Features:
-- Self-signed TLS certificate generation with Subject Alternative Names (SANs)
-- Docker Hub and GHCR proxy cache projects
+- Traefik ingress with TLS termination via wildcard certificate
+- Proxy cache projects for Docker Hub, GHCR, Quay, and other registries
 - API-based configuration of registry endpoints and proxy projects
-- Two exposure modes:
-  - **ingress** (default): Traefik ingress at domain root for production
-  - **nodePort**: NodePort 30443 for development or shared domains
 - external_url support for Tailscale/cross-network access
 - Automatic Harbor readiness checks
 - Idempotent deployment (handles already-exists scenarios)
 - Molecule tests for role validation
 
 Configuration:
-- `harbor_expose_type`: Set to 'ingress' or 'nodePort'
 - `external_url`: Optional Tailscale hostname or DNS name (overrides inventory_hostname)
 - `harbor_admin_password`: Admin password (vault-encrypted in inventory)
 
 Used by: Staging node deployment when `use_staging_node: true`
+
+### nexus
+
+Deploys Sonatype Nexus Repository CE as a pull-through proxy for conda, PyPI, and Maven packages in air-gapped environments:
+
+- **deploy.yaml**: Deploys Nexus via Helm chart with Traefik ingress, configures proxy repositories
+
+Features:
+- Conda proxy repositories (conda-forge, defaults)
+- PyPI proxy repository
+- Maven Central (ships pre-configured in Nexus CE)
+- Separate blob stores per package format with configurable soft quotas
+- Automatic cleanup of packages not downloaded in 90 days
+- Anonymous read access for transparent proxying
+- Optional EULA acceptance via API
+- Traefik ingress with TLS termination
+- Helm values defined in `templates/values.yaml.j2`
+
+Configuration:
+- `nexus_root_password`: Admin password (vault-encrypted in inventory, required)
+- `nexus_storage_size`: PVC size (default: 20Gi)
+- `nexus_blob_stores`: Blob store definitions with soft quotas
+- `nexus_conda_repos` / `nexus_pypi_repos`: Proxy repository definitions
+- `accept_nexus_eula`: Accept Sonatype CE EULA automatically (default: false)
+
+Used by: Staging node deployment alongside Harbor (ADR 0016)
 
 ### jupyter
 
