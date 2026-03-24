@@ -146,21 +146,21 @@ def extract_mapping(batch_df, spark, table_name, source_table):
     ) | (remaining_reports_df["epic_mrn"] == existing_mapping_df["epic_mrn"])
     partial_existing_mapping_match_df = remaining_reports_df.join(
         existing_mapping_df, on=partial_match_condition, how="left_semi"
-    )
+    ).cache()
     no_existing_mapping_match_df = remaining_reports_df.join(
         existing_mapping_df, on=partial_match_condition, how="left_anti"
-    )
+    ).cache()
 
     mpi_counts = (
         no_existing_mapping_match_df.filter(F.col("mpi").isNotNull())
         .groupBy("mpi")
         .agg(F.count("*").alias("mpi_count"))
-    )
+    ).cache()
     epic_mrn_counts = (
         no_existing_mapping_match_df.filter(F.col("epic_mrn").isNotNull())
         .groupBy("epic_mrn")
         .agg(F.count("*").alias("epic_mrn_count"))
-    )
+    ).cache()
 
     def filter_no_existing_mapping_df(additional_filter: Column) -> DataFrame:
         return (
@@ -173,11 +173,11 @@ def extract_mapping(batch_df, spark, table_name, source_table):
 
     fully_disjoint_reports_df = filter_no_existing_mapping_df(
         (F.col("mpi_count") <= 1) & (F.col("epic_mrn_count") <= 1)
-    )
+    ).cache()
     activity.logger.info("Calculated fully disjoint reports")
     incoming_reports_with_links_df = filter_no_existing_mapping_df(
         (F.col("mpi_count") > 1) | (F.col("epic_mrn_count") > 1)
-    )
+    ).cache()
     activity.logger.info("Calculated stage 2 incoming reports with links")
 
     if not (fully_disjoint_reports_df.isEmpty()):
@@ -185,7 +185,7 @@ def extract_mapping(batch_df, spark, table_name, source_table):
             "Inserting mapping for %d fully disjoint reports",
             fully_disjoint_reports_df.count(),
         )
-        fully_disjoint_reports_df = fully_disjoint_reports_df.select(
+        fully_disjoint_reports_transformed_df = fully_disjoint_reports_df.select(
             F.expr("uuid()").alias("scout_patient_id"),
             "primary_report_identifier",
             "mpi",
@@ -195,11 +195,12 @@ def extract_mapping(batch_df, spark, table_name, source_table):
 
         merge_df_into_dt_on_column(
             DeltaTable.forName(spark, table_name),
-            fully_disjoint_reports_df,
+            fully_disjoint_reports_transformed_df,
             "primary_report_identifier",
             False,
         )
         activity.logger.info("Fully disjoint reports inserted")
+        existing_mapping_df.unpersist()
         existing_mapping_df = spark.read.table(table_name)
         activity.logger.info("Updated existing mapping table reread")
 
@@ -252,6 +253,16 @@ def extract_mapping(batch_df, spark, table_name, source_table):
             False,
         )
 
+    for df in [
+        no_existing_mapping_match_df,
+        mpi_counts,
+        epic_mrn_counts,
+        filtered_df,
+        fully_disjoint_reports_df,
+        incoming_reports_with_links_df,
+        partial_existing_mapping_match_df,
+    ]:
+        df.unpersist()
     activity.logger.info("Mapping table derivation complete")
 
     spark.sql(
