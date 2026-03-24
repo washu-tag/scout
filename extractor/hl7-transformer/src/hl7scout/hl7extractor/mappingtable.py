@@ -203,13 +203,19 @@ def extract_mapping(batch_df, spark, table_name, source_table):
         existing_mapping_df = spark.read.table(table_name)
         activity.logger.info("Updated existing mapping table reread")
 
+    activity.logger.info(
+        "Creating df as union of %d incoming links and %d partial existing matches",
+        incoming_reports_with_links_df.count(),
+        partial_existing_mapping_match_df.count(),
+    )
+    remaining_reports_df = incoming_reports_with_links_df.unionByName(
+        partial_existing_mapping_match_df
+    ).dropDuplicates()
+
     # Stage 2 complete, begin stage 3
 
     activity.logger.info("Stage 2 completed on mapping table derivation")
 
-    remaining_reports_df = incoming_reports_with_links_df.unionByName(
-        partial_existing_mapping_match_df
-    ).dropDuplicates()
     activity.logger.warn(
         "Stages 3 and 4 have not yet been implemented, %d reports will be skipped",
         remaining_reports_df.count(),
