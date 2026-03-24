@@ -506,6 +506,8 @@ ADRs in `docs/internal/adr/` document significant architectural decisions. Consu
 
 - **ADR 0015: Staging Node Certificate Distribution** — Distributes the staging node's self-signed TLS certificate to the production cluster via Ansible, replacing `insecure_skip_verify: true` with explicit CA trust. For containerd/K3s, the cert is placed on host nodes and referenced via `ca_file` in `registries.yaml`. For future containerized services, the cert is mounted from a Kubernetes Secret. Consult when adding services that contact the staging node or modifying air-gapped TLS configuration.
 
+- **ADR 0016: Air-Gapped Package Proxy** — Deploys Sonatype Nexus CE on the staging node alongside Harbor to serve as a pull-through proxy for conda, PyPI, Maven, and RPM packages. Enables Jupyter users to install packages on demand, simplifies RPM installation to standard `dnf` commands, and allows the Jupyter image to be slimmed by removing baked-in packages. Uses per-format proxy URL variables (`conda_proxy_url`, `pip_proxy_url`, etc.) following the service-mode pattern from ADR 0011, with staging cert trust per ADR 0015. Consult when modifying package proxy configuration, Jupyter notebook image contents, RPM installation tasks, or air-gapped package management.
+
 ## Key Concepts for AI Assistants
 
 ### Architecture Understanding

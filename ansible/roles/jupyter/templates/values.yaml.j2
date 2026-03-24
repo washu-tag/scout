@@ -133,6 +133,22 @@ singleuser:
           readOnly: true
         - name: spark-config-writable
           mountPath: /mnt/spark-config
+{% if _package_proxy_needs_staging_cert | default(false) | bool %}
+    - name: staging-ca-setup
+      image: '{{ jupyter_singleuser_image_name }}:{{ jupyter_singleuser_image_tag }}'
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          # Build combined CA bundle: system CAs + staging self-signed CA
+          cat /etc/ssl/certs/ca-certificates.crt {{ _staging_ca_cert_pod_path }} > /etc/pki/staging/ca-bundle.crt
+      volumeMounts:
+        - name: staging-ca-cert
+          mountPath: {{ _staging_ca_cert_pod_path }}
+          subPath: ca.crt
+          readOnly: true
+        - name: staging-ca-bundle
+          mountPath: /etc/pki/staging
+{% endif %}
   lifecycleHooks:
     postStart:
       exec:
@@ -158,6 +174,14 @@ singleuser:
               touch $FLAG_FILE
             fi
   extraEnv:
+{% if _package_proxy_needs_staging_cert | default(false) | bool %}
+    # Combined CA bundle (system CAs + staging CA) — built by staging-ca-setup init container.
+    # These env vars ensure all Python HTTP clients (requests, urllib3, pip, conda)
+    # trust the staging self-signed cert without needing root access.
+    REQUESTS_CA_BUNDLE: '/etc/pki/staging/ca-bundle.crt'
+    SSL_CERT_FILE: '/etc/pki/staging/ca-bundle.crt'
+    CURL_CA_BUNDLE: '/etc/pki/staging/ca-bundle.crt'
+{% endif %}
     # HuggingFace model cache directory - models downloaded from HF Hub are stored here
     # This directory is created in postStart hook and persists with user's home directory
     HF_HOME: '/home/jovyan/models'
@@ -203,6 +227,18 @@ singleuser:
           # Disable Extension Manager UI (prevent users from installing extensions)
           "@jupyterlab/extensionmanager-extension": true
 {% endif %}
+{% if conda_channel_alias | default('') | length > 0 %}
+    condarc:
+      mountPath: /opt/conda/.condarc
+      stringData: |
+        {{ lookup('template', 'condarc.j2') | indent(8) }}
+{% endif %}
+{% if pip_proxy_url | default('') | length > 0 %}
+    pip-conf:
+      mountPath: /etc/pip.conf
+      stringData: |
+        {{ lookup('template', 'pip.conf.j2') | indent(8) }}
+{% endif %}
 
   storage:
     type: dynamic
@@ -228,6 +264,15 @@ singleuser:
         name: jupyterlab-scout-logo
         configMap:
           name: scout-logo
+{% if _package_proxy_needs_staging_cert | default(false) | bool %}
+      staging-ca-cert:
+        name: staging-ca-cert
+        secret:
+          secretName: staging-ca-cert
+      staging-ca-bundle:
+        name: staging-ca-bundle
+        emptyDir: {}
+{% endif %}
     extraVolumeMounts:
       spark-defaults:
         name: spark-config-writable
@@ -241,6 +286,12 @@ singleuser:
         name: jupyterlab-scout-logo
         mountPath: /home/jovyan/.jupyter/custom/scout.png
         subPath: scout.png
+{% if _package_proxy_needs_staging_cert | default(false) | bool %}
+      staging-ca-bundle:
+        name: staging-ca-bundle
+        mountPath: /etc/pki/staging
+        readOnly: true
+{% endif %}
   networkPolicy:
     egress:
 {% if not aws_deployment %}
