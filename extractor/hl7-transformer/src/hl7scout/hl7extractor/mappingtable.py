@@ -130,9 +130,11 @@ def extract_mapping(batch_df, spark, table_name, source_table):
         remaining_reports_ranked.filter(F.col("_rank") > 1).drop("_rank").cache()
     )
 
-    deferred_reports_df = exact_matches_df.unionByName(
-        duplicate_ids_incoming_reports
-    ).dropDuplicates()
+    deferred_reports_df = (
+        exact_matches_df.unionByName(duplicate_ids_incoming_reports)
+        .cache()
+        .dropDuplicates()
+    )
 
     activity.logger.info("Stage 1 completed on mapping table derivation")
 
@@ -142,12 +144,36 @@ def extract_mapping(batch_df, spark, table_name, source_table):
     partial_match_condition = (
         remaining_reports_df["mpi"] == existing_mapping_df["mpi"]
     ) | (remaining_reports_df["epic_mrn"] == existing_mapping_df["epic_mrn"])
-    partial_existing_mapping_match_df = remaining_reports_df.join(
-        existing_mapping_df, on=partial_match_condition, how="left_semi"
-    ).cache()
-    no_existing_mapping_match_df = remaining_reports_df.join(
-        existing_mapping_df, on=partial_match_condition, how="left_anti"
-    ).cache()
+
+    partial_match_with_indicator_df = (
+        remaining_reports_df.join(
+            existing_mapping_df.select("mpi", "epic_mrn").withColumn(
+                "_contains_match", F.lit(True)
+            ),
+            on=partial_match_condition,
+            how="left",
+        )
+        .select(
+            remaining_reports_df["primary_report_identifier"],
+            remaining_reports_df["mpi"],
+            remaining_reports_df["epic_mrn"],
+            F.col("_contains_match"),
+        )
+        .dropDuplicates(["primary_report_identifier"])
+        .cache()
+    )  # cache join once
+
+    partial_existing_mapping_match_df = (
+        partial_match_with_indicator_df.filter(F.col("_contains_match"))
+        .drop("_contains_match")
+        .cache()
+    )
+
+    no_existing_mapping_match_df = (
+        partial_match_with_indicator_df.filter(F.col("_contains_match").isNull())
+        .drop("_contains_match")
+        .cache()
+    )
 
     mpi_counts = (
         no_existing_mapping_match_df.filter(F.col("mpi").isNotNull())
@@ -263,6 +289,7 @@ def extract_mapping(batch_df, spark, table_name, source_table):
         unique_ids_incoming_reports,
         duplicate_ids_incoming_reports,
         existing_mapping_df,
+        partial_match_with_indicator_df,
     ]:
         df.unpersist()
     activity.logger.info("Mapping table derivation complete")
