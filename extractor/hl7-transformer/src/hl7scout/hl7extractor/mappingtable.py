@@ -296,15 +296,26 @@ def extract_mapping(batch_df, spark, table_name, source_table):
 
     spark.sql(
         f"""
-        CREATE OR REPLACE VIEW {source_table}_epic_view AS
-        SELECT 
-            r.*,
-            m.scout_patient_id,
-            m.epic_mrn AS resolved_epic_mrn,
-            m.mpi AS resolved_mpi
-        FROM {source_table} r
-        JOIN report_patient_mapping m
-          ON r.primary_report_identifier = m.primary_report_identifier
-        WHERE m.consistent = true
+            CREATE OR REPLACE VIEW {source_table}_epic_view AS
+            WITH patient_ids AS (
+                SELECT
+                    scout_patient_id,
+                    MAX(epic_mrn) AS resolved_epic_mrn,
+                    MAX(mpi) AS resolved_mpi
+                FROM report_patient_mapping
+                WHERE consistent = true
+                GROUP BY scout_patient_id
+            )
+            SELECT
+                r.*,
+                m.scout_patient_id,
+                p.resolved_epic_mrn,
+                p.resolved_mpi
+            FROM {source_table} r
+            JOIN report_patient_mapping m
+                ON r.primary_report_identifier = m.primary_report_identifier
+            JOIN patient_ids p
+                ON m.scout_patient_id = p.scout_patient_id
+            WHERE m.consistent = true
     """
     )
