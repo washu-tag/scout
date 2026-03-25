@@ -40,7 +40,7 @@
         namespace: '{{ oauth2_proxy_namespace }}'
       type: Opaque
       data:
-        logo.png: '{{ lookup("file", role_path + "/files/scout.jpg") | b64encode }}'
+        logo.png: '{{ lookup("community.general.binary_file", role_path + "/files/scout.jpg") }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Create Secret with Redis password for OAuth2 Proxy
