@@ -38,6 +38,34 @@ TRINO_USER = os.environ.get("TRINO_USER", "trino")
 TRINO_CATALOG = os.environ.get("TRINO_CATALOG", "delta")
 TRINO_SCHEMA = os.environ.get("TRINO_SCHEMA", "default")
 
+# Facilities lists
+ALL_FACILITIES = [
+    "BJH",
+    "BJCMG",
+    "SLCH",
+    "WUSM",
+    "AMH",
+    "BJSPH",
+    "BJWCH",
+    "CC",
+    "CH",
+    "HOME CARE SERVICES",
+    "MBMC",
+    "MBSH",
+    "MHB",
+    "MHE",
+    "PHCF",
+    "PWH",
+    "WUCA",
+]
+
+DEFAULT_FACILITIES = [
+    "BJH",
+    "WUSM",
+    "BJCMG",
+    "SLCH",
+]
+
 # Export directory (must be under /home/jovyan/notebooks for Voila file serving)
 EXPORT_DIR = "/home/jovyan/notebooks/exports"
 os.makedirs(EXPORT_DIR, exist_ok=True)
@@ -223,11 +251,33 @@ def build_cohort_query(config):
         conditions.append(f"patient_age <= {config['max_age']}")
         criteria_summary.append(f"Max age: {config['max_age']}")
 
+    # Sex
+    if config.get("sex") and config["sex"] != "all":
+        sex_value = config["sex"]
+        conditions.append(f"sex = '{sex_value}'")
+        sex_label = "Male" if sex_value == "M" else "Female"
+        criteria_summary.append(f"Sex: {sex_label}")
+
     # Date range
-    if config.get("date_range_days") and config["date_range_days"] != "all":
-        days = int(config["date_range_days"])
-        conditions.append(f"requested_dt >= current_date - INTERVAL '{days}' DAY")
-        criteria_summary.append(f"Date range: Last {days} days")
+    if not config.get("all_dates", False):
+        if config.get("date_start"):
+            date_start = config["date_start"]
+            conditions.append(f"requested_dt >= DATE '{date_start}'")
+            criteria_summary.append(f"From: {date_start}")
+        if config.get("date_end"):
+            date_end = config["date_end"]
+            conditions.append(f"requested_dt <= DATE '{date_end}'")
+            criteria_summary.append(f"To: {date_end}")
+    # Patient ID list filter
+    if config.get("patient_ids"):
+        raw = config["patient_ids"].strip()
+        if raw:
+            # Support comma-separated, newline-separated, or mixed
+            ids = [m.strip() for m in re.split(r"[,\n]+", raw) if m.strip()]
+            if ids:
+                ids_str = "', '".join(ids)
+                conditions.append(f"epic_mrn IN ('{ids_str}')")
+                criteria_summary.append(f"Patient list: {len(ids)} Epic MRNs")
 
     # Ensure we have patient ID
     conditions.append("(epic_mrn IS NOT NULL OR empi_mr IS NOT NULL)")

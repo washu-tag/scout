@@ -470,6 +470,7 @@ def create_navigation_controls(state):
         sex = html.escape(str(row.get("sex", "Unknown")))
         modality = html.escape(str(row.get("modality", "Unknown")))
         service_name = html.escape(str(row.get("service_name", "Unknown")))
+        facility = html.escape(str(row.get("sending_facility", "Unknown")))
 
         report_text = (
             str(row["report_text"])
@@ -589,7 +590,6 @@ def create_navigation_controls(state):
                 <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb;'>
                     <div>
                         <span style='font-weight: 600; font-size: 14px;'>Report {current_pos + 1} of {len(filtered_indices)}</span>
-                        <span style='margin-left: 12px; font-size: 13px; color: #666;'>{accession}</span>
                     </div>
                     {status_badge}
                 </div>
@@ -601,11 +601,18 @@ def create_navigation_controls(state):
                         <!-- Patient Demographics -->
                         <div style='background: #f8f9fa; padding: 12px; border-radius: 4px; font-size: 14px;'>
                             <div style='font-weight: 600; margin-bottom: 8px; font-size: 15px;'>Patient</div>
-                            <div style='margin-bottom: 4px;'><strong>ID:</strong> {patient_id}</div>
-                            <div style='margin-bottom: 4px;'><strong>Age:</strong> {patient_age} • <strong>Sex:</strong> {sex}</div>
-                            <div style='margin-bottom: 4px;'><strong>Date:</strong> {requested_dt}</div>
+                            <div style='margin-bottom: 4px;'><strong>Epic MRN:</strong> {patient_id}</div>
+                            <div><strong>Age:</strong> {patient_age} • <strong>Sex:</strong> {sex}</div>
+                        </div>
+
+                        <!-- Exam Details -->
+                        <div style='background: #f8f9fa; padding: 12px; border-radius: 4px; font-size: 14px;'>
+                            <div style='font-weight: 600; margin-bottom: 8px; font-size: 15px;'>Exam</div>
                             <div style='margin-bottom: 4px;'><strong>Modality:</strong> {modality}</div>
-                            <div><strong>Service:</strong> {service_name}</div>
+                            <div style='margin-bottom: 4px;'><strong>Exam:</strong> {service_name}</div>
+                            <div style='margin-bottom: 4px;'><strong>Date:</strong> {requested_dt}</div>
+                            <div style='margin-bottom: 4px;'><strong>Facility:</strong> {facility}</div>
+                            <div><strong>Accession:</strong> {accession}</div>
                         </div>
 
                         <!-- Diagnoses -->
