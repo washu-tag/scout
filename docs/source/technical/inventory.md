@@ -421,9 +421,9 @@ prometheus_resources:
     memory: 4Gi
 ```
 
-**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, mcp_trino
+**Services supporting partial overrides:** temporal, postgres, minio, hive, prometheus, grafana, loki, superset, superset_statsd, jupyter_hub, hl7log_extractor, redis_operator, redis_cluster_node, voila, orthanc, dcm4chee, ollama, open_webui, mcp_trino, cassandra_system_logger
 
-**Services NOT supporting partial overrides** (use flattened variables instead): Trino coordinator/worker, Cassandra, Elasticsearch, HL7 Transformer. These services use individual variables (e.g., `cassandra_max_heap`, `trino_worker_cpu_limit`) because JVM heap sizes drive memory calculations with different multipliers for requests vs limits.
+**Services NOT supporting partial overrides** (use flattened variables instead): Trino coordinator/worker, Cassandra (main container), Elasticsearch, HL7 Transformer. These services use individual variables (e.g., `cassandra_max_heap`, `trino_worker_cpu_limit`) because JVM heap sizes drive memory calculations with different multipliers for requests vs limits. Note: Cassandra's system logger sidecar (Vector) does support partial overrides via `cassandra_system_logger_resources`.
 
 #### PostgreSQL
 
@@ -451,9 +451,13 @@ cassandra_init_heap: 6G
 cassandra_max_heap: 12G
 cassandra_cpu_request: 2
 cassandra_cpu_limit: 4
+# System logger sidecar (Vector) - supports partial overrides
+cassandra_system_logger_resources:
+  limits:
+    memory: 512Mi
 ```
 
-Memory is computed automatically from heap size (requests = 1x heap, limits = 2x heap).
+Memory is computed automatically from heap size (requests = 1x heap, limits = 2x heap). The system logger sidecar (Vector) uses the standard partial override pattern with `cassandra_system_logger_resources` (defaults: 100m/128Mi requests, 500m/256Mi limits).
 
 #### Elasticsearch (JVM-based)
 

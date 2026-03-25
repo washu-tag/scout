@@ -326,6 +326,14 @@ k3s_cluster:
     # Override CPU if needed (defaults: 250m request, 2 limit):
     cassandra_cpu_request: 2
     cassandra_cpu_limit: 4
+    # System logger sidecar (Vector) resources (defaults: 100m/128Mi request, 500m/256Mi limit):
+    # cassandra_system_logger_resources:
+    #   requests:
+    #     cpu: 100m
+    #     memory: 128Mi
+    #   limits:
+    #     cpu: 500m
+    #     memory: 256Mi
 
     #---------------------------------------------------------------------------
     # Elasticsearch

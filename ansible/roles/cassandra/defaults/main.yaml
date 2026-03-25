@@ -16,3 +16,14 @@ cassandra_max_heap: 2G
 # Memory is computed in tasks using jvm_memory_to_k8s filter (not computable here in defaults)
 cassandra_cpu_request: 100m
 cassandra_cpu_limit: 2
+
+# System logger sidecar (Vector) resource configuration
+# K8ssandra adds a Vector sidecar for log collection; its default 128M limit
+# is insufficient and causes OOMKill. Override with cassandra_system_logger_resources.
+cassandra_system_logger_resources_default:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
