@@ -4,6 +4,8 @@
   become: false
   gather_facts: false
   any_errors_fatal: false
+  roles:
+    - scout_common
   tasks:
     - name: Build verification config
       ansible.builtin.set_fact:
