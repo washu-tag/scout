@@ -241,7 +241,7 @@ make all
 ```
 
 **What happens:**
-- `staging` play installs a single-node K3s cluster on the staging host (online mode), deploys Harbor via Helm with pull-through proxy configured for Docker Hub, Quay.io, and GitHub Container Registry (Traefik is installed only if `harbor_expose_type: ingress`), and installs Squid forward proxy for outbound IdP access
+- `staging` play installs a single-node K3s cluster on the staging host (online mode), deploys Traefik, Harbor (container image proxy), and Nexus (package proxy for conda/PyPI/Maven) via Helm, and installs Squid forward proxy for outbound IdP access
 - `k3s` play
   - Downloads K3s artifacts (binary, install script) to Ansible control node
   - Downloads SELinux packages via Kubernetes Job on staging cluster

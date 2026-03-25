@@ -87,6 +87,51 @@
         spawn.html: '{{ lookup("template", "spawn.html.j2") }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
+# Staging cert distribution for package proxy TLS trust (per ADR-0015)
+# When package_proxy_mode is 'nexus' and the staging node uses a self-signed cert,
+# we need to mount the CA cert into Jupyter pods so conda/pip can verify TLS.
+# These tasks must run before the ConfigMap and Helm values are rendered,
+# since condarc.j2, pip.conf.j2, and values.yaml.j2 check _package_proxy_needs_staging_cert.
+
+- name: Determine if staging cert trust is needed for package proxy
+  ansible.builtin.set_fact:
+    _staging_uses_self_signed_cert: >-
+      {{ (hostvars[groups['staging'][0]].tls_cert_path | default(staging_self_signed_tls_cert_path)) == staging_self_signed_tls_cert_path }}
+    _package_proxy_needs_staging_cert: false
+  when: package_proxy_mode == 'nexus' and groups['staging'] is defined and groups['staging'] | length > 0
+
+- name: Evaluate staging cert requirement
+  ansible.builtin.set_fact:
+    _package_proxy_needs_staging_cert: '{{ _staging_uses_self_signed_cert | bool }}'
+  when: _staging_uses_self_signed_cert is defined
+
+- name: Slurp staging CA certificate
+  ansible.builtin.slurp:
+    src: "{{ hostvars[groups['staging'][0]].tls_cert_path | default(staging_self_signed_tls_cert_path) }}"
+  delegate_to: "{{ groups['staging'][0] | default('localhost') }}"
+  register: _staging_ca_cert
+  when: _package_proxy_needs_staging_cert | default(false) | bool
+
+- name: Create staging CA cert Secret for Jupyter pods
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: staging-ca-cert
+        namespace: '{{ jupyter_namespace }}'
+      data:
+        ca.crt: '{{ _staging_ca_cert.content }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  when: _package_proxy_needs_staging_cert | default(false) | bool
+
+- name: Set staging CA cert pod path for templates
+  ansible.builtin.set_fact:
+    _staging_ca_cert_pod_path: /etc/pki/staging/ca.crt
+  when: _package_proxy_needs_staging_cert | default(false) | bool
+
 - name: Parse Helm values
   ansible.builtin.set_fact:
     jh_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"

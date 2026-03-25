@@ -1,7 +1,7 @@
 ---
 # Staging Node Deployment Playbook
-# Installs k3s and deploys Harbor on the staging node
-# Used for air-gapped deployments with Harbor registry
+# Installs k3s and deploys Harbor and Nexus on the staging node
+# Used for air-gapped deployments with Harbor registry and Nexus package proxy
 #
 # Documentation: docs/source/technical/air-gapped.md
 #
@@ -10,8 +10,8 @@
 #   - air_gapped: true in inventory
 #
 # Notes:
-#   - Traefik is deployed by default when harbor_expose_type: ingress (requires TLS certs)
-#   - For nodePort mode, Harbor uses self-signed certs and Traefik is skipped
+#   - Traefik provides TLS termination for Harbor and Nexus ingresses
+#   - A self-signed cert is generated if tls_cert_path/tls_key_path not provided
 
 - name: Prepare staging node for K3s
   hosts: staging
@@ -54,9 +54,7 @@
       when: not (run_deploy | default(false) | bool)
 
     - name: Generate self-signed TLS certificate for ingress
-      when:
-        - harbor_expose_type == 'ingress'
-        - tls_cert_path is not defined or tls_key_path is not defined
+      when: tls_cert_path is not defined or tls_key_path is not defined
       block:
         - name: Check if cert already exists
           ansible.builtin.stat:
@@ -73,12 +71,14 @@
                 mode: '0700'
 
             - name: Generate certificate
+              vars:
+                _staging_domain: '{{ external_url | default(inventory_hostname) }}'
               ansible.builtin.shell: |
                 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
                   -keyout {{ staging_self_signed_tls_key_path }} \
                   -out {{ staging_self_signed_tls_cert_path }} \
-                  -subj "/CN={{ inventory_hostname }}/O=Scout" \
-                  -addext "subjectAltName=DNS:{{ inventory_hostname }}"
+                  -subj "/CN={{ _staging_domain }}/O=Scout" \
+                  -addext "subjectAltName=DNS:{{ _staging_domain }},DNS:*.{{ _staging_domain }}"
               changed_when: true
 
         - name: Set tls_cert_path to self-signed location
@@ -92,6 +92,6 @@
   roles:
     - role: k3s
     - role: traefik
-      when: harbor_expose_type == 'ingress'
     - role: harbor
     - role: squid
+    - role: nexus

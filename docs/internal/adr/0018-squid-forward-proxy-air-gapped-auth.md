@@ -1,4 +1,4 @@
-# ADR 0016: Squid Forward Proxy for Air-Gapped Authentication
+# ADR 0018: Squid Forward Proxy for Air-Gapped Authentication
 
 **Date**: 2026-03
 **Status**: Proposed

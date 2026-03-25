@@ -1,0 +1,101 @@
+---
+# Main Nexus deployment tasks
+- name: Validate nexus_root_password is set
+  ansible.builtin.assert:
+    that:
+      - nexus_root_password | length > 0
+    fail_msg: >-
+      nexus_root_password must be set in inventory (vault-encrypted).
+      See inventory.example.yaml for details.
+
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ nexus_namespace }}'
+
+- name: Create root password secret
+  block:
+    - name: Check if root password secret already exists
+      kubernetes.core.k8s_info:
+        kind: Secret
+        namespace: '{{ nexus_namespace }}'
+        name: nexus-root-password
+      register: existing_root_password_secret
+
+    - name: Create root password secret if it doesn't exist
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: nexus-root-password
+            namespace: '{{ nexus_namespace }}'
+          type: Opaque
+          stringData:
+            password: '{{ nexus_root_password }}'
+      when: existing_root_password_secret.resources | length == 0
+
+- name: Parse Nexus Helm values
+  ansible.builtin.set_fact:
+    nexus_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
+
+- name: Deploy Nexus
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ nexus_helm_chart_name }}'
+    helm_chart_ref: '{{ nexus_helm_repo_name }}/{{ nexus_helm_chart_name }}'
+    helm_chart_version: '{{ nexus_helm_chart_version }}'
+    helm_chart_namespace: '{{ nexus_namespace }}'
+    helm_repo_name: '{{ nexus_helm_repo_name }}'
+    helm_repo_url: '{{ nexus_helm_repo_url }}'
+    helm_chart_timeout: 15m
+    helm_chart_values: '{{ nexus_helm_chart_values }}'
+
+- name: Wait for Nexus to be ready
+  ansible.builtin.uri:
+    url: '{{ nexus_health_check_url }}'
+    validate_certs: false
+    status_code: 200
+  register: nexus_health
+  until: nexus_health.status == 200
+  retries: 30
+  delay: 10
+
+- name: Accept Nexus EULA
+  when: accept_nexus_eula | bool
+  block:
+    - name: Get EULA status
+      ansible.builtin.uri:
+        url: '{{ nexus_api_base_url }}/service/rest/v1/system/eula'
+        validate_certs: false
+        method: GET
+        user: admin
+        password: '{{ nexus_root_password }}'
+        force_basic_auth: true
+        status_code: 200
+      register: nexus_eula
+
+    - name: Accept EULA
+      ansible.builtin.uri:
+        url: '{{ nexus_api_base_url }}/service/rest/v1/system/eula'
+        validate_certs: false
+        method: POST
+        user: admin
+        password: '{{ nexus_root_password }}'
+        force_basic_auth: true
+        body_format: json
+        body:
+          disclaimer: '{{ nexus_eula.json.disclaimer }}'
+          accepted: true
+        status_code: [200, 204]
+      when: not nexus_eula.json.accepted
+
+- name: Display Nexus deployment status
+  ansible.builtin.debug:
+    msg: 'Nexus deployed successfully at https://{{ nexus_hostname }}'

@@ -21,6 +21,8 @@ from cohort_builder import (
     GREEN_SUCCESS,
     ORANGE_WARNING,
     RED_ERROR,
+    ALL_FACILITIES,
+    DEFAULT_FACILITIES,
 )
 
 from cohort_ui import (
@@ -415,36 +417,53 @@ def _create_search_form(container, config=None):
     service_name_input = widgets.Text(
         value=config.get("service_name_pattern", ""),
         placeholder="e.g., brain, chest, abdomen",
-        description="Exam Description:",
+        description="Exam Desc:",
         layout=widgets.Layout(width="98%"),
         style={"description_width": "100px"},
     )
 
+    facility_default = config.get("facilities", DEFAULT_FACILITIES)
     facility_select = widgets.SelectMultiple(
-        value=tuple(config.get("facilities", [])),
-        options=[
-            "BJH",
-            "PWH",
-            "BJSPH",
-            "MBMC",
-            "CH",
-            "WUSM",
-            "BJWCH",
-            "SLCH",
-            "PHCF",
-            "MBSH",
-            "BJCMG",
-            "AMH",
-            "MHB",
-            "MHE",
-            "WUCA",
-            "CC",
-            "HOME CARE SERVICES",
-        ],
+        value=tuple(facility_default),
+        options=ALL_FACILITIES,
         description="Facilities:",
         layout=widgets.Layout(width="98%", height="120px"),
         style={"description_width": "100px"},
     )
+
+    default_facilities_button = widgets.Button(
+        description="IRB Default",
+        button_style="info",
+        tooltip="Select default IRB-approved facilities",
+        layout=widgets.Layout(width="auto"),
+    )
+
+    select_all_button = widgets.Button(
+        description="All Facilities",
+        button_style="",
+        tooltip="Select all facilities",
+        layout=widgets.Layout(width="auto"),
+    )
+
+    clear_facilities_button = widgets.Button(
+        description="Clear",
+        button_style="",
+        tooltip="Clear facility selection",
+        layout=widgets.Layout(width="auto"),
+    )
+
+    def on_default_facilities(b):
+        facility_select.value = tuple(DEFAULT_FACILITIES)
+
+    def on_select_all(b):
+        facility_select.value = tuple(ALL_FACILITIES)
+
+    def on_clear_facilities(b):
+        facility_select.value = ()
+
+    default_facilities_button.on_click(on_default_facilities)
+    select_all_button.on_click(on_select_all)
+    clear_facilities_button.on_click(on_clear_facilities)
 
     min_age_input = widgets.IntText(
         value=config.get("min_age") if config.get("min_age") is not None else 18,
@@ -460,19 +479,67 @@ def _create_search_form(container, config=None):
         style={"description_width": "80px"},
     )
 
-    date_range_select = widgets.Dropdown(
+    sex_select = widgets.Dropdown(
         options=[
-            ("All dates", "all"),
-            ("Last 30 days", "30"),
-            ("Last 90 days", "90"),
-            ("Last 180 days", "180"),
-            ("Last 365 days", "365"),
+            ("Any Sex", "all"),
+            ("Male", "M"),
+            ("Female", "F"),
         ],
-        value=config.get("date_range_days", "all"),
-        description="Date Range:",
-        layout=widgets.Layout(width="98%"),
-        style={"description_width": "100px"},
+        value=config.get("sex", "all"),
+        description="Sex:",
+        layout=widgets.Layout(width="48%"),
+        style={"description_width": "80px"},
     )
+
+    from datetime import date, timedelta
+
+    date_start_input = widgets.DatePicker(
+        value=config.get("date_start", date.today() - timedelta(days=365)),
+        description="Start Date:",
+        layout=widgets.Layout(width="48%"),
+        style={"description_width": "80px"},
+    )
+
+    date_end_input = widgets.DatePicker(
+        value=config.get("date_end", date.today()),
+        description="End Date:",
+        layout=widgets.Layout(width="48%"),
+        style={"description_width": "80px"},
+    )
+
+    all_dates_check = widgets.Checkbox(
+        value=config.get("all_dates", False),
+        description="All dates (ignore date range)",
+        layout=widgets.Layout(width="98%"),
+        style={"description_width": "0px"},
+    )
+
+    def set_date_preset(days):
+        all_dates_check.value = False
+        date_start_input.value = date.today() - timedelta(days=days)
+        date_end_input.value = date.today()
+
+    preset_btn_layout = widgets.Layout(width="50px", min_width="50px")
+    last_30_btn = widgets.Button(description="30d", layout=preset_btn_layout)
+    last_90_btn = widgets.Button(description="90d", layout=preset_btn_layout)
+    last_180_btn = widgets.Button(
+        description="180d", layout=widgets.Layout(width="55px", min_width="55px")
+    )
+    last_365_btn = widgets.Button(description="1yr", layout=preset_btn_layout)
+
+    last_30_btn.on_click(lambda b: set_date_preset(30))
+    last_90_btn.on_click(lambda b: set_date_preset(90))
+    last_180_btn.on_click(lambda b: set_date_preset(180))
+    last_365_btn.on_click(lambda b: set_date_preset(365))
+
+    def on_all_dates_change(change):
+        date_start_input.disabled = change["new"]
+        date_end_input.disabled = change["new"]
+
+    all_dates_check.observe(on_all_dates_change, names="value")
+    # Apply initial state
+    date_start_input.disabled = all_dates_check.value
+    date_end_input.disabled = all_dates_check.value
 
     sample_limit_input = widgets.IntText(
         value=(
@@ -530,13 +597,85 @@ def _create_search_form(container, config=None):
         layout=widgets.Layout(width="45%"),
     )
 
-    # Fake upload button for patient identifiers
-    upload_ids_button = widgets.Button(
-        description="📤 Upload Patient IDs CSV",
-        button_style="info",
-        tooltip="Upload a CSV file with patient identifiers to filter",
-        layout=widgets.Layout(width="50%"),
+    # Patient ID filtering
+    patient_ids_input = widgets.Textarea(
+        value=config.get("patient_ids", ""),
+        placeholder="Paste Epic MRNs (one per line or comma-separated)",
+        description="Epic MRNs:",
+        layout=widgets.Layout(width="98%", height="80px"),
+        style={"description_width": "100px"},
     )
+
+    upload_ids_widget = widgets.FileUpload(
+        accept=".csv",
+        multiple=False,
+        description="Upload CSV",
+        button_style="info",
+        layout=widgets.Layout(width="auto"),
+    )
+
+    upload_status = widgets.HTML()
+
+    def on_upload_change(change):
+        if not upload_ids_widget.value:
+            return
+        try:
+            import io
+
+            uploaded = upload_ids_widget.value[0]
+            content = bytes(uploaded["content"]).decode("utf-8")
+            csv_df = pd.read_csv(io.StringIO(content))
+
+            # Look for epic_mrn column (case-insensitive)
+            mrn_col = None
+            for col in csv_df.columns:
+                if col.strip().lower() in ("epic_mrn", "mrn", "epicmrn", "patient_id"):
+                    mrn_col = col
+                    break
+
+            if mrn_col is None:
+                upload_status.value = (
+                    "<div style='font-size: 11px; color: #dc2626; margin-top: 4px;'>"
+                    "No epic_mrn, mrn, or patient_id column found in CSV"
+                    "</div>"
+                )
+                return
+
+            mrns = csv_df[mrn_col].dropna().astype(str).str.strip().tolist()
+            mrns = [m for m in mrns if m]
+
+            # Append to existing text
+            existing = patient_ids_input.value.strip()
+            new_mrns = "\n".join(mrns)
+            patient_ids_input.value = (
+                f"{existing}\n{new_mrns}".strip() if existing else new_mrns
+            )
+            upload_status.value = (
+                f"<div style='font-size: 11px; color: #10b981; margin-top: 4px;'>"
+                f"Loaded {len(mrns)} MRNs from CSV"
+                f"</div>"
+            )
+        except Exception as e:
+            upload_status.value = (
+                f"<div style='font-size: 11px; color: #dc2626; margin-top: 4px;'>"
+                f"Error reading CSV: {str(e)}"
+                f"</div>"
+            )
+
+    upload_ids_widget.observe(on_upload_change, names="value")
+
+    clear_ids_button = widgets.Button(
+        description="Clear",
+        button_style="",
+        layout=widgets.Layout(width="auto"),
+    )
+
+    def on_clear_ids(b):
+        patient_ids_input.value = ""
+        upload_status.value = ""
+        upload_ids_widget.value = ()
+
+    clear_ids_button.on_click(on_clear_ids)
 
     right_column = widgets.VBox(
         [
@@ -548,15 +687,32 @@ def _create_search_form(container, config=None):
             ),
             modality_select,
             service_name_input,
-            facility_select,
             widgets.HTML(
-                """
-            <div style='font-size: 12px; color: #6b7280; margin-top: 4px; font-style: italic;'>
-                💡 No selection = all facilities
-            </div>
-        """
+                "<div style='font-weight: 600; font-size: 13px; margin: 12px 0 8px 0; color: #374151;'>Facility Filters</div>"
             ),
-            date_range_select,
+            widgets.HTML(
+                "<div style='font-size: 11px; color: #92400e; background: #fef9c3; padding: 6px 10px; border-radius: 4px; border-left: 3px solid #f59e0b; margin-bottom: 6px;'>"
+                "Select facilities from IRB approved institutions"
+                "</div>"
+            ),
+            facility_select,
+            widgets.HBox(
+                [default_facilities_button, select_all_button, clear_facilities_button],
+                layout=widgets.Layout(gap="8px", margin="4px 0 0 0"),
+            ),
+            widgets.HTML(
+                "<div style='font-weight: 600; font-size: 13px; margin: 12px 0 8px 0; color: #374151;'>Date Filters</div>"
+            ),
+            widgets.HBox(
+                [date_start_input, date_end_input],
+                layout=widgets.Layout(width="100%", justify_content="space-between"),
+            ),
+            widgets.HBox(
+                [last_30_btn, last_90_btn, last_180_btn, last_365_btn, all_dates_check],
+                layout=widgets.Layout(
+                    gap="8px", margin="4px 0 0 0", align_items="center"
+                ),
+            ),
             widgets.HTML("<div style='height: 16px;'></div>"),
             widgets.HTML(
                 "<div style='font-weight: 600; font-size: 13px; margin-bottom: 8px; color: #374151;'>Demographic Filters</div>"
@@ -565,6 +721,7 @@ def _create_search_form(container, config=None):
                 [min_age_input, max_age_input],
                 layout=widgets.Layout(width="100%", justify_content="space-between"),
             ),
+            sex_select,
             widgets.HTML("<div style='height: 20px;'></div>"),
             widgets.HTML(
                 "<div style='font-weight: 600; font-size: 15px; margin-bottom: 10px; color: #1f2937; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb;'>Options</div>"
@@ -574,7 +731,18 @@ def _create_search_form(container, config=None):
             widgets.HTML(
                 "<div style='font-weight: 600; font-size: 15px; margin-bottom: 10px; color: #1f2937; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb;'>Patient List <span style='font-weight: 400; font-style: italic; color: #6b7280;'>(optional)</span></div>"
             ),
-            upload_ids_button,
+            patient_ids_input,
+            widgets.HBox(
+                [upload_ids_widget, clear_ids_button, upload_status],
+                layout=widgets.Layout(
+                    align_items="center", gap="8px", margin="8px 0 0 0"
+                ),
+            ),
+            widgets.HTML(
+                "<div style='font-size: 11px; color: #6b7280; margin-top: 4px;'>"
+                "CSV must have an <code>epic_mrn</code> column"
+                "</div>"
+            ),
         ],
         layout=widgets.Layout(width="45%"),
     )
@@ -603,10 +771,14 @@ def _create_search_form(container, config=None):
             "facilities": list(facility_select.value),
             "min_age": min_age_input.value if min_age_input.value else None,
             "max_age": max_age_input.value if max_age_input.value else None,
-            "date_range_days": date_range_select.value,
+            "sex": sex_select.value,
+            "date_start": date_start_input.value,
+            "date_end": date_end_input.value,
+            "all_dates": all_dates_check.value,
             "sample_limit": (
                 sample_limit_input.value if sample_limit_input.value else None
             ),
+            "patient_ids": patient_ids_input.value,
             "apply_negation_filter": apply_negation_filter.value,
         }
 

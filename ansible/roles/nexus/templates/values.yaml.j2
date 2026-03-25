@@ -1,0 +1,76 @@
+service:
+  type: ClusterIP
+resources: {{ nexus_resources_default | combine(nexus_resources | default({}), recursive=true) | to_json }}
+persistence:
+  enabled: true
+  size: "{{ nexus_storage_size }}"
+{% if nexus_storage_class %}
+  storageClass: "{{ nexus_storage_class }}"
+{% endif %}
+rootPassword:
+  secret: nexus-root-password
+  key: password
+ingress:
+  enabled: true
+  ingressClassName: traefik
+  hosts:
+    - "{{ nexus_hostname }}"
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+config:
+  enabled: true
+  anonymous:
+    enabled: true
+  blobStores: {{ nexus_blob_stores | to_json }}
+  cleanup:
+    - name: purge-unused
+      notes: "Remove components not downloaded in {{ nexus_cleanup_last_downloaded_days }} days"
+      format: ALL_FORMATS
+      mode: delete
+      criteria:
+        lastDownloaded: "{{ nexus_cleanup_last_downloaded_days | int * 86400 }}" # API expects seconds
+  repos:
+{% for repo in nexus_conda_repos %}
+    - name: {{ repo.name }}
+      format: conda
+      type: proxy
+      online: true
+      storage:
+        blobStoreName: {{ repo.blobStoreName }}
+        strictContentTypeValidation: true
+      cleanup:
+        policyNames:
+          - purge-unused
+      proxy:
+        remoteUrl: {{ repo.remoteUrl }}
+        contentMaxAge: 1440
+        metadataMaxAge: 60
+      httpClient:
+        blocked: false
+        autoBlock: true
+      negativeCache:
+        enabled: true
+        timeToLive: 1440
+{% endfor %}
+{% for repo in nexus_pypi_repos %}
+    - name: {{ repo.name }}
+      format: pypi
+      type: proxy
+      online: true
+      storage:
+        blobStoreName: {{ repo.blobStoreName }}
+        strictContentTypeValidation: true
+      cleanup:
+        policyNames:
+          - purge-unused
+      proxy:
+        remoteUrl: {{ repo.remoteUrl }}
+        contentMaxAge: 1440
+        metadataMaxAge: 60
+      httpClient:
+        blocked: false
+        autoBlock: true
+      negativeCache:
+        enabled: true
+        timeToLive: 1440
+{% endfor %}

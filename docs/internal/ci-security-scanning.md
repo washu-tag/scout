@@ -162,7 +162,7 @@ CVE PRs are created automatically. All other available updates are listed on the
 my_chart_version: ~1.2.0
 ```
 
-See `renovate.json5` for the full regex pattern and ADR 0014 for the design decision.
+See `renovate.json5` for the full regex pattern and ADR 0015 for the design decision.
 
 ## Reviewing findings
 

@@ -1,0 +1,85 @@
+---
+# Default configuration for nexus role
+# Override in inventory files as needed
+
+nexus_namespace: nexus
+
+# Helm chart (stevehipwell/nexus3)
+nexus_helm_repo_name: stevehipwell
+nexus_helm_repo_url: https://stevehipwell.github.io/helm-charts/
+nexus_helm_chart_name: nexus3
+
+# Admin password — REQUIRED, must be set in inventory (vault-encrypted)
+# The role writes this to the nexus-root-password K8s secret on every run.
+# NOTE: Nexus only reads this secret on first-ever startup. After that the
+# password lives in Nexus's internal DB. To rotate, use the Nexus API:
+#   PUT /service/rest/v1/security/users/admin/change-password
+# Then update the vault value to keep the secret in sync.
+nexus_root_password: ''
+
+# Accept the Sonatype Nexus CE EULA (https://links.sonatype.com/products/nxrm/ce-eula).
+# If false, you must manually log in to Nexus and accept the EULA during setup.
+accept_nexus_eula: false
+
+# Subdomain for ingress (results in nexus.{{ external_url }})
+nexus_subdomain: nexus
+
+# Storage
+nexus_storage_size: 20Gi
+nexus_storage_class: '' # empty = cluster default
+
+# Resources (JVM-based, needs substantial memory)
+# Override selectively in inventory with nexus_resources (e.g., nexus_resources: {limits: {memory: 8Gi}})
+nexus_resources_default:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 2
+    memory: 4Gi
+
+# Blob stores (separate storage areas for different package formats)
+nexus_blob_stores:
+  - name: conda-store
+    type: file
+    path: conda-store
+    softQuota:
+      type: spaceRemainingQuota
+      limit: 21474836480 # 20 GB
+  - name: pypi-store
+    type: file
+    path: pypi-store
+    softQuota:
+      type: spaceRemainingQuota
+      limit: 5368709120
+
+# Cleanup policy — purge packages not downloaded in this many days
+nexus_cleanup_last_downloaded_days: 90
+
+# Proxy repositories — lists so operators can add/remove proxied sources
+nexus_conda_repos:
+  - name: conda-forge
+    remoteUrl: https://conda.anaconda.org/conda-forge/
+    blobStoreName: conda-store
+  - name: defaults
+    remoteUrl: https://repo.anaconda.com/pkgs/main/
+    blobStoreName: conda-store
+
+nexus_pypi_repos:
+  - name: pypi-proxy
+    remoteUrl: https://pypi.org/
+    blobStoreName: pypi-store
+
+# maven-central ships pre-configured in Nexus CE — no need to create it
+
+# Computed — uses external_url/inventory_hostname of the staging host (where this role runs)
+# Same pattern as harbor_hostname in ansible/roles/harbor/defaults/main.yaml
+nexus_hostname: '{{ nexus_subdomain }}.{{ external_url | default(inventory_hostname) }}'
+
+# Base URL for Nexus API calls from the Ansible control node.
+# Override when the control node can't reach the ingress on port 443
+# (e.g., k3d with a non-standard port mapping: nexus.staging.local:9443)
+nexus_api_base_url: 'https://{{ nexus_hostname }}'
+
+# Health check URL — derived from nexus_api_base_url
+nexus_health_check_url: '{{ nexus_api_base_url }}/service/rest/v1/status'

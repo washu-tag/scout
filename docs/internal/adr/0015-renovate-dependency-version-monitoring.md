@@ -1,4 +1,4 @@
-# ADR 0014: Dependency CVE Monitoring via Renovate and Dependabot
+# ADR 0015: Dependency CVE Monitoring via Renovate and Dependabot
 
 **Date**: 2026-03
 **Status**: Accepted

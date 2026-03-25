@@ -180,7 +180,7 @@ Install a security filter to prevent data exfiltration via external links in LLM
 
 #### 6. Install Context Summarization Filter
 
-Install a filter to handle long conversations that approach the 128K context window limit. Without this filter, Ollama silently truncates older messages, causing conversations to "fall apart." See [ADR 0013](../../../docs/internal/adr/0013-open-webui-context-summarization-filter.md) for details.
+Install a filter to handle long conversations that approach the 128K context window limit. Without this filter, Ollama silently truncates older messages, causing conversations to "fall apart." See [ADR 0014](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md) for details.
 
 1. Navigate to **Admin Panel → Functions** (requires admin access)
 2. Click **+ (New Function)**
@@ -307,4 +307,4 @@ kubectl exec -n ollama deploy/ollama -- ollama list
 - **ADRs**:
   - [ADR 0009: Content Security Policy](../../../docs/internal/adr/0009-open-webui-content-security-policy.md)
   - [ADR 0010: Link Exfiltration Filter](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)
-  - [ADR 0013: Context Summarization Filter](../../../docs/internal/adr/0013-open-webui-context-summarization-filter.md)
+  - [ADR 0013: Context Summarization Filter](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md)
