@@ -307,4 +307,4 @@ kubectl exec -n ollama deploy/ollama -- ollama list
 - **ADRs**:
   - [ADR 0009: Content Security Policy](../../../docs/internal/adr/0009-open-webui-content-security-policy.md)
   - [ADR 0010: Link Exfiltration Filter](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)
-  - [ADR 0013: Context Summarization Filter](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md)
+  - [ADR 0014: Context Summarization Filter](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md)
