@@ -417,6 +417,14 @@ k3s_cluster:
         memory: 4Gi
 
     #---------------------------------------------------------------------------
+    # Package Proxy (conda, pip)
+    #---------------------------------------------------------------------------
+    # Options: none, nexus, external
+    package_proxy_mode: none
+    # conda_channel_alias: ''   # Override for 'external' mode
+    # pip_proxy_url: ''         # Override for 'external' mode
+
+    #---------------------------------------------------------------------------
     # Jupyter
     #---------------------------------------------------------------------------
     jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)

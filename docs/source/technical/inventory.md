@@ -813,6 +813,32 @@ hl7_transformer_cpu_request: 2
 hl7_transformer_cpu_limit: 4
 ```
 
+#### Package Proxy (Conda and pip)
+
+In air-gapped environments, Jupyter notebook users cannot install conda or pip packages directly from the internet. Scout supports routing package installations through a proxy so that users can install packages on demand.
+
+```yaml
+# Options: none, nexus, external
+package_proxy_mode: nexus
+```
+
+**Modes:**
+- **`none`** (default): No package proxy. Users can only use packages baked into the notebook image.
+- **`nexus`**: Route conda and pip traffic through the Sonatype Nexus proxy deployed on the staging node. This is the recommended mode for air-gapped deployments. When set, `conda_channel_alias` and `pip_proxy_url` are automatically computed from the staging node's hostname — no manual URL configuration is needed. The staging node's self-signed TLS certificate is also automatically distributed to Jupyter pods.
+- **`external`**: Route traffic through a user-provided proxy. Set `conda_channel_alias` and `pip_proxy_url` manually:
+
+```yaml
+package_proxy_mode: external
+conda_channel_alias: 'https://my-proxy.example.com/repository'
+pip_proxy_url: 'https://my-proxy.example.com/repository/pypi-proxy/simple'
+```
+
+Nexus itself is configured in the `staging` vars section of the inventory (see {ref}`Staging Group <air-gapped-deployment>`). The `nexus_root_password`, `accept_nexus_eula`, and optional `nexus_storage_size` variables are set there.
+
+:::{note}
+`package_proxy_mode` is set in the `k3s_cluster` vars section because it controls behavior on the production cluster (Jupyter pod configuration), not on the staging node.
+:::
+
 #### JupyterLab Extension Manager
 
 Control whether users can install and manage JupyterLab extensions:
