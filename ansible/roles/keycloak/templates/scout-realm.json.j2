@@ -5,6 +5,11 @@
     "eventsEnabled": true,
     "adminEventsEnabled": true,
     "adminEventsDetailsEnabled": true,
+    "accessTokenLifespan": {{ keycloak_token_lifespan }},
+    "ssoSessionIdleTimeout": {{ keycloak_token_lifespan }},
+    "ssoSessionMaxLifespan": {{ keycloak_token_lifespan }},
+    "clientSessionIdleTimeout": {{ keycloak_token_lifespan }},
+    "clientSessionMaxLifespan": {{ keycloak_token_lifespan }},
     "emailTheme": "scout",
     "eventsListeners": [
       "user-approval-email",
@@ -315,12 +320,6 @@
         "webOrigins": [
           "https://temporal.{{ server_hostname }}"
         ],
-        "attributes": {
-          "access.token.lifespan": "{{ keycloak_temporal_token_lifespan }}",
-          "client.session.idle.timeout": "{{ keycloak_temporal_token_lifespan }}",
-          "client.session.max.lifespan": "{{ keycloak_temporal_token_lifespan }}",
-          "client.offline.session.idle.timeout": "{{ keycloak_temporal_token_lifespan }}"
-        },
         "defaultClientScopes": [
           "web-origins",
           "acr",

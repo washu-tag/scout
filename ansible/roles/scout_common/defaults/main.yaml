@@ -198,6 +198,9 @@ oauth2_proxy_subdomain: auth
 keycloak_realm_name: scout
 keycloak_subdomain: keycloak
 
+# Session lifespan (hours) — single source of truth for OAuth2 Proxy cookie and Keycloak token lifespans
+scout_session_lifespan_hours: 8
+
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
 enable_playbooks: false
