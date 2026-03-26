@@ -93,4 +93,5 @@
     - role: k3s
     - role: traefik
     - role: harbor
+    - role: squid
     - role: nexus

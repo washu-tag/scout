@@ -1,4 +1,4 @@
-# ADR 0013: Temporary Open WebUI Context Summarization Filter
+# ADR 0014: Temporary Open WebUI Context Summarization Filter
 
 **Date**: 2026-02-23
 **Status**: Accepted

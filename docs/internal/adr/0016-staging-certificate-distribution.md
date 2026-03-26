@@ -1,4 +1,4 @@
-# ADR 0015: Staging Node Certificate Distribution
+# ADR 0016: Staging Node Certificate Distribution
 
 **Date**: 2026-03
 **Status**: Proposed

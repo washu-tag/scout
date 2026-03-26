@@ -1,0 +1,53 @@
+---
+# Deploys Squid forward proxy as a system service on the staging node
+# Used to provide air-gapped Keycloak with outbound access to IdP endpoints
+#
+# Allowed domains are computed automatically from configured IdPs by reading
+# keycloak_microsoft_client_id and keycloak_gh_client_id from the server group.
+
+- name: Read IdP configuration from production cluster
+  ansible.builtin.set_fact:
+    _has_microsoft_idp: "{{ hostvars[groups.get('server', [])[0] | default(inventory_hostname)].keycloak_microsoft_client_id | default('') | length > 0 if groups.get('server', []) | length > 0 else false }}"
+    _has_github_idp: "{{ hostvars[groups.get('server', [])[0] | default(inventory_hostname)].keycloak_gh_client_id | default('') | length > 0 if groups.get('server', []) | length > 0 else false }}"
+
+- name: Compute allowed domains from configured IdPs
+  ansible.builtin.set_fact:
+    _squid_allowed_domains: >-
+      {{ (squid_microsoft_domains if _has_microsoft_idp | bool else [])
+       + (squid_github_domains if _has_github_idp | bool else [])
+       + squid_extra_allowed_domains }}
+
+- name: Skip Squid when no domains need proxying
+  when: _squid_allowed_domains | length == 0
+  ansible.builtin.debug:
+    msg: 'No IdP domains configured and no extra domains specified — skipping Squid deployment'
+
+- name: Install and configure Squid
+  when: _squid_allowed_domains | length > 0
+  block:
+    - name: Install Squid
+      ansible.builtin.package:
+        name: squid
+        state: present
+
+    - name: Deploy Squid configuration
+      ansible.builtin.template:
+        src: squid.conf.j2
+        dest: /etc/squid/squid.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Squid
+
+    - name: Enable and start Squid
+      ansible.builtin.systemd:
+        name: squid
+        enabled: true
+        state: started
+
+    - name: Display Squid deployment information
+      ansible.builtin.debug:
+        msg: |
+          Squid forward proxy deployed successfully!
+          Listening on port {{ squid_port }}
+          Allowed domains: {{ _squid_allowed_domains | join(', ') }}
