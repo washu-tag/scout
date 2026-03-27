@@ -20,6 +20,19 @@ all:
     #   - Works with existing Scout deployments (backward compatible)
     # air_gapped: false  # Default is false; set to true here to override
 
+    # Package proxy mode for Jupyter notebook users
+    # Options: none, nexus, external
+    #
+    # Controls whether Jupyter pods can install packages (conda, pip) on demand.
+    # Defined at the all level because it affects both the staging node (whether
+    # Nexus is deployed) and the production cluster (Jupyter pod configuration).
+    #
+    # - none:     No package proxy. Users can only use baked-in packages.
+    # - nexus:    Route traffic through Nexus on the staging node (air-gapped).
+    # - external: Route traffic through a user-provided proxy (set
+    #             conda_channel_alias and pip_proxy_url in k3s_cluster vars).
+    # package_proxy_mode: none  # Default is none; set to 'nexus' or 'external' here
+
 # The staging group contains the staging node that acts as a data diode
 # for air-gapped deployments.
 #
@@ -417,10 +430,10 @@ k3s_cluster:
         memory: 4Gi
 
     #---------------------------------------------------------------------------
-    # Package Proxy (conda, pip)
+    # Package Proxy overrides (conda, pip)
     #---------------------------------------------------------------------------
-    # Options: none, nexus, external
-    package_proxy_mode: none
+    # package_proxy_mode is set in all.vars (see top of file).
+    # These overrides are only needed for 'external' mode:
     # conda_channel_alias: ''   # Override for 'external' mode
     # pip_proxy_url: ''         # Override for 'external' mode
 

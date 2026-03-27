@@ -836,7 +836,7 @@ pip_proxy_url: 'https://my-proxy.example.com/repository/pypi-proxy/simple'
 Nexus itself is configured in the `staging` vars section of the inventory (see {ref}`Staging Group <air-gapped-deployment>`). The `nexus_root_password`, `accept_nexus_eula`, and optional `nexus_storage_size` variables are set there.
 
 :::{note}
-`package_proxy_mode` is set in the `k3s_cluster` vars section because it controls behavior on the production cluster (Jupyter pod configuration), not on the staging node.
+`package_proxy_mode` is set in the `all.vars` section of the inventory because it affects both the staging node (whether Nexus is deployed) and the production cluster (Jupyter pod configuration). The `external` mode overrides (`conda_channel_alias`, `pip_proxy_url`) remain in the `k3s_cluster` vars section since they only affect the production cluster.
 :::
 
 #### JupyterLab Extension Manager
