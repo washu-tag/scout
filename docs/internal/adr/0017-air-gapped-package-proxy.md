@@ -1,7 +1,7 @@
 # ADR 0017: Air-Gapped Package Proxy
 
 **Date**: 2026-03  
-**Status**: Proposed  
+**Status**: Accepted  
 **Decision Owner**: TAG Team
 
 ## Context
