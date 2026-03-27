@@ -56,7 +56,7 @@
         name: scout-logo
         namespace: '{{ jupyter_namespace }}'
       binaryData:
-        scout.png: '{{ lookup("file", jupyter_logo_path) | b64encode }}'
+        scout.png: '{{ lookup("community.general.binary_file", jupyter_logo_path) }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Create ConfigMap with custom CSS for JupyterLab branding

@@ -64,7 +64,7 @@
           'registry_name': item.registry_name,
           'registry_type': item.registry_type,
           'registry_url': item.registry_url,
-          'project_name': vars['harbor_' + item.registry_name + '_proxy_project'] | default(item.project_name)
+          'project_name': lookup('vars', 'harbor_' + item.registry_name + '_proxy_project', default=item.project_name)
         }]
       }}
   loop: '{{ harbor_registry_proxies }}'

@@ -392,7 +392,6 @@ Located in `tests/auth/` - Playwright browser-based authorization tests for OAut
 
 ### Unit Tests
 - **Python** (hl7-transformer): `pytest` in `extractor/hl7-transformer/`
-- **Ansible filters**: `uvx pytest tests/unit/filter_plugins/ -v`
 
 ### Ansible Role Testing
 - **Molecule**: Test Ansible roles in isolation

@@ -5,7 +5,7 @@
 
 - name: Auto-detect SELinux status if not explicitly set
   ansible.builtin.set_fact:
-    k3s_selinux_enabled: "{{ ansible_selinux.status == 'enabled' if ansible_selinux is defined else false }}"
+    k3s_selinux_enabled: "{{ ansible_facts['selinux']['status'] == 'enabled' if ansible_facts['selinux'] is defined else false }}"
   when: k3s_selinux_enabled is not defined
 
 - name: Display SELinux installation status

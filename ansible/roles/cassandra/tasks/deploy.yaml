@@ -63,6 +63,7 @@
           limits:
             cpu: '{{ cassandra_cpu_limit }}'
             memory: '{{ cassandra_max_heap | jvm_memory_to_k8s(2) }}'
+        systemLoggerResources: '{{ cassandra_system_logger_resources_default | combine(cassandra_system_logger_resources | default({}), recursive=true) }}'
         config:
           jvm-server-options:
             initial_heap_size: '{{ cassandra_init_heap }}'

@@ -26,7 +26,6 @@ provisioner:
       all:
         # Mock environment - no real cluster needed
         ansible_connection: local
-        gather_facts: false
 
         # Use Python from the current environment (uvx virtualenv)
         ansible_python_interpreter: '{{ ansible_playbook_python }}'
