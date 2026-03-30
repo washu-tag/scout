@@ -49,7 +49,7 @@ jupyter_extension_manager_mode: 'disabled'
 jupyter_logo_path: '{{ scout_repo_dir }}/launchpad/public/favicon.ico'
 
 # Quickstart samples directory (mounted into singleuser pods via ConfigMap)
-jupyter_samples_dir: '{{ scout_repo_dir }}/helm/jupyter/notebook/samples'
+jupyter_samples_dir: '{{ role_path }}/files/samples'
 
 # Jupyter resources
 jupyter_hub_resources_default:
