@@ -5,3 +5,7 @@ vulnerabilities:
   - id: GHSA-72hv-8253-57qq # jackson-core
   # Alpine base image not yet rebuilt with zlib 1.3.2-r0 — check amazoncorretto:21-alpine on Docker Hub for rebuild after 2026-03-05
   - id: CVE-2026-22184 # zlib
+  # Transitive dependency via Spring Boot WebFlux (Reactor Netty) — actuator-only server, not externally reachable.
+  # Remove when Spring Boot upgrades to Netty >= 4.1.132.Final (or override via ext['netty.version'] in build.gradle).
+  - id: CVE-2026-33870 # netty-codec-http: HTTP request smuggling via chunked extension parsing
+  - id: CVE-2026-33871 # netty-codec-http2: DoS via HTTP/2 CONTINUATION frame flood
