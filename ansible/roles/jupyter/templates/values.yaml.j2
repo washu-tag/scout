@@ -338,3 +338,9 @@ singleuser:
                 kubernetes.io/metadata.name: '{{ trino_namespace }}'
         ports:
           - port: 8080
+{% if jupyter_egress_allow_cidr | default('') | length > 0 %}
+      # Allow access to additional private network CIDR (e.g. staging node / package proxy)
+      - to:
+          - ipBlock:
+              cidr: '{{ jupyter_egress_allow_cidr }}'
+{% endif %}

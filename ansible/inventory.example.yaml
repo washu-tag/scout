@@ -504,6 +504,13 @@ k3s_cluster:
     # jupyter_cull_remove_named_servers: true    # Remove all server types
     # jupyter_cull_concurrency: 10               # Parallel culling operations
 
+    # Egress network policy: allow notebook pods to reach a private IP range
+    # Required when package_proxy_mode is 'nexus' and the staging node is on
+    # a private network (10.x, 172.16.x, 192.168.x). Must be in CIDR notation;
+    # use /32 for a single IP (e.g. '10.27.107.145/32') or a broader range
+    # for a subnet (e.g. '10.27.107.0/24').
+    # jupyter_egress_allow_cidr: '10.27.107.0/24'
+
     #---------------------------------------------------------------------------
     # Temporal
     #---------------------------------------------------------------------------

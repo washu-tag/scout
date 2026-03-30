@@ -839,6 +839,17 @@ Nexus itself is configured in the `staging` vars section of the inventory (see {
 `package_proxy_mode` is set in the `all.vars` section of the inventory because it affects both the staging node (whether Nexus is deployed) and the production cluster (Jupyter pod configuration). The `external` mode overrides (`conda_channel_alias`, `pip_proxy_url`) remain in the `k3s_cluster` vars section since they only affect the production cluster.
 :::
 
+#### Notebook Egress Network Policy
+
+By default, JupyterHub's network policy blocks notebook pod egress to private IP ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) while allowing public internet access. When `package_proxy_mode` is `nexus` and the staging node is on a private network, notebook pods cannot reach the Nexus proxy without an explicit egress allowance.
+
+```yaml
+# CIDR notation required — use /32 for a single IP
+jupyter_egress_allow_cidr: '10.27.107.0/24'
+```
+
+Set this to the staging node's IP (`/32`) or subnet CIDR to allow notebook pods to connect to the package proxy. Leave empty (default) when the staging node is reachable via a public or non-private IP.
+
 #### JupyterLab Extension Manager
 
 Control whether users can install and manage JupyterLab extensions:
