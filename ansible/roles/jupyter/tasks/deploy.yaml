@@ -129,7 +129,7 @@
 
 - name: Set staging CA cert pod path for templates
   ansible.builtin.set_fact:
-    _staging_ca_cert_pod_path: /etc/pki/staging/ca.crt
+    _staging_ca_cert_pod_path: /etc/pki/staging-secret/ca.crt
   when: _package_proxy_needs_staging_cert | default(false) | bool
 
 - name: Discover quickstart sample files
