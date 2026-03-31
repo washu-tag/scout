@@ -24,6 +24,9 @@ elasticsearch_version: 9.2.3
 # Databases & Data Storage - Cassandra
 # renovate: datasource=helm registryUrl=https://charts.jetstack.io depName=cert-manager
 cert_manager_version: ~1.19.0
+# Chart vendored at vendored/helm/cass-operator-0.60.0.tgz due to broken upstream Helm repo
+# (https://github.com/k8ssandra/k8ssandra-operator/issues/1710).
+# Update vendored .tgz when bumping this version.
 # renovate: datasource=helm registryUrl=https://helm.k8ssandra.io/stable depName=cass-operator
 cass_operator_version: ~0.60.0
 # cassandra_server_version is managed by K8ssandra cass-operator, which pulls k8ssandra/cass-management-api
