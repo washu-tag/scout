@@ -48,6 +48,9 @@ jupyter_extension_manager_mode: 'disabled'
 # Branding
 jupyter_logo_path: '{{ scout_repo_dir }}/launchpad/public/favicon.ico'
 
+# Quickstart samples directory (mounted into singleuser pods via ConfigMap)
+jupyter_samples_dir: '{{ role_path }}/files/samples'
+
 # Jupyter resources
 jupyter_hub_resources_default:
   requests:
@@ -98,6 +101,15 @@ jupyter_cpu_profile:
               SPARK_EXECUTOR_MEMORY: '12g'
 jupyter_profiles:
   - '{{ jupyter_cpu_profile }}'
+
+# Egress network policy: allow singleuser pods to reach an external CIDR
+# By default, JupyterHub's network policy blocks egress to private IP ranges
+# (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) while allowing public internet.
+# Set this to a CIDR (e.g. '10.27.107.0/24' or '10.27.107.145/32') to allow
+# notebook pods to reach a staging node or package proxy on a private network.
+# Must be in CIDR notation — use /32 for a single IP (a bare IP is not valid).
+# Leave empty to use the default policy (no extra private-IP egress).
+jupyter_egress_allow_cidr: ''
 
 # jupyterhub-idle-culler settings
 jupyter_cull_enabled: true

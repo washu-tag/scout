@@ -20,6 +20,19 @@ all:
     #   - Works with existing Scout deployments (backward compatible)
     # air_gapped: false  # Default is false; set to true here to override
 
+    # Package proxy mode for Jupyter notebook users
+    # Options: none, nexus, external
+    #
+    # Controls whether Jupyter pods can install packages (conda, pip) on demand.
+    # Defined at the all level because it affects both the staging node (whether
+    # Nexus is deployed) and the production cluster (Jupyter pod configuration).
+    #
+    # - none:     No package proxy. Users can only use baked-in packages.
+    # - nexus:    Route traffic through Nexus on the staging node (air-gapped).
+    # - external: Route traffic through a user-provided proxy (set
+    #             conda_channel_alias and pip_proxy_url in k3s_cluster vars).
+    # package_proxy_mode: none  # Default is none; set to 'nexus' or 'external' here
+
 # The staging group contains the staging node that acts as a data diode
 # for air-gapped deployments.
 #
@@ -417,6 +430,14 @@ k3s_cluster:
         memory: 4Gi
 
     #---------------------------------------------------------------------------
+    # Package Proxy overrides (conda, pip)
+    #---------------------------------------------------------------------------
+    # package_proxy_mode is set in all.vars (see top of file).
+    # These overrides are only needed for 'external' mode:
+    # conda_channel_alias: ''   # Override for 'external' mode
+    # pip_proxy_url: ''         # Override for 'external' mode
+
+    #---------------------------------------------------------------------------
     # Jupyter
     #---------------------------------------------------------------------------
     jupyter_metrics_api_token: $(openssl rand -hex 32  | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
@@ -482,6 +503,13 @@ k3s_cluster:
     # jupyter_cull_max_age: 172800               # 2 days (48 hours)
     # jupyter_cull_remove_named_servers: true    # Remove all server types
     # jupyter_cull_concurrency: 10               # Parallel culling operations
+
+    # Egress network policy: allow notebook pods to reach a private IP range
+    # Required when package_proxy_mode is 'nexus' and the staging node is on
+    # a private network (10.x, 172.16.x, 192.168.x). Must be in CIDR notation;
+    # use /32 for a single IP (e.g. '10.27.107.145/32') or a broader range
+    # for a subnet (e.g. '10.27.107.0/24').
+    # jupyter_egress_allow_cidr: '10.27.107.0/24'
 
     #---------------------------------------------------------------------------
     # Temporal

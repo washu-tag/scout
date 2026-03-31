@@ -13,6 +13,7 @@ import io.temporal.testing.TestWorkflowEnvironment;
 import io.temporal.testing.TestWorkflowExtension;
 import io.temporal.worker.Worker;
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -236,17 +237,36 @@ class RefreshIngestDbViewsWorkflowTest {
     }
 
     /**
-     * Test that signals sent before any are processed all result in just one refresh.
+     * Test that signals arriving during an active refresh are batched into
+     * a single subsequent refresh rather than triggering one refresh per signal.
+     *
+     * <p>Uses latches to guarantee deterministic ordering:
+     * signal 1 triggers the first refresh, signals 2 and 3 arrive while that
+     * refresh is in progress, and they batch into one additional refresh.
      */
     @Test
-    void testMultipleSignalsBeforeProcessingResultInOneRefresh(TestWorkflowEnvironment testEnv,
+    void testMultipleSignalsDuringProcessingBatchIntoOneRefresh(TestWorkflowEnvironment testEnv,
             Worker worker, WorkflowClient workflowClient) {
         // Track refresh calls
         AtomicInteger refreshCount = new AtomicInteger(0);
 
-        // Create activity implementations
+        // Latches for deterministic synchronization
+        CountDownLatch activityEntered = new CountDownLatch(1);
+        CountDownLatch proceedWithActivity = new CountDownLatch(1);
+
+        // Create activity that blocks until we release it
         RefreshIngestDbViewsActivity refreshActivity = input -> {
-            refreshCount.incrementAndGet();
+            int count = refreshCount.incrementAndGet();
+            if (count == 1) {
+                // First invocation: signal that we've entered, then wait
+                activityEntered.countDown();
+                try {
+                    proceedWithActivity.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(e);
+                }
+            }
             return new RefreshIngestDbViewsOutput();
         };
 
@@ -265,21 +285,33 @@ class RefreshIngestDbViewsWorkflowTest {
                 .build()
         );
 
-        // Start workflow
+        // Start workflow and send first signal to trigger processing
         WorkflowClient.start(workflow::run);
-
-        // Send multiple signals rapidly before any are processed
         workflow.requestRefresh("source-workflow-1");
+
+        // Wait for the activity to start executing (first refresh in progress)
+        try {
+            activityEntered.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+
+        // Now send two more signals while the first refresh is in progress.
+        // Both set pendingRefresh=true, but since it's a boolean flag they
+        // batch into a single subsequent refresh.
         workflow.requestRefresh("source-workflow-2");
         workflow.requestRefresh("source-workflow-3");
 
-        // Let workflow process
+        // Release the activity so the workflow can continue
+        proceedWithActivity.countDown();
+
+        // Let workflow process the batched pending refresh
         testEnv.sleep(Duration.ofSeconds(1));
 
-        // Should have exactly 1 refresh since all signals arrived before processing started
+        // Should have exactly 2 refreshes: one from signal 1, one batched from signals 2+3
         ViewRefreshStatus status = workflow.getStatus();
-        assertEquals(1, status.totalRefreshes());
-
-        assertEquals(1, refreshCount.get());
+        assertEquals(2, status.totalRefreshes());
+        assertEquals(2, refreshCount.get());
     }
 }

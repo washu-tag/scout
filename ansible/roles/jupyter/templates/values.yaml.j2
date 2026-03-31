@@ -168,9 +168,11 @@ singleuser:
             FLAG_FILE=/home/$NB_USER/.scout_quickstart
             if [ ! -f $FLAG_FILE ]; then
               mkdir -p /home/$NB_USER/models
-              mkdir -p /home/$NB_USER/Scout &&
-              cp -r /opt/scout/samples/* /home/$NB_USER/Scout/ &&
-              chown -R $NB_USER:$NB_GID /home/$NB_USER/Scout &&
+              if [ -d /opt/scout/samples ]; then
+                mkdir -p /home/$NB_USER/Scout &&
+                cp -rL /opt/scout/samples/* /home/$NB_USER/Scout/ &&
+                chown -R $NB_USER:$NB_GID /home/$NB_USER/Scout
+              fi
               touch $FLAG_FILE
             fi
   extraEnv:
@@ -264,6 +266,11 @@ singleuser:
         name: jupyterlab-scout-logo
         configMap:
           name: scout-logo
+      scout-samples:
+        name: scout-samples
+        configMap:
+          name: scout-quickstart-samples
+          defaultMode: 0644
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
       staging-ca-cert:
         name: staging-ca-cert
@@ -286,6 +293,10 @@ singleuser:
         name: jupyterlab-scout-logo
         mountPath: /home/jovyan/.jupyter/custom/scout.png
         subPath: scout.png
+      scout-samples:
+        name: scout-samples
+        mountPath: /opt/scout/samples
+        readOnly: true
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
       staging-ca-bundle:
         name: staging-ca-bundle
@@ -327,3 +338,9 @@ singleuser:
                 kubernetes.io/metadata.name: '{{ trino_namespace }}'
         ports:
           - port: 8080
+{% if jupyter_egress_allow_cidr | default('') | length > 0 %}
+      # Allow access to additional private network CIDR (e.g. staging node / package proxy)
+      - to:
+          - ipBlock:
+              cidr: '{{ jupyter_egress_allow_cidr }}'
+{% endif %}

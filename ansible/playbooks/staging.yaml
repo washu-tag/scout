@@ -95,3 +95,4 @@
     - role: harbor
     - role: squid
     - role: nexus
+      when: package_proxy_mode | default('none') == 'nexus'

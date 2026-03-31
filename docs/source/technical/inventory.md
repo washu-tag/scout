@@ -813,6 +813,43 @@ hl7_transformer_cpu_request: 2
 hl7_transformer_cpu_limit: 4
 ```
 
+#### Package Proxy (Conda and pip)
+
+In air-gapped environments, Jupyter notebook users cannot install conda or pip packages directly from the internet. Scout supports routing package installations through a proxy so that users can install packages on demand.
+
+```yaml
+# Options: none, nexus, external
+package_proxy_mode: nexus
+```
+
+**Modes:**
+- **`none`** (default): No package proxy. Users can only use packages baked into the notebook image.
+- **`nexus`**: Route conda and pip traffic through the Sonatype Nexus proxy deployed on the staging node. This is the recommended mode for air-gapped deployments. When set, `conda_channel_alias` and `pip_proxy_url` are automatically computed from the staging node's hostname — no manual URL configuration is needed. The staging node's self-signed TLS certificate is also automatically distributed to Jupyter pods.
+- **`external`**: Route traffic through a user-provided proxy. Set `conda_channel_alias` and `pip_proxy_url` manually:
+
+```yaml
+package_proxy_mode: external
+conda_channel_alias: 'https://my-proxy.example.com/repository'
+pip_proxy_url: 'https://my-proxy.example.com/repository/pypi-proxy/simple'
+```
+
+Nexus itself is configured in the `staging` vars section of the inventory (see {ref}`Staging Group <air-gapped-deployment>`). The `nexus_root_password`, `accept_nexus_eula`, and optional `nexus_storage_size` variables are set there.
+
+:::{note}
+`package_proxy_mode` is set in the `all.vars` section of the inventory because it affects both the staging node (whether Nexus is deployed) and the production cluster (Jupyter pod configuration). The `external` mode overrides (`conda_channel_alias`, `pip_proxy_url`) remain in the `k3s_cluster` vars section since they only affect the production cluster.
+:::
+
+#### Notebook Egress Network Policy
+
+By default, JupyterHub's network policy blocks notebook pod egress to private IP ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) while allowing public internet access. When `package_proxy_mode` is `nexus` and the staging node is on a private network, notebook pods cannot reach the Nexus proxy without an explicit egress allowance.
+
+```yaml
+# CIDR notation required — use /32 for a single IP
+jupyter_egress_allow_cidr: '10.27.107.0/24'
+```
+
+Set this to the staging node's IP (`/32`) or subnet CIDR to allow notebook pods to connect to the package proxy. Leave empty (default) when the staging node is reachable via a public or non-private IP.
+
 #### JupyterLab Extension Manager
 
 Control whether users can install and manage JupyterLab extensions:
