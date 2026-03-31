@@ -2,7 +2,7 @@ name: scout-ml
 channels:
   - conda-forge
 dependencies:
-  - python=3.11
+  - python=3.13
   - ipykernel # Required for nb_conda_kernels to discover this env as a Jupyter kernel
   - pytorch
   - transformers
