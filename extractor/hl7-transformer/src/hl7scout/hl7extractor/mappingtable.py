@@ -334,9 +334,11 @@ def extract_mapping(batch_df, spark, table_name, source_table):
 
     activity.logger.info("Stage 3 completed on mapping table derivation")
 
-    complex_cases_df = remaining_reports_df.filter(
-        ~exactly_one_id_specified_condition
-    ).cache()
+    complex_cases_df = (
+        remaining_reports_df.filter(~exactly_one_id_specified_condition)
+        .withColumn("scout_patient_id", F.lit(None).cast(StringType()))
+        .cache()
+    )
 
     recurse_complex_cases(spark, complex_cases_df, table_name)
 
