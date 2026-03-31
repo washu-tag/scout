@@ -337,6 +337,7 @@ def extract_mapping(batch_df, spark, table_name, source_table):
     complex_cases_df = (
         remaining_reports_df.filter(~exactly_one_id_specified_condition)
         .withColumn("scout_patient_id", F.lit(None).cast(StringType()))
+        .withColumn("consistent", F.lit(True))
         .cache()
     )
 
