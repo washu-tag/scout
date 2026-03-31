@@ -1,7 +1,6 @@
 from typing import List
 
 from delta import DeltaTable
-from pyspark.sql.connect.session import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, BooleanType
 from temporalio import activity
 
@@ -13,7 +12,7 @@ from .sparkutils import (
     extract_from_anticipated_column,
 )
 
-from pyspark.sql import functions as F, Column, DataFrame, Window
+from pyspark.sql import functions as F, Column, DataFrame, Window, SparkSession
 import uuid
 
 
