@@ -297,7 +297,7 @@ def build_cohort_query(config):
     # Build full query
     sql = f"""
     SELECT DISTINCT
-        obr_3_filler_order_number,
+        accession_number,
         epic_mrn,
         empi_mr,
         patient_age,
@@ -312,7 +312,7 @@ def build_cohort_query(config):
         diagnoses,
         sending_facility,
         message_dt
-    FROM {TRINO_CATALOG}.{TRINO_SCHEMA}.reports
+    FROM {TRINO_CATALOG}.{TRINO_SCHEMA}.reports_latest
     WHERE {where_clause}
     ORDER BY message_dt DESC
     {limit_clause}
@@ -644,7 +644,7 @@ def export_cohort(df, annotations, include_report_text=False):
     # Build export dataframe
     export_df = df[
         [
-            "obr_3_filler_order_number",
+            "accession_number",
             "epic_mrn",
             "empi_mr",
             "patient_age",

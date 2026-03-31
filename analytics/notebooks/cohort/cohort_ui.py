@@ -465,7 +465,7 @@ def create_navigation_controls(state):
             if pd.notna(row["requested_dt"])
             else "N/A"
         )
-        accession = html.escape(str(row.get("obr_3_filler_order_number", "Unknown")))
+        accession = html.escape(str(row.get("accession_number", "Unknown")))
         patient_age = html.escape(str(row.get("patient_age", "Unknown")))
         sex = html.escape(str(row.get("sex", "Unknown")))
         modality = html.escape(str(row.get("modality", "Unknown")))
