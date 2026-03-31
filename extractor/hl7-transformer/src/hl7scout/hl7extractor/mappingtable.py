@@ -282,7 +282,6 @@ def extract_mapping(batch_df, spark, table_name, source_table):
             on=partial_match_condition,
             how="inner",
         )
-        .dropDuplicates(["incoming.primary_report_identifier"])
         .select(
             "existing.scout_patient_id",
             "incoming.primary_report_identifier",
@@ -290,6 +289,7 @@ def extract_mapping(batch_df, spark, table_name, source_table):
             "incoming.epic_mrn",
             "existing.consistent",
         )
+        .dropDuplicates(["primary_report_identifier"])
     ).cache()
 
     merge_df_into_dt_on_column(
