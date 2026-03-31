@@ -32,7 +32,6 @@ def copy_existing_assumed_matches_into_incoming_reports(
             on=join_condition,
             how="inner",
         )
-        .dropDuplicates(["incoming.primary_report_identifier"])
         .select(
             "existing.scout_patient_id",
             "incoming.primary_report_identifier",  # take only the report ID from the incoming data
@@ -40,6 +39,7 @@ def copy_existing_assumed_matches_into_incoming_reports(
             "existing.epic_mrn",
             "existing.consistent",
         )
+        .dropDuplicates(["primary_report_identifier"])
     )
 
 
