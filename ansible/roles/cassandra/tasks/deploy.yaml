@@ -24,11 +24,8 @@
     tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: cass-operator
-    helm_chart_ref: k8ssandra/cass-operator
-    helm_chart_version: '{{ cass_operator_version }}'
+    helm_chart_ref: '{{ scout_repo_dir }}/vendored/helm/cass-operator-0.60.0.tgz'
     helm_chart_namespace: '{{ scout_extractor_namespace }}'
-    helm_repo_name: k8ssandra
-    helm_repo_url: https://helm.k8ssandra.io/stable
     helm_chart_timeout: 10m
 
 # Deploy Cassandra datacenter
