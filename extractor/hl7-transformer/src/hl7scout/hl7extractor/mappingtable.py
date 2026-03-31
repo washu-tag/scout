@@ -265,7 +265,7 @@ def extract_mapping(batch_df, spark, table_name, source_table):
     activity.logger.info("Stage 2 completed on mapping table derivation")
 
     exactly_one_id_specified_condition = (
-        F.col("mpi").isNull() ^ F.col("epic_mrn").isNull()
+        F.col("mpi").isNull() != F.col("epic_mrn").isNull()
     )
     reports_with_single_id_df = remaining_reports_df.filter(
         exactly_one_id_specified_condition
