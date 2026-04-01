@@ -445,7 +445,7 @@ def recurse_complex_cases(spark: SparkSession, df: DataFrame, table_name: str):
                 "Inconsistent patient IDs found, marking all linked report mappings"
             )
             for entry in patient_web:
-                if not entry.consistent or entry.scout_patient_id != generated_uuid:
+                if entry.consistent or entry.scout_patient_id != generated_uuid:
                     entry.scout_patient_id = generated_uuid
                     entry.consistent = False
                     bulk_updates.append(entry)
