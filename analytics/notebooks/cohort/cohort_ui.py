@@ -713,28 +713,18 @@ def create_annotation_controls(
     xnat_output = widgets.Output()
 
     def on_xnat_request(b):
-        xnat_button.description = "⏳ Processing..."
-        xnat_button.disabled = True
-
-        import time
-
-        time.sleep(2)  # Fake 2s delay
-
         with xnat_output:
             xnat_output.clear_output()
             display(
                 HTML(
                     """
-                <div style='background: #d1fae5; color: #065f46; padding: 8px; border-radius: 4px;
-                            font-size: 12px; text-align: center; border: 1px solid #10b981;'>
-                    ✅ Cohort request submitted successfully!
+                <div style='background: #fef3c7; color: #92400e; padding: 8px; border-radius: 4px;
+                            font-size: 12px; text-align: center; border: 1px solid #f59e0b;'>
+                    🚧 XNAT integration is a planned feature. For now, use <strong>Export Cohort CSV</strong> to download your cohort.
                 </div>
             """
                 )
             )
-
-        xnat_button.description = "🚀 Request Cohort in XNAT"
-        xnat_button.disabled = False
 
     xnat_button.on_click(on_xnat_request)
 
