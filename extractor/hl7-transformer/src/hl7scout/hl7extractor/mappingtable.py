@@ -471,7 +471,7 @@ def recurse_complex_cases(spark: SparkSession, df: DataFrame, table_name: str):
     merge_df_into_dt_on_column(
         DeltaTable.forName(spark, table_name),
         spark.createDataFrame(
-            [mapping.to_dict() for mapping in complex_cases],
+            [mapping.to_dict() for mapping in bulk_updates],
             StructType(
                 [
                     StructField("scout_patient_id", StringType()),
