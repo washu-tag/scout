@@ -5,6 +5,6 @@ home: https://github.com/adorsys/keycloak-config-cli
 
 type: application
 
-version: 3.0.0
+version: 0.0.0-dev
 
 appVersion: "6.4.0-26"

@@ -1,6 +1,6 @@
 {
   "name": "launchpad",
-  "version": "3.0.0",
+  "version": "latest",
   "private": true,
   "scripts": {
     "dev": "next dev",
