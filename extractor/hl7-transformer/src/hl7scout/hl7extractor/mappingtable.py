@@ -427,7 +427,7 @@ def recurse_complex_cases(spark: SparkSession, df: DataFrame, table_name: str):
             existing_mapping_df,
             known_mpis,
             known_mrns,
-            [],
+            [complex_case],
             complex_case,
         )
         unique_ids = list(
@@ -438,7 +438,7 @@ def recurse_complex_cases(spark: SparkSession, df: DataFrame, table_name: str):
             )
         )
         generated_uuid = (
-            unique_ids[0] if len(unique_ids) == 1 else str(uuid.uuid4())
+            unique_ids[0] if len(unique_ids) > 0 else str(uuid.uuid4())
         )  # take the only ID, generating a new one if none exist
         if (len(known_mpis) > 1) or (len(known_mrns) > 1):
             activity.logger.info(
