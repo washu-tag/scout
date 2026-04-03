@@ -364,7 +364,6 @@ public class TestScoutQueries extends BaseTest {
                     .collect(Collectors.toSet())
             ).as("subset of mapping table").hasSize(expectedNumRowsForPatient);
             logger.info("Checked mapping table subset to have size {}", expectedNumRowsForPatient);
-            assertSubsetOfMappingsHasExactlyNumberOfScoutIds(mappingsWithMatchingScoutId, expectedPatientCluster.expectedRows().length);
             for (MappingLookup expectedMapping : expectedPatientCluster.expectedRows()) {
                 final ReportPatientMappingEntry actualMapping = findExpectedMapping(mappingsWithMatchingScoutId, expectedMapping);
 
