@@ -51,7 +51,7 @@ def mapping_table(base_report_table_name: str) -> DerivativeTable:
 
     return DerivativeTable(
         source_table=source_table,
-        table_name="report_patient_mapping",
+        table_name=f"{base_report_table_name}_report_patient_mapping",
         process_source_data=process_table,
     )
 
