@@ -356,6 +356,14 @@ public class TestScoutQueries extends BaseTest {
                 .filter(mapping -> mapping.getScoutPatientId().equals(scoutIdForPatient))
                 .toList();
 
+            final int expectedNumRowsForPatient = expectedPatientCluster.expectedRows().length;
+            assertThat(
+                mappingsWithMatchingScoutId
+                    .stream()
+                    .map(ReportPatientMappingEntry::getPrimaryReportIdentifier)
+                    .collect(Collectors.toSet())
+            ).as("subset of mapping table").hasSize(expectedNumRowsForPatient);
+            logger.info("Checked mapping table subset to have size {}", expectedNumRowsForPatient);
             assertSubsetOfMappingsHasExactlyNumberOfScoutIds(mappingsWithMatchingScoutId, expectedPatientCluster.expectedRows().length);
             for (MappingLookup expectedMapping : expectedPatientCluster.expectedRows()) {
                 final ReportPatientMappingEntry actualMapping = findExpectedMapping(mappingsWithMatchingScoutId, expectedMapping);
