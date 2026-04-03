@@ -47,7 +47,6 @@ hub:
     Authenticator:
       auto_login: true
     JupyterHub:
-      cookie_max_age_days: {{ scout_session_lifespan_hours | int / 24 }}
       subdomain_host: 'jupyter.{{ server_hostname }}'
       authenticator_class: 'oauthenticator.generic.GenericOAuthenticator'
     GenericOAuthenticator:

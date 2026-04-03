@@ -42,5 +42,5 @@ keycloak_smtp_debug: 'false'
 # Identity Provider configuration
 keycloak_default_provider: github
 
-# Token lifespan (in seconds) — derived from scout_session_lifespan_hours
-keycloak_token_lifespan: '{{ scout_session_lifespan_hours | int * 3600 }}'
+# Client-specific token lifespans (in seconds)
+keycloak_temporal_token_lifespan: 28800
