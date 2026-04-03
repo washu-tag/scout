@@ -364,7 +364,7 @@ public class TestScoutQueries extends BaseTest {
                     .as("Scout ID of mapping row")
                     .isEqualTo(scoutIdForPatient);
 
-                assertThat(actualMapping.getConsistent())
+                assertThat(actualMapping.isConsistent())
                     .as("consistent flag on mapping row")
                     .isEqualTo(expectedPatientCluster.consistent());
 
