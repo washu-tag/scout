@@ -10,7 +10,7 @@ public class ReportPatientMappingEntry {
     private String primaryReportIdentifier;
     private String mpi;
     private String epicMrn;
-    private String consistent;
+    private boolean consistent;
 
     public String getScoutPatientId() {
         return scoutPatientId;
@@ -44,11 +44,11 @@ public class ReportPatientMappingEntry {
         this.epicMrn = epicMrn;
     }
 
-    public String getConsistent() {
+    public boolean isConsistent() {
         return consistent;
     }
 
-    public void setConsistent(String consistent) {
+    public void setConsistent(boolean consistent) {
         this.consistent = consistent;
     }
 
