@@ -9,9 +9,11 @@ import edu.washu.tag.BaseTest;
 import edu.washu.tag.TestQuery;
 import edu.washu.tag.TestQuerySuite;
 import edu.washu.tag.model.IngestJobInput;
+import edu.washu.tag.model.ReportPatientMappingEntry;
 import edu.washu.tag.util.FileIOUtils;
 import edu.washu.tag.validation.ExactRowsResult;
 import edu.washu.tag.validation.column.ArrayType;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,6 +34,7 @@ import org.testng.annotations.Test;
 public class TestScoutQueries extends BaseTest {
 
     private SparkSession spark;
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final TestQuerySuite<?> exportedQueries = readQueries();
     private static final Logger logger = LoggerFactory.getLogger(TestScoutQueries.class);
     public static final String TABLE = newTable();
@@ -247,9 +250,151 @@ public class TestScoutQueries extends BaseTest {
         ));
     }
 
+    @Test
+    public void testLongitudinalPatientIds() {
+        final String baseTableName = newTable();
+        final String mappingTableName = baseTableName + "_report_patient_mapping";
+        ingest(
+            new IngestJobInput().setReportTableName(baseTableName).setLogPaths("/data/transitive_id_resolution/20260329.log")
+        );
+
+        final MappingLookup report0 = new MappingLookup(29, 0, "LTI_01", null);
+        final MappingLookup report1 = new MappingLookup(29, 1, "LTI_02", null);
+        final MappingLookup report2 = new MappingLookup(29, 2, "LTI_02", null);
+        final MappingLookup report3 = new MappingLookup(29, 3, null, "LTI_03");
+        final MappingLookup report4 = new MappingLookup(29, 4, "LTI_04", null);
+        final MappingLookup report5 = new MappingLookup(29, 5, "LTI_04", null);
+        final MappingLookup report6 = new MappingLookup(29, 6, null, "LTI_05");
+        final MappingLookup report7 = new MappingLookup(29, 7, "LTI_06", "LTI_07");
+        final MappingLookup report8 = new MappingLookup(29, 8, "LTI_08", "LTI_09");
+        final MappingLookup report9 = new MappingLookup(29, 9, "LTI_10", "LTI_11");
+        final MappingLookup report10 = new MappingLookup(29, 10, "LTI_10", "LTI_12");
+        final MappingLookup report11 = new MappingLookup(29, 11, "LTI_13", null);
+        final MappingLookup report12 = new MappingLookup(29, 12, "LTI_13", "LTI_14");
+
+        final List<ExpectedPatientCluster> expectedPatients = new ArrayList<>();
+        expectedPatients.add(new ExpectedPatientCluster(true, report0));
+        expectedPatients.add(new ExpectedPatientCluster(true, report1, report2));
+        expectedPatients.add(new ExpectedPatientCluster(true, report3));
+        expectedPatients.add(new ExpectedPatientCluster(true, report4, report5));
+        expectedPatients.add(new ExpectedPatientCluster(true, report6));
+        expectedPatients.add(new ExpectedPatientCluster(true, report7));
+        expectedPatients.add(new ExpectedPatientCluster(true, report8));
+        expectedPatients.add(new ExpectedPatientCluster(false, report9, report10));
+        expectedPatients.add(new ExpectedPatientCluster(true, report11, report12));
+
+        validateMappingTable(mappingTableName, expectedPatients);
+
+        ingest(
+            new IngestJobInput().setReportTableName(baseTableName).setLogPaths("/data/transitive_id_resolution/20260330.log")
+        );
+
+        final MappingLookup reportSecondDay0 = new MappingLookup(30, 0, "LTI_01", null);
+        final MappingLookup reportSecondDay1 = new MappingLookup(30, 1, null, "LTI_03");
+        final MappingLookup reportSecondDay2 = new MappingLookup(30, 2, "LTI_06", "LTI_07");
+        final MappingLookup reportSecondDay3 = new MappingLookup(30, 3, "LTI_15", null);
+        final MappingLookup reportSecondDay4 = new MappingLookup(30, 4, null, "LTI_16");
+        final MappingLookup reportSecondDay5 = new MappingLookup(30, 5, "LTI_17", "LTI_18");
+        final MappingLookup reportSecondDay6 = new MappingLookup(30, 6, "LTI_17", "LTI_18");
+        final MappingLookup reportSecondDay7 = new MappingLookup(30, 7, "LTI_02", "LTI_03");
+        final MappingLookup reportSecondDay8 = new MappingLookup(30, 8, "LTI_04", "LTI_05");
+        final MappingLookup reportSecondDay9 = new MappingLookup(30, 9, "LTI_01", "LTI_05");
+        final MappingLookup reportSecondDay10 = new MappingLookup(30, 10, "LTI_19", "LTI_14");
+
+        expectedPatients.clear();
+        expectedPatients.add(new ExpectedPatientCluster(false, report0, reportSecondDay0, reportSecondDay9, report6, reportSecondDay8, report4, report5));
+        expectedPatients.add(new ExpectedPatientCluster(true, report3, reportSecondDay1, reportSecondDay7, report1, report2));
+        expectedPatients.add(new ExpectedPatientCluster(true, report7, reportSecondDay2));
+        expectedPatients.add(new ExpectedPatientCluster(true, reportSecondDay3));
+        expectedPatients.add(new ExpectedPatientCluster(true, reportSecondDay4));
+        expectedPatients.add(new ExpectedPatientCluster(true, reportSecondDay5, reportSecondDay6));
+        expectedPatients.add(new ExpectedPatientCluster(true, report8));
+        expectedPatients.add(new ExpectedPatientCluster(false, report9, report10));
+        expectedPatients.add(new ExpectedPatientCluster(false, report11, report12, reportSecondDay10));
+
+        validateMappingTable(mappingTableName, expectedPatients);
+    }
+
+    private List<ReportPatientMappingEntry> readMappingTable(String tableName) {
+        return spark.sql("SELECT * FROM " + tableName)
+            .toJSON()
+            .collectAsList()
+            .stream()
+            .map(row -> {
+                try {
+                    return objectMapper.readValue(row, ReportPatientMappingEntry.class);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+            }).toList();
+    }
+
+    private ReportPatientMappingEntry findExpectedMapping(List<ReportPatientMappingEntry> mappingsToSearch, MappingLookup expectedMapping) {
+        return mappingsToSearch.stream()
+            .filter(mapping -> {
+                final String reportId = mapping.getPrimaryReportIdentifier();
+                return reportId.contains(String.format("202603%d.zip", expectedMapping.day))
+                    && reportId.contains(String.format("_%d.hl7", expectedMapping.index));
+            })
+            .findFirst()
+            .orElseThrow(RuntimeException::new);
+    }
+
+    private void validateMappingTable(String tableName, List<ExpectedPatientCluster> expectedPatientClusters) {
+        final List<ReportPatientMappingEntry> actualState = readMappingTable(tableName);
+
+        assertThat(actualState).as("mapping table").hasSize(
+            expectedPatientClusters.stream().mapToInt(cluster -> Math.toIntExact(Arrays.stream(cluster.expectedRows()).count())).sum()
+        );
+        assertSubsetOfMappingsHasExactlyNumberOfScoutIds(actualState, expectedPatientClusters.size());
+
+        for (ExpectedPatientCluster expectedPatientCluster : expectedPatientClusters) {
+            final MappingLookup lookup = expectedPatientCluster.expectedRows()[0];
+            final String scoutIdForPatient = findExpectedMapping(actualState, lookup).getScoutPatientId();
+
+            final List<ReportPatientMappingEntry> mappingsWithMatchingScoutId = actualState.stream()
+                .filter(mapping -> mapping.getScoutPatientId().equals(scoutIdForPatient))
+                .toList();
+
+            assertSubsetOfMappingsHasExactlyNumberOfScoutIds(mappingsWithMatchingScoutId, expectedPatientCluster.expectedRows().length);
+            for (MappingLookup expectedMapping : expectedPatientCluster.expectedRows()) {
+                final ReportPatientMappingEntry actualMapping = findExpectedMapping(mappingsWithMatchingScoutId, expectedMapping);
+
+                assertThat(actualMapping.getScoutPatientId())
+                    .as("Scout ID of mapping row")
+                    .isEqualTo(scoutIdForPatient);
+
+                assertThat(actualMapping.getConsistent())
+                    .as("consistent flag on mapping row")
+                    .isEqualTo(expectedPatientCluster.consistent());
+
+                assertThat(actualMapping.getMpi())
+                    .as("mpi on mapping row")
+                    .isEqualTo(expectedMapping.mpi);
+
+                assertThat(actualMapping.getEpicMrn())
+                    .as("EPIC MRN on mapping row")
+                    .isEqualTo(expectedMapping.epicMrn);
+
+                logger.info("Validated mapping for row {}", actualMapping.getPrimaryReportIdentifier());
+            }
+            logger.info("Validated mappings associated to scout patient id {}", scoutIdForPatient);
+        }
+    }
+
+    private void assertSubsetOfMappingsHasExactlyNumberOfScoutIds(List<ReportPatientMappingEntry> mappingSubset, int expectedSize) {
+        assertThat(
+            mappingSubset
+                .stream()
+                .map(ReportPatientMappingEntry::getScoutPatientId)
+                .collect(Collectors.toSet())
+        ).as("subset of mapping table").hasSize(expectedSize);
+        logger.info("Checked mapping table subset to have size {}", expectedSize);
+    }
+
     private static <T> T readFileAs(String resourceName, TypeReference<T> classObj) {
         try {
-            return new ObjectMapper().readValue(
+            return objectMapper.readValue(
                 FileIOUtils.readResource(resourceName),
                 classObj
             );
@@ -296,6 +441,14 @@ public class TestScoutQueries extends BaseTest {
 
     private static String newTable() {
         return "testdata" + System.currentTimeMillis();
+    }
+
+    private record MappingLookup(int day, int index, String mpi, String epicMrn) {
+
+    }
+
+    private record ExpectedPatientCluster(boolean consistent, MappingLookup... expectedRows) {
+
     }
 
 }
