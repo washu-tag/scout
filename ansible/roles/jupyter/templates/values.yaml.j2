@@ -109,6 +109,8 @@ singleuser:
     tag: '{{ jupyter_singleuser_image_tag }}'
     pullPolicy: IfNotPresent
   extraResource:
+    guarantees:
+      ephemeral-storage: 10Mi
     limits:
       ephemeral-storage: '{{ jupyter_singleuser_ephemeral_storage_limit }}'
   profileList: {{ jupyter_profiles | to_json }}
