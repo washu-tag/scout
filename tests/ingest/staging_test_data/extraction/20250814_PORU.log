@@ -13,8 +13,8 @@ OBX|5|ST|&GDT|1|dense breast tissue. No suspicious masses, calcifications, or|||
 OBX|6|ST|&GDT|1|architectural distortion identified.||||||Final<R>
 OBX|7|ST|&GDT|1|||||||Final<R>
 OBX|8|ST|&GDT|1|||||||Final<R>
-OBX|9|ST|&GDT|1|IMPRESSION:||||||Final<R>
-OBX|10|ST|&GDT|1|Negative bilateral screening mammogram. BI-RADS 1.||||||Final<R>
-OBX|11|ST|&GDT|1|Recommend routine annual screening.||||||Final<R>
-OBX|12|ST|&GDT|1|Dictated by: Melissa Wright Interpreter, M.D.||||||Final<R>
-<EB>
+OBX|9|ST|&IMP|2|IMPRESSION:||||||Final<R>
+OBX|10|ST|&IMP|2|Negative bilateral screening mammogram. BI-RADS 1.||||||Final<R>
+OBX|11|ST|&IMP|2|Recommend routine annual screening.||||||Final<R>
+OBX|12|ST|&IMP|2|Dictated by: Melissa Wright Interpreter, M.D.||||||Final<R>
+<EB><R>
