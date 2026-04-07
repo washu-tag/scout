@@ -4,7 +4,7 @@
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 31,
+        "expectedNumResults": 32,
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
@@ -63,7 +63,7 @@
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 8,
+        "expectedNumResults": 9,
         "additionalValidation": {
           "type": ".FixedColumnsValidator",
           "fixedColumns": {
@@ -96,8 +96,8 @@
           },
           "MG": {
             "male_count": 0,
-            "female_count": 9,
-            "total_count": 9
+            "female_count": 10,
+            "total_count": 10
           },
           "IR": {
             "male_count": 1,
@@ -148,7 +148,7 @@
             "total_count": 16
           },
           "Final": {
-            "total_count": 19
+            "total_count": 20
           },
           "P": {
             "total_count": 2
@@ -374,6 +374,13 @@
             "legacy_patient_id_un": null,
             "empi_mr": null,
             "patient_ids": "[[ABC1234334,ABC,MR,null], [EPIC2603475,EPIC,MRN,null]]"
+          },
+          "2.25.999888777666555444333222111000999888": {
+            "abc_mr": "ABC1234331",
+            "epic_mrn": "EPIC2603472",
+            "legacy_patient_id_un": null,
+            "empi_mr": null,
+            "patient_ids": "[[ABC1234331,ABC,MR,null], [EPIC2603472,EPIC,MRN,null]]"
           }
         },
         "columnTypes": [
@@ -389,7 +396,7 @@
     {
       "expectedQueryResult": {
         "type": ".ExactNumberObjectsResult",
-        "expectedNumResults": 60,
+        "expectedNumResults": 61,
         "additionalValidation": null
       },
       "sql": "SELECT * FROM %TABLE_PLACEHOLDER%",
