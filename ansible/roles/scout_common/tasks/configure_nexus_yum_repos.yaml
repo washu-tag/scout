@@ -15,6 +15,7 @@
   when:
     - package_proxy_mode == 'nexus'
     - air_gapped | default(false) | bool
+    - groups['staging'] is defined and groups['staging'] | length > 0
   block:
     - name: Load Nexus role variables (default values)
       ansible.builtin.include_vars:
