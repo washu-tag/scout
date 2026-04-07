@@ -320,7 +320,10 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         Path logFilePath = Paths.get(logFile);
         String logFileName = logFilePath.getFileName().toString();
         String logFileNameNoExtension = logFileName.substring(0, logFileName.lastIndexOf('.'));
-        String logFileDate = Objects.requireNonNull(dateStringFromLogFilePath(logFileNameNoExtension));
+        String logFileDate = Objects.requireNonNull(
+            dateStringFromLogFilePath(logFileNameNoExtension),
+            "Log file name does not contain an 8-digit date (YYYYMMDD): " + logFileName
+        );
 
         Map<Integer, String> zippedHl7Files = new HashMap<>();
 
