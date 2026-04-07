@@ -208,7 +208,7 @@ public class TestScoutQueries extends BaseTest {
 
         final ExactRowsResult latestPostMergeExpectation = (ExactRowsResult) reusedTableQueryPostMerge.getExpectedQueryResult();
         final Map<String, Map<String, String>> prefilteredExpectation = latestPostMergeExpectation.getRowAssertions();
-        final Set<String> latestReportIds = Set.of("1.2.4.8.16.1", "1.2.4.8.16.2", "1.2.4.8.16.4", "1.2.4.8.16.6");
+        final Set<String> latestReportIds = Set.of("1.2.4.8.16.1", "1.2.4.8.16.2", "1.2.4.8.16.4", "1.2.4.8.16.6", "1.2.4.8.16.7");
 
         latestPostMergeExpectation.setRowAssertions(
             latestReportIds
