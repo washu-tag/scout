@@ -6,7 +6,6 @@ import edu.washu.tag.extractor.hl7log.db.DbUtils.FileStatusStatus;
 import edu.washu.tag.extractor.hl7log.db.DbUtils.FileStatusType;
 import edu.washu.tag.extractor.hl7log.db.FileStatus;
 import edu.washu.tag.extractor.hl7log.db.IngestDbService;
-import edu.washu.tag.extractor.hl7log.exception.FileFormatException;
 import edu.washu.tag.extractor.hl7log.model.Hl7ManifestFileInput;
 import edu.washu.tag.extractor.hl7log.model.Hl7ManifestFileOutput;
 import edu.washu.tag.extractor.hl7log.model.SplitAndTransformHl7LogInput;
@@ -44,7 +43,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -59,18 +57,13 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     // Constants
     private static final String EXTRACTOR_HL7_COUNTER = "scout.extractor.hl7.report.count";
     private static final String HL7_PATHS_FILENAME = "hl7-paths.txt";
-    private static final int HEADER_LENGTH = 24;
-    private static final int MIN_TIMESTAMP_LENGTH = 14;
-    private static final int EXPECTED_TIMESTAMP_LENGTH = 18;
-    // Timestamp position indices
+    // Date position indices (for 8-digit YYYYMMDD date from log filename)
     private static final int YEAR_START = 0;
     private static final int YEAR_END = 4;
     private static final int MONTH_START = 4;
     private static final int MONTH_END = 6;
     private static final int DAY_START = 6;
     private static final int DAY_END = 8;
-    private static final int HOUR_START = 8;
-    private static final int HOUR_END = 10;
 
     // Log file date pattern
     private static final Pattern DATE_PATTERN = Pattern.compile("\\d{8}");
@@ -255,52 +248,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     }
 
     /**
-     * Extracts a timestamp from the line immediately preceding the SB tag.
-     *
-     * @param headerLine Line containing timestamp
-     * @return The extracted timestamp
-     * @throws FileFormatException If timestamp extraction fails
-     */
-    private String extractTimestamp(String headerLine) throws FileFormatException {
-        // Check if we have enough bytes
-        if (headerLine.length() < HEADER_LENGTH) {
-            throw new FileFormatException(
-                String.format("Timestamp header line is too short, expected at least %d bytes but got %d",
-                    HEADER_LENGTH, headerLine.length())
-            );
-        }
-
-        // Extract the timestamp from the header
-        return parseAndValidateTimestamp(headerLine.substring(0, HEADER_LENGTH));
-    }
-
-    /**
-     * Parses a timestamp from the header string.
-     *
-     * @param headerStr Header content as a string
-     * @return The parsed timestamp
-     * @throws FileFormatException If the timestamp cannot be parsed or is invalid
-     */
-    private String parseAndValidateTimestamp(String headerStr) throws FileFormatException {
-        // Remove all non-digit characters
-        String digitsOnly = headerStr.replaceAll("\\D", "");
-
-        if (digitsOnly.isEmpty()) {
-            throw new FileFormatException("Could not find any digits in timestamp header line");
-        }
-
-        // Validate timestamp length
-        if (digitsOnly.length() < MIN_TIMESTAMP_LENGTH) {
-            throw new FileFormatException(
-                String.format("Timestamp \"%s\" is not long enough. Minimum length %d, expected length %d.",
-                    digitsOnly, MIN_TIMESTAMP_LENGTH, EXPECTED_TIMESTAMP_LENGTH)
-            );
-        }
-
-        return digitsOnly;
-    }
-
-    /**
      * Splits and transforms an HL7 log file into multiple HL7 formatted files.
      *
      * @param logFile     The HL7 log file to process
@@ -320,7 +267,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         int hl7Count = 0;
         try (BufferedReader reader = Files.newBufferedReader(logFilePath, StandardCharsets.ISO_8859_1)) {
             String line;
-            String previousLine = null;
             List<String> hl7Content = new ArrayList<>();
 
             while ((line = reader.readLine()) != null) {
@@ -338,13 +284,11 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                         hl7Content.add(processed);
                     }
 
-                    splitHl7LogEntries.add(new Hl7LogEntry(hl7Count++, previousLine, new ArrayList<>(hl7Content)));
+                    splitHl7LogEntries.add(new Hl7LogEntry(hl7Count++, new ArrayList<>(hl7Content)));
                     ctx.heartbeat("Parsed " + hl7Count);
                     hl7Content.clear();
-                    previousLine = null;
                     continue;
                 }
-                previousLine = line;
             }
         }
 
@@ -376,6 +320,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         Path logFilePath = Paths.get(logFile);
         String logFileName = logFilePath.getFileName().toString();
         String logFileNameNoExtension = logFileName.substring(0, logFileName.lastIndexOf('.'));
+        String logFileDate = Objects.requireNonNull(dateStringFromLogFilePath(logFileNameNoExtension));
 
         Map<Integer, String> zippedHl7Files = new HashMap<>();
 
@@ -385,7 +330,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
             for (Hl7LogEntry hl7LogEntry : splitHl7LogEntries) {
 
                 int messageNumber = hl7LogEntry.messageNumber();
-                String headerLine = hl7LogEntry.headerLine();
                 List<String> lines = hl7LogEntry.hl7Content();
                 ctx.heartbeat("Writing " + messageNumber);
 
@@ -400,38 +344,10 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
                     continue;
                 }
 
-                if (StringUtils.isBlank(headerLine)) {
-                    results.set(messageNumber,
-                        FileStatus.failed(
-                            createPlaceholderHl7FilePath(logFile, messageNumber),
-                            FileStatusType.HL7,
-                            "HL7 content did not contain a timestamp header line; this usually means it is a repeat of the previous message's HL7 content",
-                            workflowId, activityId
-                        ));
-                    continue;
-                }
-
-                String timestamp;
-                try {
-                    timestamp = extractTimestamp(headerLine);
-                } catch (FileFormatException e) {
-                    logger.error("WorkflowId {} ActivityId {} - Unable to extract timestamp for message {} from log {}: {}", workflowId, activityId,
-                        messageNumber, logFile, e.getMessage());
-                    results.set(messageNumber,
-                        FileStatus.failed(
-                            createPlaceholderHl7FilePath(logFile, messageNumber),
-                            FileStatusType.HL7,
-                            "Unable to extract timestamp for message: " + formatExceptionForMessage(e),
-                            workflowId,
-                            activityId
-                        ));
-                    continue;
-                }
-
                 try {
                     // Add HL7 content to the zip file
-                    String fileName = timestamp + "_" + messageNumber + ".hl7";
-                    String zipPath = getZipTimestampPath(timestamp).resolve(fileName).toString();
+                    String fileName = logFileDate + "_" + messageNumber + ".hl7";
+                    String zipPath = getZipTimestampPath(logFileDate).resolve(fileName).toString();
                     ZipEntry zipEntry = new ZipEntry(zipPath);
                     zipOut.putNextEntry(zipEntry);
                     for (String line : lines) {
@@ -463,7 +379,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
             // Upload the zip file to S3
             ctx.heartbeat("Upload zip to S3");
-            String logFileDate = Objects.requireNonNull(dateStringFromLogFilePath(logFileNameNoExtension));
             String relativePath = getBucketTimestampPath(logFileDate).resolve(logFileNameNoExtension + ".zip").toString();
             String uploadedPath = fileHandler.putWithRetry(byteArrayOutputStream.toByteArray(), relativePath, destination);
 
@@ -509,13 +424,12 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         return Path.of(year);
     }
 
-    private Path getZipTimestampPath(String timestamp) {
-        String year = timestamp.substring(YEAR_START, YEAR_END);
-        String month = timestamp.substring(MONTH_START, MONTH_END);
-        String day = timestamp.substring(DAY_START, DAY_END);
-        String hour = timestamp.substring(HOUR_START, HOUR_END);
+    private Path getZipTimestampPath(String dateString) {
+        String year = dateString.substring(YEAR_START, YEAR_END);
+        String month = dateString.substring(MONTH_START, MONTH_END);
+        String day = dateString.substring(DAY_START, DAY_END);
         // Create the directory path
-        return Path.of(year, month, day, hour);
+        return Path.of(year, month, day);
     }
 
     private String uploadHl7PathList(List<String> hl7Paths, URI destination) throws IOException {
@@ -531,7 +445,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         return String.format("%s: %s", e.getClass().getSimpleName(), e.getMessage());
     }
 
-    private record Hl7LogEntry(int messageNumber, String headerLine, List<String> hl7Content) {
+    private record Hl7LogEntry(int messageNumber, List<String> hl7Content) {
 
     }
 }
