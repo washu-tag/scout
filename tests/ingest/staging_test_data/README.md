@@ -21,3 +21,6 @@ HL7 reports with no timestamp header line between them. Both should be ingested 
 It should be marked as an error: empty HL7. 
 6. File with junk HL7: [20160829.log](postgres/2016/20160829.log) contains a message with garbage in the HL7 content.
 It should be marked as an error: unparsable HL7.
+7. Multiple log files for the same date: [20000216.log](postgres/2000/20000216.log) and [20000216_PORU.log](postgres/2000/20000216_PORU.log)
+share the date 2000-02-16. Both should be ingested successfully, and the HL7 filenames should use the full log filename
+as a prefix (`20000216_0.hl7` and `20000216_PORU_0.hl7` respectively) to avoid collisions.

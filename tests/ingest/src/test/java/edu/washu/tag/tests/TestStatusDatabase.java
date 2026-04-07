@@ -377,6 +377,47 @@ public class TestStatusDatabase extends BaseTest {
     }
 
     /**
+     * Tests that when a log file has a suffix beyond the date (20000216_PORU.log),
+     * the HL7 filenames inside the zip use the full log filename as a prefix, not just the date.
+     * This ensures files from different logs for the same date are disambiguated:
+     * - 20000216_PORU.log produces HL7 files like {@code 2000/02/16/20000216_PORU_0.hl7}
+     *   (not {@code 2000/02/16/20000216_0.hl7}, which would collide with 20000216.log)
+     */
+    @Test
+    public void testStatusDbSuffixedLogFileName() {
+        final String date = "20000216";
+        final List<String> parentWorkflowId = Collections.singletonList(ingestWorkflow.getIngestWorkflowId());
+        final List<String> ingestWorkflowIds = Stream.concat(
+            parentWorkflowId.stream(),
+            ingestWorkflow.getIngestToDeltaLakeWorkflows().stream()
+        ).toList();
+
+        // The suffixed log file should be parsed successfully
+        final FileStatus logRow = FileStatus.parsedLog();
+        runLogStatusTest(FileStatusLogQuery.suffixedQuery(date, "_PORU", parentWorkflowId), logRow);
+
+        // HL7 from 20000216_PORU.log should use the full log filename as prefix
+        final Hl7FilesRow h0 = new Hl7FilesRow("2000/02/16/20000216_PORU_0.hl7", 0, date);
+        final FileStatus h0Staged = FileStatus.staged(h0.hl7FilePath);
+        final FileStatus h0Success = FileStatus.success(h0.hl7FilePath);
+
+        runHl7FileStatusTest(
+            FileStatusHl7Query.suffixedQuery(date, "_PORU", ingestWorkflowIds),
+            h0Staged,
+            h0Success
+        );
+
+        runHl7FilesTest(
+            new Hl7FileTableQuery(date, "_PORU"),
+            h0
+        );
+        runRecentHl7FilesTest(
+            new RecentHl7FilesViewQuery(date, "_PORU", ingestWorkflowIds),
+            new RecentHl7FileRow(h0, h0Success)
+        );
+    }
+
+    /**
      * Tests the state of the ingest database after attempting to ingest a non-existent log file.
      * For the date 2015-01-01, we pass a log path that does not exist.
      * The {@value #TABLE_FILE_STATUSES} table is expected to have multiple "failed" log rows
@@ -589,13 +630,23 @@ public class TestStatusDatabase extends BaseTest {
         protected final String tableOrView;
         protected final String filterColumn;
         protected final String logDate;
+        protected final String logSuffix;
         protected List<String> filteredWorkflowIds;
 
         protected SqlQuery(String tableOrView, String filterColumn, String logDate, List<String> filteredWorkflowIds) {
+            this(tableOrView, filterColumn, logDate, "", filteredWorkflowIds);
+        }
+
+        protected SqlQuery(String tableOrView, String filterColumn, String logDate, String logSuffix, List<String> filteredWorkflowIds) {
             this.tableOrView = tableOrView;
             this.filterColumn = filterColumn;
             this.logDate = logDate;
+            this.logSuffix = logSuffix;
             this.filteredWorkflowIds = filteredWorkflowIds;
+        }
+
+        protected String logFilePattern() {
+            return logDate + logSuffix;
         }
 
         protected String buildWorkflowQueryRestriction() {
@@ -613,12 +664,16 @@ public class TestStatusDatabase extends BaseTest {
     }
 
     private static class FileStatusLogQuery extends SqlQuery {
-        private FileStatusLogQuery(String tableOrView, String logDate, List<String> filteredWorkflowIds) {
-            super(tableOrView, FILE_PATH, logDate, filteredWorkflowIds);
+        private FileStatusLogQuery(String tableOrView, String logDate, String logSuffix, List<String> filteredWorkflowIds) {
+            super(tableOrView, FILE_PATH, logDate, logSuffix, filteredWorkflowIds);
         }
 
         static FileStatusLogQuery tableQuery(String logDate, List<String> filteredWorkflowIds) {
-            return new FileStatusLogQuery(TABLE_FILE_STATUSES, logDate, filteredWorkflowIds);
+            return new FileStatusLogQuery(TABLE_FILE_STATUSES, logDate, "", filteredWorkflowIds);
+        }
+
+        static FileStatusLogQuery suffixedQuery(String logDate, String logSuffix, List<String> filteredWorkflowIds) {
+            return new FileStatusLogQuery(TABLE_FILE_STATUSES, logDate, logSuffix, filteredWorkflowIds);
         }
 
         @Override
@@ -628,18 +683,22 @@ public class TestStatusDatabase extends BaseTest {
                 tableOrView,
                 buildWorkflowQueryRestriction(),
                 filterColumn,
-                logDate
+                logFilePattern()
             );
         }
     }
 
     private static class FileStatusHl7Query extends SqlQuery {
-        private FileStatusHl7Query(String tableOrView, String logDate, List<String> filteredWorkflowIds) {
-            super(tableOrView, LOG_FILE_PATH, logDate, filteredWorkflowIds);
+        private FileStatusHl7Query(String tableOrView, String logDate, String logSuffix, List<String> filteredWorkflowIds) {
+            super(tableOrView, LOG_FILE_PATH, logDate, logSuffix, filteredWorkflowIds);
         }
 
         static FileStatusHl7Query tableQuery(String logDate, List<String> filteredWorkflowIds) {
-            return new FileStatusHl7Query(TABLE_FILE_STATUSES, logDate, filteredWorkflowIds);
+            return new FileStatusHl7Query(TABLE_FILE_STATUSES, logDate, "", filteredWorkflowIds);
+        }
+
+        static FileStatusHl7Query suffixedQuery(String logDate, String logSuffix, List<String> filteredWorkflowIds) {
+            return new FileStatusHl7Query(TABLE_FILE_STATUSES, logDate, logSuffix, filteredWorkflowIds);
         }
 
         @Override
@@ -652,14 +711,18 @@ public class TestStatusDatabase extends BaseTest {
                 tableOrView,
                 buildWorkflowQueryRestriction(),
                 filterColumn,
-                logDate
+                logFilePattern()
             );
         }
     }
 
     private static class Hl7FileTableQuery extends SqlQuery {
         private Hl7FileTableQuery(String logDate) {
-            super(TABLE_HL7_FILES, LOG_FILE_PATH, logDate, Collections.emptyList());
+            this(logDate, "");
+        }
+
+        private Hl7FileTableQuery(String logDate, String logSuffix) {
+            super(TABLE_HL7_FILES, LOG_FILE_PATH, logDate, logSuffix, Collections.emptyList());
         }
 
         @Override
@@ -668,14 +731,18 @@ public class TestStatusDatabase extends BaseTest {
                 "SELECT * FROM %s WHERE %s LIKE '%%/%s.log'",
                 tableOrView,
                 filterColumn,
-                logDate
+                logFilePattern()
             );
         }
     }
 
     private static class RecentHl7FilesViewQuery extends SqlQuery {
         private RecentHl7FilesViewQuery(String logDate, List<String> filteredWorkflowIds) {
-            super(VIEW_RECENT_HL7_FILES, LOG_FILE_PATH, logDate, filteredWorkflowIds);
+            this(logDate, "", filteredWorkflowIds);
+        }
+
+        private RecentHl7FilesViewQuery(String logDate, String logSuffix, List<String> filteredWorkflowIds) {
+            super(VIEW_RECENT_HL7_FILES, LOG_FILE_PATH, logDate, logSuffix, filteredWorkflowIds);
         }
 
         @Override
@@ -685,7 +752,7 @@ public class TestStatusDatabase extends BaseTest {
                 tableOrView,
                 buildWorkflowQueryRestriction(),
                 filterColumn,
-                logDate
+                logFilePattern()
             );
         }
     }

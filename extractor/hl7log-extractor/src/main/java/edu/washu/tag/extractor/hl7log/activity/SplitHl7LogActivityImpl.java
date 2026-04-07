@@ -349,7 +349,7 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
 
                 try {
                     // Add HL7 content to the zip file
-                    String fileName = logFileDate + "_" + messageNumber + ".hl7";
+                    String fileName = logFileNameNoExtension + "_" + messageNumber + ".hl7";
                     String zipPath = getZipTimestampPath(logFileDate).resolve(fileName).toString();
                     ZipEntry zipEntry = new ZipEntry(zipPath);
                     zipOut.putNextEntry(zipEntry);

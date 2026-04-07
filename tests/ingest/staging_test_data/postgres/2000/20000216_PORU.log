@@ -1,0 +1,10 @@
+<SB>
+MSH|^~\&|SOMERIS|ABCHOSP|SOMEAPP|ABC_HOSP_DEPT_X|20000216143022|TBD|ORU^R01|2.25.999888777666555444333222111000999888|P|2.4<R>
+PID|1||ABC451153^^^ABC^MR~EPIC4485912^^^EPIC^MRN||COLEMAN^ANTHONY^RYAN^^^^D||19620626000000|M||C|123 STREET^^CITY CITY^MO^61111^USA^L^^COUNTY||5555555555|||S||ABC451153^^^ABC^PN<R>
+PV1||O|ABC RAD5^ABC RAD5 R-5005^ABC RAD5 R-5005^ABC||||D7823233^GALLAGHER^RUSSELL^J.^M.D.^^^^ABC^^^^HOSP|^^|^^|RAD|||||||||V56457334^^^ABC^VN||||||||||||||||||||||||||||||||V<R>
+OBR||8812923^SYS|7795083412|BED70260^70260 70260 Skull complete min 4 views^UNKDEV|URGENT||20000216073204|||PSCRIB|||||^^^^ |D7823234^DONOVAN^WILLIAM^CORY^M.D.^^^^ABC|||||70260^Skull Complete Min 4 Views Dx Xray|20000216143022||BED|||1^^^20000216143022^^U^^URGENT|       |||^Headache|D7823232^MARKS^MICHAEL^R.^^^M.D.|D7823241^SANDERS^LISA^A.^^^M.D.||PSCRIB|||||||||70260<R>
+OBX|1|TX|976487||MICHAEL MARKS, M.D.~~~~********Final Report********~~~ ||||||F<R>
+OBX|2|TX|976487||ACC#  Date Time  Exam~~7795083412 Feb 16 2000 02:30PM BED70260 70260 Skull complete min 4 views~~EXAMINATION:~Skull X-ray, complete series~~FINDINGS:~The complete skull series demonstrates normal cranial vault contour~and thickness. No fracture lines or bony erosions are identified.~The sella turcica is normal in size and configuration. The paranasal~sinuses are clear. The mastoid air cells are well-pneumatized~bilaterally.~~IMPRESSION:~Normal complete skull series. No acute intracranial abnormality~detected.||||||F<R>
+OBX|3|TX|976487||Requested By: Donovan,William C. M.D.~~Dictated By: Michael Marks, M.D. on Feb 16 2000 02:30PM~~This document has been electronically signed by: Michael Marks, M.D. on~Feb 16 2000 02:30PM~ ~~~ ~~~ ||||||F<R>
+OBX||RP|976487|4|7795083412^UK^ZB||||||F<R>
+<EB>
