@@ -29,13 +29,13 @@
     - name: Check if staging node uses self-signed cert
       ansible.builtin.set_fact:
         _staging_uses_self_signed: >-
-          {{ (hostvars[groups['staging'][0]].tls_cert_path | default(staging_self_signed_tls_cert_path)) == staging_self_signed_tls_cert_path }}
+          {{ (hostvars[(groups['staging'] | default([inventory_hostname]))[0]].tls_cert_path | default(staging_self_signed_tls_cert_path)) == staging_self_signed_tls_cert_path }}
       run_once: true
 
     - name: Slurp staging CA certificate
       ansible.builtin.slurp:
-        src: '{{ hostvars[groups["staging"][0]].tls_cert_path | default(staging_self_signed_tls_cert_path) }}'
-      delegate_to: "{{ groups['staging'][0] }}"
+        src: '{{ hostvars[(groups["staging"] | default([inventory_hostname]))[0]].tls_cert_path | default(staging_self_signed_tls_cert_path) }}'
+      delegate_to: "{{ (groups['staging'] | default([inventory_hostname]))[0] }}"
       register: _staging_ca_cert
       run_once: true
       when: _staging_uses_self_signed | bool
