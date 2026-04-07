@@ -444,15 +444,18 @@ export default function HomeClient({ enableChat, enablePlaybooks }: HomeClientPr
     console.log('[Scout Client] Props received:', { enableChat, enablePlaybooks });
   }, [enableChat, enablePlaybooks]);
 
+  const skipAuth =
+    process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
+
   // Auto-login: redirect to sign in if not authenticated
   useEffect(() => {
-    if (status !== 'loading' && !session) {
+    if (!skipAuth && status !== 'loading' && !session) {
       signIn('keycloak');
     }
-  }, [status, session]);
+  }, [status, session, skipAuth]);
 
   // Show loading state while checking auth or redirecting to login
-  if (status === 'loading' || !session) {
+  if (!skipAuth && (status === 'loading' || !session)) {
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex items-center justify-center">
         <div className="text-center">
