@@ -444,7 +444,8 @@ export default function HomeClient({ enableChat, enablePlaybooks }: HomeClientPr
     console.log('[Scout Client] Props received:', { enableChat, enablePlaybooks });
   }, [enableChat, enablePlaybooks]);
 
-  const skipAuth = process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
+  const skipAuth =
+    process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
 
   // Auto-login: redirect to sign in if not authenticated
   useEffect(() => {
