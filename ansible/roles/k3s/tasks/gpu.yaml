@@ -27,5 +27,7 @@
       - libnvidia-container-tools
       - libnvidia-container1
     package_type: 'GPU'
-    online_repo_setup: '{{ playbook_dir }}/../roles/k3s/tasks/gpu_repo_setup.yaml'
+    yum_repo:
+      name: nvidia-container-toolkit
+      url: https://nvidia.github.io/libnvidia-container/stable/rpm/x86_64/
     verify_command: 'nvidia-ctk --version'

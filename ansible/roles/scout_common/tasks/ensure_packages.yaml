@@ -1,16 +1,17 @@
 ---
 # Generic Package Installation
 # Unified wrapper that handles package installation for both online and air-gapped environments.
-# In air-gapped mode, Nexus yum proxy repos must be pre-configured on the node
-# (via configure_nexus_yum_repos.yaml) before calling this task.
+# Configures the required yum repository (if specified) and installs packages.
 #
 # Required parameters:
 #   - package_names: List of package names to install (e.g., ["python3-kubernetes"])
-#   - package_type: Description for logging (e.g., "Python", "SELinux", "GPU")
+#   - package_type: Description for logging (e.g., "Python", "GPU")
 #
 # Optional parameters:
+#   - yum_repo: Dict with 'name' and 'url' for a yum repository the packages require.
+#               A .repo file is created automatically. In proxy mode (yum_proxy_base_url is set),
+#               baseurl points to the proxy; otherwise it points to the upstream url.
 #   - verify_command: Command to verify installation (optional)
-#   - online_repo_setup: Path to task file for online-mode repo setup (optional, skipped in air-gapped)
 
 ################################################################################
 # Skip if packages already installed
@@ -28,29 +29,16 @@
     msg: "{{ package_type }} packages {{ 'already installed - skipping' if packages_check.rc == 0 else 'will be installed' }}"
 
 ################################################################################
-# Guard: fail early if air-gapped without yum proxy
+# Repository setup
 ################################################################################
 
-- name: Fail if air-gapped without yum proxy configured
-  ansible.builtin.fail:
-    msg: >-
-      Air-gapped RPM installation requires a yum proxy.
-      Either set package_proxy_mode: nexus and deploy Nexus on the staging node,
-      or set package_proxy_mode: external and provide yum_proxy_base_url in inventory.
+- name: Configure {{ yum_repo.name | default('') }} yum repository
+  ansible.builtin.template:
+    src: yum-repo.j2
+    dest: '/etc/yum.repos.d/{{ yum_repo.name }}.repo'
+    mode: '0644'
   when:
-    - air_gapped | default(false) | bool
-    - yum_proxy_base_url | default('') | length == 0
-    - packages_check.rc != 0
-
-################################################################################
-# Repository setup (online mode only)
-################################################################################
-
-- name: Run online repository setup tasks
-  ansible.builtin.include_tasks: '{{ online_repo_setup }}'
-  when:
-    - online_repo_setup is defined
-    - not (air_gapped | default(false) | bool)
+    - yum_repo is defined
     - packages_check.rc != 0
 
 ################################################################################

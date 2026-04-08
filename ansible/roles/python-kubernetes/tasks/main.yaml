@@ -11,4 +11,7 @@
     package_names:
       - python3-kubernetes
     package_type: 'Python'
+    yum_repo:
+      name: epel-9
+      url: https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/
     verify_command: python3 -c "import kubernetes; print(kubernetes.__version__)"

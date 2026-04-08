@@ -8,14 +8,14 @@
 #   - Air-gapped deployment: docs/source/technical/air-gapped.md
 #   - Role details: ansible/roles/k3s/README.md
 
-- name: Configure Nexus yum proxy repos on cluster nodes
+- name: Configure staging CA trust on cluster nodes
   hosts: k3s_cluster
   any_errors_fatal: true
   tasks:
-    - name: Configure Nexus yum repos for air-gapped dnf access
+    - name: Configure staging CA for package proxy access
       ansible.builtin.include_role:
         name: scout_common
-        tasks_from: configure_nexus_yum_repos
+        tasks_from: configure_staging_ca
 
 - name: Install Python kubernetes library on cluster nodes
   hosts: k3s_cluster
