@@ -11,6 +11,7 @@ import edu.washu.tag.TestQuerySuite;
 import edu.washu.tag.model.IngestJobInput;
 import edu.washu.tag.model.ReportPatientMappingEntry;
 import edu.washu.tag.util.FileIOUtils;
+import edu.washu.tag.validation.ExactNumberObjectsResult;
 import edu.washu.tag.validation.ExactRowsResult;
 import edu.washu.tag.validation.column.ArrayType;
 import java.util.ArrayList;
@@ -253,7 +254,7 @@ public class TestScoutQueries extends BaseTest {
     @Test
     public void testLongitudinalPatientIds() {
         final String baseTableName = newTable();
-        final String mappingTableName = baseTableName + "_report_patient_mapping";
+        final String mappingTableName = baseTableName + "_curated_report_patient_mapping";
         ingest(
             new IngestJobInput().setReportTableName(baseTableName).setLogPaths("/data/transitive_id_resolution/20260329.log")
         );
@@ -313,6 +314,87 @@ public class TestScoutQueries extends BaseTest {
         expectedPatients.add(new ExpectedPatientCluster(false, report11, report12, reportSecondDay10));
 
         validateMappingTable(mappingTableName, expectedPatients);
+
+        final String curatedEpicView = baseTableName + "_curated_epic_view";
+
+        final TestQuery<?> viewSizeQuery = new TestQuery<>("viewSizeQuery", "SELECT * FROM " + curatedEpicView);
+        final ExactNumberObjectsResult viewCount = new ExactNumberObjectsResult();
+        viewCount.setExpectedNumResults(
+            expectedPatients
+                .stream()
+                .filter(ExpectedPatientCluster::consistent)
+                .mapToInt(cluster -> cluster.expectedRows().length)
+                .sum()
+        );
+        viewSizeQuery.setExpectedQueryResult(viewCount);
+        queryAndValidate(viewSizeQuery, curatedEpicView);
+
+        // Now let's check the view. The view should return a number of rows equal to report count total in consistent clusters
+        // test queries to run:
+        // 1) EPIC MRN that exists but inconsistent should return no rows
+        // 2) EPIC MRN that exists and is consistent should return full patient web.
+        // Do both queries in 1 spark SQL call. This is closest to real user interaction where the user
+        // may request a mix of consistent and inconsistent EPIC MRNs
+
+        final String expectedPatientId = spark.sql(String.format("SELECT scout_patient_id FROM %s WHERE message_control_id='1.2.3.29.1'", curatedEpicView))
+            .collectAsList()
+            .getFirst()
+            .getString(0);
+        final Map<String, Map<String, String>> rowAssertions = new HashMap<>();
+        final Map<String, String> report1ViewRepresentation = new HashMap<>();
+        report1ViewRepresentation.put("mpi", "LTI_02");
+        report1ViewRepresentation.put("epic_mrn", null);
+        report1ViewRepresentation.put("version_id", "2.4");
+        report1ViewRepresentation.put("sending_facility", "ABCHOSP1");
+        report1ViewRepresentation.put("message_control_id", "1.2.3.29.1");
+        rowAssertions.put("s3://%LAKE_BUCKET%/hl7/2026/20260329.zip/2026/03/29/16/202603291659521322_1.hl7", report1ViewRepresentation);
+
+        final Map<String, String> report2ViewRepresentation = new HashMap<>();
+        report2ViewRepresentation.put("mpi", "LTI_02");
+        report2ViewRepresentation.put("epic_mrn", null);
+        report2ViewRepresentation.put("version_id", "2.4");
+        report2ViewRepresentation.put("sending_facility", "ABCHOSP2");
+        report2ViewRepresentation.put("message_control_id", "1.2.3.29.2");
+        rowAssertions.put("s3://%LAKE_BUCKET%/hl7/2026/20260329.zip/2026/03/29/16/202603291659538535_2.hl7", report2ViewRepresentation);
+
+        final Map<String, String> report3ViewRepresentation = new HashMap<>();
+        report3ViewRepresentation.put("mpi", null);
+        report3ViewRepresentation.put("epic_mrn", "LTI_03");
+        report3ViewRepresentation.put("version_id", "2.7");
+        report3ViewRepresentation.put("sending_facility", "ABCHOSP3");
+        report3ViewRepresentation.put("message_control_id", "1.2.3.29.3");
+        rowAssertions.put("s3://%LAKE_BUCKET%/hl7/2026/20260329.zip/2026/03/29/16/202603291659544492_3.hl7", report3ViewRepresentation);
+
+        final Map<String, String> reportSecondDay1ViewRepresentation = new HashMap<>();
+        reportSecondDay1ViewRepresentation.put("mpi", null);
+        reportSecondDay1ViewRepresentation.put("epic_mrn", "LTI_03");
+        reportSecondDay1ViewRepresentation.put("version_id", "2.7");
+        reportSecondDay1ViewRepresentation.put("sending_facility", "ABCHOSPD21");
+        reportSecondDay1ViewRepresentation.put("message_control_id", "1.2.3.30.1");
+        rowAssertions.put("s3://%LAKE_BUCKET%/hl7/2026/20260330.zip/2026/03/30/16/202603301659521322_1.hl7", reportSecondDay1ViewRepresentation);
+
+        final Map<String, String> reportSecondDay7ViewRepresentation = new HashMap<>();
+        reportSecondDay7ViewRepresentation.put("mpi", "LTI_02");
+        reportSecondDay7ViewRepresentation.put("epic_mrn", "LTI_03");
+        reportSecondDay7ViewRepresentation.put("version_id", "2.7");
+        reportSecondDay7ViewRepresentation.put("sending_facility", "ABCHOSPD27");
+        reportSecondDay7ViewRepresentation.put("message_control_id", "1.2.3.30.7");
+        rowAssertions.put("s3://%LAKE_BUCKET%/hl7/2026/20260330.zip/2026/03/30/16/202603301659551654_7.hl7", reportSecondDay7ViewRepresentation);
+
+        for (Map<String, String> assertions : rowAssertions.values()) {
+            assertions.put("scout_patient_id", expectedPatientId);
+            assertions.put("resolved_mpi", "LTI_02");
+            assertions.put("resolved_epic_mrn", "LTI_03");
+        }
+        final TestQuery<?> viewResolvedQuery = new TestQuery<>(
+            "viewResolvedQuery",
+            "SELECT * FROM " + curatedEpicView + " WHERE resolved_epic_mrn IN ('LTI_03', 'LTI_05', 'LTI_11')"
+        );
+        final ExactRowsResult viewResolvedQueryResult = new ExactRowsResult();
+        viewResolvedQuery.setExpectedQueryResult(viewResolvedQueryResult);
+        viewResolvedQueryResult.setUniqueIdColumnName("primary_report_identifier");
+        viewResolvedQueryResult.setRowAssertions(rowAssertions);
+        queryAndValidate(viewResolvedQuery, curatedEpicView);
     }
 
     private List<ReportPatientMappingEntry> readMappingTable(String tableName) {
@@ -396,7 +478,7 @@ public class TestScoutQueries extends BaseTest {
                 .map(ReportPatientMappingEntry::getScoutPatientId)
                 .collect(Collectors.toSet())
         ).as("subset of mapping table").hasSize(expectedSize);
-        logger.info("Checked mapping table subset to have size {}", expectedSize);
+        logger.info("Checked mapping table subset to have {} unique Scout patient IDs", expectedSize);
     }
 
     private static <T> T readFileAs(String resourceName, TypeReference<T> classObj) {
