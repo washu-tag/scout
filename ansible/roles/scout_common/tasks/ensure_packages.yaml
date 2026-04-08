@@ -1,16 +1,23 @@
 ---
 # Generic Package Installation
-# Unified wrapper that handles package installation for both online and air-gapped environments.
-# Configures the required yum repository (if specified) and installs packages.
+# Handles package installation for both online and proxy (air-gapped) environments.
+#
+# Online mode (package_proxy_mode == 'none'):
+#   Uses the system package manager directly (apt, dnf, etc.) with minimal assumptions.
+#   Callers may provide an online_repo_setup tasks file for packages requiring
+#   explicit repository configuration (e.g., NVIDIA container toolkit).
+#
+# Proxy mode (package_proxy_mode == 'nexus' or 'external'):
+#   Configures a yum repository pointing to the package proxy, then installs.
+#   Assumes a RHEL-based system (air-gapped environments are controlled).
 #
 # Required parameters:
 #   - package_names: List of package names to install (e.g., ["python3-kubernetes"])
 #   - package_type: Description for logging (e.g., "Python", "GPU")
 #
 # Optional parameters:
-#   - yum_repo: Dict with 'name' and 'url' for a yum repository the packages require.
-#               A .repo file is created automatically. In proxy mode (yum_proxy_base_url is set),
-#               baseurl points to the proxy; otherwise it points to the upstream url.
+#   - yum_repo: Dict with 'name' and 'url' — used in proxy mode to configure the repo.
+#   - online_repo_setup: Path to a tasks file for online-mode repo setup.
 #   - verify_command: Command to verify installation (optional)
 
 ################################################################################
@@ -29,15 +36,38 @@
     msg: "{{ package_type }} packages {{ 'already installed - skipping' if packages_check.rc == 0 else 'will be installed' }}"
 
 ################################################################################
-# Repository setup
+# Guard: fail early if air-gapped without a package proxy
 ################################################################################
 
-- name: Configure {{ yum_repo.name | default('') }} yum repository
+- name: Fail if air-gapped without package proxy configured
+  ansible.builtin.fail:
+    msg: >-
+      Air-gapped RPM installation requires a package proxy.
+      Either set package_proxy_mode: nexus and deploy Nexus on the staging node,
+      or set package_proxy_mode: external and provide yum_proxy_base_url in inventory.
+  when:
+    - air_gapped | default(false) | bool
+    - yum_proxy_base_url | default('') | length == 0
+    - packages_check.rc != 0
+
+################################################################################
+# Repository setup — online or proxy, mutually exclusive
+################################################################################
+
+- name: Run online repository setup for {{ package_type }}
+  ansible.builtin.include_tasks: '{{ online_repo_setup }}'
+  when:
+    - package_proxy_mode | default('none') == 'none'
+    - online_repo_setup is defined
+    - packages_check.rc != 0
+
+- name: Configure {{ yum_repo.name | default('') }} yum repository for proxy
   ansible.builtin.template:
     src: yum-repo.j2
     dest: '/etc/yum.repos.d/{{ yum_repo.name }}.repo'
     mode: '0644'
   when:
+    - package_proxy_mode | default('none') != 'none'
     - yum_repo is defined
     - packages_check.rc != 0
 
