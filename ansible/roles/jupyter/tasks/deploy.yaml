@@ -56,7 +56,7 @@
         name: scout-logo
         namespace: '{{ jupyter_namespace }}'
       binaryData:
-        scout.png: '{{ lookup("file", jupyter_logo_path) | b64encode }}'
+        scout.png: '{{ lookup("community.general.binary_file", jupyter_logo_path) }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Create ConfigMap with custom CSS for JupyterLab branding
@@ -129,8 +129,34 @@
 
 - name: Set staging CA cert pod path for templates
   ansible.builtin.set_fact:
-    _staging_ca_cert_pod_path: /etc/pki/staging/ca.crt
+    _staging_ca_cert_pod_path: /etc/pki/staging-secret/ca.crt
   when: _package_proxy_needs_staging_cert | default(false) | bool
+
+- name: Discover quickstart sample files
+  delegate_to: localhost
+  ansible.builtin.find:
+    paths: '{{ jupyter_samples_dir }}'
+    file_type: file
+  register: _jupyter_sample_files
+
+- name: Build quickstart samples data
+  ansible.builtin.set_fact:
+    _jupyter_samples_data: "{{ _jupyter_samples_data | default({}) | combine({item | basename: lookup('file', item)}) }}"
+  loop: "{{ _jupyter_sample_files.files | map(attribute='path') | list }}"
+  no_log: true
+
+- name: Create ConfigMap with Scout quickstart samples
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: scout-quickstart-samples
+        namespace: '{{ jupyter_namespace }}'
+      data: '{{ _jupyter_samples_data }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Parse Helm values
   ansible.builtin.set_fact:

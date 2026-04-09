@@ -15,10 +15,12 @@ encountering a file like this.
 a message that matches the encoding rules of individual messages within the log files. The goal is to double check
 that attempting to ingest an HL7-ish log file that is generally well-formed but which contains an unparseable message
 will _not_ cause the other reports in the same log file to fail the ingestion process.
-4. File with message containing duplicate HL7 content: [20071021.log](postgres/2007/20071021.log) contains a message with
-two HL7 reports. We expect to see the first ingested successfully and a complaint about the second because it doesn't
-have a header line with a timestamp.
+4. File with message containing duplicate HL7 content: [20071021.log](postgres/2007/20071021.log) contains two identical
+HL7 reports with no timestamp header line between them. Both should be ingested successfully.
 5. File with no HL7: [20190106.log](postgres/2019/20190106.log) contains a message with no HL7 content, just message tags (<SB><EB><R>).
 It should be marked as an error: empty HL7. 
 6. File with junk HL7: [20160829.log](postgres/2016/20160829.log) contains a message with garbage in the HL7 content.
 It should be marked as an error: unparsable HL7.
+7. Multiple log files for the same date: [20000216.log](postgres/2000/20000216.log) and [20000216_PORU.log](postgres/2000/20000216_PORU.log)
+share the date 2000-02-16. Both should be ingested successfully, and the HL7 filenames should use the full log filename
+as a prefix (`20000216_0.hl7` and `20000216_PORU_0.hl7` respectively) to avoid collisions.

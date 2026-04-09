@@ -32,7 +32,7 @@ air_gapped: false
 # Ansible control node location relative to cluster
 # TRUE when control node is external to cluster - needs fetched kubeconfig
 # FALSE when control node is on the cluster - can use cluster kubeconfig directly
-ansible_control_node_external_to_cluster: "{{ ansible_connection | default('ssh') != 'local' or (air_gapped | bool) }}"
+ansible_control_node_external_to_cluster: "{{ hostvars[inventory_hostname].ansible_connection | default('ssh') != 'local' or (air_gapped | bool) }}"
 
 # Kubeconfig path for Ansible control node execution
 # When control node is on cluster, uses the cluster's kubeconfig directly
@@ -71,6 +71,19 @@ scout_monitoring_namespace: scout-monitoring
 # System namespaces (kept separate)
 traefik_namespace: kube-system
 harbor_namespace: harbor
+
+# Squid forward proxy port (on staging node for air-gapped IdP access)
+squid_port: 3128
+
+# Domains required by each IdP for air-gapped proxy access
+# Used by both squid (allowlist) and keycloak (proxy mappings)
+squid_microsoft_domains:
+  - login.microsoftonline.com
+  - graph.microsoft.com
+
+squid_github_domains:
+  - github.com
+  - api.github.com
 
 # Staging node self-signed TLS certificate paths
 # Used when tls_cert_path/tls_key_path not provided in inventory

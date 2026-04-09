@@ -13,6 +13,7 @@ Scout supports air-gapped deployments through a staging node architecture. Ansib
 │   Internet   │────────▶│  Staging Node                │
 └──────────────┘         │  - K3s cluster (standalone)  │
                          │  - Harbor registry proxy     │
+                         │  - Squid forward proxy       │
                          └──────────────────────────────┘
                                           │
 ┌───────────────────────┐                 │ HTTPS (registry)
@@ -72,6 +73,7 @@ This requirement exists because air-gapped installations download SELinux packag
 ### Network Connectivity
 
 - Production nodes → Staging Harbor (HTTPS, typically port 443 but configurable in the inventory)
+- Production nodes → Staging Squid proxy (TCP port 3128, for IdP authentication)
 - Ansible control → Staging K8s API (port 6443)
 - Ansible control → Production K8s API (port 6443)
 - Ansible control → All nodes (SSH, port 22)
@@ -239,7 +241,7 @@ make all
 ```
 
 **What happens:**
-- `staging` play installs a single-node K3s cluster on the staging host (online mode) and deploys Traefik, Harbor (container image proxy), and Nexus (package proxy for conda/PyPI/Maven) via Helm
+- `staging` play installs a single-node K3s cluster on the staging host (online mode), deploys Traefik, Harbor (container image proxy), and Nexus (package proxy for conda/PyPI/Maven) via Helm, and installs Squid forward proxy for outbound IdP access
 - `k3s` play
   - Downloads K3s artifacts (binary, install script) to Ansible control node
   - Downloads SELinux packages via Kubernetes Job on staging cluster
@@ -272,6 +274,42 @@ Harbor acts as a transparent caching proxy for container registries:
 - Elastic Docker Registry (`docker.elastic.co`)
 - NVIDIA GPU Cloud (`nvcr.io`)
 - Apache Superset (`apachesuperset.docker.scarf.sh`)
+
+### Squid Forward Proxy
+
+Squid is installed as a system service on the staging node to provide outbound HTTPS access for services on the air-gapped production cluster that need to reach external APIs — specifically, Keycloak's server-to-server calls to external identity provider (IdP) OAuth endpoints.
+
+**How it works:**
+
+1. Squid listens on port 3128 on the staging node with a strict domain allowlist
+2. Keycloak on the production cluster is configured to route IdP traffic through the proxy
+3. Squid permits HTTPS CONNECT requests only to allowed domains, denying all other traffic
+
+**Allowed domains** are computed automatically from your IdP configuration:
+
+| IdP configured | Domains allowed |
+|----------------|-----------------|
+| `keycloak_microsoft_client_id` | `login.microsoftonline.com`, `graph.microsoft.com` |
+| `keycloak_gh_client_id` | `github.com`, `api.github.com` |
+
+**Keycloak integration:**
+
+When `air_gapped: true` and an external IdP is configured, the Keycloak Ansible role automatically configures Keycloak's `spi-connections-http-client-default-proxy-mappings` SPI to route IdP traffic through Squid. No manual configuration is needed.
+
+**Adding extra domains:**
+
+To allow additional outbound access through the proxy (e.g., for Azure OpenAI API), set `squid_extra_allowed_domains` in your staging inventory vars:
+
+```yaml
+staging:
+  vars:
+    squid_extra_allowed_domains:
+      - api.openai.com
+```
+
+**Network requirements:**
+
+Production cluster nodes must be able to reach the staging node on port 3128 (TCP). Add this to the network connectivity requirements alongside the existing Harbor registry access.
 
 ### K3s Artifact Distribution
 

@@ -1,4 +1,4 @@
-# ADR 0016: Air-Gapped Package Proxy
+# ADR 0017: Air-Gapped Package Proxy
 
 **Date**: 2026-03  
 **Status**: Proposed  
@@ -77,9 +77,9 @@ The three modes are:
 
 The per-format URL granularity allows mixing sources — for example, using an institutional PyPI mirror while proxying conda through Nexus.
 
-### Staging Certificate Trust (per ADR 0015)
+### Staging Certificate Trust (per ADR 0016)
 
-Nexus runs on the staging node behind TLS. When the staging node uses a self-signed certificate, the certificate must be distributed to clients that contact Nexus. For Jupyter pods, this means mounting the staging CA certificate and configuring conda and pip to trust it. For production nodes running dnf, the certificate is added to the system trust store. This follows the patterns established in ADR 0015.
+Nexus runs on the staging node behind TLS. When the staging node uses a self-signed certificate, the certificate must be distributed to clients that contact Nexus. For Jupyter pods, this means mounting the staging CA certificate and configuring conda and pip to trust it. For production nodes running dnf, the certificate is added to the system trust store. This follows the patterns established in ADR 0016.
 
 ### Jupyter Conda Environments
 
@@ -208,7 +208,7 @@ Nexus CE supports Docker registry proxy repositories and could theoretically rep
 ### Operational
 
 - **Monitoring**: Track Nexus component count against the 40,000 cap; configure cleanup policies to prune unused cached packages
-- **Staging certificate**: When the staging node uses a self-signed certificate, distribute it to Jupyter pods and production nodes per ADR 0015
+- **Staging certificate**: When the staging node uses a self-signed certificate, distribute it to Jupyter pods and production nodes per ADR 0016
 - **Storage**: Nexus proxy cache requires persistent storage on the staging node; size depends on the breadth of packages cached
 - **User PVC sizing**: User home directories may need larger persistent volumes to accommodate conda environments (ML stacks can be several GB)
 
@@ -250,4 +250,4 @@ The CSP `connect-src` directive blocks `fetch()` to external origins, but the cu
 - **ADR 0008**: Ollama Model Distribution in Air-Gapped Environments — NFS pre-staging pattern for ML models
 - **ADR 0011**: Deployment Portability via Layered Architecture — service-mode variable pattern
 - **ADR 0012**: Security Scan Response and Hardening — global CSP and security headers middleware
-- **ADR 0015**: Staging Node Certificate Distribution — TLS trust for staging-hosted services
+- **ADR 0016**: Staging Node Certificate Distribution — TLS trust for staging-hosted services

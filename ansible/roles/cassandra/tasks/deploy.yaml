@@ -24,11 +24,8 @@
     tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: cass-operator
-    helm_chart_ref: k8ssandra/cass-operator
-    helm_chart_version: '{{ cass_operator_version }}'
+    helm_chart_ref: '{{ scout_repo_dir }}/vendored/helm/cass-operator-0.60.0.tgz'
     helm_chart_namespace: '{{ scout_extractor_namespace }}'
-    helm_repo_name: k8ssandra
-    helm_repo_url: https://helm.k8ssandra.io/stable
     helm_chart_timeout: 10m
 
 # Deploy Cassandra datacenter
@@ -63,6 +60,7 @@
           limits:
             cpu: '{{ cassandra_cpu_limit }}'
             memory: '{{ cassandra_max_heap | jvm_memory_to_k8s(2) }}'
+        systemLoggerResources: '{{ cassandra_system_logger_resources_default | combine(cassandra_system_logger_resources | default({}), recursive=true) }}'
         config:
           jvm-server-options:
             initial_heap_size: '{{ cassandra_init_heap }}'

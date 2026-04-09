@@ -121,7 +121,7 @@ Configuration:
 - `nexus_conda_repos` / `nexus_pypi_repos`: Proxy repository definitions
 - `accept_nexus_eula`: Accept Sonatype CE EULA automatically (default: false)
 
-Used by: Staging node deployment alongside Harbor (ADR 0016)
+Used by: Staging node deployment alongside Harbor (ADR 0017)
 
 ### jupyter
 

@@ -71,7 +71,7 @@
 
     - name: Set variables for download job
       ansible.builtin.set_fact:
-        rpm_job_name: '{{ package_type | lower }}-downloader-{{ ansible_date_time.epoch }}'
+        rpm_job_name: '{{ package_type | lower }}-downloader-{{ ansible_facts["date_time"]["epoch"] }}'
         rpm_package_type: '{{ package_type }}'
         rpm_download_script: '{{ download_script }}'
         control_node_rpm_archive_dir: '{{ control_node_artifact_dir.path }}'

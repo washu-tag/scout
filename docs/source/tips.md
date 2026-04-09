@@ -46,6 +46,28 @@ This page provides helpful tips for using Scout services effectively.
 - **Leverage convenience columns**: Use `epic_mrn` or dynamically-created ID columns instead of parsing `patient_ids` array
 - **Cache frequently-used DataFrames**: Use `.cache()` on DataFrames you'll query multiple times
 
+### Installing Additional Packages
+
+The base Jupyter environment includes PySpark, Delta Lake, Trino, pandas, matplotlib, seaborn, and other core data analysis packages. For ML, NLP, or other specialized libraries, create a conda environment:
+
+```bash
+# Create an environment with specific packages
+mamba create -n my-env python=3.11 ipykernel pytorch transformers scikit-learn -y
+
+# Or use the sample environment file (in ~/Scout/environment.yml)
+mamba env create -f ~/Scout/environment.yml
+```
+
+Environments are stored on your persistent home directory (`/home/jovyan/.conda/envs/`) and survive server restarts. The `nb_conda_kernels` extension automatically discovers them as Jupyter kernels -- after creating an environment, refresh the launcher to see it.
+
+```{important}
+Every environment you create must include `ipykernel` for `nb_conda_kernels` to discover it as a kernel. Without it, the environment won't appear in the Jupyter launcher.
+```
+
+```{note}
+In air-gapped deployments, package requests are routed through a proxy transparently -- no extra configuration is needed.
+```
+
 ### Working with Report Sections
 
 The Delta Lake schema includes parsed report sections:

@@ -12,6 +12,7 @@ import ipywidgets as widgets
 from IPython.display import display, HTML
 import requests
 import json
+import re
 
 from cohort_builder import (
     load_cohort_data,
@@ -21,6 +22,8 @@ from cohort_builder import (
     GREEN_SUCCESS,
     ORANGE_WARNING,
     RED_ERROR,
+    ALL_FACILITIES,
+    DEFAULT_FACILITIES,
 )
 
 from cohort_ui import (
@@ -32,164 +35,116 @@ from cohort_ui import (
 )
 
 
-def generate_regex_fake(user_query, return_prompt=False):
+def generate_regex_with_ollama(
+    user_query,
+    ollama_url="http://ollama:11434",
+    model="gpt-oss-120b-long:latest",
+):
     """
-    Fake regex pattern generator for testing (returns brain mets patterns after 1s delay).
+    Generate regex patterns for radiology report text search using Ollama.
 
     Args:
-        user_query: Natural language description (ignored in fake version)
-        return_prompt: If True, return what the prompt would be
+        user_query: Natural language description of what to search for (e.g., "brain mets")
+        ollama_url: Ollama API endpoint
+        model: Model name to use
 
     Returns:
-        Generated regex patterns for brain mets matching
+        Generated regex patterns (one per line) or error message
     """
-    prompt = f"[FAKE] Would generate patterns for: {user_query}"
+    prompt = f"""Generate regex patterns to search radiology reports for: {user_query}
 
-    if return_prompt:
-        return prompt
+Requirements:
+- Generate 2-4 regex patterns
+- Case-insensitive matching is already applied, do NOT include (?i) flags
+- Use .{{0,N}} for flexible proximity between terms (e.g., .{{0,50}} allows up to 50 characters between words)
+- Use non-capturing groups for alternations: (?:word1|word2|word3)
+- Include medical terminology variations and synonyms
+- Consider both forward and reverse word orders
+- Do NOT use \\b word boundaries — they are not supported. Every pattern MUST contain .{{0,N}} proximity syntax
 
-    # Simulate API delay
-    time.sleep(1)
+Examples:
+For "brain mets":
+- (?:metasta(?:sis|ses|tic)?|mets).{{0,50}}(?:brain|cerebr(?:al|um)|intracranial)
+- (?:brain|cerebr(?:al|um)|intracranial).{{0,50}}(?:metasta(?:sis|ses|tic)?|mets)
 
-    # Return brain mets-matching regex patterns
-    return "\n".join(
-        [
-            r"(?:metasta(?:sis|ses|tic)?|mets).{0,50}(?:brain|cerebr(?:al|um)|intracranial)",
-            r"(?:brain|cerebr(?:al|um)|intracranial).{0,50}(?:metasta(?:sis|ses|tic)?|mets)",
-            r"(?:brain|cerebral|intracranial).{0,30}(?:lesion|mass|tumor).{0,30}(?:metasta|secondary)",
-        ]
-    )
+Return ONLY valid JSON, nothing else:
+{{"patterns": ["pattern1", "pattern2", "pattern3"]}}
 
+Search term: {user_query}
 
-# def generate_regex_with_ollama(
-#     user_query,
-#     ollama_url="http://ollama.chatbot:11434",
-#     model="gpt-oss-120b-long:latest",
-#     return_prompt=False,
-# ):
-#     """
-#     Generate regex patterns for radiology report text search using Ollama.
-#
-#     Args:
-#         user_query: Natural language description of what to search for (e.g., "brain mets")
-#         ollama_url: Ollama API endpoint
-#         model: Model name to use
-#         return_prompt: If True, return the prompt instead of calling Ollama
-#
-#     Returns:
-#         Generated regex patterns (one per line) or error message, or prompt if return_prompt=True
-#     """
-#     prompt = f"""Generate regex patterns to search radiology reports for: {user_query}
-#
-# Requirements:
-# - Generate 2-4 regex patterns
-# - Use case-insensitive matching ((?i) flag assumed)
-# - Use flexible spacing: .{{0,50}} to allow words within 50 characters
-# - Use non-capturing groups: (?:word1|word2|word3)
-# - Include medical terminology variations and synonyms
-# - Consider both forward and reverse word orders
-#
-# Examples:
-# For "brain mets":
-# - Pattern 1: (?:metasta(?:sis|ses|tic)?|mets).{{0,50}}(?:brain|cerebr(?:al|um)|intracranial)
-# - Pattern 2: (?:brain|cerebr(?:al|um)|intracranial).{{0,50}}(?:metasta(?:sis|ses|tic)?|mets)
-#
-# Return ONLY valid JSON, nothing else:
-# {{"patterns": ["pattern1", "pattern2", "pattern3"]}}
-#
-# Search term: {user_query}
-#
-# JSON:"""
-#
-#     if return_prompt:
-#         return prompt
-#
-#     try:
-#         response = requests.post(
-#             f"{ollama_url}/api/generate",
-#             json={
-#                 "model": model,
-#                 "prompt": prompt,
-#                 "temperature": 0,
-#                 "stream": False,
-#                 "thinking": "low",
-#             },
-#             timeout=60,
-#         )
-#         response.raise_for_status()
-#         result = response.json()
-#
-#         # Extract generated text
-#         resp_text = result["response"].strip()
-#
-#         # Check if response is empty
-#         if not resp_text:
-#             return f"Error: Empty response from model. Available fields: {list(result.keys())}"
-#
-#         # Extract JSON object, ignoring any text before or after
-#
-#         # Remove code block fencing if present
-#         if resp_text.startswith("```json"):
-#             resp_text = resp_text[7:]  # Remove ```json
-#         if resp_text.startswith("```"):
-#             resp_text = resp_text[3:]  # Remove ```
-#
-#         # Remove closing fence
-#         if "```" in resp_text:
-#             resp_text = resp_text.split("```")[0]
-#
-#         resp_text = resp_text.strip()
-#
-#         # Check again after cleanup
-#         if not resp_text:
-#             return "Error: Empty response after cleanup"
-#
-#         # Find first JSON object (handles text before/after)
-#         import re
-#
-#         json_match = re.search(r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}", resp_text)
-#         if json_match:
-#             json_str = json_match.group()
-#         else:
-#             # Fallback: try to parse the whole thing
-#             json_str = resp_text.strip()
-#
-#         # Final check before parsing
-#         if not json_str or not json_str.strip():
-#             return f"Error: No JSON found in response: {resp_text[:300]}"
-#
-#         # Parse JSON
-#         try:
-#             obj = json.loads(json_str)
-#
-#             if not isinstance(obj, dict):
-#                 return "Error: Response is not a JSON object"
-#
-#             patterns = obj.get("patterns", [])
-#
-#             if not patterns:
-#                 return f"Error: No patterns in response. Got: {str(obj)[:200]}"
-#
-#             # Ensure patterns are strings and join with newlines
-#             # Each pattern should be on its own line
-#             # Also replace any escaped newlines (\n as text) with actual newlines
-#             pattern_strings = []
-#             for p in patterns:
-#                 if p:
-#                     p_str = str(p)
-#                     # Replace literal \n (backslash-n) with actual newline if present
-#                     p_str = p_str.replace("\\n", "\n")
-#                     pattern_strings.append(p_str)
-#
-#             return "\n".join(pattern_strings)
-#
-#         except json.JSONDecodeError as je:
-#             return f"Error: Could not parse JSON. Response: {resp_text[:300]}"
-#
-#     except requests.exceptions.RequestException as e:
-#         return f"Error connecting to Ollama: {str(e)}"
-#     except Exception as e:
-#         return f"Error generating regex: {str(e)}"
+JSON:"""
+
+    try:
+        response = requests.post(
+            f"{ollama_url}/api/generate",
+            json={
+                "model": model,
+                "prompt": prompt,
+                "temperature": 0,
+                "stream": False,
+                "thinking": "low",
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+        result = response.json()
+
+        # Extract generated text
+        resp_text = result["response"].strip()
+
+        if not resp_text:
+            return f"Error: Empty response from model. Available fields: {list(result.keys())}"
+
+        # Remove code block fencing if present
+        if resp_text.startswith("```json"):
+            resp_text = resp_text[7:]
+        if resp_text.startswith("```"):
+            resp_text = resp_text[3:]
+        if "```" in resp_text:
+            resp_text = resp_text.split("```")[0]
+
+        resp_text = resp_text.strip()
+
+        if not resp_text:
+            return "Error: Empty response after cleanup"
+
+        # Find first JSON object
+        json_match = re.search(r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}", resp_text)
+        if json_match:
+            json_str = json_match.group()
+        else:
+            json_str = resp_text.strip()
+
+        if not json_str or not json_str.strip():
+            return f"Error: No JSON found in response: {resp_text[:300]}"
+
+        try:
+            obj = json.loads(json_str)
+
+            if not isinstance(obj, dict):
+                return "Error: Response is not a JSON object"
+
+            patterns = obj.get("patterns", [])
+
+            if not patterns:
+                return f"Error: No patterns in response. Got: {str(obj)[:200]}"
+
+            pattern_strings = []
+            for p in patterns:
+                if p:
+                    p_str = str(p)
+                    p_str = p_str.replace("\\n", "\n")
+                    pattern_strings.append(p_str)
+
+            return "\n".join(pattern_strings)
+
+        except json.JSONDecodeError:
+            return f"Error: Could not parse JSON. Response: {resp_text[:300]}"
+
+    except requests.exceptions.RequestException as e:
+        return f"Error connecting to Ollama: {str(e)}"
+    except Exception as e:
+        return f"Error generating regex: {str(e)}"
 
 
 def _create_search_form(container, config=None):
@@ -283,14 +238,13 @@ def _create_search_form(container, config=None):
         layout=widgets.Layout(width="98%", max_height="60px")
     )
 
-    # Debug toggle
-    show_debug = widgets.Checkbox(
-        value=False, description="Show debug info", layout=widgets.Layout(width="auto")
-    )
-
     debug_output = widgets.Output(
         layout=widgets.Layout(width="98%", max_height="200px", overflow="auto")
     )
+
+    debug_accordion = widgets.Accordion(children=[debug_output])
+    debug_accordion.set_title(0, "Debug info")
+    debug_accordion.selected_index = None  # Collapsed by default
 
     report_text_input = widgets.Textarea(
         value=config.get("report_text_terms", ""),
@@ -313,7 +267,6 @@ def _create_search_form(container, config=None):
                 )
             return
 
-        # Show loading state
         generate_regex_button.description = "⏳ Generating..."
         generate_regex_button.disabled = True
 
@@ -325,47 +278,37 @@ def _create_search_form(container, config=None):
                 )
             )
 
-        # Show debug info if enabled
-        if show_debug.value:
-            import html as html_module
+        import html as html_module
 
-            # Get the actual prompt that will be sent
-            prompt_text = generate_regex_fake(query, return_prompt=True)
-            prompt_escaped = html_module.escape(prompt_text)
+        with debug_output:
+            debug_output.clear_output()
+            display(
+                HTML(
+                    f"""
+                <div style='background: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 11px; font-family: monospace;'>
+                    <div style='font-weight: 600; margin-bottom: 4px;'>Request Details:</div>
+                    <div><b>URL:</b> http://ollama:11434/api/generate</div>
+                    <div><b>Model:</b> gpt-oss-120b-long:latest</div>
+                    <div><b>Query:</b> {html_module.escape(query)}</div>
+                </div>
+            """
+                )
+            )
+
+        try:
+            result = generate_regex_with_ollama(query)
 
             with debug_output:
-                debug_output.clear_output()
                 display(
                     HTML(
                         f"""
-                    <div style='background: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 11px; font-family: monospace;'>
-                        <div style='font-weight: 600; margin-bottom: 4px;'>Request Details:</div>
-                        <div><b>Mode:</b> FAKE (returns brain mets patterns after 1s delay)</div>
-                        <div><b>Query:</b> {query}</div>
-                        <div style='margin-top: 8px;'><b>Prompt:</b></div>
-                        <pre style='background: white; padding: 4px; border-radius: 2px; overflow-x: auto; max-height: 200px; font-size: 10px;'>{prompt_escaped}</pre>
+                    <div style='background: #fef3c7; padding: 8px; border-radius: 4px; font-size: 11px; font-family: monospace; margin-top: 8px;'>
+                        <div style='font-weight: 600; margin-bottom: 4px;'>Response:</div>
+                        <pre style='margin: 0; white-space: pre-wrap; word-wrap: break-word;'>{result[:500]}</pre>
                     </div>
                 """
                     )
                 )
-
-        try:
-            # Generate regex using fake function (Ollama call commented out)
-            result = generate_regex_fake(query)
-
-            # Show full response in debug if enabled
-            if show_debug.value:
-                with debug_output:
-                    display(
-                        HTML(
-                            f"""
-                        <div style='background: #fef3c7; padding: 8px; border-radius: 4px; font-size: 11px; font-family: monospace; margin-top: 8px;'>
-                            <div style='font-weight: 600; margin-bottom: 4px;'>Response:</div>
-                            <pre style='margin: 0; white-space: pre-wrap; word-wrap: break-word;'>{result[:500]}</pre>
-                        </div>
-                    """
-                        )
-                    )
 
             with ai_status_output:
                 ai_status_output.clear_output()
@@ -399,7 +342,7 @@ def _create_search_form(container, config=None):
                 )
 
         finally:
-            generate_regex_button.description = "✨Generate Patterns"
+            generate_regex_button.description = "✨ Generate Patterns"
             generate_regex_button.disabled = False
 
     generate_regex_button.on_click(on_generate_regex)
@@ -415,36 +358,53 @@ def _create_search_form(container, config=None):
     service_name_input = widgets.Text(
         value=config.get("service_name_pattern", ""),
         placeholder="e.g., brain, chest, abdomen",
-        description="Exam Description:",
+        description="Exam Desc:",
         layout=widgets.Layout(width="98%"),
         style={"description_width": "100px"},
     )
 
+    facility_default = config.get("facilities", DEFAULT_FACILITIES)
     facility_select = widgets.SelectMultiple(
-        value=tuple(config.get("facilities", [])),
-        options=[
-            "BJH",
-            "PWH",
-            "BJSPH",
-            "MBMC",
-            "CH",
-            "WUSM",
-            "BJWCH",
-            "SLCH",
-            "PHCF",
-            "MBSH",
-            "BJCMG",
-            "AMH",
-            "MHB",
-            "MHE",
-            "WUCA",
-            "CC",
-            "HOME CARE SERVICES",
-        ],
+        value=tuple(facility_default),
+        options=ALL_FACILITIES,
         description="Facilities:",
         layout=widgets.Layout(width="98%", height="120px"),
         style={"description_width": "100px"},
     )
+
+    default_facilities_button = widgets.Button(
+        description="IRB Default",
+        button_style="info",
+        tooltip="Select default IRB-approved facilities",
+        layout=widgets.Layout(width="auto"),
+    )
+
+    select_all_button = widgets.Button(
+        description="All Facilities",
+        button_style="",
+        tooltip="Select all facilities",
+        layout=widgets.Layout(width="auto"),
+    )
+
+    clear_facilities_button = widgets.Button(
+        description="Clear",
+        button_style="",
+        tooltip="Clear facility selection",
+        layout=widgets.Layout(width="auto"),
+    )
+
+    def on_default_facilities(b):
+        facility_select.value = tuple(DEFAULT_FACILITIES)
+
+    def on_select_all(b):
+        facility_select.value = tuple(ALL_FACILITIES)
+
+    def on_clear_facilities(b):
+        facility_select.value = ()
+
+    default_facilities_button.on_click(on_default_facilities)
+    select_all_button.on_click(on_select_all)
+    clear_facilities_button.on_click(on_clear_facilities)
 
     min_age_input = widgets.IntText(
         value=config.get("min_age") if config.get("min_age") is not None else 18,
@@ -460,19 +420,67 @@ def _create_search_form(container, config=None):
         style={"description_width": "80px"},
     )
 
-    date_range_select = widgets.Dropdown(
+    sex_select = widgets.Dropdown(
         options=[
-            ("All dates", "all"),
-            ("Last 30 days", "30"),
-            ("Last 90 days", "90"),
-            ("Last 180 days", "180"),
-            ("Last 365 days", "365"),
+            ("Any Sex", "all"),
+            ("Male", "M"),
+            ("Female", "F"),
         ],
-        value=config.get("date_range_days", "all"),
-        description="Date Range:",
-        layout=widgets.Layout(width="98%"),
-        style={"description_width": "100px"},
+        value=config.get("sex", "all"),
+        description="Sex:",
+        layout=widgets.Layout(width="48%"),
+        style={"description_width": "80px"},
     )
+
+    from datetime import date, timedelta
+
+    date_start_input = widgets.DatePicker(
+        value=config.get("date_start", date.today() - timedelta(days=365)),
+        description="Start Date:",
+        layout=widgets.Layout(width="48%"),
+        style={"description_width": "80px"},
+    )
+
+    date_end_input = widgets.DatePicker(
+        value=config.get("date_end", date.today()),
+        description="End Date:",
+        layout=widgets.Layout(width="48%"),
+        style={"description_width": "80px"},
+    )
+
+    all_dates_check = widgets.Checkbox(
+        value=config.get("all_dates", False),
+        description="All dates (ignore date range)",
+        layout=widgets.Layout(width="98%"),
+        style={"description_width": "0px"},
+    )
+
+    def set_date_preset(days):
+        all_dates_check.value = False
+        date_start_input.value = date.today() - timedelta(days=days)
+        date_end_input.value = date.today()
+
+    preset_btn_layout = widgets.Layout(width="50px", min_width="50px")
+    last_30_btn = widgets.Button(description="30d", layout=preset_btn_layout)
+    last_90_btn = widgets.Button(description="90d", layout=preset_btn_layout)
+    last_180_btn = widgets.Button(
+        description="180d", layout=widgets.Layout(width="55px", min_width="55px")
+    )
+    last_365_btn = widgets.Button(description="1yr", layout=preset_btn_layout)
+
+    last_30_btn.on_click(lambda b: set_date_preset(30))
+    last_90_btn.on_click(lambda b: set_date_preset(90))
+    last_180_btn.on_click(lambda b: set_date_preset(180))
+    last_365_btn.on_click(lambda b: set_date_preset(365))
+
+    def on_all_dates_change(change):
+        date_start_input.disabled = change["new"]
+        date_end_input.disabled = change["new"]
+
+    all_dates_check.observe(on_all_dates_change, names="value")
+    # Apply initial state
+    date_start_input.disabled = all_dates_check.value
+    date_end_input.disabled = all_dates_check.value
 
     sample_limit_input = widgets.IntText(
         value=(
@@ -517,10 +525,7 @@ def _create_search_form(container, config=None):
                 layout=widgets.Layout(width="100%", justify_content="space-between"),
             ),
             ai_status_output,
-            widgets.HTML(
-                "<details style='margin: 4px 0;'><summary style='font-size: 11px; color: #6b7280; cursor: pointer;'>Debug info</summary><div id='debug-content'></div></details>"
-            ),
-            debug_output,
+            debug_accordion,
             widgets.HTML("<div style='height: 12px;'></div>"),
             widgets.HTML(
                 "<div style='font-weight: 600; font-size: 15px; margin-bottom: 10px; color: #1f2937; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb;'>Isolate Positive Findings</div>"
@@ -530,13 +535,85 @@ def _create_search_form(container, config=None):
         layout=widgets.Layout(width="45%"),
     )
 
-    # Fake upload button for patient identifiers
-    upload_ids_button = widgets.Button(
-        description="📤 Upload Patient IDs CSV",
-        button_style="info",
-        tooltip="Upload a CSV file with patient identifiers to filter",
-        layout=widgets.Layout(width="50%"),
+    # Patient ID filtering
+    patient_ids_input = widgets.Textarea(
+        value=config.get("patient_ids", ""),
+        placeholder="Paste Epic MRNs (one per line or comma-separated)",
+        description="Epic MRNs:",
+        layout=widgets.Layout(width="98%", height="80px"),
+        style={"description_width": "100px"},
     )
+
+    upload_ids_widget = widgets.FileUpload(
+        accept=".csv",
+        multiple=False,
+        description="Upload CSV",
+        button_style="info",
+        layout=widgets.Layout(width="auto"),
+    )
+
+    upload_status = widgets.HTML()
+
+    def on_upload_change(change):
+        if not upload_ids_widget.value:
+            return
+        try:
+            import io
+
+            uploaded = upload_ids_widget.value[0]
+            content = bytes(uploaded["content"]).decode("utf-8")
+            csv_df = pd.read_csv(io.StringIO(content))
+
+            # Look for epic_mrn column (case-insensitive)
+            mrn_col = None
+            for col in csv_df.columns:
+                if col.strip().lower() in ("epic_mrn", "mrn", "epicmrn", "patient_id"):
+                    mrn_col = col
+                    break
+
+            if mrn_col is None:
+                upload_status.value = (
+                    "<div style='font-size: 11px; color: #dc2626; margin-top: 4px;'>"
+                    "No epic_mrn, mrn, or patient_id column found in CSV"
+                    "</div>"
+                )
+                return
+
+            mrns = csv_df[mrn_col].dropna().astype(str).str.strip().tolist()
+            mrns = [m for m in mrns if m]
+
+            # Append to existing text
+            existing = patient_ids_input.value.strip()
+            new_mrns = "\n".join(mrns)
+            patient_ids_input.value = (
+                f"{existing}\n{new_mrns}".strip() if existing else new_mrns
+            )
+            upload_status.value = (
+                f"<div style='font-size: 11px; color: #10b981; margin-top: 4px;'>"
+                f"Loaded {len(mrns)} MRNs from CSV"
+                f"</div>"
+            )
+        except Exception as e:
+            upload_status.value = (
+                f"<div style='font-size: 11px; color: #dc2626; margin-top: 4px;'>"
+                f"Error reading CSV: {str(e)}"
+                f"</div>"
+            )
+
+    upload_ids_widget.observe(on_upload_change, names="value")
+
+    clear_ids_button = widgets.Button(
+        description="Clear",
+        button_style="",
+        layout=widgets.Layout(width="auto"),
+    )
+
+    def on_clear_ids(b):
+        patient_ids_input.value = ""
+        upload_status.value = ""
+        upload_ids_widget.value = ()
+
+    clear_ids_button.on_click(on_clear_ids)
 
     right_column = widgets.VBox(
         [
@@ -548,15 +625,32 @@ def _create_search_form(container, config=None):
             ),
             modality_select,
             service_name_input,
-            facility_select,
             widgets.HTML(
-                """
-            <div style='font-size: 12px; color: #6b7280; margin-top: 4px; font-style: italic;'>
-                💡 No selection = all facilities
-            </div>
-        """
+                "<div style='font-weight: 600; font-size: 13px; margin: 12px 0 8px 0; color: #374151;'>Facility Filters</div>"
             ),
-            date_range_select,
+            widgets.HTML(
+                "<div style='font-size: 11px; color: #92400e; background: #fef9c3; padding: 6px 10px; border-radius: 4px; border-left: 3px solid #f59e0b; margin-bottom: 6px;'>"
+                "Select facilities from IRB approved institutions"
+                "</div>"
+            ),
+            facility_select,
+            widgets.HBox(
+                [default_facilities_button, select_all_button, clear_facilities_button],
+                layout=widgets.Layout(gap="8px", margin="4px 0 0 0"),
+            ),
+            widgets.HTML(
+                "<div style='font-weight: 600; font-size: 13px; margin: 12px 0 8px 0; color: #374151;'>Date Filters</div>"
+            ),
+            widgets.HBox(
+                [date_start_input, date_end_input],
+                layout=widgets.Layout(width="100%", justify_content="space-between"),
+            ),
+            widgets.HBox(
+                [last_30_btn, last_90_btn, last_180_btn, last_365_btn, all_dates_check],
+                layout=widgets.Layout(
+                    gap="8px", margin="4px 0 0 0", align_items="center"
+                ),
+            ),
             widgets.HTML("<div style='height: 16px;'></div>"),
             widgets.HTML(
                 "<div style='font-weight: 600; font-size: 13px; margin-bottom: 8px; color: #374151;'>Demographic Filters</div>"
@@ -565,6 +659,7 @@ def _create_search_form(container, config=None):
                 [min_age_input, max_age_input],
                 layout=widgets.Layout(width="100%", justify_content="space-between"),
             ),
+            sex_select,
             widgets.HTML("<div style='height: 20px;'></div>"),
             widgets.HTML(
                 "<div style='font-weight: 600; font-size: 15px; margin-bottom: 10px; color: #1f2937; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb;'>Options</div>"
@@ -574,7 +669,18 @@ def _create_search_form(container, config=None):
             widgets.HTML(
                 "<div style='font-weight: 600; font-size: 15px; margin-bottom: 10px; color: #1f2937; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb;'>Patient List <span style='font-weight: 400; font-style: italic; color: #6b7280;'>(optional)</span></div>"
             ),
-            upload_ids_button,
+            patient_ids_input,
+            widgets.HBox(
+                [upload_ids_widget, clear_ids_button, upload_status],
+                layout=widgets.Layout(
+                    align_items="center", gap="8px", margin="8px 0 0 0"
+                ),
+            ),
+            widgets.HTML(
+                "<div style='font-size: 11px; color: #6b7280; margin-top: 4px;'>"
+                "CSV must have an <code>epic_mrn</code> column"
+                "</div>"
+            ),
         ],
         layout=widgets.Layout(width="45%"),
     )
@@ -603,10 +709,14 @@ def _create_search_form(container, config=None):
             "facilities": list(facility_select.value),
             "min_age": min_age_input.value if min_age_input.value else None,
             "max_age": max_age_input.value if max_age_input.value else None,
-            "date_range_days": date_range_select.value,
+            "sex": sex_select.value,
+            "date_start": date_start_input.value,
+            "date_end": date_end_input.value,
+            "all_dates": all_dates_check.value,
             "sample_limit": (
                 sample_limit_input.value if sample_limit_input.value else None
             ),
+            "patient_ids": patient_ids_input.value,
             "apply_negation_filter": apply_negation_filter.value,
         }
 
@@ -697,8 +807,20 @@ def _create_review_dashboard(config, container):
             if len(sql_display) > 2000:
                 sql_display = sql_display[:2000] + "\n...(truncated)"
 
-            with status_output:
-                status_output.clear_output(wait=True)
+            back_button = widgets.Button(
+                description="← Back to Search",
+                button_style="info",
+                layout=widgets.Layout(width="auto", margin="20px auto 0 auto"),
+            )
+
+            def on_back_click(b):
+                container.children = []
+                _create_search_form(container, config)
+
+            back_button.on_click(on_back_click)
+
+            no_results_output = widgets.Output()
+            with no_results_output:
                 display(
                     HTML(
                         f"""
@@ -719,6 +841,8 @@ def _create_review_dashboard(config, container):
                 """
                     )
                 )
+
+            container.children = [no_results_output, back_button]
             return
 
         # Continue with dashboard creation
@@ -730,8 +854,20 @@ def _create_review_dashboard(config, container):
         if len(sql_display) > 2000:
             sql_display = sql_display[:2000] + "\n...(truncated)"
 
-        with status_output:
-            status_output.clear_output(wait=True)
+        back_button = widgets.Button(
+            description="← Back to Search",
+            button_style="info",
+            layout=widgets.Layout(width="auto", margin="20px auto 0 auto"),
+        )
+
+        def on_back_click(b):
+            container.children = []
+            _create_search_form(container, config)
+
+        back_button.on_click(on_back_click)
+
+        error_output = widgets.Output()
+        with error_output:
             display(
                 HTML(
                     f"""
@@ -752,6 +888,8 @@ def _create_review_dashboard(config, container):
             """
                 )
             )
+
+        container.children = [error_output, back_button]
 
 
 def _build_dashboard_ui(df, criteria_summary, config, sql, container, status_output):

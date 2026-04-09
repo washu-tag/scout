@@ -79,8 +79,8 @@
         name: scout-logo
         namespace: '{{ superset_namespace }}'
       binaryData:
-        scout.png: '{{ lookup("file", superset_logo_path) | b64encode }}'
-        favicon.ico: '{{ lookup("file", superset_favicon_path) | b64encode }}'
+        scout.png: '{{ lookup("community.general.binary_file", superset_logo_path) }}'
+        favicon.ico: '{{ lookup("community.general.binary_file", superset_favicon_path) }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
 
 - name: Create ConfigMap for StatsD exporter mapping

@@ -1,0 +1,5 @@
+---
+- name: Restart Squid
+  ansible.builtin.systemd:
+    name: squid
+    state: restarted

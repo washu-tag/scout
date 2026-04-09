@@ -220,36 +220,51 @@ jobs:
           TARGET_SHA="${{ steps.target.outputs.sha }}"
           echo "Waiting for CI workflow to complete on $TARGET_SHA..."
 
-          # Wait up to 30 minutes for build to appear and complete
-          MAX_ATTEMPTS=60
+          # Poll for up to 90 minutes (180 attempts * 30s)
+          MAX_ATTEMPTS=180
           SLEEP_SECONDS=30
+          RUN_ID=""
 
           for ((i=1; i<=MAX_ATTEMPTS; i++)); do
-            echo "Attempt $i/$MAX_ATTEMPTS..."
+            # Find the workflow run if we haven't yet
+            if [[ -z "$RUN_ID" ]]; then
+              RUN_ID=$(gh run list \
+                --workflow=ci.yaml \
+                --branch=main \
+                --json databaseId,headSha,status \
+                --jq ".[] | select(.headSha == \"$TARGET_SHA\") | .databaseId" \
+                | head -1)
 
-            # Find workflow run for target SHA
-            RUN_ID=$(gh run list \
-              --workflow=ci.yaml \
-              --branch=main \
-              --json databaseId,headSha,status \
-              --jq ".[] | select(.headSha == \"$TARGET_SHA\") | .databaseId" \
-              | head -1)
-
-            if [[ -n "$RUN_ID" ]]; then
-              echo "Found workflow run: $RUN_ID"
-
-              # Wait for it to complete
-              if gh run watch "$RUN_ID" --exit-status; then
-                echo "CI workflow completed successfully"
-                exit 0
+              if [[ -n "$RUN_ID" ]]; then
+                echo "Found workflow run: $RUN_ID"
               else
-                echo "::error::CI workflow failed"
-                exit 1
+                echo "[$i/$MAX_ATTEMPTS] Waiting for CI workflow to start..."
+                sleep "$SLEEP_SECONDS"
+                continue
               fi
             fi
 
-            echo "No workflow run found yet, waiting ${SLEEP_SECONDS}s..."
-            sleep "$SLEEP_SECONDS"
+            # Poll run status (tolerate transient API errors)
+            if ! STATUS=$(gh run view "$RUN_ID" --json status,conclusion --jq '.status + ":" + .conclusion'); then
+              echo "[$i/$MAX_ATTEMPTS] API error, will retry..."
+              sleep "$SLEEP_SECONDS"
+              continue
+            fi
+            case "$STATUS" in
+              completed:success)
+                echo "CI workflow completed successfully"
+                exit 0
+                ;;
+              completed:*)
+                echo "::error::CI workflow failed (status: $STATUS)"
+                echo "See: https://github.com/${{ github.repository }}/actions/runs/$RUN_ID"
+                exit 1
+                ;;
+              *)
+                echo "[$i/$MAX_ATTEMPTS] CI workflow status: $STATUS"
+                sleep "$SLEEP_SECONDS"
+                ;;
+            esac
           done
 
           echo "::error::Timed out waiting for CI workflow"
@@ -259,7 +274,7 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     needs: [validate, wait-for-build]
-    if: ${{ !inputs.dry_run && needs.validate.outputs.release_exists != 'true' }}
+    if: ${{ !inputs.dry_run && always() && !cancelled() && needs.wait-for-build.result == 'success' && needs.validate.outputs.release_exists != 'true' }}
     steps:
       - name: Generate token from GitHub App
         id: app_token
@@ -287,7 +302,7 @@ jobs:
     # Only reset after a successful release. If the release was skipped (e.g., build
     # failed) or failed (e.g., gh release create error), we preserve the version bump
     # commit so a re-run can reuse it.
-    if: ${{ !inputs.dry_run && needs.release.result == 'success' && needs.validate.outputs.reset_exists != 'true' }}
+    if: ${{ !inputs.dry_run && always() && !cancelled() && needs.release.result == 'success' && needs.validate.outputs.reset_exists != 'true' }}
     steps:
       - name: Generate token from GitHub App
         id: app_token
