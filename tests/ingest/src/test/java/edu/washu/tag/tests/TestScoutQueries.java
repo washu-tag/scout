@@ -342,7 +342,8 @@ public class TestScoutQueries extends BaseTest {
             .getString(0);
         final Map<String, Map<String, String>> rowAssertions = new HashMap<>();
         final Map<String, String> report1ViewRepresentation = new HashMap<>();
-        report1ViewRepresentation.put("mpi", "LTI_02");
+        report1ViewRepresentation.put("mpi", null);
+        report1ViewRepresentation.put("bjh_ee", "LTI_02");
         report1ViewRepresentation.put("epic_mrn", null);
         report1ViewRepresentation.put("version_id", "2.4");
         report1ViewRepresentation.put("sending_facility", "ABCHOSP1");
@@ -350,7 +351,8 @@ public class TestScoutQueries extends BaseTest {
         rowAssertions.put("1.2.3.29.1", report1ViewRepresentation);
 
         final Map<String, String> report2ViewRepresentation = new HashMap<>();
-        report2ViewRepresentation.put("mpi", "LTI_02");
+        report2ViewRepresentation.put("mpi", null);
+        report2ViewRepresentation.put("bjwc_ee", "LTI_02");
         report2ViewRepresentation.put("epic_mrn", null);
         report2ViewRepresentation.put("version_id", "2.4");
         report2ViewRepresentation.put("sending_facility", "ABCHOSP2");
