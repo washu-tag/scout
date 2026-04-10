@@ -376,7 +376,8 @@ public class TestScoutQueries extends BaseTest {
         rowAssertions.put("1.2.3.30.1", reportSecondDay1ViewRepresentation);
 
         final Map<String, String> reportSecondDay7ViewRepresentation = new HashMap<>();
-        reportSecondDay7ViewRepresentation.put("mpi", "LTI_02");
+        reportSecondDay7ViewRepresentation.put("mpi", null);
+        reportSecondDay7ViewRepresentation.put("empi_mr", "LTI_02");
         reportSecondDay7ViewRepresentation.put("epic_mrn", "LTI_03");
         reportSecondDay7ViewRepresentation.put("version_id", "2.7");
         reportSecondDay7ViewRepresentation.put("sending_facility", "ABCHOSPD27");
