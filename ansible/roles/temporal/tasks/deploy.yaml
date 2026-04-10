@@ -46,10 +46,24 @@
   set_fact:
     scheduled_ingest_cron: '0 {{ scheduled_ingest_hour }} * * *'
 
+- name: Delete previous prospective indexing job
+  when: scheduled_ingest_cron is defined
+  kubernetes.core.k8s:
+    state: absent
+    api_version: batch/v1
+    kind: Job
+    name: 'add-prospective-indexing'
+    namespace: '{{ scout_extractor_namespace }}'
+
 - name: Add scheduled task for prospective report indexing
   when: scheduled_ingest_cron is defined
   kubernetes.core.k8s:
     state: present
+    wait: true
+    wait_timeout: 120
+    wait_condition:
+      type: Complete
+      status: "True"
     definition:
       apiVersion: batch/v1
       kind: Job
@@ -73,16 +87,21 @@
                   - name: TEMPORAL_ADDRESS
                     value: 'temporal-internal-frontend.{{ scout_extractor_namespace }}:7236'
                 command:
-                  - temporal
-                  - schedule
-                  - create
-                  - '--schedule-id'
-                  - ScheduledReportIngest
-                  - '--workflow-id'
-                  - ScheduledReportIngest
-                  - '--task-queue'
-                  - ingest-hl7-log
-                  - '--type'
-                  - IngestHl7LogWorkflow
-                  - '--cron'
-                  - '{{ scheduled_ingest_cron }}'
+                  - /bin/sh
+                  - -c
+                  - |
+                    if temporal schedule describe --schedule-id ScheduledReportIngest 2>/dev/null; then
+                      temporal schedule update \
+                        --schedule-id ScheduledReportIngest \
+                        --workflow-id ScheduledReportIngest \
+                        --task-queue ingest-hl7-log \
+                        --type IngestHl7LogWorkflow \
+                        --cron '{{ scheduled_ingest_cron }}'
+                    else
+                      temporal schedule create \
+                        --schedule-id ScheduledReportIngest \
+                        --workflow-id ScheduledReportIngest \
+                        --task-queue ingest-hl7-log \
+                        --type IngestHl7LogWorkflow \
+                        --cron '{{ scheduled_ingest_cron }}'
+                    fi
