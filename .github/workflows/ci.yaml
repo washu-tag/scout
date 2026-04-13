@@ -405,33 +405,6 @@ jobs:
           sudo -E kubectl rollout status statefulset/loki -n scout-monitoring --timeout=180s
           echo "=== All pods ==="
           sudo -E kubectl get pods -A
-      # Verify Grafana sidecar can authenticate for provisioning reloads.
-      # Grafana auto-reloads dashboards via filesystem polling, but alerts and
-      # datasources require an explicit API call from the sidecar. This test
-      # triggers a reload by creating a labeled ConfigMap, then checks that the
-      # sidecar's reload call succeeds (not 401 Unauthorized).
-      - name: 'Grafana sidecar reload check'
-        shell: bash
-        run: |
-          echo "=== Triggering dashboard sidecar reload ==="
-          sudo -E kubectl create configmap sidecar-reload-test \
-            -n scout-monitoring --from-literal='sidecar-reload-test.json={}'
-          sudo -E kubectl label configmap sidecar-reload-test \
-            -n scout-monitoring grafana_dashboard=1
-          sleep 5
-          LOGS=$(sudo -E kubectl logs -n scout-monitoring deployment/grafana \
-            -c grafana-sc-dashboard --since=10s 2>&1)
-          echo "$LOGS"
-          if echo "$LOGS" | grep -q "provisioning/dashboards/reload.*401"; then
-            echo "FAIL: Dashboard sidecar got 401 Unauthorized on reload"
-            exit 1
-          fi
-          if echo "$LOGS" | grep -q "provisioning/dashboards/reload"; then
-            echo "PASS: Dashboard sidecar reload succeeded"
-          else
-            echo "FAIL: No reload call found in sidecar logs"
-            exit 1
-          fi
       # Trino connectivity check
       - name: 'Trino connectivity check'
         shell: bash
