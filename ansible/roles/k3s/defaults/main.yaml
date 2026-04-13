@@ -66,19 +66,6 @@ k3s_selinux_channel: stable
 k3s_selinux_rpm_site: rpm.rancher.io
 
 ################################################################################
-# Kubernetes Job Configuration (for package downloads in air-gapped mode)
-################################################################################
-
-# Namespace where the SELinux downloader Job will run on the staging cluster
-k3s_package_download_namespace: default
-
-# Timeout in seconds to wait for the SELinux package download Job to complete
-k3s_package_download_timeout: 300
-
-# Rocky Linux container image used for package download jobs
-k3s_package_download_image: rockylinux/rockylinux:9.6
-
-################################################################################
 # CoreDNS Customization
 ################################################################################
 

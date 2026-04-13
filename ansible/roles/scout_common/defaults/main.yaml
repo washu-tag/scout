@@ -50,15 +50,8 @@ scout_repo_dir: '{{ (playbook_dir ~ "/../..") | realpath }}'
 # Set to true to clone or update the repo to a different location
 clone_scout_repo: false
 
-# Package Management Configuration (for air-gapped RPM downloads via Kubernetes Jobs)
+# Namespace for air-gapped staging Jobs (Grafana plugin downloads, Ollama model staging, etc.)
 package_download_namespace: default
-package_download_timeout: 300
-package_download_image: rockylinux/rockylinux:9.6
-
-# Package installation timeout (seconds) - applies to dnf/yum install operations
-# SELinux policy compilation (semodule) can be slow on first install
-# Set to 0 to disable timeout
-package_install_timeout: 600
 
 # Consolidated Namespaces (6 primary namespaces)
 scout_core_namespace: scout-core
@@ -244,6 +237,10 @@ conda_channel_alias: >-
      else '' }}
 pip_proxy_url: >-
   {{ ('https://' ~ nexus_host ~ '/repository/pypi-proxy/simple')
+     if package_proxy_mode == 'nexus'
+     else '' }}
+yum_proxy_base_url: >-
+  {{ ('https://' ~ nexus_host ~ '/repository')
      if package_proxy_mode == 'nexus'
      else '' }}
 aws_deployment: "{{ deployment_type | trim | lower == 'aws' }}"

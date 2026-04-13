@@ -381,6 +381,12 @@
         "webOrigins": [
           "https://minio.{{ server_hostname }}"
         ],
+        "attributes": {
+          "access.token.lifespan": "{{ keycloak_minio_token_lifespan }}",
+          "client.session.idle.timeout": "{{ keycloak_minio_token_lifespan }}",
+          "client.session.max.lifespan": "{{ keycloak_minio_token_lifespan }}",
+          "client.offline.session.idle.timeout": "{{ keycloak_minio_token_lifespan }}"
+        },
         "defaultClientScopes": [
           "web-origins",
           "acr",
