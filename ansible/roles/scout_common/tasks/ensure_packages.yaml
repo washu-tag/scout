@@ -1,18 +1,24 @@
 ---
-# Generic Package Installation - Online and Air-Gapped Modes
-# High-level wrapper that handles package installation for both online and air-gapped environments
-# Automatically creates and cleans up all temporary directories required for package staging
+# Generic Package Installation
+# Handles package installation for both online and proxy (air-gapped) environments.
+#
+# Online mode (package_proxy_mode == 'none'):
+#   Uses the system package manager directly (apt, dnf, etc.) with minimal assumptions.
+#   Callers may provide an online_repo_setup tasks file for packages requiring
+#   explicit repository configuration (e.g., NVIDIA container toolkit).
+#
+# Proxy mode (package_proxy_mode == 'nexus' or 'external'):
+#   Configures a yum repository pointing to the package proxy, then installs.
+#   Assumes a RHEL-based system (air-gapped environments are controlled).
 #
 # Required parameters:
 #   - package_names: List of package names to install (e.g., ["python3-kubernetes"])
-#   - package_type: Description for logging (e.g., "Python", "SELinux", "GPU")
-#
-# Required for air-gapped mode:
-#   - download_script: Bash script to download packages in Rocky Linux container
+#   - package_type: Description for logging (e.g., "Python", "GPU")
 #
 # Optional parameters:
+#   - yum_repo: Dict with 'name' and 'url' — used in proxy mode to configure the repo.
+#   - online_repo_setup: Path to a tasks file for online-mode repo setup.
 #   - verify_command: Command to verify installation (optional)
-#   - online_repo_setup: List of tasks for online mode repo setup (optional)
 
 ################################################################################
 # Skip if packages already installed
@@ -25,89 +31,55 @@
   changed_when: false
   failed_when: false
 
-- name: Display package installation mode
+- name: Display package installation status
   ansible.builtin.debug:
-    msg: "{{ package_type }} packages {{ 'already installed - skipping' if packages_check.rc == 0 else 'will be installed via ' + ('downloaded RPMs (air-gapped)' if air_gapped | default(false) | bool else 'system package manager (online)') }}"
+    msg: "{{ package_type }} packages {{ 'already installed - skipping' if packages_check.rc == 0 else 'will be installed' }}"
 
 ################################################################################
-# Online Mode: Install directly via package manager
+# Guard: fail early if air-gapped without a package proxy
 ################################################################################
 
-- name: Install packages (online mode)
-  when:
-    - not (air_gapped | default(false) | bool)
-    - packages_check.rc != 0
-  block:
-    - name: Run online repository setup tasks
-      ansible.builtin.include_tasks: '{{ online_repo_setup }}'
-      when: online_repo_setup is defined
-
-    - name: Install {{ package_type }} packages from system package manager
-      ansible.builtin.package:
-        name: '{{ package_names }}'
-        state: present
-
-################################################################################
-# Air-Gapped Mode: Download via K8s Job, then install from RPMs
-################################################################################
-
-- name: Install packages (air-gapped mode)
+- name: Fail if air-gapped without package proxy configured
+  ansible.builtin.fail:
+    msg: >-
+      Air-gapped RPM installation requires a package proxy.
+      Either set package_proxy_mode: nexus and deploy Nexus on the staging node,
+      or set package_proxy_mode: external and provide yum_proxy_base_url in inventory.
   when:
     - air_gapped | default(false) | bool
-  block:
-    - name: Create temp directory on control node for RPM artifacts
-      ansible.builtin.tempfile:
-        state: directory
-        prefix: '{{ package_type | lower }}_artifacts_'
-      register: control_node_artifact_dir
-      delegate_to: localhost
-      run_once: true
+    - yum_proxy_base_url | default('') | length == 0
+    - packages_check.rc != 0
 
-    - name: Create temp directory on target nodes for RPM staging
-      ansible.builtin.tempfile:
-        state: directory
-        prefix: '{{ package_type | lower }}_staging_'
-      register: target_node_staging_dir
+################################################################################
+# Repository setup — online or proxy, mutually exclusive
+################################################################################
 
-    - name: Set variables for download job
-      ansible.builtin.set_fact:
-        rpm_job_name: '{{ package_type | lower }}-downloader-{{ ansible_facts["date_time"]["epoch"] }}'
-        rpm_package_type: '{{ package_type }}'
-        rpm_download_script: '{{ download_script }}'
-        control_node_rpm_archive_dir: '{{ control_node_artifact_dir.path }}'
-      delegate_to: localhost
-      run_once: true
+- name: Run online repository setup for {{ package_type }}
+  ansible.builtin.include_tasks: '{{ online_repo_setup }}'
+  when:
+    - package_proxy_mode | default('none') == 'none'
+    - online_repo_setup is defined
+    - packages_check.rc != 0
 
-    - name: Download {{ package_type }} packages via Kubernetes Job
-      ansible.builtin.include_tasks: download_rpms_via_job.yaml
-      vars:
-        rpm_artifact_dir: '{{ control_node_rpm_archive_dir }}'
+- name: Configure {{ yum_repo.name | default('') }} yum repository for proxy
+  ansible.builtin.template:
+    src: yum-repo.j2
+    dest: '/etc/yum.repos.d/{{ yum_repo.name }}.repo'
+    mode: '0644'
+  when:
+    - package_proxy_mode | default('none') != 'none'
+    - yum_repo is defined
+    - packages_check.rc != 0
 
-    - name: Install {{ package_type }} packages from downloaded RPMs
-      ansible.builtin.include_tasks: install_rpms_from_artifacts.yaml
-      vars:
-        rpm_staging_dir: '{{ target_node_staging_dir.path }}'
-        rpm_artifact_dir: '{{ control_node_rpm_archive_dir }}'
-        rpm_package_names: '{{ package_names }}'
+################################################################################
+# Install packages
+################################################################################
 
-  always:
-    - name: Clean up target node staging directory
-      ansible.builtin.file:
-        path: '{{ target_node_staging_dir.path }}'
-        state: absent
-      when:
-        - target_node_staging_dir is defined
-        - target_node_staging_dir.path is defined
-
-    - name: Clean up control node artifact directory
-      ansible.builtin.file:
-        path: '{{ control_node_artifact_dir.path }}'
-        state: absent
-      delegate_to: localhost
-      run_once: true
-      when:
-        - control_node_artifact_dir is defined
-        - control_node_artifact_dir.path is defined
+- name: Install {{ package_type }} packages
+  ansible.builtin.package:
+    name: '{{ package_names }}'
+    state: present
+  when: packages_check.rc != 0
 
 ################################################################################
 # Verification (Optional)

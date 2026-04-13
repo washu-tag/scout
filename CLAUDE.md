@@ -477,7 +477,7 @@ ADRs in `docs/internal/adr/` document significant architectural decisions. Consu
 
 - **ADR 0001: Helm Deployment for Air-Gapped Environments** — Uses remote Helm deployment via kubeconfig rather than OCI registry caching or local template rendering. Consult when modifying air-gapped deployment patterns or Helm chart installations.
 
-- **ADR 0002: K3s Air-Gapped Deployment Strategy** — K3s installation in air-gapped environments uses Harbor pull-through proxy for images and a Kubernetes Job on staging to download SELinux RPMs. Consult when modifying k3s installation or the `air_gapped` feature flag behavior.
+- **ADR 0002: K3s Air-Gapped Deployment Strategy** — K3s installation in air-gapped environments uses Harbor pull-through proxy for images. The original Kubernetes Job pattern for downloading SELinux RPMs (section 2) has been superseded by ADR 0017's Nexus yum proxy approach. Consult when modifying k3s installation or the `air_gapped` feature flag behavior.
 
 - **ADR 0003: OAuth2 Proxy as Authentication Middleware** — Implements hybrid authentication: OAuth2 Proxy enforces user approval at the ingress layer, while services maintain their own Keycloak OAuth clients for authorization. Consult when modifying authentication flows, adding new protected services, or working with the user approval workflow.
 

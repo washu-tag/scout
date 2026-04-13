@@ -15,14 +15,6 @@
   ansible.builtin.include_tasks: prepare_k3s_binaries.yaml
 
 ################################################################################
-# SELinux Package Installation - Air-Gapped Only
-################################################################################
-
-- name: Install SELinux packages for k3s
-  ansible.builtin.include_tasks: selinux.yaml
-  when: air_gapped | default(false) | bool
-
-################################################################################
 # Registry Mirror Configuration - Air-Gapped Only
 ################################################################################
 
