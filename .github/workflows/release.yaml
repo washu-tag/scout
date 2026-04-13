@@ -181,7 +181,7 @@ jobs:
         run: |
           git add -A
           git commit -m "Update to version ${{ inputs.version }}"
-          git push origin main
+          git push origin ${{ github.ref_name }}
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   wait-for-build:
@@ -208,7 +208,7 @@ jobs:
           # The release should include everything on main at this point — not just
           # the version bump commit, but also any fixes pushed after it (e.g., if a
           # previous release attempt failed and we pushed a fix before re-running).
-          git pull origin main
+          git pull origin ${{ github.ref_name }}
           HEAD_SHA=$(git rev-parse HEAD)
           echo "Waiting for build on commit: $HEAD_SHA"
           echo "sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
@@ -230,7 +230,7 @@ jobs:
             if [[ -z "$RUN_ID" ]]; then
               RUN_ID=$(gh run list \
                 --workflow=ci.yaml \
-                --branch=main \
+                --branch=${{ github.ref_name }} \
                 --json databaseId,headSha,status \
                 --jq ".[] | select(.headSha == \"$TARGET_SHA\") | .databaseId" \
                 | head -1)
@@ -318,7 +318,7 @@ jobs:
           token: ${{ steps.app_token.outputs.token }}
 
       - name: Pull latest
-        run: git pull origin main
+        run: git pull origin ${{ github.ref_name }}
 
       - name: Configure git
         run: |
@@ -345,6 +345,6 @@ jobs:
             echo "No changes to commit (already at dev versions)"
           else
             git commit -m "Reset to dev versions"
-            git push origin main
+            git push origin ${{ github.ref_name }}
             echo "::notice::Reset to dev versions complete"
           fi
