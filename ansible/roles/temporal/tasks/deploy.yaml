@@ -46,15 +46,6 @@
   set_fact:
     scheduled_ingest_cron: '0 {{ scheduled_ingest_hour }} * * *'
 
-- name: Delete previous prospective indexing job
-  when: scheduled_ingest_cron is defined
-  kubernetes.core.k8s:
-    state: absent
-    api_version: batch/v1
-    kind: Job
-    name: 'add-prospective-indexing'
-    namespace: '{{ scout_extractor_namespace }}'
-
 - name: Add scheduled task for prospective report indexing
   when: scheduled_ingest_cron is defined
   kubernetes.core.k8s:
@@ -68,11 +59,12 @@
       apiVersion: batch/v1
       kind: Job
       metadata:
-        name: 'add-prospective-indexing'
+        generateName: 'add-prospective-indexing-'
         namespace: '{{ scout_extractor_namespace }}'
         labels:
           app: prospective-indexing
       spec:
+        ttlSecondsAfterFinished: 3600
         backoffLimit: 5
         template:
           metadata:
