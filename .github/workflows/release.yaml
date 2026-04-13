@@ -12,6 +12,11 @@ on:
         required: false
         type: boolean
         default: false
+      skip_dev_reset:
+        description: 'Skip resetting versions back to dev after release (use for releases from non-main branches)'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: release
@@ -302,7 +307,7 @@ jobs:
     # Only reset after a successful release. If the release was skipped (e.g., build
     # failed) or failed (e.g., gh release create error), we preserve the version bump
     # commit so a re-run can reuse it.
-    if: ${{ !inputs.dry_run && always() && !cancelled() && needs.release.result == 'success' && needs.validate.outputs.reset_exists != 'true' }}
+    if: ${{ !inputs.dry_run && !inputs.skip_dev_reset && always() && !cancelled() && needs.release.result == 'success' && needs.validate.outputs.reset_exists != 'true' }}
     steps:
       - name: Generate token from GitHub App
         id: app_token
