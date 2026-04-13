@@ -52,6 +52,12 @@ nexus_blob_stores:
     softQuota:
       type: spaceRemainingQuota
       limit: 5368709120
+  - name: yum-store
+    type: file
+    path: yum-store
+    softQuota:
+      type: spaceRemainingQuota
+      limit: 5368709120 # 5 GB
 
 # Cleanup policy — purge packages not downloaded in this many days
 nexus_cleanup_last_downloaded_days: 90
@@ -69,6 +75,17 @@ nexus_pypi_repos:
   - name: pypi-proxy
     remoteUrl: https://pypi.org/
     blobStoreName: pypi-store
+
+nexus_yum_repos:
+  - name: rancher-k3s
+    remoteUrl: https://rpm.rancher.io/k3s/stable/common/centos/9/noarch
+    blobStoreName: yum-store
+  - name: epel-9
+    remoteUrl: https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/
+    blobStoreName: yum-store
+  - name: nvidia-container-toolkit
+    remoteUrl: https://nvidia.github.io/libnvidia-container/stable/rpm/x86_64/
+    blobStoreName: yum-store
 
 # maven-central ships pre-configured in Nexus CE — no need to create it
 

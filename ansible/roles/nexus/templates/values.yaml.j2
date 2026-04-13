@@ -74,3 +74,25 @@ config:
         enabled: true
         timeToLive: 1440
 {% endfor %}
+{% for repo in nexus_yum_repos %}
+    - name: {{ repo.name }}
+      format: yum
+      type: proxy
+      online: true
+      storage:
+        blobStoreName: {{ repo.blobStoreName }}
+        strictContentTypeValidation: true
+      cleanup:
+        policyNames:
+          - purge-unused
+      proxy:
+        remoteUrl: {{ repo.remoteUrl }}
+        contentMaxAge: 1440
+        metadataMaxAge: 60
+      httpClient:
+        blocked: false
+        autoBlock: true
+      negativeCache:
+        enabled: true
+        timeToLive: 1440
+{% endfor %}

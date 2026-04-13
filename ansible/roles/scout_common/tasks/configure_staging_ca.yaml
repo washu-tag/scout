@@ -1,0 +1,43 @@
+---
+# Configure staging node CA trust on production nodes
+# Only runs when package_proxy_mode == 'nexus' (staging node with self-signed cert)
+# Must run before any task that contacts the staging node over HTTPS
+#
+# Trusts the staging node's self-signed CA in the system trust store
+
+- name: Skip staging CA configuration
+  ansible.builtin.debug:
+    msg: 'Staging CA not configured (package_proxy_mode={{ package_proxy_mode }})'
+  when: package_proxy_mode != 'nexus'
+
+- name: Configure staging CA trust
+  when: package_proxy_mode == 'nexus'
+  block:
+    - name: Check if staging node uses self-signed cert
+      ansible.builtin.set_fact:
+        _staging_uses_self_signed: >-
+          {{ (hostvars[(groups['staging'] | default([inventory_hostname]))[0]].tls_cert_path | default(staging_self_signed_tls_cert_path)) == staging_self_signed_tls_cert_path }}
+      run_once: true
+
+    - name: Slurp staging CA certificate
+      ansible.builtin.slurp:
+        src: '{{ hostvars[(groups["staging"] | default([inventory_hostname]))[0]].tls_cert_path | default(staging_self_signed_tls_cert_path) }}'
+      delegate_to: "{{ (groups['staging'] | default([inventory_hostname]))[0] }}"
+      register: _staging_ca_cert
+      run_once: true
+      when: _staging_uses_self_signed | bool
+
+    - name: Install staging CA into system trust store
+      ansible.builtin.copy:
+        content: '{{ _staging_ca_cert.content | b64decode }}'
+        dest: /etc/pki/ca-trust/source/anchors/staging-ca.crt
+        mode: '0644'
+      register: _staging_ca_installed
+      when: _staging_uses_self_signed | bool
+
+    - name: Update system CA trust
+      ansible.builtin.command: update-ca-trust
+      changed_when: true
+      when:
+        - _staging_uses_self_signed | bool
+        - _staging_ca_installed is changed

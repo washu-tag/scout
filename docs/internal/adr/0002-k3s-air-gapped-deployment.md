@@ -1,7 +1,7 @@
 # ADR 0002: K3s Air-Gapped Deployment Strategy
 
 **Date:** 2025-10-27  
-**Status:** Accepted  
+**Status:** Accepted (Section 2 superseded by [ADR 0017](0017-air-gapped-package-proxy.md))  
 **Decision Owner**: TAG Team
 
 ## Context
