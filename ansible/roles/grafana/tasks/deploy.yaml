@@ -198,6 +198,21 @@
           data:
             pg-db.yaml: '{{ postgres_datasource_content_b64 }}'
 
+- name: Create Grafana admin credentials secret
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: grafana-admin-credentials
+        namespace: '{{ grafana_namespace }}'
+      type: Opaque
+      stringData:
+        admin-user: admin
+        admin-password: '{{ grafana_admin_password }}'
+
 - name: Deploy Grafana
   ansible.builtin.include_role:
     name: scout_common
