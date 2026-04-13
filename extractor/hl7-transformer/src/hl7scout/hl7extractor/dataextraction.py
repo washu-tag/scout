@@ -7,6 +7,7 @@ from .diagnosistable import diagnosis_table
 from .latesttable import latest_table
 from .mappingtable import mapping_table
 from .derivativetable import DerivativeTable
+from .sparkutils import add_epic_view
 
 
 def define_derivative_tables(report_table_name: str) -> dict[str, DerivativeTable]:
@@ -65,3 +66,8 @@ def process_derivative_data(spark: SparkSession, report_table_name: str):
         else:
             derivative_tables[table.source_table].children_tables[name] = table
     perform_table_operations(spark, report_table_name, root_table_children)
+
+    mapping_table_name = f"{report_table_name}_report_patient_mapping"
+    for child_table in derivative_tables.keys():
+        if child_table != mapping_table_name:
+            add_epic_view(spark, child_table, mapping_table_name)

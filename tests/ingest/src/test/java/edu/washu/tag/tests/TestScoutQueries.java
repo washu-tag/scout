@@ -254,7 +254,7 @@ public class TestScoutQueries extends BaseTest {
     @Test
     public void testLongitudinalPatientIds() {
         final String baseTableName = newTable();
-        final String mappingTableName = baseTableName + "_curated_report_patient_mapping";
+        final String mappingTableName = baseTableName + "_report_patient_mapping";
         ingest(
             new IngestJobInput().setReportTableName(baseTableName).setLogPaths("/data/transitive_id_resolution/20260329.log")
         );
