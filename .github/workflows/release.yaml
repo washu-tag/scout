@@ -50,7 +50,7 @@ jobs:
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.RELEASE_APP_ID }}
+          client-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Checkout
@@ -156,7 +156,7 @@ jobs:
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.RELEASE_APP_ID }}
+          client-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Checkout
@@ -285,7 +285,7 @@ jobs:
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.RELEASE_APP_ID }}
+          client-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Create GitHub release
@@ -313,7 +313,7 @@ jobs:
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.RELEASE_APP_ID }}
+          client-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Checkout
