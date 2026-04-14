@@ -187,14 +187,13 @@ class Tools:
         file_id = str(uuid.uuid4())
 
         # Upload to the configured storage backend.
-        # NOTE: The Storage.upload_file signature is based on Open WebUI source
-        # code and may need adjustment for your version. If the call fails,
-        # check the signature in the running container:
-        #   kubectl exec -n ollama deploy/open-webui -- \
-        #     python -c "from open_webui.storage.provider import Storage; help(Storage.upload_file)"
+        # Signature: upload_file(file: BinaryIO, filename: str, tags: Dict[str, str])
+        # The tags dict is only used by S3 (when S3_ENABLE_TAGGING is true),
+        # but the parameter is required by all storage providers.
         _contents, file_path = Storage.upload_file(
             io.BytesIO(csv_bytes),
             filename,
+            {},
         )
 
         # Create the database record
