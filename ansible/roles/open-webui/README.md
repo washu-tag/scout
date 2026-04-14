@@ -6,7 +6,7 @@ Deploys Open WebUI with Ollama for AI-powered chat interface in Scout.
 
 Open WebUI provides a user-friendly interface for interacting with language models via Ollama. In Scout, it's configured with:
 - **Keycloak OAuth** for authentication and role-based access control
-- **Trino MCP tool** for natural language querying of radiology reports in the Delta Lake
+- **Scout Query Tool** for natural language querying of radiology reports in the Delta Lake (native Open WebUI Tool function, replaces Trino MCP)
 - **Redis** for distributed websocket coordination
 
 ## Deployment
@@ -79,7 +79,6 @@ After deploying via Ansible, configure Open WebUI through the web interface to c
 
 - Open WebUI deployed and accessible
 - Scout custom model `gpt-oss-120b-long:latest` created (automated by Ansible)
-- Trino MCP server deployed (automatically deployed with Trino if `mcp_trino_enabled: true`)
 
 ### Configuration Steps
 
@@ -106,22 +105,22 @@ ollama create gpt-oss-120b-long:latest -f Modelfile
 exit
 ```
 
-#### 2. Add Trino MCP Tool
+#### 2. Install Scout Query Tool
 
-Configure the Trino MCP external tool to enable SQL querying:
+Install the native query tool that enables the LLM to query the Delta Lake. This replaces the Trino MCP external tool with a native Open WebUI Tool function that stores full results as downloadable CSV files and returns only summaries to the LLM context.
 
-1. Navigate to **Admin Panel → Settings → Integrations** (requires admin access)
-2. Click **+ (Add Server)**
-3. Configure the tool:
-   - **Type**: `MCP (Streamable HTTP)`
-   - **ID**: `scout-db`
-   - **Name**: `Trino MCP`
-   - **Description**: `Query Scout Delta Lake with Trino`
-   - **Server URL**: `http://mcp-trino.scout-analytics:8080/mcp`
-     - Adjust namespace if Trino is deployed elsewhere: `http://mcp-trino.<namespace>:8080/mcp`
-   - **Auth**: `None`
-   - **Visibility**: `Public`
-4. Click **Save**
+1. Navigate to **Admin Panel → Functions** (requires admin access)
+2. Click **+ (New Function)**
+3. Set **Function ID** to `scout_query_tool`
+4. Set **Name** to "Scout Query Tool"
+5. Set **Description** to "Execute SQL queries against Scout Delta Lake."
+6. Copy the contents of `ansible/roles/open-webui/files/scout_query_tool.py` into the code editor and click **Save**
+7. Click the **gear icon** next to the new function to configure Valves:
+   - **use_mock_data**: `true` for POC/demo, `false` for production (requires Trino connectivity)
+   - **trino_host**, **trino_port**, **trino_user**: Configure for your Trino deployment (only used when mock data is disabled)
+   - **max_context_rows**: Number of sample rows included in the LLM summary (default: 5)
+
+> **Note:** If migrating from Trino MCP, remove the Trino MCP external tool from **Admin Panel → Settings → External Tools** and disable it on the Scout Explorer model before enabling the Scout Query Tool.
 
 #### 3. Add Knowledge in Open WebUI
 
@@ -152,7 +151,7 @@ Configure the Trino MCP external tool to enable SQL querying:
      - **Reasoning Effort**: `high`
    - **Prompt Suggestions**: Select "Custom" and add sample prompts
    - **Knowledge**: Using "Select Knowledge" add `dataschema.md` and optionally `gpt-oss-charting.md`
-   - **Tools**: Enable "Trino MCP", disable "Web Search" and "Code Interpreter"
+   - **Tools**: Enable "Scout Query Tool", disable "Web Search" and "Code Interpreter"
 7. Click **Save**
 
 #### 5. Install Link Sanitizer Filter
@@ -228,32 +227,16 @@ Test the configuration to ensure everything is working:
 
 1. Start a new chat in Open WebUI
 2. Select the **`Scout Explorer`** model from the model dropdown
-3. Send a test query: `How many radiology reports are in the database?`
+3. Send a test query: `Show me CT studies from 2024`
 4. The model should:
-   - Automatically use the Trino MCP tool to execute a SQL query
-   - Return actual results from the Delta Lake
+   - Automatically use the Scout Query Tool to execute a SQL query
+   - A CSV file should appear as an attachment on the message
+   - The model's response should reference the summary (row count, columns) without reproducing all the data
    - Display the tool usage in the chat interface (expandable section)
 
-**Example Expected Behavior:**
-
-```
-User: How many reports are there?
-
-Assistant (Scout Explorer): [Uses Trino MCP tool]
-
-I'll query the database to get the total count of reports.
-
-[Tool Call: trino_query_execute]
-Query: SELECT COUNT(*) as total_reports FROM reports;
-
-Result: 1,234,567 reports
-
-There are 1,234,567 radiology reports in the Scout database.
-```
-
 If the tool is not working, check:
-- Trino MCP service is running: `kubectl get svc -n scout-analytics mcp-trino`
-- Tool configuration in Open WebUI Admin Settings
+- Scout Query Tool is enabled in **Admin Panel → Functions**
+- Tool is enabled on the Scout Explorer model
 - Model has Function Calling set to "Native"
 
 ### Common Queries to Test
@@ -289,10 +272,11 @@ kubectl exec -n ollama deploy/ollama -- ollama list
 - Check job logs: `kubectl logs -n ollama job/<job-name>`
 - Verify base model was pulled: `kubectl exec -n ollama deploy/ollama -- ollama list`
 
-**MCP tool not working:**
-- Verify MCP server is running: `kubectl get pods -n scout-analytics -l app.kubernetes.io/name=mcp-trino`
-- Test connectivity: `kubectl exec -n ollama deploy/open-webui -- curl http://mcp-trino.scout-analytics:8080/health`
+**Scout Query Tool not working:**
+- Verify the function is enabled: **Admin Panel → Functions** → check Scout Query Tool is enabled
+- Verify it's assigned to the model: **Admin Panel → Settings → Models** → edit Scout Explorer → check Tools
 - In Open WebUI model settings, ensure Function Calling is set to "Native"
+- Check Open WebUI logs for errors: `kubectl logs -n ollama deploy/open-webui -f | grep -i "scout_query"`
 
 **Authentication issues:**
 - Users must have Keycloak roles: `open-webui-user` or `open-webui-admin`
@@ -301,6 +285,7 @@ kubectl exec -n ollama deploy/ollama -- ollama list
 
 - **Main Scout Docs**: https://washu-scout.readthedocs.io/
 - **Open WebUI Docs**: https://docs.openwebui.com/
+- **Scout Query Tool**: `files/scout_query_tool.py`
 - **Scout Query Prompt**: `files/gpt-oss-scout-query-prompt.md`
 - **Link Sanitizer Filter**: `files/link_sanitizer_filter.py`
 - **Context Summarization Filter**: `files/context_summarization_filter.py`
