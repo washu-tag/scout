@@ -8,11 +8,14 @@ version: 0.1.0
 """
 
 import csv
+import html as html_module
 import io
+import json
 import uuid
 from datetime import datetime, timezone
 from typing import Callable, Any, Awaitable, Optional
 
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 
@@ -112,8 +115,21 @@ class Tools:
 
             await self._emit_status(__event_emitter__, "Query complete", done=True)
 
-            # Return a compact summary for the LLM context
-            return self._build_summary(columns, rows, file_id)
+            # Build the LLM context summary (compact text)
+            summary = self._build_summary(columns, rows, file_id)
+
+            # Build the Rich UI HTML table (rendered as iframe for the user)
+            rich_ui = self._build_rich_ui(columns, rows, csv_bytes)
+
+            # Returning (HTMLResponse, str) renders the HTML as an iframe
+            # for the user while sending only the summary to the LLM context.
+            return (
+                HTMLResponse(
+                    content=rich_ui,
+                    headers={"Content-Disposition": "inline"},
+                ),
+                summary,
+            )
 
         except Exception as exc:
             await self._emit_status(
@@ -276,6 +292,142 @@ class Tools:
         )
 
         return "\n".join(parts)
+
+    # ------------------------------------------------------------------
+    # Rich UI
+    # ------------------------------------------------------------------
+    def _build_rich_ui(
+        self, columns: list[str], rows: list[dict], csv_bytes: bytes
+    ) -> str:
+        """
+        Build a self-contained HTML page with an interactive data table and
+        a CSV download button. Rendered in a sandboxed iframe by Open WebUI.
+        All CSS/JS is inline (no external resources, respects CSP).
+        """
+        n_rows = len(rows)
+
+        # Build table header
+        th_cells = "".join(f"<th>{html_module.escape(c)}</th>" for c in columns)
+
+        # Build table rows
+        tr_rows = []
+        for row in rows:
+            td_cells = "".join(
+                f"<td>{html_module.escape(str(row.get(c, '')))}</td>" for c in columns
+            )
+            tr_rows.append(f"<tr>{td_cells}</tr>")
+        tbody = "\n".join(tr_rows)
+
+        # Encode CSV as base64 for the download button
+        import base64
+
+        csv_b64 = base64.b64encode(csv_bytes).decode("ascii")
+
+        return f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    body {{
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 13px;
+        color: #e0e0e0;
+        background: #1e1e1e;
+    }}
+    .toolbar {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: #2a2a2a;
+        border-bottom: 1px solid #3a3a3a;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }}
+    .toolbar .info {{
+        color: #aaa;
+    }}
+    .toolbar button {{
+        background: #3a3a3a;
+        color: #e0e0e0;
+        border: 1px solid #555;
+        padding: 4px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+    }}
+    .toolbar button:hover {{
+        background: #4a4a4a;
+    }}
+    .table-wrap {{
+        overflow: auto;
+        max-height: 400px;
+    }}
+    table {{
+        border-collapse: collapse;
+        width: 100%;
+        white-space: nowrap;
+    }}
+    th {{
+        background: #2a2a2a;
+        color: #ccc;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }}
+    th, td {{
+        border: 1px solid #3a3a3a;
+        padding: 5px 10px;
+        text-align: left;
+    }}
+    tr:hover {{
+        background: #2a2a2a;
+    }}
+    td {{
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }}
+</style>
+</head>
+<body>
+    <div class="toolbar">
+        <span class="info">{n_rows} row{"s" if n_rows != 1 else ""}, {len(columns)} columns</span>
+        <button onclick="downloadCsv()">Download CSV</button>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr>{th_cells}</tr></thead>
+            <tbody>{tbody}</tbody>
+        </table>
+    </div>
+<script>
+    function downloadCsv() {{
+        const b64 = "{csv_b64}";
+        const bytes = atob(b64);
+        const arr = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        const blob = new Blob([arr], {{ type: "text/csv" }});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "scout_results.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+    }}
+    // Report height to parent for auto-sizing
+    function reportHeight() {{
+        const h = document.documentElement.scrollHeight;
+        parent.postMessage({{ type: "iframe:height", height: Math.min(h, 460) }}, "*");
+    }}
+    reportHeight();
+    new MutationObserver(reportHeight).observe(document.body, {{ childList: true, subtree: true }});
+</script>
+</body>
+</html>"""
 
     # ------------------------------------------------------------------
     # Event helpers
