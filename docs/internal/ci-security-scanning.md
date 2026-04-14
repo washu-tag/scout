@@ -131,9 +131,10 @@ Dependabot handles two concerns:
 
 **Required GitHub settings** (**Settings > Security > Advanced Security**):
 
-1. **Dependency graph** — must be enabled. GitHub automatically detects manifest files (`package.json`, `pyproject.toml`, `requirements.txt`, `build.gradle`, `Dockerfile`, etc.) and builds the dependency graph. This is the foundation for all Dependabot features.
-2. **Dependabot alerts** — must be enabled. Matches the dependency graph against the GitHub Advisory Database and creates alerts for known CVEs.
-3. **Dependabot security updates** — enable this to have Dependabot automatically open PRs to fix every alert with an available patch. For more granular control (e.g., auto-dismiss low-severity alerts, target specific ecosystems), leave this disabled and configure **Dependabot rules** instead (**Settings > Security > Advanced Security > Dependabot rules**).
+1. **Dependency graph** — must be enabled. GitHub automatically detects manifest files (`package.json`, `pyproject.toml`, `requirements.txt`, `Dockerfile`, etc.) and builds the dependency graph. This is the foundation for all Dependabot features.
+2. **Automatic dependency submission** — must be enabled (**Settings > Code security > Dependency graph > Automatic dependency submission**). Gradle cannot be statically parsed like npm or pip, so GitHub runs the `gradle/actions/dependency-submission` action automatically on each push to the default branch to resolve and submit the full dependency tree. Without this, Dependabot has no visibility into Gradle dependencies.
+3. **Dependabot alerts** — must be enabled. Matches the dependency graph against the GitHub Advisory Database and creates alerts for known CVEs.
+4. **Dependabot security updates** — enable this to have Dependabot automatically open PRs to fix every alert with an available patch. For more granular control (e.g., auto-dismiss low-severity alerts, target specific ecosystems), leave this disabled and configure **Dependabot rules** instead (**Settings > Security > Advanced Security > Dependabot rules**).
 
 Dependabot does **not** monitor `ansible/group_vars/all/versions.yaml` — that file uses custom YAML keys that no standard package ecosystem can parse, so it is handled by Renovate (see below).
 
