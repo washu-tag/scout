@@ -242,8 +242,13 @@ Changes needed:
 
 Manual steps (add to README):
 
-1. Navigate to Admin Panel > Functions > Create New Function
-2. Set Function ID: `scout_query_tool`
+> **Important**: Open WebUI has separate interfaces for Tools vs Functions.
+> Tools (class `Tools`) must be created via **Workspace > Tools**.
+> Functions (class `Filter`, `Action`, or `Pipe`) are created via **Admin Panel > Functions**.
+> Using the wrong interface gives: "No Function class found in the module" or "No Tools class found in the module".
+
+1. Navigate to Workspace (left sidebar) > Tools > New Tool
+2. Set Tool ID: `scout_query_tool`
 3. Paste contents of `scout_query_tool.py`
 4. Save; configure Valves (trino connection details, mock mode toggle)
 5. Edit the Scout Explorer model:
@@ -505,7 +510,7 @@ Go with Approach A — it avoids auth token management and network round-trips.
 
 Manual steps (add to README):
 
-1. Navigate to Admin Panel > Functions > Create New Function
+1. Navigate to Admin Panel > Functions > Create New Function (Actions are Functions, not Tools)
 2. Set Function ID: `xnat_export_action`
 3. Paste contents of `xnat_export_action.py`
 4. Save; configure Valves:

@@ -109,13 +109,15 @@ exit
 
 Install the native query tool that enables the LLM to query the Delta Lake. This replaces the Trino MCP external tool with a native Open WebUI Tool function that stores full results as downloadable CSV files and returns only summaries to the LLM context.
 
-1. Navigate to **Admin Panel → Functions** (requires admin access)
-2. Click **+ (New Function)**
-3. Set **Function ID** to `scout_query_tool`
+> **Important:** Tools and Functions are uploaded through different interfaces in Open WebUI. Tools (class `Tools`) must be created via **Workspace > Tools**, not **Admin Panel > Functions**. The Functions interface only accepts Filters, Pipes, and Actions.
+
+1. Navigate to **Workspace (left sidebar) → Tools** (requires admin access)
+2. Click **+ (New Tool)**
+3. Set **Tool ID** to `scout_query_tool`
 4. Set **Name** to "Scout Query Tool"
 5. Set **Description** to "Execute SQL queries against Scout Delta Lake."
 6. Copy the contents of `ansible/roles/open-webui/files/scout_query_tool.py` into the code editor and click **Save**
-7. Click the **gear icon** next to the new function to configure Valves:
+7. Click the **gear icon** next to the new tool to configure Valves:
    - **use_mock_data**: `true` for POC/demo, `false` for production (requires Trino connectivity)
    - **trino_host**, **trino_port**, **trino_user**: Configure for your Trino deployment (only used when mock data is disabled)
    - **max_context_rows**: Number of sample rows included in the LLM summary (default: 5)
@@ -273,7 +275,7 @@ kubectl exec -n ollama deploy/ollama -- ollama list
 - Verify base model was pulled: `kubectl exec -n ollama deploy/ollama -- ollama list`
 
 **Scout Query Tool not working:**
-- Verify the function is enabled: **Admin Panel → Functions** → check Scout Query Tool is enabled
+- Verify the tool was created in **Workspace → Tools** (not Admin Panel → Functions — those are different interfaces)
 - Verify it's assigned to the model: **Admin Panel → Settings → Models** → edit Scout Explorer → check Tools
 - In Open WebUI model settings, ensure Function Calling is set to "Native"
 - Check Open WebUI logs for errors: `kubectl logs -n ollama deploy/open-webui -f | grep -i "scout_query"`
