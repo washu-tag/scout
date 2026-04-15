@@ -1,0 +1,114 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mock-xnat-code
+  namespace: scout-analytics
+data:
+  mock_xnat_service.py: |
+    import logging
+    import uuid
+    from datetime import datetime, timezone
+    from typing import Any
+
+    from fastapi import FastAPI, Request
+    from fastapi.responses import JSONResponse
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    log = logging.getLogger(__name__)
+
+    app = FastAPI(title="Mock XNAT Service", version="0.1.0")
+
+    @app.get("/health")
+    async def health():
+        return {"status": "ok"}
+
+    @app.post("/export")
+    async def export_to_xnat(request: Request):
+        body: dict[str, Any] = {}
+        try:
+            body = await request.json()
+        except Exception:
+            pass
+
+        log.info("Received export request: %s", body)
+
+        response = {
+            "status": "accepted",
+            "xnat_job_id": str(uuid.uuid4()),
+            "received_at": datetime.now(timezone.utc).isoformat(),
+            "project_id": body.get("project_id", "unknown"),
+            "accession_count": body.get("total_count", len(body.get("accession_numbers", []))),
+            "message": "Export request accepted. Studies will be available shortly.",
+        }
+
+        log.info("Returning response: %s", response)
+        return JSONResponse(content=response, status_code=202)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mock-xnat
+  namespace: scout-analytics
+  labels:
+    app: mock-xnat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mock-xnat
+  template:
+    metadata:
+      labels:
+        app: mock-xnat
+    spec:
+      containers:
+        - name: mock-xnat
+          image: ghcr.io/open-webui/open-webui:0.8.12
+          command: ['uvicorn']
+          args: ['mock_xnat_service:app', '--host', '0.0.0.0', '--port', '8000']
+          workingDir: /app
+          ports:
+            - containerPort: 8000
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - name: code
+              mountPath: /app
+      volumes:
+        - name: code
+          configMap:
+            name: mock-xnat-code
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mock-xnat
+  namespace: scout-analytics
+  labels:
+    app: mock-xnat
+spec:
+  selector:
+    app: mock-xnat
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+  type: ClusterIP
