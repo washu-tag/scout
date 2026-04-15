@@ -110,7 +110,7 @@ exit
 
 Configure the Trino MCP external tool to enable SQL querying:
 
-1. Navigate to **Admin Panel → Settings → External Tools** (requires admin access)
+1. Navigate to **Admin Panel → Settings → Integrations** (requires admin access)
 2. Click **+ (Add Server)**
 3. Configure the tool:
    - **Type**: `MCP (Streamable HTTP)`

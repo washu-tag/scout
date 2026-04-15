@@ -91,7 +91,9 @@ jupyter_helm_chart_version: ~4.3.0
 
 # AI & ML
 # renovate: datasource=helm registryUrl=https://helm.openwebui.com/ depName=open-webui
-open_webui_helm_chart_version: ~8.22.0
+open_webui_helm_chart_version: ~13.3.1
+# renovate: datasource=docker depName=ollama/ollama
+ollama_image_tag: 0.20.6
 
 # Monitoring & Observability - Prometheus
 # renovate: datasource=helm registryUrl=https://prometheus-community.github.io/helm-charts depName=kube-prometheus-stack

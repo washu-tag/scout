@@ -12,6 +12,9 @@ open_webui_helm_release_name: open-webui
 ollama_name: ollama
 open_webui_name: open-webui
 
+# Ollama image (tag pinned in group_vars/all/versions.yaml)
+ollama_image_repository: ollama/ollama
+
 # Storage configuration
 ollama_storage_size: 5Gi
 ollama_storage_class: ''

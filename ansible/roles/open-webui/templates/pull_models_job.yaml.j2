@@ -17,7 +17,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: ollama
-          image: 'ollama/ollama:{{ ollama_version | default("latest") }}'
+          image: '{{ ollama_image_repository }}:{{ ollama_image_tag }}'
           env:
 {% if _pull_air_gapped %}
             - name: OLLAMA_MODELS
