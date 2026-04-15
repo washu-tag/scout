@@ -412,7 +412,7 @@ def extract_mapping(batch_df, spark, table_name, source_table):
 
 def recurse_complex_cases(spark: SparkSession, df: DataFrame, table_name: str):
     complex_cases = [MappingEntry.from_df_row(row) for row in df.collect()]
-    existing_mapping_df = spark.read.table(table_name)
+    existing_mapping_df = spark.read.table(table_name).cache()
     bulk_updates = []
     activity.logger.info(
         "Performing recursive search to resolve IDs for %d reports", len(complex_cases)
@@ -485,6 +485,7 @@ def recurse_complex_cases(spark: SparkSession, df: DataFrame, table_name: str):
         "primary_report_identifier",
         False,
     )
+    existing_mapping_df.unpersist()
 
 
 def search_mappings_on_patient_id(
