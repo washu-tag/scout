@@ -169,8 +169,9 @@ This is an Open WebUI Action function (class `Action`) that adds a "Send to XNAT
 
 **File**: `ansible/roles/open-webui/files/xnat_logo_grey.svg`
 
-- Greyscale SVG icon file (source for the button icon)
-- **Note**: The action currently uses a generic "external link" placeholder icon as a data URI. A proper XNAT logo needs to be designed or sourced — see remaining work below.
+- Greyscale SVG icon file, vector-traced from the official XNAT icon at wiki.xnat.org
+- Flat grey (#888) silhouette of the XNAT swoosh emblem, suitable for use as a 20px action button icon
+- Embedded in the action as a base64 data URI via `_ICON_DATA_URI`
 
 ### Lessons learned during implementation
 
@@ -182,23 +183,13 @@ This is an Open WebUI Action function (class `Action`) that adds a "Send to XNAT
 
 8. **Separate internal and external URLs.** The action needs two URL concepts: an internal `xnat_base_url` for server-side HTTP requests (in-cluster service name), and an `xnat_external_url` for browser-facing links shown to users. These are configured as separate Valves.
 
-### Step 2.1: Prepare the XNAT logo icon
+### Step 2.1: Prepare the XNAT logo icon — COMPLETE
 
 **File**: `ansible/roles/open-webui/files/xnat_logo_grey.svg`
 
-The action button needs an icon via the `icon_url` field, which accepts HTTP/HTTPS URLs. Options for serving it:
+**Status**: Done. The XNAT swoosh icon was sourced from the official icon at `wiki.xnat.org`, vector-traced using `vtracer` into a simplified flat-fill SVG, and converted to greyscale (#888). The resulting SVG is ~2KB and embedded as a base64 data URI (Option A) in `_ICON_DATA_URI`.
 
-- **Option A (simplest for POC)**: Use a data URI in the `icon_url` field. The docs discourage this due to "API payload bloat," but for a single small SVG it's negligible. Encode the greyscale SVG as a data URI: `data:image/svg+xml;base64,...`
-- **Option B (production-ready)**: Serve the SVG from a static file server or embed it in the Open WebUI container. More work, better practice.
-
-For the POC, go with Option A. The SVG should be:
-- Greyscale to match Open WebUI's button aesthetic
-- Small (< 2KB)
-- Recognizable as the XNAT logo
-
-Open WebUI's own action buttons (copy, regenerate, edit, etc.) are monochrome SVG icons, approximately 16-20px rendered size. Match that style.
-
-Regarding light/dark mode: Open WebUI's built-in icons are single-color SVGs that work in both modes (they use `currentColor` or a neutral grey). For the POC, a medium grey (#888 or similar) SVG will be fine in both modes. A production version could use `currentColor` to adapt.
+**Approach taken**: Option A — data URI in the `icon_url` field. The SVG is a single-path silhouette of the XNAT swoosh emblem at 20x20 rendered size with a 320x320 viewBox. It matches Open WebUI's monochrome button aesthetic and works in both light and dark modes.
 
 ### Step 2.2: Create the XNAT Export Action function
 
@@ -576,7 +567,7 @@ The SQL patterns, example queries, and troubleshooting sections remain unchanged
 | 2 | Create Scout Query Tool (mock mode + Rich UI) | Step 1 | **DONE** | `scout_query_tool.py` |
 | 3 | Update system prompt | — | **DONE** | `gpt-oss-scout-query-prompt.md` |
 | 4 | Install tool, update model config, test query flow | Steps 2, 3 | **DONE** | README update |
-| 5 | Prepare XNAT logo SVG | — | **Placeholder** | `xnat_logo_grey.svg` (generic icon in use; real XNAT logo TBD) |
+| 5 | Prepare XNAT logo SVG | — | **DONE** | `xnat_logo_grey.svg` (traced from official XNAT icon) |
 | 6 | Create XNAT Export Action (input form + confirmation + send) | Step 5 | **DONE** | `xnat_export_action.py` |
 | 7 | ~~Add confirmation dialog to action~~ | — | **DONE** | (merged into step 6) |
 | 8 | Create Mock XNAT Service | — | **DONE** | `mock_xnat_service.py`, `mock-xnat-deployment.yaml` |
@@ -584,7 +575,7 @@ The SQL patterns, example queries, and troubleshooting sections remain unchanged
 | 10 | ~~Add API call to mock service and result display~~ | — | **DONE** | (merged into step 6) |
 | 11 | Install action, test full flow | Steps 4, 10 | **DONE** | README update |
 | 12 | Fill in stub CSV with representative data | — | **DONE** | `scout_query_stub_data.csv`, `scout_query_tool.py` |
-| 13 | Design or source a proper XNAT logo icon | — | Pending | `xnat_logo_grey.svg`, `xnat_export_action.py` `_ICON_DATA_URI` |
+| 13 | Design or source a proper XNAT logo icon | — | **DONE** | `xnat_logo_grey.svg`, `xnat_export_action.py` `_ICON_DATA_URI` |
 | 14 | Update XNAT API request/response to match real schema | — | **DONE** | `xnat_export_action.py`, `mock_xnat_service.py`, `mock-xnat-deployment.yaml` |
 
 ### Step 14: Update XNAT API request/response schema
