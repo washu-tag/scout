@@ -20,12 +20,12 @@ LLM generates SQL (as it does today)
     ▼
 Scout Query Tool executes "query"
     ├── Returns canned CSV data (mock)
-    ├── Stores full results as Open WebUI file (CSV attachment on message)
+    ├── Stores full results as Open WebUI file (CSV, persisted server-side)
     ├── Returns summary to LLM context (row count, columns, sample)
-    └── [Stretch] Renders Rich UI data table in iframe
+    └── Renders Rich UI data table in iframe (with CSV download button)
     │
     ▼
-LLM presents summary to user; file is visible as attachment
+LLM presents summary to user; Rich UI table is visible inline in chat
     │
     ▼
 User clicks "Send to XNAT" button on message toolbar
@@ -63,200 +63,66 @@ XNAT Export Action
 
 ---
 
-## Phase 1: Scout Query Tool
+## Phase 1: Scout Query Tool — COMPLETE
 
 This is a native Open WebUI Tool function (class `Tools`) that replaces the Trino MCP tool. The LLM invokes it to run SQL queries against Scout's data.
 
-### Step 1.1: Create stub CSV data file
+**Status**: Implemented and tested. The tool is working in Open WebUI with mock data, Rich UI table rendering, and CSV download.
 
-**File**: `ansible/roles/open-webui/files/scout_query_stub_data.csv`
-
-Create a CSV file with columns that are representative of real Scout query results and include an `accession_number` column (required by the XNAT export flow). Suggested columns based on the existing reports schema:
-
-```csv
-accession_number,epic_mrn,modality,service_name,message_dt,patient_age,sex,report_section_impression
-```
-
-You will fill in the actual rows. Aim for 20-50 rows — enough to demonstrate pagination and summarization without being unwieldy.
-
-**Acceptance criteria**: CSV file exists with headers and placeholder rows.
-
-### Step 1.2: Create the Scout Query Tool function
+### What was built
 
 **File**: `ansible/roles/open-webui/files/scout_query_tool.py`
 
-#### Frontmatter
+- Class `Tools` with a single LLM-callable method `query(sql)`
+- `Valves` for Trino connection settings + `use_mock_data` toggle (defaults to `True`)
+- Mock mode: parses embedded `MOCK_DATA_CSV` string constant, ignores actual SQL
+- Stores results server-side via `Storage.upload_file()` + `Files.insert_new_file()` (Open WebUI internal APIs)
+- Returns a tuple of `(HTMLResponse, summary_string)`:
+  - The `HTMLResponse` renders as a Rich UI iframe showing an interactive data table with a "Download CSV" button (CSV is base64-encoded inline)
+  - The `summary_string` is what the LLM receives in context (row count, columns, sample rows)
+- Status events show "Executing query..." / "Query complete" shimmer
+- Trino implementation is stubbed with `NotImplementedError`; `use_mock_data` must be `True` for now
+- Uses only the `csv` standard library module (no pandas dependency)
+- Dark theme styling matching Open WebUI's default appearance
 
-```python
-"""
-title: Scout Query Tool
-description: Execute SQL queries against Scout Delta Lake. Replaces Trino MCP with native file storage and context-aware result handling.
-author: Scout Team
-version: 0.1.0
-requirements: pandas
-"""
-```
+**File**: `ansible/roles/open-webui/files/scout_query_stub_data.csv`
 
-The `requirements` field tells Open WebUI to pip-install these packages. `pandas` is useful for CSV handling and generating summaries. Check whether `pandas` is already available in the Open WebUI container; if so, the requirement is a no-op. If pip install is disabled in the environment, we may need to use only the standard library (`csv` module) instead.
-
-#### Class structure
-
-```python
-class Tools:
-    class Valves(BaseModel):
-        trino_host: str = Field(default="trino", description="Trino hostname")
-        trino_port: int = Field(default=8080, description="Trino port")
-        trino_user: str = Field(default="trino", description="Trino user")
-        trino_catalog: str = Field(default="delta", description="Trino catalog")
-        trino_schema: str = Field(default="default", description="Trino schema")
-        use_mock_data: bool = Field(default=True, description="Return canned data instead of querying Trino (for POC/demo)")
-        max_context_rows: int = Field(default=5, description="Max sample rows to include in LLM context summary")
-
-    def __init__(self):
-        self.valves = self.Valves()
-        self.mock_csv = "..."  # Embedded CSV string (see notes below)
-```
-
-#### Key design: Embedding the CSV data
-
-Open WebUI functions are single Python files — no adjacent file access, no relative imports. The stub CSV data must be embedded directly in the Python file as a string constant.
-
-```python
-MOCK_DATA_CSV = """\
-accession_number,epic_mrn,modality,...
-ACC001,MRN001,CT,...
-ACC002,MRN002,MR,...
-...
-"""
-```
-
-When you finalize the CSV content in `scout_query_stub_data.csv`, copy it into the tool's Python file as the `MOCK_DATA_CSV` constant. The separate CSV file exists for readability and version control; the Python file is what gets installed.
-
-#### Tool method: `query`
-
-The LLM-callable method. Its name, docstring, and parameter types are what the LLM uses to decide when to invoke it.
-
-```python
-async def query(
-    self,
-    sql: str,
-    __user__: dict = {},
-    __event_emitter__: Callable = None,
-) -> str:
-    """
-    Execute a SQL query against the Scout Delta Lake database and return results.
-    Use this tool whenever you need to look up radiology report data.
-    The query should be valid Trino SQL against the 'reports' table.
-
-    :param sql: The SQL query to execute
-    :return: A summary of the query results
-    """
-```
-
-#### Method implementation (mock mode)
-
-```
-1. Emit status: "Executing query..."
-2. If use_mock_data is True:
-   a. Parse MOCK_DATA_CSV into a data structure (pandas DataFrame or list of dicts)
-   b. Apply rudimentary SQL-like filtering if feasible, or just return all rows
-      (For the POC, returning the full mock dataset regardless of query is fine.
-       The LLM will see the summary and work with it.)
-3. If use_mock_data is False:
-   a. [Future] Connect to Trino via trino-python-client and execute the SQL
-   b. Fetch results into the same data structure
-4. Generate CSV bytes from the results
-5. Store as Open WebUI file:
-   a. Import: from open_webui.models.files import Files, FileForm
-   b. Import: from open_webui.storage.provider import Storage
-   c. Generate a file_id (uuid4)
-   d. Upload CSV bytes via Storage.upload_file()
-   e. Create file record via Files.insert_new_file()
-6. Emit file event to attach to the message:
-   await __event_emitter__({
-       "type": "files",
-       "data": {"files": [{"type": "file", "id": file_id, ...}]}
-   })
-7. Emit status: "Query complete" (done=True)
-8. Build and return summary string for LLM context:
-   "Query returned {N} rows across {M} columns.
-    Columns: {column_list}
-    Sample ({max_context_rows} rows):
-    {tabular_sample}
-    Full results are saved as file '{filename}' and visible to the user."
-```
-
-The summary string is what enters the LLM context. The full data stays in the file.
-
-#### Stretch: Rich UI data table
-
-If time permits, return a tuple of `(HTMLResponse, summary_string)`:
-
-```python
-from fastapi.responses import HTMLResponse
-
-html = f"""
-<html>
-<head>
-    <style>
-        table {{ border-collapse: collapse; width: 100%; font-size: 13px; }}
-        th, td {{ border: 1px solid #ddd; padding: 6px 8px; text-align: left; }}
-        th {{ background: #f5f5f5; position: sticky; top: 0; }}
-        tr:hover {{ background: #f9f9f9; }}
-    </style>
-</head>
-<body>
-    <div style="max-height: 400px; overflow: auto;">
-        {html_table}
-    </div>
-    <p style="color: #666; font-size: 12px; margin-top: 8px;">
-        Showing {N} rows. Full data available as attached CSV file.
-    </p>
-</body>
-</html>
-"""
-return (
-    HTMLResponse(content=html, headers={"Content-Disposition": "inline"}),
-    summary_string
-)
-```
-
-The iframe renders the table visually; the `summary_string` is what the LLM sees.
-
-#### Further stretch: Rich UI charts
-
-For charts, the tool could return a Vega-Lite spec rendered in an iframe. However, making charts that the user can tweak via conversation requires the LLM to understand how to modify the Vega-Lite spec, which is a substantial prompt engineering effort. Not recommended for this POC.
-
-### Step 1.3: Update the system prompt
+Separate CSV file for readability/version control. Must be copied into the `MOCK_DATA_CSV` constant in the Python file. Rows need to be filled in with representative data.
 
 **File**: `ansible/roles/open-webui/files/gpt-oss-scout-query-prompt.md`
 
-Changes needed:
-- Replace all references to "Trino MCP" with "Scout Query Tool" (or whatever the tool method is named)
-- Update the preamble: "You have access to **Scout Query Tool** for querying the Scout Delta Lake."
-- Add a note about result handling: "Query results are saved as CSV files. The user can see the full data; you receive a summary. Reference the summary when discussing results, but do not attempt to reproduce the full dataset."
-- The SQL patterns, examples, and troubleshooting sections can stay largely the same — the LLM still generates Trino SQL, the tool just handles it differently
-- Remove or soften the "never fabricate data" rule since mock mode will always return the same data regardless of query. Perhaps: "In demo mode, query results are simulated. Treat the returned data as representative."
+Updated system prompt: references "Scout Query Tool" instead of "Trino MCP", adds rules about referencing summaries rather than reproducing data, and mentions the "Send to XNAT" button.
 
-### Step 1.4: Install and configure
+**File**: `ansible/roles/open-webui/README.md`
 
-Manual steps (add to README):
+Updated installation steps for the new tool.
 
-> **Important**: Open WebUI has separate interfaces for Tools vs Functions.
-> Tools (class `Tools`) must be created via **Workspace > Tools**.
-> Functions (class `Filter`, `Action`, or `Pipe`) are created via **Admin Panel > Functions**.
-> Using the wrong interface gives: "No Function class found in the module" or "No Tools class found in the module".
+### Lessons learned during implementation
 
-1. Navigate to Workspace (left sidebar) > Tools > New Tool
+1. **Tools vs Functions are separate upload paths.** Tools (class `Tools`) must be uploaded via **Workspace > Tools**. Functions (class `Filter`, `Action`, `Pipe`) go via **Admin Panel > Functions**. Using the wrong path gives a confusing "No Function class found" or "No Tools class found" error.
+
+2. **`Storage.upload_file()` requires a `tags` parameter.** Signature is `upload_file(file: BinaryIO, filename: str, tags: Dict[str, str])`. The `tags` dict is only used by S3 (when `S3_ENABLE_TAGGING` is true), but all storage providers require it. Pass `{}` for local storage.
+
+3. **The `files` event emitter does not produce visible UI.** We emitted `{"type": "files", "data": {"files": [...]}}` correctly and the file was persisted server-side (accessible via Open WebUI Files API), but no file attachment appeared in the chat UI. The exact event schema for visible file attachments remains unclear. This is not a blocker because the Rich UI table with embedded CSV download provides a better UX anyway.
+
+4. **Rich UI is the primary data display mechanism.** Returning `(HTMLResponse, summary_string)` works well: the iframe renders inline at the tool call indicator, the LLM only sees the compact summary. All CSS/JS must be inline (no external CDN) due to Scout's CSP middleware.
+
+5. **Rich UI iframes are sandboxed.** They lack `allow-same-origin` by default, meaning they cannot make fetch/XHR requests to Open WebUI or other Scout services. They also cannot escape the CSP `connect-src 'self'` restriction to reach other subdomains. This means export-to-XNAT logic cannot live in the iframe — it must be in a server-side Action function.
+
+6. **No pandas needed.** The `csv` standard library module handles all CSV parsing and generation. Avoids dependency management issues.
+
+### Installation (documented in README)
+
+1. Navigate to **Workspace > Tools > New Tool**
 2. Set Tool ID: `scout_query_tool`
 3. Paste contents of `scout_query_tool.py`
-4. Save; configure Valves (trino connection details, mock mode toggle)
+4. Save; configure Valves (`use_mock_data: true`)
 5. Edit the Scout Explorer model:
    - Remove Trino MCP from tools
    - Enable Scout Query Tool
-   - Ensure Function Calling is set to "Native" (required for tool invocation)
+   - Ensure Function Calling is set to "Native"
 6. Update the model's system prompt with the revised `gpt-oss-scout-query-prompt.md`
-7. Test: Ask "Show me CT studies from 2024" — should see a file attachment and summary
+7. Test: Ask "Show me CT studies from 2024" — should see a Rich UI table and the LLM referencing a summary
 
 ---
 
@@ -608,43 +474,47 @@ The SQL patterns, example queries, and troubleshooting sections remain unchanged
 
 ## Implementation Order
 
-This is the recommended order for incremental implementation. Each step is independently testable.
-
-| Step | Description | Depends On | Files |
-|------|-------------|------------|-------|
-| 1 | Create stub CSV data | — | `scout_query_stub_data.csv` |
-| 2 | Create Scout Query Tool (mock mode, no Rich UI) | Step 1 | `scout_query_tool.py` |
-| 3 | Update system prompt | — | `gpt-oss-scout-query-prompt.md` |
-| 4 | Install tool, update model config, test query flow | Steps 2, 3 | README update |
-| 5 | Prepare XNAT logo SVG | — | `xnat_logo_grey.svg` |
-| 6 | Create XNAT Export Action (input form only) | Step 5 | `xnat_export_action.py` |
-| 7 | Add confirmation dialog to action | Step 6 | `xnat_export_action.py` |
-| 8 | Add mock API call and result display | Step 7 | `xnat_export_action.py` |
-| 9 | Install action, test full flow | Steps 4, 8 | README update |
-| 10 | [Stretch] Add Rich UI table to query tool | Step 4 | `scout_query_tool.py` |
+| Step | Description | Depends On | Status | Files |
+|------|-------------|------------|--------|-------|
+| 1 | Create stub CSV data | — | **DONE** | `scout_query_stub_data.csv` |
+| 2 | Create Scout Query Tool (mock mode + Rich UI) | Step 1 | **DONE** | `scout_query_tool.py` |
+| 3 | Update system prompt | — | **DONE** | `gpt-oss-scout-query-prompt.md` |
+| 4 | Install tool, update model config, test query flow | Steps 2, 3 | **DONE** | README update |
+| 5 | Prepare XNAT logo SVG | — | Pending | `xnat_logo_grey.svg` |
+| 6 | Create XNAT Export Action (input form only) | Step 5 | Pending | `xnat_export_action.py` |
+| 7 | Add confirmation dialog to action | Step 6 | Pending | `xnat_export_action.py` |
+| 8 | Add mock API call and result display | Step 7 | Pending | `xnat_export_action.py` |
+| 9 | Install action, test full flow | Steps 4, 8 | Pending | README update |
+| 10 | Fill in stub CSV with representative data | — | Pending | `scout_query_stub_data.csv`, `scout_query_tool.py` |
 
 ---
 
 ## Open Questions and Risks
 
-### Open Questions
+### Resolved Questions
 
-1. **File event format**: The exact schema for the `files` event emitter is poorly documented. The approach outlined (using `Files.insert_new_file()` + emitting file IDs) is based on source code reading, not official docs. May need experimentation.
+1. ~~**File event format**~~: **Resolved.** The `files` event emitter persists the file server-side but does not produce visible UI in the chat. This is not a blocker — the Rich UI table with embedded CSV download provides a better UX for displaying data. The server-side file is still accessible via the Open WebUI Files API, which the XNAT Export Action can use to read file contents.
 
-2. **pandas availability**: The Open WebUI container may or may not have pandas. If not and pip install is disabled, fall back to the `csv` standard library module. This is less ergonomic but sufficient.
+2. ~~**pandas availability**~~: **Resolved.** The `csv` standard library module handles all needs. No external dependencies required.
 
-3. **`__event_call__` timeout**: Default is 300 seconds per call. Complex confirmation dialogs (user reading through accession numbers) could hit this if the user walks away. The `WEBSOCKET_EVENT_CALLER_TIMEOUT` env var can increase this. Worth noting in the README.
+3. ~~**CSP restrictions on Rich UI**~~: **Resolved.** Inline CSS/JS works. All Rich UI content is self-contained with no external resources. The base64-encoded CSV download also works within the sandbox.
 
-4. **Action button on all messages**: Open WebUI shows action buttons on every assistant message, not just ones with file attachments. The action must gracefully handle being clicked on a message with no relevant files.
+4. ~~**Native function calling mode**~~: **Resolved.** Native mode works correctly with `__event_emitter__` status events and the Rich UI `(HTMLResponse, str)` return pattern. No flickering observed.
 
-5. **File content access pattern**: The plan uses `Files.get_file_by_id()` + `Storage.get_file()` to read file contents. This imports Open WebUI internals, which could break on version updates. The REST API alternative (`/api/v1/files/{id}/content`) is more stable but requires auth token management.
+### Remaining Open Questions
+
+1. **`__event_call__` timeout**: Default is 300 seconds per call. Complex confirmation dialogs (user reading through accession numbers) could hit this if the user walks away. The `WEBSOCKET_EVENT_CALLER_TIMEOUT` env var can increase this. Worth noting in the README.
+
+2. **Action button on all messages**: Open WebUI shows action buttons on every assistant message, not just ones with file attachments. The action must gracefully handle being clicked on a message with no relevant files.
+
+3. **File content access in Action**: The Action needs to read CSV files stored by the Query Tool. Plan is to use `Files.get_file_by_id()` + `Storage.get_file()` (Open WebUI internal APIs). These may change between versions. The alternative (`/api/v1/files/{id}/content` REST endpoint) is more stable but requires auth token management.
+
+4. **Rich UI iframe sandbox limitations**: The iframe lacks `allow-same-origin` and is constrained by CSP `connect-src 'self'`. It cannot make HTTP requests to Open WebUI APIs or other Scout subdomains. This means XNAT export logic cannot live in the iframe — confirmed that the Action approach (server-side Python) is the correct architecture for the export button.
 
 ### Risks
 
-1. **Open WebUI version sensitivity**: Native Tool functions depend on internal APIs (`open_webui.models.files`, `open_webui.storage.provider`). These may change between Open WebUI versions. The Trino MCP tool avoided this by being an external service. Mitigation: pin Open WebUI version; test after upgrades.
+1. **Open WebUI version sensitivity**: Native Tool functions depend on internal APIs (`open_webui.models.files`, `open_webui.storage.provider`). The `Storage.upload_file()` signature already required adjustment (missing `tags` parameter). These APIs may change between versions. Mitigation: pin Open WebUI version; test after upgrades; the `kubectl exec ... help(Storage.upload_file)` pattern documented in the code helps debug signature changes.
 
 2. **`execute` event browser compatibility**: The custom HTML/JS modal approach runs unsandboxed JS in the page context via `new Function()`. This is powerful but fragile — Open WebUI UI updates could break assumptions about DOM structure or CSS variables. Mitigation: use minimal, self-contained styles; don't depend on Open WebUI's internal DOM structure.
 
-3. **Native function calling mode**: The existing Scout Explorer model uses "Native" function calling mode (required for MCP tools). Native mode may have quirks with `__event_emitter__` — the research noted that content emitted via `message`/`replace` events can flicker because the model's completion snapshot overwrites emitted content. File events and status events should be unaffected, but test carefully.
-
-4. **CSP restrictions on Rich UI**: Scout's Traefik CSP middleware blocks external resources. Rich UI iframes should work (they use `self` origin), but any external library CDN links (e.g., DataTables.js) would be blocked. All Rich UI HTML/CSS/JS must be inline and self-contained.
+3. **Tools vs Functions upload confusion**: Open WebUI has separate interfaces for Tools (Workspace > Tools) and Functions (Admin Panel > Functions). Using the wrong one gives cryptic errors. This is documented in the README but remains a usability trap for anyone setting up the system.
