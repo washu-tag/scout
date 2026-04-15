@@ -585,7 +585,7 @@ The SQL patterns, example queries, and troubleshooting sections remain unchanged
 | 11 | Install action, test full flow | Steps 4, 10 | **DONE** | README update |
 | 12 | Fill in stub CSV with representative data | — | **DONE** | `scout_query_stub_data.csv`, `scout_query_tool.py` |
 | 13 | Design or source a proper XNAT logo icon | — | Pending | `xnat_logo_grey.svg`, `xnat_export_action.py` `_ICON_DATA_URI` |
-| 14 | Update XNAT API request/response to match real schema | — | Pending | `xnat_export_action.py`, `mock_xnat_service.py`, `mock-xnat-deployment.yaml` |
+| 14 | Update XNAT API request/response to match real schema | — | **DONE** | `xnat_export_action.py`, `mock_xnat_service.py`, `mock-xnat-deployment.yaml` |
 
 ### Step 14: Update XNAT API request/response schema
 

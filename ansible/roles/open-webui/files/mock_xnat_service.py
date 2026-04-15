@@ -9,8 +9,8 @@ Run with: uvicorn mock_xnat_service:app --host 0.0.0.0 --port 8000
 """
 
 import logging
-import uuid
-from datetime import datetime, timezone
+import random
+import time
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -29,10 +29,9 @@ async def health():
 
 @app.post("/export")
 async def export_to_xnat(request: Request):
-    """Accept an export request and return a mock success response.
+    """Accept an IQ data request and return a mock XNAT IQ response.
 
-    Accepts any JSON body — the real schema is TBD. Logs the request
-    for observability and returns a success envelope echoing key fields.
+    Mirrors the real XNAT Image Query (IQ) data request API schema.
     """
     body: dict[str, Any] = {}
     try:
@@ -43,14 +42,18 @@ async def export_to_xnat(request: Request):
     log.info("Received export request: %s", body)
 
     response = {
-        "status": "accepted",
-        "xnat_job_id": str(uuid.uuid4()),
-        "received_at": datetime.now(timezone.utc).isoformat(),
-        "project_id": body.get("project_id", "unknown"),
-        "accession_count": body.get(
-            "total_count", len(body.get("accession_numbers", []))
-        ),
-        "message": "Export request accepted. Studies will be available shortly.",
+        "id": random.randint(1, 9999),
+        "requestUser": body.get("requestUser", "unknown"),
+        "requestDate": int(time.time() * 1000),
+        "status": "PRE_PROCESSING",
+        "deidStatus": "IDENTIFIABLE",
+        "comment": body.get("comment", ""),
+        "message": "Request is being pre-processed.",
+        "projectName": body.get("projectName", "unknown"),
+        "irbNumber": body.get("irbNumber", ""),
+        "numberOfItemsRequested": len(body.get("data", [])),
+        "numberOfItemsPreviouslyDownloaded": 0,
+        "hasIrbProtocolForm": False,
     }
 
     log.info("Returning response: %s", response)

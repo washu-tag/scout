@@ -10,7 +10,6 @@ import csv
 import io
 import json
 import logging
-from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Optional
 
 import httpx
@@ -206,6 +205,10 @@ class Action:
 
             file_id: str = input_result.get("file_id", "")
             project_name: str = input_result.get("project_name", "").strip()
+            irb_number: str = input_result.get("irb_number", "").strip()
+            comment: str = input_result.get("comment", "").strip()
+            rationale: str = input_result.get("rationale", "").strip()
+            data_use_committee: str = input_result.get("data_use_committee", "").strip()
             if not project_name:
                 await self._notify(
                     __event_emitter__, "Project name is required", error=True
@@ -255,6 +258,10 @@ class Action:
                             project_name=project_name,
                             accession_numbers=accession_numbers,
                             row_count=row_count,
+                            irb_number=irb_number,
+                            comment=comment,
+                            rationale=rationale,
+                            data_use_committee=data_use_committee,
                         )
                     },
                 }
@@ -276,17 +283,20 @@ class Action:
         # -- Step 5: Send to XNAT ------------------------------------------
         xnat_url = f"{self.valves.xnat_base_url.rstrip('/')}/export"
         payload: dict[str, Any] = {
-            "project_id": project_name,
-            "requested_by": {
-                "name": user_info.get("name", "Unknown"),
-                "email": user_info.get("email", ""),
-                "username": user_info.get("username", ""),
-            },
-            "accession_numbers": accession_numbers,
-            "total_count": len(accession_numbers),
-            "source": "scout-open-webui",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "projectName": project_name,
+            "requestUser": user_info.get("username", "")
+            or user_info.get("name", "Unknown"),
+            "data": [{"Accession Number": acc} for acc in accession_numbers],
         }
+        # Add optional fields only if provided
+        if irb_number:
+            payload["irbNumber"] = irb_number
+        if comment:
+            payload["comment"] = comment
+        if rationale:
+            payload["rationale"] = rationale
+        if data_use_committee:
+            payload["dataUseCommitteeOversight"] = data_use_committee
 
         response_data: dict[str, Any] | None = None
         error_message: str | None = None
@@ -509,6 +519,22 @@ return new Promise((resolve) => {{
                 {file_field}
                 <label>XNAT project name</label>
                 <input type="text" id="xnat-project" placeholder="e.g. MyProject" />
+                <div style="margin-top:8px;margin-bottom:4px;">
+                    <button type="button" id="xnat-toggle-optional"
+                        style="background:none;border:none;color:#60a5fa;cursor:pointer;font-size:13px;padding:0;">
+                        &#9654; Optional details
+                    </button>
+                </div>
+                <div id="xnat-optional" style="display:none;">
+                    <label>IRB number</label>
+                    <input type="text" id="xnat-irb" placeholder="e.g. 202400123" />
+                    <label>Comment</label>
+                    <input type="text" id="xnat-comment" placeholder="" />
+                    <label>Rationale</label>
+                    <input type="text" id="xnat-rationale" placeholder="" />
+                    <label>Data Use Committee oversight</label>
+                    <input type="text" id="xnat-duc" placeholder="" />
+                </div>
                 <div class="btn-row">
                     <button id="xnat-cancel">Cancel</button>
                     <button id="xnat-next" class="primary">Next</button>
@@ -518,6 +544,15 @@ return new Promise((resolve) => {{
     `;
     document.body.appendChild(overlay);
 
+    const toggleBtn = document.getElementById('xnat-toggle-optional');
+    const optionalDiv = document.getElementById('xnat-optional');
+    let optionalOpen = false;
+    toggleBtn.onclick = () => {{
+        optionalOpen = !optionalOpen;
+        optionalDiv.style.display = optionalOpen ? 'block' : 'none';
+        toggleBtn.innerHTML = optionalOpen ? '&#9660; Optional details' : '&#9654; Optional details';
+    }};
+
     document.getElementById('xnat-cancel').onclick = () => {{
         overlay.remove(); resolve(null);
     }};
@@ -525,7 +560,18 @@ return new Promise((resolve) => {{
       try {{
         const project = document.getElementById('xnat-project').value;
         const fileId = {file_id_expr};
-        const result = JSON.stringify({{ file_id: fileId, project_name: project }});
+        const irb = document.getElementById('xnat-irb').value;
+        const comment = document.getElementById('xnat-comment').value;
+        const rationale = document.getElementById('xnat-rationale').value;
+        const duc = document.getElementById('xnat-duc').value;
+        const result = JSON.stringify({{
+            file_id: fileId,
+            project_name: project,
+            irb_number: irb,
+            comment: comment,
+            rationale: rationale,
+            data_use_committee: duc
+        }});
         console.log('[XNAT] resolving with:', result);
         overlay.remove();
         resolve(result);
@@ -552,11 +598,37 @@ return new Promise((resolve) => {{
         project_name: str,
         accession_numbers: list[str] | None = None,
         row_count: int = 0,
+        irb_number: str = "",
+        comment: str = "",
+        rationale: str = "",
+        data_use_committee: str = "",
     ) -> str:
         """Return JS that shows the confirmation dialog."""
         user_display = _js_escape(user_info.get("name", "Unknown"))
         email = _js_escape(user_info.get("email", ""))
         user_line = f"{user_display} &lt;{email}&gt;" if email else user_display
+
+        # Build optional fields section — only show fields that have values
+        optional_lines: list[str] = []
+        if irb_number:
+            optional_lines.append(
+                f"<div><strong>IRB number:</strong> {_js_escape(irb_number)}</div>"
+            )
+        if comment:
+            truncated = comment[:200] + ("…" if len(comment) > 200 else "")
+            optional_lines.append(
+                f"<div><strong>Comment:</strong> {_js_escape(truncated)}</div>"
+            )
+        if rationale:
+            truncated = rationale[:200] + ("…" if len(rationale) > 200 else "")
+            optional_lines.append(
+                f"<div><strong>Rationale:</strong> {_js_escape(truncated)}</div>"
+            )
+        if data_use_committee:
+            optional_lines.append(
+                f"<div><strong>Data Use Committee:</strong> {_js_escape(data_use_committee)}</div>"
+            )
+        optional_section = "".join(optional_lines)
 
         accession_numbers = accession_numbers or []
         n_acc = len(accession_numbers)
@@ -600,6 +672,7 @@ return new Promise((resolve) => {{
                     <div><strong>User:</strong> {user_line}</div>
                     <div><strong>File:</strong> {_js_escape(file_name)} ({row_count} rows)</div>
                     <div><strong>Destination:</strong> {_js_escape(project_name)}</div>
+                    {optional_section}
                     {acc_section}
                 </div>
                 <div class="btn-row">
@@ -635,7 +708,6 @@ return new Promise((resolve) => {{
     ) -> str:
         """Return JS that shows the result of the XNAT export."""
         payload_json = _js_escape(json.dumps(payload, indent=2))
-        link = f"{xnat_external_url.rstrip('/')}/data/projects/{project_name}"
 
         if error_message:
             status_section = (
@@ -647,17 +719,37 @@ return new Promise((resolve) => {{
                 status_section += f"<pre>{response_json}</pre>"
             title = "XNAT Export \\u2014 Error"
         else:
-            response_json = _js_escape(
-                json.dumps(response_data, indent=2)
-                if response_data is not None
-                else "{}"
-            )
+            resp = response_data or {}
+            resp_status = _js_escape(str(resp.get("status", "")))
+            resp_message = _js_escape(str(resp.get("message", "")))
+            resp_id = resp.get("id")
+            response_json = _js_escape(json.dumps(resp, indent=2))
+
+            # Build the link using the response id if available
+            if resp_id is not None:
+                link = (
+                    f"{xnat_external_url.rstrip('/')}/xapi/iq/data-requests/{resp_id}"
+                )
+                link_html = (
+                    f'<p><a href="{_js_escape(link)}" target="_blank" '
+                    f'style="color:#60a5fa;">{_js_escape(link)}</a></p>'
+                )
+            else:
+                link_html = ""
+
             status_section = (
-                f'<p style="color:#22c55e;font-weight:600;">Sent (HTTP {status_code})</p>'
+                f'<div class="info-block">'
+                f"<div><strong>Status:</strong> {resp_status}</div>"
+                f"<div><strong>Message:</strong> {resp_message}</div>"
+                + (
+                    f"<div><strong>Request ID:</strong> {resp_id}</div>"
+                    if resp_id is not None
+                    else ""
+                )
+                + f"</div>"
                 f"<label>Response</label>"
                 f"<pre>{response_json}</pre>"
-                f'<p><a href="{_js_escape(link)}" target="_blank" '
-                f'style="color:#60a5fa;">{_js_escape(link)}</a></p>'
+                f"{link_html}"
             )
             title = "XNAT Export \\u2014 Sent"
 
