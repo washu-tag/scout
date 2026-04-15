@@ -5,6 +5,9 @@ ollama:
   enabled: true
   # -- If enabling embedded Ollama, update fullnameOverride to your desired Ollama name value, or else it will use the default ollama.name value from the Ollama chart
   fullnameOverride: ollama
+  image:
+    repository: '{{ ollama_image_repository }}'
+    tag: '{{ ollama_image_tag }}'
   ollama:
     gpu:
       enabled: {{ ollama_gpu_enabled }}
@@ -27,6 +30,8 @@ ollama:
   extraEnv:
     - name: OLLAMA_KEEP_ALIVE
       value: '-1'
+    - name: OLLAMA_NO_CLOUD
+      value: '1'
 {% if air_gapped | default(false) and ollama_nfs_path is defined and ollama_nfs_path | length > 0 %}
     # Air-gapped with NFS: mount pre-staged models read-only (ADR 0008)
     - name: OLLAMA_MODELS
@@ -118,12 +123,12 @@ enableOpenaiApi: false
 websocket:
   # -- Enables websocket support in Open WebUI with env `ENABLE_WEBSOCKET_SUPPORT`
   enabled: true
-  # Use external Redis for websocket coordination
+  # Use external Valkey for websocket coordination
   manager: redis
-  # Set to empty - will be overridden by extraEnvVars below (which comes last in env list)
-  url: ''
+  existingSecret: open-webui-secrets
+  existingSecretKey: REDIS_URL
   redis:
-    # Disable embedded Redis - using external Redis Enterprise Database
+    # Disable embedded Redis - using external Valkey
     enabled: false
 
 # Load sensitive environment variables from Kubernetes Secret
@@ -205,16 +210,3 @@ extraEnvVars:
   # Logout redirect URL (OAuth2 Proxy signout)
   - name: WEBUI_AUTH_SIGNOUT_REDIRECT_URL
     value: '{{ oauth2_proxy_signout_url }}'
-
-  # Redis URLs with passwords - loaded from secret
-  # These override the chart's default WEBSOCKET_REDIS_URL (last env wins)
-  - name: WEBSOCKET_REDIS_URL
-    valueFrom:
-      secretKeyRef:
-        name: open-webui-secrets
-        key: REDIS_URL
-  - name: REDIS_URL
-    valueFrom:
-      secretKeyRef:
-        name: open-webui-secrets
-        key: REDIS_URL
