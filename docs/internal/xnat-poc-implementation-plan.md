@@ -134,9 +134,53 @@ Updated installation steps for the new tool.
 
 ---
 
-## Phase 2: Send to XNAT Action
+## Phase 2: Send to XNAT Action — COMPLETE
 
 This is an Open WebUI Action function (class `Action`) that adds a "Send to XNAT" button to the message toolbar.
+
+**Status**: Implemented and tested end-to-end. The multi-step dialog flow (input form → confirmation → send → result) works, including file reading, accession number extraction, payload construction, and mock XNAT service integration.
+
+### What was built
+
+**File**: `ansible/roles/open-webui/files/xnat_export_action.py`
+
+- Class `Action` with a multi-step dialog flow using `__event_call__` execute events
+- `Valves` for `xnat_base_url` (internal API endpoint), `xnat_external_url` (browser-facing link), service account credentials, timeout, and debug toggle
+- Step 1: Input form — file selection dropdown (all user's CSV files, sorted by recency), XNAT project name text input
+- Step 2: File reading — reads CSV via `Files.get_file_by_id()` + `Storage.get_file()` (returns local path) + `open()`, extracts accession numbers from `accession_number` column
+- Step 3: Confirmation dialog — shows user identity (from `__user__` or OAuth token), file name with row count, destination project, and accession numbers in a two-column monospace grid
+- Step 4: HTTP POST to XNAT — sends JSON payload with `project_id`, `requested_by`, `accession_numbers`, `total_count`, `source`, `timestamp`
+- Step 5: Result dialog — shows request payload, HTTP status, response JSON, and a clickable link using the external XNAT URL
+- Back button loops to input form; Cancel aborts at any step
+- Error handling for missing files, missing accession column, HTTP errors, and network failures
+
+**File**: `ansible/roles/open-webui/files/mock_xnat_service.py`
+
+- Standalone FastAPI reference implementation (for local development/testing)
+- Single POST `/export` endpoint that echoes key fields in a success envelope (HTTP 202)
+- GET `/health` endpoint for Kubernetes probes
+
+**File**: `ansible/roles/open-webui/files/mock-xnat-deployment.yaml`
+
+- Kubernetes ConfigMap + Deployment + Service manifest
+- Uses the Open WebUI container image (has FastAPI/uvicorn pre-installed, avoids pip on air-gapped clusters)
+- Mounts the service code from ConfigMap, runs uvicorn on port 8000
+- ClusterIP Service at `mock-xnat.<namespace>.svc.cluster.local:8000`
+
+**File**: `ansible/roles/open-webui/files/xnat_logo_grey.svg`
+
+- Greyscale SVG icon file (source for the button icon)
+- **Note**: The action currently uses a generic "external link" placeholder icon as a data URI. A proper XNAT logo needs to be designed or sourced — see remaining work below.
+
+### Lessons learned during implementation
+
+5. **`Storage.get_file()` returns a filesystem path, not file content.** The method signature is `get_file(file_path: str) -> str` and it returns the local path where the file is stored. To read content: `open(Storage.get_file(record.path), "r")`. This is different from what the method name suggests.
+
+6. **Air-gapped clusters cannot pip install.** The `python:3.12-slim` image cannot reach PyPI. Using the Open WebUI image (`ghcr.io/open-webui/open-webui`) as the base for the mock service works because it already has FastAPI and uvicorn installed. Alternatively, use the Nexus proxy configured per ADR 0017.
+
+7. **`__event_call__` returns strings, not dicts.** When the JS `resolve()` is called with `JSON.stringify({...})`, the Python side receives a string. Parse with `json.loads()` before accessing keys.
+
+8. **Separate internal and external URLs.** The action needs two URL concepts: an internal `xnat_base_url` for server-side HTTP requests (in-cluster service name), and an `xnat_external_url` for browser-facing links shown to users. These are configured as separate Valves.
 
 ### Step 2.1: Prepare the XNAT logo icon
 
@@ -532,14 +576,110 @@ The SQL patterns, example queries, and troubleshooting sections remain unchanged
 | 2 | Create Scout Query Tool (mock mode + Rich UI) | Step 1 | **DONE** | `scout_query_tool.py` |
 | 3 | Update system prompt | — | **DONE** | `gpt-oss-scout-query-prompt.md` |
 | 4 | Install tool, update model config, test query flow | Steps 2, 3 | **DONE** | README update |
-| 5 | Prepare XNAT logo SVG | — | Pending | `xnat_logo_grey.svg` |
-| 6 | Create XNAT Export Action (input form only) | Step 5 | Pending | `xnat_export_action.py` |
-| 7 | Add confirmation dialog to action | Step 6 | Pending | `xnat_export_action.py` |
-| 8 | Create Mock XNAT Service | — | Pending | `mock_xnat_service.py`, `mock-xnat-deployment.yaml` |
-| 9 | Deploy Mock XNAT Service to cluster | Step 8 | Pending | `kubectl apply` |
-| 10 | Add API call to mock service and result display | Steps 7, 9 | Pending | `xnat_export_action.py` |
-| 11 | Install action, test full flow | Steps 4, 10 | Pending | README update |
-| 12 | Fill in stub CSV with representative data | — | Pending | `scout_query_stub_data.csv`, `scout_query_tool.py` |
+| 5 | Prepare XNAT logo SVG | — | **Placeholder** | `xnat_logo_grey.svg` (generic icon in use; real XNAT logo TBD) |
+| 6 | Create XNAT Export Action (input form + confirmation + send) | Step 5 | **DONE** | `xnat_export_action.py` |
+| 7 | ~~Add confirmation dialog to action~~ | — | **DONE** | (merged into step 6) |
+| 8 | Create Mock XNAT Service | — | **DONE** | `mock_xnat_service.py`, `mock-xnat-deployment.yaml` |
+| 9 | Deploy Mock XNAT Service to cluster | Step 8 | **DONE** | `kubectl apply` |
+| 10 | ~~Add API call to mock service and result display~~ | — | **DONE** | (merged into step 6) |
+| 11 | Install action, test full flow | Steps 4, 10 | **DONE** | README update |
+| 12 | Fill in stub CSV with representative data | — | **DONE** | `scout_query_stub_data.csv`, `scout_query_tool.py` |
+| 13 | Design or source a proper XNAT logo icon | — | Pending | `xnat_logo_grey.svg`, `xnat_export_action.py` `_ICON_DATA_URI` |
+| 14 | Update XNAT API request/response to match real schema | — | Pending | `xnat_export_action.py`, `mock_xnat_service.py`, `mock-xnat-deployment.yaml` |
+
+### Step 14: Update XNAT API request/response schema
+
+The current action sends an empty-ish payload and shows the raw mock response. This step updates both to match the real XNAT Image Query (IQ) data request API.
+
+#### Request body
+
+```json
+{
+    "projectName": "...",
+    "irbNumber": "...",
+    "comment": "...",
+    "requestUser": "...",
+    "rationale": "...",
+    "dataUseCommitteeOversight": "...",
+    "data": [
+        {"Accession Number": "ACC001"},
+        {"Accession Number": "ACC002"}
+    ]
+}
+```
+
+Field mapping:
+
+| Field | Source | UI input |
+|-------|--------|----------|
+| `projectName` | Input form | **Existing** — already collected as "XNAT project name" |
+| `requestUser` | `__user__` / OAuth token | **Existing** — use `preferred_username` (or fallback to `__user__["name"]`) |
+| `irbNumber` | Input form | **New** — optional text input on the input form |
+| `comment` | Input form | **New** — optional text input (or textarea) on the input form |
+| `rationale` | Input form | **New** — optional text input (or textarea) on the input form |
+| `dataUseCommitteeOversight` | Input form | **New** — optional text input on the input form |
+| `data` | CSV file | **Existing** — accession numbers already extracted; restructure from `["ACC001", ...]` to `[{"Accession Number": "ACC001"}, ...]` |
+
+#### Changes to the input form dialog
+
+Add optional fields below the existing project name input:
+
+- **IRB number** — text input, optional, placeholder "e.g. 202400123"
+- **Comment** — text input, optional
+- **Rationale** — text input, optional
+- **Data Use Committee oversight** — text input, optional
+
+These fields should be visually grouped (e.g. under a "Optional details" label or collapsible section) so the form doesn't feel heavy for quick exports. All are optional — the user can leave them blank and the fields will be omitted or sent as empty strings.
+
+#### Changes to the confirmation dialog
+
+Show the new fields if provided (skip if empty):
+
+- IRB number
+- Comment (truncated if long)
+- Rationale (truncated if long)
+- Data Use Committee oversight
+
+#### Changes to the payload construction
+
+Replace the current payload builder with the new schema. The `data` array should be constructed as:
+
+```python
+"data": [{"Accession Number": acc} for acc in accession_numbers]
+```
+
+#### Expected response
+
+```json
+{
+    "id": 86,
+    "requestUser": "...",
+    "requestDate": 1776281971235,
+    "status": "PRE_PROCESSING",
+    "deidStatus": "IDENTIFIABLE",
+    "comment": "...",
+    "message": "Request is being pre-processed.",
+    "projectName": "...",
+    "irbNumber": "...",
+    "numberOfItemsRequested": 0,
+    "numberOfItemsPreviouslyDownloaded": 0,
+    "hasIrbProtocolForm": false
+}
+```
+
+#### Changes to the result dialog
+
+- Show `status` and `message` from the response prominently
+- Show the request ID (`id`)
+- Update the project link to: `{xnat_external_url}/xapi/iq/data-requests/{id}` (using the `id` from the response, not the project name)
+- If the response has no `id` (error case), fall back to showing the raw response JSON
+
+#### Changes to the mock XNAT service
+
+Update the mock service to:
+- Accept the new request body schema
+- Return a response matching the expected schema above (with a random `id`, current timestamp for `requestDate`, `status: "PRE_PROCESSING"`, etc.)
+- Update the ConfigMap in the deployment manifest to match
 
 ---
 
