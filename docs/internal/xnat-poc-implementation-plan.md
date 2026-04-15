@@ -34,9 +34,15 @@ User clicks "Send to XNAT" button on message toolbar
 XNAT Export Action
     ├── Step 1: Input form (file selection if ambiguous, XNAT project name)
     ├── Step 2: Confirmation (accession numbers, user identity, project)
-    ├── Builds JSON payload that would be sent to XNAT
-    ├── Displays payload to user as proof-of-work
+    ├── POSTs JSON payload to Mock XNAT Service
+    ├── Displays request and response to user
     └── Shows success with link to XNAT
+    │
+    ▼
+Mock XNAT Service (FastAPI, in-cluster)
+    ├── Receives POST request with JSON payload
+    ├── Logs the request for observability
+    └── Returns a JSON response (simulating XNAT acceptance)
 ```
 
 ## Files to Create or Modify
@@ -49,6 +55,8 @@ XNAT Export Action
 | `ansible/roles/open-webui/files/scout_query_stub_data.csv` | Canned CSV result data (you fill in contents) |
 | `ansible/roles/open-webui/files/xnat_export_action.py` | Send to XNAT Action function |
 | `ansible/roles/open-webui/files/xnat_logo_grey.svg` | Greyscale XNAT logo for the action button |
+| `ansible/roles/open-webui/files/mock_xnat_service.py` | Mock FastAPI service that stands in for the real XNAT API |
+| `ansible/roles/open-webui/files/mock-xnat-deployment.yaml` | Kubernetes manifests to deploy the mock service in-cluster |
 
 ### Files to Modify
 
@@ -171,8 +179,8 @@ No external pip requirements expected — uses only `json`, `csv`, `io`, `base64
 class Action:
     class Valves(BaseModel):
         xnat_base_url: str = Field(
-            default="https://xnat.example.org",
-            description="XNAT instance base URL"
+            default="http://mock-xnat.scout.svc.cluster.local:8000",
+            description="XNAT API base URL. For POC, points to the mock XNAT service."
         )
         xnat_service_account_id: str = Field(
             default="",
@@ -254,10 +262,9 @@ The action method orchestrates a multi-step dialog using `__event_call__` with `
    - If "Back": loop back to step 3 (re-show input form)
    - Returns: {action: "send" | "back" | "cancel"}
 
-6. Build XNAT API payload (mock)
-   - Construct a JSON object representing what would be sent:
+6. Build and send XNAT API payload
+   - Construct a JSON request payload (exact schema TBD — will match real XNAT API once known):
      {
-         "xnat_base_url": valves.xnat_base_url,
          "project_id": project_name,
          "requested_by": {
              "name": user_name,
@@ -269,11 +276,14 @@ The action method orchestrates a multi-step dialog using `__event_call__` with `
          "source": "scout-open-webui",
          "timestamp": ISO-8601
      }
+   - POST the payload to the Mock XNAT Service endpoint (URL configured in Valves)
+   - The mock service returns a JSON response (exact schema TBD)
+   - If the request fails (network error, non-2xx), show an error notification and return
 
 7. Show result (Step 3) via __event_call__ execute
-   - Title: "XNAT Export — Demo Mode"
-   - Show the constructed JSON payload in a formatted code block
-   - Message: "In production, this payload would be sent to {xnat_base_url}/api/..."
+   - Title: "XNAT Export — Sent"
+   - Show the request payload in a formatted code block
+   - Show the response from the mock service in a second formatted code block
    - Show a (non-functional) link: "{xnat_base_url}/data/projects/{project_name}"
    - "Done" button
    - Returns when user dismisses
@@ -372,7 +382,43 @@ response = await httpx.AsyncClient().get(
 
 Go with Approach A — it avoids auth token management and network round-trips.
 
-### Step 2.4: Install and configure
+### Step 2.4: Mock XNAT Service
+
+**File**: `ansible/roles/open-webui/files/mock_xnat_service.py`
+
+A lightweight FastAPI application that stands in for the real XNAT API. The action's "Send" step POSTs to this service and displays the response, making the demo feel like a real integration rather than a purely client-side mock.
+
+#### What it does
+
+- Exposes a single POST endpoint (path TBD — will mirror the real XNAT API route once known)
+- Accepts a JSON body (schema TBD)
+- Logs the incoming request for observability / demo purposes
+- Returns a JSON response (schema TBD — will mirror real XNAT response once known)
+- No authentication, no persistence, no validation beyond basic JSON parsing
+
+#### Implementation notes
+
+- Single-file FastAPI app, runnable with `uvicorn mock_xnat_service:app`
+- No external dependencies beyond `fastapi` and `uvicorn`
+- The request and response schemas are placeholders. Once the real XNAT API details are known, update them to match. For now, the service accepts whatever JSON is posted and returns a success envelope with an echo of key fields.
+- Keep it minimal — this exists only to make the demo round-trip real
+
+#### Deployment
+
+**File**: `ansible/roles/open-webui/files/mock-xnat-deployment.yaml`
+
+A simple Kubernetes Deployment + Service manifest:
+- Single-replica Deployment running `uvicorn` in a lightweight Python container
+- ClusterIP Service so the Open WebUI action can reach it by service name (e.g., `http://mock-xnat.<namespace>.svc.cluster.local:8000/...`)
+- No ingress needed — this is internal-only, called server-side from the action
+
+For the POC, this can be deployed manually with `kubectl apply`. No Ansible role or Helm chart needed.
+
+#### Valve configuration
+
+The XNAT Export Action's `xnat_base_url` Valve should point to the mock service's in-cluster URL for the POC (e.g., `http://mock-xnat.<namespace>.svc.cluster.local:8000`). In production, this would be swapped to the real XNAT URL.
+
+### Step 2.5: Install and configure
 
 Manual steps (add to README):
 
@@ -448,7 +494,8 @@ The SQL patterns, example queries, and troubleshooting sections remain unchanged
    - Enter a project name, click Next
    - Confirmation shows: user identity, file name, accession number sample and count, project name
    - Click Send
-   - JSON payload is displayed showing the constructed request
+   - Request is POSTed to the mock XNAT service
+   - Result dialog shows both the request payload and the mock service's response
    - A link to the (mock) XNAT project is shown
 
 ### Test 3: XNAT export — back flow
@@ -465,7 +512,12 @@ The SQL patterns, example queries, and troubleshooting sections remain unchanged
 2. Click "Send to XNAT"
 3. Verify: error message about missing required column
 
-### Test 6: Multiple files in conversation
+### Test 6: XNAT export — mock service unavailable
+1. Scale the mock XNAT service to 0 replicas (or misconfigure the Valve URL)
+2. Go through the export flow and click Send
+3. Verify: error notification about the request failing (network error / non-2xx)
+
+### Test 7: Multiple files in conversation
 1. Ask two separate queries to generate two file attachments
 2. Click "Send to XNAT" on the message with both files (or on any message)
 3. Verify: file selection dropdown appears, can choose which file to export
@@ -483,9 +535,11 @@ The SQL patterns, example queries, and troubleshooting sections remain unchanged
 | 5 | Prepare XNAT logo SVG | — | Pending | `xnat_logo_grey.svg` |
 | 6 | Create XNAT Export Action (input form only) | Step 5 | Pending | `xnat_export_action.py` |
 | 7 | Add confirmation dialog to action | Step 6 | Pending | `xnat_export_action.py` |
-| 8 | Add mock API call and result display | Step 7 | Pending | `xnat_export_action.py` |
-| 9 | Install action, test full flow | Steps 4, 8 | Pending | README update |
-| 10 | Fill in stub CSV with representative data | — | Pending | `scout_query_stub_data.csv`, `scout_query_tool.py` |
+| 8 | Create Mock XNAT Service | — | Pending | `mock_xnat_service.py`, `mock-xnat-deployment.yaml` |
+| 9 | Deploy Mock XNAT Service to cluster | Step 8 | Pending | `kubectl apply` |
+| 10 | Add API call to mock service and result display | Steps 7, 9 | Pending | `xnat_export_action.py` |
+| 11 | Install action, test full flow | Steps 4, 10 | Pending | README update |
+| 12 | Fill in stub CSV with representative data | — | Pending | `scout_query_stub_data.csv`, `scout_query_tool.py` |
 
 ---
 
