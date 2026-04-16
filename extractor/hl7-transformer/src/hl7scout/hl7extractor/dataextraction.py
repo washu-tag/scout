@@ -1,5 +1,7 @@
+import contextvars
 import threading
 
+from pyspark.sql.streaming import StreamingQuery
 from temporalio import activity
 
 from pyspark.sql import SparkSession
@@ -38,28 +40,13 @@ def perform_table_operations(
         .option("readChangeFeed", "true")
         .table(f"default.{source_table}")
     )
-    latest_table_operation = (
+
+    perform_derivative_operation_with_heartbeat(
         full_table.writeStream.foreachBatch(streaming_function)
         .option("checkpointLocation", f"{warehouse_dir}/checkpoints/{source_table}")
         .trigger(availableNow=True)
         .start()
     )
-
-    stop_event = threading.Event()
-
-    def heartbeat_loop():
-        while not stop_event.wait(timeout=10):
-            activity.heartbeat()
-
-    t = threading.Thread(target=heartbeat_loop, daemon=True)
-    t.start()
-    try:
-        latest_table_operation.awaitTermination()
-    finally:
-        stop_event.set()
-        t.join()
-
-    latest_table_operation.awaitTermination()
 
     activity.heartbeat()
     activity.logger.info(f"Derivative tables {tables.keys()} updated")
@@ -87,3 +74,20 @@ def process_derivative_data(spark: SparkSession, report_table_name: str):
     for child_table in derivative_tables.keys():
         if child_table != mapping_table_name:
             add_epic_view(spark, child_table, mapping_table_name)
+
+
+def perform_derivative_operation_with_heartbeat(table_operation: StreamingQuery):
+    ctx = contextvars.copy_context()
+    stop_event = threading.Event()
+
+    def heartbeat_loop():
+        while not stop_event.wait(timeout=10):
+            ctx.run(activity.heartbeat)  # need right context for activity heartbeat
+
+    t = threading.Thread(target=heartbeat_loop, daemon=True)
+    t.start()
+    try:
+        table_operation.awaitTermination()
+    finally:
+        stop_event.set()
+        t.join()
