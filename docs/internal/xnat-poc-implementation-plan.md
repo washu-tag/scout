@@ -183,6 +183,8 @@ This is an Open WebUI Action function (class `Action`) that adds a "Send to XNAT
 
 8. **Separate internal and external URLs.** The action needs two URL concepts: an internal `xnat_base_url` for server-side HTTP requests (in-cluster service name), and an `xnat_external_url` for browser-facing links shown to users. These are configured as separate Valves.
 
+9. **Files must be scoped to chats via `meta.chat_id`.** Open WebUI's `File` model has no `chat_id` column — there is no database-level file-to-chat association. `Files.get_files_by_user_id()` returns ALL files the user has ever created across all chats. There is also no `Chats.insert_chat_files()` or `Chats.get_chat_files_by_chat_id_and_message_id()` API. The solution is to store `chat_id` in the file's `meta` JSON field when the tool creates it (the tool receives `__chat_id__` as an injected parameter), then filter by `meta.chat_id` in the action (using `body["chat_id"]` from the frontend). The `files` event emitter does persist file references in the chat's message history on the frontend, but the action body's messages do not include `files` arrays.
+
 ### Step 2.1: Prepare the XNAT logo icon — COMPLETE
 
 **File**: `ansible/roles/open-webui/files/xnat_logo_grey.svg`

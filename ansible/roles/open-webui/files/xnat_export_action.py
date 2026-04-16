@@ -377,26 +377,25 @@ class Action:
     # ------------------------------------------------------------------
     @staticmethod
     def _collect_csv_files(body: dict, user_id: str) -> list[dict[str, str]]:
-        """Find CSV files created by the Scout Query Tool.
+        """Find CSV files created by the Scout Query Tool for this chat.
 
-        The tool stores results via Files.insert_new_file() and emits a
-        ``files`` event, but neither mechanism populates the action body's
-        ``messages`` with file references.  Instead, we query the Files
-        model directly for this user's CSV files.
-
-        TODO: Improve this by linking files to chats via
-        Chats.insert_chat_files() in the query tool, then looking up
-        files by chat_id here with
-        Chats.get_chat_files_by_chat_id_and_message_id().
+        The query tool stores ``chat_id`` in each file's ``meta`` dict.
+        We filter the user's files to only those whose
+        ``meta.chat_id`` matches the current chat, so the export dialog
+        only shows files from the active conversation.
         """
         from open_webui.models.files import Files
 
+        chat_id = body.get("chat_id", "")
         all_files = Files.get_files_by_user_id(user_id)
         csv_files = sorted(
             [
                 {"id": f.id, "name": f.filename, "created_at": f.created_at or 0}
                 for f in all_files
-                if f.filename and f.filename.lower().endswith(".csv")
+                if f.filename
+                and f.filename.lower().endswith(".csv")
+                and (f.meta or {}).get("chat_id") == chat_id
+                and chat_id  # don't match if chat_id is empty
             ],
             key=lambda f: f["created_at"],
             reverse=True,

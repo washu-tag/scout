@@ -86,6 +86,7 @@ class Tools:
         sql: str,
         __user__: dict = {},
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
+        __chat_id__: str = "",
     ) -> str:
         """
         Execute a SQL query against the Scout Delta Lake reports database and
@@ -121,6 +122,7 @@ class Tools:
                 csv_bytes=csv_bytes,
                 filename=self._generate_filename(),
                 user_id=__user__.get("id", ""),
+                chat_id=__chat_id__,
                 event_emitter=__event_emitter__,
             )
 
@@ -200,6 +202,7 @@ class Tools:
         csv_bytes: bytes,
         filename: str,
         user_id: str,
+        chat_id: str = "",
         event_emitter: Optional[Callable] = None,
     ) -> str:
         """
@@ -223,11 +226,14 @@ class Tools:
             {},
         )
 
-        # Create the database record
+        # Create the database record.
+        # chat_id is stored in meta so the XNAT export action can filter
+        # files to only those belonging to the current chat.
         file_meta = {
             "name": filename,
             "content_type": "text/csv",
             "size": len(csv_bytes),
+            "chat_id": chat_id,
         }
         Files.insert_new_file(
             user_id,
