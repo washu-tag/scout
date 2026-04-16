@@ -310,7 +310,7 @@ jobs:
           IMAGES="hl7log-extractor hl7-transformer pyspark-notebook launchpad superset keycloak"
           for IMAGE in $IMAGES; do
             echo "=== Publishing $IMAGE ==="
-            gh run download "$RUN_ID" -n "$IMAGE" -D "${{ runner.temp }}/$IMAGE"
+            gh run download "$RUN_ID" --repo "${{ github.repository }}" -n "$IMAGE" -D "${{ runner.temp }}/$IMAGE"
             FULL_TAG=$(docker load --input "${{ runner.temp }}/$IMAGE/$IMAGE.tar" | sed 's/.*: //g')
             rm -f "${{ runner.temp }}/$IMAGE/$IMAGE.tar"
             docker push "$FULL_TAG"
