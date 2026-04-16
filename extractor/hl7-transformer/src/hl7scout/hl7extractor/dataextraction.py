@@ -1,3 +1,5 @@
+import threading
+
 from temporalio import activity
 
 from pyspark.sql import SparkSession
@@ -42,6 +44,20 @@ def perform_table_operations(
         .trigger(availableNow=True)
         .start()
     )
+
+    stop_event = threading.Event()
+
+    def heartbeat_loop():
+        while not stop_event.wait(timeout=10):
+            activity.heartbeat()
+
+    t = threading.Thread(target=heartbeat_loop, daemon=True)
+    t.start()
+    try:
+        latest_table_operation.awaitTermination()
+    finally:
+        stop_event.set()
+        t.join()
 
     latest_table_operation.awaitTermination()
 
