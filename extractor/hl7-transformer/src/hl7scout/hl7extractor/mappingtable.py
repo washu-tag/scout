@@ -147,14 +147,14 @@ def extract_mapping(batch_df, spark, table_name, source_table):
     unique_ids_incoming_reports = (
         remaining_reports_ranked.filter(F.col("_rank") == 1).drop("_rank").cache()
     )
-    duplicate_ids_incoming_reports = (
-        remaining_reports_ranked.filter(F.col("_rank") > 1).drop("_rank").cache()
-    )
+    duplicate_ids_incoming_reports = remaining_reports_ranked.filter(
+        F.col("_rank") > 1
+    ).drop("_rank")
 
     deferred_reports_df = (
         exact_matches_df.unionByName(duplicate_ids_incoming_reports)
-        .cache()
         .dropDuplicates()
+        .cache()
     )
 
     activity.logger.info("Stage 1 completed on mapping table derivation")
@@ -162,25 +162,24 @@ def extract_mapping(batch_df, spark, table_name, source_table):
     # Stage 1 complete, begin stage 2
     remaining_reports_df = unique_ids_incoming_reports
 
-    partial_match_condition = (
-        remaining_reports_df["mpi"] == existing_mapping_df["mpi"]
-    ) | (remaining_reports_df["epic_mrn"] == existing_mapping_df["epic_mrn"])
+    mpi_matches_df = remaining_reports_df.join(
+        existing_mapping_df.select("mpi").withColumn("_contains_match", F.lit(True)),
+        on="mpi",
+        how="left",
+    )
+
+    epic_mrn_matches_df = remaining_reports_df.join(
+        existing_mapping_df.select("epic_mrn").withColumn(
+            "_contains_match", F.lit(True)
+        ),
+        on="epic_mrn",
+        how="left",
+    )
 
     partial_match_with_indicator_df = (
-        remaining_reports_df.join(
-            existing_mapping_df.select("mpi", "epic_mrn").withColumn(
-                "_contains_match", F.lit(True)
-            ),
-            on=partial_match_condition,
-            how="left",
-        )
-        .select(
-            remaining_reports_df["primary_report_identifier"],
-            remaining_reports_df["mpi"],
-            remaining_reports_df["epic_mrn"],
-            F.col("_contains_match"),
-        )
-        .dropDuplicates(["primary_report_identifier"])
+        mpi_matches_df.unionByName(epic_mrn_matches_df)
+        .groupBy("primary_report_identifier", "mpi", "epic_mrn")
+        .agg(F.max("_contains_match").alias("_contains_match"))
         .cache()
     )  # cache join once
 
@@ -219,16 +218,21 @@ def extract_mapping(batch_df, spark, table_name, source_table):
     fully_disjoint_reports_df = filter_no_existing_mapping_df(
         (F.col("mpi_count") <= 1) & (F.col("epic_mrn_count") <= 1)
     ).cache()
-    activity.logger.info("Calculated fully disjoint reports")
+
+    fully_disjoint_count = fully_disjoint_reports_df.count()
+    activity.logger.info("Calculated fully disjoint reports: %d", fully_disjoint_count)
     incoming_reports_with_links_df = filter_no_existing_mapping_df(
         (F.col("mpi_count") > 1) | (F.col("epic_mrn_count") > 1)
     ).cache()
-    activity.logger.info("Calculated stage 2 incoming reports with links")
+    activity.logger.info(
+        "Calculated stage 2 incoming reports with links: %d",
+        incoming_reports_with_links_df.count(),
+    )
 
-    if not (fully_disjoint_reports_df.isEmpty()):
+    if fully_disjoint_count > 0:
         activity.logger.info(
             "Inserting mapping for %d fully disjoint reports",
-            fully_disjoint_reports_df.count(),
+            fully_disjoint_count,
         )
         fully_disjoint_reports_transformed_df = fully_disjoint_reports_df.select(
             F.expr("uuid()").alias("scout_patient_id"),
@@ -246,7 +250,7 @@ def extract_mapping(batch_df, spark, table_name, source_table):
         )
         activity.logger.info("Fully disjoint reports inserted")
         existing_mapping_df.unpersist()
-        existing_mapping_df = spark.read.table(table_name)
+        existing_mapping_df = spark.read.table(table_name).cache()
         activity.logger.info("Updated existing mapping table reread")
 
     activity.logger.info(
@@ -271,15 +275,11 @@ def extract_mapping(batch_df, spark, table_name, source_table):
         exactly_one_id_specified_condition
     ).cache()
 
-    partial_match_condition = (
-        reports_with_single_id_df["mpi"] == existing_mapping_df["mpi"]
-    ) | (reports_with_single_id_df["epic_mrn"] == existing_mapping_df["epic_mrn"])
-
-    reports_with_partial_existing_match_df = (
+    single_id_reports_with_mpi_match_df = (
         reports_with_single_id_df.alias("incoming")
         .join(
             existing_mapping_df.alias("existing"),
-            on=partial_match_condition,
+            on="mpi",
             how="inner",
         )
         .select(
@@ -289,7 +289,28 @@ def extract_mapping(batch_df, spark, table_name, source_table):
             "incoming.epic_mrn",
             "existing.consistent",
         )
-        .dropDuplicates(["primary_report_identifier"])
+    )
+
+    single_id_reports_with_epic_mrn_match_df = (
+        reports_with_single_id_df.alias("incoming")
+        .join(
+            existing_mapping_df.alias("existing"),
+            on="epic_mrn",
+            how="inner",
+        )
+        .select(
+            "existing.scout_patient_id",
+            "incoming.primary_report_identifier",
+            "incoming.mpi",
+            "incoming.epic_mrn",
+            "existing.consistent",
+        )
+    )
+
+    reports_with_partial_existing_match_df = (
+        single_id_reports_with_mpi_match_df.unionByName(
+            single_id_reports_with_epic_mrn_match_df
+        ).dropDuplicates(["primary_report_identifier"])
     ).cache()
 
     merge_df_into_dt_on_column(
@@ -306,17 +327,19 @@ def extract_mapping(batch_df, spark, table_name, source_table):
 
     reports_with_no_existing_match_df = (
         reports_with_single_id_df.join(
-            existing_mapping_df,
-            on=partial_match_condition,
+            reports_with_partial_existing_match_df.select("primary_report_identifier"),
+            on="primary_report_identifier",
             how="left_anti",
-        ).select(
+        )
+        .select(
             F.expr("uuid()").alias("scout_patient_id"),
             "primary_report_identifier",
             "mpi",
             "epic_mrn",
             F.lit(True).alias("consistent"),
         )
-    ).cache()
+        .cache()
+    )
 
     merge_df_into_dt_on_column(
         DeltaTable.forName(spark, table_name),
@@ -338,7 +361,6 @@ def extract_mapping(batch_df, spark, table_name, source_table):
         remaining_reports_df.filter(~exactly_one_id_specified_condition)
         .withColumn("scout_patient_id", F.lit(None).cast(StringType()))
         .withColumn("consistent", F.lit(True))
-        .cache()
     )
 
     recurse_complex_cases(spark, complex_cases_df, table_name)
@@ -371,48 +393,21 @@ def extract_mapping(batch_df, spark, table_name, source_table):
         partial_existing_mapping_match_df,
         remaining_reports_ranked,
         unique_ids_incoming_reports,
-        duplicate_ids_incoming_reports,
         existing_mapping_df,
         partial_match_with_indicator_df,
         remaining_reports_df,
         reports_with_single_id_df,
         reports_with_partial_existing_match_df,
         reports_with_no_existing_match_df,
-        complex_cases_df,
+        deferred_reports_df,
     ]:
         df.unpersist()
     activity.logger.info("Mapping table derivation complete")
 
-    spark.sql(
-        f"""
-            CREATE OR REPLACE VIEW {source_table}_epic_view AS
-            WITH patient_ids AS (
-                SELECT
-                    scout_patient_id,
-                    MAX(epic_mrn) AS resolved_epic_mrn,
-                    MAX(mpi) AS resolved_mpi
-                FROM {table_name}
-                WHERE consistent = true
-                GROUP BY scout_patient_id
-            )
-            SELECT
-                r.*,
-                m.scout_patient_id,
-                p.resolved_epic_mrn,
-                p.resolved_mpi
-            FROM {source_table} r
-            JOIN {table_name} m
-                ON r.primary_report_identifier = m.primary_report_identifier
-            JOIN patient_ids p
-                ON m.scout_patient_id = p.scout_patient_id
-            WHERE m.consistent = true
-    """
-    )
-
 
 def recurse_complex_cases(spark: SparkSession, df: DataFrame, table_name: str):
     complex_cases = [MappingEntry.from_df_row(row) for row in df.collect()]
-    existing_mapping_df = spark.read.table(table_name).cache()
+    existing_mappings_df = spark.read.table(table_name).cache()
     bulk_updates = []
     activity.logger.info(
         "Performing recursive search to resolve IDs for %d reports", len(complex_cases)
@@ -424,7 +419,7 @@ def recurse_complex_cases(spark: SparkSession, df: DataFrame, table_name: str):
         patient_web = recursive_search_patient_web(
             spark,
             complex_cases,
-            existing_mapping_df,
+            existing_mappings_df,
             known_mpis,
             known_mrns,
             [complex_case],
@@ -485,7 +480,7 @@ def recurse_complex_cases(spark: SparkSession, df: DataFrame, table_name: str):
         "primary_report_identifier",
         False,
     )
-    existing_mapping_df.unpersist()
+    existing_mappings_df.unpersist()
 
 
 def search_mappings_on_patient_id(
