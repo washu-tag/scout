@@ -68,6 +68,10 @@ Developer                    GitHub                        CI
     |                           |     Wait for build -------+---> [Build fails]
     |                           |          |                |           |
     |                           |          v                |           |
+    |                           |     Publish images        |           |
+    |                           |     (non-main only)       |           |
+    |                           |          |                |           |
+    |                           |          v                |           |
     |                           |     Create release        |           |
     |                           |     (auto-gen changelog)  |           |
     |                           |     Create vX.Y.Z tag     |           |
@@ -96,9 +100,10 @@ Developer                    GitHub                        CI
 2. **Searches git history** for an existing version bump commit (for idempotent re-runs)
 3. **Updates version files** and commits the version bump to the branch (if not already done)
 4. **Waits for the Build Workflow** to complete on HEAD (builds versioned artifacts)
-5. **Creates the GitHub release** with auto-generated changelog (if build succeeded)
-6. **Creates the `vX.Y.Z` tag** pointing at HEAD (if build succeeded)
-7. **Resets to dev versions** by running the update script and committing (always, regardless of build result)
+5. **Publishes Docker images** to GHCR (non-main branches only — on main, the CI workflow's publish job handles this)
+6. **Creates the GitHub release** with auto-generated changelog (if build succeeded)
+7. **Creates the `vX.Y.Z` tag** pointing at HEAD (if build succeeded)
+8. **Resets to dev versions** by running the update script and committing (always, regardless of build result)
 
 ### Result
 
@@ -137,12 +142,13 @@ The release workflow pushes a version bump commit to the branch and then waits f
 
 To release from a non-main branch, ensure the branch name starts with `ci-` (e.g., `ci-hotfix-3.0.1`).
 
+### Image Publishing
+
+The CI workflow's `publish` job only runs on `main`. For non-main releases, the release workflow handles image publishing directly: after the CI build succeeds, it downloads the built image artifacts from the CI run and pushes them to GHCR with the release version tag (e.g., `3.0.1`). This ensures versioned images are available regardless of which branch the release is made from, without affecting the `latest` tag.
+
 ### Why Skip the Dev Reset?
 
-The `skip_dev_reset` option prevents the workflow from committing dev versions back to the branch after the release. This is recommended for non-main releases because:
-
-- It avoids an extra commit and CI run on a branch that doesn't need dev versions
-- While it might seem necessary to prevent publishing `latest` images from an older branch, this isn't actually a concern — the `publish` jobs in the CI workflow only run on `main`
+The `skip_dev_reset` option prevents the workflow from committing dev versions back to the branch after the release. This is recommended for non-main releases because it avoids an extra commit and CI run on a branch that doesn't need dev versions.
 
 Skipping the reset is a good practice for non-main releases but not strictly required.
 
@@ -253,9 +259,11 @@ Both approaches are valid. If the alternative behavior is preferred, the `reset-
 
 **Triggers**: Push to `main`, `ci-**`, or `demo**` branches
 
-**Behavior**: Builds and publishes artifacts. Tags are derived from version files:
-- Dev versions (`latest`, `0.0.0-dev`, etc.) → publishes with `latest` tag
-- Release versions (`2.1.0`) → publishes with `2.1.0` tag
+**Behavior**: Builds and tests artifacts. Tags are derived from version files:
+- Dev versions (`latest`, `0.0.0-dev`, etc.) → publishes with `latest` tag (main only)
+- Release versions (`2.1.0`) → publishes with `2.1.0` tag (main only)
+
+The CI workflow's `publish` job only runs on `main`. For non-main branches, the release workflow handles image publishing directly (see below).
 
 ### 2. Release Workflow (New)
 
@@ -274,9 +282,10 @@ Both approaches are valid. If the alternative behavior is preferred, the `reset-
 1. Validate version format and check tag doesn't exist
 2. Update version files and commit
 3. Wait for Build Workflow to complete
-4. Create GitHub release with auto-generated changelog
-5. Create version tag
-6. Reset to dev versions and commit
+4. Publish Docker images to GHCR (non-main branches only)
+5. Create GitHub release with auto-generated changelog
+6. Create version tag
+7. Reset to dev versions and commit
 
 ### 3. Version Update Script
 

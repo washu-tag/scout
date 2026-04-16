@@ -24,8 +24,11 @@ concurrency:
 
 permissions:
   contents: write
+  packages: write
   pull-requests: read
   actions: read
+  attestations: write
+  id-token: write
 
 jobs:
   validate:
@@ -201,6 +204,7 @@ jobs:
     if: ${{ !inputs.dry_run && always() && !cancelled() && (needs.version-bump.result == 'success' || needs.version-bump.result == 'skipped') }}
     outputs:
       commit_sha: ${{ steps.target.outputs.sha }}
+      ci_run_id: ${{ steps.wait.outputs.run_id }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -219,6 +223,7 @@ jobs:
           echo "sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Wait for CI workflow
+        id: wait
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -258,6 +263,7 @@ jobs:
             case "$STATUS" in
               completed:success)
                 echo "CI workflow completed successfully"
+                echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
                 exit 0
                 ;;
               completed:*)
@@ -275,11 +281,51 @@ jobs:
           echo "::error::Timed out waiting for CI workflow"
           exit 1
 
+  publish:
+    name: Publish Images
+    runs-on: ubuntu-latest
+    needs: [wait-for-build]
+    # On main, CI's publish job pushes images. On non-main branches, CI runs but its
+    # publish job is gated to main only, so we push images here instead.
+    # always() is required because version-bump (a transitive dependency) may be skipped
+    # on re-runs, and GitHub Actions propagates skip status through the dependency graph.
+    if: >-
+      always() && !cancelled()
+      && github.ref_name != 'main'
+      && !inputs.dry_run
+      && needs.wait-for-build.result == 'success'
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download and push all images
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ needs.wait-for-build.outputs.ci_run_id }}
+        run: |
+          IMAGES="hl7log-extractor hl7-transformer pyspark-notebook launchpad superset keycloak"
+          for IMAGE in $IMAGES; do
+            echo "=== Publishing $IMAGE ==="
+            gh run download "$RUN_ID" -n "$IMAGE" -D "${{ runner.temp }}/$IMAGE"
+            FULL_TAG=$(docker load --input "${{ runner.temp }}/$IMAGE/$IMAGE.tar" | sed 's/.*: //g')
+            rm -f "${{ runner.temp }}/$IMAGE/$IMAGE.tar"
+            docker push "$FULL_TAG"
+            docker rmi "$FULL_TAG"
+          done
+
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [validate, wait-for-build]
-    if: ${{ !inputs.dry_run && always() && !cancelled() && needs.wait-for-build.result == 'success' && needs.validate.outputs.release_exists != 'true' }}
+    needs: [validate, wait-for-build, publish]
+    if: >-
+      !inputs.dry_run && always() && !cancelled()
+      && needs.wait-for-build.result == 'success'
+      && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
+      && needs.validate.outputs.release_exists != 'true'
     steps:
       - name: Generate token from GitHub App
         id: app_token
