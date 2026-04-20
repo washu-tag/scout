@@ -30,8 +30,13 @@ def perform_table_operations(
     spark: SparkSession, source_table: str, tables: dict[str, DerivativeTable]
 ):
     def streaming_function(batch_df, batch_id):
-        for name, table in tables.items():
-            table.process_source_data(batch_df, spark, f"default.{name}")
+        cached_df = batch_df.cache()
+        activity.logger.info("Processing batch (%d) for derivative tables with %d rows", batch_id, cached_df.count())
+        try:
+            for name, table in tables.items():
+                table.process_source_data(cached_df, spark, f"default.{name}")
+        finally:
+            cached_df.unpersist()
 
     warehouse_dir = spark.conf.get("spark.sql.warehouse.dir")
 
