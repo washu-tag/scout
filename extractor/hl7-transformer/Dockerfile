@@ -36,7 +36,7 @@ RUN venv/bin/python3 -m pip install --no-cache .
 COPY --chown=spark . /app
 
 # Install the applicationp
-RUN venv/bin/python3 -m pip install .
+RUN venv/bin/python3 -m pip install --force-reinstall --no-deps .
 
 # Define environment variable
 ENV PYTHONUNBUFFERED=1
