@@ -27,3 +27,6 @@ dependencies = [
     "temporalio ~= 1.25.0",
     "uvicorn",
 ]
+
+[tool.setuptools.packages.find]
+  where = ["src"]
