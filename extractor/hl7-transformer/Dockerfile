@@ -27,11 +27,15 @@ ADD --chown=spark \
 # Create venv
 RUN python3 -m venv venv
 
+# Copy the pyproject.toml so we can install the dependencies first
+COPY --chown=spark pyproject.toml /app
+RUN venv/bin/python3 -m pip install --no-cache .
+
 # Copy the current directory contents into the container at /app
 COPY --chown=spark . /app
 
-# Install the application and its dependencies
-RUN venv/bin/python3 -m pip install --no-cache .
+# Install the applicationp
+RUN venv/bin/python3 -m pip install .
 
 # Define environment variable
 ENV PYTHONUNBUFFERED=1
