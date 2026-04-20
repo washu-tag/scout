@@ -29,6 +29,7 @@ RUN python3 -m venv venv
 
 # Copy the pyproject.toml so we can install the dependencies first
 COPY --chown=spark pyproject.toml /app
+RUN mkdir -p src/hl7scout && touch src/hl7scout/__init__.py
 RUN venv/bin/python3 -m pip install --no-cache .
 
 # Copy the current directory contents into the container at /app
