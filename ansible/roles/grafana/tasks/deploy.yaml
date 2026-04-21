@@ -1,4 +1,13 @@
 ---
+- name: Verify required variables are defined
+  ansible.builtin.assert:
+    that:
+      - grafana_admin_password | default('') | length > 0
+    fail_msg: >-
+      grafana_admin_password must be set in inventory. Sidecars use it
+      to authenticate to /api/admin/provisioning/*/reload; an empty
+      value disables hot-reload of alerts and datasources.
+
 - name: Create namespace
   ansible.builtin.include_role:
     name: scout_common
