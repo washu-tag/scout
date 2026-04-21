@@ -2,13 +2,13 @@
 # Defaults for keycloak role
 # User-configurable settings are in inventory.yaml
 
-keycloak_version: 26.6.1
+keycloak_version: 26.4.2
 
 # Keycloak image
 keycloak_image_repository: ghcr.io/washu-tag/keycloak
 # demo branch: pin to -kate suffix so it matches the VERSION file tag.
 # Revert to '{{ keycloak_version }}' before merging to main.
-keycloak_image_tag: 26.6.1-kate
+keycloak_image_tag: 26.4.2-kate
 
 # Air-gapped artifact configuration
 keycloak_artifact_download_timeout: 300
