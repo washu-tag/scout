@@ -81,7 +81,7 @@
             "URL": "[% server_hostname %]"
           },
           "labels": {},
-          "isPaused": false,
+          "isPaused": [% alert_is_disabled | default(false) | bool | tojson %],
           "notification_settings": {
             "receiver": "[% grafana_alert_contact_point %]"
           }
