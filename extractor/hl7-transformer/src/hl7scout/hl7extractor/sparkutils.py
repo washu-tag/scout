@@ -64,7 +64,11 @@ def create_table_from_df(df: DataFrame, table_name: str, cluster_col: Optional[s
         .addColumns(df.schema)
     )
     if cluster_col:
-        builder = builder.clusterBy(cluster_col)
+        # Liquid clustering requires stats on the cluster column, but Delta only
+        # collects stats on the first 32 columns by default.
+        builder = builder.clusterBy(cluster_col).property(
+            "delta.dataSkippingStatsColumns", cluster_col
+        )
     builder.execute()
     df.write.format("delta").mode("append").saveAsTable(table_name)
 
