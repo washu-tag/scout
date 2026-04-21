@@ -93,7 +93,7 @@
           vars:
             alert_name: "{{ item.path | basename | regex_replace('.json.j2$', '') }}"
             alert_filename: '{{ alert_name }}.json'
-            alert_is_disabled: "{{ alert_name in grafana_disabled_alerts }}"
+            alert_is_disabled: '{{ alert_name in grafana_disabled_alerts }}'
             alert_content_b64: >-
               {{ (lookup("template", item.path, variable_start_string="[%", variable_end_string="%]") | b64encode) }}
           kubernetes.core.k8s:
