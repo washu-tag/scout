@@ -1,0 +1,61 @@
+---
+# Apply per-site Terms of Use text via realm localization overrides.
+#
+# keycloak-config-cli does not import `localizationTexts` from the realm JSON
+# (see https://github.com/adorsys/keycloak-config-cli/issues/1290), so we set
+# them with a post-import API call. Realm localization texts take precedence
+# over the theme message bundle at render time, so sites can override any key
+# in the scout login theme by setting `keycloak_terms_localizations` in
+# inventory.yaml — no image rebuild required.
+#
+# Idempotent: POSTing the same keys re-upserts the same values.
+
+- name: Look up Keycloak pod for localization overrides
+  delegate_to: localhost
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: '{{ keycloak_namespace }}'
+    label_selectors:
+      - 'app=keycloak'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: keycloak_pods_for_i18n
+
+- name: Fail if no Keycloak pod is ready
+  ansible.builtin.fail:
+    msg: 'No Keycloak pod found in namespace {{ keycloak_namespace }}'
+  when: keycloak_pods_for_i18n.resources | length == 0
+
+- name: Read Keycloak admin password from cluster secret
+  delegate_to: localhost
+  no_log: true
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: keycloak-admin-secret
+    namespace: '{{ keycloak_namespace }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: keycloak_admin_secret_for_i18n
+
+- name: Apply Terms of Use localization overrides
+  delegate_to: localhost
+  no_log: true
+  kubernetes.core.k8s_exec:
+    namespace: '{{ keycloak_namespace }}'
+    pod: '{{ keycloak_pods_for_i18n.resources[0].metadata.name }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+    command: >-
+      bash -c '
+      set -euo pipefail;
+      KC_PW={{ (keycloak_admin_secret_for_i18n.resources[0].data.password | b64decode) | quote }};
+      /opt/keycloak/bin/kcadm.sh config credentials
+      --server http://localhost:8080
+      --realm master
+      --user {{ keycloak_bootstrap_admin_user }}
+      --password "$KC_PW" >/dev/null;
+      cat >/tmp/scout-terms.json <<"EOF"
+      {{ keycloak_terms_localizations | to_nice_json }}
+      EOF
+      /opt/keycloak/bin/kcadm.sh create
+      realms/{{ keycloak_realm_name }}/localization/en
+      -f /tmp/scout-terms.json;
+      rm -f /tmp/scout-terms.json
+      '

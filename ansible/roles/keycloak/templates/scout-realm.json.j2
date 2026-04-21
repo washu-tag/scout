@@ -6,6 +6,10 @@
     "adminEventsEnabled": true,
     "adminEventsDetailsEnabled": true,
     "emailTheme": "scout",
+    "loginTheme": "scout",
+    "internationalizationEnabled": true,
+    "supportedLocales": ["en"],
+    "defaultLocale": "en",
     "eventsListeners": [
       "user-approval-email",
       "jboss-logging"
@@ -537,6 +541,17 @@
         "config": {
           "defaultProvider": "{{ keycloak_default_provider }}"
         }
+      }
+    ],
+    "requiredActions": [
+      {
+        "alias": "TERMS_AND_CONDITIONS",
+        "name": "Terms and Conditions",
+        "providerId": "TERMS_AND_CONDITIONS",
+        "enabled": true,
+        "defaultAction": true,
+        "priority": 10,
+        "config": {}
       }
     ],
     "clientScopes": [

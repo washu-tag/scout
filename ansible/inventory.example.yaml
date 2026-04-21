@@ -293,6 +293,25 @@ k3s_cluster:
     keycloak_smtp_ssl: ''
     keycloak_smtp_starttls: ''
 
+    # Terms of Use text — override the body with your institution's HTML blob.
+    # Leave unset to use the WashU defaults baked into the scout login theme.
+    # termsBody is rendered inside the terms page between the title and the
+    # Continue button; include your intro, bullets, and any closing statement.
+    # keycloak_terms_localizations:
+    #   termsBody: >-
+    #     <p>Scout processes protected health information. By continuing, I
+    #     acknowledge each of the following:</p>
+    #     <ul>
+    #       <li>Scout is a research platform and is not approved for clinical care.</li>
+    #       <li>I have completed <institution> HIPAA training
+    #         (<a href="https://your-hipaa-url" target="_blank" rel="noopener">policy</a>).</li>
+    #       <li>I will not access PHI of myself, family, or acquaintances
+    #         except as required by my authorized research duties.</li>
+    #       <li>I will use AI responsibly per
+    #         <a href="https://your-ai-url" target="_blank" rel="noopener">&lt;institution&gt; AI policy</a>.</li>
+    #     </ul>
+    #     <p>By clicking <strong>Continue</strong>, I accept the statements above.</p>
+
     #---------------------------------------------------------------------------
     # Launchpad
     #---------------------------------------------------------------------------
