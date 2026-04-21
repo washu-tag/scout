@@ -56,13 +56,17 @@ def dedupe_df_on_accession_number(batch_df: DataFrame) -> Optional[DataFrame]:
     )
 
 
-def create_table_from_df(df: DataFrame, table_name: str):
-    (
-        df.write.format("delta")
-        .option("delta.enableChangeDataFeed", "true")
-        .mode("append")
-        .saveAsTable(table_name)
+def create_table_from_df(df: DataFrame, table_name: str, cluster_col: Optional[str] = None):
+    builder = (
+        DeltaTable.createIfNotExists(df.sparkSession)
+        .tableName(table_name)
+        .property("delta.enableChangeDataFeed", "true")
+        .addColumns(df.schema)
     )
+    if cluster_col:
+        builder = builder.clusterBy(cluster_col)
+    builder.execute()
+    df.write.format("delta").mode("append").saveAsTable(table_name)
 
 
 def empty_string_coalesce(col1: str, col2: str) -> Column:
