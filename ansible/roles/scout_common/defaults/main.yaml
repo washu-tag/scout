@@ -23,7 +23,7 @@ helm_chart_values_files: []
 
 # Jupyter singleuser image (shared by JupyterHub and Voila)
 jupyter_singleuser_image_name: ghcr.io/washu-tag/pyspark-notebook
-jupyter_singleuser_image_tag: latest
+jupyter_singleuser_image_tag: 3.0.1
 
 # Kubernetes configuration
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml
