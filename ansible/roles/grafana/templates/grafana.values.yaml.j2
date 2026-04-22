@@ -47,8 +47,10 @@ grafana.ini:
     preinstall_disabled: true
 {% endif %}
 
-env:
-  GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION: true
+admin:
+  existingSecret: grafana-admin-credentials
+  userKey: admin-user
+  passwordKey: admin-password
 
 extraSecretMounts:
   - name: keycloak-grafana-client-secret
@@ -192,12 +194,10 @@ sidecar:
     enabled: {{ grafana_alerts_enabled | default(true) | bool | lower }}
     label: grafana_alert
     labelValue: '1'
-    watchMethod: SLEEP
   dashboards:
     enabled: true
     label: grafana_dashboard
     labelValue: '1'
-    watchMethod: SLEEP
     provider:
       folder: Scout
   datasources:

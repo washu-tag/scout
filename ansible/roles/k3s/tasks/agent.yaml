@@ -3,17 +3,32 @@
 # Installs k3s agent and joins it to the k3s server
 # Only runs on hosts in the 'agents' group
 
+# The install script does `systemctl start` and checks status once. If the
+# first start attempt fatals on a transient race (TLS tunnel EOF when
+# multiple agents join simultaneously), the script exits 1 even though
+# systemd's Restart=always brings the service up seconds later. Rescue by
+# waiting for systemd to report active; genuine failures still propagate.
 - name: Install k3s agent
-  ansible.builtin.command:
-    cmd: '{{ k3s_install_script_path }}'
-    creates: /usr/local/bin/k3s-agent-uninstall.sh
-  environment:
-    INSTALL_K3S_SKIP_DOWNLOAD: "{{ 'true' if air_gapped | default(false) | bool else omit }}"
-    INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
-    K3S_URL: 'https://{{ groups["server"][0] }}:6443'
-    K3S_TOKEN: '{{ k3s_token }}'
-    UNINSTALL_K3S_SH: /usr/local/bin/k3s-agent-uninstall.sh
-  register: k3s_agent_install_result
+  block:
+    - name: Run k3s agent install script
+      ansible.builtin.command:
+        cmd: '{{ k3s_install_script_path }}'
+        creates: /usr/local/bin/k3s-agent-uninstall.sh
+      environment:
+        INSTALL_K3S_SKIP_DOWNLOAD: "{{ 'true' if air_gapped | default(false) | bool else omit }}"
+        INSTALL_K3S_VERSION: '{{ k3s_version | default("") }}'
+        K3S_URL: 'https://{{ groups["server"][0] }}:6443'
+        K3S_TOKEN: '{{ k3s_token }}'
+        UNINSTALL_K3S_SH: /usr/local/bin/k3s-agent-uninstall.sh
+      register: k3s_agent_install_result
+  rescue:
+    - name: Wait for k3s-agent to reach active state
+      ansible.builtin.systemd:
+        name: k3s-agent
+      register: k3s_agent_state
+      until: k3s_agent_state.status.ActiveState == "active"
+      retries: 12
+      delay: 5
 
 - name: Restart k3s-agent to pick up registry config changes
   ansible.builtin.systemd:
