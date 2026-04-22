@@ -20,6 +20,12 @@ config:
     banner = "{{ oauth2_proxy_banner }}"
     footer = "{{ server_hostname }}" # Hacky way to pass server hostname to sign_in template
     upstreams = ["static://200"]
+    # Serve launchpad's /scout.png and /favicon.ico without authentication so
+    # the "Access Not Yet Granted" error page (shown to users who have no
+    # session by definition) can load them via
+    # <img src="//{{ server_hostname }}/scout.png"> and the corresponding
+    # <link rel="icon" href="//{{ server_hostname }}/favicon.ico">.
+    skip_auth_routes = ["^/scout.png$", "^/favicon.ico$"]
 {% if oauth2_proxy_ssl_insecure_skip_verify | default(false) | bool %}
     ssl_insecure_skip_verify = true
 {% endif %}
