@@ -11,20 +11,25 @@
 }
 
 /* Replace the PatternFly polygonal backdrop with the same navy gradient
-   used on the oauth2-proxy "Access Not Yet Granted" page. */
+   used on the oauth2-proxy "Access Not Yet Granted" page.
+   Parent theme applies the background image with the selector `.login-pf body`
+   — note: `.login-pf` is on the <html> element, not <body>. We must target
+   that same selector (or a more-specific one) for !important to win. */
 html,
-body,
-body.login-pf,
-.login-pf-page,
-.login-pf-body {
+body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
-  background: linear-gradient(135deg, var(--scout-navy) 0%, var(--scout-navy-dark) 100%) !important;
-  background-image: linear-gradient(
+}
+
+.login-pf body,
+html.login-pf body,
+.login-pf-page {
+  background: linear-gradient(
     135deg,
     var(--scout-navy) 0%,
     var(--scout-navy-dark) 100%
-  ) !important;
+  ) fixed !important;
+  background-size: auto !important;
 }
 
 /* Card */
