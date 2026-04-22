@@ -32,8 +32,77 @@
       border-radius: 16px;
       box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
       text-align: center;
-      max-width: 450px;
+      max-width: 500px;
       width: 100%;
+    }
+
+    ol.reasons {
+      list-style: none;
+      counter-reset: reason;
+      padding: 0;
+      margin: 20px 0 28px;
+      text-align: left;
+    }
+
+    ol.reasons li {
+      counter-increment: reason;
+      position: relative;
+      padding: 14px 16px 14px 52px;
+      margin-bottom: 12px;
+      background: #f5f7fa;
+      border-radius: 10px;
+      color: #374151;
+      line-height: 1.55;
+      font-size: 0.95rem;
+    }
+
+    ol.reasons li:last-child { margin-bottom: 0; }
+
+    ol.reasons li::before {
+      content: counter(reason);
+      position: absolute;
+      left: 14px;
+      top: 12px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #254470;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    ol.reasons strong {
+      color: #1e3b61;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .actions .btn {
+      flex: 0 0 auto;
+      width: 100%;
+      padding: 12px 20px;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #254470;
+      border: 1px solid #cbd5e1;
+    }
+
+    .btn-ghost:hover {
+      background: #f1f5f9;
+      color: #1e3b61;
     }
 
     .status-code {
@@ -178,27 +247,25 @@
   <div class="card">
     {{ if eq .StatusCode 403 }}
       <h1>Access Not Yet Granted</h1>
-      <p>
-        Your Scout account isn't active yet. This can happen for two reasons:
-      </p>
-      <p style="text-align: left;">
-        <strong>1. You haven't accepted the Scout Terms of Use.</strong>
-        When you sign in, you'll see a Scout Terms of Use page. Click
-        <strong>Continue</strong> to accept &mdash; declining or closing the
-        page will leave your access blocked.
-      </p>
-      <p style="text-align: left;">
-        <strong>2. You're waiting for administrator approval.</strong>
-        If you've already accepted the Terms of Use, an administrator is
-        reviewing your request. You'll get an email when it's approved.
-      </p>
-      <p>In the meantime, you can:</p>
-      <p>
-        <a href="https://washu-scout.readthedocs.io/en/latest/" class="link">Visit our documentation</a>
-      </p>
-      <p>
-        <a id="return-to-scout" href="/" class="link">Return to Scout and try signing in again</a>
-      </p>
+      <p>Your Scout account isn&rsquo;t active yet. This can happen for two reasons:</p>
+      <ol class="reasons">
+        <li>
+          <strong>You haven&rsquo;t accepted the Scout Terms of Use.</strong>
+          When you sign in, you&rsquo;ll see a Scout Terms of Use page. Click
+          <strong>Continue</strong> to accept &mdash; declining or closing the
+          page will leave your access blocked.
+        </li>
+        <li>
+          <strong>You&rsquo;re waiting for administrator approval.</strong>
+          If you&rsquo;ve already accepted the Terms of Use, an administrator
+          is reviewing your request. You&rsquo;ll get an email when it&rsquo;s
+          approved.
+        </li>
+      </ol>
+      <div class="actions">
+        <a id="return-to-scout" href="/" class="btn btn-blue">Try signing in again</a>
+        <a href="https://washu-scout.readthedocs.io/en/latest/" class="btn btn-ghost">Visit our documentation</a>
+      </div>
     {{ else }}
       <div class="status-code">{{.StatusCode}}</div>
 
