@@ -8,9 +8,15 @@
 # in the scout login theme by setting `keycloak_terms_localizations` in
 # inventory.yaml — no image rebuild required.
 #
+# Idempotency: we compute a hash of `keycloak_terms_localizations` and store
+# it as a realm attribute (`scout_terms_hash`). On subsequent runs, if the
+# stored hash matches the desired hash, every mutation task is skipped.
+# Keycloak's localization POST is a merge-upsert, so removing a key from
+# inventory does NOT remove it from Keycloak — clean up manually with
+# `kcadm delete realms/scout/localization/en/<key>` if needed.
+#
 # The Keycloak image is minimal (no `tar`), so we can't use `kubectl cp`.
 # Instead we stream the JSON into the pod via `kubectl exec -i`.
-# Idempotent: POSTing the same keys re-upserts the same values.
 
 - name: Look up Keycloak pod for localization overrides
   delegate_to: localhost
@@ -37,24 +43,6 @@
     kubeconfig: '{{ local_kubeconfig_yaml }}'
   register: keycloak_admin_secret_for_i18n
 
-- name: Write terms localization JSON to local tempfile
-  delegate_to: localhost
-  ansible.builtin.copy:
-    dest: /tmp/scout-terms-localization.json
-    content: '{{ keycloak_terms_localizations | to_json }}'
-    mode: '0600'
-
-- name: Stream terms localization JSON into Keycloak pod
-  delegate_to: localhost
-  ansible.builtin.shell:
-    cmd: >-
-      kubectl --kubeconfig {{ local_kubeconfig_yaml | quote }}
-      -n {{ keycloak_namespace | quote }}
-      exec -i {{ keycloak_pods_for_i18n.resources[0].metadata.name | quote }} --
-      sh -c 'cat > /tmp/scout-terms.json'
-      < /tmp/scout-terms-localization.json
-  changed_when: true
-
 - name: Authenticate kcadm in Keycloak pod
   delegate_to: localhost
   no_log: true
@@ -69,32 +57,82 @@
       --user {{ keycloak_bootstrap_admin_user }}
       --password {{ keycloak_admin_secret_for_i18n.resources[0].data.password | b64decode }}
 
-- name: Apply Terms of Use localization overrides
+- name: Fetch current realm attributes
   delegate_to: localhost
   kubernetes.core.k8s_exec:
     namespace: '{{ keycloak_namespace }}'
     pod: '{{ keycloak_pods_for_i18n.resources[0].metadata.name }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
-    command: >-
-      /opt/keycloak/bin/kcadm.sh create
-      realms/{{ keycloak_realm_name }}/localization/en
-      -f /tmp/scout-terms.json
-  register: apply_terms_result
+    command: '/opt/keycloak/bin/kcadm.sh get realms/{{ keycloak_realm_name }} --fields attributes'
+  register: realm_attrs_raw
+  changed_when: false
 
-- name: Clean up terms JSON inside pod
-  delegate_to: localhost
-  kubernetes.core.k8s_exec:
-    namespace: '{{ keycloak_namespace }}'
-    pod: '{{ keycloak_pods_for_i18n.resources[0].metadata.name }}'
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
-    command: rm -f /tmp/scout-terms.json
+- name: Compute desired vs stored terms hash
+  ansible.builtin.set_fact:
+    current_terms_hash: >-
+      {{ (realm_attrs_raw.stdout | from_json).attributes.scout_terms_hash | default('') }}
+    desired_terms_hash: >-
+      {{ keycloak_terms_localizations | to_json(sort_keys=true) | hash('sha256') | truncate(16, True, '') }}
 
-- name: Remove local terms JSON tempfile
-  delegate_to: localhost
-  ansible.builtin.file:
-    path: /tmp/scout-terms-localization.json
-    state: absent
-
-- name: Report localization apply result
+- name: Report terms localization status
   ansible.builtin.debug:
-    var: apply_terms_result.stdout_lines
+    msg: >-
+      Terms localization hash: current={{ current_terms_hash }}
+      desired={{ desired_terms_hash }}
+      {% if current_terms_hash == desired_terms_hash %}(up-to-date, skipping apply){% else %}(will apply){% endif %}
+
+- name: Apply Terms of Use localization overrides (only when hash differs)
+  when: current_terms_hash != desired_terms_hash
+  block:
+    - name: Write terms localization JSON to local tempfile
+      delegate_to: localhost
+      ansible.builtin.copy:
+        dest: /tmp/scout-terms-localization.json
+        content: '{{ keycloak_terms_localizations | to_json }}'
+        mode: '0600'
+
+    - name: Stream terms localization JSON into Keycloak pod
+      delegate_to: localhost
+      ansible.builtin.shell:
+        cmd: >-
+          kubectl --kubeconfig {{ local_kubeconfig_yaml | quote }}
+          -n {{ keycloak_namespace | quote }}
+          exec -i {{ keycloak_pods_for_i18n.resources[0].metadata.name | quote }} --
+          sh -c 'cat > /tmp/scout-terms.json'
+          < /tmp/scout-terms-localization.json
+      changed_when: true
+
+    - name: POST localization overrides to Keycloak
+      delegate_to: localhost
+      kubernetes.core.k8s_exec:
+        namespace: '{{ keycloak_namespace }}'
+        pod: '{{ keycloak_pods_for_i18n.resources[0].metadata.name }}'
+        kubeconfig: '{{ local_kubeconfig_yaml }}'
+        command: >-
+          /opt/keycloak/bin/kcadm.sh create
+          realms/{{ keycloak_realm_name }}/localization/en
+          -f /tmp/scout-terms.json
+
+    - name: Persist new terms hash as a realm attribute
+      delegate_to: localhost
+      kubernetes.core.k8s_exec:
+        namespace: '{{ keycloak_namespace }}'
+        pod: '{{ keycloak_pods_for_i18n.resources[0].metadata.name }}'
+        kubeconfig: '{{ local_kubeconfig_yaml }}'
+        command: >-
+          /opt/keycloak/bin/kcadm.sh update realms/{{ keycloak_realm_name }}
+          -s attributes.scout_terms_hash={{ desired_terms_hash }}
+
+    - name: Clean up terms JSON inside pod
+      delegate_to: localhost
+      kubernetes.core.k8s_exec:
+        namespace: '{{ keycloak_namespace }}'
+        pod: '{{ keycloak_pods_for_i18n.resources[0].metadata.name }}'
+        kubeconfig: '{{ local_kubeconfig_yaml }}'
+        command: rm -f /tmp/scout-terms.json
+
+    - name: Remove local terms JSON tempfile
+      delegate_to: localhost
+      ansible.builtin.file:
+        path: /tmp/scout-terms-localization.json
+        state: absent
