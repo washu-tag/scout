@@ -236,9 +236,10 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
     const protocol = window.location.protocol;
     const host = window.location.host;
 
+    const baseDomain = host.replace(/^launchpad\./, '');
     const getUrl = (subdomain: string, path: string = '') => {
       const normalizedPath = path ? (path.startsWith('/') ? path : `/${path}`) : '';
-      return `${protocol}//${subdomain}.${host}${normalizedPath}`;
+      return `${protocol}//${subdomain}.${baseDomain}${normalizedPath}`;
     };
 
     setSubdomainUrls({
