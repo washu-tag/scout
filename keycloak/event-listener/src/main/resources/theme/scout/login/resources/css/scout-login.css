@@ -28,13 +28,17 @@ html.login-pf body,
   background-size: auto !important;
 }
 
-/* Card */
+/* Widen the login card — parent theme's 500px cuts off the terms bullets
+   below the fold on most desktop viewports. */
 .login-pf-page .card-pf {
+  max-width: 640px;
   border-top: 4px solid var(--scout-blue);
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
   padding: 2.25rem 2.5rem;
   background: #fff;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Replace the letter-spaced "SCOUT" text header with the Scout logo. */
@@ -46,16 +50,24 @@ html.login-pf body,
   letter-spacing: 0 !important;
   padding: 0 !important;
 }
+/* Frame the logo intentionally — gradient ring around a white interior
+   that holds the scout.png mark. Matches Launchpad's gradient-border
+   pattern so the auth flow feels continuous with the app itself. */
 #kc-header-wrapper::before {
   content: '';
   display: block;
-  width: 140px;
-  height: 140px;
-  margin: 24px auto 8px;
-  background-image: url('../img/scout.png');
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: center;
+  width: 80px;
+  height: 80px;
+  margin: 24px auto 16px;
+  padding: 4px;
+  border-radius: 18px;
+  border: 4px solid transparent;
+  background:
+    url('../img/scout.png') no-repeat center / 64px 64px,
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%) border-box;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+  box-sizing: content-box;
 }
 
 /* Page title ("Scout Terms of Use" etc.) */

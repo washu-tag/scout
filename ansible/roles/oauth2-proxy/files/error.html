@@ -75,10 +75,37 @@
       justify-content: center;
     }
 
-    ol.reasons strong {
+    /* Only the lead-in strong (first child of the li) becomes its own block;
+       inline <strong> mid-sentence stays inline. */
+    ol.reasons li > strong:first-child {
       color: #1e3b61;
       display: block;
       margin-bottom: 4px;
+    }
+
+    ol.reasons strong {
+      color: #1e3b61;
+    }
+
+    /* Logo frame — matches Launchpad's gradient-ring-over-white-bg pattern. */
+    .logo-frame {
+      display: inline-block;
+      padding: 4px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%);
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+      margin-bottom: 20px;
+    }
+
+    .logo-frame img {
+      display: block;
+      width: 64px;
+      height: 64px;
+      padding: 8px;
+      border-radius: 14px;
+      background: white;
+      box-sizing: content-box;
+      object-fit: contain;
     }
 
     .actions {
@@ -245,6 +272,9 @@
 </head>
 <body>
   <div class="card">
+    <div class="logo-frame">
+      <img src="//{{.Footer}}/scout.png" alt="Scout" />
+    </div>
     {{ if eq .StatusCode 403 }}
       <h1>Access Not Yet Granted</h1>
       <p>Your Scout account isn&rsquo;t active yet. This can happen for two reasons:</p>
