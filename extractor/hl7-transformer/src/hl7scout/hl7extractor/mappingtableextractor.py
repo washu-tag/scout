@@ -309,6 +309,8 @@ class MappingTableExtractor:
             ).dropDuplicates()
         )
 
+        activity.logger.info("Stage 2 remaining_reports_df final count: %d", remaining_reports_df.count())
+
         activity.logger.info("Stage 2 completed on mapping table derivation")
         return remaining_reports_df
 
@@ -407,8 +409,9 @@ class MappingTableExtractor:
         Goal: Recursive search to process all remaining reports
         :param df: DataFrame of data to be processed
         """
-
-        complex_cases = [MappingEntry.from_df_row(row) for row in df.collect()]
+        rows = df.collect()
+        activity.logger.info("Stage 4 input count: %d", len(rows))
+        complex_cases = [MappingEntry.from_df_row(row) for row in rows]
         bulk_updates = []
         activity.logger.info(
             "Performing recursive search to resolve IDs for %d reports",
