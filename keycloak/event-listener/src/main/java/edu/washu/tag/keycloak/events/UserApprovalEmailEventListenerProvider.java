@@ -26,10 +26,14 @@ import org.keycloak.theme.Theme;
 import org.keycloak.theme.freemarker.FreeMarkerProvider;
 
 /**
- * Event listener provider to listen for user registration events to send a
- * welcome email to the user and an approval email to admins. It also listens
- * for group membership events to send enabled/disabled emails to users when
- * they are added or removed from the "scout-user" group.
+ * Event listener provider that gates user-pending and admin-approval emails on
+ * Terms of Use acceptance: both fire on the first successful LOGIN after the
+ * user has accepted the Terms of Use required action (rather than on the
+ * initial REGISTER event). This prevents admins from being nagged about users
+ * who may ultimately decline the Terms and never complete signup.
+ *
+ * <p>It also listens for group membership events to send enabled/disabled
+ * emails to users when they are added or removed from the "scout-user" group.
  */
 public class UserApprovalEmailEventListenerProvider implements EventListenerProvider {
 
@@ -41,6 +45,10 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     private static final String EMAIL_TEMPLATE_PARAMETER_USERNAME = "username";
     private static final String EMAIL_TEMPLATE_PARAMETER_SCOUT_URL = "scoutUrl";
     private static final String ENV_SCOUT_URL = "KC_SCOUT_URL";
+    // Set by Keycloak's built-in TermsAndConditions required action on acceptance.
+    private static final String TERMS_ACCEPTED_ATTR = "terms_and_conditions";
+    // Our own bookkeeping: prevents re-sending the approval email on every login.
+    private static final String ADMIN_APPROVAL_EMAIL_SENT_ATTR = "scout_admin_approval_email_sent_at";
     
     /**
      * Constructor for UserApprovalEmailEventListenerProvider.
@@ -54,14 +62,15 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     }
 
     /**
-     * Registration events are user events. Send welcome email to users and
-     * approval email to admins.
+     * Login events are user events. We trigger the pending-approval and
+     * admin-approval emails on the first LOGIN after Terms of Use acceptance,
+     * so admins aren't asked to approve users who haven't completed signup.
      */
     @Override
     public void onEvent(Event event) {
         log.debugf("Received event: %s, type: %s, realm: %s, user: %s, details: %s",
                 event.getId(), event.getType(), event.getRealmId(), event.getUserId(), event.getDetails());
-        if (isUserRegistrationEvent(event)) {
+        if (isEligibleLoginEvent(event)) {
             tx.addEvent(event);
         }
     }
@@ -83,10 +92,15 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     public void close() {
     }
 
-    private boolean isUserRegistrationEvent(Event event) {
-        return event.getType() == EventType.REGISTER
+    private boolean isEligibleLoginEvent(Event event) {
+        return event.getType() == EventType.LOGIN
                 && event.getRealmId() != null
                 && event.getUserId() != null;
+    }
+
+    private boolean isUserApproved(UserModel user) {
+        return user.getGroupsStream()
+                .anyMatch(g -> SCOUT_USER_GROUP.equals(g.getName()));
     }
 
     private boolean isScoutUserGroupMembershipEvent(AdminEvent event) {
@@ -98,7 +112,9 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     }
 
     /**
-     * Send registration event emails.
+     * On successful LOGIN, send the pending-approval and admin-approval emails
+     * if and only if: the user has accepted the Terms of Use, is not already
+     * in the scout-user group, and hasn't already been notified.
      */
     private void sendEmail(Event event) {
         runJobInTransaction(sessionFactory, (KeycloakSession sess) -> {
@@ -111,10 +127,27 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
             if (!isUserValid(user, event, realm)) {
                 return;
             }
+            if (isUserApproved(user)) {
+                log.debugf("User %s is already approved, skipping approval email.", user.getUsername());
+                return;
+            }
+            if (user.getFirstAttribute(TERMS_ACCEPTED_ATTR) == null) {
+                log.debugf("User %s has not accepted Terms of Use, deferring approval email.", user.getUsername());
+                return;
+            }
+            if (user.getFirstAttribute(ADMIN_APPROVAL_EMAIL_SENT_ATTR) != null) {
+                log.debugf("Admin approval email already sent for user %s, skipping.", user.getUsername());
+                return;
+            }
+
             Map<String, Object> bodyAttributes = createBodyAttributes(user);
 
             sendUserPendingApprovalEmail(sess, realm, user, bodyAttributes);
             sendAdminApprovalEmail(session, realm, bodyAttributes, user);
+
+            user.setSingleAttribute(ADMIN_APPROVAL_EMAIL_SENT_ATTR,
+                    Long.toString(System.currentTimeMillis()));
+            log.infof("Marked admin approval email as sent for user %s.", user.getUsername());
         });
     }
 

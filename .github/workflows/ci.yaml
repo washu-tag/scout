@@ -538,3 +538,28 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: pyspark-notebook
+      - name: 'Push Image - hl7log-extractor'
+        if: needs.changes.outputs.hl7log-extractor == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: hl7log-extractor
+      - name: 'Push Image - hl7-transformer'
+        if: needs.changes.outputs.hl7-transformer == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: hl7-transformer
+      - name: 'Push Image - launchpad'
+        if: needs.changes.outputs.launchpad == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: launchpad
+      - name: 'Push Image - superset'
+        if: needs.changes.outputs.superset == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: superset
+      - name: 'Push Image - keycloak'
+        if: needs.changes.outputs.keycloak == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: keycloak

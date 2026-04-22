@@ -4,11 +4,14 @@
 #
 # defaultAction: true in the realm JSON only affects users created AFTER the
 # flag was set, so pre-existing users will never be prompted without this task.
-# Safe to re-run: kcadm skips users who already have the action or who have
-# the terms_and_conditions attribute set (i.e. already accepted).
+# The script (files/backfill_terms.sh) is idempotent — it skips users who
+# already have the action pending or who have the terms_and_conditions
+# attribute set.
+#
+# We stream the script into the pod via `kubectl exec -i` with `bash -s`
+# (the Keycloak image is minimal and has no `tar`, ruling out `kubectl cp`).
 #
 # Gate with: -e keycloak_terms_backfill_existing_users=true
-# Typical usage: run once after enabling the feature, then leave the var false.
 
 - name: Look up Keycloak pod for back-fill
   delegate_to: localhost
@@ -35,7 +38,7 @@
     kubeconfig: '{{ local_kubeconfig_yaml }}'
   register: keycloak_admin_secret
 
-- name: Back-fill TERMS_AND_CONDITIONS required action for existing users
+- name: Authenticate kcadm in Keycloak pod
   delegate_to: localhost
   no_log: true
   kubernetes.core.k8s_exec:
@@ -43,31 +46,24 @@
     pod: '{{ keycloak_pods.resources[0].metadata.name }}'
     kubeconfig: '{{ local_kubeconfig_yaml }}'
     command: >-
-      bash -c '
-      set -euo pipefail;
-      KCADMIN_PASSWORD={{ (keycloak_admin_secret.resources[0].data.password | b64decode) | quote }};
       /opt/keycloak/bin/kcadm.sh config credentials
       --server http://localhost:8080
       --realm master
       --user {{ keycloak_bootstrap_admin_user }}
-      --password "$KCADMIN_PASSWORD" >/dev/null;
-      for uid in $(/opt/keycloak/bin/kcadm.sh get users
-      -r {{ keycloak_realm_name }}
-      --fields id
-      --format csv --noquotes -q max=10000 | tail -n +1); do
-        user_json=$(/opt/keycloak/bin/kcadm.sh get "users/$uid" -r {{ keycloak_realm_name }});
-        already_accepted=$(echo "$user_json" | grep -c "\"terms_and_conditions\"" || true);
-        already_pending=$(echo "$user_json" | grep -c "\"TERMS_AND_CONDITIONS\"" || true);
-        if [ "$already_accepted" -eq 0 ] && [ "$already_pending" -eq 0 ]; then
-          /opt/keycloak/bin/kcadm.sh update "users/$uid"
-          -r {{ keycloak_realm_name }}
-          -s "requiredActions+=[\"TERMS_AND_CONDITIONS\"]";
-          echo "added TERMS_AND_CONDITIONS to $uid";
-        fi;
-      done
-      '
+      --password {{ keycloak_admin_secret.resources[0].data.password | b64decode }}
+
+- name: Stream back-fill script into Keycloak pod and run it
+  delegate_to: localhost
+  ansible.builtin.shell:
+    cmd: >-
+      kubectl --kubeconfig {{ local_kubeconfig_yaml | quote }}
+      -n {{ keycloak_namespace | quote }}
+      exec -i {{ keycloak_pods.resources[0].metadata.name | quote }} --
+      bash -s {{ keycloak_realm_name | quote }}
+      < {{ (role_path ~ '/files/backfill_terms.sh') | quote }}
   register: backfill_result
+  changed_when: '"added TERMS_AND_CONDITIONS" in backfill_result.stdout'
 
 - name: Report back-fill results
   ansible.builtin.debug:
-    msg: '{{ backfill_result.stdout_lines | default([]) }}'
+    var: backfill_result.stdout_lines

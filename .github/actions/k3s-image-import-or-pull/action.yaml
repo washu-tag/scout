@@ -34,29 +34,35 @@ runs:
 
     - name: Import from artifact or pull from registry
       shell: bash
+      # REGISTRY tag uses VERSION (demo-suffixed on demo-* branches to keep
+      # demo images from clobbering main/release tags). LOCAL tag uses
+      # RAW_VERSION so Ansible role defaults — which reference raw tags —
+      # resolve identically on every branch.
       run: |
         VERSION="${{ steps.derive-version.outputs.version }}"
+        RAW_VERSION="${{ steps.derive-version.outputs.raw-version }}"
         IMAGE_NAME="${{ inputs.image-name }}"
         REGISTRY="${{ inputs.registry }}"
         NAMESPACE="${{ inputs.registry-namespace }}"
-        FULL_IMAGE="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
+        REGISTRY_IMAGE="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
+        LOCAL_IMAGE="docker.io/local/${NAMESPACE}/${IMAGE_NAME}:${RAW_VERSION}"
         TAR_FILE="${{ runner.temp }}/${IMAGE_NAME}.tar"
 
         if [ -f "${TAR_FILE}" ]; then
           echo "Importing newly built image from artifact..."
           sudo k3s ctr -n k8s.io images import \
-            --index-name "docker.io/local/${NAMESPACE}/${IMAGE_NAME}:${VERSION}" \
+            --index-name "${LOCAL_IMAGE}" \
             "${TAR_FILE}"
-          echo "Successfully imported ${IMAGE_NAME}:${VERSION} from artifact"
+          echo "Successfully imported as ${LOCAL_IMAGE}"
         else
           echo "Artifact not found, pulling existing image from registry..."
-          echo "Pulling ${FULL_IMAGE}..."
-          sudo k3s ctr -n k8s.io images pull "${FULL_IMAGE}"
-          echo "Successfully pulled ${FULL_IMAGE}"
+          echo "Pulling ${REGISTRY_IMAGE}..."
+          sudo k3s ctr -n k8s.io images pull "${REGISTRY_IMAGE}"
+          echo "Successfully pulled ${REGISTRY_IMAGE}"
 
-          # Tag the pulled image for local use
+          # Alias to raw tag for in-cluster use
           sudo k3s ctr -n k8s.io images tag \
-            "${FULL_IMAGE}" \
-            "docker.io/local/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
-          echo "Tagged as docker.io/local/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
+            "${REGISTRY_IMAGE}" \
+            "${LOCAL_IMAGE}"
+          echo "Tagged as ${LOCAL_IMAGE}"
         fi

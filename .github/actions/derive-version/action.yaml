@@ -6,8 +6,19 @@ inputs:
     required: true
 outputs:
   version:
-    description: 'Derived version'
+    description: >-
+      Derived version used for publishing. On demo-* branches the raw version
+      is suffixed with the branch name so demo images never collide with
+      main/release tags. Use this for building, publishing, and existence
+      checks against the registry.
     value: ${{ steps.detect-version.outputs.version }}
+  raw-version:
+    description: >-
+      The raw version read from the project files with no branch suffix
+      applied. Use this when tagging images for local (in-cluster) use so
+      Ansible role defaults — which reference raw tags — still resolve on
+      demo branches.
+    value: ${{ steps.detect-version.outputs.raw-version }}
 runs:
   using: 'composite'
   steps:
@@ -17,16 +28,30 @@ runs:
       run: |
         cd ${{ inputs.subproject }}
         if [ -f VERSION ]; then
-          echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+          raw_version="$(cat VERSION)"
         elif [ -f package.json ]; then
-          echo "version=$(jq -r '.version' package.json)" >> "$GITHUB_OUTPUT"
+          raw_version="$(jq -r '.version' package.json)"
         elif [ -f build.gradle ]; then
           # Extract version from: version = '1.2.3' or version = "1.2.3"
-          echo "version=$(grep "^version" build.gradle | sed "s/.*['\"]\([^'\"]*\)['\"].*/\1/")" >> "$GITHUB_OUTPUT"
+          raw_version="$(grep "^version" build.gradle | sed "s/.*['\"]\([^'\"]*\)['\"].*/\1/")"
         elif [ -f pyproject.toml ]; then
           # Extract version from: version = "1.2.3"
-          echo "version=$(grep "^version" pyproject.toml | sed 's/.*"\([^"]*\)".*/\1/')" >> "$GITHUB_OUTPUT"
+          raw_version="$(grep "^version" pyproject.toml | sed 's/.*"\([^"]*\)".*/\1/')"
         else
           echo "Could not find a way to determine version"
           exit 22
         fi
+
+        # On demo-* branches, suffix the version with the branch name so demo
+        # images never clobber main/release tags. Docker tag-safe chars only
+        # ([A-Za-z0-9._-]); anything else is replaced with '-'.
+        if [[ "${GITHUB_REF_NAME}" == demo-* ]]; then
+          suffix="$(echo "${GITHUB_REF_NAME}" | tr -c '[:alnum:]._-' '-')"
+          version="${raw_version}-${suffix}"
+        else
+          version="${raw_version}"
+        fi
+
+        echo "raw-version=${raw_version}" >> "$GITHUB_OUTPUT"
+        echo "version=${version}" >> "$GITHUB_OUTPUT"
+        echo "Derived: version=${version} raw-version=${raw_version} ref=${GITHUB_REF_NAME}"

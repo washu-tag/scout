@@ -1,0 +1,102 @@
+/* Scout login theme overrides — applied on top of the `keycloak` parent. */
+
+:root {
+  --scout-blue: #2563eb;        /* tailwind blue-600, matches launchpad */
+  --scout-blue-hover: #1d4ed8;  /* tailwind blue-700 */
+  --scout-text: #111827;        /* tailwind gray-900 */
+  --scout-muted: #4b5563;       /* tailwind gray-600 */
+  --scout-border: #e5e7eb;      /* tailwind gray-200 */
+}
+
+body.login-pf body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Keep the dark polygon background from the parent, but soften the card */
+.login-pf-page .card-pf {
+  border-top: 4px solid var(--scout-blue);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  padding: 2rem 2.25rem;
+}
+
+#kc-header-wrapper {
+  padding: 30px 0 20px;
+  letter-spacing: 0.2em;
+  font-weight: 600;
+}
+
+#kc-page-title {
+  color: var(--scout-text);
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+/* Terms page content */
+#kc-terms-text {
+  color: var(--scout-text);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+#kc-terms-text p {
+  margin: 0 0 1rem 0;
+  color: var(--scout-text);
+}
+
+/* Restore bullets that PatternFly resets, and make them breathe */
+#kc-terms-text ul {
+  list-style: disc outside;
+  margin: 0 0 1.25rem 1.5rem;
+  padding: 0;
+}
+
+#kc-terms-text ul li {
+  margin-bottom: 0.6rem;
+  padding-left: 0.25rem;
+}
+
+#kc-terms-text ul li:last-child {
+  margin-bottom: 0;
+}
+
+#kc-terms-text a {
+  color: var(--scout-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+#kc-terms-text a:hover {
+  color: var(--scout-blue-hover);
+}
+
+/* Primary accept button */
+#kc-accept.pf-c-button.pf-m-primary {
+  background-color: var(--scout-blue);
+  border-color: var(--scout-blue);
+  color: #fff;
+  font-weight: 600;
+  padding: 0.625rem 1rem;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+#kc-accept.pf-c-button.pf-m-primary:hover,
+#kc-accept.pf-c-button.pf-m-primary:focus {
+  background-color: var(--scout-blue-hover);
+  border-color: var(--scout-blue-hover);
+}
+
+/* Decline link — understated, not competing with Continue */
+#kc-decline.pf-c-button.pf-m-link {
+  color: var(--scout-muted);
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  text-decoration: underline;
+}
+
+#kc-decline.pf-c-button.pf-m-link:hover {
+  color: var(--scout-text);
+}
