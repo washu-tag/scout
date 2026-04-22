@@ -3,8 +3,10 @@
 :root {
   --scout-blue: #2563eb; /* tailwind blue-600, matches launchpad */
   --scout-blue-hover: #1d4ed8; /* tailwind blue-700 */
-  --scout-navy: #254470; /* matches oauth2-proxy error page */
-  --scout-navy-dark: #1e3b61;
+  /* Gradient colors match the oauth2-proxy sign_in + error pages exactly. */
+  --scout-gradient-from: #3467a5;
+  --scout-gradient-to: #254470;
+  --scout-navy: #254470;
   --scout-text: #111827; /* tailwind gray-900 */
   --scout-muted: #4b5563; /* tailwind gray-600 */
   --scout-border: #e5e7eb; /* tailwind gray-200 */
@@ -24,14 +26,15 @@ body {
 .login-pf body,
 html.login-pf body,
 .login-pf-page {
-  background: linear-gradient(135deg, var(--scout-navy) 0%, var(--scout-navy-dark) 100%) fixed !important;
+  background: linear-gradient(135deg, var(--scout-gradient-from) 0%, var(--scout-gradient-to) 100%) fixed !important;
   background-size: auto !important;
 }
 
 /* Widen the login card — parent theme's 500px cuts off the terms bullets
-   below the fold on most desktop viewports. */
+   below the fold on most desktop viewports. 820px lets the 6 bullets fit
+   above the fold on a ~900px-tall window while still leaving margin. */
 .login-pf-page .card-pf {
-  max-width: 640px;
+  max-width: 820px;
   border-top: 4px solid var(--scout-blue);
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
