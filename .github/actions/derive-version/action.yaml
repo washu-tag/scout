@@ -46,7 +46,9 @@ runs:
         # images never clobber main/release tags. Docker tag-safe chars only
         # ([A-Za-z0-9._-]); anything else is replaced with '-'.
         if [[ "${GITHUB_REF_NAME}" == demo-* ]]; then
-          suffix="$(echo "${GITHUB_REF_NAME}" | tr -c '[:alnum:]._-' '-')"
+          # printf %s (not echo) so no trailing newline; tr would otherwise
+          # convert it to a stray '-' and taint the tag.
+          suffix="$(printf '%s' "${GITHUB_REF_NAME}" | tr -c '[:alnum:]._-' '-')"
           version="${raw_version}-${suffix}"
         else
           version="${raw_version}"
