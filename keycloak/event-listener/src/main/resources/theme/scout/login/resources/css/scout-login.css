@@ -1,15 +1,16 @@
 /* Scout login theme overrides — applied on top of the `keycloak` parent. */
 
 :root {
-  --scout-blue: #2563eb;        /* tailwind blue-600, matches launchpad */
-  --scout-blue-hover: #1d4ed8;  /* tailwind blue-700 */
-  --scout-text: #111827;        /* tailwind gray-900 */
-  --scout-muted: #4b5563;       /* tailwind gray-600 */
-  --scout-border: #e5e7eb;      /* tailwind gray-200 */
+  --scout-blue: #2563eb; /* tailwind blue-600, matches launchpad */
+  --scout-blue-hover: #1d4ed8; /* tailwind blue-700 */
+  --scout-text: #111827; /* tailwind gray-900 */
+  --scout-muted: #4b5563; /* tailwind gray-600 */
+  --scout-border: #e5e7eb; /* tailwind gray-200 */
 }
 
 body.login-pf body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
 }
 
 /* Keep the dark polygon background from the parent, but soften the card */
