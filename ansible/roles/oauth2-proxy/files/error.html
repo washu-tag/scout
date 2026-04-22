@@ -177,16 +177,27 @@
 <body>
   <div class="card">
     {{ if eq .StatusCode 403 }}
-      <h1>Access Pending</h1>
+      <h1>Access Not Yet Granted</h1>
       <p>
-        Thank you for your interest in Scout! Your account is currently pending approval. You'll receive an email once your account is approved by an administrator.
+        Your Scout account isn't active yet. This can happen for two reasons:
+      </p>
+      <p style="text-align: left;">
+        <strong>1. You haven't accepted the Scout Terms of Use.</strong>
+        When you sign in, you'll see a Scout Terms of Use page. Click
+        <strong>Continue</strong> to accept &mdash; declining or closing the
+        page will leave your access blocked.
+      </p>
+      <p style="text-align: left;">
+        <strong>2. You're waiting for administrator approval.</strong>
+        If you've already accepted the Terms of Use, an administrator is
+        reviewing your request. You'll get an email when it's approved.
       </p>
       <p>In the meantime, you can:</p>
       <p>
         <a href="https://washu-scout.readthedocs.io/en/latest/" class="link">Visit our documentation</a>
       </p>
       <p>
-        <a id="return-to-scout" href="/" class="link">Return to Scout</a>
+        <a id="return-to-scout" href="/" class="link">Return to Scout and try signing in again</a>
       </p>
     {{ else }}
       <div class="status-code">{{.StatusCode}}</div>

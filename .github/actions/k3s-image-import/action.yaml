@@ -22,5 +22,8 @@ runs:
         subproject: ${{ inputs.subproject }}
     - name: Import image into k3s
       shell: bash
+      # Tag locally with the RAW version (no demo suffix) so Ansible role
+      # defaults — which reference raw tags — resolve identically on demo
+      # branches and main.
       run: |
-        sudo k3s ctr -n k8s.io images import --index-name docker.io/local/washu-tag/${{ inputs.image-name }}:${{ steps.derive-version.outputs.version }} ${{ runner.temp }}/${{ inputs.image-name }}.tar
+        sudo k3s ctr -n k8s.io images import --index-name docker.io/local/washu-tag/${{ inputs.image-name }}:${{ steps.derive-version.outputs.raw-version }} ${{ runner.temp }}/${{ inputs.image-name }}.tar
