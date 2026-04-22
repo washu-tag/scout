@@ -26,7 +26,8 @@ body {
 .login-pf body,
 html.login-pf body,
 .login-pf-page {
-  background: linear-gradient(135deg, var(--scout-gradient-from) 0%, var(--scout-gradient-to) 100%) fixed !important;
+  background: linear-gradient(135deg, var(--scout-gradient-from) 0%, var(--scout-gradient-to) 100%)
+    fixed !important;
   background-size: auto !important;
 }
 
