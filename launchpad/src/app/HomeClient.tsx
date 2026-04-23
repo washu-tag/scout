@@ -447,12 +447,45 @@ export default function HomeClient({ enableChat, enablePlaybooks }: HomeClientPr
   const skipAuth =
     process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
 
-  // Auto-login: redirect to sign in if not authenticated
+  // After an explicit sign-out we suppress auto-login so the user stays signed out
+  // — otherwise the upstream IdP (e.g. GitHub) silently re-federates the session.
+  const [justLoggedOut, setJustLoggedOut] = useState(false);
   useEffect(() => {
-    if (!skipAuth && status !== 'loading' && !session) {
+    if (typeof window === 'undefined') return;
+    if (sessionStorage.getItem('justLoggedOut') === '1') {
+      setJustLoggedOut(true);
+      sessionStorage.removeItem('justLoggedOut');
+    }
+  }, []);
+
+  // Auto-login: redirect to sign in if not authenticated (unless user just signed out)
+  useEffect(() => {
+    if (!skipAuth && !justLoggedOut && status !== 'loading' && !session) {
       signIn('keycloak');
     }
-  }, [status, session, skipAuth]);
+  }, [status, session, skipAuth, justLoggedOut]);
+
+  // Signed out: render a simple landing page with a Sign in button
+  if (!skipAuth && !session && justLoggedOut) {
+    return (
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block p-1 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 mb-4 shadow-lg shadow-blue-200 dark:shadow-blue-900/50">
+            <img src="/scout.png" alt="Scout" className="h-16 rounded-xl bg-white p-2" />
+          </div>
+          <h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
+            You are signed out
+          </h1>
+          <button
+            onClick={() => signIn('keycloak')}
+            className="px-6 py-3 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-medium shadow-lg hover:shadow-xl transition-all"
+          >
+            Sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Show loading state while checking auth or redirecting to login
   if (!skipAuth && (status === 'loading' || !session)) {

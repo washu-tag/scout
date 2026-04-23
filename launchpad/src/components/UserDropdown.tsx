@@ -57,6 +57,8 @@ export default function UserDropdown() {
           <button
             onClick={async () => {
               setIsDropdownOpen(false);
+              // Flag so HomeClient skips auto-signIn after the IdP round-trip.
+              sessionStorage.setItem('justLoggedOut', '1');
               // First sign out from NextAuth
               await signOut({ redirect: false });
 
