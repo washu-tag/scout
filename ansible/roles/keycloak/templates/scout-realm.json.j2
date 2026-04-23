@@ -10,6 +10,9 @@
     "internationalizationEnabled": true,
     "supportedLocales": ["en"],
     "defaultLocale": "en",
+    "attributes": {
+      "scout_terms_hash": "{{ keycloak_terms_localizations | to_json(sort_keys=true) | hash('sha256') | truncate(16, True, '') }}"
+    },
     "eventsListeners": [
       "user-approval-email",
       "jboss-logging"
@@ -545,11 +548,11 @@
     ],
     "requiredActions": [
       {
-        "alias": "TERMS_AND_CONDITIONS",
-        "name": "Terms and Conditions",
-        "providerId": "TERMS_AND_CONDITIONS",
+        "alias": "SCOUT_TERMS",
+        "name": "Accept Scout Terms of Use",
+        "providerId": "SCOUT_TERMS",
         "enabled": true,
-        "defaultAction": true,
+        "defaultAction": false,
         "priority": 10,
         "config": {}
       }

@@ -8,7 +8,3 @@
 - name: Apply per-site Terms of Use text overrides
   ansible.builtin.include_tasks: apply_terms_texts.yaml
   when: keycloak_terms_localizations | length > 0
-
-- name: Back-fill Terms and Conditions required action for existing users
-  ansible.builtin.include_tasks: backfill_terms.yaml
-  when: keycloak_terms_backfill_existing_users | default(false) | bool
