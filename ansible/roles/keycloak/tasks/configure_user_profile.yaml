@@ -1,0 +1,190 @@
+---
+# Declare the three custom user attributes written by
+# ScoutTermsRequiredAction as managed attributes in the realm's user-profile
+# config. Managed attributes are always visible to the admin API/UI and to
+# server-side UserModel reads regardless of the realm's
+# unmanagedAttributePolicy — so the feature doesn't depend on a separate
+# realm-wide policy setting.
+#
+# Permissions: view/edit by admin only. SPI writes (via
+# UserModel.setSingleAttribute) bypass the UserProfile permission layer
+# entirely — they hit JpaUserProvider directly — so edit: ["admin"] doesn't
+# block the SPI; it just prevents users from self-modifying their
+# acceptance record via the account console.
+#
+# keycloak-config-cli does not import user-profile config (separate endpoint
+# /admin/realms/{realm}/users/profile), so we PUT it via kcadm after the
+# realm import completes.
+#
+# Idempotent: reads current config, upserts our attribute definitions (and
+# the "scout" attribute group), skips the PUT if nothing changed. Verifies
+# the attributes land after the PUT and fails the play if they don't.
+
+- name: Look up Keycloak pod for user-profile config
+  delegate_to: localhost
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: '{{ keycloak_namespace }}'
+    label_selectors:
+      - 'app=keycloak'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: keycloak_pods_for_profile
+
+- name: Fail if no Keycloak pod is ready
+  ansible.builtin.fail:
+    msg: 'No Keycloak pod found in namespace {{ keycloak_namespace }}'
+  when: keycloak_pods_for_profile.resources | length == 0
+
+- name: Read Keycloak admin password from cluster secret
+  delegate_to: localhost
+  no_log: true
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: keycloak-admin-secret
+    namespace: '{{ keycloak_namespace }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: keycloak_admin_secret_for_profile
+
+- name: Authenticate kcadm in Keycloak pod
+  delegate_to: localhost
+  no_log: true
+  kubernetes.core.k8s_exec:
+    namespace: '{{ keycloak_namespace }}'
+    pod: '{{ keycloak_pods_for_profile.resources[0].metadata.name }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+    command: >-
+      /opt/keycloak/bin/kcadm.sh config credentials
+      --server http://localhost:8080
+      --realm master
+      --user {{ keycloak_bootstrap_admin_user }}
+      --password {{ keycloak_admin_secret_for_profile.resources[0].data.password | b64decode }}
+
+- name: Fetch current user-profile config
+  delegate_to: localhost
+  kubernetes.core.k8s_exec:
+    namespace: '{{ keycloak_namespace }}'
+    pod: '{{ keycloak_pods_for_profile.resources[0].metadata.name }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+    command: '/opt/keycloak/bin/kcadm.sh get users/profile -r {{ keycloak_realm_name }}'
+  register: user_profile_raw
+  changed_when: false
+
+- name: Compute desired user-profile (declare Scout attributes, keep others)
+  ansible.builtin.set_fact:
+    _current_user_profile: '{{ user_profile_raw.stdout | from_json }}'
+    _scout_managed_attrs:
+      - name: scout_terms_hash_accepted
+        displayName: 'Scout Terms of Use — accepted hash'
+        permissions:
+          view: [admin]
+          edit: [admin]
+        group: scout
+      - name: scout_terms_accepted_at
+        displayName: 'Scout Terms of Use — accepted at (epoch seconds)'
+        permissions:
+          view: [admin]
+          edit: [admin]
+        group: scout
+      - name: scout_admin_approval_email_sent_at
+        displayName: 'Scout admin approval email — sent at (epoch millis)'
+        permissions:
+          view: [admin]
+          edit: [admin]
+        group: scout
+    _scout_attr_names:
+      - scout_terms_hash_accepted
+      - scout_terms_accepted_at
+      - scout_admin_approval_email_sent_at
+
+- name: Build updated user-profile (upsert Scout attributes + "scout" group)
+  ansible.builtin.set_fact:
+    _desired_user_profile: >-
+      {{ _current_user_profile | combine({
+          'attributes': (
+              (_current_user_profile.attributes | default([]) | rejectattr('name', 'in', _scout_attr_names) | list)
+              + _scout_managed_attrs
+          ),
+          'groups': (
+              (_current_user_profile.groups | default([]) | rejectattr('name', 'equalto', 'scout') | list)
+              + [{'name': 'scout', 'displayHeader': 'Scout'}]
+          )
+      }) }}
+
+- name: Report user-profile state
+  ansible.builtin.debug:
+    msg: >-
+      user-profile {{ 'matches desired (skipping PUT)' if _current_user_profile == _desired_user_profile
+                       else 'needs update — will PUT with Scout attributes declared' }}
+
+- name: Apply user-profile changes when they differ from current
+  when: _current_user_profile != _desired_user_profile
+  block:
+    - name: Write updated user-profile JSON to local tempfile
+      delegate_to: localhost
+      ansible.builtin.copy:
+        dest: /tmp/scout-user-profile.json
+        content: '{{ _desired_user_profile | to_nice_json }}'
+        mode: '0600'
+
+    - name: Stream user-profile JSON into Keycloak pod
+      delegate_to: localhost
+      ansible.builtin.shell:
+        cmd: >-
+          kubectl --kubeconfig {{ local_kubeconfig_yaml | quote }}
+          -n {{ keycloak_namespace | quote }}
+          exec -i {{ keycloak_pods_for_profile.resources[0].metadata.name | quote }} --
+          sh -c 'cat > /tmp/scout-user-profile.json'
+          < /tmp/scout-user-profile.json
+      changed_when: true
+
+    - name: PUT updated user-profile to Keycloak
+      delegate_to: localhost
+      kubernetes.core.k8s_exec:
+        namespace: '{{ keycloak_namespace }}'
+        pod: '{{ keycloak_pods_for_profile.resources[0].metadata.name }}'
+        kubeconfig: '{{ local_kubeconfig_yaml }}'
+        command: >-
+          /opt/keycloak/bin/kcadm.sh update users/profile
+          -r {{ keycloak_realm_name }}
+          -f /tmp/scout-user-profile.json
+
+    - name: Clean up user-profile JSON inside pod
+      delegate_to: localhost
+      kubernetes.core.k8s_exec:
+        namespace: '{{ keycloak_namespace }}'
+        pod: '{{ keycloak_pods_for_profile.resources[0].metadata.name }}'
+        kubeconfig: '{{ local_kubeconfig_yaml }}'
+        command: rm -f /tmp/scout-user-profile.json
+
+    - name: Remove local user-profile JSON tempfile
+      delegate_to: localhost
+      ansible.builtin.file:
+        path: /tmp/scout-user-profile.json
+        state: absent
+
+    - name: Verify Scout attributes are declared in the user-profile after PUT
+      delegate_to: localhost
+      kubernetes.core.k8s_exec:
+        namespace: '{{ keycloak_namespace }}'
+        pod: '{{ keycloak_pods_for_profile.resources[0].metadata.name }}'
+        kubeconfig: '{{ local_kubeconfig_yaml }}'
+        command: '/opt/keycloak/bin/kcadm.sh get users/profile -r {{ keycloak_realm_name }}'
+      register: user_profile_verify
+      changed_when: false
+
+    - name: Fail hard if any Scout attribute didn't make it into the user-profile
+      ansible.builtin.fail:
+        msg: >-
+          Expected Scout attributes {{ _scout_attr_names }} declared in the
+          realm's user-profile after PUT, but at least one is missing.
+          Present attributes: {{
+            (user_profile_verify.stdout | from_json).attributes
+            | default([]) | map(attribute='name') | list
+          }}. The ScoutTermsRequiredAction SPI depends on these; do not
+          proceed — user acceptance records would be silently filtered.
+      when: >-
+        (_scout_attr_names
+         | difference(
+             (user_profile_verify.stdout | from_json).attributes
+             | default([]) | map(attribute='name') | list
+           ) | length) > 0
