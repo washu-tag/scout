@@ -2,7 +2,7 @@
 # Defaults for keycloak role
 # User-configurable settings are in inventory.yaml
 
-keycloak_version: 26.4.2
+keycloak_version: 26.6.1
 
 # Keycloak image
 keycloak_image_repository: ghcr.io/washu-tag/keycloak
