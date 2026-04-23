@@ -5,6 +5,15 @@
     "eventsEnabled": true,
     "adminEventsEnabled": true,
     "adminEventsDetailsEnabled": true,
+    "ssoSessionIdleTimeout": {{ keycloak_token_lifespan }},
+    "ssoSessionMaxLifespan": {{ keycloak_token_lifespan }},
+    {#- Realm-level session timeouts align with the oauth2-proxy cookie (8h)
+        so users get one consistent session across the stack.
+        Required by Keycloak 26.6+: `client.session.idle.timeout` on the
+        temporal and minio clients (which don't refresh OIDC tokens, so
+        they need long-lived access tokens) cannot exceed the realm's
+        ssoSessionIdleTimeout. Prior 26.x versions tolerated this mismatch
+        but 26.6 validates it at client create time. -#}
     "emailTheme": "scout",
     "loginTheme": "scout",
     "internationalizationEnabled": true,
