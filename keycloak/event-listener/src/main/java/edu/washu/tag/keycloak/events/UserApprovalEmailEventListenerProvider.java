@@ -133,7 +133,17 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
                 return;
             }
             if (user.getFirstAttribute(TERMS_ACCEPTED_ATTR) == null) {
-                log.debugf("User %s has not accepted Terms of Use, deferring approval email.", user.getUsername());
+                // Logged at WARN (not DEBUG) so silent failures are visible
+                // without bumping log levels. If you see this for a user
+                // who JUST clicked Continue, two likely causes: (a) the
+                // Scout user-profile attributes aren't declared in the
+                // realm's users/profile config (re-run `make install-auth`
+                // to re-apply configure_user_profile.yaml); (b) user-cache
+                // staleness where the post-commit listener saw the user
+                // before the SPI's attribute write hit the cache.
+                log.warnf(
+                        "User %s has no %s attribute; deferring approval email.",
+                        user.getUsername(), TERMS_ACCEPTED_ATTR);
                 return;
             }
             if (user.getFirstAttribute(ADMIN_APPROVAL_EMAIL_SENT_ATTR) != null) {

@@ -37,11 +37,11 @@
         KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
       existingSecret: keycloak-admin-secret
 
-# Keycloak 26 defaults the user-profile `unmanagedAttributePolicy` to
-# DISABLED, which hides arbitrary user attributes from the admin API and
-# UI (they may still be stored in the DB). Our SPI writes
-# `scout_terms_hash_accepted` and `scout_terms_accepted_at` per user —
-# enabling unmanaged attributes lets these show up in the admin console
-# and be reliably readable by other event listeners / integrations.
-- name: Enable unmanaged user attributes on the Scout realm
-  ansible.builtin.include_tasks: enable_unmanaged_attrs.yaml
+# Declare the three Scout-specific user attributes written by
+# ScoutTermsRequiredAction (scout_terms_hash_accepted,
+# scout_terms_accepted_at, scout_admin_approval_email_sent_at) as managed
+# attributes in the realm's user-profile config. Managed attributes are
+# always admin-visible regardless of the realm's unmanagedAttributePolicy,
+# so the feature doesn't depend on a realm-wide policy setting.
+- name: Declare Scout user attributes in the realm user-profile
+  ansible.builtin.include_tasks: configure_user_profile.yaml
