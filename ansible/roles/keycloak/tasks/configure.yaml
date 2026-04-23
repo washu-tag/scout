@@ -35,4 +35,9 @@
       env:
         KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
         KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
+        # DEBUG: remove these two lines before merging to main.
+        # Surface full request/response bodies so we can identify which client
+        # Keycloak is rejecting with 400 invalid_input during the realm import.
+        LOGGING_LEVEL_DE_ADORSYS_KEYCLOAK_CONFIG: DEBUG
+        LOGGING_LEVEL_ORG_APACHE_HTTP_WIRE: DEBUG
       existingSecret: keycloak-admin-secret
