@@ -1,0 +1,114 @@
+---
+# Flip the realm's user-profile unmanagedAttributePolicy to ENABLED so custom
+# user attributes written by the ScoutTermsRequiredAction SPI
+# (scout_terms_hash_accepted, scout_terms_accepted_at) are visible in the
+# admin console and returned by the admin API. Idempotent — PUTting the
+# same config is a no-op.
+#
+# keycloak-config-cli does not import user-profile config (it's a separate
+# endpoint /admin/realms/{realm}/users/profile), so we set it via kcadm.
+
+- name: Look up Keycloak pod for user-profile config
+  delegate_to: localhost
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: '{{ keycloak_namespace }}'
+    label_selectors:
+      - 'app=keycloak'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: keycloak_pods_for_profile
+
+- name: Fail if no Keycloak pod is ready
+  ansible.builtin.fail:
+    msg: 'No Keycloak pod found in namespace {{ keycloak_namespace }}'
+  when: keycloak_pods_for_profile.resources | length == 0
+
+- name: Read Keycloak admin password from cluster secret
+  delegate_to: localhost
+  no_log: true
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: keycloak-admin-secret
+    namespace: '{{ keycloak_namespace }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+  register: keycloak_admin_secret_for_profile
+
+- name: Authenticate kcadm in Keycloak pod
+  delegate_to: localhost
+  no_log: true
+  kubernetes.core.k8s_exec:
+    namespace: '{{ keycloak_namespace }}'
+    pod: '{{ keycloak_pods_for_profile.resources[0].metadata.name }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+    command: >-
+      /opt/keycloak/bin/kcadm.sh config credentials
+      --server http://localhost:8080
+      --realm master
+      --user {{ keycloak_bootstrap_admin_user }}
+      --password {{ keycloak_admin_secret_for_profile.resources[0].data.password | b64decode }}
+
+- name: Fetch current user-profile config
+  delegate_to: localhost
+  kubernetes.core.k8s_exec:
+    namespace: '{{ keycloak_namespace }}'
+    pod: '{{ keycloak_pods_for_profile.resources[0].metadata.name }}'
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+    command: '/opt/keycloak/bin/kcadm.sh get users/profile -r {{ keycloak_realm_name }}'
+  register: user_profile_raw
+  changed_when: false
+
+- name: Parse current unmanagedAttributePolicy
+  ansible.builtin.set_fact:
+    current_unmanaged_policy: >-
+      {{ (user_profile_raw.stdout | from_json).unmanagedAttributePolicy | default('') }}
+
+- name: Enable unmanaged attributes when not already enabled
+  when: current_unmanaged_policy != 'ENABLED'
+  block:
+    - name: Build updated user-profile JSON (merge unmanagedAttributePolicy = ENABLED)
+      ansible.builtin.set_fact:
+        updated_user_profile: >-
+          {{ (user_profile_raw.stdout | from_json) | combine({'unmanagedAttributePolicy': 'ENABLED'}) }}
+
+    - name: Write updated user-profile JSON to local tempfile
+      delegate_to: localhost
+      ansible.builtin.copy:
+        dest: /tmp/scout-user-profile.json
+        content: '{{ updated_user_profile | to_nice_json }}'
+        mode: '0600'
+
+    - name: Stream user-profile JSON into Keycloak pod
+      delegate_to: localhost
+      ansible.builtin.shell:
+        cmd: >-
+          kubectl --kubeconfig {{ local_kubeconfig_yaml | quote }}
+          -n {{ keycloak_namespace | quote }}
+          exec -i {{ keycloak_pods_for_profile.resources[0].metadata.name | quote }} --
+          sh -c 'cat > /tmp/scout-user-profile.json'
+          < /tmp/scout-user-profile.json
+      changed_when: true
+
+    - name: PUT updated user-profile to Keycloak
+      delegate_to: localhost
+      kubernetes.core.k8s_exec:
+        namespace: '{{ keycloak_namespace }}'
+        pod: '{{ keycloak_pods_for_profile.resources[0].metadata.name }}'
+        kubeconfig: '{{ local_kubeconfig_yaml }}'
+        command: >-
+          /opt/keycloak/bin/kcadm.sh update users/profile
+          -r {{ keycloak_realm_name }}
+          -f /tmp/scout-user-profile.json
+
+    - name: Clean up user-profile JSON inside pod
+      delegate_to: localhost
+      kubernetes.core.k8s_exec:
+        namespace: '{{ keycloak_namespace }}'
+        pod: '{{ keycloak_pods_for_profile.resources[0].metadata.name }}'
+        kubeconfig: '{{ local_kubeconfig_yaml }}'
+        command: rm -f /tmp/scout-user-profile.json
+
+    - name: Remove local user-profile JSON tempfile
+      delegate_to: localhost
+      ansible.builtin.file:
+        path: /tmp/scout-user-profile.json
+        state: absent
