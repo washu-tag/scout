@@ -157,11 +157,6 @@
         value: 'realm,idp,clientId'
       - name: spi-events-listener-jboss-logging-success-level
         value: info
-      # DEBUG: remove this log-level option before merging to main.
-      # Surfaces validation failures on the admin REST endpoints so we can
-      # diagnose Config CLI 400 responses during realm import.
-      - name: log-level
-        value: 'INFO,org.keycloak.services:debug,org.keycloak.services.resources.admin:debug,org.keycloak.validation:debug'
         # Hacky way to get an env variable into the Keycloak pod until the operator supports it natively
       - name: scout-url
         value: '{{ server_hostname }}'

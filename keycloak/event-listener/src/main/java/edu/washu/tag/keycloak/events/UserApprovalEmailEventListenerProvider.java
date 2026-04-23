@@ -45,8 +45,9 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     private static final String EMAIL_TEMPLATE_PARAMETER_USERNAME = "username";
     private static final String EMAIL_TEMPLATE_PARAMETER_SCOUT_URL = "scoutUrl";
     private static final String ENV_SCOUT_URL = "KC_SCOUT_URL";
-    // Set by Keycloak's built-in TermsAndConditions required action on acceptance.
-    private static final String TERMS_ACCEPTED_ATTR = "terms_and_conditions";
+    // Set by ScoutTermsRequiredAction.processAction when the user accepts terms.
+    // Must match ScoutTermsRequiredAction.USER_HASH_ATTR.
+    private static final String TERMS_ACCEPTED_ATTR = "scout_terms_hash_accepted";
     // Our own bookkeeping: prevents re-sending the approval email on every login.
     private static final String ADMIN_APPROVAL_EMAIL_SENT_ATTR = "scout_admin_approval_email_sent_at";
     
