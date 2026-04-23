@@ -1,22 +1,17 @@
 ---
-# Apply per-site Terms of Use text via realm localization overrides.
+# POST per-site Terms of Use text via the Keycloak realm-localization API.
 #
 # keycloak-config-cli does not import `localizationTexts` from the realm JSON
-# (see https://github.com/adorsys/keycloak-config-cli/issues/1290), so we set
-# them with a post-import API call. Realm localization texts take precedence
-# over the theme message bundle at render time, so sites can override any key
-# in the scout login theme by setting `keycloak_terms_localizations` in
-# inventory.yaml — no image rebuild required.
+# (https://github.com/adorsys/keycloak-config-cli/issues/1290), so the
+# overrides need a separate admin-API call. The realm attribute
+# `scout_terms_hash` — set by the ScoutTermsRequiredAction SPI's contract —
+# IS imported via the realm JSON, and the Java required-action compares it
+# to a per-user attribute to decide whether to prompt on each login.
 #
-# Idempotency: we compute a hash of `keycloak_terms_localizations` and store
-# it as a realm attribute (`scout_terms_hash`). On subsequent runs, if the
-# stored hash matches the desired hash, every mutation task is skipped.
-# Keycloak's localization POST is a merge-upsert, so removing a key from
-# inventory does NOT remove it from Keycloak — clean up manually with
-# `kcadm delete realms/scout/localization/en/<key>` if needed.
-#
-# The Keycloak image is minimal (no `tar`), so we can't use `kubectl cp`.
-# Instead we stream the JSON into the pod via `kubectl exec -i`.
+# Idempotency: hash `keycloak_terms_localizations`, compare against the
+# realm attribute. Same hash → no-op. Different hash → POST new
+# localization. (The SPI's user-prompt behavior kicks in automatically
+# because realm-attribute changes are applied by config-cli.)
 
 - name: Look up Keycloak pod for localization overrides
   delegate_to: localhost
@@ -67,22 +62,25 @@
   register: realm_attrs_raw
   changed_when: false
 
-- name: Compute desired vs stored terms hash
+- name: Compute desired vs applied terms hash
   ansible.builtin.set_fact:
-    current_terms_hash: >-
+    # The realm attribute is set via the realm JSON (templated from the same
+    # expression), so after config-cli re-imports it reflects the current
+    # inventory content. We compare against it to decide whether the
+    # localization POST is needed.
+    current_localization_hash: >-
       {{ (realm_attrs_raw.stdout | from_json).attributes.scout_terms_hash | default('') }}
-    desired_terms_hash: >-
+    desired_localization_hash: >-
       {{ keycloak_terms_localizations | to_json(sort_keys=true) | hash('sha256') | truncate(16, True, '') }}
 
-- name: Report terms localization status
+- name: Report terms localization state
   ansible.builtin.debug:
     msg: >-
-      Terms localization hash: current={{ current_terms_hash }}
-      desired={{ desired_terms_hash }}
-      {% if current_terms_hash == desired_terms_hash %}(up-to-date, skipping apply){% else %}(will apply){% endif %}
+      terms hash current={{ current_localization_hash }} desired={{ desired_localization_hash }}
+      {% if current_localization_hash == desired_localization_hash %}(up-to-date, skipping localization POST){% else %}(will POST new localization){% endif %}
 
-- name: Apply Terms of Use localization overrides (only when hash differs)
-  when: current_terms_hash != desired_terms_hash
+- name: POST Terms of Use localization overrides
+  when: current_localization_hash != desired_localization_hash
   block:
     - name: Write terms localization JSON to local tempfile
       delegate_to: localhost
@@ -102,7 +100,7 @@
           < /tmp/scout-terms-localization.json
       changed_when: true
 
-    - name: POST localization overrides to Keycloak
+    - name: Upsert localization overrides to Keycloak
       delegate_to: localhost
       kubernetes.core.k8s_exec:
         namespace: '{{ keycloak_namespace }}'
@@ -112,16 +110,6 @@
           /opt/keycloak/bin/kcadm.sh create
           realms/{{ keycloak_realm_name }}/localization/en
           -f /tmp/scout-terms.json
-
-    - name: Persist new terms hash as a realm attribute
-      delegate_to: localhost
-      kubernetes.core.k8s_exec:
-        namespace: '{{ keycloak_namespace }}'
-        pod: '{{ keycloak_pods_for_i18n.resources[0].metadata.name }}'
-        kubeconfig: '{{ local_kubeconfig_yaml }}'
-        command: >-
-          /opt/keycloak/bin/kcadm.sh update realms/{{ keycloak_realm_name }}
-          -s attributes.scout_terms_hash={{ desired_terms_hash }}
 
     - name: Clean up terms JSON inside pod
       delegate_to: localhost
