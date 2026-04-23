@@ -422,6 +422,23 @@ jobs:
         run: |
           sudo -E kubectl get pods -A
           sudo -E kubectl get events -A --sort-by='.lastTimestamp' | tail -50
+      - name: 'Debug - full logs for keycloak-config-cli + keycloak pods'
+        if: failure()
+        shell: bash
+        continue-on-error: true
+        run: |
+          # These are the two pods we most often need full (not tail'd) logs
+          # for when diagnosing realm-import failures. Dumped separately
+          # because the generic `Debug - all pod logs` step below tails to
+          # keep output manageable.
+          for pod in $(sudo -E kubectl get pods -n scout-core \
+              -o jsonpath='{.items[?(@.metadata.labels.app=="keycloak")].metadata.name}' 2>/dev/null) \
+              $(sudo -E kubectl get pods -n scout-core \
+                -o jsonpath='{.items[?(@.metadata.labels.job-name=="keycloak-config-cli")].metadata.name}' 2>/dev/null); do
+            echo "=== scout-core/${pod} (full log) ==="
+            sudo -E kubectl logs -n scout-core "${pod}" --all-containers --previous 2>/dev/null || \
+            sudo -E kubectl logs -n scout-core "${pod}" --all-containers 2>/dev/null || true
+          done
       - name: 'Debug - all pod logs'
         if: failure()
         shell: bash
