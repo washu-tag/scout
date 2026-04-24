@@ -2,12 +2,15 @@ package edu.washu.tag.keycloak.events;
 
 import static org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction;
 
+import edu.washu.tag.keycloak.requiredactions.ScoutTermsRequiredAction;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import org.jboss.logging.Logger;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.EmailSenderProvider;
 import org.keycloak.email.EmailTemplateProvider;
+import org.keycloak.events.Details;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
 import org.keycloak.events.EventListenerTransaction;
@@ -15,6 +18,7 @@ import org.keycloak.events.EventType;
 import org.keycloak.events.admin.AdminEvent;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
+import org.keycloak.executors.ExecutorsProvider;
 import org.keycloak.http.HttpRequest;
 import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
@@ -27,10 +31,17 @@ import org.keycloak.theme.freemarker.FreeMarkerProvider;
 
 /**
  * Event listener provider that gates user-pending and admin-approval emails on
- * Terms of Use acceptance: both fire on the first successful LOGIN after the
- * user has accepted the Terms of Use required action (rather than on the
- * initial REGISTER event). This prevents admins from being nagged about users
- * who may ultimately decline the Terms and never complete signup.
+ * Terms of Use acceptance: both fire when the user completes the
+ * {@link ScoutTermsRequiredAction SCOUT_TERMS} required action, signalled by a
+ * {@link EventType#CUSTOM_REQUIRED_ACTION} event whose
+ * {@link Details#CUSTOM_REQUIRED_ACTION} detail equals
+ * {@link ScoutTermsRequiredAction#ID}. Listening on the required-action event
+ * (rather than on LOGIN) means we don't have to re-read the SPI's freshly-
+ * written acceptance attrs — the event itself is sufficient evidence, which
+ * sidesteps the user-cache read-your-writes hazard post-commit.
+ *
+ * <p>Email sending is dispatched to {@link ExecutorsProvider}'s managed
+ * thread pool so SMTP latency never lands on the user's auth path.
  *
  * <p>It also listens for group membership events to send enabled/disabled
  * emails to users when they are added or removed from the "scout-user" group.
@@ -45,10 +56,11 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     private static final String EMAIL_TEMPLATE_PARAMETER_USERNAME = "username";
     private static final String EMAIL_TEMPLATE_PARAMETER_SCOUT_URL = "scoutUrl";
     private static final String ENV_SCOUT_URL = "KC_SCOUT_URL";
-    // Set by ScoutTermsRequiredAction.processAction when the user accepts terms.
-    // Must match ScoutTermsRequiredAction.USER_HASH_ATTR.
-    private static final String TERMS_ACCEPTED_ATTR = "scout_terms_hash_accepted";
-    // Our own bookkeeping: prevents re-sending the approval email on every login.
+    // Named pool for approval-email sends; ExecutorsProvider returns a shared
+    // managed pool keyed by name and handles shutdown on server reload.
+    private static final String EMAIL_EXECUTOR_NAME = "scout-approval-email";
+    // Our own bookkeeping: prevents re-sending the approval email on every
+    // re-acceptance (Scout terms re-prompt whenever the realm hash changes).
     private static final String ADMIN_APPROVAL_EMAIL_SENT_ATTR = "scout_admin_approval_email_sent_at";
     
     /**
@@ -63,15 +75,17 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     }
 
     /**
-     * Login events are user events. We trigger the pending-approval and
-     * admin-approval emails on the first LOGIN after Terms of Use acceptance,
-     * so admins aren't asked to approve users who haven't completed signup.
+     * Trigger pending-approval and admin-approval emails when the user
+     * completes the SCOUT_TERMS required action. Filtering on the action ID
+     * matters because CUSTOM_REQUIRED_ACTION fires for every SPI-provided
+     * required action — any future custom action would otherwise produce
+     * spurious approval emails.
      */
     @Override
     public void onEvent(Event event) {
         log.debugf("Received event: %s, type: %s, realm: %s, user: %s, details: %s",
                 event.getId(), event.getType(), event.getRealmId(), event.getUserId(), event.getDetails());
-        if (isEligibleLoginEvent(event)) {
+        if (isScoutTermsAcceptedEvent(event)) {
             tx.addEvent(event);
         }
     }
@@ -93,10 +107,13 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     public void close() {
     }
 
-    private boolean isEligibleLoginEvent(Event event) {
-        return event.getType() == EventType.LOGIN
+    private boolean isScoutTermsAcceptedEvent(Event event) {
+        return event.getType() == EventType.CUSTOM_REQUIRED_ACTION
                 && event.getRealmId() != null
-                && event.getUserId() != null;
+                && event.getUserId() != null
+                && event.getDetails() != null
+                && ScoutTermsRequiredAction.ID.equals(
+                        event.getDetails().get(Details.CUSTOM_REQUIRED_ACTION));
     }
 
     private boolean isUserApproved(UserModel user) {
@@ -113,37 +130,36 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     }
 
     /**
-     * On successful LOGIN, send the pending-approval and admin-approval emails
-     * if and only if: the user has accepted the Terms of Use, is not already
-     * in the scout-user group, and hasn't already been notified.
+     * On SCOUT_TERMS acceptance: send the pending-approval and admin-approval
+     * emails unless the user is already in scout-user or has already been
+     * notified for this account. Dispatched to a background thread so SMTP
+     * latency stays off the user's auth path; the executor handoff completes
+     * in microseconds before the redirect is returned.
+     *
+     * <p>The event itself is proof of acceptance, so the worker does not need
+     * to re-read the SPI's {@code scout_terms_hash_accepted} attribute — and
+     * therefore doesn't race against user-cache invalidation of the freshly
+     * written acceptance attrs.
      */
     private void sendEmail(Event event) {
-        runJobInTransaction(sessionFactory, (KeycloakSession sess) -> {
-            KeycloakContext context = sess.getContext();
-            RealmModel realm = sess.realms().getRealm(event.getRealmId());
-            context.setRealm(realm);
-            context.setHttpRequest(session.getContext().getHttpRequest());
-            UserModel user = sess.users().getUserById(realm, event.getUserId());
+        ExecutorService executor = session.getProvider(ExecutorsProvider.class)
+                .getExecutor(EMAIL_EXECUTOR_NAME);
+        String realmId = event.getRealmId();
+        String userId = event.getUserId();
+        executor.execute(() -> runJobInTransaction(sessionFactory, (KeycloakSession sess) -> {
+            RealmModel realm = sess.realms().getRealm(realmId);
+            if (realm == null) {
+                log.warnf("Realm %s no longer exists; skipping approval email.", realmId);
+                return;
+            }
+            sess.getContext().setRealm(realm);
+            UserModel user = sess.users().getUserById(realm, userId);
 
             if (!isUserValid(user, event, realm)) {
                 return;
             }
             if (isUserApproved(user)) {
                 log.debugf("User %s is already approved, skipping approval email.", user.getUsername());
-                return;
-            }
-            if (user.getFirstAttribute(TERMS_ACCEPTED_ATTR) == null) {
-                // Logged at WARN (not DEBUG) so silent failures are visible
-                // without bumping log levels. If you see this for a user
-                // who JUST clicked Continue, two likely causes: (a) the
-                // Scout user-profile attributes aren't declared in the
-                // realm's users/profile config (re-run `make install-auth`
-                // to re-apply configure_user_profile.yaml); (b) user-cache
-                // staleness where the post-commit listener saw the user
-                // before the SPI's attribute write hit the cache.
-                log.warnf(
-                        "User %s has no %s attribute; deferring approval email.",
-                        user.getUsername(), TERMS_ACCEPTED_ATTR);
                 return;
             }
             if (user.getFirstAttribute(ADMIN_APPROVAL_EMAIL_SENT_ATTR) != null) {
@@ -154,12 +170,12 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
             Map<String, Object> bodyAttributes = createBodyAttributes(user);
 
             sendUserPendingApprovalEmail(sess, realm, user, bodyAttributes);
-            sendAdminApprovalEmail(session, realm, bodyAttributes, user);
+            sendAdminApprovalEmail(sess, realm, bodyAttributes, user);
 
             user.setSingleAttribute(ADMIN_APPROVAL_EMAIL_SENT_ATTR,
                     Long.toString(System.currentTimeMillis()));
             log.infof("Marked admin approval email as sent for user %s.", user.getUsername());
-        });
+        }));
     }
 
     /**
