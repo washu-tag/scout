@@ -4,7 +4,3 @@
 
 - name: Configure Keycloak
   ansible.builtin.include_tasks: configure.yaml
-
-- name: Apply per-site Terms of Use text overrides
-  ansible.builtin.include_tasks: apply_terms_texts.yaml
-  when: keycloak_terms_localizations | length > 0

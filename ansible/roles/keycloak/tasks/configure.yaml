@@ -36,12 +36,3 @@
         KEYCLOAK_URL: 'http://keycloak-service.{{ keycloak_namespace }}:8080/'
         KEYCLOAK_USER: '{{ keycloak_bootstrap_admin_user }}'
       existingSecret: keycloak-admin-secret
-
-# Declare the three Scout-specific user attributes written by
-# ScoutTermsRequiredAction (scout_terms_hash_accepted,
-# scout_terms_accepted_at, scout_admin_approval_email_sent_at) as managed
-# attributes in the realm's user-profile config. Managed attributes are
-# always admin-visible regardless of the realm's unmanagedAttributePolicy,
-# so the feature doesn't depend on a realm-wide policy setting.
-- name: Declare Scout user attributes in the realm user-profile
-  ansible.builtin.include_tasks: configure_user_profile.yaml

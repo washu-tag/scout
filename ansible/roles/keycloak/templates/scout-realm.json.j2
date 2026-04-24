@@ -19,8 +19,13 @@
     "internationalizationEnabled": true,
     "supportedLocales": ["en"],
     "defaultLocale": "en",
-    "attributes": {
-      "scout_terms_hash": "{{ keycloak_terms_localizations | to_json(sort_keys=true) | hash('sha256') | truncate(16, True, '') }}"
+    {#- Scout Terms of Use text overrides for the "en" locale. Imported by
+        keycloak-config-cli into realm localization texts; the
+        ScoutTermsRequiredAction SPI reads `termsBody` at request time via
+        getRealmLocalizationTextsByLocale. Empty dict is valid — SPI falls
+        back to the scout login theme's baked-in messages_en.properties. -#}
+    "messageBundles": {
+      "en": {{ keycloak_terms_localizations | to_json }}
     },
     "eventsListeners": [
       "user-approval-email",
@@ -555,6 +560,114 @@
         }
       }
     ],
+    {#- User-profile config: full-replace semantics via keycloak-config-cli
+        (Scout owns this block). First four attrs are the Keycloak 26.x
+        defaults reproduced verbatim; last three are Scout-managed. Declaring
+        the Scout attrs as "managed" (view/edit permissioned, grouped) makes
+        them admin-visible regardless of the realm's unmanagedAttributePolicy.
+        ScoutTermsRequiredAction writes to them via UserModel.setSingleAttribute,
+        which bypasses user-profile permissions and goes direct to JpaUserProvider. -#}
+    "userProfile": {
+      "attributes": [
+        {
+          "name": "username",
+          "displayName": "${username}",
+          "validations": {
+            "length": {"min": 3, "max": 255},
+            "username-prohibited-characters": {},
+            "up-username-not-idn-homograph": {}
+          },
+          "permissions": {
+            "view": ["admin", "user"],
+            "edit": ["admin", "user"]
+          },
+          "multivalued": false
+        },
+        {
+          "name": "email",
+          "displayName": "${email}",
+          "validations": {
+            "email": {},
+            "length": {"max": 255}
+          },
+          "required": {
+            "roles": ["user"]
+          },
+          "permissions": {
+            "view": ["admin", "user"],
+            "edit": ["admin", "user"]
+          },
+          "multivalued": false
+        },
+        {
+          "name": "firstName",
+          "displayName": "${firstName}",
+          "validations": {
+            "length": {"max": 255},
+            "person-name-prohibited-characters": {}
+          },
+          "permissions": {
+            "view": ["admin", "user"],
+            "edit": ["admin", "user"]
+          },
+          "multivalued": false
+        },
+        {
+          "name": "lastName",
+          "displayName": "${lastName}",
+          "validations": {
+            "length": {"max": 255},
+            "person-name-prohibited-characters": {}
+          },
+          "permissions": {
+            "view": ["admin", "user"],
+            "edit": ["admin", "user"]
+          },
+          "multivalued": false
+        },
+        {
+          "name": "scout_terms_hash_accepted",
+          "displayName": "Scout Terms of Use — accepted hash",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": false
+        },
+        {
+          "name": "scout_terms_accepted_at",
+          "displayName": "Scout Terms of Use — accepted at (epoch seconds)",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": false
+        },
+        {
+          "name": "scout_admin_approval_email_sent_at",
+          "displayName": "Scout admin approval email — sent at (epoch millis)",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": false
+        }
+      ],
+      "groups": [
+        {
+          "name": "user-metadata",
+          "displayHeader": "User metadata",
+          "displayDescription": "Attributes, which refer to user metadata"
+        },
+        {
+          "name": "scout",
+          "displayHeader": "Scout"
+        }
+      ]
+    },
     "requiredActions": [
       {
         "alias": "SCOUT_TERMS",
