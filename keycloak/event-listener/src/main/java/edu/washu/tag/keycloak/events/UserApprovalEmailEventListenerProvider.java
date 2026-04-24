@@ -60,7 +60,7 @@ public class UserApprovalEmailEventListenerProvider implements EventListenerProv
     // managed pool keyed by name and handles shutdown on server reload.
     private static final String EMAIL_EXECUTOR_NAME = "scout-approval-email";
     // Our own bookkeeping: prevents re-sending the approval email on every
-    // re-acceptance (Scout terms re-prompt whenever the realm hash changes).
+    // re-acceptance (Scout terms re-prompt whenever termsBody changes).
     private static final String ADMIN_APPROVAL_EMAIL_SENT_ATTR = "scout_admin_approval_email_sent_at";
     
     /**
