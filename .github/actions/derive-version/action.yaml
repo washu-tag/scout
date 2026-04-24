@@ -25,8 +25,13 @@ runs:
     - name: 'Detect Image Version'
       id: detect-version
       shell: bash
+      # SUBPROJECT passed via env: (not ${{ }} inside run:) to avoid
+      # workflow script injection — CodeQL flags the inline expansion
+      # pattern. Also quotes the path, which the inline form didn't.
+      env:
+        SUBPROJECT: ${{ inputs.subproject }}
       run: |
-        cd ${{ inputs.subproject }}
+        cd "${SUBPROJECT}"
         if [ -f VERSION ]; then
           raw_version="$(cat VERSION)"
         elif [ -f package.json ]; then

@@ -38,15 +38,18 @@ runs:
       # demo images from clobbering main/release tags). LOCAL tag uses
       # RAW_VERSION so Ansible role defaults — which reference raw tags —
       # resolve identically on every branch.
+      # Values passed via env: (not ${{ }} inside run:) to avoid workflow
+      # script injection — CodeQL flags the inline expansion pattern.
+      env:
+        VERSION: ${{ steps.derive-version.outputs.version }}
+        RAW_VERSION: ${{ steps.derive-version.outputs.raw-version }}
+        IMAGE_NAME: ${{ inputs.image-name }}
+        REGISTRY: ${{ inputs.registry }}
+        NAMESPACE: ${{ inputs.registry-namespace }}
       run: |
-        VERSION="${{ steps.derive-version.outputs.version }}"
-        RAW_VERSION="${{ steps.derive-version.outputs.raw-version }}"
-        IMAGE_NAME="${{ inputs.image-name }}"
-        REGISTRY="${{ inputs.registry }}"
-        NAMESPACE="${{ inputs.registry-namespace }}"
         REGISTRY_IMAGE="${REGISTRY}/${NAMESPACE}/${IMAGE_NAME}:${VERSION}"
         LOCAL_IMAGE="docker.io/local/${NAMESPACE}/${IMAGE_NAME}:${RAW_VERSION}"
-        TAR_FILE="${{ runner.temp }}/${IMAGE_NAME}.tar"
+        TAR_FILE="${RUNNER_TEMP}/${IMAGE_NAME}.tar"
 
         if [ -f "${TAR_FILE}" ]; then
           echo "Importing newly built image from artifact..."
