@@ -11,6 +11,10 @@ grafana_helm_chart_name: grafana
 grafana_storage_size: 5Gi
 grafana_storage_class: ''
 
+# Internal admin password used by sidecars for API reload calls.
+# Login form is disabled so this account is not user-accessible.
+grafana_admin_password: ''
+
 # Alert configuration
 grafana_alerts_enabled: true
 grafana_alert_contact_point: slack # email or slack

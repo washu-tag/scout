@@ -72,6 +72,7 @@ k3s_cluster:
     prometheus_storage_size: 1Gi
     loki_storage_size: 1Gi
     grafana_storage_size: 1Gi
+    grafana_admin_password: ci-grafana-admin-password
     grafana_alerts_enabled: false
 
     # Jupyter config
