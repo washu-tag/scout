@@ -130,6 +130,7 @@ keycloak_temporal_client_id: temporal
 keycloak_minio_client_id: minio
 keycloak_launchpad_client_id: launchpad
 keycloak_open_webui_client_id: open-webui
+keycloak_xnat_client_id: xnat
 
 # OAuth callback URLs for each client
 open_webui_callback_url: 'https://chat.{{ server_hostname }}/oauth/oidc/callback'

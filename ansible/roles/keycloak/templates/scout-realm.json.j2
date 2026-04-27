@@ -171,6 +171,22 @@
             "clientRole": true,
             "attributes": {}
           }
+        ],
+        "{{ keycloak_xnat_client_id }}": [
+          {
+            "name": "xnat-admin",
+            "description": "Scout Admin Role for XNAT Client (cosmetic - not consumed by XNAT)",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          },
+          {
+            "name": "xnat-user",
+            "description": "Scout User Role for XNAT Client (cosmetic - not consumed by XNAT)",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
+          }
         ]
       }
     },
@@ -205,6 +221,9 @@
           "{{ keycloak_open_webui_client_id }}": [
             "open-webui-admin"
           ],
+          "{{ keycloak_xnat_client_id }}": [
+            "xnat-admin"
+          ],
           "realm-management": [
             "realm-admin"
           ]
@@ -228,6 +247,9 @@
           ],
           "{{ keycloak_open_webui_client_id }}": [
             "open-webui-user"
+          ],
+          "{{ keycloak_xnat_client_id }}": [
+            "xnat-user"
           ]
         }
       }
@@ -454,6 +476,38 @@
         "webOrigins": [
           "https://chat.{{ server_hostname }}"
         ],
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access",
+        ]
+      },
+      {
+        "name": "{{ keycloak_xnat_client_id }}",
+        "description": "XNAT Client",
+        "enabled": true,
+        "clientId": "{{ keycloak_xnat_client_id }}",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_xnat_client_secret }}",
+        "redirectUris": [
+          "https://xnat.{{ server_hostname }}/openid-login*"
+        ],
+        "webOrigins": [
+          "https://xnat.{{ server_hostname }}"
+        ],
+        "attributes": {
+          "pkce.code.challenge.method": "S256"
+        },
         "defaultClientScopes": [
           "web-origins",
           "acr",
