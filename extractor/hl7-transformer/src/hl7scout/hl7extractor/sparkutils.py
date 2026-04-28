@@ -96,30 +96,3 @@ def extract_from_anticipated_column(
     else:  # particular column may not have been seen yet
         return F.lit(None)
 
-
-def add_epic_view(spark: SparkSession, source_table: str, mapping_table_name: str):
-    spark.sql(
-        f"""
-            CREATE OR REPLACE VIEW {source_table}_epic_view AS
-            WITH patient_ids AS (
-                SELECT
-                    scout_patient_id,
-                    MAX(epic_mrn) AS resolved_epic_mrn,
-                    MAX(mpi) AS resolved_mpi
-                FROM {mapping_table_name}
-                WHERE consistent = true
-                GROUP BY scout_patient_id
-            )
-            SELECT
-                r.*,
-                m.scout_patient_id,
-                p.resolved_epic_mrn,
-                p.resolved_mpi
-            FROM {source_table} r
-            JOIN {mapping_table_name} m
-                ON r.primary_report_identifier = m.primary_report_identifier
-            JOIN patient_ids p
-                ON m.scout_patient_id = p.scout_patient_id
-            WHERE m.consistent = true
-    """
-    )

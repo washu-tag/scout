@@ -1,6 +1,8 @@
 import contextvars
+import os
 import threading
 
+import trino
 from pyspark.sql.streaming import StreamingQuery
 from temporalio import activity
 
@@ -11,7 +13,6 @@ from .diagnosistable import diagnosis_table
 from .latesttable import latest_table
 from .mappingtable import mapping_table
 from .derivativetable import DerivativeTable
-from .sparkutils import add_epic_view
 
 
 def define_derivative_tables(report_table_name: str) -> dict[str, DerivativeTable]:
@@ -79,7 +80,7 @@ def process_derivative_data(spark: SparkSession, report_table_name: str):
     mapping_table_name = f"{report_table_name}_report_patient_mapping"
     for child_table in derivative_tables.keys():
         if child_table != mapping_table_name:
-            add_epic_view(spark, child_table, mapping_table_name)
+            add_epic_views(spark, child_table, mapping_table_name)
 
 
 def perform_derivative_operation_with_heartbeat(table_operation: StreamingQuery):
@@ -97,3 +98,47 @@ def perform_derivative_operation_with_heartbeat(table_operation: StreamingQuery)
     finally:
         stop_event.set()
         t.join()
+
+
+def add_epic_views(spark: SparkSession, source_table: str, mapping_table_name: str):
+    def view_sql(view_name):
+        return f"""
+            CREATE OR REPLACE VIEW {view_name} AS
+            WITH patient_ids AS (
+                SELECT
+                    scout_patient_id,
+                    MAX(epic_mrn) AS resolved_epic_mrn,
+                    MAX(mpi) AS resolved_mpi
+                FROM {mapping_table_name}
+                WHERE consistent = true
+                GROUP BY scout_patient_id
+            )
+            SELECT
+                r.*,
+                m.scout_patient_id,
+                p.resolved_epic_mrn,
+                p.resolved_mpi
+            FROM {source_table} r
+            JOIN {mapping_table_name} m
+                ON r.primary_report_identifier = m.primary_report_identifier
+            JOIN patient_ids p
+                ON m.scout_patient_id = p.scout_patient_id
+            WHERE m.consistent = true
+        """
+
+    spark.sql(view_sql(f"{source_table}_spark_epic_view"))
+
+    def trino_connection():
+        return trino.dbapi.connect(
+            host=os.environ["TRINO_HOST"],
+            port=int(os.environ["TRINO_PORT"]),
+            user=os.environ["TRINO_USER"],
+            catalog=os.environ["TRINO_CATALOG"],
+            schema="default",
+            http_scheme=os.environ["TRINO_SCHEME"],
+        )
+
+    with trino_connection() as conn:
+        cur = conn.cursor()
+        cur.execute(view_sql(f"{source_table}_epic_view"))
+        cur.fetchall()  # Trino DB-API requires fetching to actually execute
