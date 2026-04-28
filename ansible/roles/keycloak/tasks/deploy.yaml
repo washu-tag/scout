@@ -164,7 +164,7 @@
     state: present
     namespace: '{{ keycloak_namespace }}'
     definition:
-      apiVersion: k8s.keycloak.org/v2alpha1
+      apiVersion: k8s.keycloak.org/v2beta1
       kind: Keycloak
       metadata:
         name: keycloak
@@ -222,7 +222,7 @@
 
 - name: Wait for Keycloak to be ready
   kubernetes.core.k8s_info:
-    api_version: k8s.keycloak.org/v2alpha1
+    api_version: k8s.keycloak.org/v2beta1
     kind: Keycloak
     name: keycloak
     namespace: '{{ keycloak_namespace }}'

@@ -2,7 +2,7 @@
 # Defaults for keycloak role
 # User-configurable settings are in inventory.yaml
 
-keycloak_version: 26.4.2
+keycloak_version: 26.6.1
 
 # Keycloak image
 keycloak_image_repository: ghcr.io/washu-tag/keycloak
@@ -41,6 +41,14 @@ keycloak_smtp_debug: 'false'
 
 # Identity Provider configuration
 keycloak_default_provider: github
+
+# Per-site Terms of Use text overrides.
+# Leave empty to use the WashU-flavored defaults baked into the scout login
+# theme. Most sites only need to override `termsBody` with their own HTML —
+# that single string contains the intro paragraph, the bullet list, and the
+# closing acknowledgment. `termsTitle`, `doAccept`, and `doDecline` are
+# available to override too, but rarely need changes.
+keycloak_terms_localizations: {}
 
 # Token lifespan (in seconds) — should match oauth2_proxy_cookie_expire
 keycloak_token_lifespan: 28800

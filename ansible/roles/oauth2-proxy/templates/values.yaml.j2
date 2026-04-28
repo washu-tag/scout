@@ -38,6 +38,13 @@ ingress:
   path: /
   hosts:
     - '{{ oauth2_proxy_subdomain }}.{{ server_hostname }}'
+# Hash every *.html template in files/ so that editing any of them flips
+# this annotation → Helm sees a spec change → pod rolls and re-reads the
+# templates (oauth2-proxy only loads them at startup). Glob-based so new
+# template files are auto-covered without editing this line. Matches the
+# config-hash pattern already used by the keycloak role.
+podAnnotations:
+  scout/templates-hash: '{{ lookup("pipe", "cat " + role_path + "/files/*.html | sha256sum | cut -c1-16") }}'
 extraVolumes:
   - name: oauth2-proxy-templates
     configMap:
