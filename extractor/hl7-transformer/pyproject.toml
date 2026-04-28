@@ -25,5 +25,6 @@ dependencies = [
     "pyspark==3.5.4",
     "s3fs",
     "temporalio ~= 1.25.0",
+    "trino",
     "uvicorn",
 ]
