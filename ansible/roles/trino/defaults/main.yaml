@@ -43,6 +43,29 @@ trino_worker_resources:
     cpu: '{{ trino_worker_cpu_limit }}'
     memory: '{{ trino_worker_max_heap | jvm_memory_to_k8s(4) }}'
 
+# RW Trino (admin) — small instance used by hl7-transformer for view DDL
+trino_rw_enabled: true
+trino_rw_release_name: trino-rw
+trino_rw_worker_count: 1
+trino_rw_worker_max_heap: 1G
+trino_rw_coordinator_max_heap: 512M
+
+trino_rw_coordinator_resources:
+  requests:
+    cpu: 100m
+    memory: '{{ trino_rw_coordinator_max_heap | jvm_memory_to_k8s }}'
+  limits:
+    cpu: 500m
+    memory: '{{ trino_rw_coordinator_max_heap | jvm_memory_to_k8s(4) }}'
+
+trino_rw_worker_resources:
+  requests:
+    cpu: 100m
+    memory: '{{ trino_rw_worker_max_heap | jvm_memory_to_k8s }}'
+  limits:
+    cpu: 500m
+    memory: '{{ trino_rw_worker_max_heap | jvm_memory_to_k8s(4) }}'
+
 # Trino MCP server configuration
 mcp_trino_repo_url: https://github.com/tuannvm/mcp-trino.git
 mcp_trino_repo_version: 'v{{ mcp_trino_version }}'

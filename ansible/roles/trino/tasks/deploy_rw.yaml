@@ -1,0 +1,26 @@
+---
+# Deploy a small RW Trino used only by the hl7-transformer for view DDL.
+# Ingress is restricted via NetworkPolicy.
+
+- name: Parse RW Trino Helm values
+  ansible.builtin.set_fact:
+    trino_rw_helm_chart_values: "{{ lookup('template', 'values-rw.yaml.j2') | from_yaml }}"
+
+- name: Deploy RW Trino
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: '{{ trino_rw_release_name }}'
+    helm_chart_ref: '{{ trino_helm_repo_name }}/{{ trino_helm_chart_name }}'
+    helm_chart_version: '{{ trino_helm_chart_version }}'
+    helm_chart_namespace: '{{ trino_rw_namespace }}'
+    helm_repo_name: '{{ trino_helm_repo_name }}'
+    helm_repo_url: '{{ trino_helm_repo_url }}'
+    helm_chart_values: '{{ trino_rw_helm_chart_values }}'
+
+- name: Apply NetworkPolicy restricting RW Trino ingress
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'networkpolicy-rw.yaml.j2') | from_yaml }}"
+  environment: '{{ cluster_k8s_environment }}'
