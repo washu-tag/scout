@@ -5,6 +5,10 @@
 - name: Include Trino deployment
   ansible.builtin.include_tasks: deploy.yaml
 
+- name: Include RW Trino deployment
+  ansible.builtin.include_tasks: deploy_rw.yaml
+  when: trino_rw_enabled | default(true) | bool
+
 - name: Include Trino MCP deployment
   ansible.builtin.include_tasks: mcp.yaml
   when: enable_chat | default(false) | bool

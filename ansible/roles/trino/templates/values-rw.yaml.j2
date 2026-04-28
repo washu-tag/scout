@@ -1,0 +1,73 @@
+# Trino RW (admin) instance — small Trino used by the hl7-transformer
+# to issue view DDL. Gated to the transformer via NetworkPolicy.
+#
+# Differences from the user-facing Trino:
+#   - delta.security is NOT read-only (writes allowed)
+#   - Uses writable Hive metastore endpoint
+#   - Uses lake-writer S3 credentials
+#   - Single small worker (DDL workload only)
+
+server:
+  workers: {{ trino_rw_worker_count }}
+  config:
+    query:
+      maxMemory: "{{ trino_rw_worker_max_heap | multiply_memory(trino_rw_worker_count * trino_per_node_query_memory_fraction) }}B"
+
+# JMX exporter for Prometheus (parity with the user-facing Trino)
+jmx:
+  enabled: true
+  registryPort: 9080
+  serverPort: 9081
+  exporter:
+    enabled: true
+    image: bitnamilegacy/jmx-exporter:{{ trino_jmx_exporter_version }}
+    pullPolicy: IfNotPresent
+    port: 5556
+    configProperties: |
+      hostPort: localhost:9080
+      startDelaySeconds: 30
+      ssl: false
+      lowercaseOutputName: false
+
+coordinator:
+  jvm:
+    maxHeapSize: {{ trino_rw_coordinator_max_heap }}
+  config:
+    memory:
+      heapHeadroomPerNode: ""
+    query:
+      maxMemoryPerNode: "{{ trino_rw_coordinator_max_heap | multiply_memory(trino_per_node_query_memory_fraction) }}B"
+  resources: {{ trino_rw_coordinator_resources | to_json }}
+  annotations:
+    prometheus.io/scrape: 'true'
+    prometheus.io/port: '5556'
+    prometheus.io/path: '/metrics'
+
+worker:
+  jvm:
+    maxHeapSize: {{ trino_rw_worker_max_heap }}
+  config:
+    memory:
+      heapHeadroomPerNode: ""
+    query:
+      maxMemoryPerNode: "{{ trino_rw_worker_max_heap | multiply_memory(trino_per_node_query_memory_fraction) }}B"
+  resources: {{ trino_rw_worker_resources | to_json }}
+  annotations:
+    prometheus.io/scrape: 'true'
+    prometheus.io/port: '5556'
+    prometheus.io/path: '/metrics'
+
+catalogs:
+  delta: |
+    connector.name=delta_lake
+    hive.metastore.uri={{ hive_metastore_endpoint }}
+    fs.native-s3.enabled=true
+    s3.region={{ s3_region }}
+{% if not aws_deployment %}
+    s3.aws-access-key={{ s3_lake_writer }}
+    s3.aws-secret-key={{ s3_lake_writer_secret }}
+    s3.endpoint={{ s3_endpoint }}
+    s3.path-style-access=true
+{% else %}
+    s3.path-style-access=false
+{% endif %}
