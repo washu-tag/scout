@@ -1,0 +1,74 @@
+replicaCount: 1
+
+image:
+  repository: xnatworks/xnat-web
+  tag: '1.9.2.1'
+
+redis:
+  enabled: false
+
+activemq:
+  broker:
+    enabled: false
+
+cnpg:
+  cluster:
+    enabled: true
+    instances: 1
+    storage:
+      size: 10Gi
+      storageClass: local-path
+    credentials:
+      database: xnat
+      username: xnat
+      password: xnatdevpgpassword
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  hosts:
+    - host: xnat.dev03.tag.rcif.io
+      paths:
+        - path: /
+          pathType: Prefix
+
+volumes:
+  xnatdata:
+    accessMode: ReadWriteOnce
+    storageClass: local-path
+    size: 10Gi
+  build:
+    accessMode: ReadWriteOnce
+    storageClass: local-path
+    size: 5Gi
+  cache:
+    accessMode: ReadWriteOnce
+    storageClass: local-path
+    size: 10Gi
+  archive:
+    accessMode: ReadWriteOnce
+    storageClass: local-path
+    size: 10Gi
+  prearchive:
+    accessMode: ReadWriteOnce
+    storageClass: local-path
+    size: 5Gi
+
+authplugins:
+  keycloak:
+    provider: keycloak
+    auth: true
+
+initContainers:
+  - name: install-openid-plugin
+    image: curlimages/curl:8.10.1
+    command: ['sh', '-c']
+    args:
+      - >
+        set -e;
+        curl -fsSL -o /data/xnat/home/plugins/openid-auth-plugin.jar
+        https://bitbucket.org/xnatx/openid-auth-plugin/downloads/openid-auth-plugin-1.4.1-xpl.jar
+    volumeMounts:
+      - name: home-plugins
+        mountPath: /data/xnat/home/plugins
