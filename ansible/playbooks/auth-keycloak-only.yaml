@@ -1,0 +1,11 @@
+---
+# Keycloak-only variant of playbooks/auth.yaml — skips oauth2-proxy.
+# Used for XNAT login testing on local k3d (see xnat/k3d/runbook.md), where
+# XNAT bypasses oauth2-proxy and we don't want to deploy or maintain it.
+
+- name: Install Keycloak (no oauth2-proxy)
+  hosts: server
+  gather_facts: false
+  environment: '{{ cluster_k8s_environment }}'
+  roles:
+    - role: keycloak

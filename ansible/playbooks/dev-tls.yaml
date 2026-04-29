@@ -1,0 +1,90 @@
+---
+# Minimal Traefik TLS setup for local k3d / XNAT-Keycloak testing.
+#
+# Pulls the cert + key from tls_cert_path / tls_key_path, creates a
+# kubernetes.io/tls Secret in the Traefik namespace, points a default TLSStore
+# at it, and configures k3s's built-in Traefik to enable TLS on websecure and
+# redirect web → websecure.
+#
+# This is a stripped-down subset of roles/traefik/tasks/main.yaml: it omits the
+# catch-all ingress and the security-headers middleware because both reference
+# oauth2-proxy middlewares that don't exist in this slice.
+
+- name: Configure Traefik TLS for local k3d
+  hosts: server
+  gather_facts: false
+  environment: '{{ cluster_k8s_environment }}'
+  roles:
+    # Pulls in scout_common defaults (notably cluster_k8s_environment).
+    # scout_common has no tasks; it's used here purely as a defaults source.
+    - role: scout_common
+  tasks:
+    - name: Verify TLS material is present
+      ansible.builtin.assert:
+        that:
+          - tls_cert_path is defined
+          - tls_key_path is defined
+        fail_msg: 'tls_cert_path and tls_key_path must be set in inventory'
+
+    - name: Read TLS cert
+      no_log: true
+      ansible.builtin.slurp:
+        src: '{{ tls_cert_path }}'
+      register: cert_file
+
+    - name: Read TLS key
+      no_log: true
+      ansible.builtin.slurp:
+        src: '{{ tls_key_path }}'
+      register: key_file
+
+    - name: Create TLS secret in Traefik namespace
+      no_log: true
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: '{{ traefik_tls_secret_name | default("scout-tls") }}'
+            namespace: '{{ traefik_namespace }}'
+          type: kubernetes.io/tls
+          data:
+            tls.crt: '{{ cert_file.content }}'
+            tls.key: '{{ key_file.content }}'
+
+    - name: Apply default Traefik TLSStore
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: traefik.io/v1alpha1
+          kind: TLSStore
+          metadata:
+            name: default
+            namespace: '{{ traefik_namespace }}'
+          spec:
+            defaultCertificate:
+              secretName: '{{ traefik_tls_secret_name | default("scout-tls") }}'
+
+    - name: Enable websecure TLS and redirect web → websecure
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: helm.cattle.io/v1
+          kind: HelmChartConfig
+          metadata:
+            name: traefik
+            namespace: '{{ traefik_namespace }}'
+          spec:
+            valuesContent: |-
+              globalArguments: []
+              ports:
+                websecure:
+                  tls:
+                    enabled: true
+                web:
+                  redirections:
+                    entryPoint:
+                      to: websecure
+                      scheme: https
+                      permanent: true

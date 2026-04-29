@@ -1,0 +1,3 @@
+kubeconfig
+certs/
+manifests/
