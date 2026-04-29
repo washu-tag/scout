@@ -22,6 +22,14 @@ cnpg:
       database: xnat
       username: xnat
       password: xnatdevpgpassword
+  # Workaround for a chart bug in templates/_postgresql.tpl: the else
+  # branch of postgresqlPort emits `"5432"` on its own line with no
+  # whitespace trimmer, so the rendered wait-for-postgres init container
+  # ends up with a literal newline before the port and the YAML block
+  # scalar breaks. Setting the value here makes the chart take the (clean)
+  # `if` branch instead. The number itself is unchanged.
+  external:
+    postgresqlPort: 5432
 
 ingress:
   enabled: true
