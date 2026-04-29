@@ -48,12 +48,13 @@ the agent-browser assertions, with health waits between phases and a
 non-zero exit on first failure. The runbook documents the same flow as
 discrete numbered phases so individual steps can be re-run when debugging.
 
-**Current status:** steps 1–10 pass. Alice's positive assertion now
-passes too — she completes the OIDC flow, is provisioned as
-`keycloak-<sub>`, and lands on the authenticated XNAT homepage. Bob's
-negative assertion does *not* pass — he is also let in, because the
-plugin we're using has no group-filter support at all (see Layer 2
-below). Step 11 therefore fails on bob.
+**Current status:** all steps pass. Alice (in `scout-user`) completes the
+OIDC round trip, is provisioned in XNAT as `keycloak-<sub>`, and lands on
+the authenticated homepage. Bob (not in `scout-user`) is rejected by
+Keycloak's deny-access endpoint before any code runs at the xnat client,
+because the xnat client's browser flow is overridden with a conditional
+sub-flow that requires the `xnat-access` client role. The full reset →
+rerun loop also works (see "Re-running the test" below).
 
 ## Login configuration: choices made and choices still pending
 
@@ -161,33 +162,70 @@ this kind of override on dev03, but the k3d slice deliberately skips
 `run-all.sh` writes the same `coredns-custom` ConfigMap shape directly.
 Same shape as what the k3s role would have produced; just inline.
 
-### What we still have to decide
+### How we landed: Option B (Keycloak-side gate)
 
-Reading the plugin source closes the original Option A from this doc:
-there is no group-gating code path in 1.4.1-xpl to chase. The realistic
-shortlist is now:
+We took the runbook's "Plan B" — move authorization into Keycloak
+because the plugin source confirms 1.4.1-xpl has no group-filter code
+to leverage. Concrete pieces, all wired up by `run-all.sh` step 5:
 
-**Option B — Move authorization into Keycloak (runbook's "Plan B").**
-Attach a required `xnat-access` realm role to the `xnat` client, map it
-from `scout-user` group membership, and let Keycloak refuse bob outright
-at the auth endpoint. The XNAT plugin then only has to provision users
-that Keycloak already approved. Matches how Scout already gates other
-services and is independent of which plugin version we settle on. Cost:
-edits to `scout-realm.json.j2` so dev03 sees it too.
+1. **`xnat-access` client role** on the `xnat` Keycloak client. Defined
+   in `scout-realm.json.j2` (next to the existing `xnat-user` /
+   `xnat-admin` cosmetic roles), so it lands automatically on fresh
+   realm imports.
+2. **`scout-user` group → `xnat-access` mapping**, also in the realm
+   template. Members of `scout-user` get the role transitively.
+3. **`browser-xnat-access` authentication flow**, copied from the
+   built-in `browser` flow at runtime via `kcadm`. We add a
+   `CONDITIONAL` sub-flow inside its `forms` step, with two `REQUIRED`
+   executions:
+   - `Condition - User Role`, configured with `condUserRole=xnat.xnat-access`
+     and `negate=true` (i.e., "fire when the user is *missing* the role").
+   - `Deny Access`, which terminates the flow with the access-denied
+     screen.
+4. **Client-level binding override** — the `xnat` client's
+   `authenticationFlowBindingOverrides.browser` is set to the new flow's
+   ID. This scope-limits the gate: only logins via the xnat client see
+   it; the rest of the realm's clients keep the standard browser flow.
 
-**Option C — Patch the plugin** to honor `allowedGroups` (or similar),
-and ship the patched jar via the init container (or a Harbor mirror in
-air-gapped environments). Lowest visible config-surface change, but puts
-us on the hook for maintaining a fork of an external plugin.
+Result: alice (in `scout-user`, has `xnat-access`) sees the regular
+Keycloak login form, authenticates, and the OIDC callback hits XNAT
+which provisions her. Bob (not in `scout-user`, no `xnat-access`)
+authenticates against Keycloak but is intercepted by the conditional
+sub-flow — Keycloak shows its access-denied page and never issues an
+auth code, so the XNAT pod never sees bob at all.
 
-**Option D — Drop the alice/bob group gating from this slice.** Accept
-that the k3d test only proves "OIDC users can log in," not "non-Scout
-users are kept out," and pick a real strategy when the answer matters.
-Use this if the gate isn't a release blocker for dev03.
+The kcadm calls in `run-all.sh` are written idempotently (skip-if-exists
+checks on the role, flow, sub-flow, and child executions), so reruns
+against the same cluster don't double-up the configuration.
 
-Recommendation: Option B. Same reasoning as the runbook — Scout already
-gates other services this way, so it's a pattern the team knows, and it
-works regardless of plugin version. Defer the call to John.
+### Re-running the test
+
+`xnat/k3d/reset-test-state.sh` resets just enough state to drive
+`test-login.sh` again without recreating the cluster:
+
+- Logs out alice and bob in Keycloak (so leftover SSO cookies don't
+  short-circuit the next login form).
+- Deletes the `keycloak-*` users from XNAT directly via `psql` on
+  `xnat-postgres-1`. XNAT's REST API only supports disabling users
+  (PUT `enabled=false` returns 200; DELETE returns 405); a disabled
+  user blocks the openid plugin's user-creation path on the next login,
+  so SQL deletion is the only way to fully exercise provisioning again.
+- Closes `agent-browser` sessions named `login-alice` / `login-bob`.
+
+For a full teardown (Keycloak, Postgres, the cluster itself) use
+`xnat/k3d/teardown-cluster.sh` and then `run-all.sh`.
+
+### What this leaves for dev03
+
+The role + group mapping in `scout-realm.json.j2` is durable and will
+land on dev03 the next time the realm is imported. The `kcadm` build of
+the `browser-xnat-access` flow is currently k3d-only — it lives in
+`run-all.sh` rather than in the Ansible role. Promoting Plan B to dev03
+means either (a) lifting the kcadm sequence into a small Ansible task
+under the `keycloak` role, or (b) expressing the flow override directly
+in `scout-realm.json.j2` so keycloak-config-cli imports it. Both are
+feasible; (b) is cleaner if keycloak-config-cli's flow-import support
+handles conditional executions reliably.
 
 We should make this call before iterating further on `run-all.sh`.
 
@@ -201,11 +239,18 @@ shared roles, shared values, or behavior dev03 will also see.
   (the value the chart would have rendered anyway), but it works around
   the upstream chart bug described in the next section. dev03 sees the
   same fix.
+- **`ansible/roles/keycloak/templates/scout-realm.json.j2`** — added
+  the `xnat-access` client role on the xnat client and mapped it from
+  the `scout-user` group's `clientRoles`. This is the durable half of
+  Option B; the matching `browser-xnat-access` authentication flow is
+  k3d-only at the moment (built via `kcadm` in `run-all.sh` step 5)
+  and would need to be promoted to the role / realm template before
+  dev03 sees end-to-end gating.
 
 The k3d-only artifacts (`ansible/playbooks/dev-tls.yaml`,
 `ansible/playbooks/auth-keycloak-only.yaml`, `ansible/inventory.k3d.yaml`,
-the `xnat/k3d/` tree including `test-login.sh`) are deliberately scoped
-to local-cluster testing and don't affect dev03.
+the `xnat/k3d/` tree) are deliberately scoped to local-cluster testing
+and don't affect dev03.
 
 ## Upstream XNAT helm chart bugs we're working around
 
