@@ -186,6 +186,13 @@
             "composite": false,
             "clientRole": true,
             "attributes": {}
+          },
+          {
+            "name": "xnat-access",
+            "description": "Required for XNAT login. Mapped from the scout-user group; gated by the browser-xnat-access authentication flow override on the xnat client (see ansible/roles/keycloak/tasks for setup).",
+            "composite": false,
+            "clientRole": true,
+            "attributes": {}
           }
         ]
       }
@@ -249,7 +256,8 @@
             "open-webui-user"
           ],
           "{{ keycloak_xnat_client_id }}": [
-            "xnat-user"
+            "xnat-user",
+            "xnat-access"
           ]
         }
       }
