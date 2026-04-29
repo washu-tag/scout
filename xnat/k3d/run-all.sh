@@ -90,6 +90,31 @@ until curl -skf -o /dev/null \
   sleep 2
 done
 
+# Make keycloak.localtest.me resolvable from inside the cluster.
+# Outside the cluster, keycloak.localtest.me → 127.0.0.1 (public DNS), which
+# from the host's POV hits the k3d load balancer on :443. From inside a pod
+# 127.0.0.1 is the pod's own loopback — token-exchange and userinfo calls
+# from XNAT to Keycloak get "Connection refused" and the OIDC callback
+# silently fails. Fix: install a CoreDNS *.server override that points
+# keycloak.localtest.me at the Traefik cluster IP, so in-cluster pods reach
+# Traefik (which then routes via the Keycloak Ingress).
+echo "Patching CoreDNS so keycloak.localtest.me resolves in-cluster..."
+TRAEFIK_IP=$(kubectl -n kube-system get svc traefik \
+               -o jsonpath='{.spec.clusterIP}')
+[[ -n "${TRAEFIK_IP}" ]] || fail "step 4: could not read traefik clusterIP"
+kubectl -n kube-system create configmap coredns-custom \
+  --from-literal="keycloak.localtest.me.server=keycloak.localtest.me:53 {
+    template IN A {
+        answer \"{{ .Name }} 60 IN A ${TRAEFIK_IP}\"
+    }
+}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+# Bounce CoreDNS so it picks up the override immediately (the import only
+# rescans on pod start; the Corefile itself is unchanged).
+kubectl -n kube-system rollout restart deployment/coredns
+kubectl -n kube-system rollout status deployment/coredns --timeout=2m \
+  || fail "step 4: coredns did not roll out after configmap update"
+
 # ---------------------------------------------------------------------------
 step "5. Configure Keycloak: scout-user group, alice/bob, groups mapper"
 KC_POD=$(kubectl -n scout-core get pod -l app=keycloak \
