@@ -48,9 +48,12 @@ the agent-browser assertions, with health waits between phases and a
 non-zero exit on first failure. The runbook documents the same flow as
 discrete numbered phases so individual steps can be re-run when debugging.
 
-**Current status:** steps 1–10 pass. Step 11's positive assertion (alice
-gets in) is the part that doesn't pass yet — see the next section for why
-and what we have to decide.
+**Current status:** steps 1–10 pass. Alice's positive assertion now
+passes too — she completes the OIDC flow, is provisioned as
+`keycloak-<sub>`, and lands on the authenticated XNAT homepage. Bob's
+negative assertion does *not* pass — he is also let in, because the
+plugin we're using has no group-filter support at all (see Layer 2
+below). Step 11 therefore fails on bob.
 
 ## Login configuration: choices made and choices still pending
 
@@ -78,69 +81,113 @@ Decided already, no open questions:
 Plugin: `openid-auth-plugin-1.4.1-xpl.jar`, downloaded at startup by an
 init container. Provider properties live at
 `/data/xnat/home/config/auth/keycloak-provider.properties` (mounted from
-the `xnat-plugin-keycloak` Secret).
+the `xnat-plugin-keycloak` Secret). Source for the plugin lives at
+`/Users/jflavin/repos/openid-auth-plugin` for reference.
 
-The properties file currently sets:
+What the plugin **does** support, all confirmed working:
 
-- `auto.enabled=true` — supposed to auto-enable Keycloak-provisioned users
-  on first login (so admins don't have to click-approve each one).
-- `forceUserCreate=true`, `auto.verified=true` — should provision new XNAT
-  users on first login.
-- `openid.keycloak.allowedGroups=scout-user` — supposed to gate users on
-  the `groups` claim.
+- `auto.enabled=true` — auto-enables Keycloak-provisioned users on first
+  login (no admin click-approval needed).
+- `forceUserCreate=true`, `auto.verified=true` — provision new XNAT users
+  on first login.
+- `usernamePattern=[providerId]-[sub]` — alice now appears in `/xapi/users`
+  as `keycloak-<sub>` after a successful login.
+- `shouldFilterEmailDomains` + `allowedEmailDomains` — domain whitelist on
+  the email claim.
 
-This is where we're stuck. After a complete OIDC round trip:
+What the plugin **does not** support, confirmed by reading the source:
 
-- The plugin shows up correctly in `/xapi/plugins` and the
-  `/openid-login?providerId=keycloak` route 302s to Keycloak as expected.
-- Both alice and bob complete Keycloak login and the callback hits XNAT
-  with a valid auth code.
-- Neither user is created in XNAT. `/xapi/users` still returns just
-  `["admin", "guest"]` after both logins.
-- The plugin's debug log only contains the redirect-prep trace ("At
-  create rest template", "Provider id is keycloak", "PKCE Enabled"). No
-  callback-side activity (token exchange, userinfo, user create) is
-  logged.
+- `allowedGroups` does not exist in 1.4.1-xpl. Grepping the source for
+  `allowedGroups` / `allowed_groups` / `allowed.groups` returns nothing.
+  The runbook's `openid.keycloak.allowedGroups=scout-user` line is
+  silently ignored — there's no code path in the plugin that reads the
+  `groups` claim or filters on it.
 
-In other words: the plugin is loaded and the redirect path works, but the
-callback path is silently failing somewhere inside the plugin or its
-Spring filter chain — `forceUserCreate` doesn't seem to fire and
-`allowedGroups` is never reached because no user gets that far.
+So with this plugin alone we can let users in (alice ✓) and create them
+on the fly, but we can't keep specific Keycloak users out of XNAT (bob ✗).
+The email-domain filter is the only filter the plugin offers, and it
+won't help here because alice and bob share the `localtest.me` domain.
 
-The runbook anticipated *part* of this — it warned that 1.4.1-xpl might
-not honor `allowedGroups`, in which case bob would slip in as a
-disabled user. What we're seeing is broader: even alice never gets in,
-which suggests the plugin's user-provisioning path isn't running at all.
+A separate gotcha worth recording, since it will trip up any future
+debugging: the plugin bundles a logback config that sets the
+`au.edu.qcif.xnat.auth.openid` package to **INFO** and only the
+`OpenIdAuthPlugin` class to **DEBUG**. So all the debug-level logging in
+`OpenIdConnectFilter` (which does the actual callback work — token
+exchange, userinfo, user lookup, user creation) is silently dropped. To
+trace callback failures you have to add an additional logback config or
+patch the plugin's bundled one.
 
 ### Layer 3 — XNAT site config
 
 XNAT has a separate, site-wide list of enabled auth providers. Chart
-defaults leave `enabledProviders=["localdb"]`, which means the keycloak
-provider isn't eligible at all even when the plugin and properties are
-correct. We now POST `["localdb", "keycloak"]` to `/xapi/siteConfig` in
-step 10 of `run-all.sh` so this is set every run.
+defaults leave `enabledProviders=["localdb"]`. Two things to know:
+
+- The login page renders providers off this list, so `keycloak` has to
+  be in it for the "Sign in with Scout" link to even be a candidate
+  (we don't render it on the homepage anyway — see the runbook — but
+  the underlying provider has to be enabled here regardless).
+- The plugin's own `OpenIdConnectFilter.attemptAuthentication()` calls
+  `_plugin.isEnabled(providerId)` against a *different* list — the one
+  the plugin itself builds from `auth/*-provider.properties` files. So
+  this site-config flag is **necessary but not sufficient** for the
+  callback path; passing the site-config check just means you've cleared
+  the gate that controls login-page rendering.
+
+We POST `["localdb", "keycloak"]` to `/xapi/siteConfig` in step 10 of
+`run-all.sh` so this is set every run.
+
+### Layer 4 — Pod-side DNS for `keycloak.localtest.me`
+
+Not really a config layer, but the missing piece that masked the rest of
+this analysis for several iterations. `keycloak.localtest.me` resolves to
+`127.0.0.1` via public DNS. From the user's host that's the k3d load
+balancer; from inside a pod that's the pod's own loopback. The XNAT pod
+calling `https://keycloak.localtest.me/.../token` (token exchange) and
+`/userinfo` got "Connection refused" before any plugin logic ran, the
+filter caught the OAuth2Exception, redirected to `/app/template/Login.vm`,
+and (per the logback gotcha above) wrote nothing to `openid.log` — so the
+failure looked like "user creation isn't running" when it was really
+"the pod can't reach Keycloak."
+
+Fix: install a CoreDNS `*.server` override in the `coredns-custom`
+ConfigMap that points `keycloak.localtest.me` at Traefik's cluster IP,
+so in-pod calls hit Traefik (which terminates TLS with the `*.localtest.me`
+cert and routes via the Keycloak Ingress). `run-all.sh` does this between
+phases 4 and 5 by reading `kubectl -n kube-system get svc traefik`.
+
+The Scout `k3s` role exposes `coredns_extra_server_blocks` for exactly
+this kind of override on dev03, but the k3d slice deliberately skips
+`playbooks/k3s.yaml` (we use `k3d`, not `k3s.yaml`-managed k3s), so
+`run-all.sh` writes the same `coredns-custom` ConfigMap shape directly.
+Same shape as what the k3s role would have produced; just inline.
 
 ### What we still have to decide
 
-Two reasonable next moves; we should pick one rather than try both.
-
-**Option A — Keep authorization in the plugin (current shape).** Figure
-out why 1.4.1-xpl's callback path isn't running. Likely sub-tasks:
-decompile `OpenIdAuthPlugin.class` or pull a different plugin version,
-confirm the actual property names the build honors, compare against
-1.4.1-xpl's own README, and either fix our properties file or pin a known
-working version. Lowest blast radius; keeps existing config patterns; but
-puts us on the hook for plugin internals.
+Reading the plugin source closes the original Option A from this doc:
+there is no group-gating code path in 1.4.1-xpl to chase. The realistic
+shortlist is now:
 
 **Option B — Move authorization into Keycloak (runbook's "Plan B").**
-Attach a required `xnat-access` realm role to the xnat client, map it
+Attach a required `xnat-access` realm role to the `xnat` client, map it
 from `scout-user` group membership, and let Keycloak refuse bob outright
 at the auth endpoint. The XNAT plugin then only has to provision users
-that Keycloak already approved. Sidesteps the `allowedGroups` and
-user-provisioning issues entirely; matches how Scout already gates other
-services. Requires editing the realm template (more visible blast radius
-to dev03) and may still leave a residual question about whether 1.4.1-xpl
-provisions users at all, which Option A would have to answer regardless.
+that Keycloak already approved. Matches how Scout already gates other
+services and is independent of which plugin version we settle on. Cost:
+edits to `scout-realm.json.j2` so dev03 sees it too.
+
+**Option C — Patch the plugin** to honor `allowedGroups` (or similar),
+and ship the patched jar via the init container (or a Harbor mirror in
+air-gapped environments). Lowest visible config-surface change, but puts
+us on the hook for maintaining a fork of an external plugin.
+
+**Option D — Drop the alice/bob group gating from this slice.** Accept
+that the k3d test only proves "OIDC users can log in," not "non-Scout
+users are kept out," and pick a real strategy when the answer matters.
+Use this if the gate isn't a release blocker for dev03.
+
+Recommendation: Option B. Same reasoning as the runbook — Scout already
+gates other services this way, so it's a pattern the team knows, and it
+works regardless of plugin version. Defer the call to John.
 
 We should make this call before iterating further on `run-all.sh`.
 
