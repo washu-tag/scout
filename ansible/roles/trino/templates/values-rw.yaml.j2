@@ -7,6 +7,11 @@
 #   - Uses lake-writer S3 credentials
 #   - Single small worker (DDL workload only)
 
+# Make resource names match the release name exactly. Without this, the
+# chart's fullname helper produces "<release>-trino" because our release
+# name doesn't equal the chart name (it only dedupes when they're equal).
+fullnameOverride: '{{ trino_rw_release_name }}'
+
 server:
   workers: {{ trino_rw_worker_count }}
   config:
