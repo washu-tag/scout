@@ -9,7 +9,7 @@ initContainers:
     command:
       - sh
       - -c
-      - 'until getent hosts temporal-internal-frontend; do echo "waiting for dns..."; sleep 2; done'
+      - 'until nslookup temporal-internal-frontend >/dev/null 2>&1; do echo "waiting for dns..."; sleep 2; done'
 envFrom:
   - secretRef:
       name: s3-secret
