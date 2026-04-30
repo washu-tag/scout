@@ -103,6 +103,7 @@ extractor_namespace: '{{ scout_extractor_namespace }}'
 # Analytics & user services
 trino_namespace: '{{ scout_analytics_namespace }}'
 trino_rw_namespace: '{{ scout_extractor_namespace }}'
+trino_rw_release_name: trino-rw
 trino_rw_endpoint_host: '{{ trino_rw_release_name }}.{{ trino_rw_namespace }}'
 trino_rw_endpoint_port: 8080
 superset_namespace: '{{ scout_analytics_namespace }}'

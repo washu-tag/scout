@@ -44,8 +44,10 @@ trino_worker_resources:
     memory: '{{ trino_worker_max_heap | jvm_memory_to_k8s(4) }}'
 
 # RW Trino (admin) — small instance used by hl7-transformer for view DDL
+# Note: trino_rw_release_name lives in scout_common because the extractor
+# role's values template references it (via trino_rw_endpoint_host) and
+# does not load the trino role's defaults.
 trino_rw_enabled: true
-trino_rw_release_name: trino-rw
 trino_rw_worker_count: 1
 trino_rw_worker_max_heap: 1G
 trino_rw_coordinator_max_heap: 512M
