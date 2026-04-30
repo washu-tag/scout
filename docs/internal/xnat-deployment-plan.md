@@ -468,6 +468,41 @@ helm upgrade xnat /Users/jflavin/repos/helm-charts/helm/xnat \
 
 Watch logs for any startup-probe / config-key regressions; fold any required values changes into a follow-up note.
 
+## Findings from the dev03 deploy
+
+These came up during the first run on `tagdev-control-03` (2026-04-30) and should be folded into the runbook the next time it's revised.
+
+### CoreDNS allowlist needed for the OpenID-plugin init container
+
+Dev03's CoreDNS is configured with an air-gap-style override that returns NXDOMAIN for any domain not on a per-cluster allowlist (`coredns_forward_map['/etc/resolv.conf']` in `inventory.dev03.yaml`). The init container that fetches the OpenID plugin from Bitbucket failed with `curl: (6) Could not resolve host: bitbucket.org`. After allowlisting `bitbucket.org`, the next failure was `bbuseruploads.s3.amazonaws.com` — Bitbucket's downloads endpoint redirects to S3 for the actual artifact bytes.
+
+Both domains had to be added to `coredns_forward_map['/etc/resolv.conf']` in `inventory.dev03.yaml`:
+
+```yaml
+/etc/resolv.conf:
+  - tagdev-staging-03.nrg.wustl.edu
+  - osmtp.wustl.edu
+  - github.com
+  - bitbucket.org
+  - bbuseruploads.s3.amazonaws.com  # Bitbucket downloads redirect target
+```
+
+Inventory was updated; CoreDNS ConfigMap was patched live for the running deploy and CoreDNS was restarted. Re-running the `k3s` role would have produced the same end state.
+
+This reinforces the air-gap finding in the existing "Plugin JAR delivery" section — vendoring the JAR is still the right long-term fix. For an air-gapped cluster the allowlist approach won't be available.
+
+### Helm `authplugins: Not a table` coalesce warning
+
+`helm install` emits two `coalesce.go:237: warning: skipped value for xnat.authplugins: Not a table.` warnings during render. The chart's `values.yaml` defaults `authplugins: []` (empty list), but the chart's templates iterate it as a map (`range $plugin, $p := .Values.authplugins`). Our values supplies the map shape (`authplugins.keycloak.{provider,auth}`), and the override does take effect — the plugin properties Secret is mounted and the plugin loads — but Helm warns because the type changed from list to map. Cosmetic; harmless. Worth reporting upstream as a chart bug (the default should be `{}`, not `[]`).
+
+### Ingress TLS comes from Traefik default cert
+
+The chart's `ingress` block produces an Ingress on port 80 with no `tls:` section. Traefik on dev03 nonetheless serves HTTPS for the host with TLS termination via the default cluster cert (302 on `https://xnat.dev03.tag.rcif.io`). No explicit cert-manager wiring was needed for this dev deploy. For a deployment whose ingress controller doesn't terminate TLS by default, a `tls:` block on the chart's `ingress` (and a corresponding `Certificate` from cert-manager) would be required.
+
+### Operators are in `scout-operators`, not `cnpg-system`
+
+Scout's PostgreSQL role installs the CloudNativePG operator into the `scout-operators` namespace. The plan and an early version of the runbook used `cnpg-system` (CNPG's upstream default). Runbook prereq updated.
+
 ## Open questions / outstanding decisions
 
 1. **Mail wiring:** once we know we want it, point postfix's `RELAYHOST` at MailHog, or skip postfix and configure XNAT's SMTP directly at `mailhog.mailhog.svc.cluster.local:1025`?
