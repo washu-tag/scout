@@ -315,7 +315,7 @@ public class TestScoutQueries extends BaseTest {
 
         validateMappingTable(mappingTableName, expectedPatients);
 
-        final String curatedEpicView = baseTableName + "_curated_epic_view";
+        final String curatedEpicView = baseTableName + "_curated_spark_epic_view";
 
         final TestQuery<?> viewSizeQuery = new TestQuery<>("viewSizeQuery", "SELECT * FROM " + curatedEpicView);
         final ExactNumberObjectsResult viewCount = new ExactNumberObjectsResult();
