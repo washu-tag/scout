@@ -39,12 +39,14 @@ It does **not** template anything for redis (no host, no URL) or for mail (no SM
 
 ### XNAT OpenID Auth Plugin
 
-From <https://bitbucket.org/xnatx/openid-auth-plugin>:
+From <https://bitbucket.org/xnatx/openid-auth-plugin>; source clone for reference at `/Users/jflavin/repos/openid-auth-plugin`:
 
 - Latest published artifact: `openid-auth-plugin-1.4.1-xpl.jar` (2025-12-12, ~879 KB).
 - Direct download: `https://bitbucket.org/xnatx/openid-auth-plugin/downloads/openid-auth-plugin-1.4.1-xpl.jar`. Bitbucket downloads are public — `curl -fLO` works without auth.
 - README states "XNAT 1.7.5.x+". 1.10 isn't called out specifically; we'll verify on first run.
 - Configuration goes in a `<provider>-provider.properties` file under `/data/xnat/home/config/auth/`. The plugin's own `src/main/resources/openid-provider-sample-Keycloak.properties` is a verbatim Keycloak example.
+- **No group-claim filter exists in 1.4.1-xpl.** Grepping the source for `allowedGroups` / `allowed_groups` / `allowed.groups` returns nothing — the only "filter" the plugin offers is `shouldFilterEmailDomains` against `allowedEmailDomains`. So if XNAT can't gate on Keycloak group membership, the gate has to live in Keycloak. (See the "Authorization gate" decision below.)
+- **Logback-debug gotcha.** The plugin bundles a logback config that sets the `au.edu.qcif.xnat.auth.openid` package to INFO and only the `OpenIdAuthPlugin` class to DEBUG. So all the debug-level logging in `OpenIdConnectFilter` (which does the actual callback work — token exchange, userinfo, user lookup, user creation) is silently dropped. To trace callback failures you have to add an additional logback config or patch the plugin's bundled one. Worth knowing before you spend an hour wondering why "user creation isn't running" produces no logs.
 
 Properties we'll set (parameterized for Scout):
 
@@ -53,7 +55,7 @@ auth.method=openid
 type=openid
 provider.id=keycloak
 name=Scout SSO
-auto.enabled=false
+auto.enabled=true
 auto.verified=true
 
 # Public XNAT URL — see "siteUrl method" below
@@ -76,6 +78,19 @@ openid.keycloak.usernamePattern=[providerId]-[sub]
 openid.keycloak.link=<a href="/openid-login?providerId=keycloak">Sign in with Scout</a>
 ```
 
+### Chart issues that require values overrides or out-of-band setup
+
+Three problems in `helm-charts/helm/xnat` (1.0.1 / appVersion 1.9.2.1) that will bite any deploy of this chart, not just the dev one. We work around them from the values / pre-install side rather than patching the chart; they should be reported / fixed upstream eventually.
+
+1. **`templates/_postgresql.tpl` — broken whitespace trimmer in the default postgres port.** When `cnpg.external.postgresqlPort` is empty, the template hits an `else` branch that emits `"5432"` on its own line with no `{{-` trimmer. The output is `\n"5432"\n`, which lands at column 0 inside the rendered `wait-for-postgres` block scalar in `statefulset.yaml`. That breaks the YAML block scalar and `helm install` fails with `error converting YAML to JSON: yaml: line 114: could not find expected ':'`.
+   **Workaround:** set `cnpg.external.postgresqlPort: 5432` explicitly in `xnat-values.yaml` so the chart hits the (clean) `if` branch. The number itself is unchanged.
+
+2. **The `bokysan/postfix` mail subchart is unconditional and requires a hardcoded `postfix-password` Secret.** There's no `mail.enabled` flag and the secret name is not configurable. Without the secret, the `xnat-mail-0` pod sits in `CreateContainerConfigError` indefinitely, which means `helm install --wait` never returns even though XNAT itself is healthy.
+   **Workaround:** create a placeholder `postfix-password` Secret in the `xnat` namespace before `helm install`. The contents are arbitrary because XNAT is configured with `smtpEnabled=false` (see "Mail / postfix" decision below) and the postfix container is never used.
+
+3. **Default startup probe is too tight for first-boot Hibernate DDL.** The chart sets `probes.startup.failureThreshold: 15` with `periodSeconds: 10`, giving Hibernate 150s to finish creating the schema. Real first-boot is 3–5+ min; the pod gets killed and restarted before it ever finishes.
+   **Workaround:** override to `probes.startup.failureThreshold: 60` (10 min budget) and pass `--timeout 20m` to `helm install --wait`. This is enough for native-arch first boots; deeply emulated runs (e.g. amd64 image on arm64) need more, but that's a host concern, not a deploy-plan one.
+
 ## Architectural decisions
 
 ### Where the Keycloak client_id and client_secret come from
@@ -90,22 +105,34 @@ These are not values you "obtain" from a running Keycloak — they're values **S
 
 So the realm-template change is a **prerequisite** to deploying XNAT — it's the only piece that *cannot* stay manual through `kubectl`. We touch the realm template + inventory secrets + run `make install-auth`, then proceed with the manual XNAT deploy.
 
-### Keycloak roles — cosmetic now, plus an XNAT-side access gate
+### Authorization gate — Keycloak-side, via a client-scoped browser flow
 
 **Background.** Keycloak has realm roles (visible to every client) and client roles (scoped to a single client). Groups bundle role mappings — that's how Scout's `scout-admin` group simultaneously assigns `superset_admin`, `grafana-admin`, `jupyterhub-admin`, etc. Roles ride into the JWT as claims, and consuming services authorize from those claims (Superset reads `superset_admin`, etc.).
 
-**XNAT does not consume Keycloak roles.** The OpenID Auth Plugin authenticates the user and creates/finds an XNAT user; it does not map IdP claims to XNAT permissions. XNAT 1.x has no first-class facility for "Keycloak role X → XNAT permission Y" — XNAT's authorization is internal (XNAT users, XNAT groups, the site-admin flag, project-level roles). So `xnat-user` / `xnat-admin` client roles, if defined, would appear in the JWT but no XNAT code path would inspect them. **Cosmetic.**
+**XNAT does not consume Keycloak roles.** The OpenID Auth Plugin authenticates the user and creates/finds an XNAT user; it does not map IdP claims to XNAT permissions. XNAT 1.x has no first-class facility for "Keycloak role X → XNAT permission Y" — XNAT's authorization is internal (XNAT users, XNAT groups, the site-admin flag, project-level roles). So `xnat-user` / `xnat-admin` client roles, if defined, would appear in the JWT but no XNAT code path would inspect them.
 
-**The access-control gap.** Without oauth2-proxy in front, and with Keycloak roles inert from XNAT's perspective, the gate degrades to: *anyone who completes a Keycloak login can hit XNAT.* That's looser than every other Scout service, where `scout-user` membership is the real gate.
+**The plugin can't gate on group membership either.** We initially planned to filter via the plugin's `allowedGroups` property, but reading the plugin source (see Findings) confirms no such property exists in 1.4.1-xpl — the only filter the plugin offers is `shouldFilterEmailDomains`, which doesn't help when all Scout users share an email domain. That leaves three options for keeping non-Scout-users out of XNAT:
 
-**Mitigation: `auto.enabled=false` in the plugin properties.** With `auto.enabled=false`, new XNAT users created on first OIDC login land **disabled**; an XNAT admin must enable them inside XNAT before they can do anything. This is XNAT's native user-approval workflow — functionally parallel to Scout's `scout-user` gate, just enforced inside XNAT rather than at the ingress.
+1. **Plugin-side filter** — does not exist in 1.4.1-xpl. Adding it would mean forking the plugin or upstreaming a feature; out of scope.
+2. **XNAT-side admin approval** — set `auto.enabled=false` so first-login users land disabled and an XNAT admin must enable each one. This was the earlier proposal; it works but adds friction (every new user requires a manual click) and has a separate failure mode (a disabled user re-attempting login produces unhelpful errors and blocks re-provisioning).
+3. **Keycloak-side gate** — wire a conditional check into the xnat client's browser flow so non-Scout-users are denied at Keycloak before any auth code is ever issued.
 
-**Plan:**
+We're going with option 3. The xnat client's browser flow is overridden with one that requires an `xnat-access` client role; users in `scout-user` get the role transitively via group mapping, so the gate is implicit. Concretely:
 
-- Set `auto.enabled=false` in `openid-provider.properties`. Document the consequence: a Scout admin who is also an XNAT admin must approve each new XNAT user.
-- Still add `xnat-user` and `xnat-admin` client roles to the realm template, with `scout-user` → `xnat-user` and `scout-admin` → `xnat-admin` group mappings. **Be explicit these are inert today** — XNAT doesn't read them. They cost nothing, keep the realm shape consistent with every other Scout service, and give us a documentation hook the next time someone asks "what roles does XNAT have?"
+1. Define an `xnat-access` client role on the `xnat` Keycloak client.
+2. Map `scout-user` group → `xnat-access` (i.e., everyone in `scout-user` gets the role transitively). Mirror the existing group → clientRoles mappings already in `scout-realm.json.j2`.
+3. Build a `browser-xnat-access` authentication flow by copying the built-in `browser` flow and inserting a `CONDITIONAL` sub-flow inside its `forms` step. The sub-flow has two `REQUIRED` executions:
+   - `Condition - User Role`, configured with `condUserRole=xnat.xnat-access` and `negate=true` (i.e., "fire when the user is *missing* the role").
+   - `Deny Access`, which terminates the flow with the access-denied screen.
+4. Override the `xnat` client's `authenticationFlowBindingOverrides.browser` to point at the new flow's ID. This scope-limits the gate: only logins via the xnat client see it; the rest of the realm's clients keep the standard browser flow.
 
-This is reversible — if we later add an XNAT plugin that *does* map JWT roles to XNAT permissions, the role definitions and group mappings are already in place.
+Result: Scout users (members of `scout-user`) authenticate normally and the OIDC callback hits XNAT, which provisions them. Non-Scout users authenticate against Keycloak but are intercepted by the conditional sub-flow — Keycloak shows its access-denied page and never issues an auth code, so XNAT never sees them at all. The gate runs before any XNAT code, in parallel to how `scout-user` gates other Scout services at the oauth2-proxy layer.
+
+**With this gate in place, set `auto.enabled=true`.** New XNAT users created on first OIDC login are auto-enabled — Keycloak has already done the gating, so the second-line approval workflow is redundant.
+
+**Implementation note.** All of this lives in `scout-realm.json.j2` and is imported by keycloak-config-cli — the role and group mapping alongside every other client role mapping in the template, the `browser-xnat-access` flow and its two sub-flows (`browser-xnat-access forms`, `browser-xnat-access require-xnat-access`) under `authenticationFlows`, the `conditional-user-role` authenticatorConfig (`condUserRole=xnat.xnat-access`, `negate=true`) under `authenticatorConfig`, and the `authenticationFlowBindingOverrides.browser` on the xnat client. No `kcadm` task is needed.
+
+**The `xnat-user` and `xnat-admin` cosmetic roles.** Keep these on the client too, with `scout-user` → `xnat-user` and `scout-admin` → `xnat-admin` group mappings. Be explicit that they are inert today — XNAT doesn't read them. They cost nothing, keep the realm shape consistent with every other Scout service, and give us a documentation hook the next time someone asks "what roles does XNAT have?" If we later add an XNAT plugin that *does* map JWT roles to XNAT permissions, the role definitions and group mappings are already in place.
 
 ### Redis — don't deploy the bundled Bitnami redis
 
@@ -228,8 +255,11 @@ Required fields on the client:
 - `webOrigins: ["https://xnat.{server_hostname}"]`.
 - `attributes: { "pkce.code.challenge.method": "S256" }`.
 - Default client scopes: `openid`, `profile`, `email`.
-- Client roles: `xnat-user` and `xnat-admin` (cosmetic — see "Keycloak roles" decision above).
-- Realm group mappings: add `xnat-user` to `scout-user`'s clientRoles for the `xnat` client; add `xnat-admin` to `scout-admin`'s clientRoles for the `xnat` client (mirror the existing entries for other services in `scout-realm.json.j2`).
+- Client roles: `xnat-user` and `xnat-admin` (cosmetic — see "Authorization gate" decision above), plus **`xnat-access`** (the load-bearing one that the browser flow will check against).
+- Realm group mappings on `scout-user`'s clientRoles for the `xnat` client: `xnat-user` and `xnat-access`. On `scout-admin`'s clientRoles for the `xnat` client: `xnat-admin`. Mirror the existing entries for other services in `scout-realm.json.j2`.
+- A **Group Membership protocol mapper** on the client so the `groups` claim shows up in ID/access tokens and userinfo. We don't read it from XNAT today (the plugin can't gate on it), but it's free and gives us a `groups: ["scout-user", ...]` claim available for any future plugin or downstream tool.
+
+Plus, separately, the **`browser-xnat-access` authentication flow** — defined alongside the built-in `browser` flow in `scout-realm.json.j2`'s `authenticationFlows` list, with two sub-flows (`browser-xnat-access forms` running the username/password form, and `browser-xnat-access require-xnat-access` running `Condition - User Role` followed by `Deny Access`). The `conditional-user-role` authenticatorConfig (`condUserRole=xnat.xnat-access`, `negate=true`) lives in `authenticatorConfig`, and the xnat client carries `authenticationFlowBindingOverrides.browser: browser-xnat-access`. All of this is imported by keycloak-config-cli — no out-of-band `kcadm` task.
 
 Then: `make install-auth` to apply the realm change.
 
@@ -254,6 +284,22 @@ kubectl -n xnat create secret generic xnat-plugin-keycloak \
 ```
 
 …where `openid-provider.properties` is the file from the "Findings" section, with `siteUrl`, `clientSecret`, and the three Keycloak `*Uri` values filled in.
+
+Also create the `xnat-prefs-init` Secret used by the first-boot wizard skip in step 4:
+
+```bash
+kubectl -n xnat create secret generic xnat-prefs-init \
+  --from-file=prefs-init.ini=./prefs-init.ini
+```
+
+And create a placeholder `postfix-password` Secret to work around the chart's unconditional postfix subchart (see "Chart issues" in Findings):
+
+```bash
+kubectl -n xnat create secret generic postfix-password \
+  --from-literal=username=xnat --from-literal=password=unused-dev
+```
+
+The contents are arbitrary because XNAT is set to `smtpEnabled=false` and the postfix container is never used; the secret just has to exist or `helm install --wait` hangs on `xnat-mail-0` failing to start.
 
 ### 4. Write `xnat-values.yaml`
 
@@ -284,6 +330,12 @@ cnpg:
       database: xnat
       username: xnat
       password: <generated>
+  external:
+    # Workaround for chart bug in templates/_postgresql.tpl — see Findings.
+    # Setting the port explicitly avoids the broken `else` branch that
+    # produces invalid YAML in the rendered StatefulSet. Same value the
+    # chart would default to anyway.
+    postgresqlPort: 5432
 
 ingress:
   enabled: true
@@ -325,6 +377,25 @@ authplugins:
     provider: keycloak
     auth: true
 
+# Skip XNAT's first-boot setup wizard. Mounted as a file under the XNAT
+# home dir; XNAT consumes it on first launch and self-completes the
+# wizard. Keeps the deploy non-interactive and reproducible.
+extraVolumes:
+  - name: prefs-init
+    secret:
+      secretName: xnat-prefs-init
+extraVolumeMounts:
+  - name: prefs-init
+    mountPath: /data/xnat/home/config/prefs-init.ini
+    subPath: prefs-init.ini
+
+# Bump the startup probe to give Hibernate's first-boot DDL enough time.
+# Chart default (failureThreshold=15, periodSeconds=10 → 150s) is too tight;
+# real first-boot is 3-5 min. See Findings.
+probes:
+  startup:
+    failureThreshold: 60
+
 # Init container to fetch the OpenID plugin JAR at deploy time
 initContainers:
   - name: install-openid-plugin
@@ -340,6 +411,18 @@ initContainers:
         mountPath: /data/xnat/home/plugins
 ```
 
+The `xnat-prefs-init` Secret is created in step 3, alongside `xnat-plugin-keycloak`. Contents (the file landing at `/data/xnat/home/config/prefs-init.ini`):
+
+```ini
+[siteConfig]
+siteUrl=https://xnat.{server_hostname}
+siteId=scout-xnat
+adminEmail=admin@{server_hostname}
+smtpEnabled=false
+initialized=true
+requireLogin=true
+```
+
 > Note: this requires internet egress from the cluster nodes at deploy time. **Won't work air-gapped** — air-gap path is to vendor the JAR (Nexus per ADR 0017, ConfigMap, or installer image). Document only; don't solve here.
 
 > Note: We're leaving `mail` (postfix subchart) at chart defaults — postfix will install but XNAT won't be configured to use it. For dev, that's fine; XNAT email sends will fail silently. Wiring XNAT to MailHog is a follow-up.
@@ -349,17 +432,28 @@ initContainers:
 ```bash
 helm install xnat /Users/jflavin/repos/helm-charts/helm/xnat \
   --namespace xnat \
-  --values xnat-values.yaml
+  --values xnat-values.yaml \
+  --wait --timeout 20m
 ```
+
+The 20-minute timeout pairs with the bumped `probes.startup.failureThreshold` to cover Hibernate's first-boot DDL (see "Chart issues" in Findings). Without `--wait` you can drop the timeout, but then you have to poll for readiness yourself.
 
 ### 6. First-boot verification
 
-- Watch the StatefulSet come up: `kubectl -n xnat get pods -w`. Init containers run in order: `wait-for-postgres` → our `install-openid-plugin` → chart's `home-init` → `xnat` container.
-- First boot does Hibernate `hbm2ddl.auto=update` schema bootstrap — expect 2–5 min. The chart's `startupProbe` allows up to ~150s; if Hibernate takes longer, the pod will be killed and restarted. Bump `probes.startup.failureThreshold` if needed.
-- `kubectl -n xnat logs sts/xnat -c xnat` and grep for `openid-auth-plugin` to verify the plugin loaded.
-- Browse to `https://xnat.{server_hostname}` — first time you'll get the XNAT setup wizard. Set site URL, admin email, etc., then log in as `admin`/`admin`, change the admin password.
-- Log out. Reload — you should see a "Sign in with Scout" link from `openid.keycloak.link`. Click it, complete the Keycloak flow.
-- Because `auto.enabled=false`, the plugin will create a **disabled** XNAT user `keycloak-<sub>` and bounce you back to the login page. Log in again as the local `admin`, navigate to the XNAT user admin UI, find the new user, enable them, and promote to site admin if appropriate. Log out, log back in via Keycloak — now access works. This same approval step is what every subsequent user goes through.
+- Watch the StatefulSet come up: `kubectl -n xnat get pods -w`. Init containers run in order: `wait-for-postgres` → our `install-openid-plugin` → chart's `home-init` → `xnat` container. First boot does Hibernate `hbm2ddl.auto=update` schema bootstrap — expect 3–5 min.
+- Confirm the plugin loaded by querying the XNAT plugin API rather than scraping logs (XNAT's logback config only routes ERROR-level logs to stdout, so the plugin scan is invisible there):
+  ```bash
+  curl -sku admin:admin https://xnat.{server_hostname}/xapi/plugins | grep '"openIdAuthPlugin"'
+  ```
+- Enable `keycloak` as a site auth provider. The chart leaves `enabledProviders=["localdb"]` and the keycloak provider has to be explicitly added or the `/openid-login` route won't accept it, regardless of whether the plugin loaded:
+  ```bash
+  curl -sku admin:admin -X POST -H 'Content-Type: application/json' \
+    -d '{"enabledProviders": ["localdb", "keycloak"]}' \
+    https://xnat.{server_hostname}/xapi/siteConfig
+  ```
+- Browse to `https://xnat.{server_hostname}`. Because `prefs-init.ini` was mounted, the setup wizard is already complete — you'll land on the login page directly (no first-time wizard click-through). The default admin credentials are `admin`/`admin`; change the admin password from the user admin UI before opening up access.
+- Visit `/openid-login?providerId=keycloak` (or click the "Sign in with Scout" link, if you've added it via `openid.keycloak.link`). Complete the Keycloak flow as a user in `scout-user` — XNAT auto-provisions a `keycloak-<sub>` user (because `auto.enabled=true`), auto-enables them (because the Keycloak-side gate already verified group membership), and lands you on the homepage authenticated.
+- For a negative test, attempt the same flow as a user *not* in `scout-user`. The conditional sub-flow in the `browser-xnat-access` flow override fires, Keycloak shows the access-denied screen, and no auth code is ever issued — XNAT never sees the user. (If this fails open, the realm import didn't pick up the flow override; check whether the `kcadm` task ran or whether keycloak-config-cli mis-imported the conditional sub-flow.)
 
 ### 7. Bump to 1.10.0
 
