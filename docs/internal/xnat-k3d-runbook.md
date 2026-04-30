@@ -8,11 +8,13 @@ Everything else in Scout (lake, analytics, monitoring, oauth2-proxy, etc.)
 is deliberately skipped — see `xnat-deployment-plan.md` for what's needed
 and why.
 
-The flow is end-to-end automated: kcadm provisions groups/users/mappers, an
-XNAT `prefs-init.ini` skips the first-boot setup wizard, and an
-`agent-browser` script drives the OIDC login as both an authorized user
-(`alice`, in `scout-user`) and an unauthorized user (`bob`, no group) with
-explicit pass/fail assertions.
+The flow is end-to-end automated: keycloak-config-cli imports the realm
+(xnat client, xnat-access role + scout-user mapping, group membership
+mapper, browser-xnat-access flow override), kcadm seeds the test fixtures
+(scout-user group, alice/bob users), an XNAT `prefs-init.ini` skips the
+first-boot setup wizard, and an `agent-browser` script drives the OIDC
+login as both an authorized user (`alice`, in `scout-user`) and an
+unauthorized user (`bob`, no group) with explicit pass/fail assertions.
 
 > **TL;DR — just run it:** `xnat/k3d/run-all.sh` drives every step below
 > end-to-end with health waits between phases and exits non-zero on the
@@ -64,10 +66,10 @@ k3d cluster is **automated** by `run-all.sh` (§1–§11).
 ### Automated by `run-all.sh` (§1–§11)
 
 Cluster creation, TLS config, Postgres + Keycloak install, kcadm
-configuration of groups/users/mapper, XNAT manifest generation,
-namespace/secret creation, Helm install, and the agent-browser login
-assertions — all with health waits between phases and a non-zero exit on
-the first failure.
+seeding of test fixtures (scout-user group, alice/bob users), XNAT
+manifest generation, namespace/secret creation, Helm install, and the
+agent-browser login assertions — all with health waits between phases
+and a non-zero exit on the first failure.
 
 ## 1. Create the k3d cluster + TLS material
 
@@ -144,14 +146,16 @@ curl -kI https://keycloak.localtest.me
 (No manual UI verification needed — step 5 reads the same state via kcadm
 and will fail loudly if anything is missing.)
 
-## 5. Configure Keycloak: groups, users, group-membership mapper
+## 5. Configure Keycloak test fixtures (scout-user group, alice/bob users)
 
 This step replaces the manual "browse to Keycloak admin, click around,
-create a test user" flow with `kcadm.sh` calls run inside the Keycloak pod.
-It creates the `scout-user` group, two test users (`alice` in the group,
-`bob` not in it), and a Group Membership protocol mapper on the `xnat`
-client so the `groups` claim is included in ID/access tokens and userinfo
-responses.
+create a test user" flow with `kcadm.sh` calls run inside the Keycloak
+pod. The realm template (imported in step 4 via keycloak-config-cli)
+already ships everything that's *durable* — the `xnat` client, the
+`xnat-access` client role, the scout-user → xnat-access mapping, the
+Group Membership protocol mapper that emits the `groups` claim, and the
+`browser-xnat-access` flow override. What's left for this step is the
+test-only fixture: the `scout-user` group itself and the alice/bob users.
 
 ```bash
 KC_POD=$(kubectl -n scout-core get pod -l app=keycloak -o jsonpath='{.items[0].metadata.name}')
@@ -178,28 +182,14 @@ ${KC} set-password -r scout --username bob --new-password bob-pw
 ALICE_ID=$(${KC} get users -r scout -q username=alice --fields id --format csv --noquotes | tail -1)
 GROUP_ID=$(${KC} get groups -r scout -q search=scout-user --fields id --format csv --noquotes | tail -1)
 ${KC} update users/${ALICE_ID}/groups/${GROUP_ID} -r scout -n
-
-# Group Membership mapper on the xnat client → emit "groups" claim
-XNAT_CID=$(${KC} get clients -r scout -q clientId=xnat --fields id --format csv --noquotes | tail -1)
-${KC} create clients/${XNAT_CID}/protocol-mappers/models -r scout -f - <<'JSON'
-{
-  "name": "groups",
-  "protocol": "openid-connect",
-  "protocolMapper": "oidc-group-membership-mapper",
-  "config": {
-    "claim.name": "groups",
-    "full.path": "false",
-    "id.token.claim": "true",
-    "access.token.claim": "true",
-    "userinfo.token.claim": "true"
-  }
-}
-JSON
 ```
 
 Sanity-check by requesting a token for alice and decoding it; the `groups`
 claim should be `["scout-user"]`. Bob's token should have `groups: []` (or
-the claim absent).
+the claim absent). Direct access grant bypasses the browser-xnat-access
+flow gate (gates only run on the browser flow), so this verifies the
+`groups` claim wiring without testing the gate — the gate is exercised
+end-to-end by the agent-browser tests in step 11.
 
 ```bash
 curl -sk -d "grant_type=password" -d "client_id=xnat" \
@@ -223,32 +213,14 @@ sed 's/dev03\.tag\.rcif\.io/localtest.me/g' openid-provider.properties \
   > k3d/manifests/openid-provider.properties
 ```
 
-Then patch the openid plugin properties to (a) auto-enable users on first
-login (no admin click-through) and (b) gate on the `scout-user` group claim:
+The properties file already ships `auto.enabled=true` — Keycloak-provisioned
+users are auto-enabled on first login because the `scout-user` membership
+gate runs at Keycloak (via the `browser-xnat-access` flow), not at XNAT.
+The plugin has no `allowedGroups` property anyway (verified against the
+1.4.1-xpl source), so a plugin-side filter wouldn't be an option even if
+we wanted one.
 
-```bash
-cat <<'EOF' >> k3d/manifests/openid-provider.properties
-
-# Auto-enable Keycloak-provisioned users on first login. Combined with the
-# group filter below, this means: alice (in scout-user) lands logged in;
-# bob (not in scout-user) is rejected at the OIDC callback.
-EOF
-
-# Flip auto.enabled and add the allowed-groups gate. The exact property name
-# for group-claim filtering depends on openid-auth-plugin version. We use
-# 1.4.1-xpl; verify against:
-#   https://bitbucket.org/xnatx/openid-auth-plugin/src/master/README.md
-# If 1.4.1-xpl doesn't honor `allowedGroups`, bob's test in step 11 will
-# fail (he'll get in as a disabled user instead of being rejected at the
-# callback). Fix: either patch the plugin, or move the gate to Keycloak by
-# attaching a required `xnat-access` realm role to the xnat client and
-# mapping it from the scout-user group.
-sed -i.bak 's/^auto.enabled=false/auto.enabled=true/' k3d/manifests/openid-provider.properties
-echo "openid.keycloak.allowedGroups=scout-user" >> k3d/manifests/openid-provider.properties
-rm k3d/manifests/openid-provider.properties.bak
-```
-
-Also drop a `prefs-init.ini` next to it. This is XNAT's first-boot
+Drop a `prefs-init.ini` next to the values file. This is XNAT's first-boot
 configuration file; mounting it under `/data/xnat/home/config/` skips the
 setup wizard entirely (no manual site-URL entry, no admin-password change
 prompt). See:
@@ -270,8 +242,7 @@ Sanity-check: `xnat-values.yaml` and `openid-provider.properties` reference
 `xnat.localtest.me` and `keycloak.localtest.me` (no `dev03`); the
 `clientSecret` in `openid-provider.properties` matches
 `keycloak_xnat_client_secret` in `ansible/inventory.k3d.yaml`;
-`auto.enabled=true` and `openid.keycloak.allowedGroups=scout-user` are
-present.
+`auto.enabled=true` is present.
 
 ## 7. Helm chart prep
 
@@ -539,9 +510,13 @@ realm template, provider properties, chart values, and group-gating
 configuration are in play there.
 
 If only **bob's** case fails (he's let in), the most likely cause is that
-`openid-auth-plugin` 1.4.1-xpl doesn't honor `openid.keycloak.allowedGroups`.
-See the comment in step 6 for the two fixes (patch the plugin or move the
-gate into Keycloak).
+the `browser-xnat-access` flow override on the xnat client didn't land
+during the realm import. Run-all.sh asserts this in step 5; if you're
+running phases manually, check
+`kcadm.sh get clients/<xnat-cid> | jq .authenticationFlowBindingOverrides`
+— it should show `{"browser": "<flow-id>"}`. If the field is empty,
+keycloak-config-cli failed to apply the override; check its logs and
+re-run the realm import.
 
 ## 12. Teardown
 
@@ -567,8 +542,9 @@ want a clean slate.
 - Multi-replica / HA XNAT (single-node k3d, single-replica StatefulSet)
 - Differentiated XNAT roles per Scout group (the runbook gates on
   `scout-user` membership only; if Scout grows `scout-admin` /
-  `scout-readonly` tiers, swap the plugin's group-claim filter for a full
-  group→role mapper and add cases to `test-login.sh`)
+  `scout-readonly` tiers, the gate becomes inadequate and you'd need a
+  group→XNAT-role mapping mechanism — likely a different XNAT plugin,
+  since 1.4.1-xpl has no role mapping at all)
 
 When dev03 is reachable again, re-run the full `xnat-deployment-runbook.md`
 flow there. The `ansible/inventory.k3d.yaml`, `playbooks/dev-tls.yaml`,

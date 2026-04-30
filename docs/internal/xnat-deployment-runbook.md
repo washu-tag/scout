@@ -123,9 +123,8 @@ Init containers run in order: `wait-for-postgres` → our `install-openid-plugin
 - [ ] Browse https://xnat.dev03.tag.rcif.io — XNAT setup wizard appears.
 - [ ] Complete the wizard (set site URL = `https://xnat.dev03.tag.rcif.io`, set admin email, etc.). Log in as `admin` / `admin` and change the admin password immediately.
 - [ ] Log out, reload — confirm the "Sign in with Scout" link appears (driven by `openid.keycloak.link`).
-- [ ] Click the Scout link, complete the Keycloak flow as a user in `scout-user`. Because `auto.enabled=false`, the plugin creates the XNAT user `keycloak-<sub>` in **disabled** state and you'll get bounced back to the login page.
-- [ ] Log back in as the local XNAT admin → user admin UI → find the new `keycloak-<sub>` user → enable them (and promote to site admin if desired).
-- [ ] Log out, log back in via Keycloak — full access this time. **This same approval step gates every new XNAT user.**
+- [ ] Click the Scout link, complete the Keycloak flow as a user in `scout-user`. Because `auto.enabled=true` and the user holds the `xnat-access` client role (granted transitively via `scout-user`), the plugin auto-provisions and enables the XNAT user `keycloak-<sub>` and lands you on the homepage authenticated. Group membership was already verified at Keycloak by the `browser-xnat-access` flow before any auth code was issued.
+- [ ] Negative test: log in as a user *not* in `scout-user`. Keycloak's `Deny Access` step inside the `browser-xnat-access` flow fires, the access-denied page renders, and no auth code reaches XNAT. **If this fails open**, the realm import didn't apply the `authenticationFlowBindingOverrides.browser`; check keycloak-config-cli's logs and re-run the auth role.
 
 ## 6. Bump to 1.10.0
 
