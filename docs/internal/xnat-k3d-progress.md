@@ -293,6 +293,88 @@ They should be reported / fixed upstream eventually.
    `--timeout` to 20m. The runbook §10 already mentioned this would be
    needed; we've now wired it into the script so it's not a manual step.
 
+## Apple Silicon (arm64) — XNAT image runs under qemu and is unusably slow
+
+This does not contradict the "all steps pass" status above; that result
+stands. It was produced on a host where the `xnatworks/xnat-web` image runs
+natively. A subsequent attempt to re-run `run-all.sh` on an arm64 Mac
+(host `uname -m` = `arm64`) ran into a separate, platform-level problem
+worth recording so the next person doesn't lose an hour to it.
+
+**Symptom:** `run-all.sh` failed at step 10 with
+`Error: context deadline exceeded` from `helm install --wait`, after the
+20-minute timeout the script already passes. The `xnat-0` pod was still
+`Running` (one early restart from a startup-probe miss, then alive), but
+Tomcat had logged nothing past `TldScanner.scanJars` at `T+1:00` and the
+"set the node ID to xnat-0" access-log line at `T+2:00` — silent for
+40+ minutes after that, with the JVM pinning a CPU the entire time.
+
+**Root cause:** `xnatworks/xnat-web:1.9.2.1` is a single-arch image
+(`linux/amd64`). On arm64 hosts, k3d/containerd transparently runs it
+through `qemu-x86_64` user-mode emulation. Inside the pod:
+
+```
+$ kubectl -n xnat exec xnat-0 -c xnat -- uname -m
+x86_64
+$ kubectl -n xnat exec xnat-0 -c xnat -- ps -ef | head
+tomcat  1  0 99 ... /usr/bin/qemu-x86_64 /opt/java/openjdk/bin/java ...
+```
+
+The wrapping `/usr/bin/qemu-x86_64` in front of `java` is the giveaway.
+Webapp deployment + Hibernate `hbm2ddl.auto=update` under user-mode
+emulation runs roughly an order of magnitude slower than native, which
+puts first boot well past the 10-minute startup-probe budget the script
+already bumps to and well past helm's 20-minute `--wait`.
+
+**Why the runbook's existing `failureThreshold=60` workaround isn't
+enough:** that workaround sizes for a slow-but-native first boot (3–5
+min). Under qemu emulation the cost isn't a constant; it scales with
+how much bytecode the JVM has to JIT, which is most of XNAT on cold
+start. We saw 40+ minutes of CPU-bound silence with no progress
+markers, and there's no reason to believe it would have terminated in
+a useful timeframe.
+
+**What this means for the laptop test plan:**
+
+- The k3d slice as written is fine on x86_64 hosts (Linux laptops,
+  Intel Macs, dev VMs). The "all steps pass" result above came from
+  one of those.
+- On Apple Silicon the durable fix is a multi-arch xnat-web image
+  (or a separate arm64 build). That's an upstream concern, not
+  something `run-all.sh` should paper over.
+- Until that exists, the realistic options on an arm64 laptop are:
+  (a) skip the local k3d run and validate on a real x86_64 cluster,
+  (b) run the k3d slice inside an x86_64 Linux VM so containerd
+  schedules the image natively, or (c) accept very long runtimes and
+  bump both the startup probe and helm `--wait` to >1 hour. None of
+  these are pleasant; (a) is what we'll do once dev03 is back.
+- No code/config change has been made in response to this finding —
+  it's purely a host-platform compatibility note. The cluster from
+  the failed run was left up at the time of writing in case anyone
+  wants to keep poking at it; otherwise `teardown-cluster.sh` cleans
+  it up.
+
+State of the failed run, for context:
+
+- Phases 1–9 all succeeded (cluster, TLS, Postgres, Keycloak with the
+  realm import, `scout-user` group + alice/bob + `xnat-access` role +
+  `browser-xnat-access` flow override, manifests, namespace, secrets,
+  `helm dependency update`).
+- Phase 10 helm install hit `context deadline exceeded` after 20 min;
+  `xnat-0` was `Running` but stuck booting under qemu. `xnat-postgres`
+  and `xnat-mail` were both healthy.
+- Phase 11 (the agent-browser login assertions) never ran.
+
+## Next step
+
+Re-run on dev03 once the server issues there are resolved. The Ansible
+inventory, role changes, and realm template additions described above
+all carry over directly; the only k3d-only piece that doesn't (the
+`browser-xnat-access` flow built via `kcadm` in `run-all.sh` step 5)
+needs to be promoted to either an Ansible task or the realm template
+before dev03 sees end-to-end gating — see "What this leaves for dev03"
+above.
+
 ## Pointers
 
 - Runbook (the canonical phase-by-phase doc): `xnat-k3d-runbook.md`.
