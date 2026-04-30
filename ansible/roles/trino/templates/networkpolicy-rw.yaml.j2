@@ -22,6 +22,11 @@ spec:
   policyTypes:
     - Ingress
   ingress:
+    # Coordinator <-> worker communication within the trino-rw release.
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: '{{ trino_rw_release_name }}'
     - from:
         - namespaceSelector:
             matchLabels:
