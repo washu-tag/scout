@@ -68,6 +68,26 @@ authplugins:
     provider: keycloak
     auth: true
 
+# Skip XNAT's first-boot setup wizard. The xnat-prefs-init Secret (created
+# out-of-band before helm install) contains a prefs-init.ini file that XNAT
+# consumes on first launch and self-completes the wizard, keeping the deploy
+# non-interactive and reproducible.
+extraVolumes:
+  - name: prefs-init
+    secret:
+      secretName: xnat-prefs-init
+extraVolumeMounts:
+  - name: prefs-init
+    mountPath: /data/xnat/home/config/prefs-init.ini
+    subPath: prefs-init.ini
+
+# Bump the startup probe so Hibernate's first-boot DDL has time to finish.
+# Chart default (failureThreshold=15 * periodSeconds=10 = 150s) is too tight;
+# real first-boot is 3-5 min. 60 * 10s = 10 min budget.
+probes:
+  startup:
+    failureThreshold: 60
+
 initContainers:
   - name: install-openid-plugin
     image: curlimages/curl:8.10.1

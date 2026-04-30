@@ -14,13 +14,13 @@ Working directory is the Scout repo root (`/Users/jflavin/apps/scout/.worktrees/
 
 - [ ] `helm` and `kubectl` installed locally
 - [ ] kubeconfig resolves: `kubectl --kubeconfig=$KUBECONFIG get nodes`
-- [ ] CloudNativePG operator running: `kubectl --kubeconfig=$KUBECONFIG get pods -n cnpg-system`
+- [ ] CloudNativePG operator running: `kubectl --kubeconfig=$KUBECONFIG -n scout-operators get pods | grep cnpg`
 - [ ] Traefik running: `kubectl --kubeconfig=$KUBECONFIG -n kube-system get pods | grep traefik`
 - [ ] DNS for `xnat.dev03.tag.rcif.io` resolves to the cluster ingress IP
 
 ## 1. Update Keycloak realm
 
-The realm template (`ansible/roles/keycloak/templates/scout-realm.json.j2`) and dev03 inventory have already been updated in this branch with the `xnat` Keycloak client, `xnat-user` / `xnat-admin` client roles, and `scout-user` / `scout-admin` group mappings. The client_id default lives in `ansible/roles/scout_common/defaults/main.yaml`; the secret is in `ansible/inventory.dev03.yaml`.
+The realm template (`ansible/roles/keycloak/templates/scout-realm.json.j2`) and dev03 inventory have already been updated in this branch with the `xnat` Keycloak client, `xnat-user` / `xnat-admin` / `xnat-access` client roles, the `scout-user` / `scout-admin` group mappings, and the `browser-xnat-access` authentication flow override. **These changes have not yet been deployed to dev03** — re-running `install-auth` is required for the gate to be live. The client_id default lives in `ansible/roles/scout_common/defaults/main.yaml`; the secret is in `ansible/inventory.dev03.yaml`.
 
 - [ ] Apply the realm to dev03:
 
@@ -33,7 +33,11 @@ The realm template (`ansible/roles/keycloak/templates/scout-realm.json.j2`) and 
   - Realm `scout` → Clients → `xnat` exists
   - Credentials tab → secret matches `keycloak_xnat_client_secret` from `inventory.dev03.yaml`
   - Settings → Valid Redirect URIs includes `https://xnat.dev03.tag.rcif.io/openid-login*`
-  - Groups → `scout-user` and `scout-admin` → Role Mappings → Client Roles for `xnat` shows `xnat-user` / `xnat-admin` respectively
+  - Roles tab → `xnat-user`, `xnat-admin`, `xnat-access` all exist
+  - Groups → `scout-user` Role Mappings → Client Roles for `xnat` shows `xnat-user` and `xnat-access` (the load-bearing one)
+  - Groups → `scout-admin` Role Mappings → Client Roles for `xnat` shows `xnat-admin`
+  - Authentication → Flows → `browser-xnat-access` exists with the conditional sub-flow that requires the `xnat-access` role
+  - Clients → `xnat` → Advanced → Authentication Flow Overrides → Browser Flow = `browser-xnat-access`
 
 ## 2. Helm chart prep
 
@@ -56,7 +60,7 @@ The realm template (`ansible/roles/keycloak/templates/scout-realm.json.j2`) and 
 
   Compare structure to `/Users/jflavin/apps/scout/.worktrees/xnat-dev-wt/xnat/xnat-values.yaml` and adjust paths in our values file if the chart uses different keys (e.g. `cnpg.cluster.storage.size` vs `cnpg.storage.size`).
 
-## 3. Namespace and provider-properties Secret
+## 3. Namespace and supporting Secrets
 
 - [ ] Create the namespace:
 
@@ -73,15 +77,30 @@ The realm template (`ansible/roles/keycloak/templates/scout-realm.json.j2`) and 
 
 - [ ] Sanity-check that the `clientSecret` in `xnat/openid-provider.properties` matches `keycloak_xnat_client_secret` in `ansible/inventory.dev03.yaml`. If they don't match, the Keycloak login will fail with an `invalid_client` error.
 
+- [ ] Create the `xnat-prefs-init` Secret used by the values file's `extraVolumes`/`extraVolumeMounts` to skip the first-boot setup wizard. The mounted file lands at `/data/xnat/home/config/prefs-init.ini`; XNAT consumes it on first launch and self-completes the wizard:
+
+  ```bash
+  kubectl --kubeconfig=$KUBECONFIG -n xnat create secret generic xnat-prefs-init \
+    --from-file=prefs-init.ini=/Users/jflavin/apps/scout/.worktrees/xnat-dev-wt/xnat/prefs-init.ini
+  ```
+
+- [ ] Create a placeholder `postfix-password` Secret. The chart's `bokysan/postfix` mail subchart is unconditional and references a hardcoded `postfix-password` Secret; without it `xnat-mail-0` sits in `CreateContainerConfigError` and `helm install --wait` never returns. Contents are arbitrary — XNAT is configured `smtpEnabled=false` and the postfix container is never used:
+
+  ```bash
+  kubectl --kubeconfig=$KUBECONFIG -n xnat create secret generic postfix-password \
+    --from-literal=username=xnat --from-literal=password=unused-dev
+  ```
+
 ## 4. Helm install (1.9.2.1)
 
-- [ ] Install:
+- [ ] Install. The 20-min timeout pairs with the bumped `probes.startup.failureThreshold: 60` in the values file to cover Hibernate's first-boot DDL (3–5 min):
 
   ```bash
   helm install xnat /Users/jflavin/repos/helm-charts/helm/xnat \
     --kubeconfig $KUBECONFIG \
     --namespace xnat \
-    --values /Users/jflavin/apps/scout/.worktrees/xnat-dev-wt/xnat/xnat-values.yaml
+    --values /Users/jflavin/apps/scout/.worktrees/xnat-dev-wt/xnat/xnat-values.yaml \
+    --wait --timeout 20m
   ```
 
 - [ ] First-pass health: `kubectl --kubeconfig=$KUBECONFIG -n xnat get pods` — expect `xnat-0` working through init containers, and a CNPG cluster pod (`xnat-cnpg-1` or similar).
@@ -108,21 +127,28 @@ Init containers run in order: `wait-for-postgres` → our `install-openid-plugin
   kubectl --kubeconfig=$KUBECONFIG -n xnat get cluster
   ```
 
-- [ ] OpenID plugin loaded:
+- [ ] Confirm the OpenID plugin loaded by querying the XNAT plugin API. XNAT's logback config only routes ERROR-level logs to stdout, so the plugin scan is invisible there — query the API instead of grepping logs:
 
   ```bash
-  kubectl --kubeconfig=$KUBECONFIG -n xnat logs sts/xnat -c xnat | grep -i openid-auth-plugin
+  curl -sku admin:admin https://xnat.dev03.tag.rcif.io/xapi/plugins | grep '"openIdAuthPlugin"'
   ```
 
-- [ ] Hibernate `hbm2ddl.auto=update` schema bootstrap completes (2–5 min on first boot). If `xnat-0` keeps restarting during init because the chart's startup probe (~150s) fires first, bump `probes.startup.failureThreshold` in `xnat-values.yaml` and `helm upgrade ... --reuse-values --set probes.startup.failureThreshold=60`:
+- [ ] Enable `keycloak` as a site auth provider. The chart leaves `enabledProviders=["localdb"]`; the keycloak provider has to be explicitly added or the `/openid-login` route won't accept it, regardless of whether the plugin loaded:
+
+  ```bash
+  curl -sku admin:admin -X POST -H 'Content-Type: application/json' \
+    -d '{"enabledProviders": ["localdb", "keycloak"]}' \
+    https://xnat.dev03.tag.rcif.io/xapi/siteConfig
+  ```
+
+- [ ] Hibernate `hbm2ddl.auto=update` schema bootstrap completes (3–5 min on first boot). The values file's `probes.startup.failureThreshold: 60` gives a 10-min budget. If `xnat-0` somehow still restarts during init, watch logs:
 
   ```bash
   kubectl --kubeconfig=$KUBECONFIG -n xnat logs sts/xnat -c xnat --tail=200
   ```
 
-- [ ] Browse https://xnat.dev03.tag.rcif.io — XNAT setup wizard appears.
-- [ ] Complete the wizard (set site URL = `https://xnat.dev03.tag.rcif.io`, set admin email, etc.). Log in as `admin` / `admin` and change the admin password immediately.
-- [ ] Log out, reload — confirm the "Sign in with Scout" link appears (driven by `openid.keycloak.link`).
+- [ ] Browse https://xnat.dev03.tag.rcif.io. Because `prefs-init.ini` was mounted, the setup wizard is already complete — you'll land on the login page directly. Default admin credentials are `admin` / `admin`; change the admin password from the user admin UI before opening up access.
+- [ ] Confirm the "Sign in with Scout" link appears on the login page (driven by `openid.keycloak.link`).
 - [ ] Click the Scout link, complete the Keycloak flow as a user in `scout-user`. Because `auto.enabled=true` and the user holds the `xnat-access` client role (granted transitively via `scout-user`), the plugin auto-provisions and enables the XNAT user `keycloak-<sub>` and lands you on the homepage authenticated. Group membership was already verified at Keycloak by the `browser-xnat-access` flow before any auth code was issued.
 - [ ] Negative test: log in as a user *not* in `scout-user`. Keycloak's `Deny Access` step inside the `browser-xnat-access` flow fires, the access-denied page renders, and no auth code reaches XNAT. **If this fails open**, the realm import didn't apply the `authenticationFlowBindingOverrides.browser`; check keycloak-config-cli's logs and re-run the auth role.
 
