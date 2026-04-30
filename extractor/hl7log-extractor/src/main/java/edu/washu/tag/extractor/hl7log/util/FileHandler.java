@@ -1,6 +1,7 @@
 package edu.washu.tag.extractor.hl7log.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -143,4 +144,16 @@ public interface FileHandler {
      */
     @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 1000, multiplier = 2))
     boolean isFile(URI source);
+
+    /**
+     * Open the source for streaming reads. Suitable for line-oriented or chunked parsing of large
+     * files where buffering the whole content into memory would be wasteful. The caller owns the
+     * returned stream and must close it (typically via try-with-resources); for S3 sources, close
+     * also releases the underlying HTTP connection back to the SDK's pool.
+     *
+     * @param source The URI of the file/object to open.
+     * @return An {@link InputStream} positioned at the start of the file's content.
+     * @throws IOException If the source can't be opened.
+     */
+    InputStream open(URI source) throws IOException;
 }
