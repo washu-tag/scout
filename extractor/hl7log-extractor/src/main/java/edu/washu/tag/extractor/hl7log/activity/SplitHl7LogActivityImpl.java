@@ -22,9 +22,9 @@ import io.temporal.workflow.Workflow;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -36,9 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -47,7 +44,6 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -76,27 +72,18 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private final FileHandler fileHandler;
     private final IngestDbService ingestDbService;
     private final MeterRegistry meterRegistry;
-    private final Path downloadTempDir;
 
     /**
      * Constructor for SplitHl7LogActivityImpl.
      *
-     * @param fileHandler          The file handler for reading and writing files.
-     * @param ingestDbService      The service for interacting with the ingest database.
-     * @param meterRegistry        The meter registry for Prometheus metrics.
-     * @param downloadTempDirPath  Optional local directory for staging S3-sourced log files during
-     *                             processing. Defaults to {@code java.io.tmpdir}. Set this to a
-     *                             larger ephemeral volume when concurrency × log size could exceed
-     *                             the pod's default temp storage.
+     * @param fileHandler    The file handler for reading and writing files.
+     * @param ingestDbService The service for interacting with the ingest database.
+     * @param meterRegistry  The meter registry for Prometheus metrics.
      */
-    public SplitHl7LogActivityImpl(FileHandler fileHandler, IngestDbService ingestDbService, MeterRegistry meterRegistry,
-                                   @Value("${s3.download-temp-dir:}") String downloadTempDirPath) {
+    public SplitHl7LogActivityImpl(FileHandler fileHandler, IngestDbService ingestDbService, MeterRegistry meterRegistry) {
         this.fileHandler = fileHandler;
         this.ingestDbService = ingestDbService;
         this.meterRegistry = meterRegistry;
-        this.downloadTempDir = (downloadTempDirPath == null || downloadTempDirPath.isBlank())
-            ? null
-            : Path.of(downloadTempDirPath);
 
         // https://prometheus.io/docs/practices/instrumentation/#avoid-missing-metrics
         Stream.of(FileStatusStatus.values())
@@ -274,64 +261,51 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
         String workflowId = activityInfo.getWorkflowId();
         String activityId = activityInfo.getActivityId();
 
-        // For S3-sourced logs, download to a local temp file first. Logs can be tens of MB at scale —
-        // too large to slurp into memory via fileHandler.read().
-        Path tempFile = null;
-        try {
-            Path logFilePath;
-            if (FileHandler.isS3Uri(logFile)) {
-                tempFile = createDownloadTempFile();
-                logger.debug("WorkflowId {} ActivityId {} - Downloading {} to local temp {}", workflowId, activityId, logFile, tempFile);
-                logFilePath = downloadWithHeartbeats(URI.create(logFile), tempFile, ctx);
-            } else {
-                logFilePath = Paths.get(logFile);
-            }
+        // Stream the log directly — same code path for filesystem and S3. BufferedReader chunks
+        // reads, so we never hold the full file in memory; the parser heartbeats after each HL7
+        // message, which keeps the activity alive even on slow networks. Closing the reader
+        // closes the underlying InputStream, which for S3 returns the connection to the SDK pool.
+        URI logUri = FileHandler.isS3Uri(logFile)
+            ? URI.create(logFile)
+            : Paths.get(logFile).toUri();
 
-            List<Hl7LogEntry> splitHl7LogEntries = new ArrayList<>();
-            int hl7Count = 0;
-            try (BufferedReader reader = Files.newBufferedReader(logFilePath, StandardCharsets.ISO_8859_1)) {
-                String line;
-                List<String> hl7Content = new ArrayList<>();
+        List<Hl7LogEntry> splitHl7LogEntries = new ArrayList<>();
+        int hl7Count = 0;
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(fileHandler.open(logUri), StandardCharsets.ISO_8859_1))) {
+            String line;
+            List<String> hl7Content = new ArrayList<>();
 
-                while ((line = reader.readLine()) != null) {
-                    if (line.contains("<SB>")) {
-                        // Collect lines until the next <EB>
-                        while ((line = reader.readLine()) != null) {
-                            // Strip the non-HL7 "tags"
-                            String processed = line.replaceAll("<R>$", "");
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("<SB>")) {
+                    // Collect lines until the next <EB>
+                    while ((line = reader.readLine()) != null) {
+                        // Strip the non-HL7 "tags"
+                        String processed = line.replaceAll("<R>$", "");
 
-                            // <EB> means we're at the end of the HL7 message. Strip the tag, store any extra content.
-                            if (line.contains("<EB>")) {
-                                hl7Content.add(processed.replace("<EB>", ""));
-                                break;
-                            }
-                            hl7Content.add(processed);
+                        // <EB> means we're at the end of the HL7 message. Strip the tag, store any extra content.
+                        if (line.contains("<EB>")) {
+                            hl7Content.add(processed.replace("<EB>", ""));
+                            break;
                         }
-
-                        splitHl7LogEntries.add(new Hl7LogEntry(hl7Count++, new ArrayList<>(hl7Content)));
-                        ctx.heartbeat("Parsed " + hl7Count);
-                        hl7Content.clear();
-                        continue;
+                        hl7Content.add(processed);
                     }
-                }
-            }
 
-            if (hl7Count == 0) {
-                return Collections.singletonList(FileStatus.failed(logFile, FileStatusType.LOG,
-                    "Log did not contain any HL7 messages", workflowId, activityId));
-            }
-
-            // Validate, zip, and upload the HL7 messages
-            return validateZipAndUploadHl7(logFile, splitHl7LogEntries, destination);
-        } finally {
-            if (tempFile != null) {
-                try {
-                    Files.deleteIfExists(tempFile);
-                } catch (IOException e) {
-                    logger.warn("WorkflowId {} ActivityId {} - Failed to delete temp file {}", workflowId, activityId, tempFile, e);
+                    splitHl7LogEntries.add(new Hl7LogEntry(hl7Count++, new ArrayList<>(hl7Content)));
+                    ctx.heartbeat("Parsed " + hl7Count);
+                    hl7Content.clear();
+                    continue;
                 }
             }
         }
+
+        if (hl7Count == 0) {
+            return Collections.singletonList(FileStatus.failed(logFile, FileStatusType.LOG,
+                "Log did not contain any HL7 messages", workflowId, activityId));
+        }
+
+        // Validate, zip, and upload the HL7 messages
+        return validateZipAndUploadHl7(logFile, splitHl7LogEntries, destination);
     }
 
     /**
@@ -479,40 +453,6 @@ public class SplitHl7LogActivityImpl implements SplitHl7LogActivity {
     private String formatExceptionForMessage(Exception e) {
         return String.format("%s: %s", e.getClass().getSimpleName(), e.getMessage());
     }
-
-    private Path createDownloadTempFile() throws IOException {
-        return downloadTempDir == null
-            ? Files.createTempFile(TEMP_FILE_PREFIX, TEMP_FILE_SUFFIX)
-            : Files.createTempFile(downloadTempDir, TEMP_FILE_PREFIX, TEMP_FILE_SUFFIX);
-    }
-
-    /**
-     * Download the source URI to {@code tempFile}, heartbeating periodically so the activity doesn't
-     * time out on a multi-minute download. The S3 GetObject call is synchronous; we drive heartbeats
-     * from a separate scheduled thread.
-     */
-    private Path downloadWithHeartbeats(URI source, Path tempFile, ActivityExecutionContext ctx) throws IOException {
-        ctx.heartbeat("Downloading from S3");
-        ScheduledExecutorService heartbeatExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "s3-download-heartbeat");
-            t.setDaemon(true);
-            return t;
-        });
-        try {
-            heartbeatExecutor.scheduleAtFixedRate(
-                () -> ctx.heartbeat("Downloading from S3"),
-                DOWNLOAD_HEARTBEAT_SECONDS,
-                DOWNLOAD_HEARTBEAT_SECONDS,
-                TimeUnit.SECONDS);
-            return fileHandler.get(source, tempFile);
-        } finally {
-            heartbeatExecutor.shutdownNow();
-        }
-    }
-
-    private static final String TEMP_FILE_PREFIX = "hl7log-";
-    private static final String TEMP_FILE_SUFFIX = ".log";
-    private static final long DOWNLOAD_HEARTBEAT_SECONDS = 30L;
 
     private record Hl7LogEntry(int messageNumber, List<String> hl7Content) {
 

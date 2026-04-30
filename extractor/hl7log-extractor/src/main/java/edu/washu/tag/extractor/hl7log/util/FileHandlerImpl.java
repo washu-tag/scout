@@ -5,9 +5,11 @@ import io.temporal.activity.ActivityInfo;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.workflow.Workflow;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -15,8 +17,10 @@ import org.slf4j.Logger;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.support.RetrySynchronizationManager;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -154,7 +158,15 @@ public class FileHandlerImpl implements FileHandler {
             }
             logger.debug("WorkflowId {} ActivityId {} - Downloading file from S3 bucket {} key {} to {}", activityInfo.getWorkflowId(),
                 activityInfo.getActivityId(), bucket, key, destination);
-            s3Client.getObject(builder -> builder.bucket(bucket).key(key), destination);
+            // Stream the response and write via Files.copy with REPLACE_EXISTING. The path-overload
+            // s3Client.getObject(consumer, Path) uses ResponseTransformer.toFile() which fails if
+            // the destination already exists — and callers may have allocated the path via
+            // Files.createTempFile (which leaves an empty 0-byte file behind). Streaming gives us
+            // the standard JDK overwrite semantic without the SDK's file-write quirk.
+            try (ResponseInputStream<GetObjectResponse> in =
+                     s3Client.getObject(builder -> builder.bucket(bucket).key(key))) {
+                Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
+            }
         } else {
             // Copy local files
             Path sourcePath = Path.of(source);
@@ -182,6 +194,21 @@ public class FileHandlerImpl implements FileHandler {
         } else {
             return Files.readAllBytes(Path.of(source));
         }
+    }
+
+    @Override
+    public InputStream open(URI source) throws IOException {
+        if (S3_SCHEME.equals(source.getScheme())) {
+            String bucket = source.getHost();
+            String key = normalizeS3Key(source.getPath());
+            ActivityInfo activityInfo = Activity.getExecutionContext().getInfo();
+            logger.debug("WorkflowId {} ActivityId {} - Opening S3 stream for bucket {} key {}",
+                activityInfo.getWorkflowId(), activityInfo.getActivityId(), bucket, key);
+            // Returns a ResponseInputStream<GetObjectResponse>; caller must close to release the
+            // SDK's HTTP connection back to the pool.
+            return s3Client.getObject(builder -> builder.bucket(bucket).key(key));
+        }
+        return Files.newInputStream(Path.of(source));
     }
 
     @Override
