@@ -116,7 +116,7 @@ kubectl -n kube-system rollout status deployment/coredns --timeout=2m \
   || fail "step 4: coredns did not roll out after configmap update"
 
 # ---------------------------------------------------------------------------
-step "5. Configure Keycloak: scout-user group, alice/bob, groups mapper"
+step "5. Configure Keycloak test fixtures (scout-user group, alice/bob users)"
 KC_POD=$(kubectl -n scout-core get pod -l app=keycloak \
            -o jsonpath='{.items[0].metadata.name}')
 KC="kubectl -n scout-core exec -i ${KC_POD} -- /opt/keycloak/bin/kcadm.sh"
@@ -155,30 +155,15 @@ ${KC} update "users/${ALICE_ID}/groups/${GROUP_ID}" -r scout -n
 
 XNAT_CID=$(${KC} get clients -r scout -q clientId=xnat \
              --fields id --format csv --noquotes | tail -1)
-if ! ${KC} get "clients/${XNAT_CID}/protocol-mappers/models" -r scout \
-       --fields name --format csv --noquotes 2>/dev/null \
-       | grep -qx groups; then
-  ${KC} create "clients/${XNAT_CID}/protocol-mappers/models" -r scout -f - <<'JSON'
-{
-  "name": "groups",
-  "protocol": "openid-connect",
-  "protocolMapper": "oidc-group-membership-mapper",
-  "config": {
-    "claim.name": "groups",
-    "full.path": "false",
-    "id.token.claim": "true",
-    "access.token.claim": "true",
-    "userinfo.token.claim": "true"
-  }
-}
-JSON
-fi
 
 # Sanity-check: alice's id_token should contain groups: ["scout-user"].
 # The production xnat client only uses the OIDC redirect flow, so the realm
 # template doesn't enable directAccessGrantsEnabled. Flip it on here for the
 # k3d cluster so we can do a password-grant smoke test before driving the
-# real login through agent-browser in step 11.
+# real login through agent-browser in step 11. Note: direct access grant
+# bypasses the browser-xnat-access flow gate (which only runs on the browser
+# flow), so this smoke test verifies the groups claim is wired up but not
+# the gate itself — the gate is exercised by the agent-browser tests.
 ${KC} update "clients/${XNAT_CID}" -r scout -s directAccessGrantsEnabled=true
 
 echo "Verifying alice's token contains scout-user claim..."
@@ -195,90 +180,18 @@ echo "  alice groups claim: ${ALICE_GROUPS}"
 echo "${ALICE_GROUPS}" | grep -q scout-user \
   || fail "step 5: alice's token is missing the scout-user groups claim"
 
-# Plan B for the alice/bob gate: 1.4.1-xpl has no group-filtering support,
-# so we let Keycloak refuse non-scout-user logins to the xnat client. Wire
-# up a `xnat-access` client role mapped from scout-user, then override the
-# xnat client's browser flow with a conditional sub-flow that runs Deny
-# Access when the user is missing the role. Idempotent.
-
-echo "Ensuring xnat-access client role exists..."
-if ! ${KC} get "clients/${XNAT_CID}/roles" -r scout \
-       --fields name --format csv --noquotes 2>/dev/null \
-       | grep -qx xnat-access; then
-  ${KC} create "clients/${XNAT_CID}/roles" -r scout \
-    -s name=xnat-access \
-    -s 'description=Required for XNAT login (gated by browser-xnat-access flow override)'
-fi
-
-echo "Mapping xnat-access to scout-user group..."
-# add-roles is idempotent — adding an existing mapping is a no-op.
-${KC} add-roles -r scout --gname scout-user --cclientid xnat \
-  --rolename xnat-access >/dev/null
-
-echo "Building browser-xnat-access authentication flow..."
-if ! ${KC} get authentication/flows -r scout \
-       --fields alias --format csv --noquotes 2>/dev/null \
-       | grep -qx browser-xnat-access; then
-  ${KC} create authentication/flows/browser/copy -r scout \
-    -s newName=browser-xnat-access >/dev/null
-fi
-
-# Sub-flow names contain spaces; URL-encode them when used in REST paths.
-FORMS_FLOW='browser-xnat-access%20forms'
-GATE_FLOW='browser-xnat-access%20require-xnat-access'
-
-# Create the gate sub-flow inside `forms` if missing.
-if ! ${KC} get "authentication/flows/${FORMS_FLOW}/executions" -r scout 2>/dev/null \
-       | python3 -c "import sys,json; sys.exit(0 if any(e.get('displayName','').endswith('require-xnat-access') for e in json.load(sys.stdin)) else 1)"; then
-  ${KC} create "authentication/flows/${FORMS_FLOW}/executions/flow" -r scout \
-    -b '{"alias": "browser-xnat-access require-xnat-access", "type": "basic-flow", "description": "Require xnat-access client role", "provider": "registration-page-form"}' \
-    >/dev/null
-fi
-
-# Get IDs for the gate sub-flow execution + its child executions.
-GATE_SUBFLOW_EXEC=$(${KC} get "authentication/flows/${FORMS_FLOW}/executions" -r scout \
-  | python3 -c "import sys,json; print(next(e['id'] for e in json.load(sys.stdin) if e.get('displayName','').endswith('require-xnat-access') and e.get('authenticationFlow')))")
-
-# Add Condition - User Role + Deny Access executions inside the gate sub-flow.
-GATE_EXECS=$(${KC} get "authentication/flows/${GATE_FLOW}/executions" -r scout)
-if ! echo "${GATE_EXECS}" | grep -q '"conditional-user-role"'; then
-  ${KC} create "authentication/flows/${GATE_FLOW}/executions/execution" -r scout \
-    -b '{"provider": "conditional-user-role"}' >/dev/null
-fi
-if ! echo "${GATE_EXECS}" | grep -q '"deny-access-authenticator"'; then
-  ${KC} create "authentication/flows/${GATE_FLOW}/executions/execution" -r scout \
-    -b '{"provider": "deny-access-authenticator"}' >/dev/null
-fi
-
-# Set requirements: gate sub-flow CONDITIONAL, child executions REQUIRED.
-${KC} update "authentication/flows/${FORMS_FLOW}/executions" -r scout \
-  -b "{\"id\": \"${GATE_SUBFLOW_EXEC}\", \"requirement\": \"CONDITIONAL\"}" \
-  >/dev/null
-COND_EXEC_ID=$(${KC} get "authentication/flows/${GATE_FLOW}/executions" -r scout \
-  | python3 -c "import sys,json; print(next(e['id'] for e in json.load(sys.stdin) if e.get('providerId')=='conditional-user-role'))")
-DENY_EXEC_ID=$(${KC} get "authentication/flows/${GATE_FLOW}/executions" -r scout \
-  | python3 -c "import sys,json; print(next(e['id'] for e in json.load(sys.stdin) if e.get('providerId')=='deny-access-authenticator'))")
-${KC} update "authentication/flows/${GATE_FLOW}/executions" -r scout \
-  -b "{\"id\": \"${COND_EXEC_ID}\", \"requirement\": \"REQUIRED\"}" >/dev/null
-${KC} update "authentication/flows/${GATE_FLOW}/executions" -r scout \
-  -b "{\"id\": \"${DENY_EXEC_ID}\", \"requirement\": \"REQUIRED\"}" >/dev/null
-
-# Configure the Condition - User Role: client role xnat.xnat-access,
-# negate so the rule fires when the user is *missing* the role.
-COND_HAS_CONFIG=$(${KC} get "authentication/flows/${GATE_FLOW}/executions" -r scout \
-  | python3 -c "import sys,json; print('yes' if next(e for e in json.load(sys.stdin) if e.get('providerId')=='conditional-user-role').get('authenticationConfig') else 'no')")
-if [[ "${COND_HAS_CONFIG}" == "no" ]]; then
-  ${KC} create "authentication/executions/${COND_EXEC_ID}/config" -r scout \
-    -b '{"alias": "browser-xnat-access cond config", "config": {"condUserRole": "xnat.xnat-access", "negate": "true"}}' \
-    >/dev/null
-fi
-
-# Bind browser-xnat-access flow as the xnat client's browser flow override.
-BX_FLOW_ID=$(${KC} get authentication/flows -r scout \
-  | python3 -c "import sys,json; print(next(f['id'] for f in json.load(sys.stdin) if f['alias']=='browser-xnat-access'))")
-${KC} update "clients/${XNAT_CID}" -r scout \
-  -s "authenticationFlowBindingOverrides.browser=${BX_FLOW_ID}" \
-  >/dev/null
+# The xnat-access client role, its scout-user group mapping, the
+# browser-xnat-access authentication flow, and the xnat client's
+# authenticationFlowBindingOverrides.browser are all imported by
+# keycloak-config-cli from scout-realm.json.j2 — no kcadm wiring needed
+# here. Verify the override actually landed at import time, since silent
+# failure would mean bob's denial test in step 11 succeeds for the wrong
+# reason (e.g. agent-browser failing to log in at all).
+echo "Verifying browser-xnat-access flow binding on the xnat client..."
+BX_OVERRIDE=$(${KC} get "clients/${XNAT_CID}" -r scout \
+  | python3 -c 'import sys,json; print(json.load(sys.stdin).get("authenticationFlowBindingOverrides", {}).get("browser", ""))')
+[[ -n "${BX_OVERRIDE}" ]] \
+  || fail "step 5: xnat client has no browser flow override — realm import did not pick up authenticationFlowBindingOverrides; check keycloak-config-cli logs"
 
 # ---------------------------------------------------------------------------
 step "6. Prepare XNAT manifests (sed + prefs-init + values overrides)"
@@ -289,23 +202,6 @@ sed 's/dev03\.tag\.rcif\.io/localtest.me/g' xnat-values.yaml \
   > k3d/manifests/xnat-values.yaml
 sed 's/dev03\.tag\.rcif\.io/localtest.me/g' openid-provider.properties \
   > k3d/manifests/openid-provider.properties
-
-sed -i.bak 's/^auto.enabled=false/auto.enabled=true/' \
-  k3d/manifests/openid-provider.properties
-rm k3d/manifests/openid-provider.properties.bak
-
-if ! grep -q '^openid.keycloak.allowedGroups=' \
-       k3d/manifests/openid-provider.properties; then
-  cat >> k3d/manifests/openid-provider.properties <<'EOF'
-
-# Auto-enable Keycloak-provisioned users on first login. With the group
-# filter below: alice (in scout-user) lands logged in; bob (not in
-# scout-user) is rejected at the OIDC callback. Verify property name
-# against openid-auth-plugin 1.4.1-xpl README — see runbook §6 for fixes
-# if 1.4.1-xpl doesn't honor allowedGroups.
-openid.keycloak.allowedGroups=scout-user
-EOF
-fi
 
 cat > k3d/manifests/prefs-init.ini <<'EOF'
 [siteConfig]
