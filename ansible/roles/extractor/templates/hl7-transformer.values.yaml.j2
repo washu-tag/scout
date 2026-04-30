@@ -1,6 +1,15 @@
 image:
   repository: '{{ hl7_transformer_image_repository }}'
   tag: '{{ hl7_transformer_image_tag }}'
+initContainers:
+  # Avoid a startup race where the main process tries to connect to
+  # Temporal before cluster networking/DNS is fully ready for this pod.
+  - name: wait-for-temporal-dns
+    image: busybox
+    command:
+      - sh
+      - -c
+      - 'until getent hosts temporal-internal-frontend; do echo "waiting for dns..."; sleep 2; done'
 envFrom:
   - secretRef:
       name: s3-secret
