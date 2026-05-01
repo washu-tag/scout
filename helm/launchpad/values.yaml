@@ -7,6 +7,10 @@ replicaCount: 1
 # Feature flags
 enableChat: false
 enablePlaybooks: false
+# Show the MinIO "Lake" card in the launchpad. Default true so deployments
+# still running an in-cluster MinIO continue to surface the console; sites
+# that have cut over to AWS S3 (e.g. Embark) set this false.
+enableMinio: true
 
 image:
   repository: ghcr.io/washu-tag/launchpad

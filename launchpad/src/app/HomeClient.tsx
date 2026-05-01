@@ -226,9 +226,10 @@ const PlaybooksGrid = ({ playbooksUrl }: PlaybooksGridProps) => {
 interface ContentGridProps {
   enableChat: boolean;
   enablePlaybooks: boolean;
+  enableMinio: boolean;
 }
 
-const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
+const ContentGrid = ({ enableChat, enablePlaybooks, enableMinio }: ContentGridProps) => {
   const [subdomainUrls, setSubdomainUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -254,8 +255,8 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
     });
 
     console.debug('[Scout] Subdomain URLs generated', { protocol, host });
-    console.debug('[Scout] Feature flags:', { enableChat, enablePlaybooks });
-  }, [enableChat, enablePlaybooks]);
+    console.debug('[Scout] Feature flags:', { enableChat, enablePlaybooks, enableMinio });
+  }, [enableChat, enablePlaybooks, enableMinio]);
 
   // Don't render until subdomain URLs are set on client side
   if (Object.keys(subdomainUrls).length === 0) {
@@ -369,17 +370,19 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4 flex-1">
-              <a
-                href={subdomainUrls.minio}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-red-50 hover:to-rose-50 dark:hover:from-red-900/20 dark:hover:to-rose-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-xl hover:shadow-red-200/30 dark:hover:shadow-red-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden flex flex-col items-center justify-center"
-              >
-                <div className="relative w-16 h-16 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
-                  <SiMinio className="text-4xl text-red-600 dark:text-red-400" />
-                </div>
-                <div className="relative text-sm font-bold text-gray-900 dark:text-white">Lake</div>
-              </a>
+              {enableMinio && (
+                <a
+                  href={subdomainUrls.minio}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl hover:bg-gradient-to-br hover:from-red-50 hover:to-rose-50 dark:hover:from-red-900/20 dark:hover:to-rose-900/10 border border-slate-200/50 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-xl hover:shadow-red-200/30 dark:hover:shadow-red-500/20 hover:-translate-y-1 transition-all duration-300 no-underline text-center overflow-hidden flex flex-col items-center justify-center"
+                >
+                  <div className="relative w-16 h-16 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                    <SiMinio className="text-4xl text-red-600 dark:text-red-400" />
+                  </div>
+                  <div className="relative text-sm font-bold text-gray-900 dark:text-white">Lake</div>
+                </a>
+              )}
 
               <a
                 href={subdomainUrls.temporal}
@@ -433,16 +436,17 @@ const ContentGrid = ({ enableChat, enablePlaybooks }: ContentGridProps) => {
 interface HomeClientProps {
   enableChat: boolean;
   enablePlaybooks: boolean;
+  enableMinio: boolean;
 }
 
-export default function HomeClient({ enableChat, enablePlaybooks }: HomeClientProps) {
+export default function HomeClient({ enableChat, enablePlaybooks, enableMinio }: HomeClientProps) {
   const [mounted, setMounted] = useState(false);
   const { data: session, status } = useSession();
 
   useEffect(() => {
     setMounted(true);
-    console.log('[Scout Client] Props received:', { enableChat, enablePlaybooks });
-  }, [enableChat, enablePlaybooks]);
+    console.log('[Scout Client] Props received:', { enableChat, enablePlaybooks, enableMinio });
+  }, [enableChat, enablePlaybooks, enableMinio]);
 
   const skipAuth =
     process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
@@ -510,7 +514,7 @@ export default function HomeClient({ enableChat, enablePlaybooks }: HomeClientPr
         </div>
 
         {/* Content Grid */}
-        <ContentGrid enableChat={enableChat} enablePlaybooks={enablePlaybooks} />
+        <ContentGrid enableChat={enableChat} enablePlaybooks={enablePlaybooks} enableMinio={enableMinio} />
 
         {/* Footer */}
         <div className="text-center mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
