@@ -1,7 +1,9 @@
 """
 Unit tests for link_sanitizer_filter.
 
-Run with: pytest ansible/roles/open-webui/files/test_link_sanitizer_filter.py -v
+Run with:
+    cd ansible/roles/open-webui/files
+    uvx --with pytest-asyncio --with pydantic pytest test_link_sanitizer_filter.py -v
 """
 
 import pytest
@@ -560,94 +562,68 @@ class TestValvesConfiguration:
 class TestOutlet:
     """Test the outlet async method."""
 
-    def test_outlet_sanitizes_assistant_not_user(self):
+    @pytest.mark.asyncio
+    async def test_outlet_sanitizes_assistant_not_user(self):
         """Outlet sanitizes assistant messages but preserves user messages."""
-        import asyncio
-
-        async def run():
-            f = Filter()
-            body = {
-                "messages": [
-                    {"role": "user", "content": "https://user-provided.com"},
-                    {"role": "assistant", "content": "Check https://evil.com/data"},
-                ]
-            }
-            return await f.outlet(body)
-
-        result = asyncio.run(run())
+        f = Filter()
+        body = {
+            "messages": [
+                {"role": "user", "content": "https://user-provided.com"},
+                {"role": "assistant", "content": "Check https://evil.com/data"},
+            ]
+        }
+        result = await f.outlet(body)
         # User message unchanged
         assert result["messages"][0]["content"] == "https://user-provided.com"
         # Assistant message sanitized
         assert "evil.com" not in result["messages"][1]["content"]
 
-    def test_outlet_empty_messages(self):
+    @pytest.mark.asyncio
+    async def test_outlet_empty_messages(self):
         """Outlet handles empty messages array."""
-        import asyncio
-
-        async def run():
-            f = Filter()
-            body = {"messages": []}
-            return await f.outlet(body)
-
-        result = asyncio.run(run())
+        f = Filter()
+        body = {"messages": []}
+        result = await f.outlet(body)
         assert result == {"messages": []}
 
-    def test_outlet_no_messages_key(self):
+    @pytest.mark.asyncio
+    async def test_outlet_no_messages_key(self):
         """Outlet handles missing messages key."""
-        import asyncio
-
-        async def run():
-            f = Filter()
-            body = {}
-            return await f.outlet(body)
-
-        result = asyncio.run(run())
+        f = Filter()
+        body = {}
+        result = await f.outlet(body)
         assert result == {}
 
-    def test_outlet_calls_event_emitter_on_change(self):
+    @pytest.mark.asyncio
+    async def test_outlet_calls_event_emitter_on_change(self):
         """Outlet calls event emitter when content changes."""
-        import asyncio
-
         emitted = []
+        f = Filter()
 
-        async def run():
-            f = Filter()
+        async def mock_emitter(event):
+            emitted.append(event)
 
-            async def mock_emitter(event):
-                emitted.append(event)
-
-            body = {
-                "messages": [{"role": "assistant", "content": "https://evil.com/data"}]
-            }
-            return await f.outlet(body, __event_emitter__=mock_emitter)
-
-        asyncio.run(run())
+        body = {"messages": [{"role": "assistant", "content": "https://evil.com/data"}]}
+        await f.outlet(body, __event_emitter__=mock_emitter)
 
         assert len(emitted) == 1
         assert emitted[0]["type"] == "replace"
         assert "evil.com" not in emitted[0]["data"]["content"]
 
-    def test_outlet_no_emitter_call_when_unchanged(self):
+    @pytest.mark.asyncio
+    async def test_outlet_no_emitter_call_when_unchanged(self):
         """Outlet doesn't call emitter when content unchanged."""
-        import asyncio
-
         emitted = []
+        f = Filter()
+        f.valves.internal_domains = "example.com"
 
-        async def run():
-            f = Filter()
-            f.valves.internal_domains = "example.com"
+        async def mock_emitter(event):
+            emitted.append(event)
 
-            async def mock_emitter(event):
-                emitted.append(event)
-
-            body = {
-                "messages": [
-                    {"role": "assistant", "content": "Visit https://example.com"}
-                ]
-            }
-            return await f.outlet(body, __event_emitter__=mock_emitter)
-
-        asyncio.run(run())
+        body = {
+            "messages": [{"role": "assistant", "content": "Visit https://example.com"}]
+        }
+        await f.outlet(body, __event_emitter__=mock_emitter)
 
         assert len(emitted) == 0
 
@@ -655,71 +631,77 @@ class TestOutlet:
 class TestStreamProcessing:
     """Test real-time stream processing."""
 
-    def test_stream_no_url(self):
+    @pytest.mark.asyncio
+    async def test_stream_no_url(self):
         """Stream without URLs passes through."""
         f = Filter()
         event = {"choices": [{"delta": {"content": "Hello world"}}]}
         metadata = {"chat_id": "test-chat-1"}
-        result = f.stream(event, __metadata__=metadata)
+        result = await f.stream(event, __metadata__=metadata)
         # Buffer holds last 7 chars, rest emitted
         assert result["choices"][0]["delta"]["content"] == "Hell"
 
-    def test_stream_url_in_single_chunk(self):
+    @pytest.mark.asyncio
+    async def test_stream_url_in_single_chunk(self):
         """URL contained in single chunk is sanitized."""
         f = Filter()
         event = {"choices": [{"delta": {"content": "Visit https://evil.com for info"}}]}
         metadata = {"chat_id": "test-chat-1"}
-        result = f.stream(event, __metadata__=metadata)
+        result = await f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
         assert "evil.com" not in content
         assert "(external link removed for security)" in content
 
-    def test_stream_url_split_across_chunks(self):
+    @pytest.mark.asyncio
+    async def test_stream_url_split_across_chunks(self):
         """URL split across chunks is properly buffered and sanitized."""
         f = Filter()
         metadata = {"chat_id": "test-chat-1"}
 
         # First chunk: partial URL
         event1 = {"choices": [{"delta": {"content": "Check https://ev"}}]}
-        result1 = f.stream(event1, __metadata__=metadata)
+        result1 = await f.stream(event1, __metadata__=metadata)
         # Should emit "Check " and buffer the partial URL
         assert "evil.com" not in result1["choices"][0]["delta"]["content"]
 
         # Second chunk: rest of URL (same chat_id)
         event2 = {"choices": [{"delta": {"content": "il.com/data now"}}]}
-        result2 = f.stream(event2, __metadata__=metadata)
+        result2 = await f.stream(event2, __metadata__=metadata)
         content2 = result2["choices"][0]["delta"]["content"]
         assert "evil.com" not in content2
         assert "(external link removed for security)" in content2
 
-    def test_stream_internal_url_preserved(self):
+    @pytest.mark.asyncio
+    async def test_stream_internal_url_preserved(self):
         """Internal URLs are preserved in stream."""
         f = Filter()
         f.valves.internal_domains = "example.com"
         metadata = {"chat_id": "test-chat-1"}
 
         event = {"choices": [{"delta": {"content": "See https://example.com/docs "}}]}
-        result = f.stream(event, __metadata__=metadata)
+        result = await f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
         assert "https://example.com/docs" in content
 
-    def test_stream_finish_flushes_buffer(self):
+    @pytest.mark.asyncio
+    async def test_stream_finish_flushes_buffer(self):
         """End of stream flushes remaining buffer."""
         f = Filter()
         metadata = {"chat_id": "test-chat-1"}
 
         # Send content without URL
         event1 = {"choices": [{"delta": {"content": "Short"}}]}
-        result1 = f.stream(event1, __metadata__=metadata)
+        result1 = await f.stream(event1, __metadata__=metadata)
         # Buffer too short, nothing emitted
         assert result1["choices"][0]["delta"]["content"] == ""
 
         # Finish signal (same chat_id)
         event2 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
-        result2 = f.stream(event2, __metadata__=metadata)
+        result2 = await f.stream(event2, __metadata__=metadata)
         assert result2["choices"][0]["delta"]["content"] == "Short"
 
-    def test_stream_multiple_urls(self):
+    @pytest.mark.asyncio
+    async def test_stream_multiple_urls(self):
         """Multiple URLs in stream are all processed."""
         f = Filter()
         metadata = {"chat_id": "test-chat-1"}
@@ -732,24 +714,25 @@ class TestStreamProcessing:
                 }
             ],
         }
-        result = f.stream(event, __metadata__=metadata)
+        result = await f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
         assert "https://a.com" not in content
         assert "https://b.com" not in content
         assert content.count("(external link removed for security)") == 2
 
-    def test_stream_http_split_at_boundary(self):
+    @pytest.mark.asyncio
+    async def test_stream_http_split_at_boundary(self):
         """'http' split across chunks doesn't cause issues."""
         f = Filter()
         metadata = {"chat_id": "test-chat-1"}
 
         # First chunk ends with 'htt'
         event1 = {"choices": [{"delta": {"content": "Link: htt"}}]}
-        result1 = f.stream(event1, __metadata__=metadata)
+        result1 = await f.stream(event1, __metadata__=metadata)
 
         # Second chunk completes the URL (same chat_id)
         event2 = {"choices": [{"delta": {"content": "ps://evil.com here "}}]}
-        result2 = f.stream(event2, __metadata__=metadata)
+        result2 = await f.stream(event2, __metadata__=metadata)
 
         # Combined should have replaced the URL
         combined = (
@@ -758,7 +741,8 @@ class TestStreamProcessing:
         )
         assert "evil.com" not in combined
 
-    def test_stream_concurrent_isolation(self):
+    @pytest.mark.asyncio
+    async def test_stream_concurrent_isolation(self):
         """
         Multiple concurrent streams are isolated from each other.
 
@@ -772,27 +756,27 @@ class TestStreamProcessing:
 
         # User A starts streaming (contains PHI)
         event_a1 = {"choices": [{"delta": {"content": "Patient MRN 12345 "}}]}
-        result_a1 = f.stream(event_a1, __metadata__=metadata_a)
+        result_a1 = await f.stream(event_a1, __metadata__=metadata_a)
 
         # User B starts streaming concurrently (different chat_id)
         event_b1 = {"choices": [{"delta": {"content": "Hello, how can I "}}]}
-        result_b1 = f.stream(event_b1, __metadata__=metadata_b)
+        result_b1 = await f.stream(event_b1, __metadata__=metadata_b)
 
         # User A continues
         event_a2 = {"choices": [{"delta": {"content": "has diagnosis "}}]}
-        result_a2 = f.stream(event_a2, __metadata__=metadata_a)
+        result_a2 = await f.stream(event_a2, __metadata__=metadata_a)
 
         # User B continues
         event_b2 = {"choices": [{"delta": {"content": "help you today?"}}]}
-        result_b2 = f.stream(event_b2, __metadata__=metadata_b)
+        result_b2 = await f.stream(event_b2, __metadata__=metadata_b)
 
         # User A finishes
         event_a3 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
-        result_a3 = f.stream(event_a3, __metadata__=metadata_a)
+        result_a3 = await f.stream(event_a3, __metadata__=metadata_a)
 
         # User B finishes
         event_b3 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
-        result_b3 = f.stream(event_b3, __metadata__=metadata_b)
+        result_b3 = await f.stream(event_b3, __metadata__=metadata_b)
 
         # Reconstruct User A's full output
         user_a_output = (
@@ -821,26 +805,27 @@ class TestStreamProcessing:
         assert "chat-user-a" not in f._stream_buffers
         assert "chat-user-b" not in f._stream_buffers
 
-    def test_stream_buffer_cleanup_on_finish(self):
+    @pytest.mark.asyncio
+    async def test_stream_buffer_cleanup_on_finish(self):
         """Stream buffer is cleaned up when finish_reason is received."""
         f = Filter()
         metadata = {"chat_id": "test-cleanup"}
 
         # Start a stream
         event1 = {"choices": [{"delta": {"content": "Hello"}}]}
-        f.stream(event1, __metadata__=metadata)
+        await f.stream(event1, __metadata__=metadata)
         assert "test-cleanup" in f._stream_buffers
 
         # Finish the stream
         event2 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
-        f.stream(event2, __metadata__=metadata)
+        await f.stream(event2, __metadata__=metadata)
 
         # Buffer should be cleaned up
         assert "test-cleanup" not in f._stream_buffers
 
-    def test_stream_stale_buffer_cleanup(self):
+    @pytest.mark.asyncio
+    async def test_stream_stale_buffer_cleanup(self):
         """Stale buffers from abandoned streams are cleaned up during outlet."""
-        import asyncio
         import time
 
         f = Filter()
@@ -854,10 +839,7 @@ class TestStreamProcessing:
         f._stream_buffers["active-stream"] = ("fresh content", fresh_timestamp)
 
         # Process outlet (triggers cleanup)
-        async def run():
-            return await f.outlet({"messages": []})
-
-        asyncio.run(run())
+        await f.outlet({"messages": []})
 
         # Stale buffer should be cleaned up
         assert "abandoned-stream" not in f._stream_buffers
@@ -865,38 +847,41 @@ class TestStreamProcessing:
         # Fresh buffer should still exist
         assert "active-stream" in f._stream_buffers
 
-    def test_stream_without_metadata_skips_processing(self):
+    @pytest.mark.asyncio
+    async def test_stream_without_metadata_skips_processing(self):
         """Stream without metadata skips buffered processing (outlet handles it)."""
         f = Filter()
 
         # No metadata provided - event returned unchanged
         event1 = {"choices": [{"delta": {"content": "Hello world "}}]}
-        result1 = f.stream(event1)
+        result1 = await f.stream(event1)
         assert result1["choices"][0]["delta"]["content"] == "Hello world "
 
         # With empty metadata - also skipped
         event2 = {"choices": [{"delta": {"content": "https://evil.com test"}}]}
-        result2 = f.stream(event2, __metadata__={})
+        result2 = await f.stream(event2, __metadata__={})
         assert result2["choices"][0]["delta"]["content"] == "https://evil.com test"
 
         # With metadata but no chat_id - also skipped
         event3 = {"choices": [{"delta": {"content": "https://evil.com test"}}]}
-        result3 = f.stream(event3, __metadata__={"other_key": "value"})
+        result3 = await f.stream(event3, __metadata__={"other_key": "value"})
         assert result3["choices"][0]["delta"]["content"] == "https://evil.com test"
 
-    def test_stream_www_url_sanitized(self):
+    @pytest.mark.asyncio
+    async def test_stream_www_url_sanitized(self):
         """www. URLs in stream are sanitized."""
         f = Filter()
         metadata = {"chat_id": "test-chat-1"}
         event = {
             "choices": [{"delta": {"content": "Visit www.evil.com/data for info "}}]
         }
-        result = f.stream(event, __metadata__=metadata)
+        result = await f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
         assert "www.evil.com" not in content
         assert "(external link removed for security)" in content
 
-    def test_stream_ipv6_url_sanitized(self):
+    @pytest.mark.asyncio
+    async def test_stream_ipv6_url_sanitized(self):
         """IPv6 URLs in stream are fully sanitized (not just the scheme)."""
         f = Filter()
         metadata = {"chat_id": "test-chat-1"}
@@ -905,14 +890,15 @@ class TestStreamProcessing:
                 {"delta": {"content": "Connect to http://[2001:db8::1]/api now "}}
             ]
         }
-        result = f.stream(event, __metadata__=metadata)
+        result = await f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
         # The entire IPv6 URL should be removed, not just http://
         assert "2001:db8" not in content
         assert "[" not in content or "Connect" in content  # brackets from URL removed
         assert "(external link removed for security)" in content
 
-    def test_stream_ipv6_url_with_port_sanitized(self):
+    @pytest.mark.asyncio
+    async def test_stream_ipv6_url_with_port_sanitized(self):
         """IPv6 URLs with port in stream are fully sanitized."""
         f = Filter()
         metadata = {"chat_id": "test-chat-1"}
@@ -921,13 +907,14 @@ class TestStreamProcessing:
                 {"delta": {"content": "Server at http://[::1]:8080/path here "}}
             ]
         }
-        result = f.stream(event, __metadata__=metadata)
+        result = await f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
         assert "::1" not in content
         assert "8080" not in content
         assert "(external link removed for security)" in content
 
-    def test_stream_url_with_trailing_period(self):
+    @pytest.mark.asyncio
+    async def test_stream_url_with_trailing_period(self):
         """URLs followed by period in stream preserve the period."""
         f = Filter()
         metadata = {"chat_id": "test-chat-1"}
@@ -936,23 +923,24 @@ class TestStreamProcessing:
                 {"delta": {"content": "Visit https://evil.com. Then continue "}}
             ]
         }
-        result = f.stream(event, __metadata__=metadata)
+        result = await f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
         assert "evil.com" not in content
         assert "(external link removed for security). Then" in content
 
-    def test_stream_url_with_trailing_period_at_end(self):
+    @pytest.mark.asyncio
+    async def test_stream_url_with_trailing_period_at_end(self):
         """URLs with trailing period at stream end preserve the period."""
         f = Filter()
         metadata = {"chat_id": "test-chat-1"}
 
         # Send URL with trailing period
         event1 = {"choices": [{"delta": {"content": "See https://evil.com."}}]}
-        result1 = f.stream(event1, __metadata__=metadata)
+        result1 = await f.stream(event1, __metadata__=metadata)
 
         # Finish the stream
         event2 = {"choices": [{"delta": {}, "finish_reason": "stop"}]}
-        result2 = f.stream(event2, __metadata__=metadata)
+        result2 = await f.stream(event2, __metadata__=metadata)
 
         combined = (
             result1["choices"][0]["delta"]["content"]
@@ -962,7 +950,8 @@ class TestStreamProcessing:
         assert combined.endswith(".")
         assert "(external link removed for security)." in combined
 
-    def test_stream_url_with_version_in_path(self):
+    @pytest.mark.asyncio
+    async def test_stream_url_with_version_in_path(self):
         """URLs with version numbers in path preserve dots within URL."""
         f = Filter()
         f.valves.internal_domains = "example.com"
@@ -972,7 +961,7 @@ class TestStreamProcessing:
                 {"delta": {"content": "API at https://example.com/v1.0/users here "}}
             ]
         }
-        result = f.stream(event, __metadata__=metadata)
+        result = await f.stream(event, __metadata__=metadata)
         content = result["choices"][0]["delta"]["content"]
         # The dots in v1.0 should be preserved
         assert "v1.0" in content
