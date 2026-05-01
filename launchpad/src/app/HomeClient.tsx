@@ -380,7 +380,9 @@ const ContentGrid = ({ enableChat, enablePlaybooks, enableMinio }: ContentGridPr
                   <div className="relative w-16 h-16 rounded-xl bg-white dark:bg-gray-800 shadow-md flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
                     <SiMinio className="text-4xl text-red-600 dark:text-red-400" />
                   </div>
-                  <div className="relative text-sm font-bold text-gray-900 dark:text-white">Lake</div>
+                  <div className="relative text-sm font-bold text-gray-900 dark:text-white">
+                    Lake
+                  </div>
                 </a>
               )}
 
@@ -514,7 +516,11 @@ export default function HomeClient({ enableChat, enablePlaybooks, enableMinio }:
         </div>
 
         {/* Content Grid */}
-        <ContentGrid enableChat={enableChat} enablePlaybooks={enablePlaybooks} enableMinio={enableMinio} />
+        <ContentGrid
+          enableChat={enableChat}
+          enablePlaybooks={enablePlaybooks}
+          enableMinio={enableMinio}
+        />
 
         {/* Footer */}
         <div className="text-center mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
