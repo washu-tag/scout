@@ -107,7 +107,7 @@ exit
 
 #### 2. Install Scout Query Tool
 
-Install the native query tool that enables the LLM to query the Delta Lake. This replaces the Trino MCP external tool with a native Open WebUI Tool function that stores full results as downloadable CSV files and returns only summaries to the LLM context.
+Install the native query tool that enables the LLM to query the Delta Lake. The tool runs real Trino queries, applies negation filtering to free-text searches, persists per-query JSON to OWUI Files (and a lean cohort projection to MinIO when results include cohort-shaped IDs), and renders a display-aware iframe to the user.
 
 > **Important:** Tools and Functions are uploaded through different interfaces in Open WebUI. Tools (class `Tools`) must be created via **Workspace > Tools**, not **Admin Panel > Functions**. The Functions interface only accepts Filters, Pipes, and Actions.
 
@@ -118,9 +118,11 @@ Install the native query tool that enables the LLM to query the Delta Lake. This
 5. Set **Description** to "Execute SQL queries against Scout Delta Lake."
 6. Copy the contents of `ansible/roles/open-webui/files/scout_query_tool.py` into the code editor and click **Save**
 7. Click the **gear icon** next to the new tool to configure Valves:
-   - **use_mock_data**: `true` for POC/demo, `false` for production (requires Trino connectivity)
-   - **trino_host**, **trino_port**, **trino_user**: Configure for your Trino deployment (only used when mock data is disabled)
-   - **max_context_rows**: Number of sample rows included in the LLM summary (default: 5)
+   - **trino_host**, **trino_port**, **trino_user**: Trino connection (the tool only runs real Trino queries — no mock mode)
+   - **trino_catalog**, **trino_schema**: typically `delta` and `default`
+   - **safety_max_context_rows**: hard cap on rows returned to the LLM context (default: 200)
+   - **owui_files_lru_keep**: how many recent per-query JSON files to retain per chat (default: 10; older ones are async-pruned)
+   - **review_dashboard_url_template**: URL of the Voila review dashboard. The `{cohort_path}` placeholder is filled in with `user_id/chat_id/uuid.json` (the MinIO key)
 
 > **Note:** If migrating from Trino MCP, remove the Trino MCP external tool from **Admin Panel → Settings → External Tools** and disable it on the Scout Explorer model before enabling the Scout Query Tool.
 

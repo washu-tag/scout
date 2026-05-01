@@ -210,3 +210,11 @@ extraEnvVars:
   # Logout redirect URL (OAuth2 Proxy signout)
   - name: WEBUI_AUTH_SIGNOUT_REDIRECT_URL
     value: '{{ oauth2_proxy_signout_url }}'
+
+  # MinIO endpoint + bucket for the Scout Query Tool's cohort writes.
+  # Credentials (SCOUT_COHORTS_S3_KEY/SECRET) are loaded from open-webui-secrets
+  # via extraEnvFrom above.
+  - name: SCOUT_COHORTS_S3_ENDPOINT
+    value: '{{ s3_endpoint }}'
+  - name: SCOUT_COHORTS_BUCKET
+    value: '{{ cohorts_bucket }}'

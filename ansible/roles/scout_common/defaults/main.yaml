@@ -146,11 +146,16 @@ s3_username: minio
 s3_lake_reader: lake-reader
 s3_lake_writer: lake-writer
 s3_loki_writer: loki-writer
+s3_cohorts_writer: cohorts-writer
+s3_cohorts_reader: cohorts-reader
 lake_bucket: lake
 scratch_bucket: scratch
 loki_chunks_bucket: loki-chunks
 loki_ruler_bucket: loki-ruler
 loki_admin_bucket: loki-admin
+cohorts_bucket: scout-cohorts
+# Days to keep cohort objects before lifecycle expiry; passes through to mc ilm
+cohorts_bucket_expiry_days: 30
 
 # Service Account names
 lake_reader_service_account_name: lake-reader

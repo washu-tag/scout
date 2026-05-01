@@ -385,6 +385,10 @@ k3s_cluster:
     s3_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     s3_lake_reader_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     s3_lake_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    # Scout cohorts bucket — used by the Scout Query Tool to drop cohort
+    # snapshots and by the Voila review dashboard to read them.
+    s3_cohorts_writer_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    s3_cohorts_reader_secret: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     minio_resources:
       requests:
         cpu: 2

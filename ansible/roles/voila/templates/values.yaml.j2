@@ -18,6 +18,14 @@ env:
   TRINO_USER: "{{ trino_user }}"
   TRINO_CATALOG: "delta"
   TRINO_SCHEMA: "default"
+  # MinIO endpoint + bucket + read credentials for the cohort review dashboard.
+  # Voila reads cohort JSONs written by the Scout Query Tool.
+  SCOUT_COHORTS_S3_ENDPOINT: "{{ s3_endpoint }}"
+  SCOUT_COHORTS_S3_KEY: "{{ s3_cohorts_reader }}"
+  SCOUT_COHORTS_S3_SECRET: "{{ s3_cohorts_reader_secret }}"
+  SCOUT_COHORTS_BUCKET: "{{ cohorts_bucket }}"
+  # Mock XNAT (in-cluster) — receives the submission POST.
+  MOCK_XNAT_URL: "http://mock-xnat.{{ analytics_namespace | default('scout-analytics') }}:8000"
 
 ingress:
   enabled: true

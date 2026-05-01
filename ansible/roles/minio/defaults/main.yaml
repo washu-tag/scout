@@ -48,6 +48,7 @@ minio_buckets:
   - name: '{{ loki_admin_bucket }}'
   - name: '{{ lake_bucket }}'
   - name: '{{ scratch_bucket }}'
+  - name: '{{ cohorts_bucket }}'
 
 # S3 User credentials
 minio_users:
@@ -57,12 +58,18 @@ minio_users:
     secret_key: '{{ s3_lake_writer_secret }}'
   - access_key: '{{ s3_loki_writer }}'
     secret_key: '{{ s3_loki_writer_secret }}'
+  - access_key: '{{ s3_cohorts_writer }}'
+    secret_key: '{{ s3_cohorts_writer_secret }}'
+  - access_key: '{{ s3_cohorts_reader }}'
+    secret_key: '{{ s3_cohorts_reader_secret }}'
 
 # User mapping
 minio_credentials:
   - name: '{{ s3_lake_reader }}-creds'
   - name: '{{ s3_lake_writer }}-creds'
   - name: '{{ s3_loki_writer }}-creds'
+  - name: '{{ s3_cohorts_writer }}-creds'
+  - name: '{{ s3_cohorts_reader }}-creds'
 
 # IAM Policy definitions
 minio_policies:
@@ -95,6 +102,32 @@ minio_policies:
       - 'arn:aws:s3:::{{ loki_admin_bucket }}'
       - 'arn:aws:s3:::{{ loki_admin_bucket }}/*'
     user: '{{ s3_loki_writer }}'
+  - name: cohorts-rw
+    actions:
+      - s3:PutObject
+      - s3:GetObject
+      - s3:DeleteObject
+      - s3:ListBucket
+      - s3:GetBucketLocation
+    resources:
+      - 'arn:aws:s3:::{{ cohorts_bucket }}'
+      - 'arn:aws:s3:::{{ cohorts_bucket }}/*'
+    user: '{{ s3_cohorts_writer }}'
+  - name: cohorts-r
+    actions:
+      - s3:GetObject
+      - s3:GetBucketLocation
+      - s3:ListBucket
+    resources:
+      - 'arn:aws:s3:::{{ cohorts_bucket }}'
+      - 'arn:aws:s3:::{{ cohorts_bucket }}/*'
+    user: '{{ s3_cohorts_reader }}'
+
+# Bucket lifecycle rules — applied via mc ilm in the bootstrap job.
+# Each entry: {bucket: name, expiry_days: int}.
+minio_bucket_lifecycle_rules:
+  - bucket: '{{ cohorts_bucket }}'
+    expiry_days: '{{ cohorts_bucket_expiry_days }}'
 
 # OIDC configuration
 minio_oidc_enabled: true

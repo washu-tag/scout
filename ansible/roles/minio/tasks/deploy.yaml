@@ -167,6 +167,29 @@
       }}
   loop: '{{ minio_policies }}'
 
+- name: Build list of projected Secrets for MinIO user credentials
+  # Each `<access_key>-creds` Secret is projected at
+  # /user-creds/<access_key>/{access_key,secret_key} in the bootstrap Job, so
+  # the script can create users itself when the MinIO operator's one-shot
+  # `tenant.status.provisionedUsers` path won't.
+  ansible.builtin.set_fact:
+    user_cred_sources: >-
+      {{
+        user_cred_sources | default([]) +
+        [ {
+            'secret': {
+              'name': item.access_key + '-creds',
+              'items': [
+                { 'key': 'CONSOLE_ACCESS_KEY', 'path': item.access_key + '/access_key' },
+                { 'key': 'CONSOLE_SECRET_KEY', 'path': item.access_key + '/secret_key' }
+              ]
+            }
+        } ]
+      }}
+  loop: '{{ minio_users }}'
+  loop_control:
+    label: '{{ item.access_key }}'
+
 - name: Bootstrap MinIO IAM (policies + bindings)
   kubernetes.core.k8s:
     state: present
@@ -205,12 +228,40 @@
                     mc alias set local http://{{ minio_tenant_name }}-hl.{{ minio_tenant_namespace }}:9000 \
                       "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" --insecure
 
+                    # Ensure each user exists. The MinIO operator has a sticky
+                    # `tenant.status.provisionedUsers: true` flag — once set on
+                    # initial provisioning, it skips provisionUsers() on
+                    # subsequent reconciles, so adding users to an existing
+                    # tenant doesn't create them. We create missing users
+                    # ourselves using credentials from the mounted *-creds
+                    # Secrets (same Secrets the tenant spec references).
+                    {% for u in minio_users %}
+                    if ! mc admin user info local "{{ u.access_key }}" >/dev/null 2>&1; then
+                      echo "User {{ u.access_key }} missing, creating..."
+                      mc admin user add local \
+                        "$(cat /user-creds/{{ u.access_key }}/access_key)" \
+                        "$(cat /user-creds/{{ u.access_key }}/secret_key)"
+                    else
+                      echo "User {{ u.access_key }} exists"
+                    fi
+                    {% endfor %}
+
                     # Apply policies and attach to users
                     {% for p in minio_policies %}
                     echo "Creating policy {{ p.name }}..."
                     mc admin policy create local {{ p.name }} /policies/{{ p.name }}.json
                     mc admin policy attach local {{ p.name }} --user {{ p.user }}
                     mc admin policy detach local consoleAdmin --user {{ p.user }}
+                    {% endfor %}
+
+                    # Apply bucket lifecycle rules (expiry only).
+                    # `mc ilm import` reads JSON from stdin and replaces the
+                    # bucket's full ILM config — declarative and idempotent.
+                    # (The mc in this image doesn't support `--id` on
+                    # `rule add`, so a per-rule update isn't an option.)
+                    {% for r in minio_bucket_lifecycle_rules | default([]) %}
+                    echo "Setting lifecycle on {{ r.bucket }}: expire after {{ r.expiry_days }} days..."
+                    printf '{"Rules":[{"ID":"scout-expiry","Status":"Enabled","Expiration":{"Days":%d},"Filter":{}}]}' {{ r.expiry_days }} | mc ilm import local/{{ r.bucket }}
                     {% endfor %}
 
                     echo "MinIO IAM setup completed successfully"
@@ -221,11 +272,18 @@
                   - name: rootcreds
                     mountPath: /rootcreds
                     readOnly: true
+                  - name: user-creds
+                    mountPath: /user-creds
+                    readOnly: true
             volumes:
               - name: policies
                 projected:
                   defaultMode: 0644
                   sources: '{{ policy_sources }}'
+              - name: user-creds
+                projected:
+                  defaultMode: 0644
+                  sources: '{{ user_cred_sources }}'
               - name: rootcreds
                 secret:
                   secretName: "{{ minio_env_secret_name | default('minio-env-configuration') }}"

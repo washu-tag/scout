@@ -1,21 +1,27 @@
 """
 title: Send to XNAT
 description: Export Scout query results to an XNAT instance. Adds a button to
-             the message toolbar.
+             the message toolbar. Reads the JSON files written by the Scout
+             Query Tool, runs a quick review step (5 included + 5 excluded
+             reports with negation highlighting), then POSTs the cohort to
+             XNAT.
 author: Scout Team
-version: 0.1.0
+version: 0.2.0
 """
 
-import csv
-import io
+from __future__ import annotations
+
+import html
 import json
 import logging
-from typing import Any, Awaitable, Callable, Optional
+import re
+from typing import Any, Awaitable, Callable
 
 import httpx
 from pydantic import BaseModel, Field
 
 log = logging.getLogger(__name__)
+
 
 # Greyscale XNAT swoosh logo, traced from the official icon at wiki.xnat.org.
 # Source SVG lives alongside this file at xnat_logo_grey.svg.
@@ -64,10 +70,6 @@ _ICON_DATA_URI = (
     "Zz4="
 )
 
-# ---------------------------------------------------------------------------
-# CSS variables used by Open WebUI that give us light/dark mode support.
-# Fallback values ensure the dialogs look reasonable even outside Open WebUI.
-# ---------------------------------------------------------------------------
 _MODAL_STYLES = """
     .xnat-overlay {
         position: fixed; inset: 0;
@@ -79,20 +81,19 @@ _MODAL_STYLES = """
         background: var(--color-surface-primary, #1e1e1e);
         color: var(--color-text-primary, #e0e0e0);
         padding: 24px; border-radius: 12px;
-        min-width: 400px; max-width: 600px;
-        max-height: 80vh; overflow: auto;
+        min-width: 400px; max-width: 800px;
+        max-height: 85vh; overflow: auto;
         box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         font-size: 14px;
     }
-    .xnat-modal h3 {
-        margin: 0 0 16px; font-size: 18px;
-    }
+    .xnat-modal h3 { margin: 0 0 16px; font-size: 18px; }
+    .xnat-modal h4 { margin: 16px 0 8px; font-size: 14px; }
     .xnat-modal label {
         display: block; margin-bottom: 4px;
         font-weight: 600; font-size: 13px;
     }
-    .xnat-modal select, .xnat-modal input[type=text] {
+    .xnat-modal select, .xnat-modal input[type=text], .xnat-modal textarea {
         width: 100%; padding: 8px; margin-bottom: 12px;
         border-radius: 6px; border: 1px solid #555;
         background: var(--color-surface-secondary, #2a2a2a);
@@ -123,7 +124,94 @@ _MODAL_STYLES = """
     .xnat-modal button.primary {
         background: #2563eb; color: #fff; border-color: #2563eb;
     }
+    .review-cards { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; }
+    .review-card {
+        background: var(--color-surface-secondary, #2a2a2a);
+        border-left: 3px solid #4caf50;
+        padding: 8px 10px; border-radius: 4px; font-size: 12px;
+    }
+    .review-card.excluded { border-left-color: #e57373; }
+    .review-card .ids { color: #aaa; font-size: 11px; margin-bottom: 4px; }
+    .review-card .text { line-height: 1.4; max-height: 200px; overflow-y: auto; white-space: pre-wrap; }
+    .review-section-empty { color: #888; font-style: italic; padding: 8px; }
 """
+
+
+# Negation patterns mirror the chat tool — used to highlight matches in the
+# review step.
+DEFAULT_NEGATION_PATTERNS = [
+    r"no\s+(mri?\s+)?evidence",
+    r"without\s+(mri?\s+)?evidence",
+    r"negative\s+for",
+    r"absence\s+of",
+    r"ruled?\s+out",
+    r"rules?\s+out",
+    r"excluding",
+    r"excluded",
+    r"evaluat(?:e|ion)\s+(for)?",
+    r"concern\s+(for)?",
+    r"no\s+\w+\s+(suggest|indication|sign)",
+    r"no\s+",
+]
+
+
+def _highlight_text(text: str, search_patterns: list[str]) -> str:
+    """
+    Return HTML with positive matches highlighted green, negation context red.
+    Mirrors the algorithm in analytics/notebooks/cohort/cohort_ui.py:32-138.
+    """
+    if not text:
+        return html.escape("(no report text)")
+    if not search_patterns:
+        return html.escape(text)
+
+    text_lower = text.lower()
+    negation_re = re.compile("|".join(DEFAULT_NEGATION_PATTERNS), re.IGNORECASE)
+    matches: list[dict] = []
+    for pattern in search_patterns:
+        try:
+            for m in re.finditer(pattern, text_lower, re.IGNORECASE | re.DOTALL):
+                start_pos = max(0, m.start() - 50)
+                ctx = text_lower[start_pos : m.start()]
+                has_negation = bool(negation_re.search(ctx))
+                matches.append(
+                    {
+                        "start": m.start(),
+                        "end": m.end(),
+                        "text": text[m.start() : m.end()],
+                        "has_negation": has_negation,
+                    }
+                )
+        except re.error:
+            continue
+
+    # Dedup overlaps (longer wins)
+    matches.sort(key=lambda mm: (mm["start"], -(mm["end"] - mm["start"])))
+    unique: list[dict] = []
+    for m in matches:
+        if not any(
+            not (m["end"] <= u["start"] or m["start"] >= u["end"]) for u in unique
+        ):
+            unique.append(m)
+
+    # Replace from end to start
+    unique.sort(key=lambda mm: mm["start"], reverse=True)
+    parts: list[str] = []
+    last_end = len(text)
+    for m in unique:
+        parts.append(html.escape(text[m["end"] : last_end]))
+        if m["has_negation"]:
+            style = "background:#ffcdd2;color:#222;border:1px solid #c62828;"
+        else:
+            style = "background:#a5d6a7;color:#222;border:1px solid #2e7d32;"
+        parts.append(
+            f'<span style="{style}padding:1px 3px;border-radius:2px;font-weight:600;">'
+            f'{html.escape(m["text"])}</span>'
+        )
+        last_end = m["start"]
+    parts.append(html.escape(text[0:last_end]))
+    parts.reverse()
+    return "".join(parts)
 
 
 class Action:
@@ -132,30 +220,19 @@ class Action:
     class Valves(BaseModel):
         xnat_base_url: str = Field(
             default="http://mock-xnat.scout-analytics.svc.cluster.local:8000",
-            description="XNAT API base URL (internal, used for server-side requests). For POC, points to the mock XNAT service.",
+            description="XNAT API base URL (internal, used for server-side requests).",
         )
         xnat_external_url: str = Field(
             default="https://xnat.example.org",
-            description="XNAT external URL (browser-facing, shown to users in links). Set to the real XNAT web UI base URL.",
-        )
-        xnat_service_account_id: str = Field(
-            default="",
-            description="XNAT service account ID for API access",
-        )
-        xnat_service_account_secret: str = Field(
-            default="",
-            description="XNAT service account secret",
+            description="XNAT external URL (browser-facing) shown in result links.",
         )
         send_timeout_seconds: int = Field(
             default=30,
             description="HTTP timeout in seconds for the XNAT API call",
         )
-        debug_show_body: bool = Field(
-            default=False,
-            description=(
-                "Show a dialog with the raw action body before proceeding. "
-                "Useful for inspecting the message structure."
-            ),
+        review_sample_size: int = Field(
+            default=5,
+            description="Number of included AND excluded reports to show in the review modal",
         )
         priority: int = Field(
             default=0,
@@ -191,97 +268,141 @@ class Action:
         if __event_call__ is None:
             return None
 
-        log.info("action() called, %d messages", len(body.get("messages", [])))
+        log.info("Send to XNAT action() called for chat %s", body.get("chat_id"))
 
-        # -- Debug: show raw body in a dialog if valve is on ---------------
-        if self.valves.debug_show_body:
-            body_summary = self._summarize_body_for_debug(body)
-            await __event_call__(
-                {
-                    "type": "execute",
-                    "data": {"code": self._build_debug_dialog_js(body_summary)},
-                }
-            )
-
-        # -- Step 1: Find CSV files for this user ----------------------------
+        # -- Step 1: Find Scout query result JSON files for this chat -----
         user_id = __user__.get("id", "")
-        files = self._collect_csv_files(body, user_id)
-        log.info("CSV files found for user %s: %s", user_id, files)
+        files = await self._collect_json_files(body, user_id)
+        log.info("Found %d Scout JSON files for chat", len(files))
         if not files:
             await self._notify(
-                __event_emitter__, "No query results to export", error=True
+                __event_emitter__,
+                "No Scout query results to export for this chat",
+                error=True,
             )
             return None
 
         # -- Step 2: Extract user identity ---------------------------------
         user_info = self._extract_user_info(__user__, __oauth_token__)
 
-        # -- Step 3 / 4 loop: input form and confirmation ------------------
-        while True:
-            # Show the input form
-            input_result = await __event_call__(
+        # -- Multi-step flow: pick → review → form → confirm → send ------
+        # The review step comes BEFORE the metadata form so the user doesn't
+        # fill in the project/IRB only to bail out at review.
+        project_name = ""
+        irb_number = ""
+        comment = ""
+        rationale = ""
+        data_use_committee = ""
+        accession_numbers: list[str] = []
+        included_rows: list[dict] = []
+        selected_file: dict = {}
+
+        # Step A: file picker (skipped when there's only one file).
+        if len(files) == 1:
+            file_id = files[0]["id"]
+            selected_file = files[0]
+        else:
+            picker = await __event_call__(
                 {
                     "type": "execute",
-                    "data": {"code": self._build_input_form_js(files)},
+                    "data": {"code": self._build_file_picker_js(files)},
                 }
             )
-            log.info(
-                "Input form result: %s (type=%s)",
-                input_result,
-                type(input_result).__name__,
+            if not picker:
+                return None
+            if isinstance(picker, str):
+                picker = json.loads(picker)
+            file_id = picker.get("file_id", "")
+            if not file_id:
+                return None
+            selected_file = next((f for f in files if f["id"] == file_id), files[0])
+
+        # Step B: load + parse JSON, fail fast if unreadable.
+        try:
+            file_content = await self._read_file_content(file_id)
+            payload_data = json.loads(file_content)
+        except Exception as exc:
+            log.warning("Failed to read JSON %s: %s", file_id, exc)
+            await self._notify(
+                __event_emitter__,
+                f"Failed to read selected file: {exc}",
+                error=True,
             )
-            if not input_result:
-                return None  # cancelled
+            return None
 
-            # __event_call__ returns strings, not dicts — parse the JSON
-            if isinstance(input_result, str):
-                input_result = json.loads(input_result)
+        all_rows = payload_data.get("rows", []) or []
+        search_patterns = payload_data.get("negation_search_patterns", []) or []
+        included_rows = [r for r in all_rows if r.get("included_in_cohort", True)]
+        excluded_rows = [r for r in all_rows if not r.get("included_in_cohort", True)]
+        accession_numbers = [
+            str(r.get("accession_number") or "").strip()
+            for r in included_rows
+            if r.get("accession_number")
+        ]
+        if not accession_numbers:
+            await self._notify(
+                __event_emitter__,
+                "Selected file has no included rows with accession_number",
+                error=True,
+            )
+            return None
 
-            file_id: str = input_result.get("file_id", "")
-            project_name: str = input_result.get("project_name", "").strip()
-            irb_number: str = input_result.get("irb_number", "").strip()
-            comment: str = input_result.get("comment", "").strip()
-            rationale: str = input_result.get("rationale", "").strip()
-            data_use_committee: str = input_result.get("data_use_committee", "").strip()
+        # Step C: review modal.
+        review_result = await __event_call__(
+            {
+                "type": "execute",
+                "data": {
+                    "code": self._build_review_js(
+                        file_name=selected_file["name"],
+                        included_rows=included_rows,
+                        excluded_rows=excluded_rows,
+                        search_patterns=search_patterns,
+                        sample_size=self.valves.review_sample_size,
+                    )
+                },
+            }
+        )
+        if not review_result:
+            return None
+        if isinstance(review_result, str):
+            review_result = json.loads(review_result)
+        if review_result.get("action") != "continue":
+            return None
+
+        # Step D: project/IRB form (loops with confirmation).
+        while True:
+            form_result = await __event_call__(
+                {
+                    "type": "execute",
+                    "data": {
+                        "code": self._build_form_js(
+                            file_name=selected_file["name"],
+                            row_count=len(included_rows),
+                            project_name=project_name,
+                            irb_number=irb_number,
+                            comment=comment,
+                            rationale=rationale,
+                            data_use_committee=data_use_committee,
+                        )
+                    },
+                }
+            )
+            if not form_result:
+                return None
+            if isinstance(form_result, str):
+                form_result = json.loads(form_result)
+            project_name = form_result.get("project_name", "").strip()
+            irb_number = form_result.get("irb_number", "").strip()
+            comment = form_result.get("comment", "").strip()
+            rationale = form_result.get("rationale", "").strip()
+            data_use_committee = form_result.get("data_use_committee", "").strip()
             if not project_name:
                 await self._notify(
                     __event_emitter__, "Project name is required", error=True
                 )
                 continue
 
-            selected_file = next((f for f in files if f["id"] == file_id), files[0])
-
-            # Read file and extract accession numbers for confirmation
-            accession_numbers: list[str] = []
-            row_count = 0
-            try:
-                file_content = self._read_file_content(file_id)
-                reader = csv.DictReader(io.StringIO(file_content))
-                acc_col = None
-                for col in reader.fieldnames or []:
-                    if col.lower() == "accession_number":
-                        acc_col = col
-                        break
-                if acc_col:
-                    for row in reader:
-                        row_count += 1
-                        val = row.get(acc_col, "").strip()
-                        if val:
-                            accession_numbers.append(val)
-                else:
-                    row_count = sum(1 for _ in reader)
-            except Exception as exc:
-                log.warning("Failed to read file %s: %s", file_id, exc)
-
-            if not accession_numbers and row_count > 0:
-                await self._notify(
-                    __event_emitter__,
-                    "No accession_number column found in the selected file",
-                    error=True,
-                )
-                continue
-
-            # Show the confirmation dialog
+            # Step E: confirmation.
             confirm_result = await __event_call__(
                 {
                     "type": "execute",
@@ -291,7 +412,7 @@ class Action:
                             user_info=user_info,
                             project_name=project_name,
                             accession_numbers=accession_numbers,
-                            row_count=row_count,
+                            row_count=len(included_rows),
                             irb_number=irb_number,
                             comment=comment,
                             rationale=rationale,
@@ -300,21 +421,18 @@ class Action:
                     },
                 }
             )
-
             if not confirm_result:
-                return None  # cancelled
-
+                return None
             if isinstance(confirm_result, str):
                 confirm_result = json.loads(confirm_result)
+            ca = confirm_result.get("action", "cancel")
+            if ca == "back":
+                continue
+            if ca == "send":
+                break
+            return None
 
-            action = confirm_result.get("action", "cancel")
-            if action == "back":
-                continue  # loop back to input form
-            if action == "send":
-                break  # proceed to send
-            return None  # cancel or unknown
-
-        # -- Step 5: Send to XNAT ------------------------------------------
+        # -- Step 6: Send to XNAT -----------------------------------------
         xnat_url = f"{self.valves.xnat_base_url.rstrip('/')}/export"
         payload: dict[str, Any] = {
             "projectName": project_name,
@@ -322,7 +440,6 @@ class Action:
             or user_info.get("name", "Unknown"),
             "data": [{"Accession Number": acc} for acc in accession_numbers],
         }
-        # Add optional fields only if provided
         if irb_number:
             payload["irbNumber"] = irb_number
         if comment:
@@ -354,7 +471,7 @@ class Action:
         except Exception as exc:
             error_message = f"Unexpected error: {exc}"
 
-        # -- Step 6: Show result -------------------------------------------
+        # -- Step 7: Result modal -----------------------------------------
         await __event_call__(
             {
                 "type": "execute",
@@ -376,48 +493,57 @@ class Action:
     # Data helpers
     # ------------------------------------------------------------------
     @staticmethod
-    def _collect_csv_files(body: dict, user_id: str) -> list[dict[str, str]]:
-        """Find CSV files created by the Scout Query Tool for this chat.
-
-        The query tool stores ``chat_id`` in each file's ``meta`` dict.
-        We filter the user's files to only those whose
-        ``meta.chat_id`` matches the current chat, so the export dialog
-        only shows files from the active conversation.
+    async def _collect_json_files(body: dict, user_id: str) -> list[dict[str, str]]:
         """
+        Find Scout Query Tool JSON files for the current chat.
+
+        Filters by:
+          - filename ends in `.json`
+          - meta.chat_id == current chat_id
+          - meta.scout_query_result == True (set by the chat tool)
+        """
+        import inspect
+
         from open_webui.models.files import Files
 
         chat_id = body.get("chat_id", "")
         all_files = Files.get_files_by_user_id(user_id)
-        csv_files = sorted(
+        if inspect.isawaitable(all_files):
+            all_files = await all_files
+        matched = sorted(
             [
-                {"id": f.id, "name": f.filename, "created_at": f.created_at or 0}
+                {
+                    "id": f.id,
+                    "name": f.filename,
+                    "created_at": f.created_at or 0,
+                    "row_count": (f.meta or {}).get("row_count"),
+                }
                 for f in all_files
                 if f.filename
-                and f.filename.lower().endswith(".csv")
+                and f.filename.lower().endswith(".json")
                 and (f.meta or {}).get("chat_id") == chat_id
-                and chat_id  # don't match if chat_id is empty
+                and (f.meta or {}).get("scout_query_result")
+                and chat_id
             ],
             key=lambda f: f["created_at"],
             reverse=True,
         )
-        # Strip the sort key before returning
-        return [{"id": f["id"], "name": f["name"]} for f in csv_files]
+        return [
+            {"id": f["id"], "name": f["name"], "row_count": f.get("row_count")}
+            for f in matched
+        ]
 
     @staticmethod
     def _extract_user_info(user: dict, oauth_token: dict) -> dict[str, str]:
-        """Pull user identity from the OAuth token or Open WebUI user dict."""
         info: dict[str, str] = {
             "name": user.get("name", "Unknown"),
             "email": user.get("email", ""),
         }
-
-        # Try to decode the id_token JWT payload (no verification needed)
         id_token = oauth_token.get("id_token", "")
         if id_token:
             try:
                 import base64
 
-                # JWT is header.payload.signature — grab payload
                 parts = id_token.split(".")
                 if len(parts) >= 2:
                     padded = parts[1] + "=" * (-len(parts[1]) % 4)
@@ -428,118 +554,84 @@ class Action:
                         "preferred_username", info.get("username", "")
                     )
             except Exception:
-                pass  # fall back to __user__ values
-
+                pass
         return info
 
     @staticmethod
-    def _read_file_content(file_id: str) -> str:
-        """Read a file's content from Open WebUI storage by file ID."""
+    async def _read_file_content(file_id: str) -> str:
+        import inspect
+
         from open_webui.models.files import Files
         from open_webui.storage.provider import Storage
 
         file_record = Files.get_file_by_id(file_id)
+        if inspect.isawaitable(file_record):
+            file_record = await file_record
         if not file_record:
             raise FileNotFoundError(f"File {file_id} not found")
-        # Storage.get_file() returns the local filesystem path
         local_path = Storage.get_file(file_record.path)
+        if inspect.isawaitable(local_path):
+            local_path = await local_path
         with open(local_path, "r", encoding="utf-8") as f:
             return f.read()
 
     # ------------------------------------------------------------------
-    # Debug helpers
+    # Modal JS builders
     # ------------------------------------------------------------------
-    @staticmethod
-    def _summarize_body_for_debug(body: dict) -> str:
-        """Build a readable summary of the body structure for debugging.
-
-        Shows message roles, content lengths, and — critically — all keys
-        present on each message so we can see where files actually live.
-        """
-        lines: list[str] = []
-        lines.append(f"Top-level keys: {sorted(body.keys())}")
-        lines.append("")
-
-        for i, msg in enumerate(body.get("messages", [])):
-            role = msg.get("role", "?")
-            content = msg.get("content", "")
-            msg_keys = sorted(msg.keys())
-            lines.append(f"--- message[{i}] ---")
-            lines.append(f"  role: {role}")
-            lines.append(f"  keys: {msg_keys}")
-
-            # Show full content for assistant messages (where tool output
-            # and file references may be embedded), truncated for others.
-            if role == "assistant":
-                # Show first 2000 chars — enough to see tool output
-                preview = content[:2000]
-                if len(content) > 2000:
-                    preview += f"\n... ({len(content) - 2000} more chars)"
-                lines.append(f"  content ({len(content)} chars):")
-                lines.append(preview)
-            else:
-                preview = content[:200] + "..." if len(content) > 200 else content
-                lines.append(f"  content ({len(content)} chars): {preview}")
-
-            # Show ALL extra keys beyond the standard set
-            for key in sorted(msg.keys()):
-                if key not in ("content", "role", "id", "timestamp"):
-                    val = msg[key]
-                    lines.append(f"  {key}: {json.dumps(val, default=str)[:500]}")
-
-        return "\n".join(lines)
-
-    @staticmethod
-    def _build_debug_dialog_js(body_summary: str) -> str:
-        """Return JS that shows the body summary in a scrollable dialog."""
-        escaped = _js_escape(body_summary)
+    def _build_file_picker_js(self, files: list[dict[str, Any]]) -> str:
+        """Step A: pick a Scout query result JSON file (only shown when >1)."""
+        options = "".join(
+            f'<option value="{_js_escape(f["id"])}">'
+            f'{_js_escape(f["name"])}'
+            f'{(" (" + str(f["row_count"]) + " rows)") if f.get("row_count") else ""}'
+            f"</option>"
+            for f in files
+        )
         return f"""
 return new Promise((resolve) => {{
     const overlay = document.createElement('div');
     overlay.innerHTML = `
         <style>{_js_escape(_MODAL_STYLES)}</style>
         <div class="xnat-overlay">
-            <div class="xnat-modal" style="min-width:600px;max-width:800px;">
-                <h3>Debug: Action Body</h3>
-                <pre style="max-height:60vh;font-size:11px;">{escaped}</pre>
+            <div class="xnat-modal">
+                <h3>Send to XNAT &mdash; pick a result</h3>
+                <p style="color:#aaa;font-size:13px;margin-bottom:12px;">
+                  Choose which Scout query result to review and submit.
+                  Most recent first.
+                </p>
+                <label>Results file</label>
+                <select id="xnat-file">{options}</select>
                 <div class="btn-row">
-                    <button id="xnat-debug-ok" class="primary">Continue</button>
+                    <button id="xnat-cancel">Cancel</button>
+                    <button id="xnat-next" class="primary">Review &rarr;</button>
                 </div>
             </div>
         </div>
     `;
     document.body.appendChild(overlay);
-
-    document.getElementById('xnat-debug-ok').onclick = () => {{
+    document.getElementById('xnat-cancel').onclick = () => {{
         overlay.remove(); resolve(null);
+    }};
+    document.getElementById('xnat-next').onclick = () => {{
+        const fileId = document.getElementById('xnat-file').value;
+        overlay.remove();
+        resolve(JSON.stringify({{ file_id: fileId }}));
     }};
 }});
 """
 
-    # ------------------------------------------------------------------
-    # Dialog JS builders
-    # ------------------------------------------------------------------
-    def _build_input_form_js(self, files: list[dict[str, str]]) -> str:
-        """Return JS that shows the input form and resolves with user input."""
-        if len(files) == 1:
-            file_field = (
-                f"<label>Results file</label>"
-                f'<input type="text" value="{_js_escape(files[0]["name"])}" '
-                f"disabled />"
-            )
-            file_id_expr = f'"{_js_escape(files[0]["id"])}"'
-        else:
-            options = "".join(
-                f'<option value="{_js_escape(f["id"])}">'
-                f'{_js_escape(f["name"])}</option>'
-                for f in files
-            )
-            file_field = (
-                f"<label>Results file</label>"
-                f'<select id="xnat-file">{options}</select>'
-            )
-            file_id_expr = 'document.getElementById("xnat-file").value'
-
+    def _build_form_js(
+        self,
+        file_name: str,
+        row_count: int,
+        project_name: str = "",
+        irb_number: str = "",
+        comment: str = "",
+        rationale: str = "",
+        data_use_committee: str = "",
+    ) -> str:
+        """Step D: project/IRB form (after the user has reviewed)."""
+        # Pre-fill values for "Back" round-trips.
         return f"""
 return new Promise((resolve) => {{
   try {{
@@ -548,10 +640,13 @@ return new Promise((resolve) => {{
         <style>{_js_escape(_MODAL_STYLES)}</style>
         <div class="xnat-overlay">
             <div class="xnat-modal">
-                <h3>Send to XNAT</h3>
-                {file_field}
-                <label>XNAT project name</label>
-                <input type="text" id="xnat-project" placeholder="e.g. MyProject" />
+                <h3>XNAT submission details</h3>
+                <p style="color:#aaa;font-size:13px;margin-bottom:12px;">
+                  Cohort: <b>{_js_escape(file_name)}</b> ({row_count} rows)
+                </p>
+                <label>XNAT project name (required)</label>
+                <input type="text" id="xnat-project" placeholder="e.g. MyProject"
+                       value="{_js_escape(project_name)}" />
                 <div style="margin-top:8px;margin-bottom:4px;">
                     <button type="button" id="xnat-toggle-optional"
                         style="background:none;border:none;color:#60a5fa;cursor:pointer;font-size:13px;padding:0;">
@@ -560,17 +655,18 @@ return new Promise((resolve) => {{
                 </div>
                 <div id="xnat-optional" style="display:none;">
                     <label>IRB number</label>
-                    <input type="text" id="xnat-irb" placeholder="e.g. 202400123" />
+                    <input type="text" id="xnat-irb" placeholder="e.g. 202400123"
+                           value="{_js_escape(irb_number)}" />
                     <label>Comment</label>
-                    <input type="text" id="xnat-comment" placeholder="" />
+                    <input type="text" id="xnat-comment" value="{_js_escape(comment)}" />
                     <label>Rationale</label>
-                    <input type="text" id="xnat-rationale" placeholder="" />
+                    <input type="text" id="xnat-rationale" value="{_js_escape(rationale)}" />
                     <label>Data Use Committee oversight</label>
-                    <input type="text" id="xnat-duc" placeholder="" />
+                    <input type="text" id="xnat-duc" value="{_js_escape(data_use_committee)}" />
                 </div>
                 <div class="btn-row">
                     <button id="xnat-cancel">Cancel</button>
-                    <button id="xnat-next" class="primary">Next</button>
+                    <button id="xnat-next" class="primary">Confirm &rarr;</button>
                 </div>
             </div>
         </div>
@@ -591,25 +687,16 @@ return new Promise((resolve) => {{
     }};
     document.getElementById('xnat-next').onclick = () => {{
       try {{
-        const project = document.getElementById('xnat-project').value;
-        const fileId = {file_id_expr};
-        const irb = document.getElementById('xnat-irb').value;
-        const comment = document.getElementById('xnat-comment').value;
-        const rationale = document.getElementById('xnat-rationale').value;
-        const duc = document.getElementById('xnat-duc').value;
         const result = JSON.stringify({{
-            file_id: fileId,
-            project_name: project,
-            irb_number: irb,
-            comment: comment,
-            rationale: rationale,
-            data_use_committee: duc
+            project_name: document.getElementById('xnat-project').value,
+            irb_number: document.getElementById('xnat-irb').value,
+            comment: document.getElementById('xnat-comment').value,
+            rationale: document.getElementById('xnat-rationale').value,
+            data_use_committee: document.getElementById('xnat-duc').value,
         }});
-        console.log('[XNAT] resolving with:', result);
         overlay.remove();
         resolve(result);
       }} catch(e) {{
-        console.error('[XNAT] Next click error:', e);
         overlay.remove();
         resolve(null);
       }}
@@ -618,9 +705,105 @@ return new Promise((resolve) => {{
     const inp = document.getElementById('xnat-project');
     if (inp) inp.focus();
   }} catch(e) {{
-    console.error('[XNAT] Dialog setup error:', e);
+    console.error('[XNAT] Form setup error:', e);
     resolve(null);
   }}
+}});
+"""
+
+    def _build_review_js(
+        self,
+        file_name: str,
+        included_rows: list[dict],
+        excluded_rows: list[dict],
+        search_patterns: list[str],
+        sample_size: int,
+    ) -> str:
+        """Step 2: review N included + N excluded reports with highlighting."""
+
+        def render_card(row: dict, kind: str) -> str:
+            cls = "review-card" + ("" if kind == "included" else " excluded")
+            acc = html.escape(str(row.get("accession_number") or "(no accession)"))
+            mci = html.escape(str(row.get("message_control_id") or ""))
+            mrn = html.escape(str(row.get("epic_mrn") or ""))
+            text = (
+                row.get("report_text")
+                or row.get("report_section_impression")
+                or row.get("report_section_findings")
+                or ""
+            )
+            highlighted = _highlight_text(text, search_patterns)
+            return (
+                f'<div class="{cls}">'
+                f'<div class="ids"><b>{acc}</b>'
+                + (f" &middot; MRN {mrn}" if mrn else "")
+                + (f' &middot; <span title="{mci}">MCI&#8230;</span>' if mci else "")
+                + f"</div>"
+                f'<div class="text">{highlighted}</div>'
+                f"</div>"
+            )
+
+        included_sample = included_rows[:sample_size]
+        excluded_sample = excluded_rows[:sample_size]
+
+        included_html = (
+            "".join(render_card(r, "included") for r in included_sample)
+            if included_sample
+            else '<div class="review-section-empty">No included rows.</div>'
+        )
+        excluded_html = (
+            "".join(render_card(r, "excluded") for r in excluded_sample)
+            if excluded_sample
+            else (
+                '<div class="review-section-empty">'
+                "No excluded rows (negation filter not applied or 0 false positives)."
+                "</div>"
+            )
+        )
+
+        n_inc = len(included_rows)
+        n_exc = len(excluded_rows)
+        patterns_label = ", ".join(search_patterns) if search_patterns else "(none)"
+
+        body = f"""
+            <h3>Review cohort</h3>
+            <div class="info-block">
+                File: <b>{html.escape(file_name)}</b><br>
+                Search patterns: <code>{html.escape(patterns_label)}</code><br>
+                <b>{n_inc}</b> included &middot; <b>{n_exc}</b> excluded
+            </div>
+            <h4>Included &mdash; first {min(sample_size, n_inc)} of {n_inc} (positive matches in green)</h4>
+            <div class="review-cards">{included_html}</div>
+            <h4>Excluded &mdash; first {min(sample_size, n_exc)} of {n_exc} (negated context in red)</h4>
+            <div class="review-cards">{excluded_html}</div>
+            <div class="btn-row">
+                <button id="xnat-cancel">Cancel</button>
+                <button id="xnat-back">Back</button>
+                <button id="xnat-continue" class="primary">Continue</button>
+            </div>
+        """
+
+        return f"""
+return new Promise((resolve) => {{
+    const overlay = document.createElement('div');
+    overlay.innerHTML = `
+        <style>{_js_escape(_MODAL_STYLES)}</style>
+        <div class="xnat-overlay">
+            <div class="xnat-modal" style="max-width:900px;">
+                {_js_escape(body)}
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    document.getElementById('xnat-cancel').onclick = () => {{
+        overlay.remove(); resolve(null);
+    }};
+    document.getElementById('xnat-back').onclick = () => {{
+        overlay.remove(); resolve(JSON.stringify({{ action: 'back' }}));
+    }};
+    document.getElementById('xnat-continue').onclick = () => {{
+        overlay.remove(); resolve(JSON.stringify({{ action: 'continue' }}));
+    }};
 }});
 """
 
@@ -636,12 +819,10 @@ return new Promise((resolve) => {{
         rationale: str = "",
         data_use_committee: str = "",
     ) -> str:
-        """Return JS that shows the confirmation dialog."""
         user_display = _js_escape(user_info.get("name", "Unknown"))
         email = _js_escape(user_info.get("email", ""))
         user_line = f"{user_display} &lt;{email}&gt;" if email else user_display
 
-        # Build optional fields section — only show fields that have values
         optional_lines: list[str] = []
         if irb_number:
             optional_lines.append(
@@ -659,14 +840,14 @@ return new Promise((resolve) => {{
             )
         if data_use_committee:
             optional_lines.append(
-                f"<div><strong>Data Use Committee:</strong> {_js_escape(data_use_committee)}</div>"
+                f"<div><strong>Data Use Committee:</strong> "
+                f"{_js_escape(data_use_committee)}</div>"
             )
         optional_section = "".join(optional_lines)
 
         accession_numbers = accession_numbers or []
         n_acc = len(accession_numbers)
         if n_acc > 0:
-            # Show up to 20 in a two-column grid; truncate with a note if more
             show_limit = 20
             shown = accession_numbers[:show_limit]
             grid_items = "".join(
@@ -739,9 +920,7 @@ return new Promise((resolve) => {{
         xnat_external_url: str,
         project_name: str,
     ) -> str:
-        """Return JS that shows the result of the XNAT export."""
         payload_json = _js_escape(json.dumps(payload, indent=2))
-
         if error_message:
             status_section = (
                 f'<p style="color:#ef4444;font-weight:600;">'
@@ -757,8 +936,6 @@ return new Promise((resolve) => {{
             resp_message = _js_escape(str(resp.get("message", "")))
             resp_id = resp.get("id")
             response_json = _js_escape(json.dumps(resp, indent=2))
-
-            # Build the link using the response id if available
             if resp_id is not None:
                 link = (
                     f"{xnat_external_url.rstrip('/')}/xapi/iq/data-requests/{resp_id}"
@@ -769,7 +946,6 @@ return new Promise((resolve) => {{
                 )
             else:
                 link_html = ""
-
             status_section = (
                 f'<div class="info-block">'
                 f"<div><strong>Status:</strong> {resp_status}</div>"
@@ -804,7 +980,6 @@ return new Promise((resolve) => {{
         </div>
     `;
     document.body.appendChild(overlay);
-
     document.getElementById('xnat-done').onclick = () => {{
         overlay.remove(); resolve(null);
     }};
@@ -820,7 +995,6 @@ return new Promise((resolve) => {{
         message: str,
         error: bool = False,
     ) -> None:
-        """Emit a status notification to the user."""
         if emitter:
             await emitter(
                 {
@@ -831,7 +1005,7 @@ return new Promise((resolve) => {{
 
 
 # ------------------------------------------------------------------
-# Utility
+# JS string escape helper
 # ------------------------------------------------------------------
 def _js_escape(text: str) -> str:
     """Escape a string for safe embedding inside a JS template literal."""
