@@ -32,12 +32,13 @@ TRINO_RW_PORT=8080
 TRINO_RW_PATH=/v1/info
 KUBECTL=${KUBECTL:-kubectl}
 
-# Retry curl up to 20 times (1s between) so kube-router has time to update
-# its ipset for new pods. Allowed pods exit fast; denied pods exhaust retries.
-RETRY_LOOP="$(cat <<'EOF'
-for i in $(seq 1 20); do
+# Retry curl up to 20 times so kube-router has time to update its ipset
+# for new pods. Allowed pods exit fast; denied pods exhaust retries.
+# curl writes "000" via -w on connection failure and exits non-zero, so
+# we suppress the exit with || true and let curl produce the code.
+RETRY_LOOP='for i in $(seq 1 20); do
   code=$(curl -sS -o /dev/null --max-time 2 -w "%{http_code}" \
-    "http://__HOST__:__PORT____PATH__" 2>/dev/null || echo 000)
+    "http://__HOST__:__PORT____PATH__" 2>/dev/null) || true
   if [ "$code" = "200" ]; then
     echo "RESULT=200"
     exit 0
@@ -45,9 +46,7 @@ for i in $(seq 1 20); do
   sleep 1
 done
 echo "RESULT=$code"
-exit 1
-EOF
-)"
+exit 1'
 RETRY_LOOP=${RETRY_LOOP//__HOST__/$TRINO_RW_HOST}
 RETRY_LOOP=${RETRY_LOOP//__PORT__/$TRINO_RW_PORT}
 RETRY_LOOP=${RETRY_LOOP//__PATH__/$TRINO_RW_PATH}
