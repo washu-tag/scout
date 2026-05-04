@@ -415,6 +415,10 @@ jobs:
       - name: 'Auth curl tests'
         shell: bash
         run: bash tests/auth/auth-curl-tests.sh scout.test
+      # NetworkPolicy tests — verify trino-rw ingress restrictions
+      - name: 'NetworkPolicy tests'
+        shell: bash
+        run: KUBECTL='sudo -E kubectl' bash tests/network/network-policy-tests.sh
       # Diagnostic logging on failure
       - name: 'Debug - pod status'
         if: failure()
