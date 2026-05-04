@@ -191,7 +191,10 @@ class MappingTableExtractor:
             ).dropDuplicates()
         )
 
-        activity.logger.info("Stage 1 completed on mapping table derivation with %d deferred reports set aside", self.deferred_reports_df.count())
+        activity.logger.info(
+            "Stage 1 completed on mapping table derivation with %d deferred reports set aside",
+            self.deferred_reports_df.count(),
+        )
 
         return unique_ids_incoming_reports
 
@@ -309,7 +312,9 @@ class MappingTableExtractor:
             ).dropDuplicates()
         )
 
-        activity.logger.info("Stage 2 remaining_reports_df final count: %d", remaining_reports_df.count())
+        activity.logger.info(
+            "Stage 2 remaining_reports_df final count: %d", remaining_reports_df.count()
+        )
 
         activity.logger.info("Stage 2 completed on mapping table derivation")
         return remaining_reports_df

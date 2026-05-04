@@ -38,4 +38,6 @@ def process_latest_table(batch_df, spark, table_name):
     else:
         create_table_from_df(deduped_df, table_name, cluster_col="accession_number")
 
-    spark.sql(f"OPTIMIZE {table_name}") # cheap, see https://delta.io/blog/liquid-clustering/
+    spark.sql(
+        f"OPTIMIZE {table_name}"
+    )  # cheap, see https://delta.io/blog/liquid-clustering/
