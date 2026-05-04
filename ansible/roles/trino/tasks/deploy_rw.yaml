@@ -1,6 +1,31 @@
 ---
 # Deploy a small RW Trino used only by the hl7-transformer for view DDL.
-# Ingress is restricted via NetworkPolicy.
+# Ingress restriction (and the intra-release coordinator <-> worker rule)
+# is configured via the chart's built-in networkPolicy support — see
+# values-rw.yaml.j2.
+
+- name: Ensure RW Trino namespace exists
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ trino_rw_namespace }}'
+
+- name: Create S3 credentials Secret for RW Trino
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: trino-rw-s3
+        namespace: '{{ trino_rw_namespace }}'
+      stringData:
+        S3_ACCESS_KEY: '{{ s3_lake_writer }}'
+        S3_SECRET_KEY: '{{ s3_lake_writer_secret }}'
+  environment: '{{ cluster_k8s_environment }}'
+  no_log: true
+  when: not aws_deployment
 
 - name: Parse RW Trino Helm values
   ansible.builtin.set_fact:
@@ -18,9 +43,3 @@
     helm_repo_name: '{{ trino_helm_repo_name }}'
     helm_repo_url: '{{ trino_helm_repo_url }}'
     helm_chart_values: '{{ trino_rw_helm_chart_values }}'
-
-- name: Apply NetworkPolicy restricting RW Trino ingress
-  kubernetes.core.k8s:
-    state: present
-    definition: "{{ lookup('template', 'networkpolicy-rw.yaml.j2') | from_yaml }}"
-  environment: '{{ cluster_k8s_environment }}'
