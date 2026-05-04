@@ -56,7 +56,9 @@ def dedupe_df_on_accession_number(batch_df: DataFrame) -> Optional[DataFrame]:
     )
 
 
-def create_table_from_df(df: DataFrame, table_name: str, cluster_col: Optional[str] = None):
+def create_table_from_df(
+    df: DataFrame, table_name: str, cluster_col: Optional[str] = None
+):
     builder = (
         DeltaTable.createIfNotExists(df.sparkSession)
         .tableName(table_name)
@@ -95,4 +97,3 @@ def extract_from_anticipated_column(
         )
     else:  # particular column may not have been seen yet
         return F.lit(None)
-

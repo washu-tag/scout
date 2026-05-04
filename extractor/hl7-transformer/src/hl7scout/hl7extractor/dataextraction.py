@@ -32,10 +32,16 @@ def perform_table_operations(
 ):
     def streaming_function(batch_df, batch_id):
         cached_df = batch_df.cache()
-        activity.logger.info("Processing batch (%d) for derivative tables with %d rows", batch_id, cached_df.count())
+        activity.logger.info(
+            "Processing batch (%d) for derivative tables with %d rows",
+            batch_id,
+            cached_df.count(),
+        )
         try:
             for name, table in tables.items():
-                activity.logger.info("Processing batch (%d) on derivative table %s", batch_id, name)
+                activity.logger.info(
+                    "Processing batch (%d) on derivative table %s", batch_id, name
+                )
                 table.process_source_data(cached_df, spark, f"default.{name}")
         finally:
             cached_df.unpersist()
