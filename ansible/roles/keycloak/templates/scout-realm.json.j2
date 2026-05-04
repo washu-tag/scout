@@ -189,7 +189,7 @@
           },
           {
             "name": "xnat-access",
-            "description": "Required for XNAT login. Mapped from the scout-user group and gated by the browser-xnat-access authentication flow (see authenticationFlows below).",
+            "description": "Required for XNAT login. Mapped from the scout-user group; the xnat-scout-auth-plugin enforces this on bearer-token API requests.",
             "composite": false,
             "clientRole": true,
             "attributes": {}
@@ -279,6 +279,21 @@
         "attributes": {
           "post.logout.redirect.uris": "https://{{ server_hostname }}"
         },
+        "protocolMappers": [
+          {
+            "name": "groups",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-group-membership-mapper",
+            "consentRequired": false,
+            "config": {
+              "claim.name": "groups",
+              "full.path": "false",
+              "id.token.claim": "true",
+              "access.token.claim": "true",
+              "userinfo.token.claim": "true"
+            }
+          }
+        ],
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -505,22 +520,20 @@
       },
       {
         "name": "{{ keycloak_xnat_client_id }}",
-        "description": "XNAT Client",
+        "description": "XNAT Client (token-exchange target; oauth2-proxy fronts the browser path with its own client)",
         "enabled": true,
         "clientId": "{{ keycloak_xnat_client_id }}",
         "clientAuthenticatorType": "client-secret",
         "secret": "{{ keycloak_xnat_client_secret }}",
         "redirectUris": [
-          "https://xnat.{{ server_hostname }}/openid-login*"
+          "https://xnat.{{ server_hostname }}/oauth2/callback"
         ],
         "webOrigins": [
           "https://xnat.{{ server_hostname }}"
         ],
         "attributes": {
-          "pkce.code.challenge.method": "S256"
-        },
-        "authenticationFlowBindingOverrides": {
-          "browser": "browser-xnat-access"
+          "pkce.code.challenge.method": "S256",
+          "standard.token.exchange.enabled": "true"
         },
         "protocolMappers": [
           {
@@ -633,84 +646,6 @@
             "userSetupAllowed": false
           }
         ]
-      },
-      {
-        "alias": "browser-xnat-access",
-        "description": "Browser flow bound to the xnat client; denies users missing the xnat-access role",
-        "providerId": "basic-flow",
-        "topLevel": true,
-        "builtIn": false,
-        "authenticationExecutions": [
-          {
-            "authenticator": "auth-cookie",
-            "authenticatorFlow": false,
-            "requirement": "ALTERNATIVE",
-            "priority": 10,
-            "userSetupAllowed": false
-          },
-          {
-            "authenticatorConfig": "default-provider",
-            "authenticator": "identity-provider-redirector",
-            "authenticatorFlow": false,
-            "requirement": "ALTERNATIVE",
-            "priority": 20,
-            "userSetupAllowed": false
-          },
-          {
-            "authenticatorFlow": true,
-            "requirement": "ALTERNATIVE",
-            "priority": 30,
-            "flowAlias": "browser-xnat-access forms",
-            "userSetupAllowed": false
-          }
-        ]
-      },
-      {
-        "alias": "browser-xnat-access forms",
-        "description": "Username/password form, then xnat-access role gate",
-        "providerId": "basic-flow",
-        "topLevel": false,
-        "builtIn": false,
-        "authenticationExecutions": [
-          {
-            "authenticator": "auth-username-password-form",
-            "authenticatorFlow": false,
-            "requirement": "REQUIRED",
-            "priority": 10,
-            "userSetupAllowed": false
-          },
-          {
-            "authenticatorFlow": true,
-            "requirement": "CONDITIONAL",
-            "priority": 20,
-            "flowAlias": "browser-xnat-access require-xnat-access",
-            "userSetupAllowed": false
-          }
-        ]
-      },
-      {
-        "alias": "browser-xnat-access require-xnat-access",
-        "description": "Deny access when the user lacks the xnat.xnat-access client role",
-        "providerId": "basic-flow",
-        "topLevel": false,
-        "builtIn": false,
-        "authenticationExecutions": [
-          {
-            "authenticatorConfig": "browser-xnat-access cond config",
-            "authenticator": "conditional-user-role",
-            "authenticatorFlow": false,
-            "requirement": "REQUIRED",
-            "priority": 10,
-            "userSetupAllowed": false
-          },
-          {
-            "authenticator": "deny-access-authenticator",
-            "authenticatorFlow": false,
-            "requirement": "REQUIRED",
-            "priority": 20,
-            "userSetupAllowed": false
-          }
-        ]
       }
     ],
     "authenticatorConfig": [
@@ -718,13 +653,6 @@
         "alias": "default-provider",
         "config": {
           "defaultProvider": "{{ keycloak_default_provider }}"
-        }
-      },
-      {
-        "alias": "browser-xnat-access cond config",
-        "config": {
-          "condUserRole": "xnat.xnat-access",
-          "negate": "true"
         }
       }
     ],
