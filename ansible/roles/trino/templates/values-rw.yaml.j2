@@ -1,16 +1,28 @@
 # Trino RW (admin) instance — small Trino used by the hl7-transformer
-# to issue view DDL. Gated to the transformer via NetworkPolicy.
+# to issue view DDL. Ingress is restricted via the chart's built-in
+# NetworkPolicy support (see networkPolicy section below).
 #
 # Differences from the user-facing Trino:
 #   - delta.security is NOT read-only (writes allowed)
 #   - Uses writable Hive metastore endpoint
-#   - Uses lake-writer S3 credentials
+#   - S3 credentials come from a Kubernetes Secret (not inlined into the
+#     catalog ConfigMap, which would expose them in plaintext metadata)
 #   - Single small worker (DDL workload only)
 
 # Make resource names match the release name exactly. Without this, the
 # chart's fullname helper produces "<release>-trino" because our release
 # name doesn't equal the chart name (it only dedupes when they're equal).
 fullnameOverride: '{{ trino_rw_release_name }}'
+
+{% if not aws_deployment %}
+# Inject S3 credentials from a Secret. The Secret is created by
+# deploy_rw.yaml before this chart is installed. The catalog config below
+# references these via Trino's ${ENV:VAR} substitution syntax, so the
+# rendered catalog ConfigMap contains only references, not credentials.
+envFrom:
+  - secretRef:
+      name: trino-rw-s3
+{% endif %}
 
 server:
   workers: {{ trino_rw_worker_count }}
@@ -69,10 +81,45 @@ catalogs:
     fs.native-s3.enabled=true
     s3.region={{ s3_region }}
 {% if not aws_deployment %}
-    s3.aws-access-key={{ s3_lake_writer }}
-    s3.aws-secret-key={{ s3_lake_writer_secret }}
+    s3.aws-access-key=${ENV:S3_ACCESS_KEY}
+    s3.aws-secret-key=${ENV:S3_SECRET_KEY}
     s3.endpoint={{ s3_endpoint }}
     s3.path-style-access=true
 {% else %}
     s3.path-style-access=false
 {% endif %}
+
+# Restrict ingress to trino-rw pods. The chart automatically allows
+# Trino pods to communicate with each other when networkPolicy is enabled,
+# so we only need to declare external allowances here. Two of them:
+#   - hl7-transformer pods in the extractor namespace (port 8080)
+#   - prometheus server pod in the monitoring namespace (port 5556)
+#
+# The Prometheus rule assumes the prometheus-community/prometheus chart's
+# labeling (server pod has app.kubernetes.io/component=server). If
+# swapped to kube-prometheus-stack, that component value differs and
+# scrapes will silently break — re-check the labels at that time.
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: '{{ extractor_namespace }}'
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: hl7-transformer
+      ports:
+        - port: 8080
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: '{{ prometheus_namespace }}'
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+              app.kubernetes.io/component: server
+      ports:
+        - port: 5556
+          protocol: TCP
