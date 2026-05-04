@@ -1,0 +1,123 @@
+// xnat-scout-auth-plugin: build.gradle
+//
+// Structure cribbed from xnat-openid-auth-plugin (1.4.x). XNAT plugin SDK
+// version is pinned to match the XNAT release we're deploying against.
+
+buildscript {
+    ext {
+        vXnat = "1.9.2"
+    }
+}
+
+plugins {
+    id "java"
+    id "io.franzbecker.gradle-lombok" version "5.0.0"
+    id "io.spring.dependency-management" version "1.0.14.RELEASE"
+    id "org.nrg.xnat.build.xnat-data-builder" version "1.9.2"
+}
+
+group "edu.wustl.scout"
+version "0.1.0-SNAPSHOT"
+description "XNAT Scout Auth Plugin (header-trust + bearer-token filters)"
+
+repositories {
+    mavenLocal()
+    maven { url "https://nrgxnat.jfrog.io/nrgxnat/libs-release" }
+    maven { url "https://nrgxnat.jfrog.io/nrgxnat/libs-snapshot" }
+    mavenCentral()
+}
+
+configurations {
+    implementation.extendsFrom(implementAndInclude)
+
+    all {
+        // Mirror exclusions from openid-auth-plugin: XNAT brings these
+        // pipeline modules in transitively and they break the plugin classpath.
+        exclude group: "log4j"
+        exclude group: "net.logstash.logback"
+        exclude group: "org.nrg", module: "pipelineBase"
+        exclude group: "org.nrg", module: "pipelineBuild"
+        exclude group: "org.nrg", module: "pipelineWorkflow"
+        exclude group: "org.nrg", module: "pipelineXNAT"
+        exclude group: "org.nrg.xnat.pipeline"
+        exclude group: "org.slf4j", module: "jcl-over-slf4j"
+        exclude group: "org.slf4j", module: "jul-to-slf4j"
+        exclude group: "org.slf4j", module: "slf4j-simple"
+    }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.nrg:parent:${vXnat}"
+    }
+    generatedPomCustomization {
+        enabled = false
+    }
+}
+
+dependencies {
+    implementation platform("org.nrg:parent:${vXnat}")
+
+    implementation "org.nrg.xnat:web"
+    implementation "org.nrg:framework"
+    implementation "org.springframework:spring-web"
+    implementation "org.springframework.security:spring-security-config"
+    implementation "org.springframework.security:spring-security-web"
+    implementation "org.apache.commons:commons-lang3"
+    implementation "org.slf4j:slf4j-api"
+
+    // Bundled into the -xpl jar so the plugin can parse the trusted access
+    // token header (Phase A) and validate JWTs / cache JWKS (Phase B).
+    implementAndInclude("com.nimbusds:nimbus-jose-jwt:9.37.3")
+
+    testImplementation "junit:junit"
+    testImplementation "org.mockito:mockito-core"
+    testImplementation "org.springframework:spring-test"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+compileJava {
+    options.fork = false
+}
+
+// Produce a shadowed -xpl jar that XNAT loads from /data/xnat/home/plugins.
+// The jar pulls in implementAndInclude deps (nimbus-jose-jwt) so XNAT doesn't
+// need to know about them at runtime.
+task xnatPluginJar(type: Jar) {
+    zip64 true
+    archiveClassifier.set "xpl"
+    from {
+        configurations.implementAndInclude.collect { it.isDirectory() ? it : zipTree(it) }
+    } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+    }
+    with jar
+}
+
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "build/xnat-generated/src/main/java"
+        }
+        resources {
+            srcDir "build/xnat-generated/src/main/resources"
+        }
+    }
+}
+
+test {
+    useJUnit()
+    maxHeapSize = "1G"
+}
+
+build.dependsOn xnatPluginJar
