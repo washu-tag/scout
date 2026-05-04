@@ -24,6 +24,12 @@ config:
     banner = "{{ oauth2_proxy_banner }}"
     footer = "{{ server_hostname }}" # Hacky way to pass server hostname to sign_in template
     upstreams = ["static://200"]
+    # Emit X-Auth-Request-* identity headers + the upstream access token from
+    # /oauth2/auth so Traefik's ForwardAuth middleware can forward them. Required
+    # by services that trust oauth2-proxy as the identity source (eg. xnat-
+    # scout-auth-plugin's HeaderTrustFilter).
+    set_xauthrequest = true
+    pass_access_token = true
 {% if oauth2_proxy_ssl_insecure_skip_verify | default(false) | bool %}
     ssl_insecure_skip_verify = true
 {% endif %}
