@@ -1,53 +1,19 @@
 package edu.wustl.scout.xnat.auth.security;
 
 import org.nrg.xft.security.UserI;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-
-import java.util.Collection;
-import java.util.Collections;
+import org.nrg.xnat.security.tokens.AbstractXnatAuthenticationToken;
 
 /**
  * Authentication token attached to the SecurityContext after either filter
- * succeeds. Mirrors the shape of XNAT's existing tokens enough that downstream
- * code that just calls getPrincipal()/isAuthenticated() works unchanged.
+ * succeeds. Extends XNAT's AbstractXnatAuthenticationToken so downstream
+ * authorization filters see the XdatUser's authorities (eg. ROLE_USER) and
+ * recognize the auth as XNAT-issued rather than treating it as anonymous.
  */
-public class ScoutAuthenticationToken extends AbstractAuthenticationToken {
+public class ScoutAuthenticationToken extends AbstractXnatAuthenticationToken {
 
-    private final UserI principal;
-    private final String source;
-
-    public ScoutAuthenticationToken(UserI principal, String source) {
-        super(Collections.<GrantedAuthority>emptyList());
-        this.principal = principal;
-        this.source = source;
-        setAuthenticated(true);
-    }
-
-    public ScoutAuthenticationToken(UserI principal, String source,
-                                    Collection<? extends GrantedAuthority> authorities) {
-        super(authorities);
-        this.principal = principal;
-        this.source = source;
-        setAuthenticated(true);
-    }
-
-    @Override
-    public Object getCredentials() {
-        return "";
-    }
-
-    @Override
-    public Object getPrincipal() {
-        return principal;
-    }
-
-    @Override
-    public String getName() {
-        return principal != null ? principal.getUsername() : null;
-    }
-
-    public String getSource() {
-        return source;
+    public ScoutAuthenticationToken(final UserI principal, final String providerId) {
+        // The 4-arg superclass ctor calls super.setAuthenticated(true) directly;
+        // calling our overridden setAuthenticated(true) here would throw.
+        super(providerId, principal, null, principal.getAuthorities());
     }
 }

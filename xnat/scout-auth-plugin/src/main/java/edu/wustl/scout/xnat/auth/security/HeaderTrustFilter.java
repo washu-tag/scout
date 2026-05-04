@@ -125,7 +125,7 @@ public class HeaderTrustFilter extends OncePerRequestFilter {
 
         try {
             final UserI user = provisioningService.provision(identity);
-            final ScoutAuthenticationToken token = new ScoutAuthenticationToken(user, "header");
+            final ScoutAuthenticationToken token = new ScoutAuthenticationToken(user, "keycloak");
             SecurityContextHolder.getContext().setAuthentication(token);
         } catch (Exception e) {
             log.warn("HeaderTrustFilter rejected request from {}: {}", preferredUsername, e.getMessage());
