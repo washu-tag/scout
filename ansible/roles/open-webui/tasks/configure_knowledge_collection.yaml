@@ -1,0 +1,121 @@
+---
+# Creates one Open WebUI knowledge collection (if missing) and uploads each
+# configured file (skipping those already attached). Captures the collection's
+# server-assigned id and full object so configure_model.yaml can attach it
+# to scout models via meta.knowledge.
+#
+# Required loop var: `kc` (one entry from open_webui_knowledge_collections)
+# Required vars: `owui_admin_token`, `_owui_pod_name`
+# Updates: `_owui_knowledge_objects` (dict keyed by collection name)
+
+- name: 'List existing knowledge collections'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - deploy/open-webui
+      - --
+      - curl
+      - -sfS
+      - 'http://localhost:8080/api/v1/knowledge/'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _kc_list
+  changed_when: false
+  no_log: true
+
+- name: 'Look for existing collection by name: {{ kc.name }}'
+  ansible.builtin.set_fact:
+    _existing_kc: '{{ ((_kc_list.stdout | from_json).items | default([])) | selectattr("name", "equalto", kc.name) | list | first | default(None) }}'
+
+- name: 'Create knowledge collection: {{ kc.name }}'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - -i
+      - deploy/open-webui
+      - --
+      - curl
+      - -sfS
+      - -X
+      - POST
+      - 'http://localhost:8080/api/v1/knowledge/create'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+      - -H
+      - 'Content-Type: application/json'
+      - --data-binary
+      - '@-'
+    stdin: '{{ {"name": kc.name, "description": kc.description | default("")} | to_json }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _kc_create
+  when: _existing_kc is none
+  no_log: true
+
+- name: 'Capture collection id (from create response or existing entry)'
+  ansible.builtin.set_fact:
+    _kc_id: '{{ (_kc_create.stdout | from_json).id if (_existing_kc is none) else _existing_kc.id }}'
+
+- name: 'GET full collection object (for files list and meta.knowledge attachment)'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - deploy/open-webui
+      - --
+      - curl
+      - -sfS
+      - 'http://localhost:8080/api/v1/knowledge/{{ _kc_id }}'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _kc_full
+  changed_when: false
+  no_log: true
+
+- name: 'Build set of filenames already in the collection'
+  ansible.builtin.set_fact:
+    kc_existing_filenames: '{{ (_kc_full.stdout | from_json).files | default([]) | map(attribute="filename") | list }}'
+    kc_id: '{{ _kc_id }}'
+
+- name: 'Upload each configured file (skipping already-attached)'
+  ansible.builtin.include_tasks: upload_knowledge_file.yaml
+  loop: '{{ kc.files | default([]) }}'
+  loop_control:
+    loop_var: file
+    label: '{{ file.upload_filename }}'
+
+- name: 'Re-fetch collection object after file uploads (for meta.knowledge)'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - deploy/open-webui
+      - --
+      - curl
+      - -sfS
+      - 'http://localhost:8080/api/v1/knowledge/{{ _kc_id }}'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _kc_final
+  changed_when: false
+  no_log: true
+
+- name: 'Register collection object for downstream model attachment'
+  ansible.builtin.set_fact:
+    _owui_knowledge_objects: '{{ (_owui_knowledge_objects | default({})) | combine({kc.name: (_kc_final.stdout | from_json)}) }}'

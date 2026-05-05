@@ -15,6 +15,7 @@
       meta:
         description: '{{ m.ui.description | default("") }}'
         toolIds: '{{ m.ui.tool_ids | default(open_webui_scout_tool_ids) }}'
+        knowledge: '{{ m.ui.knowledge | default(_scout_knowledge_objects | default([])) }}'
         suggestion_prompts: '{{ m.ui.suggestion_prompts | default([]) }}'
         capabilities: '{{ m.ui.capabilities | default({}) }}'
       params:

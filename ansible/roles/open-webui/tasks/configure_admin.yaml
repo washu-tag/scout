@@ -57,11 +57,47 @@
     label: '{{ fn.id }}'
 
 # ---------------------------------------------------------------------------
+# Phase 2d: Knowledge collections (must be created BEFORE models so models
+# can reference them in meta.knowledge)
+# ---------------------------------------------------------------------------
+- name: 'Discover OWUI pod name (for kubectl cp)'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - get
+      - pod
+      - -n
+      - '{{ chatbot_namespace }}'
+      - -l
+      - app.kubernetes.io/name=open-webui
+      - -o
+      - jsonpath={.items[0].metadata.name}
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _owui_pod_lookup
+  changed_when: false
+
+- name: 'Set OWUI pod name fact'
+  ansible.builtin.set_fact:
+    _owui_pod_name: '{{ _owui_pod_lookup.stdout }}'
+
+- name: 'Configure knowledge collections'
+  ansible.builtin.include_tasks: configure_knowledge_collection.yaml
+  loop: '{{ open_webui_knowledge_collections | default([]) }}'
+  loop_control:
+    loop_var: kc
+    label: '{{ kc.name }}'
+
+# ---------------------------------------------------------------------------
 # Phase 2c: Custom UI models (Scout Explorer variants)
 # ---------------------------------------------------------------------------
 - name: 'Read shared Scout system prompt'
   ansible.builtin.set_fact:
     _scout_system_prompt: "{{ lookup('file', role_path ~ '/files/' ~ open_webui_scout_system_prompt_file) }}"
+
+- name: 'Build list of knowledge objects to attach to every Scout model'
+  ansible.builtin.set_fact:
+    _scout_knowledge_objects: '{{ (_owui_knowledge_objects | default({})).values() | list }}'
 
 - name: 'Configure OWUI custom models for scout_models entries with ui: block'
   ansible.builtin.include_tasks: configure_model.yaml

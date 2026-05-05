@@ -124,16 +124,20 @@ kubectl exec -n {{ chatbot_namespace }} deploy/open-webui -- \
 
 **Note:** Open WebUI stores tool config as PersistentConfig — env vars seed initial values on first launch. To re-seed an existing deployment from updated env values, drop the corresponding row from the OWUI `config` table or wipe the persistence PVC.
 
-#### 3. Add Knowledge in Open WebUI
+#### 3. Add Knowledge in Open WebUI — automated
 
-1. Navigate to **Workspace (left sidebar) → Knowledge → New Knowledge**
-2. Create a new knowledge base, tweaking name/description if desired:
-   - **Name**: `Scout Capabilities`
-   - **Description**: `Provides extra context to the model on information about the Scout database and how to interact with it`
-   - **Visibility**: `Public`
-3. Using **+ button → Upload files**, add documents to the collection:
-   - `docs/source/dataschema.md`
-   - (optional) `ansible/roles/open-webui/files/gpt-oss-charting.md`
+Knowledge collections from `open_webui_knowledge_collections` (defaults/main.yaml) are created on every deploy. For each file: kubectl-cp into the OWUI pod → POST /api/v1/files/ multipart → poll /process/status until completed → POST /api/v1/knowledge/{id}/file/add. The full collection object is then attached to every Scout model's `meta.knowledge` so RAG retrieval activates automatically.
+
+To customize per environment:
+- Override `open_webui_knowledge_collections` to add files or new collections
+- A single source-of-truth: any model with a `ui:` block in `scout_models` gets every collection attached
+
+Verify after deploy:
+```bash
+kubectl exec -n {{ chatbot_namespace }} deploy/open-webui -- \
+  curl -s http://localhost:8080/api/v1/knowledge/ \
+  -H "Authorization: Bearer <admin-jwt>" | jq '.items[].name'
+```
 
 #### 4. Configure Model in Open WebUI
 

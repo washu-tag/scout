@@ -224,3 +224,31 @@ open_webui_scout_default_function_calling: native
 #   preload: false → '5m' (cold-load, unloads on idle)
 open_webui_scout_keep_alive_resident: '-1'
 open_webui_scout_keep_alive_cold_load: '5m'
+
+# ----------------------------------------------------------------------------
+# Knowledge collections (Phase 2d)
+# ----------------------------------------------------------------------------
+# Knowledge collections are looked up by `name` (OWUI assigns server-side UUIDs
+# on creation, so we identify by name not id). For each file: copied to the
+# OWUI pod via kubectl cp, uploaded via multipart POST /api/v1/files/, polled
+# until processing completes, then attached to the collection via POST
+# /api/v1/knowledge/{id}/file/add.
+#
+# Each collection's full server response object is then injected into every
+# Scout model's meta.knowledge so the model picks up RAG retrieval against it.
+#
+# `source_path` is relative to scout-demo repo root; tilde expansion and
+# environment variables in the path are NOT resolved.
+open_webui_knowledge_collections:
+  - name: 'Scout Capabilities'
+    description: 'Scout database schema and interaction guide'
+    files:
+      - source_path: '{{ role_path }}/../../../docs/source/dataschema.md'
+        upload_filename: dataschema.md
+      - source_path: '{{ role_path }}/files/gpt-oss-charting.md'
+        upload_filename: gpt-oss-charting.md
+
+# File processing poll: how long to wait for OWUI to embed an uploaded file
+# before giving up. Larger files / RAG models can take 30s+.
+open_webui_file_process_poll_interval_seconds: 2
+open_webui_file_process_poll_timeout_seconds: 120

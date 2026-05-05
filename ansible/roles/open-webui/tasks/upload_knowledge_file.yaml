@@ -1,0 +1,126 @@
+---
+# Uploads a single file into Open WebUI and adds it to a knowledge collection
+# idempotently.
+#
+# Required loop vars: `file` (one entry from collection.files), `kc_id`
+#   (target knowledge collection's server-assigned id), `kc_existing_filenames`
+#   (set of filenames already in the collection)
+# Required vars: `owui_admin_token`
+
+- name: 'Skip {{ file.upload_filename }} (already in collection)'
+  ansible.builtin.debug:
+    msg: '{{ file.upload_filename }} is already attached; nothing to do.'
+  when: file.upload_filename in kc_existing_filenames
+
+- name: 'Process file {{ file.upload_filename }}'
+  when: file.upload_filename not in kc_existing_filenames
+  block:
+    - name: 'Copy {{ file.upload_filename }} into OWUI pod'
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - cp
+          - '{{ file.source_path }}'
+          - '{{ chatbot_namespace }}/{{ _owui_pod_name }}:/tmp/{{ file.upload_filename }}'
+      environment:
+        KUBECONFIG: '{{ kubeconfig_yaml }}'
+      changed_when: true
+
+    - name: 'POST /api/v1/files/ multipart upload: {{ file.upload_filename }}'
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - exec
+          - -n
+          - '{{ chatbot_namespace }}'
+          - deploy/open-webui
+          - --
+          - curl
+          - -sfS
+          - -X
+          - POST
+          - 'http://localhost:8080/api/v1/files/'
+          - -H
+          - 'Authorization: Bearer {{ owui_admin_token }}'
+          - -F
+          - 'file=@/tmp/{{ file.upload_filename }};type=text/markdown'
+      environment:
+        KUBECONFIG: '{{ kubeconfig_yaml }}'
+      register: _file_upload_response
+      changed_when: true
+      no_log: true
+
+    - name: 'Capture uploaded file id'
+      ansible.builtin.set_fact:
+        _uploaded_file_id: '{{ (_file_upload_response.stdout | from_json).id }}'
+
+    - name: 'Poll /api/v1/files/{id}/process/status until completed'
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - exec
+          - -n
+          - '{{ chatbot_namespace }}'
+          - deploy/open-webui
+          - --
+          - curl
+          - -sfS
+          - 'http://localhost:8080/api/v1/files/{{ _uploaded_file_id }}/process/status'
+          - -H
+          - 'Authorization: Bearer {{ owui_admin_token }}'
+      environment:
+        KUBECONFIG: '{{ kubeconfig_yaml }}'
+      register: _file_status
+      until: (_file_status.stdout | from_json).status in ['completed', 'failed']
+      retries: '{{ (open_webui_file_process_poll_timeout_seconds | int) // (open_webui_file_process_poll_interval_seconds | int) }}'
+      delay: '{{ open_webui_file_process_poll_interval_seconds }}'
+      changed_when: false
+      no_log: true
+
+    - name: 'Fail if file processing did not complete cleanly: {{ file.upload_filename }}'
+      ansible.builtin.fail:
+        msg: 'OWUI failed to process {{ file.upload_filename }}: {{ _file_status.stdout }}'
+      when: (_file_status.stdout | from_json).status != 'completed'
+
+    - name: 'Add file to collection (POST /api/v1/knowledge/{id}/file/add): {{ file.upload_filename }}'
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - exec
+          - -n
+          - '{{ chatbot_namespace }}'
+          - -i
+          - deploy/open-webui
+          - --
+          - curl
+          - -sfS
+          - -X
+          - POST
+          - 'http://localhost:8080/api/v1/knowledge/{{ kc_id }}/file/add'
+          - -H
+          - 'Authorization: Bearer {{ owui_admin_token }}'
+          - -H
+          - 'Content-Type: application/json'
+          - --data-binary
+          - '@-'
+        stdin: '{{ {"file_id": _uploaded_file_id} | to_json }}'
+      environment:
+        KUBECONFIG: '{{ kubeconfig_yaml }}'
+      changed_when: true
+      no_log: true
+
+    - name: 'Clean up temp file in pod: {{ file.upload_filename }}'
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - exec
+          - -n
+          - '{{ chatbot_namespace }}'
+          - deploy/open-webui
+          - --
+          - rm
+          - -f
+          - '/tmp/{{ file.upload_filename }}'
+      environment:
+        KUBECONFIG: '{{ kubeconfig_yaml }}'
+      changed_when: false
