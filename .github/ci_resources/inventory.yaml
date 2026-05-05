@@ -126,6 +126,14 @@ k3s_cluster:
     # extractor at all, so this flag has no effect there.
     trino_view_enabled: false
 
+    # Spark default of 200 shuffle partitions is far too many for CI's
+    # single-message-to-low-hundreds row batches — each shuffle spawns
+    # 200 tasks, most processing zero rows, and scheduling overhead
+    # dominates. With ~247 stages per ingest workflow, the total task
+    # count gets into the tens of thousands and pushes the suite past
+    # the 30-minute CI timeout. 8 keeps each task usefully sized.
+    spark_sql_shuffle_partitions: 8
+
     # Valkey (single shared password for all services)
     valkey_password: valkey123
 
