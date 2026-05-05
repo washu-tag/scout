@@ -32,14 +32,26 @@ ollama_nfs_mount_path: /nfs/ollama
 staging_ollama_namespace: '{{ package_download_namespace }}'
 
 # Scout custom model configuration
-scout_base_model: gpt-oss:120b
-scout_model_name: gpt-oss-120b-long:latest
-scout_model_num_predict: -1 # Unlimited token generation
-scout_model_num_ctx: 131072 # 128K context window
-scout_model_num_keep: 32768 # Keep 32K tokens in memory
-scout_model_create: true # Set to false to skip Scout model creation
-# List of Ollama models to pull automatically (see https://ollama.com/library)
-# `scout_base_model` will be included by default
+# Each entry creates a Modelfile-based variant on top of `base` with extended-context
+# parameters baked in. Required because Ollama's runtime default num_ctx is 4096
+# regardless of the model's native max, which silently truncates long inputs.
+# All `base` models are added to `ollama_models` automatically for pull.
+#
+# `preload`: whether the values.yaml lifecycle postStart hook warms the model
+# into VRAM at pod start. Set false for models that should cold-load on demand
+# (e.g., when total resident weights+KV would exceed GPU memory). Default: true.
+# Per-model keep-alive must be configured in Open WebUI (Admin → Models → Advanced).
+scout_models:
+  - base: gpt-oss:120b
+    name: gpt-oss-120b-long:latest
+    num_ctx: 131072 # 128K context window
+    num_keep: 32768 # Keep 32K tokens in memory
+    num_predict: -1 # Unlimited token generation
+    preload: true
+scout_model_create: true # Set to false to skip Scout model creation entirely
+
+# List of additional Ollama models to pull (see https://ollama.com/library)
+# Bases from `scout_models` are added automatically.
 ollama_models: []
 
 open_webui_storage_size: 2Gi

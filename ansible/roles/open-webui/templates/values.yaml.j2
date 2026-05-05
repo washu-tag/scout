@@ -64,8 +64,10 @@ ollama:
     size: {{ ollama_storage_size }}
 {% endif %}
 {% if scout_model_create %}
-  # Load Scout model into memory on pod startup (if present)
-  # Runs in background to avoid blocking pod readiness
+  # Warm Scout models with `preload: true` into VRAM on pod startup.
+  # Runs in background to avoid blocking pod readiness.
+  # `preload: false` models cold-load on first request (intentional — e.g., when
+  # total resident weights would exceed GPU memory).
   lifecycle:
     postStart:
       exec:
@@ -79,11 +81,12 @@ ollama:
                 ollama list >/dev/null 2>&1 && break
                 sleep 5
               done
-              # Load model into memory if present
-              if ollama list 2>/dev/null | grep -q "{{ scout_model_name }}"; then
-                echo "Loading Scout model {{ scout_model_name }} into memory..."
-                ollama run "{{ scout_model_name }}" "hi" || true
+{% for m in scout_models if m.preload | default(true) %}
+              if ollama list 2>/dev/null | grep -q "{{ m.name }}"; then
+                echo "Loading Scout model {{ m.name }} into memory..."
+                ollama run "{{ m.name }}" "hi" || true
               fi
+{% endfor %}
             ) &
 {% endif %}
 

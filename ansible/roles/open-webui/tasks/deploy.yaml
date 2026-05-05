@@ -126,13 +126,11 @@
     - ollama_nfs_path is defined
     - ollama_nfs_path | length > 0
 
-# Ensure Scout base model is in ollama_models list if Scout model creation is enabled
-- name: Add Scout base model to ollama_models if needed
+# Ensure all Scout base models are in ollama_models list if Scout model creation is enabled
+- name: Add Scout base models to ollama_models
   ansible.builtin.set_fact:
-    ollama_models: '{{ (ollama_models | default([])) | union([scout_base_model]) }}'
-  when:
-    - scout_model_create | bool
-    - scout_base_model not in (ollama_models | default([]))
+    ollama_models: "{{ (ollama_models | default([])) | union(scout_models | map(attribute='base') | list) }}"
+  when: scout_model_create | bool
 
 # Pull Ollama models and create Scout model (combined into single job)
 - name: Pull Ollama models

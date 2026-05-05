@@ -20,7 +20,7 @@ The role automatically:
 - Creates PostgreSQL database and Redis instance for Open WebUI
 - Deploys Ollama and Open WebUI via Helm
 - Pulls configured Ollama models
-- Creates the Scout custom model `gpt-oss-120b-long:latest`
+- Creates each entry in `scout_models` as a Modelfile-derived variant with extended-context parameters baked in (default: `gpt-oss-120b-long:latest` from `gpt-oss:120b`)
 
 ### Air-Gapped Deployment
 
@@ -35,7 +35,7 @@ In air-gapped environments (`air_gapped: true`), both model pulling and Scout mo
 
 **First install - manual model load required:**
 
-After the initial `make install-chat`, the Scout model exists on NFS but is not loaded into memory on the air-gapped Ollama instance. The first user request will experience a slow cold start while the model loads.
+After the initial `make install-chat`, Scout models exist on NFS but are not loaded into memory on the air-gapped Ollama instance. The first user request to each model experiences a slow cold start.
 
 To wait for the pull Job **on staging cluster**:
 ```bash
@@ -43,14 +43,14 @@ To wait for the pull Job **on staging cluster**:
 kubectl get jobs -n ollama -l app=ollama-pull-models -w
 ```
 
-To pre-load the model after the pull Job completes (replace the model name with your `scout_model_name` if customized) **on Scout cluster**:
+To pre-load each Scout model after the pull Job completes **on Scout cluster**:
 ```bash
-# Load the Scout model into memory (default: gpt-oss-120b-long:latest)
+# Load each Scout model into memory (use the names from your scout_models list)
 kubectl exec -n ollama deploy/ollama -- ollama run gpt-oss-120b-long:latest "hi"
 ```
 Or, execute a chat in Open WebUI after you've configured the appropriate settings (see [Post-Deployment Configuration](#post-deployment-configuration)).
 
-On subsequent Ollama pod restarts, the model loads automatically via a lifecycle hook.
+On subsequent Ollama pod restarts, models with `preload: true` (default) load automatically via the lifecycle hook. Models with `preload: false` cold-load on first request.
 
 ### Required Configuration
 
@@ -63,11 +63,16 @@ See `defaults/main.yaml` for all available variables. Key requirements in `inven
 - `keycloak_open_webui_client_secret`
 
 **Optional Overrides:**
-- `ollama_models`: List of additional models to pull
-- `scout_model_create`: Set to `false` to skip Scout model creation (default: `true`)
+- `scout_models`: List of derived Scout model variants (each with `base`, `name`, `num_ctx`, `num_keep`, `num_predict`, `preload`). Bases are pulled automatically. See `defaults/main.yaml` for schema.
+- `ollama_models`: List of additional models to pull (beyond `scout_models` bases)
+- `scout_model_create`: Set to `false` to skip Scout model creation entirely (default: `true`)
 - `ollama_storage_class` / `open_webui_storage_class`: Custom storage class (uses cluster default if not specified)
 - `ollama_storage_size` / `open_webui_storage_size`: PVC storage sizes (defaults: 5Gi / 2Gi)
 - Resource limits, etc.
+
+**Multi-model VRAM management:**
+
+Ollama's runtime default `num_ctx` is 4096 regardless of the model's native max — that's why each Scout model bakes its `num_ctx` into a Modelfile-derived variant. With multiple `scout_models`, total resident weights + KV cache may exceed GPU memory if all models are kept hot. Use `preload: false` for models that should cold-load on demand, and configure per-model **Keep Alive** in Open WebUI (Admin → Models → Advanced Params): `-1` for resident models, a finite value (e.g., `5m`) for cold-load models so they unload when idle and free VRAM for the resident set.
 
 See `inventory.example.yaml` for configuration examples
 
@@ -78,22 +83,22 @@ After deploying via Ansible, configure Open WebUI through the web interface to c
 ### Prerequisites
 
 - Open WebUI deployed and accessible
-- Scout custom model `gpt-oss-120b-long:latest` created (automated by Ansible)
+- Scout custom models from `scout_models` created (automated by Ansible)
 - Trino MCP server deployed (automatically deployed with Trino if `mcp_trino_enabled: true`)
 
 ### Configuration Steps
 
-#### 1. Verify Scout Model (Automated)
+#### 1. Verify Scout Models (Automated)
 
-The Scout custom model is automatically created by Ansible. You can verify it exists:
+Scout custom models are automatically created by Ansible. You can verify they exist:
 
 ```bash
 kubectl exec -n ollama deploy/ollama -- ollama list
 ```
 
-You should see `gpt-oss-120b-long:latest` in the list.
+You should see each entry from `scout_models` (default: `gpt-oss-120b-long:latest`) in the list.
 
-**Note:** If you need to manually create or recreate the model:
+**Note:** If you need to manually create or recreate a model, substitute the values from your `scout_models` entry:
 ```bash
 kubectl exec -it -n ollama deploy/ollama -- sh
 cat > Modelfile <<EOF
