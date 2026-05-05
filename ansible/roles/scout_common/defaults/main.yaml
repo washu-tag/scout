@@ -100,6 +100,7 @@ minio_tenant_namespace: '{{ scout_data_namespace }}'
 hive_namespace: '{{ scout_data_namespace }}'
 dcm4chee_namespace: '{{ scout_data_namespace }}'
 orthanc_namespace: '{{ scout_data_namespace }}'
+xnat_namespace: xnat
 
 # Extractor & workflow orchestration
 extractor_namespace: '{{ scout_extractor_namespace }}'
