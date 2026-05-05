@@ -111,22 +111,18 @@ ollama create gpt-oss-120b-long:latest -f Modelfile
 exit
 ```
 
-#### 2. Add Trino MCP Tool
+#### 2. Add Trino MCP Tool — automated
 
-Configure the Trino MCP external tool to enable SQL querying:
+Registered automatically via the `TOOL_SERVER_CONNECTIONS` env var (see `tool_server_connections` in `defaults/main.yaml`). To override the URL, set `mcp_trino_url` in inventory; to skip registration, set `tool_server_connections: []`.
 
-1. Navigate to **Admin Panel → Settings → Integrations** (requires admin access)
-2. Click **+ (Add Server)**
-3. Configure the tool:
-   - **Type**: `MCP (Streamable HTTP)`
-   - **ID**: `scout-db`
-   - **Name**: `Trino MCP`
-   - **Description**: `Query Scout Delta Lake with Trino`
-   - **Server URL**: `http://mcp-trino.scout-analytics:8080/mcp`
-     - Adjust namespace if Trino is deployed elsewhere: `http://mcp-trino.<namespace>:8080/mcp`
-   - **Auth**: `None`
-   - **Visibility**: `Public`
-4. Click **Save**
+Verify after deploy:
+
+```bash
+kubectl exec -n {{ chatbot_namespace }} deploy/open-webui -- \
+  curl -s http://localhost:8080/api/v1/configs/tool_servers
+```
+
+**Note:** Open WebUI stores tool config as PersistentConfig — env vars seed initial values on first launch. To re-seed an existing deployment from updated env values, drop the corresponding row from the OWUI `config` table or wipe the persistence PVC.
 
 #### 3. Add Knowledge in Open WebUI
 
@@ -141,24 +137,27 @@ Configure the Trino MCP external tool to enable SQL querying:
 
 #### 4. Configure Model in Open WebUI
 
-1. Navigate to **Admin Panel → Settings → Documents** (requires admin access)
-2. Replace the `RAG Template` with the contents of `ansible/roles/open-webui/files/rag-prompt.md` and save.
-3. Load the "Models" tab and find `gpt-oss-120b-long:latest` in the model list
-4. Optionally disable all other models
-5. Click the **edit icon** (pencil) next to `gpt-oss-120b-long:latest`
-6. Configure the following settings:
+The RAG Template is now seeded automatically from `files/rag-prompt.md` via the `RAG_TEMPLATE` env var; steps below cover only the model-specific config that still requires the admin UI (Phase 2 of the automation roadmap).
+
+1. ~~Navigate to **Admin Panel → Settings → Documents** and replace the `RAG Template`~~ — automated via the `RAG_TEMPLATE` env var. Override `open_webui_rag_template_file` to point at a different bundled file.
+2. Load the **Models** tab and find your Scout model (e.g., `gpt-oss-120b-long:latest`) in the list
+3. Optionally disable all other models
+4. Click the **edit icon** (pencil) next to your Scout model
+5. Configure the following settings:
    - **Model Name**: `Scout Explorer`
    - **Description**: `Intelligent data exploration`
    - **Visibility**: `Public`
    - **System Prompt**: Copy contents of `ansible/roles/open-webui/files/gpt-oss-scout-query-prompt.md`
    - **Advanced Params**:
      - **Function calling**: `Native`
-     - **Keep alive**: `-1` (keeps model loaded indefinitely)
+     - **Keep alive**: `-1` for resident models (gemma4-31b-long, qwen3.6-long); `5m` for cold-load models (gpt-oss-120b-long) so they unload when idle and free VRAM
      - **Reasoning Effort**: `high`
    - **Prompt Suggestions**: Select "Custom" and add sample prompts
    - **Knowledge**: Using "Select Knowledge" add `dataschema.md` and optionally `gpt-oss-charting.md`
    - **Tools**: Enable "Trino MCP", disable "Web Search" and "Code Interpreter"
-7. Click **Save**
+6. Click **Save**
+
+Repeat for each model in your `scout_models` list.
 
 #### 5. Install Link Sanitizer Filter
 
@@ -222,10 +221,9 @@ Install a filter to handle long conversations that approach the 128K context win
 kubectl logs -n ollama deploy/open-webui -f | grep "\[ContextSummarization\]"
 ```
 
-#### 7. Disable Arena Model
+#### 7. Disable Arena Model — automated
 
-1. Navigate to **Admin Panel → Settings → Evaluations**
-2. Disable Arena Model
+Disabled automatically via `ENABLE_EVALUATION_ARENA_MODELS=false` (set from `open_webui_enable_arena_models` in `defaults/main.yaml`). To re-enable, override to `true` in inventory.
 
 #### 8. Verify Configuration
 
