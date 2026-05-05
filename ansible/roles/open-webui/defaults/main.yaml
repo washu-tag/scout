@@ -126,12 +126,15 @@ open_webui_csp_enabled: true
 # Override `tool_server_connections: []` to skip registration (e.g., environments
 # without MCP Trino deployed).
 mcp_trino_url: 'http://mcp-trino.{{ scout_analytics_namespace }}:8080/mcp'
+mcp_trino_tool_id: 'scout-db'
 tool_server_connections:
-  - url: '{{ mcp_trino_url }}'
+  - type: mcp # OWUI defaults to 'openapi'; MCP servers must declare explicitly
+    url: '{{ mcp_trino_url }}'
     auth_type: none
     config:
       enable: true
     info:
+      id: '{{ mcp_trino_tool_id }}' # Referenced from models as `server:mcp:{id}`
       name: 'Trino MCP'
       description: 'Query Scout Delta Lake with Trino'
 
@@ -199,3 +202,25 @@ open_webui_filter_functions:
       ollama_url: 'http://ollama:11434'
       summarizer_model: ''
       debug_logging: true
+
+# ----------------------------------------------------------------------------
+# Scout Explorer custom model UI config (Phase 2c)
+# ----------------------------------------------------------------------------
+# Shared settings for every scout_models entry that opts into UI customization
+# via a `ui:` sub-block. The role builds an OWUI ModelForm payload combining
+# these shared defaults with each entry's per-model overrides, then POSTs
+# /api/v1/models/create or /model/update.
+#
+# A scout_models entry with NO `ui:` block is left as a plain Ollama model
+# (still selectable but without Scout Explorer system prompt / tools / display
+# name / advanced params).
+open_webui_scout_system_prompt_file: gpt-oss-scout-query-prompt.md
+open_webui_scout_tool_ids:
+  - 'server:mcp:{{ mcp_trino_tool_id }}'
+open_webui_scout_default_reasoning_effort: high
+open_webui_scout_default_function_calling: native
+# keep_alive defaults are derived from each scout_models entry's `preload`:
+#   preload: true  → '-1' (resident)
+#   preload: false → '5m' (cold-load, unloads on idle)
+open_webui_scout_keep_alive_resident: '-1'
+open_webui_scout_keep_alive_cold_load: '5m'

@@ -1,0 +1,104 @@
+---
+# Configures one Open WebUI custom model entry idempotently.
+# Called by configure_admin.yaml in a loop over scout_models entries that
+# define a `ui:` sub-block.
+#
+# Required loop var: `m` (one entry from scout_models with `ui:` block)
+# Required vars from configure_admin.yaml: `owui_admin_token`, `_scout_system_prompt`
+
+- name: 'Build ModelForm payload: {{ m.name }}'
+  ansible.builtin.set_fact:
+    _model_payload:
+      id: '{{ m.ui.id | default(m.name | regex_replace(":latest$", "") | regex_replace(":", "-")) }}'
+      base_model_id: '{{ m.name }}'
+      name: '{{ m.ui.name }}'
+      meta:
+        description: '{{ m.ui.description | default("") }}'
+        toolIds: '{{ m.ui.tool_ids | default(open_webui_scout_tool_ids) }}'
+        suggestion_prompts: '{{ m.ui.suggestion_prompts | default([]) }}'
+        capabilities: '{{ m.ui.capabilities | default({}) }}'
+      params:
+        system: '{{ _scout_system_prompt }}'
+        function_calling: '{{ m.ui.function_calling | default(open_webui_scout_default_function_calling) }}'
+        reasoning_effort: '{{ m.ui.reasoning_effort | default(open_webui_scout_default_reasoning_effort) }}'
+        keep_alive: '{{ m.ui.keep_alive | default(open_webui_scout_keep_alive_resident if (m.preload | default(true)) else open_webui_scout_keep_alive_cold_load) }}'
+      is_active: true
+
+- name: 'Check if OWUI model exists: {{ _model_payload.id }}'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - deploy/open-webui
+      - --
+      - curl
+      - -sf
+      - -o
+      - /dev/null
+      - -w
+      - '%{http_code}'
+      - 'http://localhost:8080/api/v1/models/model?id={{ _model_payload.id | urlencode }}'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _model_exists_check
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: 'Create OWUI model (POST /create): {{ _model_payload.id }}'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - -i
+      - deploy/open-webui
+      - --
+      - curl
+      - -sfS
+      - -X
+      - POST
+      - 'http://localhost:8080/api/v1/models/create'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+      - -H
+      - 'Content-Type: application/json'
+      - --data-binary
+      - '@-'
+    stdin: '{{ _model_payload | to_json }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  when: _model_exists_check.stdout != '200'
+  no_log: true
+
+- name: 'Update existing OWUI model (POST /model/update): {{ _model_payload.id }}'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - -i
+      - deploy/open-webui
+      - --
+      - curl
+      - -sfS
+      - -X
+      - POST
+      - 'http://localhost:8080/api/v1/models/model/update?id={{ _model_payload.id | urlencode }}'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+      - -H
+      - 'Content-Type: application/json'
+      - --data-binary
+      - '@-'
+    stdin: '{{ _model_payload | to_json }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  when: _model_exists_check.stdout == '200'
+  no_log: true
