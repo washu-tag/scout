@@ -40,6 +40,22 @@
 - name: Create Kubernetes Secret for sensitive env vars
   ansible.builtin.include_tasks: create_secret.yaml
 
+# RAG_TEMPLATE goes in a ConfigMap (not Helm extraEnvVars) because the OWUI chart
+# pipes every extraEnvVars value through Go's `tpl` function, which mis-evaluates
+# OWUI's own `{{CONTEXT}}` placeholder as a Helm function call.
+- name: Create ConfigMap for env vars containing OWUI placeholder syntax
+  kubernetes.core.k8s:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: open-webui-extra-env
+        namespace: '{{ chatbot_namespace }}'
+      data:
+        RAG_TEMPLATE: "{{ lookup('file', role_path ~ '/files/' ~ open_webui_rag_template_file) }}"
+
 # For air-gapped deployments: ensure NFS directory structure exists BEFORE deploying Ollama
 # Production Ollama mounts NFS read-only, so it can't create these directories itself
 - name: Pre-create Ollama directory structure on NFS (air-gapped)
