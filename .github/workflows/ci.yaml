@@ -253,6 +253,20 @@ jobs:
       - name: 'Install extractor'
         shell: bash
         run: |
+          # Background watcher that captures transformer pod state during the
+          # install. Helm runs with atomic=true, so on failure the deployment
+          # is uninstalled before any post-step logging can fire — this gives
+          # us snapshots from just before the rollback.
+          (
+            while true; do
+              echo "=== watcher: $(date -u +%H:%M:%S) ==="
+              sudo -E kubectl -n scout-extractor get pods -l app.kubernetes.io/name=hl7-transformer 2>/dev/null || true
+              sudo -E kubectl -n scout-extractor logs --tail=20 -l app.kubernetes.io/name=hl7-transformer --all-containers=true 2>/dev/null || true
+              sleep 30
+            done
+          ) &
+          WATCHER_PID=$!
+          trap "kill $WATCHER_PID 2>/dev/null || true" EXIT
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff playbooks/extractor.yaml
       - name: 'Run tests'
         shell: bash
