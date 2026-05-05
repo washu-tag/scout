@@ -159,49 +159,23 @@ The RAG Template is now seeded automatically from `files/rag-prompt.md` via the 
 
 Repeat for each model in your `scout_models` list.
 
-#### 5. Install Link Sanitizer Filter
+#### 5 & 6. Install Filter Functions — automated
 
-Install a security filter to prevent data exfiltration via external links in LLM responses. This complements the CSP middleware (which blocks automatic resource loading) by also blocking clickable links. See [ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md) for details.
+Both the Link Sanitizer ([ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)) and Context Summarization ([ADR 0014](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md)) filters are created/updated, configured with valves, and toggled global on every deploy. Source list: `open_webui_filter_functions` in `defaults/main.yaml`.
 
-1. Navigate to **Admin Panel → Functions** (requires admin access)
-2. Click **+ (New Function)**
-3. Set Name to "Link Sanitizer Filter"
-4. Set Description to "Removes external URLs from LLM responses to prevent data exfiltration."
-5. Copy the contents of `ansible/roles/open-webui/files/link_sanitizer_filter.py` into the code editor and click **Save**
-6. Click the **gear icon** next to the new function to configure Valves:
-   - **internal_domains**: Your organization's domain (e.g., `example.com`)
-     - This allows all subdomains: `scout.example.com`, `api.example.com`, etc.
-   - **replacement_text**: Text shown in place of removed links (default is fine)
-7. Enable the filter (you still have to add it to each model) AND/OR enable the filter globally:
-   - Click the **"..." menu** next to the function
-   - Toggle **Global** to enable for all models
+To customize valves per environment (e.g., Link Sanitizer's `internal_domains`), override in inventory:
+```yaml
+open_webui_link_sanitizer_internal_domains: 'example.com'
+```
 
-**What the filter does:**
-- Removes external URLs from LLM responses before display
-- Preserves internal URLs matching your configured domain
-- Handles both markdown links `[text](url)` and raw URLs
-- Prevents HIPAA violations from PHI being transmitted via clicked links
+To skip a filter, override the list to omit it. To disable Phase 2 entirely, set `open_webui_admin_setup_enabled: false`.
 
-#### 6. Install Context Summarization Filter
-
-Install a filter to handle long conversations that approach the 128K context window limit. Without this filter, Ollama silently truncates older messages, causing conversations to "fall apart." See [ADR 0014](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md) for details.
-
-1. Navigate to **Admin Panel → Functions** (requires admin access)
-2. Click **+ (New Function)**
-3. Set Name to "Context Summarization Filter"
-4. Set Description to "Summarizes older conversation history when approaching context limits."
-5. Copy the contents of `ansible/roles/open-webui/files/context_summarization_filter.py` into the code editor and click **Save**
-6. Click the **gear icon** next to the new function to configure Valves:
-   - **token_threshold**: `100000` (triggers at ~77% of 128K context)
-   - **messages_to_keep**: `10` (recent messages to preserve intact)
-   - **min_messages_to_keep**: `2` (minimum to keep when dynamically reducing)
-   - **tool_result_token_threshold**: `500` (compact tool results exceeding this in old messages)
-   - **ollama_url**: `http://ollama:11434` (default is correct for most deployments)
-   - **summarizer_model**: Leave empty to use chat model, or specify a smaller/faster model
-   - **debug_logging**: `true` (enable detailed logging for troubleshooting)
-7. Enable the filter globally:
-   - Click the **"..." menu** next to the function
-   - Toggle **Global** to enable for all models
+Verify after deploy:
+```bash
+kubectl exec -n {{ chatbot_namespace }} deploy/open-webui -- \
+  curl -s http://localhost:8080/api/v1/functions/ \
+  -H "Authorization: Bearer <admin-jwt>" | jq '.[].id'
+```
 
 **What the filter does:**
 - Detects when conversation approaches context limit (100K tokens by default)

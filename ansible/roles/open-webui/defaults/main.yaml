@@ -167,3 +167,35 @@ open_webui_bootstrap_name: 'Scout Deploy Bot'
 
 # Set to false to skip post-deploy admin configuration entirely.
 open_webui_admin_setup_enabled: true
+
+# Internal domain(s) for the Link Sanitizer filter (Phase 2b).
+# Comma-separated. URLs matching these domains are kept; all other external
+# URLs in LLM responses are stripped to prevent PHI exfiltration via clicked
+# links. See ADR 0010.
+open_webui_link_sanitizer_internal_domains: '{{ server_hostname }}'
+
+# Filter functions seeded into Open WebUI on every deploy. Each entry maps to
+# one Function in OWUI Admin → Functions. The role reads `source_file` from
+# its files/ directory, creates/updates the function, sets valves, and
+# toggles global state to match `enable_global`.
+open_webui_filter_functions:
+  - id: link_sanitizer_filter
+    name: Link Sanitizer Filter
+    description: Removes external URLs from LLM responses to prevent data exfiltration (ADR 0010).
+    source_file: link_sanitizer_filter.py
+    enable_global: true
+    valves:
+      internal_domains: '{{ open_webui_link_sanitizer_internal_domains }}'
+  - id: context_summarization_filter
+    name: Context Summarization Filter
+    description: Summarizes older conversation history when approaching context limits (ADR 0014).
+    source_file: context_summarization_filter.py
+    enable_global: true
+    valves:
+      token_threshold: 100000
+      messages_to_keep: 10
+      min_messages_to_keep: 2
+      tool_result_token_threshold: 500
+      ollama_url: 'http://ollama:11434'
+      summarizer_model: ''
+      debug_logging: true

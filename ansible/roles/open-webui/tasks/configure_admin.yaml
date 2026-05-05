@@ -45,4 +45,13 @@
   ansible.builtin.debug:
     msg: >-
       Admin JWT minted for {{ open_webui_bootstrap_email }} (role=admin).
-      Subsequent Phase 2b/2c/2d tasks will use this token to seed OWUI config.
+
+# ---------------------------------------------------------------------------
+# Phase 2b: Filter Functions (Link Sanitizer, Context Summarization)
+# ---------------------------------------------------------------------------
+- name: 'Configure filter functions'
+  ansible.builtin.include_tasks: configure_filter_function.yaml
+  loop: '{{ open_webui_filter_functions | default([]) }}'
+  loop_control:
+    loop_var: fn
+    label: '{{ fn.id }}'
