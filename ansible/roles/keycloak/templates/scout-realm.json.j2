@@ -324,6 +324,19 @@
         "webOrigins": [
           "https://jupyter.{{ server_hostname }}"
         ],
+        "protocolMappers": [
+          {
+            "name": "xnat-audience",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.client.audience": "{{ keycloak_xnat_client_id }}",
+              "id.token.claim": "false",
+              "access.token.claim": "true"
+            }
+          }
+        ],
         "defaultClientScopes": [
           "web-origins",
           "acr",
