@@ -210,3 +210,24 @@ extraEnvVars:
   # Logout redirect URL (OAuth2 Proxy signout)
   - name: WEBUI_AUTH_SIGNOUT_REDIRECT_URL
     value: '{{ oauth2_proxy_signout_url }}'
+
+  # ------------------------------------------------------------------
+  # Declarative admin-UI config seeded as PersistentConfig on first launch
+  # (defined in defaults/main.yaml — Phase 1 of OWUI config automation).
+  # ------------------------------------------------------------------
+  # Disable Arena Model evaluations
+  - name: ENABLE_EVALUATION_ARENA_MODELS
+    value: '{{ open_webui_enable_arena_models | string | lower }}'
+
+{% if tool_server_connections | default([]) | length > 0 %}
+  # External MCP/OpenAPI tool servers (e.g., Trino MCP for Scout SQL queries).
+  # Double `to_json` produces a YAML-safe string scalar carrying the JSON value
+  # OWUI expects.
+  - name: TOOL_SERVER_CONNECTIONS
+    value: {{ tool_server_connections | to_json | to_json }}
+{% endif %}
+
+  # RAG template injected when knowledge is attached to a model.
+  # Bundled in this role's files/ directory.
+  - name: RAG_TEMPLATE
+    value: {{ lookup('file', role_path ~ '/files/' ~ open_webui_rag_template_file) | to_json }}

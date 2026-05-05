@@ -100,3 +100,32 @@ open_webui_resources_default:
 # that the user's browser then fetches, leaking data to attacker-controlled servers.
 # See: https://developer.nvidia.com/blog/practical-llm-security-advice-from-the-nvidia-ai-red-team/
 open_webui_csp_enabled: true
+
+# ----------------------------------------------------------------------------
+# Declarative Open WebUI configuration (env-var-driven)
+# ----------------------------------------------------------------------------
+# These settings move admin-UI clickthrough config into Helm/Ansible. Open WebUI
+# stores them as PersistentConfig — env vars seed initial values on first launch
+# and are then editable in the admin UI. To force a fresh re-seed on existing
+# deployments, drop the OWUI persistence PVC or wipe the relevant config rows.
+
+# Trino MCP tool server — registered automatically as an Open WebUI external tool
+# so users don't have to add it via Admin → Settings → Integrations.
+# Override `tool_server_connections: []` to skip registration (e.g., environments
+# without MCP Trino deployed).
+mcp_trino_url: 'http://mcp-trino.{{ scout_analytics_namespace }}:8080/mcp'
+tool_server_connections:
+  - url: '{{ mcp_trino_url }}'
+    auth_type: none
+    config:
+      enable: true
+    info:
+      name: 'Trino MCP'
+      description: 'Query Scout Delta Lake with Trino'
+
+# Disable Arena Model evaluation feature (per README post-deploy step 7)
+open_webui_enable_arena_models: false
+
+# RAG template — injected at chat time when knowledge is attached to a model.
+# Path is relative to this role's `files/` directory.
+open_webui_rag_template_file: rag-prompt.md
