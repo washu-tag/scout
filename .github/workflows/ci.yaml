@@ -271,6 +271,23 @@ jobs:
       - name: 'Run tests'
         shell: bash
         run: |
+          # Background watcher captures transformer pod state every 30s while
+          # tests run. Catches silent stalls, OOMKills, restarts — anything
+          # that the post-failure logging step would miss because it only
+          # sees the final state. Temporary diagnostic; remove once the
+          # silent-worker issue is understood.
+          (
+            while true; do
+              echo "=== watcher: $(date -u +%H:%M:%S) ==="
+              sudo -E kubectl -n scout-extractor get pods -l app.kubernetes.io/name=hl7-transformer \
+                -o 'custom-columns=NAME:.metadata.name,READY:.status.containerStatuses[*].ready,RESTARTS:.status.containerStatuses[*].restartCount,STATUS:.status.phase,REASON:.status.containerStatuses[*].lastState.terminated.reason' 2>/dev/null || true
+              sudo -E kubectl -n scout-extractor top pod -l app.kubernetes.io/name=hl7-transformer --containers 2>/dev/null || true
+              sleep 30
+            done
+          ) &
+          WATCHER_PID=$!
+          trap "kill $WATCHER_PID 2>/dev/null || true" EXIT
+
           cp .github/ci_resources/test_config_template.json tests/ingest/src/test/resources/config/local.json
           sed -i "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
@@ -279,6 +296,16 @@ jobs:
           sudo -E kubectl wait --for=condition=failed --timeout=1800s job/ci-tests -n scout-extractor && exit 1 &
           failure_pid=$!
           wait -n $completion_pid $failure_pid
+      - name: 'Diagnostic: transformer pod state on failure'
+        shell: bash
+        if: failure()
+        run: |
+          echo "=== Transformer pod describe ==="
+          sudo -E kubectl -n scout-extractor describe pod -l app.kubernetes.io/name=hl7-transformer || true
+          echo "=== Recent events (whole namespace) ==="
+          sudo -E kubectl -n scout-extractor get events --sort-by=.lastTimestamp | tail -50 || true
+          echo "=== Transformer container restart history ==="
+          sudo -E kubectl -n scout-extractor get pods -l app.kubernetes.io/name=hl7-transformer -o yaml | grep -A20 'lastState\|restartCount' || true
       - name: Test Logs
         shell: bash
         if: always()
