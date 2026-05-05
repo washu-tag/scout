@@ -85,11 +85,11 @@ const ServiceCard = ({
         >
           <div className={`text-xl ${t.icon}`}>{icon}</div>
         </div>
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white tracking-tight">
+        <h3 className="text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
           {title}
         </h3>
       </div>
-      <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 leading-relaxed font-light">
+      <p className="text-base text-slate-500 dark:text-slate-400 mb-4 leading-relaxed font-light">
         {description}
       </p>
       <div className={`flex items-center gap-1 font-medium text-sm ${t.cta}`}>
@@ -408,6 +408,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                 {
                   href: subdomainUrls.minio,
                   label: 'Lake',
+                  description: 'Medical data lake storage',
                   Icon: SiMinio,
                   iconBg: 'bg-red-50 border-red-100 dark:bg-red-950/40 dark:border-red-900/50',
                   iconColor: 'text-red-600 dark:text-red-400',
@@ -417,6 +418,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                 {
                   href: subdomainUrls.temporal,
                   label: 'Orchestrator',
+                  description: 'Ingestion and characterization workflows',
                   Icon: SiTemporal,
                   iconBg: 'bg-cyan-50 border-cyan-100 dark:bg-cyan-950/40 dark:border-cyan-900/50',
                   iconColor: 'text-cyan-600 dark:text-cyan-400',
@@ -426,6 +428,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                 {
                   href: subdomainUrls.grafana,
                   label: 'Monitor',
+                  description: 'Metrics, logs, and dashboards',
                   Icon: SiGrafana,
                   iconBg:
                     'bg-orange-50 border-orange-100 dark:bg-orange-950/40 dark:border-orange-900/50',
@@ -436,6 +439,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                 {
                   href: subdomainUrls.keycloak,
                   label: 'Users',
+                  description: 'Authentication and identity',
                   Icon: SiKeycloak,
                   iconBg: 'bg-blue-50 border-blue-100 dark:bg-blue-950/40 dark:border-blue-900/50',
                   iconColor: 'text-blue-600 dark:text-blue-400',
@@ -455,9 +459,14 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                   >
                     <tool.Icon className={`text-xl ${tool.iconColor}`} />
                   </div>
-                  <span className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
-                    {tool.label}
-                  </span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
+                      {tool.label}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug font-light">
+                      {tool.description}
+                    </p>
+                  </div>
                 </a>
               ))}
             </div>
@@ -562,18 +571,11 @@ export default function HomeClient({ enableChat, enablePlaybooks, scoutEnv }: Ho
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/30 transition-colors duration-500 flex items-center justify-center py-12">
-      {/* Floating TopBar */}
-      <div className="absolute top-0 right-0 p-6 z-10">
-        <TopBar />
-      </div>
-
-      <div
-        className={`w-full max-w-5xl px-6 pt-12 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-      >
-        {/* Hero — search-first */}
-        <div className="mb-14">
+      {/* Floating header — brand on left, TopBar on right */}
+      <div className="absolute top-0 left-0 right-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
           {/* Brand strip */}
-          <div className="flex items-center gap-2.5 mb-10">
+          <div className="flex items-center gap-2.5">
             <div className="p-0.5 rounded-md bg-gradient-to-br from-indigo-500 to-indigo-700">
               <img src="/scout.png" alt="Scout" className="h-7 w-7 rounded bg-white p-0.5 block" />
             </div>
@@ -583,7 +585,15 @@ export default function HomeClient({ enableChat, enablePlaybooks, scoutEnv }: Ho
             <span className="text-slate-300 dark:text-slate-700 text-sm">/</span>
             <span className="text-sm text-slate-500 dark:text-slate-400">{environment}</span>
           </div>
+          <TopBar />
+        </div>
+      </div>
 
+      <div
+        className={`w-full max-w-7xl px-6 pt-12 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+      >
+        {/* Hero — search-first */}
+        <div className="mb-14">
           {/* Search input — Enter redirects to Chat with the query prefilled and auto-submitted. */}
           <form
             onSubmit={(e) => {
