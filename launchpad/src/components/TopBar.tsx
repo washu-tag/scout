@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
-import { FaUser, FaGithub, FaMoon, FaSun } from 'react-icons/fa';
-import { SiReadthedocs } from 'react-icons/si';
+import { FaUser, FaGithub, FaMoon, FaSun, FaBook } from 'react-icons/fa';
 import UserDropdown from './UserDropdown';
 
 export default function TopBar() {
@@ -47,7 +46,7 @@ export default function TopBar() {
         className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200 cursor-pointer"
         title="Scout Documentation"
       >
-        <SiReadthedocs className="text-xl" />
+        <FaBook className="text-xl" />
       </a>
 
       {/* GitHub Link */}
