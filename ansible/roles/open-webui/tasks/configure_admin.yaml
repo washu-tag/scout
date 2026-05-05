@@ -6,21 +6,58 @@
 # This file currently implements Phase 2a — the bootstrap (JWT minting only).
 # Phases 2b/2c/2d will layer Functions/Models/Knowledge automation on top.
 
+# SigninForm requires non-empty email + password (Pydantic validates the body
+# BEFORE the handler picks the trusted-header path); the form values are
+# discarded once trusted-header takes over (signup_handler generates a random
+# uuid for the password it actually persists). We send a placeholder so the
+# Pydantic validation passes.
+#
+# Capture HTTP status separately from body so we can surface OWUI's error
+# message on non-2xx without silently failing inside curl's `-f` flag.
 - name: 'Mint OWUI admin JWT via trusted-header SSO (in-cluster, bypasses Traefik)'
   ansible.builtin.command:
-    cmd: >-
-      kubectl exec -n {{ chatbot_namespace }} deploy/open-webui --
-      curl -sf -X POST http://localhost:8080/api/v1/auths/signin
-      -H "Content-Type: application/json"
-      -H "{{ open_webui_bootstrap_email_header }}: {{ open_webui_bootstrap_email }}"
-      -H "{{ open_webui_bootstrap_name_header }}: {{ open_webui_bootstrap_name }}"
-      -H "{{ open_webui_bootstrap_role_header }}: admin"
-      --data "{}"
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - deploy/open-webui
+      - --
+      - /bin/sh
+      - -c
+      - |
+        body=$(mktemp)
+        code=$(curl -sS -o "$body" -w '%{http_code}' -X POST http://localhost:8080/api/v1/auths/signin \
+          -H "Content-Type: application/json" \
+          -H "{{ open_webui_bootstrap_email_header }}: {{ open_webui_bootstrap_email }}" \
+          -H "{{ open_webui_bootstrap_name_header }}: {{ open_webui_bootstrap_name }}" \
+          -H "{{ open_webui_bootstrap_role_header }}: admin" \
+          --data '{"email": "{{ open_webui_bootstrap_email }}", "password": "trusted-header-bootstrap"}')
+        resp=$(cat "$body"); rm -f "$body"
+        if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+          echo "OWUI signin failed: HTTP $code" >&2
+          echo "$resp" >&2
+          exit 1
+        fi
+        echo "$resp"
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: owui_bootstrap_signin
   changed_when: false
+  failed_when: false
   no_log: true
+
+- name: 'Surface signin failure (stderr from the curl wrapper)'
+  ansible.builtin.fail:
+    msg: |-
+      OWUI signin failed (rc={{ owui_bootstrap_signin.rc }}). Stderr from the in-pod curl:
+      {{ owui_bootstrap_signin.stderr }}
+      Diagnostic checklist:
+        - Are the WEBUI_AUTH_TRUSTED_*_HEADER env vars actually present on the pod?
+            kubectl exec -n {{ chatbot_namespace }} deploy/open-webui -- env | grep WEBUI_AUTH_TRUSTED
+        - Did the OWUI pod restart after Helm picked up the env vars? (helm upgrade rolls pods)
+        - Is ENABLE_PASSWORD_AUTH explicitly set to false in inventory? (signin returns 403 if so)
+  when: owui_bootstrap_signin.rc != 0
 
 - name: 'Extract admin JWT from signin response'
   ansible.builtin.set_fact:
