@@ -51,6 +51,8 @@ env:
     value: delta
   - name: TRINO_SCHEME
     value: http
+  - name: TRINO_VIEW_ENABLED
+    value: '{{ trino_view_enabled | default(true) | bool | string }}'
 resources:
   requests:
     cpu: '{{ hl7_transformer_cpu_request }}'

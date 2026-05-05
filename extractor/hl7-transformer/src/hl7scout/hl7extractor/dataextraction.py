@@ -134,6 +134,12 @@ def add_epic_views(spark: SparkSession, source_table: str, mapping_table_name: s
 
     spark.sql(view_sql(f"{source_table}_spark_epic_view"))
 
+    # Skip the Trino-side view creation when TRINO_VIEW_ENABLED is set to
+    # something falsy. Defaults to enabled. Used by CI environments that
+    # don't stand up trino-rw to keep the deploy footprint smaller.
+    if os.environ.get("TRINO_VIEW_ENABLED", "true").strip().lower() != "true":
+        return
+
     def trino_connection():
         return trino.dbapi.connect(
             host=os.environ["TRINO_HOST"],

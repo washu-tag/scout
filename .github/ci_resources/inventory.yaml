@@ -119,6 +119,13 @@ k3s_cluster:
     trino_worker_max_heap: 512M
     trino_coordinator_max_heap: 512M
 
+    # The deploy_and_test CI job exercises the full ingest workflow but
+    # doesn't deploy analytics, so trino-rw isn't available. Disable the
+    # Trino-side view creation in add_epic_views to keep the test focused
+    # on the ingest path itself. The smoke-test job doesn't deploy the
+    # extractor at all, so this flag has no effect there.
+    trino_view_enabled: false
+
     # Valkey (single shared password for all services)
     valkey_password: valkey123
 
