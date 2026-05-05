@@ -1,0 +1,48 @@
+---
+# Phase 2 admin configuration: mints an admin JWT via Open WebUI's trusted-header
+# SSO (bypassing Traefik via the in-cluster Service), then uses it to seed
+# Functions, Models, and Knowledge collections via OWUI's REST API.
+#
+# This file currently implements Phase 2a — the bootstrap (JWT minting only).
+# Phases 2b/2c/2d will layer Functions/Models/Knowledge automation on top.
+
+- name: 'Mint OWUI admin JWT via trusted-header SSO (in-cluster, bypasses Traefik)'
+  ansible.builtin.command:
+    cmd: >-
+      kubectl exec -n {{ chatbot_namespace }} deploy/open-webui --
+      curl -sf -X POST http://localhost:8080/api/v1/auths/signin
+      -H "Content-Type: application/json"
+      -H "{{ open_webui_bootstrap_email_header }}: {{ open_webui_bootstrap_email }}"
+      -H "{{ open_webui_bootstrap_name_header }}: {{ open_webui_bootstrap_name }}"
+      -H "{{ open_webui_bootstrap_role_header }}: admin"
+      --data "{}"
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: owui_bootstrap_signin
+  changed_when: false
+  no_log: true
+
+- name: 'Extract admin JWT from signin response'
+  ansible.builtin.set_fact:
+    owui_admin_token: '{{ (owui_bootstrap_signin.stdout | from_json).token }}'
+  no_log: true
+
+- name: 'Verify admin JWT works (GET /api/v1/auths/ should return user info with role=admin)'
+  ansible.builtin.command:
+    cmd: >-
+      kubectl exec -n {{ chatbot_namespace }} deploy/open-webui --
+      curl -sf http://localhost:8080/api/v1/auths/
+      -H "Authorization: Bearer {{ owui_admin_token }}"
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: owui_admin_verify
+  changed_when: false
+  no_log: true
+  failed_when:
+    - owui_admin_verify.rc != 0 or (owui_admin_verify.stdout | from_json).role != 'admin'
+
+- name: 'Bootstrap complete — admin JWT minted'
+  ansible.builtin.debug:
+    msg: >-
+      Admin JWT minted for {{ open_webui_bootstrap_email }} (role=admin).
+      Subsequent Phase 2b/2c/2d tasks will use this token to seed OWUI config.

@@ -141,3 +141,29 @@ open_webui_enable_arena_models: false
 # RAG template — injected at chat time when knowledge is attached to a model.
 # Path is relative to this role's `files/` directory.
 open_webui_rag_template_file: rag-prompt.md
+
+# ----------------------------------------------------------------------------
+# Admin bootstrap (Phase 2 of automation)
+# ----------------------------------------------------------------------------
+# Open WebUI accepts trusted-header SSO via WEBUI_AUTH_TRUSTED_*_HEADER env
+# vars. We use this to mint an admin session JWT in-cluster (bypassing
+# Traefik), then call OWUI's REST API to seed Functions, Models, and Knowledge
+# without manual UI clicks.
+#
+# Security: the headers below MUST be stripped from external traffic by the
+# Traefik middleware in templates/strip-bootstrap-headers-middleware.yaml.j2.
+# Without that strip, anyone hitting the public ingress could forge the
+# headers and become admin. The middleware is wired into the OWUI ingress
+# chain in values.yaml.j2.
+open_webui_bootstrap_email_header: 'X-Scout-Bootstrap-Email'
+open_webui_bootstrap_name_header: 'X-Scout-Bootstrap-Name'
+open_webui_bootstrap_groups_header: 'X-Scout-Bootstrap-Groups'
+open_webui_bootstrap_role_header: 'X-Scout-Bootstrap-Role'
+
+# Identity used by the bootstrap Job. Synthetic — not a real Keycloak user.
+# Will appear in OWUI's admin user list as the deployment service account.
+open_webui_bootstrap_email: 'scout-deploy@internal'
+open_webui_bootstrap_name: 'Scout Deploy Bot'
+
+# Set to false to skip post-deploy admin configuration entirely.
+open_webui_admin_setup_enabled: true

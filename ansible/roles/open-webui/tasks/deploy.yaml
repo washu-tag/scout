@@ -84,6 +84,15 @@
     definition: "{{ lookup('template', 'csp-middleware.yaml.j2') | from_yaml }}"
   when: open_webui_csp_enabled | bool
 
+# Strip Scout's bootstrap headers from external traffic — Phase 2 security keystone.
+# Without this, anyone hitting the public ingress could forge the trusted-header
+# SSO and impersonate admin. Wired into the OWUI ingress chain in values.yaml.j2.
+- name: Create middleware to strip bootstrap headers from external traffic
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'strip-bootstrap-headers-middleware.yaml.j2') | from_yaml }}"
+  when: open_webui_admin_setup_enabled | bool
+
 - name: Parse Helm values
   ansible.builtin.set_fact:
     owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
@@ -152,3 +161,11 @@
 - name: Pull Ollama models
   ansible.builtin.include_tasks: pull_models.yaml
   when: ollama_models is defined and ollama_models | length > 0
+
+# Phase 2: post-deploy admin configuration via OWUI's REST API.
+# Mints an admin JWT through the in-cluster Service (bypassing Traefik) and
+# uses it to seed Functions, Models, and Knowledge collections. See
+# tasks/configure_admin.yaml.
+- name: Configure Open WebUI admin settings via API
+  ansible.builtin.include_tasks: configure_admin.yaml
+  when: open_webui_admin_setup_enabled | bool
