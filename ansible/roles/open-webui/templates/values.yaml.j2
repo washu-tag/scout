@@ -139,6 +139,12 @@ websocket:
 extraEnvFrom:
   - secretRef:
       name: open-webui-secrets
+  # RAG_TEMPLATE lives in this ConfigMap (not extraEnvVars) because the OWUI
+  # Helm chart pipes every extraEnvVars value through Go templating, which
+  # mis-evaluates the OWUI placeholder syntax inside the RAG template as a Helm
+  # function call and fails. ConfigMap-via-envFrom bypasses Helm templating.
+  - configMapRef:
+      name: open-webui-extra-env
 
 # OAuth/OIDC Configuration for Keycloak integration
 # OAuth2 Proxy provides initial authentication gate (checks scout-user group)
@@ -224,13 +230,12 @@ extraEnvVars:
 
 {% if tool_server_connections | default([]) | length > 0 %}
   # External MCP/OpenAPI tool servers (e.g., Trino MCP for Scout SQL queries).
-  # Double `to_json` produces a YAML-safe string scalar carrying the JSON value
-  # OWUI expects.
+  # Double `to_json` produces a YAML-safe string scalar carrying the JSON OWUI
+  # expects. Safe in extraEnvVars only because the JSON contains no Helm
+  # template-syntax patterns that the chart's `tpl` would mis-evaluate.
   - name: TOOL_SERVER_CONNECTIONS
     value: {{ tool_server_connections | to_json | to_json }}
 {% endif %}
 
-  # RAG template injected when knowledge is attached to a model.
-  # Bundled in this role's files/ directory.
-  - name: RAG_TEMPLATE
-    value: {{ lookup('file', role_path ~ '/files/' ~ open_webui_rag_template_file) | to_json }}
+# RAG_TEMPLATE is loaded from the open-webui-extra-env ConfigMap above
+# (not here in extraEnvVars) — see the comment on extraEnvFrom for why.
