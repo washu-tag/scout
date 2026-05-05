@@ -1,0 +1,46 @@
+slice_name: Median TAT (hours)
+description: 'Median turn-around time from order request (requested_dt) to report
+  finalization (results_report_status_change_dt).'
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  datasource: 1__table
+  viz_type: big_number_total
+  slice_id: 31
+  metric:
+    aggregate: null
+    column: null
+    datasourceWarning: false
+    expressionType: SQL
+    hasCustomLabel: true
+    label: Median TAT (hours)
+    optionName: metric_median_tat_hours
+    sqlExpression:
+      APPROX_PERCENTILE(date_diff('hour', requested_dt, results_report_status_change_dt),
+      0.5)
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: requested_dt IS NOT NULL AND results_report_status_change_dt IS
+        NOT NULL AND results_report_status_change_dt > requested_dt
+      filterOptionName: filter_tat_valid
+  subheader: Hours, request to finalization
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: ',.1f'
+  time_format: smart_date
+  extra_form_data: {}
+  dashboards:
+    - 2
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: b1b5d2ef-79dc-42b9-a174-739afedfd3b4
+version: 1.0.0
+dataset_uuid: 14cdaed5-905e-499a-b020-13e1b54097c8
