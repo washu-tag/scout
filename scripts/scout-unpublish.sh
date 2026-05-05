@@ -159,7 +159,14 @@ else
     fi
 fi
 
+# Restart the Launchpad so the registry change is visible immediately
+# (otherwise kubelet's ConfigMap sync takes up to ~60s).
+log_info "Restarting Launchpad to apply registry update..."
+kctl rollout restart deployment -n "$LAUNCHPAD_NAMESPACE" -l app.kubernetes.io/name=launchpad
+kctl rollout status deployment -n "$LAUNCHPAD_NAMESPACE" -l app.kubernetes.io/name=launchpad --timeout=60s
+log_success "Launchpad restarted"
+
 echo ""
 log_success "Playbook '$PLAYBOOK_ID' unpublished!"
 echo ""
-echo -e "${BLUE}Note:${NC} Refresh the Launchpad page to see the changes."
+echo -e "${BLUE}Note:${NC} Refresh the Launchpad to see the change."

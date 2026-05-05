@@ -231,7 +231,15 @@ kctl create configmap "$CONFIGMAP_NAME" \
 
 log_success "Playbook registry updated"
 
-# Step 4: Get the playbook URL
+# Step 4: Restart the Launchpad so it picks up the new ConfigMap immediately.
+# Without this, kubelet's ConfigMap sync takes up to ~60s to propagate the update
+# to the mounted volume. Restarting the pod forces a fresh mount.
+log_info "Restarting Launchpad to apply registry update..."
+kctl rollout restart deployment -n "$LAUNCHPAD_NAMESPACE" -l app.kubernetes.io/name=launchpad
+kctl rollout status deployment -n "$LAUNCHPAD_NAMESPACE" -l app.kubernetes.io/name=launchpad --timeout=60s
+log_success "Launchpad restarted"
+
+# Step 5: Get the playbook URL
 SERVER_HOSTNAME=$(kctl get ingress -n "$VOILA_NAMESPACE" -l app.kubernetes.io/name=voila -o jsonpath='{.items[0].spec.rules[0].host}' 2>/dev/null || echo "playbooks.your-domain.com")
 PLAYBOOK_URL="https://$SERVER_HOSTNAME/voila/render/dynamic/$PLAYBOOK_ID/$NOTEBOOK_NAME"
 
@@ -241,5 +249,4 @@ echo ""
 echo -e "${GREEN}Playbook URL:${NC}"
 echo "  $PLAYBOOK_URL"
 echo ""
-echo -e "${BLUE}Note:${NC} The playbook will appear on the Launchpad within a minute."
-echo "      Refresh the page to see it."
+echo -e "${BLUE}Note:${NC} Refresh the Launchpad to see the new card."

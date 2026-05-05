@@ -31,6 +31,12 @@
     paths: '{{ item.path }}'
     file_type: file
     recurse: yes
+    # Exclude Python bytecode and OS metadata - they're binary, can't be UTF-8
+    # decoded into a ConfigMap, and aren't part of the playbook.
+    excludes:
+      - '*.pyc'
+      - '*.pyo'
+      - '.DS_Store'
   register: playbook_files_results
   loop: '{{ playbook_dirs.files }}'
   loop_control:

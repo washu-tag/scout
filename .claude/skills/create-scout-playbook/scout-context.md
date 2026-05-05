@@ -88,6 +88,8 @@ Diagnosis struct fields:
 |--------|------|-------------|
 | `year` | integer | **Derived** - Year from message_dt |
 
+For multi-year ranges, add an explicit `WHERE year IN (...)` so Trino prunes partitions. `year` is derived from `message_dt`, so include the cutoff year and any later years.
+
 ## Common Modalities
 
 - `CT` - Computed Tomography
@@ -111,13 +113,16 @@ ORDER BY count DESC
 ```
 
 ### TAT Calculation
+`requested_dt` is the preferred start (order time, well-populated). `observation_dt` is the fallback.
+
 ```sql
 SELECT
     modality,
-    AVG(CAST(DATE_DIFF('second', observation_dt, results_report_status_change_dt) AS DOUBLE) / 3600.0) as avg_tat_hours
+    AVG(CAST(DATE_DIFF('second',
+        COALESCE(requested_dt, observation_dt),
+        COALESCE(results_report_status_change_dt, message_dt)
+    ) AS DOUBLE) / 3600.0) AS avg_order_to_report_hours
 FROM delta.default.reports
-WHERE observation_dt IS NOT NULL
-  AND results_report_status_change_dt IS NOT NULL
 GROUP BY modality
 ```
 

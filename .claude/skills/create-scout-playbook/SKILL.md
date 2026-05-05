@@ -1,220 +1,143 @@
 ---
 name: create-scout-playbook
 description: Create and publish interactive Scout playbook dashboards that appear on the Launchpad. Use this when the user wants to create a new analytics dashboard, visualization, or playbook for Scout.
-argument-hint: "[description of the dashboard to create]"
+argument-hint: "[optional description of the dashboard]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
 
 # /create-scout-playbook
 
-Create and publish interactive Scout playbook dashboards that appear on the Launchpad.
+Create and publish an interactive Voila dashboard that appears as a card on the Scout Launchpad.
 
 ## Workflow
 
-### Step 1: Gather Requirements (BEFORE creating any files)
+### Step 1: Gather requirements
 
-**IMPORTANT:** Always ask clarifying questions FIRST using AskUserQuestion before writing any code. Do not skip this step even if the user provides a description.
+Default to a single `AskUserQuestion` call with up to 4 questions — the Q&A is part of the value of this skill. Only skip Q&A if the user's prompt already covers data scope, time range, *and* either chart types or use case. When in doubt, ask.
 
-Use AskUserQuestion to ask about (combine into 1-2 calls of up to 4 questions each):
+Pick the 3-4 most relevant questions from this set (don't ask all six):
 
-**First question set - Data & Purpose:**
+1. **Data scope** — All modalities; specific modality (CT, MRI, XR, US, NM, MG, PET); body region; or a text-match filter
+2. **Primary use case** — Operational (volumes, TAT, utilization); clinical review (timelines, case finding); QA (completeness, compliance); research/exploration
+3. **Time range default** — 30 days; 90 days; 1 year; 2+ years
+4. **Chart types** (multi-select) — Trend lines; summary cards; bar charts; pie/donut; data tables; scatter plots
+5. **Grouping** — By modality; by facility; by radiologist; by time period; by demographics
+6. **Card appearance** — Icon and color (see lists below)
 
-1. **Data scope** - Which modalities or study types should be included?
-   - All modalities
-   - Specific modality (CT, MRI, XR, US, NM, etc.)
-   - Specific body region (brain, chest, abdomen, MSK)
-   - Studies matching specific criteria (e.g., contains certain text)
+**Icons:** `users`, `chart`, `sparkles`, `clipboard`, `document`, `beaker`
 
-2. **Primary use case** - What's the main workflow this supports?
-   - Operational reporting (volumes, TAT, utilization)
-   - Clinical review (patient timelines, case finding)
-   - Quality assurance (report completeness, compliance)
-   - Research/exploration (cohort building, trend analysis)
+**Colors:** `violet`, `rose`, `cyan`, `emerald`, `amber`, `blue`, `indigo`, `pink`
 
-3. **Time range default** - What's the appropriate lookback period?
-   - 30 days (recent activity)
-   - 90 days (quarterly view)
-   - 1 year (annual trends)
-   - 2+ years (longitudinal tracking)
+Suggested pairings: TAT/quality → `clipboard` + `emerald`; volume/utilization → `chart` + `amber`; radiologists → `users` + `violet`; cohort/case finding → `beaker` + `cyan`; AI/ML → `sparkles` + `pink`; report viewer → `document` + `blue`.
 
-**Second question set - Visualizations & Features:**
+### Step 2: Create the playbook
 
-4. **Chart types** - What visualizations do you want? (multi-select)
-   - Time series / trend lines (volume over time)
-   - Summary cards with key metrics
-   - Bar charts (comparisons by category)
-   - Pie/donut charts (distribution breakdown)
-   - Data tables with sorting/filtering
-   - Scatter plots (performance comparisons)
+**Read `sample_dashboard.py` in this skill directory first** — it is the canonical reference for code patterns. Adapt its structure (don't copy-paste blindly; tailor sections, queries, and visuals to the requirements).
 
-5. **Grouping dimensions** - How should data be broken down?
-   - By modality
-   - By facility/location
-   - By radiologist
-   - By time period (day/week/month)
-   - By patient demographics
+Create files in `analytics/notebooks/{playbook-id}/`:
 
-6. **Launchpad appearance** - Icon for the playbook card on Launchpad
-   - Icons: `users`, `chart`, `sparkles`, `clipboard`, `document`, `beaker`
+- `{PlaybookName}.ipynb` — single cell that imports the dashboard module and calls `create_landing_page(...)`
+- `{module_name}.py` — dashboard module following the sample's patterns
 
-### Step 2: Create Playbook Files
+Notebook body:
+```python
+from {module_name} import create_landing_page
 
-After gathering requirements, create a new playbook directory in `analytics/notebooks/{playbook-id}/` with:
+create_landing_page(table_name="default.reports", date_range_days=360)
+```
 
-1. **Main notebook** (`{PlaybookName}.ipynb`) - Single cell that imports and calls the dashboard module
-2. **Dashboard module** (`{module_name}.py`) - Python module following the canonical pattern
+### Step 3: Smoke-test
 
-**IMPORTANT:** Read `sample_dashboard.py` in this skill directory as the canonical reference for code patterns before creating new dashboards.
+Before publishing, verify the module parses (don't use `python -m py_compile` — it writes a `.pyc` into `__pycache__/` that breaks the Ansible voila role's ConfigMap step on the next deploy):
 
-References in this skill directory:
-- `sample_dashboard.py` - **Canonical code template** showing all required patterns (Trino connection, data loading, progressive rendering, landing page, etc.). Use this as your structural reference regardless of what type of dashboard you're building.
-- `notebook-template.md` - Key patterns and code snippets
-- `trino-pattern.md` - Trino connection and query patterns
-- `scout-context.md` - Scout data schema reference
+```bash
+python3 -c "compile(open('analytics/notebooks/{playbook-id}/{module_name}.py').read(), '{module_name}.py', 'exec')" && echo OK
+```
 
-### Step 3: Publish
+Fix any errors before continuing. (Catches syntax errors locally; runtime errors only show up in Voila.)
 
-Run the publish script to deploy to the cluster:
+### Step 4: Publish
 
 ```bash
 ./scripts/scout-publish.sh analytics/notebooks/{playbook-id} \
   --title "Title" \
   --description "Description" \
   --icon "icon" \
-  --color "amber"
+  --color "color"
 ```
 
-## Key Patterns
+The script `kctl cp`s files into the Voila pod's PVC, updates the Launchpad ConfigMap, then rolls the Launchpad deployment so the new card appears immediately (~10s rollout). The user just needs to refresh. The script reads `KUBECONFIG`; if the cluster isn't the default, pass `--kubeconfig PATH` or set the env var.
 
-### Canonical Reference
-Always read `sample_dashboard.py` in this skill directory before creating a new dashboard. This file demonstrates all required code patterns (Trino connection, data loading, progressive section rendering, landing page with launch button, styling conventions). Adapt the structure and patterns to your specific dashboard requirements.
+## Code patterns (full reference: `sample_dashboard.py`)
 
-### Notebook Structure
-```python
-from {module_name} import create_landing_page
+### TAT calculation
 
-# Launch dashboard with instant page load
-# Data loads only when "Launch Dashboard" button is clicked
-create_landing_page(
-    table_name="default.reports",
-    date_range_days=360
-)
-```
+`requested_dt` (when the order was placed) is the preferred start. `observation_dt` is the fallback. Use the COALESCE in this order to get the patient-experience TAT.
 
-### Dashboard Module Structure
-```python
-"""
-{Title} Dashboard for Radiology Reports (Voila-optimized).
-"""
-import os
-import pandas as pd
-import ipywidgets as widgets
-from IPython.display import display, HTML
-import matplotlib.pyplot as plt
-import seaborn as sns
-from datetime import datetime, timedelta
-
-def _connect_trino():
-    """Connect to Trino using environment variables."""
-    # See trino-pattern.md
-
-def _load_data(table_name, date_range_days):
-    """Load data from Trino with derived fields."""
-    # Single query with all needed fields
-    # Derive time dimensions in Python (report_date, report_week)
-    # Filter outliers in Python
-    # Store date_range_days in df.attrs
-
-def create_dashboard(table_name, date_range_days):
-    """Main dashboard with progressive rendering."""
-    # Display header (always #667eea purple)
-    # Create status output for loading
-    # Load data
-    # Create output widgets for each section
-    # Render sections progressively with loading indicators
-
-def create_landing_page(table_name, date_range_days):
-    """Voila-optimized landing page with Launch button."""
-    # Simple landing card with date range input only
-    # Features list describing the dashboard
-    # Launch button that calls create_dashboard()
-```
-
-### Important Principles
-1. **Trino for data access** - Not PySpark, it's faster for Voila
-2. **Landing page pattern** - Simple landing with just date range input (no extra filters)
-3. **Progressive rendering** - Show loading indicator, then clear and render each section
-4. **Consistent styling** - Always use `#667eea` purple for headers, borders, buttons, accents
-5. **Pandas display for tables** - Use `display(df.round(1))` not custom HTML tables
-6. **Adaptive time aggregation** - Daily for <60 days, weekly for longer ranges
-7. **matplotlib/seaborn** - For all visualizations with `#667eea` and `#764ba2` colors
-8. **Exclude blank radiologists** - Always filter out reports where radiologist is NULL or empty
-9. **TAT calculation with fallback** - ALWAYS use `COALESCE(requested_dt, observation_dt)` for TAT start time. Without this fallback, TAT will be NULL for most reports since `requested_dt` is often missing. This is REQUIRED, not optional.
-
-### Required SQL Patterns (DO NOT DEVIATE)
-
-**TAT Calculation:**
 ```sql
--- REQUIRED: Always use COALESCE with fallback for TAT start time
 CAST(DATE_DIFF('second',
-    COALESCE(requested_dt, observation_dt),  -- MUST have fallback
+    COALESCE(requested_dt, observation_dt),
     COALESCE(results_report_status_change_dt, message_dt)
 ) AS DOUBLE) / 3600.0 AS order_to_report_hours
 ```
 
-**Radiologist Filter:**
-```sql
--- REQUIRED: Always exclude blank radiologists in WHERE clause
-WHERE principal_result_interpreter IS NOT NULL
-  AND TRIM(principal_result_interpreter) <> ''
+Filter outliers in Python: set `(hours <= 0) | (hours > 720)` to NULL.
+
+### Radiologist filter
+
+Filter at *render time*, not in WHERE — the WHERE form would drop rows useful for non-radiologist panels in the same dashboard.
+
+```python
+rad_named = df["radiologist"].notna() & (df["radiologist"].astype(str).str.strip() != "")
+df_rads = df[rad_named]
 ```
 
-### Dashboard Sections Pattern
-Typical dashboard has these sections (adapt based on requirements):
-1. **Summary** - Key metrics in purple gradient card with date range in title
-2. **Breakdown by Category** - Bar charts + pandas data table
-3. **Trends Over Time** - Line charts with adaptive daily/weekly aggregation
-4. **Performance Comparison** - Scatter plots or grouped bar charts
-5. **Quality Indicators** - Green gradient card with completeness metrics
+### Partition pruning (long ranges)
 
-## Example Usage
+The `reports` table is partitioned by `year`. For ranges spanning multiple years, an explicit `year IN (...)` filter helps Trino prune. `year` is derived from `message_dt`, so include the cutoff year and any later years.
 
+### Trino connection
+
+Use `_connect_trino()` from `sample_dashboard.py`. Reads `TRINO_HOST`, `TRINO_PORT`, etc. from env with defaults that work in-cluster.
+
+### Visual conventions
+
+- Header / accent: `#667eea`. Gradient: `#667eea → #764ba2`. Success: `#10b981 → #059669`.
+- Tables: `display(df.round(1))` — pandas, not custom HTML.
+- Time aggregation: daily for ≤60 days, weekly otherwise.
+- Charts: matplotlib + seaborn; `#667eea` and `#764ba2` for bars/lines.
+- Progressive rendering: each section gets its own `widgets.Output()`, shows a loading indicator first, then clears and renders. This makes the dashboard feel responsive even on slow queries.
+- Landing page with Launch button: instant page load, data only loads on click.
+
+## Iteration & debugging
+
+```bash
+# View Voila logs
+kubectl logs -n scout-analytics -l app.kubernetes.io/name=voila --tail=200
+
+# Re-publish after edits (overwrites PVC files and ConfigMap entry)
+./scripts/scout-publish.sh analytics/notebooks/{playbook-id} --title ... --description ... --icon ... --color ...
+
+# Remove a playbook
+./scripts/scout-unpublish.sh {playbook-id}
 ```
-User: Create a CT utilization dashboard showing scan volumes over time
 
-Claude:
-1. FIRST asks clarifying questions:
-   - "What modalities to include?" (All, specific)
-   - "What time range default?" (30 days, 90 days, 1 year)
-   - "What chart types?" (trend lines, summary cards, bar charts, tables)
-   - "What grouping dimensions?" (by facility, by scanner, by exam type)
-   - "What icon for Launchpad?" (chart, clipboard, etc.)
+## Files this skill writes
 
-2. Reads sample_dashboard.py for code patterns and structure
-
-3. Creates analytics/notebooks/ct-utilization/
-   - CTUtilization.ipynb
-   - ct_utilization_dashboard.py
-
-4. Runs ./scripts/scout-publish.sh to deploy
-```
-
-## Files Created
-
-For a playbook with ID `my-dashboard`:
+For a playbook with id `my-dashboard`:
 ```
 analytics/notebooks/my-dashboard/
-├── MyDashboard.ipynb           # Notebook entry point
-└── my_dashboard.py             # Dashboard module
+├── MyDashboard.ipynb
+└── my_dashboard.py
 ```
 
-## Available Icons
-- `users` - User/people related dashboards
-- `chart` - Charts/graphs/analytics
-- `sparkles` - AI/ML or special features
-- `clipboard` - Quality/compliance metrics
-- `document` - Documentation/reports
-- `beaker` - Research/experimental
+## Example flow
 
-## Styling
-All dashboards use consistent purple styling (`#667eea`) for the dashboard itself. The Launchpad card color defaults to amber but can be customized in the publish command.
+User: "Create a CT volume dashboard"
+
+1. Ask 3-4 clarifying questions (time range default, chart types, grouping by facility vs scanner, icon/color).
+2. Read `sample_dashboard.py`.
+3. Write `analytics/notebooks/ct-volume/CTVolume.ipynb` and `ct_volume_dashboard.py`, adapting the sample's `_load_data` / `create_dashboard` / `create_landing_page` to the volume use case (drop TAT-specific panels; add per-facility breakdowns).
+4. `python -m py_compile analytics/notebooks/ct-volume/ct_volume_dashboard.py`.
+5. `./scripts/scout-publish.sh analytics/notebooks/ct-volume --title "CT Volume" --description "Scan volumes over time, by facility" --icon chart --color amber`.
+6. Report the playbook URL from the script's output.

@@ -1,18 +1,9 @@
 """
-Sample Dashboard Template for Scout Playbooks (Voila-optimized).
+Canonical Scout playbook template (Voila-optimized).
 
-This is a TEMPLATE file demonstrating all required code patterns for Scout dashboards.
-Use this as a structural reference when creating new dashboards - adapt the sections,
-queries, and visualizations to match your specific requirements.
-
-Key patterns demonstrated:
-- Trino connection using environment variables
-- Data loading with TAT calculation (COALESCE fallback required)
-- Radiologist filtering (exclude NULL/blank)
-- Progressive section rendering with loading indicators
-- Landing page with Launch button
-- Consistent styling (#667eea purple theme)
-- Adaptive time aggregation (daily vs weekly)
+Adapt sections, queries, and visualizations to the dashboard's requirements;
+keep the structural patterns (Trino connection, progressive rendering, landing
+page with Launch button, consistent purple styling, adaptive time aggregation).
 
 Usage in Voila:
     from {your_module} import create_landing_page
@@ -88,20 +79,17 @@ def _load_quality_data(table_name="default.reports", date_range_days=None, limit
         schema = "default"
         table = table_parts[0]
 
-    # Build WHERE clause - filter on report_finalized_dt to keep time-based plots in range
-    where_clauses = [
-        # Exclude reports with blank radiologist names
-        "principal_result_interpreter IS NOT NULL",
-        "TRIM(principal_result_interpreter) <> ''",
-    ]
+    # Build WHERE clause - filter on report_finalized_dt to keep time-based plots in range.
+    # Don't filter blank radiologists in the WHERE clause - some panels (e.g. volume by
+    # modality) want all rows. Filter at render time for radiologist-specific panels.
+    where_clauses = []
     if date_range_days:
         cutoff = (datetime.now() - timedelta(days=date_range_days)).strftime("%Y-%m-%d")
-        # Filter on the finalized date to ensure time-based plots stay within range
         where_clauses.append(
             f"COALESCE(results_report_status_change_dt, message_dt) >= TIMESTAMP '{cutoff}'"
         )
 
-    where_sql = f"WHERE {' AND '.join(where_clauses)}"
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
     limit_sql = f"LIMIT {limit}" if limit else ""
 
     # Simplified query - only essential fields for faster loading
@@ -119,9 +107,10 @@ def _load_quality_data(table_name="default.reports", date_range_days=None, limit
         -- TAT calculations with fallbacks
         COALESCE(results_report_status_change_dt, message_dt) AS report_finalized_dt,
 
-        -- TAT in hours: ALWAYS use COALESCE with fallback to handle NULL timestamps
-        -- Primary: requested_dt (order time), Fallback: observation_dt (exam time)
-        -- This pattern is REQUIRED - without fallback, TAT will be NULL for most reports
+        -- Order-to-Report TAT in hours.
+        -- requested_dt (when the order was placed) is the preferred start. observation_dt
+        -- is the fallback. Both are populated in this dataset; using requested_dt as the
+        -- primary keeps the metric meaningful (patient-experience TAT, not just read time).
         CAST(DATE_DIFF('second',
             COALESCE(requested_dt, observation_dt),
             COALESCE(results_report_status_change_dt, message_dt)
@@ -320,7 +309,10 @@ def _render_section_loading(section_name):
 def _render_summary(df):
     """Render summary statistics."""
     total = len(df)
-    radiologists = df["radiologist"].nunique()
+    rad_named = df["radiologist"].notna() & (
+        df["radiologist"].astype(str).str.strip() != ""
+    )
+    radiologists = df.loc[rad_named, "radiologist"].nunique()
     facilities = df["sending_facility"].nunique()
 
     # TAT statistics
@@ -559,9 +551,12 @@ def _render_radiologist_metrics(df):
     """Render radiologist performance metrics."""
     display(HTML("<h2 style='margin-top: 40px;'>Radiologist Performance</h2>"))
 
-    # Aggregate by radiologist
+    # Aggregate by radiologist - exclude NULL and blank names
+    rad_named = df["radiologist"].notna() & (
+        df["radiologist"].astype(str).str.strip() != ""
+    )
     rad_metrics = (
-        df[df["radiologist"].notna() & df["order_to_report_hours"].notna()]
+        df[rad_named & df["order_to_report_hours"].notna()]
         .groupby("radiologist")
         .agg(
             total_reports=("order_to_report_hours", "size"),
