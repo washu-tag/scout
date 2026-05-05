@@ -6,8 +6,15 @@ initContainers:
   # Temporal before cluster networking/DNS is fully ready for this pod.
   # Reuses the transformer image (already pulled, glibc resolver) so we
   # exercise the same DNS code path the main app uses.
+  #
+  # imagePullPolicy must be set explicitly here. The chart's main
+  # container values default to IfNotPresent, but init containers
+  # specified via values get the K8s default — which is Always for
+  # :latest tags and breaks in environments (e.g. K3s in CI) that have
+  # the image loaded locally but no registry to pull from.
   - name: wait-for-temporal-dns
     image: '{{ hl7_transformer_image_repository }}:{{ hl7_transformer_image_tag }}'
+    imagePullPolicy: IfNotPresent
     command:
       - python3
       - -c
