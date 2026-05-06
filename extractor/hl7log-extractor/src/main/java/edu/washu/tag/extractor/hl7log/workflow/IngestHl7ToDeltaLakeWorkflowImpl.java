@@ -88,13 +88,15 @@ public class IngestHl7ToDeltaLakeWorkflowImpl implements IngestHl7ToDeltaLakeWor
 
         // Validate input
         String reportTableName = DefaultArgs.getReportTableName(input.reportTableName());
+        // Default null/unset to true so production runs derive the mapping table by default.
+        Boolean createMapping = input.createMapping() == null ? Boolean.TRUE : input.createMapping();
 
         // Ingest HL7 into delta lake
         logger.info("WorkflowId {} - Launching activity to ingest HL7 files", workflowInfo.getWorkflowId());
         Promise<IngestHl7FilesToDeltaLakeOutput> ingestHl7Promise = ingestActivity.executeAsync(
             PYTHON_ACTIVITY,
             IngestHl7FilesToDeltaLakeOutput.class,
-            new IngestHl7FilesToDeltaLakeActivityInput(reportTableName, hl7ManifestFilePath)
+            new IngestHl7FilesToDeltaLakeActivityInput(reportTableName, hl7ManifestFilePath, createMapping)
         );
 
         IngestHl7FilesToDeltaLakeOutput ingestHl7Output;

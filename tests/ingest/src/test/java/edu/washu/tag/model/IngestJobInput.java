@@ -11,6 +11,10 @@ public class IngestJobInput {
     private String logsRootPath = "/data/hl7";
     private String reportTableName = "reports";
     private String logPaths;
+    // Default false in tests so we don't pay the mapping derivation cost
+    // for tests that don't assert on it. Tests that need mapping (e.g.
+    // testLongitudinalPatientIds) must explicitly setCreateMapping(true).
+    private Boolean createMapping = false;
 
     public String getHl7OutputPath() {
         return hl7OutputPath;
@@ -54,6 +58,15 @@ public class IngestJobInput {
 
     public IngestJobInput setLogPaths(String logPaths) {
         this.logPaths = logPaths;
+        return this;
+    }
+
+    public Boolean getCreateMapping() {
+        return createMapping;
+    }
+
+    public IngestJobInput setCreateMapping(Boolean createMapping) {
+        this.createMapping = createMapping;
         return this;
     }
 

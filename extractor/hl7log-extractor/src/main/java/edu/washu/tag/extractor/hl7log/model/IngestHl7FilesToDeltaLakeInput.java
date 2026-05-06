@@ -11,11 +11,14 @@ package edu.washu.tag.extractor.hl7log.model;
  *                    {@link IngestHl7FilesToDeltaLakeInput#hl7ManifestFilePath} is not provided.
  * @param reportTableName Name of the report table to be created in Delta Lake.
  * @param deltaIngestTimeout Timeout for the Delta Lake ingest operation in minutes.
+ * @param createMapping Whether to derive the report-patient mapping table and the epic views that depend on it.
+ *                      Null is treated as true.
  */
 public record IngestHl7FilesToDeltaLakeInput(
     String scratchSpaceRootPath,
     String hl7ManifestFilePath,
     String hl7RootPath,
     String reportTableName,
-    Integer deltaIngestTimeout
+    Integer deltaIngestTimeout,
+    Boolean createMapping
 ) {}

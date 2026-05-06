@@ -256,7 +256,10 @@ public class TestScoutQueries extends BaseTest {
         final String baseTableName = newTable();
         final String mappingTableName = baseTableName + "_report_patient_mapping";
         ingest(
-            new IngestJobInput().setReportTableName(baseTableName).setLogPaths("/data/transitive_id_resolution/20260329.log")
+            new IngestJobInput()
+                .setReportTableName(baseTableName)
+                .setLogPaths("/data/transitive_id_resolution/20260329.log")
+                .setCreateMapping(true)
         );
 
         final MappingLookup report0 = new MappingLookup(29, 0, "LTI_01", null);
@@ -287,7 +290,10 @@ public class TestScoutQueries extends BaseTest {
         validateMappingTable(mappingTableName, expectedPatients);
 
         ingest(
-            new IngestJobInput().setReportTableName(baseTableName).setLogPaths("/data/transitive_id_resolution/20260330.log")
+            new IngestJobInput()
+                .setReportTableName(baseTableName)
+                .setLogPaths("/data/transitive_id_resolution/20260330.log")
+                .setCreateMapping(true)
         );
 
         final MappingLookup reportSecondDay0 = new MappingLookup(30, 0, "LTI_01", null);
