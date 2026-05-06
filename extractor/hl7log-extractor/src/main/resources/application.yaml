@@ -28,9 +28,12 @@ spring:
       connection-timeout: 300000
       leak-detection-threshold: 720000 # log stack-trace if a connection is held >12m
 s3:
-  endpoint: 'http://minio.minio:9000'
+  # endpoint: Optional. Set to the URL of an S3-compatible endpoint (e.g. MinIO).
+  # Leave unset for real AWS S3 — the SDK will use the standard regional endpoint.
   region: us-east-1
   max-connections: 50
+  # path-style-access: true for MinIO, false for AWS S3 (the default).
+  path-style-access: false
 management:
   endpoints:
     web:
