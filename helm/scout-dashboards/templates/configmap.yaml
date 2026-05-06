@@ -6,6 +6,8 @@ metadata:
   labels:
     {{- include "scout-dashboards.labels" . | nindent 4 }}
 data:
+  import.py: |-
+{{ .Files.Get "files/import.py" | indent 4 }}
   metadata.yaml: |-
 {{ .Files.Get "files/analytics/metadata.yaml" | indent 4 }}
   Scout_Data_Lake.yaml: |-

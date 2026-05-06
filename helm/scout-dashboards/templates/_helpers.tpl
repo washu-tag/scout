@@ -95,4 +95,6 @@ command expects (analytics/<subdir>/<file>).
   path: analytics/metadata.yaml
 - key: Scout_Data_Lake.yaml
   path: analytics/databases/Scout_Data_Lake.yaml
+- key: import.py
+  path: import.py
 {{- end -}}
