@@ -119,6 +119,11 @@ k3s_cluster:
     trino_worker_max_heap: 512M
     trino_coordinator_max_heap: 512M
 
+    # Spark default of 200 shuffle partitions is far too many for CI's
+    # small test data — each shuffle spawns 200 tasks, most processing
+    # zero rows, and scheduling overhead dominates.
+    spark_sql_shuffle_partitions: 8
+
     # Valkey (single shared password for all services)
     valkey_password: valkey123
 
