@@ -141,6 +141,27 @@ tool_server_connections:
 # Disable Arena Model evaluation feature (per README post-deploy step 7)
 open_webui_enable_arena_models: false
 
+# Default selected model in the picker for new chats. Comma-separated list of
+# model IDs (must match an Ollama tag exactly under override mode). Users can
+# still pick a different Scout Explorer per chat. Currently Qwen 3.6 — best
+# reasoning benchmarks of the three resident options and supports thinking
+# mode for the analytical/multi-step queries Scout is built for.
+open_webui_default_model_id: 'qwen3.6-long:latest'
+
+# Model used for OWUI's auxiliary tasks (chat title generation, follow-up
+# question suggestions, tag generation, web-search/RAG query refinement).
+# Without this, OWUI uses whichever Scout Explorer the user selected — which
+# means a 5-word title generation can trigger a 30s cold-load of gpt-oss-120b
+# OR run through Qwen's thinking mode unnecessarily.
+#
+# Pick a model that's already preloaded with keep_alive=-1 so task gen
+# reuses VRAM instead of loading a separate Ollama tag. Defaults to the
+# gemma4-long variant (resident, dense, no thinking-step latency, fast for
+# trivial tasks). MUST match the id of a resident scout_models entry exactly
+# — the raw `gemma4:31b` would be a different Ollama model loaded into a
+# separate VRAM slot.
+open_webui_task_model_id: 'gemma4-31b-long:latest'
+
 # RAG template — injected at chat time when knowledge is attached to a model.
 # Path is relative to this role's `files/` directory.
 open_webui_rag_template_file: rag-prompt.md
@@ -232,6 +253,55 @@ open_webui_scout_keep_alive_cold_load: '5m'
 # merge logic removes it from the picker. Set false to keep raw bases visible
 # (e.g., for debugging or to let users compare raw vs Scout-configured behavior).
 open_webui_hide_base_models: true
+
+# Default suggestion prompt cards shown when starting a new chat with a Scout
+# Explorer model. Each entry is {content, title: [short, subtitle]} per OWUI's
+# ModelMeta schema.
+#
+# Prompts are grounded in the Scout report schema (docs/source/dataschema.md)
+# and span the axes radiology researchers and ops actually query:
+#   - Cohort identification via free-text search of `report_section_impression`
+#     (the canonical NLP-on-radiology use case — see literature on incidental
+#     pulmonary nodule cohorts).
+#   - TAT analysis via `requested_dt` → `results_report_status_change_dt`
+#     (per memory: requested_dt is more reliably populated than observation_dt).
+#   - Modality utilization trends via `modality` + time bucketing.
+#   - Quality metrics via `report_section_addendum`.
+#   - Demographic slices via `patient_age` + `modality`.
+open_webui_scout_default_suggestion_prompts:
+  - title: ['Pulmonary nodule cohort', 'Chest CT impression search']
+    content: 'Find chest CT reports where the impression mentions a pulmonary nodule. Show counts by year and the top reasons (e.g., incidental, follow-up, indeterminate).'
+  - title: ['Turnaround time by modality', 'Order request to final report']
+    content: 'What is the median turnaround time from order request (requested_dt) to final report (results_report_status_change_dt) by modality, over the last 12 months?'
+  - title: ['Monthly exam volume', 'Trends by modality']
+    content: 'Show monthly exam volume by modality for the past 12 months.'
+  - title: ['Addendum rate', 'Quality metric by modality']
+    content: 'How many reports issued in the last year contained an addendum, broken down by modality? Express as a rate per 1000 reports.'
+  - title: ['Pediatric CT trends', 'Patients under 18']
+    content: 'How many CT exams were performed on patients under 18 in each of the last 5 years? Break down by service name.'
+
+# Default profile image (avatar) shown next to each Scout Explorer model in
+# the picker / model tile / chat header. Loaded as a data URL from a pre-
+# encoded base64 file in this role's files/ directory so it works in
+# air-gapped deployments with no external image-hosting dependency.
+# Source: docs/diagrams/logos/scout.png resized to 128×128 (~24 KB base64).
+open_webui_scout_default_profile_image_url: 'data:image/png;base64,{{ lookup("file", role_path ~ "/files/scout-logo-128.png.b64") }}'
+
+# Default capability flags. OWUI's DEFAULT_CAPABILITIES has everything `true`,
+# but a few are unsafe for Scout's air-gapped + PHI-handling deployment:
+#   - web_search:        needs internet; LLM-crafted queries can exfiltrate PHI
+#   - image_generation:  needs internet (DALL-E etc.) and same exfil risk
+#   - code_interpreter:  arbitrary code execution can exfiltrate or escape
+#   - terminal:          shell access — same risks, broader blast radius
+#   - vision:            unused by Scout (no images in the data)
+# Capabilities not listed here keep their OWUI default (true): file_context,
+# file_upload, citations, status_updates.
+open_webui_scout_default_capabilities:
+  vision: false
+  web_search: false
+  image_generation: false
+  code_interpreter: false
+  terminal: false
 
 # ----------------------------------------------------------------------------
 # Knowledge collections (Phase 2d)

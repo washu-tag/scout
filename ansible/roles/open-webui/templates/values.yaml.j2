@@ -231,6 +231,17 @@ extraEnvVars:
   - name: ENABLE_EVALUATION_ARENA_MODELS
     value: '{{ open_webui_enable_arena_models | string | lower }}'
 
+  # Pin auxiliary tasks (title gen, follow-ups, tags, RAG/web-search query
+  # refinement) to a model that's already resident in VRAM, so a 5-word
+  # title generation never cold-loads a 120B model or waits on Qwen's
+  # thinking step. Must match an Ollama tag exactly — see defaults/main.yaml.
+  - name: TASK_MODEL
+    value: '{{ open_webui_task_model_id }}'
+
+  # Default model selected in the picker for new chats.
+  - name: DEFAULT_MODELS
+    value: '{{ open_webui_default_model_id }}'
+
 {% if tool_server_connections | default([]) | length > 0 %}
   # External MCP/OpenAPI tool servers (e.g., Trino MCP for Scout SQL queries).
   # Double `to_json` produces a YAML-safe string scalar carrying the JSON OWUI

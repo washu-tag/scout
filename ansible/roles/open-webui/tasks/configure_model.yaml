@@ -24,11 +24,12 @@
       base_model_id: null
       name: '{{ m.ui.name }}'
       meta:
+        profile_image_url: '{{ m.ui.profile_image_url | default(open_webui_scout_default_profile_image_url) }}'
         description: '{{ m.ui.description | default("") }}'
         toolIds: '{{ m.ui.tool_ids | default(open_webui_scout_tool_ids) }}'
         knowledge: '{{ m.ui.knowledge | default(_scout_knowledge_objects | default([])) }}'
-        suggestion_prompts: '{{ m.ui.suggestion_prompts | default([]) }}'
-        capabilities: '{{ m.ui.capabilities | default({}) }}'
+        suggestion_prompts: '{{ m.ui.suggestion_prompts | default(open_webui_scout_default_suggestion_prompts) }}'
+        capabilities: '{{ m.ui.capabilities | default(open_webui_scout_default_capabilities) }}'
       params:
         system: '{{ _scout_system_prompt }}'
         function_calling: '{{ m.ui.function_calling | default(open_webui_scout_default_function_calling) }}'

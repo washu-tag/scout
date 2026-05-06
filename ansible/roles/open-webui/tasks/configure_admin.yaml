@@ -47,6 +47,10 @@
 #
 # Capture HTTP status separately from body so we can surface OWUI's error
 # message on non-2xx without silently failing inside curl's `-f` flag.
+# OWUI's readiness probe passes before the Python process finishes binding
+# port 8080, so the kubectl wait that ran before us isn't a guarantee — a
+# fresh pod can be Ready but still refuse connections. Retry the signin
+# (curl exit 7 = "Failed to connect", HTTP 000) for up to ~60s before failing.
 - name: 'Mint OWUI admin JWT via trusted-header SSO (in-cluster, bypasses Traefik)'
   ansible.builtin.command:
     argv:
@@ -79,6 +83,9 @@
   changed_when: false
   failed_when: false
   no_log: true
+  retries: 20
+  delay: 3
+  until: owui_bootstrap_signin.rc == 0
 
 - name: 'Surface signin failure (stderr from the curl wrapper)'
   ansible.builtin.fail:
