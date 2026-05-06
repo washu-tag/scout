@@ -1,16 +1,27 @@
 ---
-# Configures one Open WebUI custom model entry idempotently.
-# Called by configure_admin.yaml in a loop over scout_models entries that
-# define a `ui:` sub-block.
+# Configures one Open WebUI custom model entry idempotently for a scout_models
+# entry that defines a `ui:` block. Applies up to TWO overrides per entry:
+#
+#   1. Scout Explorer override on the long variant (e.g., gemma4-31b-long:latest)
+#      — visible in the picker with our display name, system prompt, tools,
+#      knowledge, and advanced params (function_calling, reasoning_effort,
+#      keep_alive). OWUI's merge logic replaces the auto-discovered Ollama
+#      base entry in place because base_model_id is null and id matches.
+#
+#   2. Hide-base override on the raw Ollama tag (e.g., gemma4:31b) — created
+#      with is_active: false so OWUI's merge code drops it from the picker
+#      (utils/models.py: `else: models.remove(model)`). Skipped when
+#      open_webui_hide_base_models is false or when base == long-variant name.
 #
 # Required loop var: `m` (one entry from scout_models with `ui:` block)
-# Required vars from configure_admin.yaml: `owui_admin_token`, `_scout_system_prompt`
+# Required vars from configure_admin.yaml: `owui_admin_token`,
+#   `_scout_system_prompt`, `_owui_pod_name`
 
-- name: 'Build ModelForm payload: {{ m.name }}'
+- name: 'Build Scout Explorer override payload: {{ m.name }}'
   ansible.builtin.set_fact:
-    _model_payload:
-      id: '{{ m.ui.id | default(m.name | regex_replace(":latest$", "") | regex_replace(":", "-")) }}'
-      base_model_id: '{{ m.name }}'
+    _scout_payload:
+      id: '{{ m.ui.id | default(m.name) }}'
+      base_model_id: null
       name: '{{ m.ui.name }}'
       meta:
         description: '{{ m.ui.description | default("") }}'
@@ -25,81 +36,28 @@
         keep_alive: '{{ m.ui.keep_alive | default(open_webui_scout_keep_alive_resident if (m.preload | default(true)) else open_webui_scout_keep_alive_cold_load) }}'
       is_active: true
 
-- name: 'Check if OWUI model exists: {{ _model_payload.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - deploy/open-webui
-      - --
-      - curl
-      - -sf
-      - -o
-      - /dev/null
-      - -w
-      - '%{http_code}'
-      - 'http://localhost:8080/api/v1/models/model?id={{ _model_payload.id | urlencode }}'
-      - -H
-      - 'Authorization: Bearer {{ owui_admin_token }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-  register: _model_exists_check
-  changed_when: false
-  failed_when: false
-  no_log: true
+- name: 'Apply Scout Explorer override: {{ m.ui.name }}'
+  ansible.builtin.include_tasks: _apply_model_payload.yaml
+  vars:
+    _payload: '{{ _scout_payload }}'
 
-- name: 'Create OWUI model (POST /create): {{ _model_payload.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - -i
-      - deploy/open-webui
-      - --
-      - curl
-      - -sfS
-      - -X
-      - POST
-      - 'http://localhost:8080/api/v1/models/create'
-      - -H
-      - 'Authorization: Bearer {{ owui_admin_token }}'
-      - -H
-      - 'Content-Type: application/json'
-      - --data-binary
-      - '@-'
-    stdin: '{{ _model_payload | to_json }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-  when: _model_exists_check.stdout != '200'
-  no_log: true
+- name: 'Build hide-base override payload: {{ m.base }}'
+  ansible.builtin.set_fact:
+    _hide_payload:
+      id: '{{ m.base }}'
+      base_model_id: null
+      name: '{{ m.base }}' # Cosmetic — never shown since the entry is hidden
+      meta: {}
+      params: {}
+      is_active: false
+  when:
+    - open_webui_hide_base_models | default(true) | bool
+    - m.base != (m.ui.id | default(m.name))
 
-- name: 'Update existing OWUI model (POST /model/update): {{ _model_payload.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - -i
-      - deploy/open-webui
-      - --
-      - curl
-      - -sfS
-      - -X
-      - POST
-      - 'http://localhost:8080/api/v1/models/model/update?id={{ _model_payload.id | urlencode }}'
-      - -H
-      - 'Authorization: Bearer {{ owui_admin_token }}'
-      - -H
-      - 'Content-Type: application/json'
-      - --data-binary
-      - '@-'
-    stdin: '{{ _model_payload | to_json }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-  when: _model_exists_check.stdout == '200'
-  no_log: true
+- name: 'Apply hide-base override: {{ m.base }}'
+  ansible.builtin.include_tasks: _apply_model_payload.yaml
+  vars:
+    _payload: '{{ _hide_payload }}'
+  when:
+    - open_webui_hide_base_models | default(true) | bool
+    - m.base != (m.ui.id | default(m.name))

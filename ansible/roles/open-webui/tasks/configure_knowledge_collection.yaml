@@ -15,7 +15,7 @@
       - exec
       - -n
       - '{{ chatbot_namespace }}'
-      - deploy/open-webui
+      - '{{ _owui_pod_name }}'
       - --
       - curl
       - -sfS
@@ -30,7 +30,9 @@
 
 - name: 'Look for existing collection by name: {{ kc.name }}'
   ansible.builtin.set_fact:
-    _existing_kc: '{{ ((_kc_list.stdout | from_json).items | default([])) | selectattr("name", "equalto", kc.name) | list | first | default(None) }}'
+    # Bracket subscript instead of `.items` — Jinja resolves `.items` to the
+    # bound dict.items() method rather than the JSON "items" key.
+    _existing_kc: '{{ ((_kc_list.stdout | from_json)["items"] | default([])) | selectattr("name", "equalto", kc.name) | list | first | default(None) }}'
 
 - name: 'Create knowledge collection: {{ kc.name }}'
   ansible.builtin.command:
@@ -40,7 +42,7 @@
       - -n
       - '{{ chatbot_namespace }}'
       - -i
-      - deploy/open-webui
+      - '{{ _owui_pod_name }}'
       - --
       - curl
       - -sfS
@@ -64,14 +66,14 @@
   ansible.builtin.set_fact:
     _kc_id: '{{ (_kc_create.stdout | from_json).id if (_existing_kc is none) else _existing_kc.id }}'
 
-- name: 'GET full collection object (for files list and meta.knowledge attachment)'
+- name: 'GET collection object (for meta.knowledge attachment to models)'
   ansible.builtin.command:
     argv:
       - kubectl
       - exec
       - -n
       - '{{ chatbot_namespace }}'
-      - deploy/open-webui
+      - '{{ _owui_pod_name }}'
       - --
       - curl
       - -sfS
@@ -84,9 +86,33 @@
   changed_when: false
   no_log: true
 
+# GET /knowledge/{id} returns `files: None` (the route handler doesn't populate it).
+# The actual file list lives at GET /knowledge/{id}/files (KnowledgeFileListResponse
+# with `items`). Use that to build the existing-filenames set for idempotency.
+- name: 'GET files attached to collection (for idempotency check)'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - '{{ _owui_pod_name }}'
+      - --
+      - curl
+      - -sfS
+      - 'http://localhost:8080/api/v1/knowledge/{{ _kc_id }}/files'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _kc_files
+  changed_when: false
+  no_log: true
+
 - name: 'Build set of filenames already in the collection'
   ansible.builtin.set_fact:
-    kc_existing_filenames: '{{ (_kc_full.stdout | from_json).files | default([]) | map(attribute="filename") | list }}'
+    # Bracket subscript on "items" — Jinja resolves `.items` to dict.items() method.
+    kc_existing_filenames: '{{ (_kc_files.stdout | from_json)["items"] | default([]) | map(attribute="filename") | list }}'
     kc_id: '{{ _kc_id }}'
 
 - name: 'Upload each configured file (skipping already-attached)'
@@ -103,7 +129,7 @@
       - exec
       - -n
       - '{{ chatbot_namespace }}'
-      - deploy/open-webui
+      - '{{ _owui_pod_name }}'
       - --
       - curl
       - -sfS

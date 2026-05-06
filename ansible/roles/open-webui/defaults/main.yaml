@@ -225,6 +225,14 @@ open_webui_scout_default_function_calling: native
 open_webui_scout_keep_alive_resident: '-1'
 open_webui_scout_keep_alive_cold_load: '5m'
 
+# Hide each scout_models entry's raw base Ollama tag (e.g., gemma4:31b) from
+# the model picker so users only see the customized Scout Explorer entries
+# (built on the long-context Modelfile derivations). Implemented by creating
+# a custom model row with id=base, base_model_id=null, is_active=false; OWUI's
+# merge logic removes it from the picker. Set false to keep raw bases visible
+# (e.g., for debugging or to let users compare raw vs Scout-configured behavior).
+open_webui_hide_base_models: true
+
 # ----------------------------------------------------------------------------
 # Knowledge collections (Phase 2d)
 # ----------------------------------------------------------------------------

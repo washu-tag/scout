@@ -5,7 +5,7 @@
 # Required loop vars: `file` (one entry from collection.files), `kc_id`
 #   (target knowledge collection's server-assigned id), `kc_existing_filenames`
 #   (set of filenames already in the collection)
-# Required vars: `owui_admin_token`
+# Required vars: `owui_admin_token`, `_owui_pod_name`
 
 - name: 'Skip {{ file.upload_filename }} (already in collection)'
   ansible.builtin.debug:
@@ -15,72 +15,112 @@
 - name: 'Process file {{ file.upload_filename }}'
   when: file.upload_filename not in kc_existing_filenames
   block:
-    - name: 'Copy {{ file.upload_filename }} into OWUI pod'
-      ansible.builtin.command:
-        argv:
-          - kubectl
-          - cp
-          - '{{ file.source_path }}'
-          - '{{ chatbot_namespace }}/{{ _owui_pod_name }}:/tmp/{{ file.upload_filename }}'
-      environment:
-        KUBECONFIG: '{{ kubeconfig_yaml }}'
-      changed_when: true
+    # The "is this file already attached" decision lives in
+    # configure_knowledge_collection.yaml's `kc_existing_filenames` set, which
+    # uses GET /knowledge/{id}/files (the correct endpoint for the file list —
+    # GET /knowledge/{id} returns `files: null`). If we got here, the file
+    # is genuinely not in the collection.
+    #
+    # If a same-named OWUI file exists in /api/v1/files/ but isn't attached
+    # here, /file/add may still fail with "Duplicate content" because the
+    # vector chunks under a different file_id collide on content hash. We
+    # surface that error rather than auto-deleting, since the same-named file
+    # could be properly attached to a DIFFERENT knowledge collection — DELETE
+    # /api/v1/files/{id} cascades through every KB association and would
+    # silently yank it from there too.
+    - name: 'Upload {{ file.upload_filename }} fresh'
+      block:
+        # source_path lives on the Ansible controller (e.g., docs/source/dataschema.md
+        # in the scout-demo repo). Other Phase 2 tasks run on the K8s control node
+        # using its native k3s.yaml, but THIS task needs delegate_to: localhost so
+        # kubectl cp can read the local file. Both kubeconfigs point to the same
+        # cluster.
+        #
+        # `realpath` resolves any `..` segments — kubectl cp passes paths literally
+        # and the OS reports "doesn't exist" otherwise.
+        - name: 'Copy {{ file.upload_filename }} into OWUI pod (from controller)'
+          ansible.builtin.command:
+            argv:
+              - kubectl
+              - cp
+              - '{{ file.source_path | realpath }}'
+              - '{{ chatbot_namespace }}/{{ _owui_pod_name }}:/tmp/{{ file.upload_filename }}'
+          delegate_to: localhost
+          environment:
+            KUBECONFIG: '{{ local_kubeconfig_yaml }}'
+          changed_when: true
 
-    - name: 'POST /api/v1/files/ multipart upload: {{ file.upload_filename }}'
-      ansible.builtin.command:
-        argv:
-          - kubectl
-          - exec
-          - -n
-          - '{{ chatbot_namespace }}'
-          - deploy/open-webui
-          - --
-          - curl
-          - -sfS
-          - -X
-          - POST
-          - 'http://localhost:8080/api/v1/files/'
-          - -H
-          - 'Authorization: Bearer {{ owui_admin_token }}'
-          - -F
-          - 'file=@/tmp/{{ file.upload_filename }};type=text/markdown'
-      environment:
-        KUBECONFIG: '{{ kubeconfig_yaml }}'
-      register: _file_upload_response
-      changed_when: true
-      no_log: true
+        - name: 'POST /api/v1/files/ multipart upload: {{ file.upload_filename }}'
+          ansible.builtin.command:
+            argv:
+              - kubectl
+              - exec
+              - -n
+              - '{{ chatbot_namespace }}'
+              - '{{ _owui_pod_name }}'
+              - --
+              - curl
+              - -sfS
+              - -X
+              - POST
+              - 'http://localhost:8080/api/v1/files/'
+              - -H
+              - 'Authorization: Bearer {{ owui_admin_token }}'
+              - -F
+              - 'file=@/tmp/{{ file.upload_filename }};type=text/markdown'
+          environment:
+            KUBECONFIG: '{{ kubeconfig_yaml }}'
+          register: _file_upload_response
+          changed_when: true
+          no_log: true
 
-    - name: 'Capture uploaded file id'
-      ansible.builtin.set_fact:
-        _uploaded_file_id: '{{ (_file_upload_response.stdout | from_json).id }}'
+        - name: 'Capture uploaded file id'
+          ansible.builtin.set_fact:
+            _uploaded_file_id: '{{ (_file_upload_response.stdout | from_json).id }}'
 
-    - name: 'Poll /api/v1/files/{id}/process/status until completed'
-      ansible.builtin.command:
-        argv:
-          - kubectl
-          - exec
-          - -n
-          - '{{ chatbot_namespace }}'
-          - deploy/open-webui
-          - --
-          - curl
-          - -sfS
-          - 'http://localhost:8080/api/v1/files/{{ _uploaded_file_id }}/process/status'
-          - -H
-          - 'Authorization: Bearer {{ owui_admin_token }}'
-      environment:
-        KUBECONFIG: '{{ kubeconfig_yaml }}'
-      register: _file_status
-      until: (_file_status.stdout | from_json).status in ['completed', 'failed']
-      retries: '{{ (open_webui_file_process_poll_timeout_seconds | int) // (open_webui_file_process_poll_interval_seconds | int) }}'
-      delay: '{{ open_webui_file_process_poll_interval_seconds }}'
-      changed_when: false
-      no_log: true
+        - name: 'Poll /api/v1/files/{id}/process/status until completed'
+          ansible.builtin.command:
+            argv:
+              - kubectl
+              - exec
+              - -n
+              - '{{ chatbot_namespace }}'
+              - '{{ _owui_pod_name }}'
+              - --
+              - curl
+              - -sfS
+              - 'http://localhost:8080/api/v1/files/{{ _uploaded_file_id }}/process/status'
+              - -H
+              - 'Authorization: Bearer {{ owui_admin_token }}'
+          environment:
+            KUBECONFIG: '{{ kubeconfig_yaml }}'
+          register: _file_status
+          until: (_file_status.stdout | from_json).status in ['completed', 'failed']
+          retries: '{{ (open_webui_file_process_poll_timeout_seconds | int) // (open_webui_file_process_poll_interval_seconds | int) }}'
+          delay: '{{ open_webui_file_process_poll_interval_seconds }}'
+          changed_when: false
+          no_log: true
 
-    - name: 'Fail if file processing did not complete cleanly: {{ file.upload_filename }}'
-      ansible.builtin.fail:
-        msg: 'OWUI failed to process {{ file.upload_filename }}: {{ _file_status.stdout }}'
-      when: (_file_status.stdout | from_json).status != 'completed'
+        - name: 'Fail if file processing did not complete cleanly: {{ file.upload_filename }}'
+          ansible.builtin.fail:
+            msg: 'OWUI failed to process {{ file.upload_filename }}: {{ _file_status.stdout }}'
+          when: (_file_status.stdout | from_json).status != 'completed'
+
+        - name: 'Clean up temp file in pod: {{ file.upload_filename }}'
+          ansible.builtin.command:
+            argv:
+              - kubectl
+              - exec
+              - -n
+              - '{{ chatbot_namespace }}'
+              - '{{ _owui_pod_name }}'
+              - --
+              - rm
+              - -f
+              - '/tmp/{{ file.upload_filename }}'
+          environment:
+            KUBECONFIG: '{{ kubeconfig_yaml }}'
+          changed_when: false
 
     - name: 'Add file to collection (POST /api/v1/knowledge/{id}/file/add): {{ file.upload_filename }}'
       ansible.builtin.command:
@@ -90,37 +130,34 @@
           - -n
           - '{{ chatbot_namespace }}'
           - -i
-          - deploy/open-webui
+          - '{{ _owui_pod_name }}'
           - --
-          - curl
-          - -sfS
-          - -X
-          - POST
-          - 'http://localhost:8080/api/v1/knowledge/{{ kc_id }}/file/add'
-          - -H
-          - 'Authorization: Bearer {{ owui_admin_token }}'
-          - -H
-          - 'Content-Type: application/json'
-          - --data-binary
-          - '@-'
+          - /bin/sh
+          - -c
+          - |
+            body=$(mktemp)
+            code=$(curl -sS -o "$body" -w '%{http_code}' -X POST \
+              'http://localhost:8080/api/v1/knowledge/{{ kc_id }}/file/add' \
+              -H 'Authorization: Bearer {{ owui_admin_token }}' \
+              -H 'Content-Type: application/json' \
+              --data-binary @-)
+            resp=$(cat "$body"); rm -f "$body"
+            if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+              echo "POST /knowledge/{{ kc_id }}/file/add failed: HTTP $code" >&2
+              echo "$resp" >&2
+              exit 1
+            fi
         stdin: '{{ {"file_id": _uploaded_file_id} | to_json }}'
       environment:
         KUBECONFIG: '{{ kubeconfig_yaml }}'
+      register: _kc_add_file_result
+      failed_when: false
       changed_when: true
       no_log: true
 
-    - name: 'Clean up temp file in pod: {{ file.upload_filename }}'
-      ansible.builtin.command:
-        argv:
-          - kubectl
-          - exec
-          - -n
-          - '{{ chatbot_namespace }}'
-          - deploy/open-webui
-          - --
-          - rm
-          - -f
-          - '/tmp/{{ file.upload_filename }}'
-      environment:
-        KUBECONFIG: '{{ kubeconfig_yaml }}'
-      changed_when: false
+    - name: 'Surface file/add failure: {{ file.upload_filename }}'
+      ansible.builtin.fail:
+        msg: |-
+          Failed to add {{ file.upload_filename }} to collection {{ kc_id }} (rc={{ _kc_add_file_result.rc }}). Stderr:
+          {{ _kc_add_file_result.stderr }}
+      when: _kc_add_file_result.rc is defined and _kc_add_file_result.rc != 0
