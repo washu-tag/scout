@@ -55,7 +55,9 @@ class IngestHl7FilesActivity:
         )
         # Default null/unset to True; explicit False skips mapping derivation.
         create_mapping = (
-            True if activity_input.createMapping is None else activity_input.createMapping
+            True
+            if activity_input.createMapping is None
+            else activity_input.createMapping
         )
         activity.logger.info("Ingesting HL7 files to Delta Lake: %s", report_table_name)
         num_hl7_ingested = import_hl7_files_to_deltalake(
