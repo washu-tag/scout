@@ -10,6 +10,14 @@ launchpad_image_repository: ghcr.io/washu-tag/launchpad
 launchpad_image_tag: latest
 launchpad_image_pull_policy: IfNotPresent
 
+# Environment label shown next to the Scout brand on the Launchpad
+# (e.g. "synthetic", "production"). Empty falls back to "local".
+scout_env: ''
+
+# Institution/organization name shown in the Launchpad footer copyright
+# line. Empty hides the line and only the "Powered by Scout" credit shows.
+deployer_name: ''
+
 # Launchpad nextauth cookie secret, override from inventory for production
 launchpad_nextauth_secret: changeme-nextauth-secret
 

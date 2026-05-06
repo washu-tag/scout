@@ -8,6 +8,14 @@ replicaCount: 1
 enableChat: false
 enablePlaybooks: false
 
+# Environment label shown next to the Scout brand (e.g. "synthetic", "production").
+# Empty string falls back to "local" in the UI.
+scoutEnv: ''
+
+# Name of the institution/organization running this deployment, shown in the
+# footer copyright line. Empty string hides the copyright line.
+deployerName: ''
+
 image:
   repository: ghcr.io/washu-tag/launchpad
   tag: latest

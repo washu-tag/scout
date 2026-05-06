@@ -481,9 +481,15 @@ interface HomeClientProps {
   enableChat: boolean;
   enablePlaybooks: boolean;
   scoutEnv?: string;
+  deployerName?: string;
 }
 
-export default function HomeClient({ enableChat, enablePlaybooks, scoutEnv }: HomeClientProps) {
+export default function HomeClient({
+  enableChat,
+  enablePlaybooks,
+  scoutEnv,
+  deployerName,
+}: HomeClientProps) {
   const [mounted, setMounted] = useState(false);
   const { data: session, status } = useSession();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -684,8 +690,23 @@ export default function HomeClient({ enableChat, enablePlaybooks, scoutEnv }: Ho
         {/* Footer */}
         <div className="text-center mt-12 pt-6 border-t border-slate-200 dark:border-slate-800">
           <p className="text-sm text-slate-400 dark:text-slate-500 font-light">
-            © {new Date().getFullYear()}{' '}
-            <span className="font-medium text-slate-500 dark:text-slate-400">Embark Labs</span>
+            Developed at{' '}
+            <a
+              href="https://github.com/washu-tag/scout"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 underline-offset-2 hover:underline"
+            >
+              Washington University in St. Louis
+            </a>
+            {deployerName && (
+              <>
+                {' · Deployed by '}
+                <span className="font-medium text-slate-500 dark:text-slate-400">
+                  {deployerName}
+                </span>
+              </>
+            )}
           </p>
         </div>
       </div>
