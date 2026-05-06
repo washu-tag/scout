@@ -84,14 +84,18 @@
     definition: "{{ lookup('template', 'csp-middleware.yaml.j2') | from_yaml }}"
   when: open_webui_csp_enabled | bool
 
-# Strip Scout's bootstrap headers from external traffic — Phase 2 security keystone.
-# Without this, anyone hitting the public ingress could forge the trusted-header
-# SSO and impersonate admin. Wired into the OWUI ingress chain in values.yaml.j2.
-- name: Create middleware to strip bootstrap headers from external traffic
+# Clean up the strip-bootstrap-headers middleware from clusters that were
+# bootstrapped under the old trusted-header scheme. The new scheme uses
+# ENABLE_INITIAL_ADMIN_SIGNUP + signup-or-signin (no trusted headers ever
+# leave Ansible), so this middleware no longer has a job. Safe to remove
+# unconditionally — `state: absent` is a no-op when the resource is gone.
+- name: Remove obsolete strip-bootstrap-headers middleware (legacy trusted-header scheme)
   kubernetes.core.k8s:
-    state: present
-    definition: "{{ lookup('template', 'strip-bootstrap-headers-middleware.yaml.j2') | from_yaml }}"
-  when: open_webui_admin_setup_enabled | bool
+    state: absent
+    api_version: traefik.io/v1alpha1
+    kind: Middleware
+    name: open-webui-strip-bootstrap-headers
+    namespace: '{{ chatbot_namespace }}'
 
 - name: Parse Helm values
   ansible.builtin.set_fact:

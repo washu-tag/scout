@@ -169,25 +169,27 @@ open_webui_rag_template_file: rag-prompt.md
 # ----------------------------------------------------------------------------
 # Admin bootstrap (Phase 2 of automation)
 # ----------------------------------------------------------------------------
-# Open WebUI accepts trusted-header SSO via WEBUI_AUTH_TRUSTED_*_HEADER env
-# vars. We use this to mint an admin session JWT in-cluster (bypassing
-# Traefik), then call OWUI's REST API to seed Functions, Models, and Knowledge
-# without manual UI clicks.
+# We mint an admin session JWT by calling OWUI's /signup endpoint (when the DB
+# is empty) or /signin (on subsequent runs) through the in-cluster Service.
+# `ENABLE_INITIAL_ADMIN_SIGNUP=true` lets /signup create the very first user
+# as admin even when ENABLE_SIGNUP is false; once any user exists the endpoint
+# self-blocks (auths.py:651 `if has_users or not ENABLE_INITIAL_ADMIN_SIGNUP`),
+# so the env var is safe to leave on permanently. The bootstrap password is
+# derived deterministically from open_webui_secret_key (already vault-secured)
+# so we don't need to track another secret.
 #
-# Security: the headers below MUST be stripped from external traffic by the
-# Traefik middleware in templates/strip-bootstrap-headers-middleware.yaml.j2.
-# Without that strip, anyone hitting the public ingress could forge the
-# headers and become admin. The middleware is wired into the OWUI ingress
-# chain in values.yaml.j2.
-open_webui_bootstrap_email_header: 'X-Scout-Bootstrap-Email'
-open_webui_bootstrap_name_header: 'X-Scout-Bootstrap-Name'
-open_webui_bootstrap_groups_header: 'X-Scout-Bootstrap-Groups'
-open_webui_bootstrap_role_header: 'X-Scout-Bootstrap-Role'
-
-# Identity used by the bootstrap Job. Synthetic — not a real Keycloak user.
-# Will appear in OWUI's admin user list as the deployment service account.
+# This replaces the earlier WEBUI_AUTH_TRUSTED_*_HEADER trusted-header bootstrap.
+# That mechanism set the `auth_trusted_header` frontend feature flag which made
+# /auth auto-call /signin on every page load — surfacing a "trusted header"
+# error toast to any user whose token expired or who passed through /auth.
+# Signup-or-signin has no equivalent frontend coupling.
 open_webui_bootstrap_email: 'scout-deploy@internal'
 open_webui_bootstrap_name: 'Scout Deploy Bot'
+
+# Deterministic bootstrap password derived from the WebUI secret key. SHA256
+# hex (64 chars) fits bcrypt's 72-byte limit and rotates with the secret key
+# (so a secret rotation forces a re-bootstrap, which is the right semantics).
+open_webui_bootstrap_password: '{{ open_webui_secret_key | hash("sha256") }}'
 
 # Set to false to skip post-deploy admin configuration entirely.
 open_webui_admin_setup_enabled: true
@@ -224,6 +226,16 @@ open_webui_filter_functions:
       summarizer_model: ''
       debug_logging: true
 
+# Python Tools (OWUI Workspace > Tools) seeded into OWUI on every deploy.
+# Each entry creates one Tool — methods on its `Tools` class become callable
+# functions exposed to the LLM. Reference from a model via meta.toolIds = [id]
+# (no `server:mcp:` prefix; that's reserved for external MCP tool servers).
+open_webui_tools:
+  - id: scout_renderer
+    name: Scout Renderer
+    description: Format Scout query results as markdown tables or interactive HTML flipbooks.
+    source_file: scout_renderer_tool.py
+
 # ----------------------------------------------------------------------------
 # Scout Explorer custom model UI config (Phase 2c)
 # ----------------------------------------------------------------------------
@@ -236,8 +248,24 @@ open_webui_filter_functions:
 # (still selectable but without Scout Explorer system prompt / tools / display
 # name / advanced params).
 open_webui_scout_system_prompt_file: gpt-oss-scout-query-prompt.md
+
+# Files appended to the system prompt verbatim under their own heading. Used
+# to guarantee the LLM has the schema + charting reference in every chat
+# regardless of OWUI's knowledge-attachment behavior (which is gated on
+# `function_calling != 'native'` for auto-injection — we run native, so the
+# auto-inject path never fires; embedding inline is the reliable path).
+#
+# Each file's text is read at deploy time and concatenated under
+# `## <heading>` into params.system. Schema is ~32KB / ~8K tokens, well
+# within the 256K context window.
+open_webui_scout_system_prompt_appendices:
+  - heading: 'Scout Database Schema'
+    source_path: '{{ role_path }}/../../../docs/source/dataschema.md'
+  - heading: 'Charting Output Format'
+    source_path: '{{ role_path }}/files/gpt-oss-charting.md'
 open_webui_scout_tool_ids:
   - 'server:mcp:{{ mcp_trino_tool_id }}'
+  - 'scout_renderer'
 open_webui_scout_default_reasoning_effort: high
 open_webui_scout_default_function_calling: native
 # keep_alive defaults are derived from each scout_models entry's `preload`:

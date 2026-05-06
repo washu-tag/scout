@@ -1,0 +1,100 @@
+---
+# Configures one Open WebUI Python Tool idempotently. Mirrors
+# configure_filter_function.yaml but uses /api/v1/tools/* endpoints — Tools
+# don't have is_active or is_global toggles (they're available whenever a
+# model attaches them via meta.toolIds), so this is simpler than the
+# function setup.
+#
+# Required loop var: `t` (one entry from open_webui_tools)
+# Required vars from configure_admin.yaml: `owui_admin_token`, `_owui_pod_name`
+
+- name: 'Read tool source code: {{ t.id }}'
+  ansible.builtin.set_fact:
+    _tool_content: "{{ lookup('file', role_path ~ '/files/' ~ t.source_file) }}"
+
+- name: 'Check if tool exists: {{ t.id }}'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - '{{ _owui_pod_name }}'
+      - --
+      - curl
+      - -sS
+      - -o
+      - /dev/null
+      - -w
+      - '%{http_code}'
+      - 'http://localhost:8080/api/v1/tools/id/{{ t.id }}'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _tool_exists_check
+  changed_when: false
+  no_log: true
+
+- name: 'Build ToolForm payload: {{ t.id }}'
+  ansible.builtin.set_fact:
+    _tool_payload:
+      id: '{{ t.id }}'
+      name: '{{ t.name }}'
+      content: '{{ _tool_content }}'
+      meta:
+        description: '{{ t.description }}'
+
+- name: 'Create tool (POST /create): {{ t.id }}'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - -i
+      - '{{ _owui_pod_name }}'
+      - --
+      - curl
+      - -sfS
+      - -X
+      - POST
+      - 'http://localhost:8080/api/v1/tools/create'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+      - -H
+      - 'Content-Type: application/json'
+      - --data-binary
+      - '@-'
+    stdin: '{{ _tool_payload | to_json }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  when: _tool_exists_check.stdout != '200'
+  no_log: true
+
+- name: 'Update existing tool (POST /id/{id}/update): {{ t.id }}'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - -i
+      - '{{ _owui_pod_name }}'
+      - --
+      - curl
+      - -sfS
+      - -X
+      - POST
+      - 'http://localhost:8080/api/v1/tools/id/{{ t.id }}/update'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+      - -H
+      - 'Content-Type: application/json'
+      - --data-binary
+      - '@-'
+    stdin: '{{ _tool_payload | to_json }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  when: _tool_exists_check.stdout == '200'
+  no_log: true

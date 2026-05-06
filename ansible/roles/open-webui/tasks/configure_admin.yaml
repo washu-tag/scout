@@ -1,11 +1,21 @@
 ---
-# Phase 2 admin configuration: mints an admin JWT via Open WebUI's trusted-header
-# SSO (bypassing Traefik via the in-cluster Service), then uses it to seed
-# Functions, Models, and Knowledge collections via OWUI's REST API.
+# Phase 2 admin configuration: mints an admin JWT by calling OWUI's /signin or
+# /signup through the in-cluster Service, then uses it to seed Functions,
+# Models, and Knowledge collections via OWUI's REST API.
 #
-# This file currently implements Phase 2a — the bootstrap (JWT minting only).
-# Phases 2b/2c/2d will layer Functions/Models/Knowledge automation on top.
-
+# Bootstrap flow (idempotent, handles all cluster states):
+#   1. Migration UPDATE: set the bootstrap user's password to our derived
+#      hash. No-op on clean clusters (the row doesn't exist yet); on clusters
+#      previously bootstrapped via trusted-header SSO it overwrites the random
+#      UUID password (which we never persisted) with a deterministic one we
+#      can sign in with on every subsequent run.
+#   2. POST /signin with the derived password. Succeeds on existing/migrated
+#      clusters.
+#   3. POST /signup with the derived password as a fallback. Succeeds on a
+#      truly empty DB (auths.py allows the very first user to register as
+#      admin when ENABLE_INITIAL_ADMIN_SIGNUP=true; once any user exists, the
+#      `has_users` short-circuit blocks /signup permanently).
+#
 # Look up the OWUI pod by label rather than guessing the Deployment name
 # (the Helm chart's release/chart naming combo doesn't always produce a
 # Deployment literally named "open-webui"). Used for all subsequent kubectl
@@ -39,19 +49,57 @@
       Helm deploy may not have rolled out, or the chart's pod label changed.
   when: _owui_pod_name | length == 0
 
-# SigninForm requires non-empty email + password (Pydantic validates the body
-# BEFORE the handler picks the trusted-header path); the form values are
-# discarded once trusted-header takes over (signup_handler generates a random
-# uuid for the password it actually persists). We send a placeholder so the
-# Pydantic validation passes.
-#
-# Capture HTTP status separately from body so we can surface OWUI's error
-# message on non-2xx without silently failing inside curl's `-f` flag.
-# OWUI's readiness probe passes before the Python process finishes binding
-# port 8080, so the kubectl wait that ran before us isn't a guarantee — a
-# fresh pod can be Ready but still refuse connections. Retry the signin
-# (curl exit 7 = "Failed to connect", HTTP 000) for up to ~60s before failing.
-- name: 'Mint OWUI admin JWT via trusted-header SSO (in-cluster, bypasses Traefik)'
+# Migration step: ensure the bootstrap user's stored password hash matches
+# our derived password. Runs every time but is idempotent — if the row
+# doesn't exist (clean DB) UPDATE affects 0 rows; if it does exist (legacy
+# trusted-header bootstrap, or prior run with this same password), the
+# password is set to a fresh bcrypt hash of the same plaintext (different
+# salt, equivalent semantics). Uses OWUI's own bcrypt + SQLAlchemy session
+# so we don't have to interrogate postgres directly or duplicate schema.
+- name: 'Migrate bootstrap user password to derived hash (idempotent, no-op on clean DB)'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - '{{ _owui_pod_name }}'
+      - --
+      - /bin/sh
+      - -c
+      - |
+        BOOTSTRAP_EMAIL='{{ open_webui_bootstrap_email }}' \
+        BOOTSTRAP_PASSWORD='{{ open_webui_bootstrap_password }}' \
+        python -c '
+        import os
+        import bcrypt
+        from open_webui.internal.db import get_db
+        from open_webui.models.auths import Auth
+        email = os.environ["BOOTSTRAP_EMAIL"]
+        password = os.environ["BOOTSTRAP_PASSWORD"]
+        hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        with get_db() as db:
+            row = db.query(Auth).filter(Auth.email == email).first()
+            if row is not None:
+                row.password = hashed
+                db.commit()
+                print("migrated")
+            else:
+                print("no-op (clean DB)")
+        '
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _owui_password_migration
+  changed_when: "'migrated' in _owui_password_migration.stdout"
+  no_log: true
+  retries: 20
+  delay: 3
+  until: _owui_password_migration.rc == 0
+
+# Try /signin first. Succeeds on any cluster where the bootstrap user already
+# exists (with the migrated password). Captures HTTP status separately from
+# body so we can branch on 400 (no such user → fall through to signup).
+- name: 'Try OWUI signin with derived bootstrap password'
   ansible.builtin.command:
     argv:
       - kubectl
@@ -66,42 +114,81 @@
         body=$(mktemp)
         code=$(curl -sS -o "$body" -w '%{http_code}' -X POST http://localhost:8080/api/v1/auths/signin \
           -H "Content-Type: application/json" \
-          -H "{{ open_webui_bootstrap_email_header }}: {{ open_webui_bootstrap_email }}" \
-          -H "{{ open_webui_bootstrap_name_header }}: {{ open_webui_bootstrap_name }}" \
-          -H "{{ open_webui_bootstrap_role_header }}: admin" \
-          --data '{"email": "{{ open_webui_bootstrap_email }}", "password": "trusted-header-bootstrap"}')
+          --data '{"email": "{{ open_webui_bootstrap_email }}", "password": "{{ open_webui_bootstrap_password }}"}')
+        resp=$(cat "$body"); rm -f "$body"
+        printf '%s\n%s' "$code" "$resp"
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _owui_signin_attempt
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: 'Parse signin response'
+  ansible.builtin.set_fact:
+    # Default to '000' if signin task somehow produced no stdout (kubectl exec
+    # error, etc.) — same code curl uses for "could not reach server".
+    _owui_signin_code: "{{ ((_owui_signin_attempt.stdout_lines | default([])) + ['000'])[0] }}"
+    _owui_signin_body: "{{ (_owui_signin_attempt.stdout_lines | default([]))[1:] | join('\n') }}"
+  no_log: true
+
+# Fallback to /signup on a truly empty DB. ENABLE_INITIAL_ADMIN_SIGNUP=true
+# (set in values.yaml.j2) lets this create the first user as admin even with
+# ENABLE_SIGNUP=false. Once /signup succeeds once, the `has_users` check
+# blocks it forever, so this is a one-shot fallback.
+- name: 'Fallback: signup the bootstrap user on a fresh DB'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - '{{ _owui_pod_name }}'
+      - --
+      - /bin/sh
+      - -c
+      - |
+        body=$(mktemp)
+        code=$(curl -sS -o "$body" -w '%{http_code}' -X POST http://localhost:8080/api/v1/auths/signup \
+          -H "Content-Type: application/json" \
+          --data '{"name": "{{ open_webui_bootstrap_name }}", "email": "{{ open_webui_bootstrap_email }}", "password": "{{ open_webui_bootstrap_password }}"}')
         resp=$(cat "$body"); rm -f "$body"
         if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
-          echo "OWUI signin failed: HTTP $code" >&2
+          echo "OWUI signup failed: HTTP $code" >&2
           echo "$resp" >&2
           exit 1
         fi
         echo "$resp"
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
-  register: owui_bootstrap_signin
-  changed_when: false
+  register: _owui_signup_attempt
+  changed_when: true
   failed_when: false
   no_log: true
-  retries: 20
-  delay: 3
-  until: owui_bootstrap_signin.rc == 0
+  when: _owui_signin_code != '200'
 
-- name: 'Surface signin failure (stderr from the curl wrapper)'
+- name: 'Surface bootstrap failure (both signin and signup unsuccessful)'
   ansible.builtin.fail:
     msg: |-
-      OWUI signin failed (rc={{ owui_bootstrap_signin.rc }}). Stderr from the in-pod curl:
-      {{ owui_bootstrap_signin.stderr }}
+      OWUI admin bootstrap failed.
+        Signin HTTP {{ _owui_signin_code }}: {{ _owui_signin_body }}
+        Signup rc={{ _owui_signup_attempt.rc | default('n/a') }} stderr={{ _owui_signup_attempt.stderr | default('') }}
       Diagnostic checklist:
-        - Are the WEBUI_AUTH_TRUSTED_*_HEADER env vars actually present on the pod?
-            kubectl exec -n {{ chatbot_namespace }} {{ _owui_pod_name }} -- env | grep WEBUI_AUTH_TRUSTED
+        - Is ENABLE_INITIAL_ADMIN_SIGNUP=true in the pod env? (kubectl exec ... -- env | grep ENABLE_INITIAL)
         - Did the OWUI pod restart after Helm picked up the env vars? (helm upgrade rolls pods)
-        - Is ENABLE_PASSWORD_AUTH explicitly set to false in inventory? (signin returns 403 if so)
-  when: owui_bootstrap_signin.rc != 0
+        - Did the migration step run? Check stdout of "Migrate bootstrap user password..."
+        - On a non-clean cluster where scout-deploy@internal was deleted but other users exist,
+          /signup will fail with ACCESS_PROHIBITED — recreate the row manually.
+  when:
+    - _owui_signin_code != '200'
+    - _owui_signup_attempt.rc | default(1) != 0
 
-- name: 'Extract admin JWT from signin response'
+- name: 'Extract admin JWT from signin or signup response'
   ansible.builtin.set_fact:
-    owui_admin_token: '{{ (owui_bootstrap_signin.stdout | from_json).token }}'
+    owui_admin_token: >-
+      {{ (_owui_signin_body | from_json).token
+         if _owui_signin_code == '200'
+         else (_owui_signup_attempt.stdout | from_json).token }}
   no_log: true
 
 - name: 'Verify admin JWT works (GET /api/v1/auths/ should return user info with role=admin)'
@@ -129,7 +216,8 @@
 - name: 'Bootstrap complete — admin JWT minted'
   ansible.builtin.debug:
     msg: >-
-      Admin JWT minted for {{ open_webui_bootstrap_email }} (role=admin).
+      Admin JWT minted for {{ open_webui_bootstrap_email }} (role=admin)
+      via {{ 'signin' if _owui_signin_code == '200' else 'signup' }}.
 
 # ---------------------------------------------------------------------------
 # Phase 2b: Filter Functions (Link Sanitizer, Context Summarization)
@@ -140,6 +228,17 @@
   loop_control:
     loop_var: fn
     label: '{{ fn.id }}'
+
+# ---------------------------------------------------------------------------
+# Phase 2b': Python Tools (Scout Renderer, etc.)
+# Must run before models so meta.toolIds references resolve.
+# ---------------------------------------------------------------------------
+- name: 'Configure Python tools'
+  ansible.builtin.include_tasks: configure_tool.yaml
+  loop: '{{ open_webui_tools | default([]) }}'
+  loop_control:
+    loop_var: t
+    label: '{{ t.id }}'
 
 # ---------------------------------------------------------------------------
 # Phase 2d: Knowledge collections (must be created BEFORE models so models
@@ -156,13 +255,39 @@
 # ---------------------------------------------------------------------------
 # Phase 2c: Custom UI models (Scout Explorer variants)
 # ---------------------------------------------------------------------------
-- name: 'Read shared Scout system prompt'
+# Build the system prompt by concatenating the base prompt + each appendix
+# file (schema, charting reference) under its own heading. We embed inline
+# rather than rely on knowledge attachments because OWUI's auto-inject path
+# is gated on `function_calling != 'native'` (utils/middleware.py) — we run
+# native everywhere, so attached knowledge only surfaces via LLM-initiated
+# list_knowledge / query_knowledge_files tool calls (unreliable). Inline
+# guarantees the LLM has the schema in every turn.
+- name: 'Build Scout system prompt — base'
   ansible.builtin.set_fact:
     _scout_system_prompt: "{{ lookup('file', role_path ~ '/files/' ~ open_webui_scout_system_prompt_file) }}"
 
-- name: 'Build list of knowledge objects to attach to every Scout model'
+- name: 'Build Scout system prompt — append {{ item.heading }}'
   ansible.builtin.set_fact:
-    _scout_knowledge_objects: '{{ (_owui_knowledge_objects | default({})).values() | list }}'
+    _scout_system_prompt: "{{ _scout_system_prompt + '\n\n## ' + item.heading + '\n\n' + lookup('file', item.source_path) }}"
+  loop: '{{ open_webui_scout_system_prompt_appendices | default([]) }}'
+  loop_control:
+    label: '{{ item.heading }}'
+
+# Inject `context: 'full'` on every knowledge attachment so OWUI bypasses
+# RAG embedding + retrieval and injects the full file content directly.
+# Required because OWUI v0.8.x's auto-injection path is gated on
+# `function_calling != 'native'` (utils/middleware.py), and we set Native
+# mode on every Scout Explorer per README. Without `context: 'full'`,
+# knowledge is only reachable via the LLM calling list_knowledge /
+# query_knowledge_files tools — which thinking-mode models (Qwen) often
+# skip. The bypass guarantees the schema docs are in context every chat.
+# OWUI 0.8.x source: `all_full_context = all(item.get('context') == 'full'
+# for item in files)` → skips query generation when true.
+- name: 'Build list of knowledge objects (with bypass-RAG flag) for every Scout model'
+  ansible.builtin.set_fact:
+    _scout_knowledge_objects: >-
+      {{ (_owui_knowledge_objects | default({})).values()
+         | map('combine', {'context': 'full'}) | list }}
 
 - name: 'Configure OWUI custom models for scout_models entries with ui: block'
   ansible.builtin.include_tasks: configure_model.yaml

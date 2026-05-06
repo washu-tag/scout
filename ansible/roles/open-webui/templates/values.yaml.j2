@@ -98,14 +98,11 @@ ingress:
   class: traefik
   annotations:
     # Middleware order matters:
-    # 0. Strip bootstrap headers FIRST: prevents external clients from forging
-    #    trusted-header SSO and impersonating admin (Phase 2 security keystone)
     # 1. Error: catches 401 and serves sign_in page (bypasses CSP)
     # 2. Auth: checks authentication
     # 3. CSP: sets stricter CSP for Open WebUI (overrides global baseline)
     # 4. Security headers last: sets baseline security headers for all responses
     traefik.ingress.kubernetes.io/router.middlewares: >-
-      {{ chatbot_namespace }}-open-webui-strip-bootstrap-headers@kubernetescrd,
       kube-system-oauth2-proxy-error@kubernetescrd,
       kube-system-oauth2-proxy-auth@kubernetescrd{% if open_webui_csp_enabled %},
       {{ chatbot_namespace }}-open-webui-csp@kubernetescrd{% endif %},
@@ -255,17 +252,12 @@ extraEnvVars:
 # (not here in extraEnvVars) — see the comment on extraEnvFrom for why.
 
   # ------------------------------------------------------------------
-  # Trusted-header SSO for in-cluster admin bootstrap (Phase 2).
-  # Inbound traffic via Traefik is stripped of these headers by the
-  # open-webui-strip-bootstrap-headers middleware (see ingress chain above).
-  # Only the bootstrap Job, hitting OWUI through its in-cluster Service,
-  # can present these headers and be authenticated.
+  # Admin bootstrap (Phase 2): allow /signup to create the very first user
+  # (auto-promoted to admin) when the DB is empty, even though ENABLE_SIGNUP
+  # is false. Once any user exists, /signup self-blocks via OWUI's `has_users`
+  # short-circuit (auths.py:651), so leaving this on permanently is safe and
+  # does not expose a backdoor. Subsequent bootstrap runs sign in with the
+  # derived bootstrap password instead.
   # ------------------------------------------------------------------
-  - name: WEBUI_AUTH_TRUSTED_EMAIL_HEADER
-    value: '{{ open_webui_bootstrap_email_header }}'
-  - name: WEBUI_AUTH_TRUSTED_NAME_HEADER
-    value: '{{ open_webui_bootstrap_name_header }}'
-  - name: WEBUI_AUTH_TRUSTED_GROUPS_HEADER
-    value: '{{ open_webui_bootstrap_groups_header }}'
-  - name: WEBUI_AUTH_TRUSTED_ROLE_HEADER
-    value: '{{ open_webui_bootstrap_role_header }}'
+  - name: ENABLE_INITIAL_ADMIN_SIGNUP
+    value: 'true'
