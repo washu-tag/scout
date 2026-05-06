@@ -68,9 +68,23 @@ def perform_table_operations(
         perform_table_operations(spark, child_name, child_table.children_tables)
 
 
-def process_derivative_data(spark: SparkSession, report_table_name: str):
+def process_derivative_data(
+    spark: SparkSession, report_table_name: str, create_mapping: bool = True
+):
     derivative_tables = define_derivative_tables(report_table_name)
     activity.heartbeat()
+
+    mapping_table_name = f"{report_table_name}_report_patient_mapping"
+    if not create_mapping:
+        # Drop the mapping table from the derivation so we don't pay the
+        # mapping-derivation cost. The epic views below also get skipped
+        # because they join against this table.
+        derivative_tables = {
+            name: table
+            for name, table in derivative_tables.items()
+            if name != mapping_table_name
+        }
+
     activity.logger.info(
         f"Processing derivative data tables: {[table.table_name for table in derivative_tables.values()]}"
     )
@@ -83,7 +97,9 @@ def process_derivative_data(spark: SparkSession, report_table_name: str):
             derivative_tables[table.source_table].children_tables[name] = table
     perform_table_operations(spark, report_table_name, root_table_children)
 
-    mapping_table_name = f"{report_table_name}_report_patient_mapping"
+    if not create_mapping:
+        return
+
     for child_table in derivative_tables.keys():
         if child_table != mapping_table_name:
             add_epic_views(spark, child_table, mapping_table_name)

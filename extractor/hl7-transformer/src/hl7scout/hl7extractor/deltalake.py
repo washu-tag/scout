@@ -93,6 +93,7 @@ def import_hl7_files_to_deltalake(
     modality_map_csv_path: str,
     report_table_name: str,
     health_file: Path,
+    create_mapping: bool = True,
 ) -> int:
     """Extract data from HL7 messages and write to Delta Lake."""
     activity_info = activity.info()
@@ -510,7 +511,7 @@ def import_hl7_files_to_deltalake(
         success_paths = [row.source_file for row in df.select("source_file").collect()]
 
         df.unpersist()
-        process_derivative_data(spark, report_table_name)
+        process_derivative_data(spark, report_table_name, create_mapping=create_mapping)
 
     except (Py4JError, ConnectionError) as e:
         activity.logger.error(

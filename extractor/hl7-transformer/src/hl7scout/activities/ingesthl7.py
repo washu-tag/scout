@@ -15,6 +15,9 @@ MODALITY_MAP_PATH = "/config/modality_mapping_codes.csv"
 class IngestHl7FilesToDeltaLakeActivityInput:
     hl7ManifestFilePath: str
     reportTableName: Optional[str] = None
+    # When False, skip the report-patient mapping table derivation and the
+    # epic views that depend on it. Defaults to True (production behavior).
+    createMapping: Optional[bool] = None
 
 
 @dataclass(frozen=True)
@@ -50,12 +53,17 @@ class IngestHl7FilesActivity:
         report_table_name = (
             activity_input.reportTableName or self.default_report_table_name
         )
+        # Default null/unset to True; explicit False skips mapping derivation.
+        create_mapping = (
+            True if activity_input.createMapping is None else activity_input.createMapping
+        )
         activity.logger.info("Ingesting HL7 files to Delta Lake: %s", report_table_name)
         num_hl7_ingested = import_hl7_files_to_deltalake(
             activity_input.hl7ManifestFilePath,
             MODALITY_MAP_PATH,
             report_table_name,
             self.health_file,
+            create_mapping=create_mapping,
         )
 
         return IngestHl7FilesToDeltaLakeActivityOutput(num_hl7_ingested)
