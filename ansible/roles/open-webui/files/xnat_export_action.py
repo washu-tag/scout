@@ -1,12 +1,14 @@
 """
 title: Send to XNAT
 description: Export Scout query results to an XNAT instance. Adds a button to
-             the message toolbar. Reads the JSON files written by the Scout
-             Query Tool, runs a quick review step (5 included + 5 excluded
-             reports with negation highlighting), then POSTs the cohort to
-             XNAT.
+             the message toolbar. Consumes the recipe + identity-list artifact
+             written by search_reports (or load_id_list when accessions are
+             present), de-dupes the accession_numbers, walks a project/IRB
+             form, and POSTs to XNAT. Review of included/excluded reports
+             happens upstream in the chat itself via read_reports — no review
+             step in the Action.
 author: Scout Team
-version: 0.2.0
+version: 0.3.0
 """
 
 from __future__ import annotations
@@ -14,7 +16,6 @@ from __future__ import annotations
 import html
 import json
 import logging
-import re
 from typing import Any, Awaitable, Callable
 
 import httpx
@@ -137,83 +138,6 @@ _MODAL_STYLES = """
 """
 
 
-# Negation patterns mirror the chat tool — used to highlight matches in the
-# review step.
-DEFAULT_NEGATION_PATTERNS = [
-    r"no\s+(mri?\s+)?evidence",
-    r"without\s+(mri?\s+)?evidence",
-    r"negative\s+for",
-    r"absence\s+of",
-    r"ruled?\s+out",
-    r"rules?\s+out",
-    r"excluding",
-    r"excluded",
-    r"evaluat(?:e|ion)\s+(for)?",
-    r"concern\s+(for)?",
-    r"no\s+\w+\s+(suggest|indication|sign)",
-    r"no\s+",
-]
-
-
-def _highlight_text(text: str, search_patterns: list[str]) -> str:
-    """
-    Return HTML with positive matches highlighted green, negation context red.
-    Mirrors the algorithm in analytics/notebooks/cohort/cohort_ui.py:32-138.
-    """
-    if not text:
-        return html.escape("(no report text)")
-    if not search_patterns:
-        return html.escape(text)
-
-    text_lower = text.lower()
-    negation_re = re.compile("|".join(DEFAULT_NEGATION_PATTERNS), re.IGNORECASE)
-    matches: list[dict] = []
-    for pattern in search_patterns:
-        try:
-            for m in re.finditer(pattern, text_lower, re.IGNORECASE | re.DOTALL):
-                start_pos = max(0, m.start() - 50)
-                ctx = text_lower[start_pos : m.start()]
-                has_negation = bool(negation_re.search(ctx))
-                matches.append(
-                    {
-                        "start": m.start(),
-                        "end": m.end(),
-                        "text": text[m.start() : m.end()],
-                        "has_negation": has_negation,
-                    }
-                )
-        except re.error:
-            continue
-
-    # Dedup overlaps (longer wins)
-    matches.sort(key=lambda mm: (mm["start"], -(mm["end"] - mm["start"])))
-    unique: list[dict] = []
-    for m in matches:
-        if not any(
-            not (m["end"] <= u["start"] or m["start"] >= u["end"]) for u in unique
-        ):
-            unique.append(m)
-
-    # Replace from end to start
-    unique.sort(key=lambda mm: mm["start"], reverse=True)
-    parts: list[str] = []
-    last_end = len(text)
-    for m in unique:
-        parts.append(html.escape(text[m["end"] : last_end]))
-        if m["has_negation"]:
-            style = "background:#ffcdd2;color:#222;border:1px solid #c62828;"
-        else:
-            style = "background:#a5d6a7;color:#222;border:1px solid #2e7d32;"
-        parts.append(
-            f'<span style="{style}padding:1px 3px;border-radius:2px;font-weight:600;">'
-            f'{html.escape(m["text"])}</span>'
-        )
-        last_end = m["start"]
-    parts.append(html.escape(text[0:last_end]))
-    parts.reverse()
-    return "".join(parts)
-
-
 class Action:
     """Open WebUI Action that exports Scout query results to XNAT."""
 
@@ -229,10 +153,6 @@ class Action:
         send_timeout_seconds: int = Field(
             default=30,
             description="HTTP timeout in seconds for the XNAT API call",
-        )
-        review_sample_size: int = Field(
-            default=5,
-            description="Number of included AND excluded reports to show in the review modal",
         )
         priority: int = Field(
             default=0,
@@ -285,9 +205,10 @@ class Action:
         # -- Step 2: Extract user identity ---------------------------------
         user_info = self._extract_user_info(__user__, __oauth_token__)
 
-        # -- Multi-step flow: pick → review → form → confirm → send ------
-        # The review step comes BEFORE the metadata form so the user doesn't
-        # fill in the project/IRB only to bail out at review.
+        # -- Multi-step flow: pick → form → confirm → send ----------------
+        # No review step inside the Action — by the time the user clicks Send
+        # to XNAT, the cohort has already been audited in chat via
+        # read_reports calls on included/excluded samples.
         project_name = ""
         irb_number = ""
         comment = ""
@@ -330,43 +251,27 @@ class Action:
             )
             return None
 
+        # Saved cohort shape per scout-tool-design.md §5: { recipe, rows: [...] }
+        # where each row has message_control_id, accession_number, epic_mrn,
+        # included (bool), and optional why_excluded / why_included excerpts.
         all_rows = payload_data.get("rows", []) or []
-        search_patterns = payload_data.get("negation_search_patterns", []) or []
-        included_rows = [r for r in all_rows if r.get("included_in_cohort", True)]
-        excluded_rows = [r for r in all_rows if not r.get("included_in_cohort", True)]
-        accession_numbers = [
-            str(r.get("accession_number") or "").strip()
-            for r in included_rows
-            if r.get("accession_number")
-        ]
+        included_rows = [r for r in all_rows if bool(r.get("included"))]
+        # De-dupe accession_numbers — search artifacts may carry multiple
+        # message_control_ids per accession; XNAT thinks at the accession level.
+        seen: set[str] = set()
+        accession_numbers: list[str] = []
+        for row in included_rows:
+            acc = str(row.get("accession_number") or "").strip()
+            if acc and acc not in seen:
+                seen.add(acc)
+                accession_numbers.append(acc)
         if not accession_numbers:
             await self._notify(
                 __event_emitter__,
-                "Selected file has no included rows with accession_number",
+                "Selected artifact has no included rows with accession_number. "
+                "Run a search_reports query that SELECTs accession_number first.",
                 error=True,
             )
-            return None
-
-        # Step C: review modal.
-        review_result = await __event_call__(
-            {
-                "type": "execute",
-                "data": {
-                    "code": self._build_review_js(
-                        file_name=selected_file["name"],
-                        included_rows=included_rows,
-                        excluded_rows=excluded_rows,
-                        search_patterns=search_patterns,
-                        sample_size=self.valves.review_sample_size,
-                    )
-                },
-            }
-        )
-        if not review_result:
-            return None
-        if isinstance(review_result, str):
-            review_result = json.loads(review_result)
-        if review_result.get("action") != "continue":
             return None
 
         # Step D: project/IRB form (loops with confirmation).
@@ -495,18 +400,18 @@ class Action:
     @staticmethod
     async def _collect_json_files(body: dict, user_id: str) -> list[dict[str, str]]:
         """
-        Find Scout Query Tool JSON files for the current chat.
-
-        Filters by:
-          - filename ends in `.json`
-          - meta.chat_id == current chat_id
-          - meta.scout_query_result == True (set by the chat tool)
+        Find Scout cohort artifacts for the current chat. Match either the new
+        `meta.scout_result` flag (search_reports / load_id_list) or the legacy
+        `meta.scout_query_result` flag from the pre-design tool, so artifacts
+        produced before the refactor still export. Sort newest first.
         """
         import inspect
 
         from open_webui.models.files import Files
 
         chat_id = body.get("chat_id", "")
+        if not chat_id:
+            return []
         all_files = Files.get_files_by_user_id(user_id)
         if inspect.isawaitable(all_files):
             all_files = await all_files
@@ -522,8 +427,10 @@ class Action:
                 if f.filename
                 and f.filename.lower().endswith(".json")
                 and (f.meta or {}).get("chat_id") == chat_id
-                and (f.meta or {}).get("scout_query_result")
-                and chat_id
+                and (
+                    (f.meta or {}).get("scout_result")
+                    or (f.meta or {}).get("scout_query_result")
+                )
             ],
             key=lambda f: f["created_at"],
             reverse=True,
@@ -708,102 +615,6 @@ return new Promise((resolve) => {{
     console.error('[XNAT] Form setup error:', e);
     resolve(null);
   }}
-}});
-"""
-
-    def _build_review_js(
-        self,
-        file_name: str,
-        included_rows: list[dict],
-        excluded_rows: list[dict],
-        search_patterns: list[str],
-        sample_size: int,
-    ) -> str:
-        """Step 2: review N included + N excluded reports with highlighting."""
-
-        def render_card(row: dict, kind: str) -> str:
-            cls = "review-card" + ("" if kind == "included" else " excluded")
-            acc = html.escape(str(row.get("accession_number") or "(no accession)"))
-            mci = html.escape(str(row.get("message_control_id") or ""))
-            mrn = html.escape(str(row.get("epic_mrn") or ""))
-            text = (
-                row.get("report_text")
-                or row.get("report_section_impression")
-                or row.get("report_section_findings")
-                or ""
-            )
-            highlighted = _highlight_text(text, search_patterns)
-            return (
-                f'<div class="{cls}">'
-                f'<div class="ids"><b>{acc}</b>'
-                + (f" &middot; MRN {mrn}" if mrn else "")
-                + (f' &middot; <span title="{mci}">MCI&#8230;</span>' if mci else "")
-                + f"</div>"
-                f'<div class="text">{highlighted}</div>'
-                f"</div>"
-            )
-
-        included_sample = included_rows[:sample_size]
-        excluded_sample = excluded_rows[:sample_size]
-
-        included_html = (
-            "".join(render_card(r, "included") for r in included_sample)
-            if included_sample
-            else '<div class="review-section-empty">No included rows.</div>'
-        )
-        excluded_html = (
-            "".join(render_card(r, "excluded") for r in excluded_sample)
-            if excluded_sample
-            else (
-                '<div class="review-section-empty">'
-                "No excluded rows (negation filter not applied or 0 false positives)."
-                "</div>"
-            )
-        )
-
-        n_inc = len(included_rows)
-        n_exc = len(excluded_rows)
-        patterns_label = ", ".join(search_patterns) if search_patterns else "(none)"
-
-        body = f"""
-            <h3>Review cohort</h3>
-            <div class="info-block">
-                File: <b>{html.escape(file_name)}</b><br>
-                Search patterns: <code>{html.escape(patterns_label)}</code><br>
-                <b>{n_inc}</b> included &middot; <b>{n_exc}</b> excluded
-            </div>
-            <h4>Included &mdash; first {min(sample_size, n_inc)} of {n_inc} (positive matches in green)</h4>
-            <div class="review-cards">{included_html}</div>
-            <h4>Excluded &mdash; first {min(sample_size, n_exc)} of {n_exc} (negated context in red)</h4>
-            <div class="review-cards">{excluded_html}</div>
-            <div class="btn-row">
-                <button id="xnat-cancel">Cancel</button>
-                <button id="xnat-back">Back</button>
-                <button id="xnat-continue" class="primary">Continue</button>
-            </div>
-        """
-
-        return f"""
-return new Promise((resolve) => {{
-    const overlay = document.createElement('div');
-    overlay.innerHTML = `
-        <style>{_js_escape(_MODAL_STYLES)}</style>
-        <div class="xnat-overlay">
-            <div class="xnat-modal" style="max-width:900px;">
-                {_js_escape(body)}
-            </div>
-        </div>
-    `;
-    document.body.appendChild(overlay);
-    document.getElementById('xnat-cancel').onclick = () => {{
-        overlay.remove(); resolve(null);
-    }};
-    document.getElementById('xnat-back').onclick = () => {{
-        overlay.remove(); resolve(JSON.stringify({{ action: 'back' }}));
-    }};
-    document.getElementById('xnat-continue').onclick = () => {{
-        overlay.remove(); resolve(JSON.stringify({{ action: 'continue' }}));
-    }};
 }});
 """
 

@@ -1,0 +1,26 @@
+epic_mrn,enrollment_date,site,note
+EPIC3606221,2024-01-15,Site A,baseline
+EPIC3606340,2024-01-22,Site A,baseline
+EPIC3606524,2024-02-03,Site B,baseline
+EPIC3606551,2024-02-14,Site A,baseline
+EPIC3606733,2024-03-01,Site B,baseline
+EPIC4881207,2024-03-08,Site A,referred from outside hospital
+EPIC4881344,2024-03-12,Site B,referred from outside hospital
+EPIC4881502,2024-03-19,Site A,referred from outside hospital
+EPIC4881678,2024-04-02,Site B,referred from outside hospital
+EPIC5102931,2024-04-15,Site A,withdrawn — kept for audit
+EPIC5103044,2024-04-22,Site B,re-enrolled
+EPIC5103188,2024-05-06,Site A,re-enrolled
+EPIC5103291,2024-05-13,Site B,re-enrolled
+EPIC5103355,2024-05-20,Site A,re-enrolled
+EPIC5712461,2024-06-04,Site B,follow-up arm
+EPIC5712588,2024-06-11,Site A,follow-up arm
+EPIC5712705,2024-06-25,Site B,follow-up arm
+EPIC5712814,2024-07-08,Site A,follow-up arm
+EPIC6028190,2024-07-22,Site B,follow-up arm
+EPIC6028273,2024-08-05,Site A,follow-up arm
+EPIC6028401,2024-08-19,Site B,follow-up arm
+EPIC6028577,2024-09-02,Site A,follow-up arm
+EPIC6451123,2024-09-16,Site B,extended cohort
+EPIC6451245,2024-09-30,Site A,extended cohort
+EPIC9999999,2024-10-14,Site B,duplicate — needs resolution

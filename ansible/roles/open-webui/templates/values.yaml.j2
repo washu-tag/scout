@@ -218,3 +218,12 @@ extraEnvVars:
     value: '{{ s3_endpoint }}'
   - name: SCOUT_COHORTS_BUCKET
     value: '{{ cohorts_bucket }}'
+
+  # Air-gapped pip proxy via Sonatype Nexus on the staging node (ADR 0017).
+  # Used by OWUI's Tool `requirements:` frontmatter installs.
+{% if pip_proxy_url is defined and pip_proxy_url | length > 0 %}
+  - name: PIP_INDEX_URL
+    value: '{{ pip_proxy_url }}'
+  - name: PIP_TRUSTED_HOST
+    value: '{{ pip_proxy_url | urlsplit("hostname") }}'
+{% endif %}
