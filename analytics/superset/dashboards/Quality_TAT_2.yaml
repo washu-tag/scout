@@ -63,6 +63,20 @@ position:
       - GRID_ID
       - ROW-tat-trend
     type: CHART
+  CHART-tat-37:
+    children: []
+    id: CHART-tat-37
+    meta:
+      chartId: 37
+      height: 60
+      sliceName: TAT vs Volume by Modality
+      uuid: ec81c48b-8550-45f1-afcc-16ae0f6494f9
+      width: 12
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - ROW-tat-bubble
+    type: CHART
   CHART-tat-34:
     children: []
     id: CHART-tat-34
@@ -110,6 +124,7 @@ position:
     children:
       - ROW-tat-headline
       - ROW-tat-trend
+      - ROW-tat-bubble
       - ROW-tat-mod-status
       - ROW-tat-completeness
     id: GRID_ID
@@ -143,6 +158,17 @@ position:
     children:
       - CHART-tat-33
     id: ROW-tat-trend
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+      - ROOT_ID
+      - GRID_ID
+    type: ROW
+  ROW-tat-bubble:
+    children:
+      - CHART-tat-37
+    id: ROW-tat-bubble
     meta:
       '0': ROOT_ID
       background: BACKGROUND_TRANSPARENT
@@ -186,6 +212,7 @@ metadata:
           - 34
           - 35
           - 36
+          - 37
     '31':
       id: 31
       crossFilters:
@@ -197,6 +224,7 @@ metadata:
           - 34
           - 35
           - 36
+          - 37
     '32':
       id: 32
       crossFilters:
@@ -208,6 +236,7 @@ metadata:
           - 34
           - 35
           - 36
+          - 37
     '33':
       id: 33
       crossFilters:
@@ -219,6 +248,7 @@ metadata:
           - 34
           - 35
           - 36
+          - 37
     '34':
       id: 34
       crossFilters:
@@ -230,6 +260,7 @@ metadata:
           - 33
           - 35
           - 36
+          - 37
     '35':
       id: 35
       crossFilters:
@@ -241,6 +272,7 @@ metadata:
           - 33
           - 34
           - 36
+          - 37
     '36':
       id: 36
       crossFilters:
@@ -252,6 +284,19 @@ metadata:
           - 33
           - 34
           - 35
+          - 37
+    '37':
+      id: 37
+      crossFilters:
+        scope: global
+        chartsInScope:
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
+          - 36
   global_chart_configuration:
     scope:
       rootPath:
@@ -265,6 +310,7 @@ metadata:
       - 34
       - 35
       - 36
+      - 37
   color_scheme: presetColors
   refresh_frequency: 0
   expanded_slices: {}
@@ -298,6 +344,7 @@ metadata:
         - 34
         - 35
         - 36
+        - 37
       tabsInScope: []
     - id: NATIVE_FILTER-tat-modality
       controlValues:
@@ -363,6 +410,7 @@ metadata:
         - 34
         - 35
         - 36
+        - 37
       tabsInScope: []
   default_filters: '{}'
 version: 1.0.0

@@ -17,8 +17,7 @@ params:
       hasCustomLabel: true
       label: Median TAT (hours)
       optionName: metric_trend_median_tat
-      sqlExpression:
-        APPROX_PERCENTILE(date_diff('hour', requested_dt, results_report_status_change_dt),
+      sqlExpression: APPROX_PERCENTILE(date_diff('minute', requested_dt, message_dt) / 60.0,
         0.5)
     - aggregate: null
       column: null
@@ -27,8 +26,7 @@ params:
       hasCustomLabel: true
       label: P95 TAT (hours)
       optionName: metric_trend_p95_tat
-      sqlExpression:
-        APPROX_PERCENTILE(date_diff('hour', requested_dt, results_report_status_change_dt),
+      sqlExpression: APPROX_PERCENTILE(date_diff('minute', requested_dt, message_dt) / 60.0,
         0.95)
   groupby: []
   adhoc_filters:
@@ -39,8 +37,8 @@ params:
       expressionType: SIMPLE
     - clause: WHERE
       expressionType: SQL
-      sqlExpression: requested_dt IS NOT NULL AND results_report_status_change_dt IS
-        NOT NULL AND results_report_status_change_dt > requested_dt
+      sqlExpression: requested_dt IS NOT NULL AND message_dt IS
+        NOT NULL AND message_dt > requested_dt
       filterOptionName: filter_tat_valid_trend
   row_limit: 10000
   truncate_metric: true
