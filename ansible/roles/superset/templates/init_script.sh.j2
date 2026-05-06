@@ -22,19 +22,4 @@ if [ -f "{{ .Values.extraConfigMountPath }}/import_datasources.yaml" ]; then
   echo "Importing database connections.... "
   superset import_datasources -p {{ .Values.extraConfigMountPath }}/import_datasources.yaml
 fi
-# Import the dashboard
-if [ -d /app/dashboard-config ]; then
-  echo "Importing dashboard..."
-  cd /app/dashboard-config
-  zip -r ~/dashboard.zip analytics
-  cd -
-  superset import-dashboards -p ~/dashboard.zip -u admin
-  result=$?
-  if [ $result != 0 ]; then
-    echo "Error importing dashboard"
-    exit $result
-  fi
-  rm -f ~/dashboard.zip
-  echo "Dashboard imported successfully"
-fi
 {% endraw %}

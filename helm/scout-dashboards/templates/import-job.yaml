@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "scout-dashboards.fullname" . }}-import
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "scout-dashboards.labels" . | nindent 4 }}
+  annotations:
+    # Re-create the Job (which re-runs the import) whenever any dashboard YAML
+    # changes. The hash covers the rendered ConfigMap, so any analytics file
+    # edit produces a different annotation, Helm sees the Job spec as changed,
+    # and the helm-hook delete-policy below replaces the existing Job.
+    checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
+    "helm.sh/hook-weight": "5"
+spec:
+  ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
+  backoffLimit: {{ .Values.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "scout-dashboards.selectorLabels" . | nindent 8 }}
+        component: dashboard-import
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: import
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.supersetRelease.envSecret }}
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.supersetRelease.valkeyAuthSecret }}
+                  key: REDIS_PASSWORD
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              cd /app/dashboard-config
+              zip -rq /tmp/dashboard.zip analytics
+              superset import-dashboards -p /tmp/dashboard.zip -u {{ .Values.importUser }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: superset-config
+              mountPath: /app/pythonpath
+              readOnly: true
+            - name: dashboard-config
+              mountPath: /app/dashboard-config
+      volumes:
+        - name: superset-config
+          secret:
+            secretName: {{ .Values.supersetRelease.configSecret }}
+        - name: dashboard-config
+          configMap:
+            name: dashboard-config
+            items:
+              {{- include "scout-dashboards.configMapItems" . | nindent 14 }}

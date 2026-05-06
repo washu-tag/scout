@@ -1,0 +1,39 @@
+# Image for the import Job. Should match the Superset image so it has the same
+# Python deps and superset CLI.
+image:
+  repository: ghcr.io/washu-tag/superset
+  tag: 5.0.0
+  pullPolicy: IfNotPresent
+
+# Trino connection details that get baked into the Scout Data Lake database YAML.
+trino:
+  user: admin
+  namespace: scout-analytics
+
+# Names of secrets/configmaps already created by the apache/superset Helm
+# release. The import Job mounts these so it has the same DB/Redis/config as
+# the Superset deployment.
+supersetRelease:
+  envSecret: superset-env # envFrom (DB connection, secret key)
+  configSecret: superset-config # mounted at /app/pythonpath
+  valkeyAuthSecret: superset-valkey-auth # REDIS_PASSWORD
+
+# Admin username dashboards are imported as. Must exist in Superset already
+# (created by the apache/superset chart's init Job).
+importUser: admin
+
+# Resources for the import Job pod.
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1
+    memory: 1Gi
+
+# How long to keep the completed Job around.
+ttlSecondsAfterFinished: 3600
+
+# Backoff for the import script. Set to 1 — if import fails the manifest is bad
+# and retrying won't help.
+backoffLimit: 1

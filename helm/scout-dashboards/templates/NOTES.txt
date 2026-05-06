@@ -1,0 +1,12 @@
+{{ .Chart.Name }} deployed.
+
+The import Job runs once per Helm install/upgrade. Watch progress with:
+
+    kubectl logs -n {{ .Release.Namespace }} \
+      -l app.kubernetes.io/instance={{ .Release.Name }},component=dashboard-import \
+      --tail=200 -f
+
+Whenever any file under analytics/superset/ changes, the rendered ConfigMap's
+sha256sum changes, the import Job pod template's checksum/config annotation
+changes, and Helm replaces the Job on the next `helm upgrade`. No Ansible
+glue required.

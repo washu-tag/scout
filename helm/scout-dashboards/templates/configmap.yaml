@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "scout-dashboards.labels" . | nindent 4 }}
+data:
+  metadata.yaml: |-
+{{ .Files.Get "files/analytics/metadata.yaml" | indent 4 }}
+  Scout_Data_Lake.yaml: |-
+{{ include "scout-dashboards.databaseYaml" . | indent 4 }}
+{{- range $path, $_ := .Files.Glob "files/analytics/charts/*.yaml" }}
+  {{ base $path }}: |-
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}
+{{- range $path, $_ := .Files.Glob "files/analytics/dashboards/*.yaml" }}
+  {{ base $path }}: |-
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}
+{{- range $path, $_ := .Files.Glob "files/analytics/datasets/Scout_Data_Lake/*.yaml" }}
+  {{ base $path }}: |-
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}

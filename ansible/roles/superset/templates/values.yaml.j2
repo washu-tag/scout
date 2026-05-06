@@ -162,10 +162,6 @@ configOverrides:
         prefix='{{ superset_statsd_prefix }}'
     )
 extraVolumes:
-  - name: dashboard-config
-    configMap:
-      name: dashboard-config
-      items: {{ superset_dashboard_items | default([]) | to_json }}
   - name: scout-logo
     configMap:
       name: scout-logo
@@ -174,8 +170,6 @@ extraVolumes:
     configMap:
       name: superset-statsd-mapping
 extraVolumeMounts:
-  - name: dashboard-config
-    mountPath: /app/dashboard-config
   - name: scout-logo
     mountPath: /app/superset/static/assets/images/scout.png
     subPath: scout.png
