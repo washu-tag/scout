@@ -1,6 +1,32 @@
 image:
   repository: '{{ hl7_transformer_image_repository }}'
   tag: '{{ hl7_transformer_image_tag }}'
+initContainers:
+  # Avoid a startup race where the main process tries to connect to
+  # Temporal before cluster networking/DNS is fully ready for this pod.
+  # Reuses the transformer image (already pulled, glibc resolver) so we
+  # exercise the same DNS code path the main app uses.
+  #
+  # imagePullPolicy must be set explicitly here. The chart's main
+  # container values default to IfNotPresent, but init containers
+  # specified via values get the K8s default — which is Always for
+  # :latest tags and breaks in environments (e.g. K3s in CI) that have
+  # the image loaded locally but no registry to pull from.
+  - name: wait-for-temporal-dns
+    image: '{{ hl7_transformer_image_repository }}:{{ hl7_transformer_image_tag }}'
+    imagePullPolicy: IfNotPresent
+    command:
+      - python3
+      - -c
+      - |
+        import socket, time
+        while True:
+            try:
+                socket.gethostbyname('temporal-internal-frontend')
+                break
+            except OSError:
+                print('waiting for dns...', flush=True)
+                time.sleep(2)
 envFrom:
   - secretRef:
       name: s3-secret
