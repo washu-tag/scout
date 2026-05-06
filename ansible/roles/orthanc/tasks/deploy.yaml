@@ -39,6 +39,30 @@
       stringData:
         'orthanc.json': "{{ lookup('template', 'orthanc-conf.json.j2') | to_nice_json }}"
 
+- name: Validate Orthanc Postgres credentials
+  when: orthanc_postgres_mode == 'cnpg'
+  ansible.builtin.assert:
+    that:
+      - orthanc_postgres_password is defined
+      - orthanc_postgres_password | length > 0
+    fail_msg: 'orthanc_postgres_password is required when orthanc_postgres_mode == cnpg'
+
+- name: Create Orthanc CNPG credentials secret
+  when: orthanc_postgres_mode == 'cnpg'
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: orthanc-cnpg-app-credentials
+        namespace: '{{ orthanc_namespace }}'
+      type: kubernetes.io/basic-auth
+      stringData:
+        username: '{{ orthanc_postgres_user }}'
+        password: '{{ orthanc_postgres_password }}'
+
 - name: Deploy Orthanc
   ansible.builtin.include_role:
     name: scout_common

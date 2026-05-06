@@ -1,0 +1,52 @@
+{{- if .Values.postgres.cluster.enabled }}
+{{- if not .Values.postgres.cluster.credentials.externalSecret }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: orthanc-cnpg-app-credentials
+type: kubernetes.io/basic-auth
+stringData:
+  username: {{ .Values.postgres.cluster.credentials.username }}
+  password: {{ .Values.postgres.cluster.credentials.password }}
+{{- end }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: orthanc-cnpg
+  annotations:
+    checksum/cnpg-values: {{ .Values.postgres | toJson | sha256sum }}
+  {{- with .Values.postgres.cluster.annotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+spec:
+  instances: {{ .Values.postgres.cluster.instances }}
+  {{- with .Values.postgres.cluster.affinity }}
+  affinity:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  imageName: ghcr.io/cloudnative-pg/postgresql:{{ .Values.postgres.cluster.version }}
+  storage:
+    size: {{ .Values.postgres.cluster.storage.size }}
+    storageClass: {{ .Values.postgres.cluster.storage.storageClass }}
+  resources: {{- .Values.postgres.cluster.resources | toYaml | nindent 4 }}
+  enableSuperuserAccess: {{ .Values.postgres.cluster.enableSuperuserAccess }}
+  bootstrap:
+    initdb:
+      database: {{ .Values.postgres.cluster.credentials.database }}
+      owner: {{ .Values.postgres.cluster.credentials.username }}
+      secret:
+        {{- if .Values.postgres.cluster.credentials.externalSecret }}
+        name: {{ .Values.postgres.cluster.credentials.externalSecret }}
+        {{- else }}
+        name: orthanc-cnpg-app-credentials
+        {{- end }}
+  postgresql:
+    parameters: {{- .Values.postgres.cluster.parameters | toYaml | nindent 6 }}
+  {{- with .Values.postgres.cluster.managed }}
+  managed:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

@@ -6,6 +6,18 @@
     "CaseSensitivePN" : false,
     "IngestTranscodingOfUncompressed" : false,
     "IngestTranscodingOfCompressed" : false,
+{%- if orthanc_postgres_mode != 'disabled' %}
+    "PostgreSQL": {
+        "EnableIndex": true,
+        "EnableStorage": false,
+        "Host": "orthanc-cnpg-rw.{{ orthanc_namespace }}.svc.cluster.local",
+        "Port": {{ orthanc_postgres_port }},
+        "Database": {{ orthanc_postgres_database | to_json }},
+        "Username": {{ orthanc_postgres_user | to_json }},
+        "Password": {{ orthanc_postgres_password | to_json }},
+        "Lock": false
+    },
+{%- endif %}
     "DicomWeb": {
         "Enable": true
     },

@@ -1,6 +1,8 @@
 ---
 # Default values for Orthanc deployment
 
+orthanc_replicas: 1
+
 # DICOM configuration
 orthanc_dicom_port: 4242
 
@@ -16,3 +18,30 @@ orthanc_resources_default:
   limits:
     cpu: 2
     memory: 2Gi
+
+# To use Cloud Provider load balancers annotations and laod balancer classes may be needed
+orthanc_dicom_service_annotations: {}
+orthanc_dicom_service_load_balancer_class: ''
+
+
+# CNPG Specific Options
+# Options: disabled, cnpg
+orthanc_postgres_mode: disabled
+orthanc_postgres_user: orthanc
+orthanc_postgres_version: 18
+orthanc_postgres_port: 5432
+orthanc_postgres_replicas: 1
+orthanc_postgres_database: orthanc
+orthanc_postgres_storage_size: 100Gi
+orthanc_postgres_storage_class: ''
+orthanc_postgres_max_connections: 100
+orthanc_postgres_shared_buffers: 256MB
+orthanc_postgres_cluster_annotations: {}
+orthanc_postgres_cluster_affinity: {}
+orthanc_postgres_resources_default:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 16
+    memory: 32Gi
