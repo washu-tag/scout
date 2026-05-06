@@ -1,0 +1,30 @@
+slice_name: Pipeline Errors
+description: Number of failures captured in the follow-up errors table.
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  datasource: 4__table
+  viz_type: big_number_total
+  slice_id: 42
+  metric: count
+  adhoc_filters:
+    - clause: WHERE
+      subject: error_timestamp
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+  subheader: Classifier failures
+  header_font_size: 0.4
+  subheader_font_size: 0.15
+  y_axis_format: SMART_NUMBER
+  time_format: smart_date
+  extra_form_data: {}
+  dashboards:
+    - 3
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 8121b8dd-1a45-4228-9850-bfafc9792062
+version: 1.0.0
+dataset_uuid: 0b2024fb-e34f-4c25-adba-e27a35a49f9d

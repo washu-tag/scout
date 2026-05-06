@@ -28,10 +28,85 @@ from superset.app import create_app  # noqa: E402
 app = create_app()
 app.app_context().push()
 
+from superset.connectors.sqla.models import (  # noqa: E402
+    SqlaTable,
+    SqlMetric,
+    TableColumn,
+)
 from superset.models.dashboard import Dashboard  # noqa: E402
 from superset.models.slice import Slice  # noqa: E402
 
 ANALYTICS = sys.argv[1] if len(sys.argv) > 1 else "/app/dashboard-config/analytics"
+
+
+def _coerce_bool(val) -> bool:
+    return bool(val) if val is not None else False
+
+
+_COLUMN_FIELDS = (
+    "verbose_name",
+    "type",
+    "expression",
+    "description",
+    "python_date_format",
+)
+_METRIC_FIELDS = (
+    "verbose_name",
+    "metric_type",
+    "expression",
+    "description",
+    "d3format",
+    "currency",
+    "warning_text",
+)
+
+
+def update_dataset(path: str) -> bool:
+    """Sync the YAML's columns and metrics into an existing SqlaTable by UUID.
+
+    Superset's import-dashboards skips datasets whose UUID already exists, so
+    new calculated columns or metrics in the YAML never reach the DB without
+    this. Datasets that don't exist yet get left to import-dashboards (which
+    happily creates them).
+    """
+    with open(path) as f:
+        data = yaml.safe_load(f)
+    ds = db.session.query(SqlaTable).filter_by(uuid=data["uuid"]).first()
+    if ds is None:
+        return False
+
+    ds.table_name = data.get("table_name", ds.table_name)
+    ds.main_dttm_col = data.get("main_dttm_col", ds.main_dttm_col)
+    ds.description = data.get("description", ds.description)
+    if "sql" in data:
+        ds.sql = data["sql"]
+
+    existing_cols = {c.column_name: c for c in ds.columns}
+    yaml_cols = {c["column_name"]: c for c in data.get("columns") or []}
+    for name, spec in yaml_cols.items():
+        col = existing_cols.get(name)
+        if col is None:
+            col = TableColumn(column_name=name)
+            ds.columns.append(col)
+        for field in _COLUMN_FIELDS:
+            if field in spec:
+                setattr(col, field, spec[field])
+        col.is_dttm = _coerce_bool(spec.get("is_dttm"))
+        col.is_active = _coerce_bool(spec.get("is_active", True))
+        col.groupby = _coerce_bool(spec.get("groupby", True))
+        col.filterable = _coerce_bool(spec.get("filterable", True))
+
+    existing_metrics = {m.metric_name: m for m in ds.metrics}
+    yaml_metrics = {m["metric_name"]: m for m in data.get("metrics") or []}
+    for name, spec in yaml_metrics.items():
+        m = existing_metrics.get(name)
+        if m is None:
+            m = SqlMetric(metric_name=name)
+            ds.metrics.append(m)
+        for field in _METRIC_FIELDS:
+            if field in spec:
+                setattr(m, field, spec[field])
+    return True
 
 
 def update_chart(path: str, chart_id_map: dict[int, int]) -> bool:
@@ -43,6 +118,18 @@ def update_chart(path: str, chart_id_map: dict[int, int]) -> bool:
     s.slice_name = data["slice_name"]
     s.viz_type = data["viz_type"]
     s.params = json.dumps(data["params"])
+    # Rebind to the dataset named by dataset_uuid. Necessary when a chart's
+    # YAML moves it to a different dataset — params.datasource follows, but
+    # the Slice.datasource_id column is a separate SQLAlchemy field that
+    # import-dashboards leaves stale.
+    dataset_uuid = data.get("dataset_uuid")
+    if dataset_uuid:
+        ds = db.session.query(SqlaTable).filter_by(uuid=dataset_uuid).first()
+        if ds is not None and (
+            s.datasource_id != ds.id or s.datasource_type != "table"
+        ):
+            s.datasource_id = ds.id
+            s.datasource_type = "table"
     qc = data.get("query_context")
     # YAMLs vary: some store query_context as a YAML mapping (parsed to dict),
     # others as a JSON string scalar (parsed to str). Normalize both to a JSON
@@ -131,6 +218,15 @@ def update_dashboard(path: str, chart_id_map: dict[int, int]) -> bool:
     return True
 
 
+# Pass 0: datasets. Sync columns/metrics on existing datasets by UUID.
+updated_datasets = skipped_datasets = 0
+for path in sorted(glob.glob(f"{ANALYTICS}/datasets/**/*.yaml", recursive=True)):
+    if update_dataset(path):
+        updated_datasets += 1
+    else:
+        skipped_datasets += 1
+db.session.flush()
+
 # Pass 1: charts. Build chart_id_map for the dashboard pass.
 chart_id_map: dict[int, int] = {}
 updated_charts = skipped_charts = 0
@@ -152,7 +248,8 @@ for path in sorted(glob.glob(f"{ANALYTICS}/dashboards/*.yaml")):
 db.session.commit()
 
 print(
-    f"force-update: charts updated={updated_charts} skipped={skipped_charts}, "
+    f"force-update: datasets updated={updated_datasets} skipped={skipped_datasets}, "
+    f"charts updated={updated_charts} skipped={skipped_charts}, "
     f"dashboards updated={updated_dashboards} skipped={skipped_dashboards}, "
     f"chart_id_map_size={len(chart_id_map)}"
 )

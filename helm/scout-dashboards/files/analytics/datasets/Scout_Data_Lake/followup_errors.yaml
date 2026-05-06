@@ -1,0 +1,64 @@
+table_name: followup_errors
+main_dttm_col: error_timestamp
+description: Pipeline errors emitted by the follow-up classifier per report.
+default_endpoint: null
+offset: 0
+cache_timeout: 7200
+catalog: delta
+schema: default
+sql: null
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+normalize_columns: false
+always_filter_main_dttm: false
+uuid: 0b2024fb-e34f-4c25-adba-e27a35a49f9d
+metrics:
+  - metric_name: count
+    verbose_name: COUNT(*)
+    metric_type: count
+    expression: COUNT(*)
+    description: null
+    d3format: null
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+columns:
+  - column_name: error_timestamp
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP(3) WITH TIME ZONE
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: primary_report_identifier
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: error
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+version: 1.0.0
+database_uuid: 9ed918e7-ef5a-4aa4-9574-f1946b58d520
