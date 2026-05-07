@@ -4,3 +4,9 @@ vulnerabilities:
   # Alpine base image not yet rebuilt with openssl 3.5.6-r0 — check amazoncorretto:21-alpine on Docker Hub for rebuild
   - id: CVE-2026-28390 # openssl 3.5.5-r0 → 3.5.6-r0
   - id: CVE-2026-40200 # musl 1.2.5-r21 → 1.2.5-r23
+  # GHSA-rwm7-x88c-3g2p — netty epoll DoS via RST on half-closed TCP connection.
+  # The advisory text states only the 4.2.x branch is affected (up to 4.2.12.Final),
+  # but its GHSA vulnerableVersionRange is "< 4.2.13.Final", which causes Trivy
+  # to flag our 4.1.133.Final as vulnerable. Remove this entry if/when the GHSA
+  # range is tightened upstream, or if we move onto the netty 4.2.x line.
+  - id: CVE-2026-42577 # io.netty:netty-transport-native-epoll (4.1.x not affected)
