@@ -42,7 +42,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: dicom
-              containerPort: {{ .Values.service.dicom }}
+              containerPort: {{ .Values.service.dicom.port }}
               protocol: TCP
             - name: http
               containerPort: {{ .Values.service.http }}
