@@ -1,8 +1,9 @@
 """
 title: Scout Renderer
-description: Render Scout query results as inline interactive HTML iframes (table or report flipbook). Returns (HTMLResponse, summary) so the iframe renders inline at the tool-call indicator while only a compact summary enters the LLM context.
+description: Execute SQL against Scout's Trino and render the rows as an inline interactive HTML iframe (sortable table or report flipbook). The Tool runs the query itself — the LLM passes a SELECT statement, NOT the rows. This keeps row data out of the LLM's tokens (no 35K-token output stalls on cohorts of hundreds of rows) and lets the iframe ship a SQL-defined cohort to XNAT regardless of how many rows are displayed. Returns (HTMLResponse, summary) so the iframe renders inline while only row count, column names, sample rows, and any SQL error feed back to the LLM.
 author: Scout
-version: 0.2.0
+version: 0.3.0
+requirements: trino
 """
 
 import html as html_lib
@@ -460,27 +461,69 @@ def _summary_table_text(rows: list[dict], columns: list[str], max_sample: int) -
 
 
 class Tools:
-    """Render Scout query results inline (no LLM-stream bloat).
+    """Execute SQL against Scout's Trino + render rows as inline interactive iframe.
 
-    Both methods return a 2-tuple `(HTMLResponse, summary_str)`. OWUI renders
-    the HTMLResponse as a sandboxed iframe at the tool-call indicator — the
-    full data is embedded as a JS const inside the iframe's HTML, so it never
-    enters the LLM stream token-by-token. Only the compact summary string is
-    fed back into the LLM's context for follow-up turns.
+    Both methods take a SQL SELECT string, run it server-side via the Trino
+    Python client, embed the results in a sandboxed iframe, and return a
+    2-tuple `(HTMLResponse, summary_str)`. OWUI renders the HTMLResponse as
+    an iframe at the tool-call indicator. Row data is JSON-encoded into the
+    iframe HTML, so it never enters the LLM stream token-by-token — only the
+    summary (row count, column names, sample rows, or SQL error) feeds back
+    to the LLM.
 
-    This pattern (vs. returning a `<file type="html" id="..."/>` marker that
-    OWUI would resolve via /api/v1/files/{id}/content/html) is recommended
-    because:
-      - No LLM cooperation needed; OWUI handles the render directly
-      - No admin-only file-ownership constraint on the render endpoint
-      - Less context bloat (LLM sees the summary, not the full rows again)
-      - One return value, one rendering path
+    The earlier (rows-as-tool-args) design timed out on cohorts of ~100+ rows
+    because the LLM had to re-emit ~35K output tokens just to pass the rows
+    to the Tool. Moving SQL execution into the Tool keeps the LLM's
+    contribution ≈200 tokens of SQL regardless of cohort size.
+
+    On SQL error, the summary string surfaces the error + the failing query
+    so the LLM can self-correct on the next turn — same recovery loop the
+    LLM already follows for `scout-db_execute_query` errors.
     """
 
     class Valves(BaseModel):
+        max_rows: int = Field(
+            default=500,
+            description=(
+                "Hard cap on rows fetched from Trino per render call. "
+                "Browser performance degrades and iframe HTML bloats past "
+                "a few hundred rows; queries that need more should be "
+                "narrowed by the user."
+            ),
+        )
         max_sample_rows: int = Field(
             default=5,
             description="Number of sample rows included in the LLM context summary",
+        )
+        trino_host: str = Field(
+            default="trino",
+            description=(
+                "Trino coordinator hostname (cluster-internal). Defaults to "
+                "'trino' which resolves to trino.<chatbot_namespace> when "
+                "OWUI runs in the same namespace."
+            ),
+        )
+        trino_port: int = Field(
+            default=8080,
+            description="Trino coordinator port",
+        )
+        trino_catalog: str = Field(
+            default="delta",
+            description="Default catalog for queries (overridable in the SQL)",
+        )
+        trino_schema: str = Field(
+            default="default",
+            description="Default schema for queries (overridable in the SQL)",
+        )
+        trino_user: str = Field(
+            default="trino",
+            description=(
+                "Trino user. Trino's built-in auth is permissive in our "
+                "deploy; rows-level access is gated by the Trino MCP server's "
+                "TRINO_ALLOWED_CATALOGS / TRINO_ALLOWED_SCHEMAS, which this "
+                "tool does not bypass (we hit the same Trino coordinator "
+                "with the same role)."
+            ),
         )
         bridge_url: str = Field(
             default="",
@@ -548,65 +591,133 @@ class Tools:
             )
 
     # ------------------------------------------------------------------
+    # SQL execution helper (shared by both render methods)
+    # ------------------------------------------------------------------
+    def _execute_sql(self, sql: str) -> tuple[list[str], list[dict]]:
+        """Run a SELECT against Trino and return (columns, rows).
+
+        Caps row fetch at `self.valves.max_rows`. Trino values that aren't
+        natively JSON-serializable (datetime, Decimal, etc.) get coerced to
+        strings via `default=str` at JSON-encode time, so the iframe sees
+        ISO timestamps and numeric strings instead of opaque objects.
+
+        Raises whatever Trino raises on failure — caller catches and returns
+        the error string in the summary so the LLM can self-correct.
+        """
+        # Local import keeps the module loadable when `trino` isn't installed
+        # (e.g., during pre-commit / lint where the requirements frontmatter
+        # hasn't run). OWUI installs the requirement at tool-load time.
+        import trino.dbapi
+
+        conn = trino.dbapi.connect(
+            host=self.valves.trino_host,
+            port=int(self.valves.trino_port),
+            user=self.valves.trino_user,
+            catalog=self.valves.trino_catalog,
+            schema=self.valves.trino_schema,
+        )
+        try:
+            cur = conn.cursor()
+            cur.execute(sql)
+            columns = [desc[0] for desc in cur.description] if cur.description else []
+            rows: list[dict] = []
+            for row in cur:
+                rows.append(dict(zip(columns, row)))
+                if len(rows) >= self.valves.max_rows:
+                    break
+            return columns, rows
+        finally:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+    # ------------------------------------------------------------------
     # render_table
     # ------------------------------------------------------------------
     async def render_table(
         self,
-        rows: list[dict],
+        sql: str,
         columns: Optional[list[str]] = None,
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
         __user__: dict = {},
         __chat_id__: str = "",
     ) -> tuple:
-        """Render rows as an inline interactive HTML table.
+        """Execute SQL and render the rows as an inline interactive HTML table.
 
-        Use whenever the user wants to SEE the rows themselves (vs. a count
-        or aggregate). Renders inline as a sandboxed iframe with sortable
-        columns and a search box. The iframe content is fully self-contained
-        — data embedded as a JS const, no fetches.
+        Pass a SQL SELECT statement — the Tool runs it server-side via Trino
+        and embeds the rows in a sandboxed iframe (sortable, filterable,
+        with a Send-to-XNAT button). Rows do NOT pass through your tool-call
+        arguments, so this scales to hundreds of rows without timing out.
 
-        Decision rule:
-          - User wants raw rows / a list / specific records   → render_table
-          - User wants counts / averages / "how many" / trends → narrative,
-            no tool needed
-          - User wants to BROWSE individual reports          → use
-            render_report_flipbook
+        Use whenever the user wants to SEE rows — "show me", "list", "find
+        all", "give me a few". For pure aggregates (counts, averages), call
+        `scout-db_execute_query` instead and answer in narrative.
 
-        :param rows: list of record dicts (e.g., the rows field from a
-          Trino MCP result)
-        :param columns: optional ordered list of column names; defaults to
-          all keys of the first row
+        For one-at-a-time report browsing ("browse", "page through", "let me
+        read through these"), use `render_report_flipbook` instead.
+
+        On SQL error, this returns the error message + the failing query as
+        a string — read the message, fix the SQL, and call render_table
+        again with the corrected query.
+
+        :param sql: A Trino SELECT statement against the delta.default
+          catalog. Always include LIMIT (max 500); the Tool caps fetch at
+          its max_rows valve regardless. Use the curated tables
+          (reports_latest, reports_dx) and curated column names per the
+          system prompt's Tables section.
+        :param columns: optional ordered list of column names to display.
+          Defaults to the SELECT order returned by Trino.
         :return: (HTMLResponse, summary_string) — OWUI renders the iframe
-          and only feeds the summary back to the LLM
+          and only feeds the summary (row count, column names, sample rows)
+          back to you. Do NOT re-display the row data as a markdown table.
         """
+        await self._emit_status(__event_emitter__, "Querying Trino…", done=False)
+
+        try:
+            cols, rows = self._execute_sql(sql)
+        except Exception as exc:
+            err = (
+                f"render_table SQL error: {exc}\n\n"
+                f"Failing query:\n{sql}\n\n"
+                f"Read the error, fix the query, and call render_table again."
+            )
+            await self._emit_status(__event_emitter__, "SQL error", done=True)
+            return (err, err)
+
         if not rows:
-            return ("_No results._", "_No results._")
-        if not isinstance(rows, list):
-            msg = f"_Expected a list of rows; got {type(rows).__name__}._"
+            msg = (
+                f"render_table: 0 rows returned by:\n{sql}\n\n"
+                f"Tell the user no rows matched and offer to broaden the criteria."
+            )
+            await self._emit_status(__event_emitter__, "No rows", done=True)
             return (msg, msg)
+
+        display_cols = columns or cols
 
         await self._emit_status(__event_emitter__, "Rendering table…", done=False)
 
-        cols = columns or list(rows[0].keys())
         html_doc = _build_table_doc(
             rows,
-            cols,
+            display_cols,
             self._user_info(__user__),
             self.valves.bridge_url,
             self.valves.xnat_external_url,
         )
-        # Lead with OWUI's canonical "embed is active" phrasing so the LLM
-        # treats the embed as the displayed answer and doesn't re-dump the
-        # data as text. Sample rows follow for follow-up reasoning context.
+        capped_note = (
+            f" (capped at the tool's max_rows={self.valves.max_rows} valve)"
+            if len(rows) >= self.valves.max_rows
+            else ""
+        )
         summary = (
             f"render_table: Embedded UI result is active and visible to the "
             f"user. Do NOT re-display the data as text — the rendered table "
             f"above this message IS the user's view of the result.\n\n"
-            f"Table summary: {len(rows):,} row(s) across {len(cols)} "
-            f"columns: {', '.join(cols)}.\n\n"
+            f"Table summary: {len(rows):,} row(s){capped_note} across "
+            f"{len(display_cols)} columns: {', '.join(display_cols)}.\n\n"
             f"Sample ({min(self.valves.max_sample_rows, len(rows))} of "
             f"{len(rows):,} rows) — for your reasoning, not for re-display:\n"
-            + _summary_table_text(rows, cols, self.valves.max_sample_rows)
+            + _summary_table_text(rows, display_cols, self.valves.max_sample_rows)
         )
 
         await self._emit_status(__event_emitter__, "Table ready", done=True)
@@ -624,29 +735,54 @@ class Tools:
     # ------------------------------------------------------------------
     async def render_report_flipbook(
         self,
-        reports: list[dict],
+        sql: str,
         __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
         __user__: dict = {},
         __chat_id__: str = "",
     ) -> tuple:
-        """Render reports as an inline interactive flipbook with prev/next nav.
+        """Execute SQL and render the rows as an inline interactive flipbook.
+
+        Same SQL-driven model as render_table — pass a SELECT, the Tool
+        runs it and embeds the rows in a flipbook iframe with prev/next
+        navigation. One report shown at a time with Findings, Impression,
+        and other-fields panes.
 
         Use when the user wants to BROWSE individual reports — intent words
-        like "browse", "let me read through", "show me the reports", "page
-        through them", "step through these". The flipbook displays one
-        report at a time with findings, impression, and other-fields panes.
+        like "browse", "page through", "let me read through", "step through
+        these". For tabular display use render_table.
 
-        :param reports: list of report record dicts; the most useful fields
-          are epic_mrn, modality, service_name, message_dt, patient_age,
-          sex, report_section_findings, report_section_impression. Extra
-          fields surface in a metadata pane.
+        SELECT the canonical column names so the flipbook can locate the
+        Findings / Impression / metadata fields:
+        report_section_findings, report_section_impression, message_dt,
+        patient_age, modality, service_name, sex, plus
+        COALESCE(patient_mpi, epic_mrn) AS patient_id.
+
+        On SQL error, returns the error + failing query as a string for
+        self-correction.
+
+        :param sql: A Trino SELECT statement; should include LIMIT.
         :return: (HTMLResponse, summary_string) — OWUI renders the iframe
-          and only feeds the summary back to the LLM
+          and only feeds the summary back to you.
         """
+        await self._emit_status(__event_emitter__, "Querying Trino…", done=False)
+
+        try:
+            _cols, reports = self._execute_sql(sql)
+        except Exception as exc:
+            err = (
+                f"render_report_flipbook SQL error: {exc}\n\n"
+                f"Failing query:\n{sql}\n\n"
+                f"Read the error, fix the query, and call render_report_flipbook again."
+            )
+            await self._emit_status(__event_emitter__, "SQL error", done=True)
+            return (err, err)
+
         if not reports:
-            return ("_No reports to browse._", "_No reports to browse._")
-        if not isinstance(reports, list):
-            msg = f"_Expected a list of reports; got {type(reports).__name__}._"
+            msg = (
+                f"render_report_flipbook: 0 reports returned by:\n{sql}\n\n"
+                f"Tell the user no reports matched and offer to broaden the criteria."
+            )
+            await self._emit_status(__event_emitter__, "No rows", done=True)
             return (msg, msg)
 
         await self._emit_status(__event_emitter__, "Rendering flipbook…", done=False)
@@ -663,19 +799,28 @@ class Tools:
         for r in reports[: self.valves.max_sample_rows]:
             tag = " / ".join(
                 str(r[k])
-                for k in ("epic_mrn", "modality", "service_name", "message_dt")
+                for k in (
+                    "patient_id",
+                    "epic_mrn",
+                    "modality",
+                    "service_name",
+                    "message_dt",
+                )
                 if r.get(k) is not None
             )
-            sample.append(f"  - {tag}")
-        # Lead with OWUI's canonical "embed is active" phrasing so the LLM
-        # doesn't re-dump the report text as a markdown list.
+            sample.append(f"  - {tag}" if tag else "  - (no orientation fields)")
+        capped_note = (
+            f" (capped at the tool's max_rows={self.valves.max_rows} valve)"
+            if len(reports) >= self.valves.max_rows
+            else ""
+        )
         summary = (
             f"render_report_flipbook: Embedded UI result is active and "
             f"visible to the user. Do NOT re-display the reports as text — "
             f"the interactive flipbook above this message IS the user's "
             f"view of the result.\n\n"
-            f"Flipbook summary: {len(reports)} report(s) navigable via "
-            f"prev/next.\n\n"
+            f"Flipbook summary: {len(reports)} report(s){capped_note} "
+            f"navigable via prev/next.\n\n"
             f"Orientation (first {len(sample)}) — for your reasoning, not "
             f"for re-display:\n" + "\n".join(sample)
         )

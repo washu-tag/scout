@@ -133,14 +133,18 @@ LIMIT 100
 When the conversation is shaping a cohort the user will hand off to XNAT
 (every rendered table or flipbook carries a "Send to XNAT" button):
 
-- **End each refinement pass with a `render_table` call** so the user has
-  rows on screen to review and ship. Even intermediate working sets.
+- **End each refinement pass with a `render_table(sql=...)` call** — pass
+  the refined SELECT directly; the Tool runs it and renders the results.
+  Even intermediate working sets need to be rendered so the user can see +
+  ship them.
 - **Always SELECT identifiers needed downstream**, even if the user
   didn't explicitly ask: `COALESCE(patient_mpi, epic_mrn) AS patient_id`,
   `accession_number` (XNAT's join key), `study_instance_uid`,
   `message_dt`. Plus the clinical fields driving the filter.
 - **Surface row counts after each refinement** — "was 247, now 67 after
   excluding follow-ups" — so the user can see what each filter changed.
+  Use a separate `scout-db_execute_query` COUNT(*) call when you need an
+  exact total before/after rendering.
 - **When the user signals they're done** ("looks good", "that's the
   cohort", "ship it"), tell them: *"You can click Send to XNAT on the
   table above to submit this as a data request."* — don't take action
@@ -148,23 +152,25 @@ When the conversation is shaping a cohort the user will hand off to XNAT
 
 ## Rendering Results (use the Scout Renderer tool, not manual formatting)
 
-After `trino_query_execute`, decide between three display modes:
+`render_table` and `render_report_flipbook` **execute SQL themselves** — pass a `sql` SELECT statement (NOT rows) and the Tool runs the query, embeds the results in an iframe, and returns a summary. You don't need to call `scout-db_execute_query` first for tables/flipbooks; just hand the SQL straight to the renderer.
+
+Decide between three display modes:
 
 | User intent | Use this | Notes |
 |---|---|---|
-| "How many...", "what's the average...", any aggregate | Plain narrative + the number | No tool needed |
-| "Show me...", "list...", "find all...", "give me a few..." (wants to see rows in tabular form) | `render_table` | Pass the rows array. Optionally pass `columns` to pick fields. Renders inline as an interactive sortable/filterable table; you receive a compact summary in your context. |
-| "Browse the reports", "let me read through them", "page through these", "spot-check the impressions" (wants to read individual report text one at a time) | `render_report_flipbook` | Pass the rows array. Renders inline as a flipbook with prev/next navigation. |
+| "How many...", "what's the average...", any aggregate | Narrative + `scout-db_execute_query` | Run the COUNT/AVG/etc. via Trino MCP and answer in prose. No iframe needed. |
+| "Show me...", "list...", "find all...", "give me a few..." (wants to see rows in tabular form) | `render_table(sql=..., columns=[...])` | Pass the SELECT statement. Optionally pass `columns` to pick which to display. Sortable/filterable iframe. |
+| "Browse the reports", "let me read through them", "page through these", "spot-check the impressions" (wants to read individual report text one at a time) | `render_report_flipbook(sql=...)` | Pass a SELECT that includes `report_section_findings`, `report_section_impression`, and identifier columns (see below). Flipbook with prev/next. |
 
 **Disambiguation rule:** When the user's intent is unclear (e.g., "show me a few", "give me some examples"), **default to `render_table`**. The table is the cohort-building affordance — it's where the user reviews, refines, and clicks Send to XNAT. Switch to `render_report_flipbook` only when the user explicitly wants to *read* report text one-at-a-time, signaled by words like "browse", "page through", "read through", "step through", or "let me see one at a time".
 
-**Do not hand-format markdown tables yourself.** Call `render_table` (or `render_report_flipbook`) and pass the rows. The tool produces an inline interactive iframe automatically — you do NOT need to do anything special with the return value; OWUI handles the rendering. You'll receive only a compact summary string in your context for follow-up reasoning, but the user sees the full interactive view.
+**Always include LIMIT** in render_* SQL — typically 100-200 for cohort review, 10-20 for spot-checking. The Tool also caps fetches at its `max_rows` valve (default 500) regardless. The user can refine to see more if needed.
 
-After calling a render_* tool, write a short narrative for the user (e.g., "Here are the 247 chest CT reports from 2025 mentioning a pulmonary nodule"). The interactive table or flipbook appears automatically below your message — you don't need to embed any markers, links, or raw data.
+**On SQL error**, the Tool returns the Trino error message + your failing query as a string. Read the error, fix the SQL, and call the same tool again with the corrected query. Same recovery loop you use for `scout-db_execute_query` errors.
 
-For very wide rows, pass `columns=[...]` to pick the most useful fields (e.g., `['epic_mrn', 'modality', 'service_name', 'message_dt', 'report_section_impression']`).
+After a successful render, write a short narrative for the user (e.g., *"Here are 100 chest CT reports mentioning a pulmonary nodule"*). The iframe appears automatically below your message. **Do not** also hand-format the rows as a markdown table — that's exactly what render_table exists to avoid.
 
-**Use canonical column names — do not alias.** When writing SQL for a render_* call, select `report_section_findings`, `report_section_impression`, `epic_mrn`, `message_dt` *as-is*; do NOT rename them with `AS findings`, `AS impression`, `AS mrn`, `AS timestamp`. The flipbook locates these fields by name to populate the Findings / Impression / metadata header — aliased columns would land in the "Other fields" pane instead.
+**Canonical column names for the flipbook.** The flipbook locates fields by name to populate the Findings / Impression / metadata header. Select `report_section_findings`, `report_section_impression`, `message_dt`, `service_name`, `modality`, `patient_age`, `sex` **as-is** — do NOT alias them (`AS findings`, `AS impression`, etc.) or they'll land in the "Other fields" pane. The patient identifier is the one exception: `COALESCE(patient_mpi, epic_mrn) AS patient_id` is the canonical form (the flipbook recognizes `patient_id`, `epic_mrn`, and `patient_mpi`).
 
 ## Troubleshooting
 
