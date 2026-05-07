@@ -19,7 +19,7 @@ params:
   row_limit: 50
   sort_by_metric: true
   color_scheme: presetColors
-  show_labels_threshold: 5
+  show_labels_threshold: 1
   show_legend: true
   legendType: scroll
   legendOrientation: top
