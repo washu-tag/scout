@@ -1,8 +1,8 @@
 """
 title: Scout Renderer
-description: Execute SQL against Scout's Trino and render the rows as an inline interactive HTML iframe (sortable table or report flipbook). The Tool runs the query itself — the LLM passes a SELECT statement, NOT the rows. This keeps row data out of the LLM's tokens (no 35K-token output stalls on cohorts of hundreds of rows) and lets the iframe ship a SQL-defined cohort to XNAT regardless of how many rows are displayed. Returns (HTMLResponse, summary) so the iframe renders inline while only row count, column names, sample rows, and any SQL error feed back to the LLM.
+description: Execute SQL against Scout's Trino and render the rows as an inline interactive HTML iframe — a sortable, filterable, paginated table where any row click opens a focused detail modal with full Findings / Impression / metadata and arrow-key navigation through the cohort. The Tool runs the query itself; the LLM passes a SELECT, NOT rows. Iframe ships the cohort's full accession_number list (from a separate wrapper query) to XNAT regardless of how many rows display. Returns (HTMLResponse, summary) so the iframe renders inline while only row count, column names, sample rows, and any SQL error feed back to the LLM.
 author: Scout
-version: 0.3.0
+version: 0.4.0
 requirements: trino
 """
 
@@ -18,12 +18,11 @@ _IFRAME_MAX_HEIGHT = 720  # px — caps the inline iframe; content scrolls insid
 
 
 # ----------------------------------------------------------------------------
-# Send-to-XNAT button + modal: shared chunks injected into both the table and
-# flipbook templates so the user can hand off the cohort they're looking at
-# without leaving the iframe. The "send" is a client-side mock — there's no
-# real XNAT instance to POST to from a sandboxed srcdoc iframe (null origin
-# would block CORS anyway). The mock generates a plausible response on
-# button click after a brief simulated delay.
+# Send-to-XNAT button + modal: chunks injected into the table template so the
+# user can hand off the cohort they're looking at without leaving the iframe.
+# When BRIDGE_URL is empty (current state — no bridge service deployed yet)
+# the modal generates a plausible response client-side after a brief
+# simulated delay. When set, the iframe POSTs to the bridge.
 # ----------------------------------------------------------------------------
 
 _XNAT_BUTTON_CSS = """
@@ -182,14 +181,26 @@ _XNAT_MODAL_JS = """
   const modal = document.getElementById('xnat-modal');
   let formState = { project: '', irb: '', comment: '', rationale: '', duc: '' };
 
+  // The cohort sent to XNAT is the full SELECT-derived accession_number
+  // list (ALL_ACCESSIONS from the Tool's secondary query), not just the
+  // currently-displayed rows. Pagination / filter / sort shape what's on
+  // screen but doesn't change what ships.
   function cohortPayload() {
+    if (typeof ALL_ACCESSIONS !== 'undefined' &&
+        Array.isArray(ALL_ACCESSIONS) &&
+        ALL_ACCESSIONS.length > 0) {
+      return {
+        count: ALL_ACCESSIONS.length,
+        label: 'reports',
+        accessions: ALL_ACCESSIONS,
+      };
+    }
+    // Fallback: extract accessions from the displayed rows
     if (typeof ROWS !== 'undefined' && Array.isArray(ROWS)) {
-      return { count: ROWS.length, label: 'rows', rows: ROWS };
+      const acc = ROWS.map((r) => r && r.accession_number).filter(Boolean);
+      return { count: acc.length, label: 'reports', accessions: acc };
     }
-    if (typeof RECORDS !== 'undefined' && Array.isArray(RECORDS)) {
-      return { count: RECORDS.length, label: 'reports', rows: RECORDS };
-    }
-    return { count: 0, label: 'rows', rows: [] };
+    return { count: 0, label: 'reports', accessions: [] };
   }
 
   function escape(s) {
@@ -208,9 +219,9 @@ _XNAT_MODAL_JS = """
       dataUseCommitteeOversight: formState.duc || null,
       requestUser: USER && (USER.username || USER.email || USER.name) || 'unknown',
       user: USER || null,
-      // The iframe holds the cohort, so it sends it. The bridge dedupes
-      // and translates to whatever XNAT expects (typically accession_number).
-      data: cohort.rows,
+      // Just accession numbers — the bridge resolves them to studies.
+      // Mirrors the XNAT IQ data-request shape (`data: [{"Accession Number": ...}]`).
+      data: cohort.accessions.map((a) => ({ 'Accession Number': a })),
       itemCount: cohort.count,
     };
   }
@@ -482,14 +493,31 @@ class Tools:
     """
 
     class Valves(BaseModel):
-        max_rows: int = Field(
-            default=500,
+        max_display_rows: int = Field(
+            default=1000,
             description=(
-                "Hard cap on rows fetched from Trino per render call. "
-                "Browser performance degrades and iframe HTML bloats past "
-                "a few hundred rows; queries that need more should be "
-                "narrowed by the user."
+                "Hard cap on rows fetched for the iframe table (full row "
+                "data, embedded as JS). Browser performance degrades past "
+                "a few thousand rows; the iframe paginates client-side at "
+                "page_size rows per page, so large display caps are fine "
+                "for sort/search but cost iframe HTML bytes."
             ),
+        )
+        max_accession_rows: int = Field(
+            default=10000,
+            description=(
+                "Hard cap on the secondary `SELECT accession_number FROM "
+                "(<llm sql>)` query. The iframe ships ALL of these to XNAT "
+                "regardless of how many rows are visible in the table — "
+                "researchers can't review every row at large cohort sizes "
+                "but they're submitting based on the SQL-defined cohort, "
+                "not what they scrolled to. Single column, scales to tens "
+                "of thousands of rows cheaply."
+            ),
+        )
+        page_size: int = Field(
+            default=25,
+            description="Rows per page in the iframe table's client-side pagination.",
         )
         max_sample_rows: int = Field(
             default=5,
@@ -591,15 +619,15 @@ class Tools:
             )
 
     # ------------------------------------------------------------------
-    # SQL execution helper (shared by both render methods)
+    # SQL execution helpers
     # ------------------------------------------------------------------
-    def _execute_sql(self, sql: str) -> tuple[list[str], list[dict]]:
+    def _execute_sql(self, sql: str, max_rows: int) -> tuple[list[str], list[dict]]:
         """Run a SELECT against Trino and return (columns, rows).
 
-        Caps row fetch at `self.valves.max_rows`. Trino values that aren't
-        natively JSON-serializable (datetime, Decimal, etc.) get coerced to
-        strings via `default=str` at JSON-encode time, so the iframe sees
-        ISO timestamps and numeric strings instead of opaque objects.
+        Caps row fetch at `max_rows`. Trino values that aren't natively
+        JSON-serializable (datetime, Decimal, etc.) get coerced to strings
+        via `default=str` at JSON-encode time, so the iframe sees ISO
+        timestamps and numeric strings instead of opaque objects.
 
         Raises whatever Trino raises on failure — caller catches and returns
         the error string in the summary so the LLM can self-correct.
@@ -623,7 +651,7 @@ class Tools:
             rows: list[dict] = []
             for row in cur:
                 rows.append(dict(zip(columns, row)))
-                if len(rows) >= self.valves.max_rows:
+                if len(rows) >= max_rows:
                     break
             return columns, rows
         finally:
@@ -632,8 +660,51 @@ class Tools:
             except Exception:
                 pass
 
+    def _execute_accessions_query(
+        self, sql: str, max_accessions: int
+    ) -> Optional[list[str]]:
+        """Run `SELECT DISTINCT accession_number FROM (<sql>)` to get the full
+        cohort's accession_numbers regardless of how many rows the display
+        query fetched. Returns None on failure (caller falls back to using
+        accession_numbers from the displayed rows only).
+
+        Wrapping caveats:
+          - The LLM's SQL must be a plain SELECT (no top-level CTE / WITH).
+            Trino can't wrap a CTE in a subquery without rewriting; we
+            don't try. If the LLM uses CTEs, this returns None and we fall
+            back to displayed-row accessions only.
+          - The LLM's SQL must include `accession_number` in its SELECT,
+            otherwise the wrapper errors with "column not found". The
+            system prompt's Cohort Building section enforces this — if it
+            fails, the user sees an empty XNAT cohort, which is a clear
+            signal the LLM forgot the column.
+        """
+        # Quick CTE check — peeking at the first non-comment, non-whitespace
+        # token. If it's `WITH`, give up (Trino disallows wrap).
+        stripped = sql.lstrip()
+        # Strip leading -- and /* ... */ comments minimally
+        while stripped.startswith("--") or stripped.startswith("/*"):
+            if stripped.startswith("--"):
+                eol = stripped.find("\n")
+                stripped = stripped[eol + 1 :].lstrip() if eol != -1 else ""
+            else:
+                end = stripped.find("*/")
+                stripped = stripped[end + 2 :].lstrip() if end != -1 else ""
+        if stripped[:5].upper() == "WITH ":
+            return None
+
+        wrapped = (
+            f"SELECT DISTINCT accession_number FROM ({sql.rstrip(' ;')}) sub "
+            f"WHERE accession_number IS NOT NULL"
+        )
+        try:
+            _cols, rows = self._execute_sql(wrapped, max_accessions)
+        except Exception:
+            return None
+        return [str(r["accession_number"]) for r in rows if r.get("accession_number")]
+
     # ------------------------------------------------------------------
-    # render_table
+    # render_table — the single rendering entry point
     # ------------------------------------------------------------------
     async def render_table(
         self,
@@ -643,39 +714,61 @@ class Tools:
         __user__: dict = {},
         __chat_id__: str = "",
     ) -> tuple:
-        """Execute SQL and render the rows as an inline interactive HTML table.
+        """Execute SQL and render the rows as an inline interactive table.
 
-        Pass a SQL SELECT statement — the Tool runs it server-side via Trino
-        and embeds the rows in a sandboxed iframe (sortable, filterable,
-        with a Send-to-XNAT button). Rows do NOT pass through your tool-call
-        arguments, so this scales to hundreds of rows without timing out.
+        Pass a SQL SELECT statement — the Tool runs it server-side via
+        Trino and embeds the rows in a sandboxed iframe with:
 
-        Use whenever the user wants to SEE rows — "show me", "list", "find
-        all", "give me a few". For pure aggregates (counts, averages), call
-        `scout-db_execute_query` instead and answer in narrative.
+          - Sortable, filterable columns (click headers to sort, search box
+            to filter, prev/next pagination)
+          - Click any row to open a focused detail modal showing the full
+            Findings, Impression, and metadata for that report — with
+            arrow-key / button nav to step through the cohort one report
+            at a time (the previous render_report_flipbook is now folded
+            into this detail modal; there is no separate flipbook tool)
+          - Send-to-XNAT button that ships the cohort's full
+            accession_number list to XNAT (NOT just rows visible on screen)
 
-        For one-at-a-time report browsing ("browse", "page through", "let me
-        read through these"), use `render_report_flipbook` instead.
+        Rows do NOT pass through your tool-call arguments, so this scales
+        to thousands of rows without timing out.
 
-        On SQL error, this returns the error message + the failing query as
-        a string — read the message, fix the SQL, and call render_table
-        again with the corrected query.
+        Use whenever the user wants to SEE a cohort — "show me", "list",
+        "find all", "browse", "let me read through". For pure aggregates
+        (counts, averages, "how many"), call ``scout-db_execute_query``
+        instead and answer in narrative.
 
-        :param sql: A Trino SELECT statement against the delta.default
-          catalog. Always include LIMIT (max 500); the Tool caps fetch at
-          its max_rows valve regardless. Use the curated tables
-          (reports_latest, reports_dx) and curated column names per the
-          system prompt's Tables section.
+        Don't add LIMIT to your SQL. The Tool caps the display rows at its
+        max_display_rows valve and the accession_number list at its
+        max_accession_rows valve. Adding LIMIT yourself would defeat the
+        full-cohort accession list that goes to XNAT.
+
+        SELECT the canonical column names so the detail modal can locate
+        Findings / Impression / metadata: ``report_section_findings``,
+        ``report_section_impression``, ``message_dt``, ``patient_age``,
+        ``modality``, ``service_name``, ``sex``, plus
+        ``COALESCE(patient_mpi, epic_mrn) AS patient_id`` and
+        ``accession_number`` (XNAT's join key — required for
+        Send-to-XNAT to work on cohorts larger than max_display_rows).
+
+        On SQL error, returns the error + failing query as a string so
+        you can self-correct on the next turn.
+
+        :param sql: A Trino SELECT against delta.default. No top-level
+          LIMIT (Tool handles caps). No top-level CTE if you want
+          Send-to-XNAT to ship all accessions — the Tool wraps your
+          SQL in a subquery to fetch the full accession list, and Trino
+          can't wrap a CTE.
         :param columns: optional ordered list of column names to display.
           Defaults to the SELECT order returned by Trino.
-        :return: (HTMLResponse, summary_string) — OWUI renders the iframe
-          and only feeds the summary (row count, column names, sample rows)
-          back to you. Do NOT re-display the row data as a markdown table.
+        :return: (HTMLResponse, summary_string) — OWUI renders the
+          iframe and only feeds the summary (row count, column names,
+          sample rows) back to you. Do NOT re-display the row data as a
+          markdown table.
         """
         await self._emit_status(__event_emitter__, "Querying Trino…", done=False)
 
         try:
-            cols, rows = self._execute_sql(sql)
+            cols, rows = self._execute_sql(sql, self.valves.max_display_rows)
         except Exception as exc:
             err = (
                 f"render_table SQL error: {exc}\n\n"
@@ -695,137 +788,78 @@ class Tools:
 
         display_cols = columns or cols
 
+        await self._emit_status(
+            __event_emitter__, "Fetching cohort accessions…", done=False
+        )
+        all_accessions = self._execute_accessions_query(
+            sql, self.valves.max_accession_rows
+        )
+        # Fall back to displayed-row accessions if the wrap query failed
+        # (LLM used CTE, accession_number not in SELECT, or unrelated SQL
+        # issue we don't want to escalate to a hard failure since the
+        # display already worked).
+        if all_accessions is None:
+            all_accessions = [
+                str(r["accession_number"]) for r in rows if r.get("accession_number")
+            ]
+            accession_note = (
+                "could not run accessions wrapper (likely a CTE in your "
+                "SQL or accession_number missing from the SELECT) — "
+                f"Send-to-XNAT will ship only the {len(all_accessions)} "
+                "accessions from the displayed rows. Rewrite without CTE "
+                "and ensure accession_number is selected so the full "
+                "cohort can ship."
+            )
+        elif len(all_accessions) >= self.valves.max_accession_rows:
+            accession_note = (
+                f"accession list capped at "
+                f"max_accession_rows={self.valves.max_accession_rows}"
+            )
+        else:
+            accession_note = ""
+
         await self._emit_status(__event_emitter__, "Rendering table…", done=False)
 
         html_doc = _build_table_doc(
             rows,
             display_cols,
+            all_accessions,
             self._user_info(__user__),
             self.valves.bridge_url,
             self.valves.xnat_external_url,
+            self.valves.page_size,
         )
-        capped_note = (
-            f" (capped at the tool's max_rows={self.valves.max_rows} valve)"
-            if len(rows) >= self.valves.max_rows
+
+        display_capped = len(rows) >= self.valves.max_display_rows
+        display_note = (
+            (
+                f"display rows capped at "
+                f"max_display_rows={self.valves.max_display_rows}; "
+                f"cohort may be larger — accession list shipped to "
+                f"XNAT is {len(all_accessions):,} regardless"
+            )
+            if display_capped
             else ""
         )
+        notes = " | ".join(n for n in [display_note, accession_note] if n)
+        notes_block = f"\n\nNotes: {notes}" if notes else ""
+
         summary = (
-            f"render_table: Embedded UI result is active and visible to the "
-            f"user. Do NOT re-display the data as text — the rendered table "
-            f"above this message IS the user's view of the result.\n\n"
-            f"Table summary: {len(rows):,} row(s){capped_note} across "
-            f"{len(display_cols)} columns: {', '.join(display_cols)}.\n\n"
+            f"render_table: Embedded UI result is active and visible to "
+            f"the user. Do NOT re-display the data as text — the "
+            f"rendered table above this message IS the user's view of "
+            f"the result.\n\n"
+            f"Table summary: {len(rows):,} row(s) shown across "
+            f"{len(display_cols)} columns: {', '.join(display_cols)}.\n"
+            f"Cohort accessions for XNAT: "
+            f"{len(all_accessions):,}.{notes_block}\n\n"
             f"Sample ({min(self.valves.max_sample_rows, len(rows))} of "
-            f"{len(rows):,} rows) — for your reasoning, not for re-display:\n"
+            f"{len(rows):,} rows) — for your reasoning, not for "
+            f"re-display:\n"
             + _summary_table_text(rows, display_cols, self.valves.max_sample_rows)
         )
 
         await self._emit_status(__event_emitter__, "Table ready", done=True)
-
-        return (
-            HTMLResponse(
-                content=html_doc,
-                headers={"Content-Disposition": "inline"},
-            ),
-            summary,
-        )
-
-    # ------------------------------------------------------------------
-    # render_report_flipbook
-    # ------------------------------------------------------------------
-    async def render_report_flipbook(
-        self,
-        sql: str,
-        __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
-        __user__: dict = {},
-        __chat_id__: str = "",
-    ) -> tuple:
-        """Execute SQL and render the rows as an inline interactive flipbook.
-
-        Same SQL-driven model as render_table — pass a SELECT, the Tool
-        runs it and embeds the rows in a flipbook iframe with prev/next
-        navigation. One report shown at a time with Findings, Impression,
-        and other-fields panes.
-
-        Use when the user wants to BROWSE individual reports — intent words
-        like "browse", "page through", "let me read through", "step through
-        these". For tabular display use render_table.
-
-        SELECT the canonical column names so the flipbook can locate the
-        Findings / Impression / metadata fields:
-        report_section_findings, report_section_impression, message_dt,
-        patient_age, modality, service_name, sex, plus
-        COALESCE(patient_mpi, epic_mrn) AS patient_id.
-
-        On SQL error, returns the error + failing query as a string for
-        self-correction.
-
-        :param sql: A Trino SELECT statement; should include LIMIT.
-        :return: (HTMLResponse, summary_string) — OWUI renders the iframe
-          and only feeds the summary back to you.
-        """
-        await self._emit_status(__event_emitter__, "Querying Trino…", done=False)
-
-        try:
-            _cols, reports = self._execute_sql(sql)
-        except Exception as exc:
-            err = (
-                f"render_report_flipbook SQL error: {exc}\n\n"
-                f"Failing query:\n{sql}\n\n"
-                f"Read the error, fix the query, and call render_report_flipbook again."
-            )
-            await self._emit_status(__event_emitter__, "SQL error", done=True)
-            return (err, err)
-
-        if not reports:
-            msg = (
-                f"render_report_flipbook: 0 reports returned by:\n{sql}\n\n"
-                f"Tell the user no reports matched and offer to broaden the criteria."
-            )
-            await self._emit_status(__event_emitter__, "No rows", done=True)
-            return (msg, msg)
-
-        await self._emit_status(__event_emitter__, "Rendering flipbook…", done=False)
-
-        html_doc = _build_flipbook_doc(
-            reports,
-            self._user_info(__user__),
-            self.valves.bridge_url,
-            self.valves.xnat_external_url,
-        )
-
-        # Pull a few orienting fields for the LLM summary
-        sample = []
-        for r in reports[: self.valves.max_sample_rows]:
-            tag = " / ".join(
-                str(r[k])
-                for k in (
-                    "patient_id",
-                    "epic_mrn",
-                    "modality",
-                    "service_name",
-                    "message_dt",
-                )
-                if r.get(k) is not None
-            )
-            sample.append(f"  - {tag}" if tag else "  - (no orientation fields)")
-        capped_note = (
-            f" (capped at the tool's max_rows={self.valves.max_rows} valve)"
-            if len(reports) >= self.valves.max_rows
-            else ""
-        )
-        summary = (
-            f"render_report_flipbook: Embedded UI result is active and "
-            f"visible to the user. Do NOT re-display the reports as text — "
-            f"the interactive flipbook above this message IS the user's "
-            f"view of the result.\n\n"
-            f"Flipbook summary: {len(reports)} report(s){capped_note} "
-            f"navigable via prev/next.\n\n"
-            f"Orientation (first {len(sample)}) — for your reasoning, not "
-            f"for re-display:\n" + "\n".join(sample)
-        )
-
-        await self._emit_status(__event_emitter__, "Flipbook ready", done=True)
 
         return (
             HTMLResponse(
@@ -859,30 +893,20 @@ def _safe_json(value: Any) -> str:
 def _build_table_doc(
     rows: list[dict],
     columns: list[str],
+    all_accessions: list[str],
     user: dict | None,
     bridge_url: str,
     xnat_external_url: str,
+    page_size: int,
 ) -> str:
     return (
         _TABLE_TMPL.replace("__ROWS__", _safe_json(rows))
         .replace("__COLS__", _safe_json(columns))
+        .replace("__ACCESSIONS__", _safe_json(all_accessions or []))
         .replace("__USER__", _safe_json(user or None))
         .replace("__BRIDGE_URL__", _safe_json(bridge_url or ""))
         .replace("__XNAT_EXTERNAL_URL__", _safe_json(xnat_external_url or ""))
-    )
-
-
-def _build_flipbook_doc(
-    reports: list[dict],
-    user: dict | None,
-    bridge_url: str,
-    xnat_external_url: str,
-) -> str:
-    return (
-        _FLIPBOOK_TMPL.replace("__RECORDS__", _safe_json(reports))
-        .replace("__USER__", _safe_json(user or None))
-        .replace("__BRIDGE_URL__", _safe_json(bridge_url or ""))
-        .replace("__XNAT_EXTERNAL_URL__", _safe_json(xnat_external_url or ""))
+        .replace("__PAGE_SIZE__", str(int(page_size)))
     )
 
 
@@ -901,6 +925,7 @@ _TABLE_TMPL = f"""<!DOCTYPE html>
     --bg-hover: #f3f4f6;
     --border: #e5e7eb;
     --accent: #2563eb;
+    --accent-soft: #eff6ff;
   }}
   body {{
     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -910,6 +935,7 @@ _TABLE_TMPL = f"""<!DOCTYPE html>
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
   }}
+  /* ---------- Toolbar ---------- */
   .toolbar {{
     display: flex;
     align-items: center;
@@ -939,7 +965,9 @@ _TABLE_TMPL = f"""<!DOCTYPE html>
   .toolbar .info {{ color: var(--fg-muted); font-size: 12px; }}
   .toolbar .spacer {{ flex: 1; }}
 {_XNAT_BUTTON_CSS}
-  .table-wrap {{ overflow: auto; max-height: {_IFRAME_MAX_HEIGHT - 60}px; }}
+
+  /* ---------- Table ---------- */
+  .table-wrap {{ overflow: auto; max-height: {_IFRAME_MAX_HEIGHT - 110}px; }}
   table {{ border-collapse: collapse; width: 100%; }}
   thead th {{
     text-align: left;
@@ -968,54 +996,254 @@ _TABLE_TMPL = f"""<!DOCTYPE html>
     word-break: break-word;
     max-width: 460px;
   }}
-  tbody td.expandable {{ cursor: pointer; }}
+  tbody tr.row-clickable {{ cursor: pointer; }}
   tbody tr:nth-child(even) td {{ background: var(--bg-soft); }}
-  tbody tr:hover td {{ background: var(--bg-hover); }}
-  /* Long-text cells: clamp to 3 lines by default, expand on click */
+  tbody tr.row-clickable:hover td {{ background: var(--bg-hover); }}
   td .clamp {{
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     overflow: hidden;
   }}
-  td.expanded .clamp {{ -webkit-line-clamp: unset; }}
-  td .more-hint {{
-    color: var(--accent);
-    font-size: 11px;
-    margin-top: 2px;
-    user-select: none;
-  }}
-  td.expanded .more-hint::after {{ content: "show less"; }}
-  td:not(.expanded) .more-hint::after {{ content: "show more"; }}
   .empty {{ color: var(--fg-subtle); font-style: italic; }}
+
+  /* ---------- Pagination footer ---------- */
+  .pagination {{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-soft);
+    font-size: 12px;
+    color: var(--fg-muted);
+    position: sticky;
+    bottom: 0;
+  }}
+  .pagination button {{
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--fg);
+  }}
+  .pagination button:hover:not(:disabled) {{
+    background: var(--bg-hover);
+    border-color: var(--fg-subtle);
+  }}
+  .pagination button:disabled {{ opacity: 0.4; cursor: not-allowed; }}
+  .pagination .page-info {{ color: var(--fg-muted); }}
+  .pagination .spacer {{ flex: 1; }}
+  .pagination .cohort-note {{
+    color: var(--fg-muted);
+    font-size: 11px;
+  }}
+
+  /* ---------- Detail modal ---------- */
+  .detail-overlay {{
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 9000;
+    align-items: center; justify-content: center;
+    padding: 24px;
+  }}
+  .detail-overlay.open {{ display: flex; }}
+  .detail-card {{
+    background: var(--bg);
+    width: min(900px, 100%);
+    max-height: 100%;
+    display: flex; flex-direction: column;
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+    overflow: hidden;
+  }}
+  .detail-header {{
+    padding: 16px 22px;
+    background: var(--bg-soft);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start;
+    gap: 14px;
+  }}
+  .detail-header-info {{ flex: 1; min-width: 0; }}
+  .detail-pos {{
+    font-size: 11px; font-weight: 600;
+    color: var(--fg-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }}
+  .detail-badges {{
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }}
+  .detail-badge {{
+    font-size: 12px; font-weight: 500;
+    padding: 3px 10px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent);
+    white-space: nowrap;
+  }}
+  .detail-badge.muted {{
+    background: var(--bg-hover); color: #4b5563;
+  }}
+  .detail-close {{
+    background: none; border: none;
+    color: var(--fg-subtle); cursor: pointer;
+    font-size: 22px; line-height: 1;
+    padding: 2px 10px; border-radius: 6px;
+    flex-shrink: 0;
+  }}
+  .detail-close:hover {{ color: var(--fg); background: var(--bg-hover); }}
+  .detail-body {{
+    flex: 1; overflow-y: auto;
+    padding: 20px 22px;
+  }}
+  .detail-section {{ margin-bottom: 22px; }}
+  .detail-section:last-child {{ margin-bottom: 0; }}
+  .detail-section h4 {{
+    font-size: 11px; font-weight: 700;
+    color: var(--fg-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin: 0 0 8px;
+  }}
+  .detail-prose {{
+    font-size: 14px; line-height: 1.65;
+    color: var(--fg);
+    white-space: pre-wrap;
+    background: var(--bg-soft);
+    padding: 14px 16px; border-radius: 8px;
+    border-left: 3px solid var(--border);
+  }}
+  .detail-prose.impression {{
+    border-left-color: var(--accent);
+    background: var(--accent-soft);
+  }}
+  .detail-meta-grid {{
+    display: grid; grid-template-columns: max-content 1fr;
+    gap: 6px 18px;
+    font-size: 13px;
+  }}
+  .detail-meta-grid dt {{ color: var(--fg-muted); font-weight: 500; }}
+  .detail-meta-grid dd {{ margin: 0; color: var(--fg); word-break: break-word; }}
+  .detail-footer {{
+    padding: 12px 22px;
+    background: var(--bg-soft);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }}
+  .detail-footer .spacer {{ flex: 1; }}
+  .detail-footer button {{
+    padding: 7px 14px; border-radius: 7px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--fg); cursor: pointer;
+    font-size: 13px; font-weight: 500;
+  }}
+  .detail-footer button:hover:not(:disabled) {{
+    background: var(--bg-hover); border-color: var(--fg-subtle);
+  }}
+  .detail-footer button:disabled {{ opacity: 0.4; cursor: not-allowed; }}
+  .detail-footer-hint {{ font-size: 11px; color: var(--fg-subtle); }}
 </style>
 </head>
 <body>
 <div class="toolbar">
   <input id="q" type="search" placeholder="Filter rows…" />
-  <span class="info" id="footer"></span>
+  <span class="info" id="row-summary"></span>
   <span class="spacer"></span>
   {_XNAT_BUTTON_HTML}
 </div>
 <div class="table-wrap">
   <table id="t"><thead><tr id="head"></tr></thead><tbody id="body"></tbody></table>
 </div>
+<div class="pagination">
+  <button id="page-prev" type="button" aria-label="Previous page">←</button>
+  <span class="page-info">Page <span id="page-idx">1</span> of <span id="page-total">1</span></span>
+  <button id="page-next" type="button" aria-label="Next page">→</button>
+  <span class="spacer"></span>
+  <span class="cohort-note" id="cohort-note"></span>
+</div>
+
+<div id="detail-overlay" class="detail-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="detail-card">
+    <header class="detail-header">
+      <div class="detail-header-info">
+        <div class="detail-pos">Report <span id="detail-pos-idx">1</span> of <span id="detail-pos-total">0</span></div>
+        <div class="detail-badges" id="detail-badges"></div>
+      </div>
+      <button class="detail-close" id="detail-close" type="button" aria-label="Close">&times;</button>
+    </header>
+    <div class="detail-body">
+      <section class="detail-section">
+        <h4>Impression</h4>
+        <div class="detail-prose impression" id="detail-impression"></div>
+      </section>
+      <section class="detail-section">
+        <h4>Findings</h4>
+        <div class="detail-prose" id="detail-findings"></div>
+      </section>
+      <section class="detail-section detail-other-section">
+        <h4>Other fields</h4>
+        <dl class="detail-meta-grid" id="detail-other"></dl>
+      </section>
+    </div>
+    <footer class="detail-footer">
+      <button id="detail-prev" type="button">&larr; Previous</button>
+      <button id="detail-next" type="button">Next &rarr;</button>
+      <span class="spacer"></span>
+      <span class="detail-footer-hint">&larr;/&rarr; keys to navigate · Esc to close</span>
+    </footer>
+  </div>
+</div>
+
 <script>
 const ROWS = __ROWS__;
 const COLS = __COLS__;
+const ALL_ACCESSIONS = __ACCESSIONS__;
 const USER = __USER__;
 const BRIDGE_URL = __BRIDGE_URL__;
 const XNAT_EXTERNAL_URL = __XNAT_EXTERNAL_URL__;
-const CLAMP_THRESHOLD = 140; // chars — cells longer than this get clamp + expand affordance
-let sortCol = null, sortDir = 1, filter = "";
+const PAGE_SIZE = __PAGE_SIZE__;
+const CLAMP_THRESHOLD = 140;
 
-function fmt(v) {{ if (v === null || v === undefined) return ""; if (typeof v === "object") return JSON.stringify(v); return String(v); }}
+// Field-name fallback chains for the detail modal — the LLM sometimes
+// aliases columns in SQL (SELECT report_section_impression AS impression).
+const FINDINGS_KEYS = ['report_section_findings', 'findings', 'report_findings'];
+const IMPRESSION_KEYS = ['report_section_impression', 'impression', 'report_impression'];
+const MRN_KEYS = ['patient_id', 'epic_mrn', 'mrn', 'patient_mpi'];
+const DATE_KEYS = ['message_dt', 'timestamp', 'date', 'report_date'];
+const HIDE_FROM_OTHER = new Set([
+  ...FINDINGS_KEYS, ...IMPRESSION_KEYS, ...MRN_KEYS, ...DATE_KEYS,
+  'modality', 'service_name', 'service', 'patient_age', 'age',
+  'sex', 'gender', 'accession_number', 'study_instance_uid', 'report_text',
+]);
+
+let sortCol = null, sortDir = 1, filter = "";
+let pageIdx = 0;
+let currentRows = ROWS;  // post-filter, post-sort
+
+function fmt(v) {{
+  if (v === null || v === undefined) return "";
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
+}}
 function compare(a, b) {{
   if (a == null) return 1; if (b == null) return -1;
   const na = Number(a), nb = Number(b);
   if (!isNaN(na) && !isNaN(nb)) return (na - nb) * sortDir;
   return String(a).localeCompare(String(b)) * sortDir;
 }}
+function pickField(record, keys) {{
+  for (const k of keys) {{
+    if (record[k] != null && record[k] !== '') return record[k];
+  }}
+  return null;
+}}
+function formatDate(v) {{
+  if (!v) return '';
+  const m = String(v).match(/^(\\d{{4}}-\\d{{2}}-\\d{{2}})/);
+  return m ? m[1] : String(v);
+}}
+
 function renderHead() {{
   const tr = document.getElementById("head");
   tr.innerHTML = "";
@@ -1029,42 +1257,53 @@ function renderHead() {{
     th.appendChild(arrow);
     th.addEventListener("click", () => {{
       if (sortCol === c) sortDir = -sortDir; else {{ sortCol = c; sortDir = 1; }}
-      render();
+      pageIdx = 0;
+      refresh();
     }});
     tr.appendChild(th);
   }});
 }}
-function render() {{
+
+function refresh() {{
+  // Recompute filter+sort from ROWS
   let rows = ROWS;
   if (filter) {{
     const f = filter.toLowerCase();
     rows = rows.filter(r => COLS.some(c => fmt(r[c]).toLowerCase().includes(f)));
   }}
   if (sortCol) rows = [...rows].sort((a, b) => compare(a[sortCol], b[sortCol]));
+  currentRows = rows;
+  renderTable();
+}}
+
+function renderTable() {{
+  const totalRows = currentRows.length;
+  const pageCount = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+  if (pageIdx >= pageCount) pageIdx = pageCount - 1;
+  if (pageIdx < 0) pageIdx = 0;
+  const startRow = pageIdx * PAGE_SIZE;
+  const visibleRows = currentRows.slice(startRow, startRow + PAGE_SIZE);
+
   renderHead();
   const body = document.getElementById("body");
   body.innerHTML = "";
-  rows.forEach((r) => {{
+  visibleRows.forEach((r) => {{
     const tr = document.createElement("tr");
+    tr.classList.add("row-clickable");
+    // Find this row's index in currentRows so the detail modal navigates
+    // through the same sort+filter view the user is looking at.
+    const rowIdx = startRow + visibleRows.indexOf(r);
+    tr.addEventListener("click", () => openDetail(currentRows, rowIdx));
     COLS.forEach((c) => {{
       const td = document.createElement("td");
       const v = fmt(r[c]);
       if (v === "") {{
         td.innerHTML = '<span class="empty">—</span>';
       }} else if (v.length > CLAMP_THRESHOLD) {{
-        // Long content: clamp to 3 lines with toggle
         const clamp = document.createElement("div");
         clamp.className = "clamp";
         clamp.textContent = v;
-        const hint = document.createElement("div");
-        hint.className = "more-hint";
-        td.classList.add("expandable");
         td.appendChild(clamp);
-        td.appendChild(hint);
-        td.addEventListener("click", () => {{
-          td.classList.toggle("expanded");
-          reportHeight();
-        }});
       }} else {{
         td.textContent = v;
       }}
@@ -1072,154 +1311,126 @@ function render() {{
     }});
     body.appendChild(tr);
   }});
-  const footer = document.getElementById("footer");
-  footer.textContent = (filter || sortCol)
-    ? `${{rows.length}} of ${{ROWS.length}} rows` : `${{ROWS.length}} row(s)`;
+
+  // Toolbar info line
+  const summary = (filter || sortCol)
+    ? `${{visibleRows.length.toLocaleString()}} shown · ${{totalRows.toLocaleString()}} matching · ${{ROWS.length.toLocaleString()}} total`
+    : `${{ROWS.length.toLocaleString()}} report${{ROWS.length === 1 ? '' : 's'}}`;
+  document.getElementById("row-summary").textContent = summary;
+
+  // Pagination
+  document.getElementById("page-idx").textContent = pageIdx + 1;
+  document.getElementById("page-total").textContent = pageCount;
+  document.getElementById("page-prev").disabled = pageIdx === 0;
+  document.getElementById("page-next").disabled = pageIdx >= pageCount - 1;
+
+  // Cohort note — what ships to XNAT
+  const accCount = (typeof ALL_ACCESSIONS !== 'undefined' && Array.isArray(ALL_ACCESSIONS))
+    ? ALL_ACCESSIONS.length : 0;
+  document.getElementById("cohort-note").textContent =
+    `${{accCount.toLocaleString()}} accession${{accCount === 1 ? '' : 's'}} ship to XNAT`;
+
   reportHeight();
 }}
-document.getElementById("q").addEventListener("input", (e) => {{ filter = e.target.value; render(); }});
-// Send height to parent multiple times to defeat the mount-race with
-// FullHeightIframe's onMessage listener: a single postMessage may fire
-// before the parent component mounts → message lost → iframe stuck at
-// browser default (~150px). Force=true bypasses the dedup so retries
-// always send even if the height hasn't changed.
-let _lastReportedHeight = -1;
-function reportHeight(force) {{
-  const h = Math.min(document.documentElement.scrollHeight, {_IFRAME_MAX_HEIGHT});
-  if (!force && h === _lastReportedHeight) return;
-  _lastReportedHeight = h;
-  parent.postMessage({{ type: "iframe:height", height: h }}, "*");
-}}
-// Burst of resends after initial render: 0ms (now), 50ms, 200ms, 600ms.
-// 0ms = best case parent already mounted; 50/200ms = catch mount-race;
-// 600ms = catch font-load reflows + slow paints.
-[0, 50, 200, 600].forEach((d) => setTimeout(() => reportHeight(true), d));
-new MutationObserver(() => reportHeight()).observe(document.body, {{ childList: true, subtree: true, characterData: true }});
-window.addEventListener("resize", () => reportHeight());
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => reportHeight(true));
-render();
-</script>
-{_XNAT_OVERLAY_HTML}
-<script>{_XNAT_MODAL_JS}</script>
-</body>
-</html>
-"""
 
-
-_FLIPBOOK_TMPL = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<style>
-  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{ font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; color: #111; background: #fff; }}
-  #flipbook {{ display: flex; flex-direction: column; min-height: 480px; max-height: {_IFRAME_MAX_HEIGHT}px; }}
-  header {{ padding: 10px 14px; border-bottom: 1px solid #e5e7eb; background: #fafafa; }}
-  .counter {{ font-size: 12px; color: #6b7280; }}
-  .meta {{ font-size: 14px; font-weight: 600; margin-top: 4px; }}
-  main {{ flex: 1; padding: 10px 14px; overflow-y: auto; }}
-  section {{ margin-bottom: 14px; }}
-  section h3 {{ margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; }}
-  pre {{ white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 13px; background: #f9fafb; padding: 10px; border-radius: 6px; margin: 0; max-height: 240px; overflow-y: auto; }}
-  dl {{ font-size: 13px; margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; }}
-  dt {{ color: #6b7280; }}
-  dd {{ margin: 0; word-break: break-word; }}
-  footer {{ padding: 8px 14px; border-top: 1px solid #e5e7eb; display: flex; gap: 8px; background: #fafafa; align-items: center; }}
-  footer .spacer {{ flex: 1; }}
-  /* Default <button> styling for prev/next, scoped so xnat-btn keeps its own look. */
-  footer > button {{ padding: 5px 12px; border: 1px solid #d1d5db; background: white; border-radius: 6px; cursor: pointer; font-size: 13px; }}
-  footer > button:hover:not(:disabled) {{ background: #f3f4f6; }}
-  footer > button:disabled {{ opacity: 0.4; cursor: not-allowed; }}
-{_XNAT_BUTTON_CSS}
-</style>
-</head>
-<body>
-<div id="flipbook">
-  <header>
-    <div class="counter"><span id="idx">1</span> / <span id="total">0</span></div>
-    <div class="meta" id="meta"></div>
-  </header>
-  <main>
-    <section><h3>Findings</h3><pre id="findings"></pre></section>
-    <section><h3>Impression</h3><pre id="impression"></pre></section>
-    <section><h3>Other fields</h3><dl id="extra"></dl></section>
-  </main>
-  <footer>
-    <button id="prev">← Previous</button>
-    <button id="next">Next →</button>
-    <span class="spacer"></span>
-    {_XNAT_BUTTON_HTML}
-  </footer>
-</div>
-<script>
-const RECORDS = __RECORDS__;
-const USER = __USER__;
-const BRIDGE_URL = __BRIDGE_URL__;
-const XNAT_EXTERNAL_URL = __XNAT_EXTERNAL_URL__;
-// Field-name fallback chains — the LLM sometimes aliases columns in SQL
-// (SELECT report_section_impression AS impression). Try canonical names
-// first, fall back to common shortened forms.
-const FINDINGS_KEYS = ['report_section_findings', 'findings', 'report_findings'];
-const IMPRESSION_KEYS = ['report_section_impression', 'impression', 'report_impression'];
-const MRN_KEYS = ['epic_mrn', 'mrn', 'patient_id'];
-const DATE_KEYS = ['message_dt', 'timestamp', 'date', 'report_date'];
-// Header metadata we surface on each card (in this order). Renders with
-// the first non-null value found per axis.
-const META_AXES = [
-  MRN_KEYS,
-  ['modality'],
-  ['service_name', 'service'],
-  DATE_KEYS,
-  ['patient_age', 'age'],
-  ['sex', 'gender'],
-];
-// Keys we hide from the "Other fields" pane (covers all the fallback
-// chains so we never show the same data twice).
-const HIDE = new Set([
-  ...FINDINGS_KEYS, ...IMPRESSION_KEYS,
-  ...MRN_KEYS, ...DATE_KEYS,
-  ...META_AXES.flat(),
-  'report_text',
-]);
-let idx = 0;
-function fmt(v) {{ if (v == null) return ''; if (typeof v === 'object') return JSON.stringify(v); return String(v); }}
-function pick(record, keys) {{
-  for (const k of keys) {{
-    if (record[k] != null && record[k] !== '') return record[k];
-  }}
-  return null;
-}}
-function render() {{
-  const r = RECORDS[idx] || {{}};
-  document.getElementById('idx').textContent = idx + 1;
-  document.getElementById('total').textContent = RECORDS.length;
-  document.getElementById('meta').textContent =
-    META_AXES.map(keys => {{ const v = pick(r, keys); return v != null ? fmt(v) : null; }})
-      .filter(Boolean).join(' • ') || '(no metadata)';
-  document.getElementById('findings').textContent = pick(r, FINDINGS_KEYS) || '(none)';
-  document.getElementById('impression').textContent = pick(r, IMPRESSION_KEYS) || '(none)';
-  const extra = document.getElementById('extra');
-  extra.innerHTML = '';
-  Object.keys(r).filter(k => !HIDE.has(k)).forEach(k => {{
-    const dt = document.createElement('dt'); dt.textContent = k;
-    const dd = document.createElement('dd'); dd.textContent = fmt(r[k]);
-    extra.appendChild(dt); extra.appendChild(dd);
-  }});
-  document.getElementById('prev').disabled = idx === 0;
-  document.getElementById('next').disabled = idx >= RECORDS.length - 1;
-  reportHeight();
-}}
-document.getElementById('prev').addEventListener('click', () => {{ if (idx > 0) {{ idx--; render(); }} }});
-document.getElementById('next').addEventListener('click', () => {{ if (idx < RECORDS.length - 1) {{ idx++; render(); }} }});
-document.addEventListener('keydown', (e) => {{
-  if (e.key === 'ArrowLeft' && idx > 0) {{ idx--; render(); }}
-  if (e.key === 'ArrowRight' && idx < RECORDS.length - 1) {{ idx++; render(); }}
+document.getElementById("q").addEventListener("input", (e) => {{
+  filter = e.target.value;
+  pageIdx = 0;
+  refresh();
 }});
-// Send height to parent multiple times to defeat the mount-race with
-// FullHeightIframe's onMessage listener: a single postMessage may fire
-// before the parent component mounts → message lost → iframe stuck at
-// browser default (~150px). Force=true bypasses the dedup so retries
-// always send even if the height hasn't changed.
+document.getElementById("page-prev").addEventListener("click", () => {{
+  if (pageIdx > 0) {{ pageIdx--; renderTable(); document.querySelector('.table-wrap').scrollTop = 0; }}
+}});
+document.getElementById("page-next").addEventListener("click", () => {{
+  const pageCount = Math.max(1, Math.ceil(currentRows.length / PAGE_SIZE));
+  if (pageIdx < pageCount - 1) {{ pageIdx++; renderTable(); document.querySelector('.table-wrap').scrollTop = 0; }}
+}});
+
+// ---------- Detail modal ----------
+const detailOverlay = document.getElementById('detail-overlay');
+let detailIdx = 0;
+let detailList = [];
+
+function renderBadges(r) {{
+  const el = document.getElementById('detail-badges');
+  el.innerHTML = '';
+  const items = [];
+  const mrn = pickField(r, MRN_KEYS);
+  if (mrn) items.push({{label: mrn, primary: true}});
+  if (r.modality) items.push({{label: r.modality}});
+  const svc = r.service_name || r.service;
+  if (svc) items.push({{label: svc}});
+  const date = pickField(r, DATE_KEYS);
+  if (date) items.push({{label: formatDate(date)}});
+  if (r.patient_age != null) items.push({{label: r.patient_age + 'y'}});
+  if (r.sex || r.gender) items.push({{label: r.sex || r.gender}});
+  items.forEach((b) => {{
+    const span = document.createElement('span');
+    span.className = b.primary ? 'detail-badge' : 'detail-badge muted';
+    span.textContent = b.label;
+    el.appendChild(span);
+  }});
+}}
+
+function renderDetail() {{
+  const r = detailList[detailIdx] || {{}};
+  document.getElementById('detail-pos-idx').textContent = detailIdx + 1;
+  document.getElementById('detail-pos-total').textContent = detailList.length;
+  renderBadges(r);
+  document.getElementById('detail-impression').textContent =
+    pickField(r, IMPRESSION_KEYS) || '(no impression recorded)';
+  document.getElementById('detail-findings').textContent =
+    pickField(r, FINDINGS_KEYS) || '(no findings recorded)';
+  const otherDl = document.getElementById('detail-other');
+  otherDl.innerHTML = '';
+  const otherKeys = Object.keys(r).filter((k) => !HIDE_FROM_OTHER.has(k));
+  const otherSec = document.querySelector('.detail-other-section');
+  if (otherKeys.length === 0) {{
+    otherSec.style.display = 'none';
+  }} else {{
+    otherSec.style.display = '';
+    otherKeys.forEach((k) => {{
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = fmt(r[k]);
+      otherDl.appendChild(dt); otherDl.appendChild(dd);
+    }});
+  }}
+  document.getElementById('detail-prev').disabled = detailIdx === 0;
+  document.getElementById('detail-next').disabled = detailIdx >= detailList.length - 1;
+}}
+
+function openDetail(rows, startIdx) {{
+  detailList = rows || [];
+  detailIdx = Math.max(0, Math.min(startIdx || 0, detailList.length - 1));
+  renderDetail();
+  detailOverlay.classList.add('open');
+  detailOverlay.setAttribute('aria-hidden', 'false');
+  parent.postMessage({{ type: 'iframe:height', height: {_IFRAME_MAX_HEIGHT} }}, '*');
+}}
+function closeDetail() {{
+  detailOverlay.classList.remove('open');
+  detailOverlay.setAttribute('aria-hidden', 'true');
+  if (typeof reportHeight === 'function') reportHeight(true);
+}}
+
+document.getElementById('detail-prev').onclick = () => {{
+  if (detailIdx > 0) {{ detailIdx--; renderDetail(); }}
+}};
+document.getElementById('detail-next').onclick = () => {{
+  if (detailIdx < detailList.length - 1) {{ detailIdx++; renderDetail(); }}
+}};
+document.getElementById('detail-close').onclick = closeDetail;
+detailOverlay.addEventListener('click', (e) => {{
+  if (e.target === detailOverlay) closeDetail();
+}});
+document.addEventListener('keydown', (e) => {{
+  if (!detailOverlay.classList.contains('open')) return;
+  if (e.key === 'Escape') closeDetail();
+  if (e.key === 'ArrowLeft' && detailIdx > 0) {{ detailIdx--; renderDetail(); }}
+  if (e.key === 'ArrowRight' && detailIdx < detailList.length - 1) {{ detailIdx++; renderDetail(); }}
+}});
+
+// ---------- Height reporting ----------
 let _lastReportedHeight = -1;
 function reportHeight(force) {{
   const h = Math.min(document.documentElement.scrollHeight, {_IFRAME_MAX_HEIGHT});
@@ -1227,14 +1438,12 @@ function reportHeight(force) {{
   _lastReportedHeight = h;
   parent.postMessage({{ type: "iframe:height", height: h }}, "*");
 }}
-// Burst of resends after initial render: 0ms (now), 50ms, 200ms, 600ms.
-// 0ms = best case parent already mounted; 50/200ms = catch mount-race;
-// 600ms = catch font-load reflows + slow paints.
 [0, 50, 200, 600].forEach((d) => setTimeout(() => reportHeight(true), d));
 new MutationObserver(() => reportHeight()).observe(document.body, {{ childList: true, subtree: true, characterData: true }});
 window.addEventListener("resize", () => reportHeight());
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => reportHeight(true));
-render();
+
+refresh();
 </script>
 {_XNAT_OVERLAY_HTML}
 <script>{_XNAT_MODAL_JS}</script>
