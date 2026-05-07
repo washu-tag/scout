@@ -128,6 +128,25 @@ Synonym/variant cheat-sheet — generate alternations from these axes when relev
 
 Use `(?is)` flags: case-insensitive plus dotall (so `.` matches newlines, since impression text spans multiple lines). Don't use `\b` word boundaries — Trino's regex flavor doesn't reliably support them; rely on `.{0,N}` proximity for separation.
 
+#### Excluding negated mentions ("No pulmonary nodule")
+
+Reports often state the absence of a finding ("No evidence of pulmonary nodule", "Negative for nodule", "Ruled out mass"). These match the positive regex above and falsely inflate the cohort. Add a `NOT REGEXP_LIKE` clause that catches negation phrases preceding the finding **within the same sentence**:
+
+```sql
+WHERE (positive_pattern_1 OR positive_pattern_2 OR ...)
+  AND NOT REGEXP_LIKE(report_section_impression,
+    '(?is)(?:no|without|negative for|absence of|ruled? out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
+  AND NOT REGEXP_LIKE(report_section_findings,
+    '(?is)(?:no|without|negative for|absence of|ruled? out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
+```
+
+Three things to know:
+- **`[^.;:]{0,40}`** — match up to 40 chars between the negation phrase and the finding, **but stop at a sentence terminator** (`.`, `;`, `:`). This prevents "No mediastinal adenopathy. Pulmonary nodule present" (negation in sentence 1, finding in sentence 2) from being incorrectly excluded.
+- **Trino does support negative lookbehind** (Joni regex engine), but only fixed-width lookbehind. Variable-length is rejected ("invalid pattern in look-behind"), so you can't do `(?<!\b(no|without)\b\W{1,40})...`. Use `NOT REGEXP_LIKE` as shown.
+- **Negation phrases** to include: `no`, `without`, `negative for`, `absence of`, `ruled out`, `excludes`, `denies`. Same list the cohort_builder notebook uses (see `analytics/notebooks/cohort/cohort_builder.py:DEFAULT_NEGATION_PATTERNS`).
+
+Apply the negation exclusion to **both sections** you searched, mirroring the positive-side OR.
+
 ## Example Queries
 
 **Patients with pulmonary embolism:**
@@ -153,7 +172,7 @@ WHERE modality = 'CT'
 LIMIT 50
 ```
 
-**Chest CTs showing a pulmonary nodule — diagnosis OR report-text union (cohort-building default):**
+**Chest CTs showing a pulmonary nodule — diagnosis OR report-text union, with negation excluded (cohort-building default):**
 ```sql
 SELECT
   COALESCE(patient_mpi, epic_mrn) AS patient_id,
@@ -171,6 +190,9 @@ WHERE modality = 'CT'
     OR REGEXP_LIKE(report_section_findings, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
     OR REGEXP_LIKE(report_section_findings, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
   )
+  -- Drop reports whose only mention is negated ("No pulmonary nodule.", "No evidence of nodule.")
+  AND NOT REGEXP_LIKE(report_section_impression, '(?is)(?:no|without|negative for|absence of|ruled? out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
+  AND NOT REGEXP_LIKE(report_section_findings, '(?is)(?:no|without|negative for|absence of|ruled? out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
 ```
 
 **Return diagnosis details (prefer `reports_dx` for one-row-per-diagnosis):**
