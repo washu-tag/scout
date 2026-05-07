@@ -9,6 +9,10 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 
 Create and publish an interactive Voila dashboard that appears as a card on the Scout Launchpad.
 
+**Speed matters — runs in front of a customer.** Don't explore the repo. The only files to Read before generating are `sample_dashboard.py` (canonical code) and `scout-context.md` (schema, only if needed). No other playbooks, no git/find/ls -R, no `CLAUDE.md`. Full flow: ~1-2 min.
+
+**Don't reference the skill's internal files in user-facing text** — no mentions of "sample_dashboard.py", "the sample", "the canonical reference", "SKILL.md", or "scout-context.md". Narrate in the customer's language ("setting up the dashboard", "wiring the Trino query", "publishing to the cluster"). Internal files are an implementation detail; surfacing them makes it look like the playbook is copy-pasted.
+
 ## Workflow
 
 ### Step 1: Gather requirements
