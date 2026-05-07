@@ -17,6 +17,8 @@
         "Password": {{ orthanc_postgres_password | to_json }},
         "Lock": false
     },
+    "DicomCheckModalityHost": false,
+    "DatabaseServerIdentifier": "orthanc-cluster",
 {%- endif %}
     "DicomWeb": {
         "Enable": true
