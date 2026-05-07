@@ -70,6 +70,7 @@ def _load_quality_data(table_name="default.reports", date_range_days=None, limit
         Report data with calculated TAT fields
     """
     conn = _connect_trino()
+    cursor = conn.cursor()
 
     # Parse table name
     table_parts = table_name.split(".")
@@ -79,12 +80,31 @@ def _load_quality_data(table_name="default.reports", date_range_days=None, limit
         schema = "default"
         table = table_parts[0]
 
-    # Build WHERE clause - filter on report_finalized_dt to keep time-based plots in range.
-    # Don't filter blank radiologists in the WHERE clause - some panels (e.g. volume by
-    # modality) want all rows. Filter at render time for radiologist-specific panels.
+    # Anchor the cutoff to the data's most recent timestamp, not datetime.now().
+    # This keeps the dashboard working when data is older than today (synthetic
+    # datasets, paused ingestion). For live production data max(dt) ≈ now() so
+    # behavior is unchanged.
     where_clauses = []
     if date_range_days:
-        cutoff = (datetime.now() - timedelta(days=date_range_days)).strftime("%Y-%m-%d")
+        cursor.execute(
+            f"SELECT MAX(COALESCE(results_report_status_change_dt, message_dt)) "
+            f"FROM delta.{schema}.{table}"
+        )
+        max_dt = cursor.fetchone()[0]
+        if max_dt is None:
+            cursor.close()
+            conn.close()
+            df = pd.DataFrame()
+            df.attrs["date_range_days"] = date_range_days
+            return df
+        anchor = pd.Timestamp(max_dt)
+        if anchor.tz is not None:
+            anchor = anchor.tz_localize(None)
+        cutoff_ts = anchor - pd.Timedelta(days=date_range_days)
+        cutoff = cutoff_ts.strftime("%Y-%m-%d")
+        # Partition pruning: year is derived from message_dt
+        years = ",".join(str(y) for y in range(cutoff_ts.year, anchor.year + 1))
+        where_clauses.append(f"year IN ({years})")
         where_clauses.append(
             f"COALESCE(results_report_status_change_dt, message_dt) >= TIMESTAMP '{cutoff}'"
         )
@@ -128,8 +148,6 @@ def _load_quality_data(table_name="default.reports", date_range_days=None, limit
     {limit_sql}
     """
 
-    # Use cursor to avoid SQLAlchemy warning
-    cursor = conn.cursor()
     cursor.execute(query)
     columns = [desc[0] for desc in cursor.description]
     data = cursor.fetchall()

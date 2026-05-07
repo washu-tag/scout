@@ -1,7 +1,7 @@
 ---
 name: create-scout-playbook
 description: Create and publish interactive Scout playbook dashboards that appear on the Launchpad. Use this when the user wants to create a new analytics dashboard, visualization, or playbook for Scout.
-argument-hint: "[optional description of the dashboard]"
+argument-hint: "[description of the playbook]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
 
@@ -70,6 +70,25 @@ The script `kctl cp`s files into the Voila pod's PVC, updates the Launchpad Conf
 
 ## Code patterns (full reference: `sample_dashboard.py`)
 
+### Date anchoring (REQUIRED — don't anchor to `now()`)
+
+Anchor the cutoff to `MAX(COALESCE(results_report_status_change_dt, message_dt))` from the table, not `datetime.now()`. The Scout demo dataset is synthetic and tops out at a fixed date in the past; anchoring to `now()` produces an empty dataframe and a "no data" dashboard. For live production data, `max(dt) ≈ now()` so behavior is unchanged.
+
+```python
+cursor.execute(
+    f"SELECT MAX(COALESCE(results_report_status_change_dt, message_dt)) "
+    f"FROM delta.{schema}.{table}"
+)
+max_dt = cursor.fetchone()[0]
+anchor = pd.Timestamp(max_dt)
+if anchor.tz is not None:
+    anchor = anchor.tz_localize(None)
+cutoff_ts = anchor - pd.Timedelta(days=date_range_days)
+cutoff = cutoff_ts.strftime("%Y-%m-%d")
+```
+
+Then use `cutoff` in the WHERE clause instead of a `datetime.now()`-derived value. See `_load_quality_data` in `sample_dashboard.py` for the full pattern.
+
 ### TAT calculation
 
 `requested_dt` (when the order was placed) is the preferred start. `observation_dt` is the fallback. Use the COALESCE in this order to get the patient-experience TAT.
@@ -92,9 +111,9 @@ rad_named = df["radiologist"].notna() & (df["radiologist"].astype(str).str.strip
 df_rads = df[rad_named]
 ```
 
-### Partition pruning (long ranges)
+### Partition pruning
 
-The `reports` table is partitioned by `year`. For ranges spanning multiple years, an explicit `year IN (...)` filter helps Trino prune. `year` is derived from `message_dt`, so include the cutoff year and any later years.
+The `reports` table is partitioned by `year` (derived from `message_dt`). Add `year IN (cutoff_ts.year, ..., anchor.year)` alongside the cutoff filter so Trino prunes partitions before scanning. The full pattern in `sample_dashboard.py` does both anchoring and pruning together.
 
 ### Trino connection
 
