@@ -39,15 +39,32 @@ If you need a column not listed above, call `scout-db_get_table_schema` to intro
 
 ## Critical: Choosing the Right Filter Strategy
 
-| Question Type | Use This | Example |
-|--------------|----------|---------|
-| Clinical conditions (PE, pneumonia, cancer) | `diagnoses` column | "patients with pulmonary embolism" |
-| Imaging findings (nodule, mass, fracture) | Report text columns | "reports mentioning lung nodule" |
-| Exam types | `modality` + `service_name` | "chest CTs" |
+For **cohort building** (the user wants a list of cases for XNAT submission, research, etc.), prefer the *union* of both axes — diagnosis codes catch cases that were formally coded; report-text regex catches incidental + indeterminate + uncoded findings. Either axis alone misses real cases.
+
+| Question Type | Approach |
+|---|---|
+| Clinical condition cohort ("patients with PE", "lung cancer cases") | `diagnoses` (ICD codes + text) **OR** `report_section_impression`/`findings` regex |
+| Imaging-finding cohort ("chest CTs showing a nodule") | `report_section_impression`/`findings` regex **OR** matching `diagnoses` codes (e.g. R91.1 for solitary pulmonary nodule) |
+| Aggregate counts ("how many...") | Pick whichever axis the user implied — or both ORed if they want the inclusive count |
+| Exam types | `modality` + `service_name` |
+
+The existing dataset is small enough that querying both axes is cheap. When in doubt for a cohort query, OR them.
 
 ### Diagnoses Column
 
 Array of structs with: `diagnosis_code`, `diagnosis_code_text`, `diagnosis_code_coding_system` ("I10" or "I9")
+
+Common ICD-10 codes for radiology cohorts (use your medical knowledge to pick the right code prefixes for any condition the user asks about — these are illustrative, not exhaustive):
+
+| Concept | ICD-10 | Notes |
+|---|---|---|
+| Solitary pulmonary nodule | `R91.1` | The codified version of "pulmonary nodule on imaging" |
+| Abnormal findings on lung imaging | `R91%` | Broader — includes other unspecified lung abnormalities |
+| Lung cancer (primary) | `C34%` | Malignant neoplasm of bronchus and lung |
+| Pulmonary embolism | `I26%` | All forms |
+| Pneumonia | `J12%`, `J15%`, `J18%` | Various etiologies |
+| Brain metastasis | `C79.31` | Secondary malignant neoplasm of brain |
+| Stroke / cerebral infarction | `I63%` | |
 
 ## Query Patterns
 
@@ -76,9 +93,40 @@ WHERE REGEXP_LIKE(service_name, '(?i)(abd|abdom|pelvis)')
 
 ### Filtering by Report Content (use for imaging findings)
 
+For free-text findings, do not use literal `LIKE '%term%'` — radiologists use synonyms, morphological variants, and varying word order. Use `REGEXP_LIKE` with two ingredients:
+
+1. **Synonym alternation** — non-capturing groups covering the medically equivalent terms. Collapse morphological variants with optional groups so one regex covers the singular/plural/adjective forms.
+2. **Proximity matching** — `.{0,N}` between two concept groups (typical N: 30–60). Generate one pattern per direction so word order doesn't matter.
+
+**Search the section columns, not `report_text`.** `report_text` is the full report including HISTORY, COMPARISON, TECHNIQUE, and dictating-physician sig — searching it picks up *"history of pulmonary nodule"* in the HISTORY of a follow-up scan and includes the case as if it were a new finding. The parsed sections (`report_section_impression`, `report_section_findings`) contain only the diagnostic content where radiologists call out what they actually see. Yes, this means two regex calls instead of one — the precision win is worth it. Search **both** sections with `OR` since radiologists may surface a finding in either.
+
 ```sql
-WHERE LOWER(report_section_impression) LIKE '%nodule%'
+-- "pulmonary nodule" — covers nodule(s), nodular, mass(es), lesion, in either word order
+WHERE (
+  REGEXP_LIKE(report_section_impression, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
+  OR REGEXP_LIKE(report_section_impression, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
+  OR REGEXP_LIKE(report_section_findings, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
+  OR REGEXP_LIKE(report_section_findings, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
+)
+
+-- "brain metastasis"
+WHERE REGEXP_LIKE(report_section_impression, '(?is)(?:metasta(?:sis|ses|tic)?|mets).{0,50}(?:brain|cerebr(?:al|um)|intracranial)')
+   OR REGEXP_LIKE(report_section_impression, '(?is)(?:brain|cerebr(?:al|um)|intracranial).{0,50}(?:metasta(?:sis|ses|tic)?|mets)')
 ```
+
+Synonym/variant cheat-sheet — generate alternations from these axes when relevant:
+
+| Concept | Alternation pattern |
+|---|---|
+| Pulmonary | `(?:pulmonary\|lung)` |
+| Nodule (any form) | `(?:nodul(?:es?\|ar))` |
+| Mass / lesion | `(?:mass(?:es)?\|lesion(?:s)?)` |
+| Cancer / malignancy | `(?:cancer\|carcinoma\|maligna(?:nt\|ncy)\|neoplas(?:m\|tic))` |
+| Suspicious / concerning | `(?:suspicious\|concerning\|worrisome)` |
+| Metastasis | `(?:metasta(?:sis\|ses\|tic)?\|mets)` |
+| Pulmonary embolism | `(?:pulmonary embolism\|p\\.?e\\.?\|emboli)` |
+
+Use `(?is)` flags: case-insensitive plus dotall (so `.` matches newlines, since impression text spans multiple lines). Don't use `\b` word boundaries — Trino's regex flavor doesn't reliably support them; rely on `.{0,N}` proximity for separation.
 
 ## Example Queries
 
@@ -103,6 +151,26 @@ WHERE modality = 'CT'
       d.diagnosis_code LIKE 'J1%'
       OR LOWER(d.diagnosis_code_text) LIKE '%pneumonia%')
 LIMIT 50
+```
+
+**Chest CTs showing a pulmonary nodule — diagnosis OR report-text union (cohort-building default):**
+```sql
+SELECT
+  COALESCE(patient_mpi, epic_mrn) AS patient_id,
+  accession_number, patient_age, sex, service_name, message_dt,
+  report_section_impression
+FROM reports_latest
+WHERE modality = 'CT'
+  AND REGEXP_LIKE(service_name, '(?i)(chest|thorax|lung)')
+  AND (
+    -- Diagnosis-coded cases: R91.1 = solitary pulmonary nodule, R91% = abnormal lung imaging findings broadly
+    any_match(diagnoses, d -> d.diagnosis_code LIKE 'R91%')
+    -- OR text-mentioned cases: catches incidental + uncoded findings
+    OR REGEXP_LIKE(report_section_impression, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
+    OR REGEXP_LIKE(report_section_impression, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
+    OR REGEXP_LIKE(report_section_findings, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
+    OR REGEXP_LIKE(report_section_findings, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
+  )
 ```
 
 **Return diagnosis details (prefer `reports_dx` for one-row-per-diagnosis):**
@@ -184,7 +252,7 @@ After a successful render, write a short narrative for the user (e.g., *"247 che
 - Broaden criteria, then narrow down
 
 **Query too slow?**
-- Use `report_section_impression` instead of `report_text`
+- Search section columns (`report_section_impression` / `report_section_findings`) instead of full `report_text` — they're shorter per row and avoid HISTORY/COMPARISON false positives anyway
 - Add LIMIT
 - Filter on `year` partition if you can scope to a date range
 
