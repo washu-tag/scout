@@ -31,7 +31,7 @@ params:
   x_axis_title: Report Date (weekly)
   x_axis_title_margin: 30
   y_axis_title: '% follow-up detected'
-  y_axis_title_margin: 30
+  y_axis_title_margin: 60
   y_axis_title_position: Left
   sort_series_type: sum
   sort_series_ascending: false

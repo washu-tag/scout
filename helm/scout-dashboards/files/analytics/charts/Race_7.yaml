@@ -16,6 +16,14 @@ params:
       expressionType: SIMPLE
       operator: TEMPORAL_RANGE
       subject: message_dt
+    - clause: WHERE
+      subject: race
+      operator: NOT IN
+      operatorId: NOT_IN
+      comparator:
+        - ''
+        - null
+      expressionType: SIMPLE
   row_limit: 100
   sort_by_metric: true
   color_scheme: supersetColors

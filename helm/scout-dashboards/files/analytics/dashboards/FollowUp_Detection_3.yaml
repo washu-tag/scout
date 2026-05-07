@@ -188,7 +188,7 @@ position:
     meta:
       chartId: 42
       height: 50
-      sliceName: Detected Follow-ups
+      sliceName: Reviewed Coverage
       uuid: 8121b8dd-1a45-4228-9850-bfafc9792062
       width: 4
     parents:

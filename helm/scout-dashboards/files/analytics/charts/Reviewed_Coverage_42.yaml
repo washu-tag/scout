@@ -1,5 +1,5 @@
-slice_name: Detected Follow-ups
-description: Number of reports the classifier flagged for follow-up.
+slice_name: Reviewed Coverage
+description: Share of detected follow-ups that a human reviewer has labeled.
 certified_by: null
 certification_details: null
 viz_type: big_number_total
@@ -12,19 +12,22 @@ params:
     column: null
     expressionType: SQL
     hasCustomLabel: true
-    label: Detected Follow-ups
-    optionName: metric_detected_followups
-    sqlExpression: SUM(CASE WHEN followup_detected = TRUE THEN 1 ELSE 0 END)
+    label: Reviewed Coverage %
+    optionName: metric_reviewed_coverage
+    sqlExpression:
+      100.0 * SUM(CASE WHEN followup_detected = TRUE AND human_reviewed_at
+      IS NOT NULL THEN 1 ELSE 0 END) / NULLIF(SUM(CASE WHEN followup_detected
+      = TRUE THEN 1 ELSE 0 END), 0)
   adhoc_filters:
     - clause: WHERE
       subject: message_dt
       operator: TEMPORAL_RANGE
       comparator: No filter
       expressionType: SIMPLE
-  subheader: Reports flagged by the model
+  subheader: '% of detected, reviewed'
   header_font_size: 0.4
-  subheader_font_size: 0.15
-  y_axis_format: SMART_NUMBER
+  subheader_font_size: 0.125
+  y_axis_format: ',.1f'
   time_format: smart_date
   extra_form_data: {}
   dashboards:
