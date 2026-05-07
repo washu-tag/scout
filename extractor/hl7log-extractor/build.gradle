@@ -27,6 +27,13 @@ def checkstyleVersion = "10.21.2"
 // (CVE-2026-42198, HIGH: pgjdbc SCRAM PBKDF2 DoS).
 ext['postgresql.version'] = '42.7.11'
 
+// TODO: Remove once Spring Boot 3.5.x manages netty >= 4.1.133.Final.
+// Overrides the Spring Boot BOM's pinned 4.1.132.Final to address
+// CVE-2026-42577, CVE-2026-42579, CVE-2026-42583, CVE-2026-42584, and
+// CVE-2026-42587 (all HIGH) across netty-codec, netty-codec-http,
+// netty-codec-http2, netty-codec-dns, and netty-transport-native-epoll.
+ext['netty.version'] = '4.1.133.Final'
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'org.springframework:spring-aspects'
