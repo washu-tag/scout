@@ -70,6 +70,15 @@ env:
   TRINO_USER: scout
   TRINO_CATALOG: delta
   TRINO_SCHEMA: default
+  # Make pyspark importable from the bundled Spark distro at $SPARK_HOME.
+  # The base image ships pyspark + py4j on disk but doesn't expose them on
+  # PYTHONPATH for Voilà-launched kernels (JupyterHub gets this for free via
+  # Spark's startup-script chain; Voilà bypasses it). Setting PYTHONPATH here
+  # avoids needing a per-playbook environment.yml just for pyspark, since
+  # nothing else currently diverges from the base image. If/when a playbook
+  # needs different/conflicting deps, switch that one to a per-playbook
+  # environment.yml-driven kernel instead of expanding this list.
+  PYTHONPATH: /usr/local/spark/python/lib/py4j-0.10.9.7-src.zip:/usr/local/spark/python
 
 nodeSelector: {}
 
