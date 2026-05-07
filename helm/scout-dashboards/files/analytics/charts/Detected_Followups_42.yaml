@@ -1,20 +1,27 @@
-slice_name: Pipeline Errors
-description: Number of failures captured in the follow-up errors table.
+slice_name: Detected Follow-ups
+description: Number of reports the classifier flagged for follow-up.
 certified_by: null
 certification_details: null
 viz_type: big_number_total
 params:
-  datasource: 4__table
+  datasource: 3__table
   viz_type: big_number_total
   slice_id: 42
-  metric: count
+  metric:
+    aggregate: null
+    column: null
+    expressionType: SQL
+    hasCustomLabel: true
+    label: Detected Follow-ups
+    optionName: metric_detected_followups
+    sqlExpression: SUM(CASE WHEN followup_detected = TRUE THEN 1 ELSE 0 END)
   adhoc_filters:
     - clause: WHERE
-      subject: error_timestamp
+      subject: message_dt
       operator: TEMPORAL_RANGE
       comparator: No filter
       expressionType: SIMPLE
-  subheader: Classifier failures
+  subheader: Reports flagged by the model
   header_font_size: 0.4
   subheader_font_size: 0.15
   y_axis_format: SMART_NUMBER
@@ -27,4 +34,4 @@ query_context: null
 cache_timeout: null
 uuid: 8121b8dd-1a45-4228-9850-bfafc9792062
 version: 1.0.0
-dataset_uuid: 0b2024fb-e34f-4c25-adba-e27a35a49f9d
+dataset_uuid: cf33626a-2b35-423b-9a9d-7d8e62a6b021

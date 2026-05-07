@@ -1,241 +1,70 @@
-dashboard_title: Follow-Up Detection
-description: Operational view of the follow-up classifier - volume, breakdowns, and
+dashboard_title: Follow-up Recommendations
+description: Operational view of the follow-up classifier — volume, breakdowns, and
   reviewer concordance metrics.
 css: ''
-slug: followup-detection
+slug: followup-recommendations
 certified_by: ''
 certification_details: ''
 published: true
 uuid: 86ee529c-6949-48dd-b79b-d55d5cf00131
 position:
-  CHART-fu-40:
-    children: []
-    id: CHART-fu-40
-    meta:
-      chartId: 40
-      height: 50
-      sliceName: Reports Processed
-      uuid: 0e85581f-c4fb-4dc0-adb1-a6f8bc898bc9
-      width: 4
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-headline
-    type: CHART
-  CHART-fu-41:
-    children: []
-    id: CHART-fu-41
-    meta:
-      chartId: 41
-      height: 50
-      sliceName: '% Follow-up Detected'
-      uuid: ac656d08-d787-472d-a032-83eff1497278
-      width: 4
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-headline
-    type: CHART
-  CHART-fu-42:
-    children: []
-    id: CHART-fu-42
-    meta:
-      chartId: 42
-      height: 50
-      sliceName: Pipeline Errors
-      uuid: 8121b8dd-1a45-4228-9850-bfafc9792062
-      width: 4
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-headline
-    type: CHART
-  CHART-fu-43:
-    children: []
-    id: CHART-fu-43
-    meta:
-      chartId: 43
-      height: 60
-      sliceName: Detection Rate Over Time
-      uuid: 3f345bb4-bf77-43e4-ac92-d945ffaf2b61
-      width: 12
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-trend
-    type: CHART
-  CHART-fu-44:
-    children: []
-    id: CHART-fu-44
-    meta:
-      chartId: 44
-      height: 60
-      sliceName: Detection by Modality
-      uuid: 1714458c-d2a7-4315-8b9c-131a10a13e44
-      width: 6
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-breakdown
-    type: CHART
-  CHART-fu-52:
-    children: []
-    id: CHART-fu-52
-    meta:
-      chartId: 52
-      height: 60
-      sliceName: Detection by Age & Modality
-      uuid: 9109dcb4-7f82-4c4b-b438-223abb2dfda6
-      width: 6
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-breakdown
-    type: CHART
-  CHART-fu-46:
-    children: []
-    id: CHART-fu-46
-    meta:
-      chartId: 46
-      height: 70
-      sliceName: Top Finding Categories
-      uuid: 9d9c0bdd-9fa4-4979-a704-31e040fd6037
-      width: 4
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-findings
-    type: CHART
-  CHART-fu-53:
-    children: []
-    id: CHART-fu-53
-    meta:
-      chartId: 53
-      height: 70
-      sliceName: Follow-up Examples
-      uuid: 791eec3c-cc03-4d41-a250-0d530ea36695
-      width: 8
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-findings
-    type: CHART
-  MARKDOWN-fu-concordance:
-    children: []
-    id: MARKDOWN-fu-concordance
-    meta:
-      code: |
-        ### Human Review & Concordance
-
-        These metrics populate after a reviewer exports annotations from the
-        Follow-up Detection Voila playbook. Until then they will read as
-        zero or "N/A".
-
-        - **Reviewed:** number of reports a reviewer has labeled.
-        - **Agreement %:** share of reviewed reports where the model and reviewer agree.
-        - **Precision:** of model-flagged reports the reviewer confirmed.
-        - **Recall:** of reviewer-confirmed follow-ups the model caught.
-      height: 30
-      width: 12
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-concordance-header
-    type: MARKDOWN
-  CHART-fu-47:
-    children: []
-    id: CHART-fu-47
-    meta:
-      chartId: 47
-      height: 50
-      sliceName: Reviewed
-      uuid: 2a90b6d4-195b-4ed1-90d5-771347c3d623
-      width: 3
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-metrics
-    type: CHART
-  CHART-fu-48:
-    children: []
-    id: CHART-fu-48
-    meta:
-      chartId: 48
-      height: 50
-      sliceName: Agreement %
-      uuid: 05cba92f-cb7d-41e1-893b-60dd407a2ea4
-      width: 3
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-metrics
-    type: CHART
-  CHART-fu-49:
-    children: []
-    id: CHART-fu-49
-    meta:
-      chartId: 49
-      height: 50
-      sliceName: Precision
-      uuid: 7a1aba09-e711-45ad-880d-856607b87a03
-      width: 3
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-metrics
-    type: CHART
-  CHART-fu-50:
-    children: []
-    id: CHART-fu-50
-    meta:
-      chartId: 50
-      height: 50
-      sliceName: Recall
-      uuid: 247e0898-5239-4d0a-868c-a74c4ce9c405
-      width: 3
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-metrics
-    type: CHART
-  CHART-fu-51:
-    children: []
-    id: CHART-fu-51
-    meta:
-      chartId: 51
-      height: 60
-      sliceName: Confusion Matrix
-      uuid: 9be736da-d474-4379-b4a1-ce74476be5fb
-      width: 12
-    parents:
-      - ROOT_ID
-      - GRID_ID
-      - ROW-fu-confusion
-    type: CHART
-  DASHBOARD_VERSION_KEY: v2
-  GRID_ID:
-    children:
-      - ROW-fu-headline
-      - ROW-fu-trend
-      - ROW-fu-breakdown
-      - ROW-fu-findings
-      - ROW-fu-concordance-header
-      - ROW-fu-metrics
-      - ROW-fu-confusion
-    id: GRID_ID
-    parents:
-      - ROOT_ID
-    type: GRID
-  HEADER_ID:
-    id: HEADER_ID
-    meta:
-      text: Follow-Up Detection
-    type: HEADER
   ROOT_ID:
     children:
       - GRID_ID
     id: ROOT_ID
     type: ROOT
+  HEADER_ID:
+    id: HEADER_ID
+    meta:
+      text: Follow-up Recommendations
+    type: HEADER
+  GRID_ID:
+    children:
+      - TABS-fu
+    id: GRID_ID
+    parents:
+      - ROOT_ID
+    type: GRID
+  TABS-fu:
+    children:
+      - TAB-fu-operations
+      - TAB-fu-validation
+    id: TABS-fu
+    meta: {}
+    parents:
+      - ROOT_ID
+      - GRID_ID
+    type: TABS
+  TAB-fu-operations:
+    children:
+      - ROW-fu-headline
+      - ROW-fu-trend
+      - ROW-fu-bubble
+      - ROW-fu-findings
+    id: TAB-fu-operations
+    meta:
+      defaultText: Tab title
+      placeholder: Tab title
+      text: Operations
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+    type: TAB
+  TAB-fu-validation:
+    children:
+      - ROW-fu-metrics
+      - ROW-fu-confusion
+    id: TAB-fu-validation
+    meta:
+      defaultText: Tab title
+      placeholder: Tab title
+      text: Reviewer Concordance
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+    type: TAB
   ROW-fu-headline:
     children:
       - CHART-fu-40
@@ -248,6 +77,8 @@ position:
     parents:
       - ROOT_ID
       - GRID_ID
+      - TABS-fu
+      - TAB-fu-operations
     type: ROW
   ROW-fu-trend:
     children:
@@ -259,18 +90,22 @@ position:
     parents:
       - ROOT_ID
       - GRID_ID
+      - TABS-fu
+      - TAB-fu-operations
     type: ROW
-  ROW-fu-breakdown:
+  ROW-fu-bubble:
     children:
       - CHART-fu-44
       - CHART-fu-52
-    id: ROW-fu-breakdown
+    id: ROW-fu-bubble
     meta:
       '0': ROOT_ID
       background: BACKGROUND_TRANSPARENT
     parents:
       - ROOT_ID
       - GRID_ID
+      - TABS-fu
+      - TAB-fu-operations
     type: ROW
   ROW-fu-findings:
     children:
@@ -283,17 +118,8 @@ position:
     parents:
       - ROOT_ID
       - GRID_ID
-    type: ROW
-  ROW-fu-concordance-header:
-    children:
-      - MARKDOWN-fu-concordance
-    id: ROW-fu-concordance-header
-    meta:
-      '0': ROOT_ID
-      background: BACKGROUND_TRANSPARENT
-    parents:
-      - ROOT_ID
-      - GRID_ID
+      - TABS-fu
+      - TAB-fu-operations
     type: ROW
   ROW-fu-metrics:
     children:
@@ -308,6 +134,8 @@ position:
     parents:
       - ROOT_ID
       - GRID_ID
+      - TABS-fu
+      - TAB-fu-validation
     type: ROW
   ROW-fu-confusion:
     children:
@@ -319,8 +147,223 @@ position:
     parents:
       - ROOT_ID
       - GRID_ID
+      - TABS-fu
+      - TAB-fu-validation
     type: ROW
+  CHART-fu-40:
+    children: []
+    id: CHART-fu-40
+    meta:
+      chartId: 40
+      height: 50
+      sliceName: Reports Processed
+      uuid: 0e85581f-c4fb-4dc0-adb1-a6f8bc898bc9
+      width: 4
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-operations
+      - ROW-fu-headline
+    type: CHART
+  CHART-fu-41:
+    children: []
+    id: CHART-fu-41
+    meta:
+      chartId: 41
+      height: 50
+      sliceName: '% Follow-up Detected'
+      uuid: ac656d08-d787-472d-a032-83eff1497278
+      width: 4
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-operations
+      - ROW-fu-headline
+    type: CHART
+  CHART-fu-42:
+    children: []
+    id: CHART-fu-42
+    meta:
+      chartId: 42
+      height: 50
+      sliceName: Detected Follow-ups
+      uuid: 8121b8dd-1a45-4228-9850-bfafc9792062
+      width: 4
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-operations
+      - ROW-fu-headline
+    type: CHART
+  CHART-fu-43:
+    children: []
+    id: CHART-fu-43
+    meta:
+      chartId: 43
+      height: 60
+      sliceName: Detection Rate Over Time
+      uuid: 3f345bb4-bf77-43e4-ac92-d945ffaf2b61
+      width: 12
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-operations
+      - ROW-fu-trend
+    type: CHART
+  CHART-fu-44:
+    children: []
+    id: CHART-fu-44
+    meta:
+      chartId: 44
+      height: 60
+      sliceName: Volume by Modality
+      uuid: 1714458c-d2a7-4315-8b9c-131a10a13e44
+      width: 6
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-operations
+      - ROW-fu-bubble
+    type: CHART
+  CHART-fu-52:
+    children: []
+    id: CHART-fu-52
+    meta:
+      chartId: 52
+      height: 60
+      sliceName: Detection by Age & Modality
+      uuid: 9109dcb4-7f82-4c4b-b438-223abb2dfda6
+      width: 6
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-operations
+      - ROW-fu-bubble
+    type: CHART
+  CHART-fu-46:
+    children: []
+    id: CHART-fu-46
+    meta:
+      chartId: 46
+      height: 70
+      sliceName: Top Finding Categories
+      uuid: 9d9c0bdd-9fa4-4979-a704-31e040fd6037
+      width: 4
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-operations
+      - ROW-fu-findings
+    type: CHART
+  CHART-fu-53:
+    children: []
+    id: CHART-fu-53
+    meta:
+      chartId: 53
+      height: 70
+      sliceName: Recent Recommendations
+      uuid: 791eec3c-cc03-4d41-a250-0d530ea36695
+      width: 8
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-operations
+      - ROW-fu-findings
+    type: CHART
+  CHART-fu-47:
+    children: []
+    id: CHART-fu-47
+    meta:
+      chartId: 47
+      height: 50
+      sliceName: Reviewed
+      uuid: 2a90b6d4-195b-4ed1-90d5-771347c3d623
+      width: 3
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-validation
+      - ROW-fu-metrics
+    type: CHART
+  CHART-fu-48:
+    children: []
+    id: CHART-fu-48
+    meta:
+      chartId: 48
+      height: 50
+      sliceName: Agreement %
+      uuid: 05cba92f-cb7d-41e1-893b-60dd407a2ea4
+      width: 3
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-validation
+      - ROW-fu-metrics
+    type: CHART
+  CHART-fu-49:
+    children: []
+    id: CHART-fu-49
+    meta:
+      chartId: 49
+      height: 50
+      sliceName: Precision
+      uuid: 7a1aba09-e711-45ad-880d-856607b87a03
+      width: 3
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-validation
+      - ROW-fu-metrics
+    type: CHART
+  CHART-fu-50:
+    children: []
+    id: CHART-fu-50
+    meta:
+      chartId: 50
+      height: 50
+      sliceName: Recall
+      uuid: 247e0898-5239-4d0a-868c-a74c4ce9c405
+      width: 3
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-validation
+      - ROW-fu-metrics
+    type: CHART
+  CHART-fu-51:
+    children: []
+    id: CHART-fu-51
+    meta:
+      chartId: 51
+      height: 60
+      sliceName: Confusion Matrix
+      uuid: 9be736da-d474-4379-b4a1-ce74476be5fb
+      width: 12
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - TABS-fu
+      - TAB-fu-validation
+      - ROW-fu-confusion
+    type: CHART
+  DASHBOARD_VERSION_KEY: v2
 metadata:
+  # Cross-filtering is enabled globally below; per-chart scope overrides
+  # would go in `chart_configuration`. Word_cloud (46) has no click handler
+  # in Superset 5.0 so it can't emit a cross-filter — table (53), donut (44),
+  # bubble (52), and trend line (43) are the click sources.
   chart_configuration: {}
   global_chart_configuration:
     scope:
@@ -369,22 +412,23 @@ metadata:
       chartsInScope:
         - 40
         - 41
+        - 42
         - 43
         - 44
-        - 45
         - 46
         - 47
         - 48
         - 49
         - 50
-        - 51
+        - 52
+        - 53
       tabsInScope: []
     - id: NATIVE_FILTER-fu-modality
       controlValues:
         enableEmptyFilter: false
         defaultToFirstItem: false
         multiSelect: true
-        searchAllOptions: false
+        searchAllOptions: true
         inverseSelection: false
       name: Modality
       filterType: filter_select
@@ -406,21 +450,61 @@ metadata:
       chartsInScope:
         - 40
         - 41
+        - 42
         - 43
-        - 45
         - 46
         - 47
         - 48
         - 49
         - 50
-        - 51
+        - 53
+      tabsInScope: []
+    # NOTE: chart 44 (Volume by Modality) and 52 (Bubble) intentionally
+    # excluded — they're grouped/colored by modality, so applying the
+    # filter would collapse them.
+    - id: NATIVE_FILTER-fu-finding-category
+      controlValues:
+        enableEmptyFilter: false
+        defaultToFirstItem: false
+        multiSelect: true
+        searchAllOptions: true
+        inverseSelection: false
+      name: Finding category
+      filterType: filter_select
+      targets:
+        - column:
+            name: finding_category
+          datasetUuid: cf33626a-2b35-423b-9a9d-7d8e62a6b021
+      defaultDataMask:
+        extraFormData: {}
+        filterState: {}
+        ownState: {}
+      cascadeParentIds: []
+      scope:
+        rootPath:
+          - ROOT_ID
+        excluded: []
+      type: NATIVE_FILTER
+      description: ''
+      chartsInScope:
+        - 40
+        - 41
+        - 42
+        - 43
+        - 44
+        - 47
+        - 48
+        - 49
+        - 50
+        - 52
+        - 53
       tabsInScope: []
     - id: NATIVE_FILTER-fu-facility
       controlValues:
         enableEmptyFilter: false
         defaultToFirstItem: false
         multiSelect: true
-        searchAllOptions: false
+        searchAllOptions: true
         inverseSelection: false
       name: Facility
       filterType: filter_select
@@ -442,15 +526,16 @@ metadata:
       chartsInScope:
         - 40
         - 41
+        - 42
         - 43
         - 44
-        - 45
         - 46
         - 47
         - 48
         - 49
         - 50
-        - 51
+        - 52
+        - 53
       tabsInScope: []
   default_filters: '{}'
 version: 1.0.0

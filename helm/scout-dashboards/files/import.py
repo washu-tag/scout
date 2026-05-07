@@ -166,7 +166,10 @@ def remap_position(position: dict) -> dict:
 
 def remap_metadata(metadata: dict, chart_id_map: dict[int, int]) -> dict:
     """Translate chartId references in chart_configuration,
-    global_chart_configuration, and native_filter_configuration."""
+    global_chart_configuration, and native_filter_configuration. Also
+    converts native filter targets' `datasetUuid` to `datasetId` — Superset's
+    filter widget value-fetch API takes the numeric local id, not the UUID,
+    and won't render the dropdown options without it."""
 
     def remap_list(ids):
         return [chart_id_map.get(i, i) for i in ids]
@@ -197,6 +200,14 @@ def remap_metadata(metadata: dict, chart_id_map: dict[int, int]) -> dict:
     for nf in metadata.get("native_filter_configuration") or []:
         if isinstance(nf.get("chartsInScope"), list):
             nf["chartsInScope"] = remap_list(nf["chartsInScope"])
+        for target in nf.get("targets") or []:
+            if not isinstance(target, dict):
+                continue
+            ds_uuid = target.pop("datasetUuid", None)
+            if ds_uuid and "datasetId" not in target:
+                ds = db.session.query(SqlaTable).filter_by(uuid=ds_uuid).first()
+                if ds is not None:
+                    target["datasetId"] = ds.id
 
     return metadata
 

@@ -1,6 +1,6 @@
-slice_name: Follow-up Examples
-description: Individual reports the model flagged for follow-up, with the extracted
-  snippet alongside the modality and finding category.
+slice_name: Recent Recommendations
+description: Most recent reports the model flagged for follow-up, with the extracted
+  excerpt alongside the modality and finding category.
 certified_by: null
 certification_details: null
 viz_type: table
@@ -10,6 +10,7 @@ params:
   slice_id: 53
   query_mode: raw
   all_columns:
+    - message_dt
     - modality
     - finding_category
     - followup_snippet
@@ -33,7 +34,8 @@ params:
       operator: IS NOT NULL
       operatorId: IS_NOT_NULL
       expressionType: SIMPLE
-  order_by_cols: []
+  order_by_cols:
+    - '["message_dt", false]'
   row_limit: 10000
   server_pagination: false
   server_page_length: 25

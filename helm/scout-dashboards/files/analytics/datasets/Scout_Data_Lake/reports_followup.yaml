@@ -255,6 +255,7 @@ columns:
     python_date_format: null
     extra: {}
   - column_name: followup_snippet
+    verbose_name: Excerpt
     is_dttm: false
     is_active: true
     type: VARCHAR
@@ -262,7 +263,8 @@ columns:
     groupby: false
     filterable: false
     expression: null
-    description: null
+    description: Verbatim excerpt from the report supporting the model's
+      follow-up recommendation.
     python_date_format: null
     extra: {}
   - column_name: human_ground_truth

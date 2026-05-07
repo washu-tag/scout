@@ -1,5 +1,5 @@
-slice_name: Detection by Modality
-description: Donut breakdown of detected follow-ups by modality.
+slice_name: Volume by Modality
+description: Donut showing total report volume per imaging modality.
 certified_by: null
 certification_details: null
 viz_type: pie
@@ -9,32 +9,12 @@ params:
   slice_id: 44
   groupby:
     - modality
-  metric:
-    aggregate: null
-    column: null
-    expressionType: SQL
-    hasCustomLabel: true
-    label: Follow-ups detected
-    optionName: metric_modality_pie_detected_count
-    sqlExpression: SUM(CASE WHEN followup_detected = TRUE THEN 1 ELSE 0 END)
+  metric: count
   adhoc_filters:
     - clause: WHERE
       subject: message_dt
       operator: TEMPORAL_RANGE
       comparator: No filter
-      expressionType: SIMPLE
-    - clause: WHERE
-      subject: followup_processed_at
-      operator: IS NOT NULL
-      operatorId: IS_NOT_NULL
-      expressionType: SIMPLE
-    - clause: WHERE
-      subject: modality
-      operator: NOT IN
-      operatorId: NOT_IN
-      comparator:
-        - null
-        - ''
       expressionType: SIMPLE
   row_limit: 50
   sort_by_metric: true
