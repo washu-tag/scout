@@ -58,6 +58,7 @@ _XNAT_BUTTON_CSS = """
     display: block; margin: 10px 0 4px;
     font-weight: 600; font-size: 12px; color: #374151;
   }
+  .xnat-modal label .req { color: #dc2626; margin-left: 2px; }
   .xnat-modal input[type=text], .xnat-modal textarea {
     width: 100%; padding: 7px 9px;
     border: 1px solid #d1d5db; border-radius: 6px;
@@ -67,10 +68,6 @@ _XNAT_BUTTON_CSS = """
   .xnat-modal textarea { min-height: 56px; resize: vertical; }
   .xnat-modal input:focus, .xnat-modal textarea:focus {
     outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
-  }
-  .xnat-modal .toggle-link {
-    background: none; border: none; padding: 4px 0;
-    color: #2563eb; cursor: pointer; font-size: 12px;
   }
   .xnat-modal .info-block {
     background: #f9fafb; border: 1px solid #e5e7eb;
@@ -179,7 +176,7 @@ _XNAT_MODAL_JS = """
 (function () {
   const overlay = document.getElementById('xnat-overlay');
   const modal = document.getElementById('xnat-modal');
-  let formState = { project: '', irb: '', comment: '', rationale: '', duc: '' };
+  let formState = { project: '', irb: '', purpose: '' };
 
   // The cohort sent to XNAT is the full SELECT-derived accession_number
   // list (ALL_ACCESSIONS from the Tool's secondary query), not just the
@@ -213,10 +210,8 @@ _XNAT_MODAL_JS = """
     const cohort = cohortPayload();
     return {
       projectName: formState.project,
-      irbNumber: formState.irb || null,
-      comment: formState.comment || null,
-      rationale: formState.rationale || null,
-      dataUseCommitteeOversight: formState.duc || null,
+      irbNumber: formState.irb,
+      purpose: formState.purpose,
       requestUser: USER && (USER.username || USER.email || USER.name) || 'unknown',
       user: USER || null,
       // Just accession numbers — the bridge resolves them to studies.
@@ -247,34 +242,17 @@ _XNAT_MODAL_JS = """
     modal.innerHTML = `
       <h3>Send to XNAT</h3>
       <p class="sub">Submit ${cohort.count} ${cohort.label} from this result as an XNAT data request.</p>
-      <label for="xnat-project">XNAT project name (required)</label>
-      <input type="text" id="xnat-project" placeholder="e.g. MyProject" value="${escape(formState.project)}" />
-      <button class="toggle-link" id="xnat-toggle-optional" type="button">▶ Optional details</button>
-      <div id="xnat-optional" style="display:none;">
-        <label for="xnat-irb">IRB number</label>
-        <input type="text" id="xnat-irb" placeholder="e.g. 202400123" value="${escape(formState.irb)}" />
-        <label for="xnat-comment">Comment</label>
-        <input type="text" id="xnat-comment" value="${escape(formState.comment)}" />
-        <label for="xnat-rationale">Rationale</label>
-        <input type="text" id="xnat-rationale" value="${escape(formState.rationale)}" />
-        <label for="xnat-duc">Data Use Committee oversight</label>
-        <input type="text" id="xnat-duc" value="${escape(formState.duc)}" />
-      </div>
+      <label for="xnat-project">Project name <span class="req">*</span></label>
+      <input type="text" id="xnat-project" placeholder="e.g. PulmonaryNoduleStudy2026" value="${escape(formState.project)}" required />
+      <label for="xnat-irb">IRB number <span class="req">*</span></label>
+      <input type="text" id="xnat-irb" placeholder="e.g. 202400123" value="${escape(formState.irb)}" required />
+      <label for="xnat-purpose">Purpose / research question <span class="req">*</span></label>
+      <textarea id="xnat-purpose" placeholder="What will this cohort be used for? (1–2 sentences)" required>${escape(formState.purpose)}</textarea>
       <div class="btn-row">
         <button class="action" id="xnat-cancel" type="button">Cancel</button>
         <button class="action primary" id="xnat-send" type="button">Send</button>
       </div>
     `;
-
-    let optOpen = !!(formState.irb || formState.comment || formState.rationale || formState.duc);
-    const optDiv = modal.querySelector('#xnat-optional');
-    const optBtn = modal.querySelector('#xnat-toggle-optional');
-    function syncOptional() {
-      optDiv.style.display = optOpen ? 'block' : 'none';
-      optBtn.textContent = (optOpen ? '▼ ' : '▶ ') + 'Optional details';
-    }
-    syncOptional();
-    optBtn.onclick = () => { optOpen = !optOpen; syncOptional(); };
 
     modal.querySelector('#xnat-cancel').onclick = closeModal;
     modal.querySelector('#xnat-send').onclick = onSubmit;
@@ -283,18 +261,19 @@ _XNAT_MODAL_JS = """
 
   async function onSubmit() {
     const project = modal.querySelector('#xnat-project').value.trim();
-    if (!project) {
-      alert('Project name is required.');
-      modal.querySelector('#xnat-project').focus();
+    const irb = modal.querySelector('#xnat-irb').value.trim();
+    const purpose = modal.querySelector('#xnat-purpose').value.trim();
+    const missing = [];
+    if (!project) missing.push('Project name');
+    if (!irb) missing.push('IRB number');
+    if (!purpose) missing.push('Purpose');
+    if (missing.length) {
+      alert('Required: ' + missing.join(', '));
+      const firstMissing = !project ? '#xnat-project' : !irb ? '#xnat-irb' : '#xnat-purpose';
+      modal.querySelector(firstMissing).focus();
       return;
     }
-    formState = {
-      project,
-      irb: modal.querySelector('#xnat-irb').value.trim(),
-      comment: modal.querySelector('#xnat-comment').value.trim(),
-      rationale: modal.querySelector('#xnat-rationale').value.trim(),
-      duc: modal.querySelector('#xnat-duc').value.trim(),
-    };
+    formState = { project, irb, purpose };
     renderSubmitting();
     const payload = buildRequestPayload();
 
@@ -349,7 +328,7 @@ _XNAT_MODAL_JS = """
         deidStatus: 'IDENTIFIABLE',
         projectName: payload.projectName,
         irbNumber: payload.irbNumber,
-        comment: payload.comment,
+        purpose: payload.purpose,
         requestUser: payload.requestUser,
         numberOfItemsRequested: payload.itemCount,
         message: 'Request submitted for approval.',
@@ -401,11 +380,10 @@ _XNAT_MODAL_JS = """
       ? XNAT_EXTERNAL_URL.replace(/\\/$/, '') + '/xapi/iq/data-requests/' + encodeURIComponent(reqId)
       : '';
 
-    const optionalLines = [];
-    if (formState.irb) optionalLines.push(`<div><strong>IRB number</strong><span>${escape(formState.irb)}</span></div>`);
-    if (formState.rationale) optionalLines.push(`<div><strong>Rationale</strong><span>${escape(formState.rationale)}</span></div>`);
-    if (formState.duc) optionalLines.push(`<div><strong>Data Use Committee</strong><span>${escape(formState.duc)}</span></div>`);
-    if (formState.comment) optionalLines.push(`<div><strong>Comment</strong><span>${escape(formState.comment)}</span></div>`);
+    const detailLines = [
+      `<div><strong>IRB number</strong><span>${escape(formState.irb)}</span></div>`,
+      `<div><strong>Purpose</strong><span>${escape(formState.purpose)}</span></div>`,
+    ];
 
     const emailTarget = recipientEmail
       ? `<strong>${escape(recipientEmail)}</strong>`
@@ -422,7 +400,7 @@ _XNAT_MODAL_JS = """
         <div><strong>${escape(cohort.label.charAt(0).toUpperCase() + cohort.label.slice(1))} requested</strong><span>${cohort.count.toLocaleString()}</span></div>
         <div><strong>Status</strong><span>${escape(friendlyStatus)}</span></div>
         <div><strong>Request ID</strong><span>${escape(String(reqId != null ? reqId : '—'))}</span></div>
-        ${optionalLines.join('')}
+        ${detailLines.join('')}
       </div>
       <p class="sub" style="margin-top:14px;">You'll receive an email at ${emailTarget}:</p>
       <ul class="next-steps">
