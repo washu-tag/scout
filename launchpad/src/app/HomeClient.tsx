@@ -108,15 +108,6 @@ interface ToolsGridProps {
 const ToolsGrid = ({ subdomainUrls, enableChat }: ToolsGridProps) => {
   return (
     <div className={`grid grid-cols-1 gap-8 ${enableChat ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
-      <ServiceCard
-        href={subdomainUrls.superset}
-        icon={<HiOutlineChartBar />}
-        title="Analytics"
-        description="Visual dashboards, business intelligence, and SQL queries"
-        tone="amber"
-        external={true}
-      />
-
       {enableChat && (
         <ServiceCard
           href={subdomainUrls.chat}
@@ -127,6 +118,15 @@ const ToolsGrid = ({ subdomainUrls, enableChat }: ToolsGridProps) => {
           external={true}
         />
       )}
+
+      <ServiceCard
+        href={subdomainUrls.superset}
+        icon={<HiOutlineChartBar />}
+        title="Analytics"
+        description="Visual dashboards, business intelligence, and SQL queries"
+        tone="amber"
+        external={true}
+      />
 
       <ServiceCard
         href={subdomainUrls.jupyter}
