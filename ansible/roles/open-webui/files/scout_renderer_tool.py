@@ -78,6 +78,32 @@ _XNAT_BUTTON_CSS = """
     font-size: 12px;
   }
   .xnat-modal .info-block div { padding: 2px 0; }
+  .xnat-modal .result-grid {
+    display: grid; grid-template-columns: max-content 1fr;
+    gap: 6px 16px; margin: 14px 0 4px;
+    background: #f9fafb; border: 1px solid #e5e7eb;
+    border-radius: 6px; padding: 12px 14px;
+    font-size: 13px;
+  }
+  .xnat-modal .result-grid > div {
+    display: contents;
+  }
+  .xnat-modal .result-grid strong {
+    color: #6b7280; font-weight: 500; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    align-self: center;
+  }
+  .xnat-modal .result-grid span {
+    color: #1f2937; word-break: break-word;
+  }
+  .xnat-modal .next-steps {
+    margin: 4px 0 8px 22px;
+    padding: 0;
+    color: #4b5563;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .xnat-modal .next-steps li { margin: 2px 0; }
   .xnat-modal pre {
     background: #f9fafb; border: 1px solid #e5e7eb;
     border-radius: 6px; padding: 8px 10px; margin: 6px 0 0;
@@ -206,9 +232,6 @@ _XNAT_MODAL_JS = """
 
   function renderForm() {
     const cohort = cohortPayload();
-    const demoBanner = BRIDGE_URL
-      ? ''
-      : '<p class="demo-note">Demo mode &mdash; bridge URL not configured, response is generated client-side.</p>';
     modal.innerHTML = `
       <h3>Send to XNAT</h3>
       <p class="sub">Submit ${cohort.count} ${cohort.label} from this result as an XNAT data request.</p>
@@ -225,7 +248,6 @@ _XNAT_MODAL_JS = """
         <label for="xnat-duc">Data Use Committee oversight</label>
         <input type="text" id="xnat-duc" value="${escape(formState.duc)}" />
       </div>
-      ${demoBanner}
       <div class="btn-row">
         <button class="action" id="xnat-cancel" type="button">Cancel</button>
         <button class="action primary" id="xnat-send" type="button">Send</button>
@@ -302,23 +324,23 @@ _XNAT_MODAL_JS = """
       return;
     }
 
-    // Demo path — fabricate the response. Wait briefly so the spinner is
-    // perceptible; production fetch latency replaces this naturally.
+    // No bridge yet — fabricate the response so the result page renders.
+    // Brief delay so the spinner is perceptible (production fetch latency
+    // replaces this naturally once BRIDGE_URL is set).
     await new Promise((r) => setTimeout(r, 1200));
     const requestId = 1000 + Math.floor(Math.random() * 9000);
     renderResult({
       payload,
       response: {
         id: requestId,
-        status: 'PRE_PROCESSING',
+        status: 'PENDING_APPROVAL',
         deidStatus: 'IDENTIFIABLE',
         projectName: payload.projectName,
         irbNumber: payload.irbNumber,
         comment: payload.comment,
         requestUser: payload.requestUser,
         numberOfItemsRequested: payload.itemCount,
-        message: 'Request is being pre-processed.',
-        _mock: true,
+        message: 'Request submitted for approval.',
       },
       httpStatus: 202,
       error: null,
@@ -332,41 +354,70 @@ _XNAT_MODAL_JS = """
     `;
   }
 
+  // Map raw XNAT IQ status codes to user-friendly phrasing. Falls through to
+  // the raw value if we don't have a friendly version yet.
+  const STATUS_TEXT = {
+    PENDING_APPROVAL: 'Pending approval',
+    APPROVED: 'Approved',
+    REJECTED: 'Rejected',
+    PRE_PROCESSING: 'Pre-processing',
+    PROCESSING: 'Processing',
+    READY_FOR_DOWNLOAD: 'Ready for download',
+  };
+
   function renderResult({ payload, response, httpStatus, error }) {
     const cohort = cohortPayload();
-    const optionalLines = [];
-    if (formState.irb) optionalLines.push(`<div><strong>IRB number:</strong> ${escape(formState.irb)}</div>`);
-    if (formState.comment) optionalLines.push(`<div><strong>Comment:</strong> ${escape(formState.comment)}</div>`);
-    if (formState.rationale) optionalLines.push(`<div><strong>Rationale:</strong> ${escape(formState.rationale)}</div>`);
-    if (formState.duc) optionalLines.push(`<div><strong>Data Use Committee:</strong> ${escape(formState.duc)}</div>`);
 
-    const isError = !!error;
-    const isMock = response && response._mock;
-    const heading = isError
-      ? 'XNAT submission failed'
-      : (isMock ? 'Sent to XNAT &mdash; demo' : 'Sent to XNAT');
+    if (error) {
+      modal.innerHTML = `
+        <h3 style="color:#b91c1c;">Submission failed</h3>
+        <p class="sub">${escape(error)}</p>
+        <p class="sub">No data was transferred. You can retry from the table below.</p>
+        <div class="btn-row">
+          <button class="action primary" id="xnat-done" type="button">Close</button>
+        </div>
+      `;
+      modal.querySelector('#xnat-done').onclick = closeModal;
+      return;
+    }
+
     const reqId = response && response.id;
-    const status = response && response.status;
-    const note = isError
-      ? `<p class="demo-note" style="color:#b91c1c;">${escape(error)}</p>`
-      : (isMock
-        ? '<p class="demo-note">No actual transfer occurred. Set the bridge_url valve on Scout Renderer (Workspace &rsaquo; Tools) to flip this on once the bridge service exists.</p>'
-        : '');
+    const rawStatus = (response && response.status) || 'PENDING_APPROVAL';
+    const friendlyStatus = STATUS_TEXT[rawStatus] || rawStatus;
+    const recipientEmail = (USER && USER.email) || '';
+    const requestUrl = (XNAT_EXTERNAL_URL && reqId != null)
+      ? XNAT_EXTERNAL_URL.replace(/\\/$/, '') + '/xapi/iq/data-requests/' + encodeURIComponent(reqId)
+      : '';
+
+    const optionalLines = [];
+    if (formState.irb) optionalLines.push(`<div><strong>IRB number</strong><span>${escape(formState.irb)}</span></div>`);
+    if (formState.rationale) optionalLines.push(`<div><strong>Rationale</strong><span>${escape(formState.rationale)}</span></div>`);
+    if (formState.duc) optionalLines.push(`<div><strong>Data Use Committee</strong><span>${escape(formState.duc)}</span></div>`);
+    if (formState.comment) optionalLines.push(`<div><strong>Comment</strong><span>${escape(formState.comment)}</span></div>`);
+
+    const emailTarget = recipientEmail
+      ? `<strong>${escape(recipientEmail)}</strong>`
+      : 'your account email';
 
     modal.innerHTML = `
-      <h3>${heading}</h3>
-      <div class="info-block">
-        <div><strong>Project:</strong> ${escape(formState.project)}</div>
-        <div><strong>${escape(cohort.label.charAt(0).toUpperCase() + cohort.label.slice(1))} sent:</strong> ${cohort.count}</div>
-        ${reqId != null ? `<div><strong>Request ID:</strong> ${escape(String(reqId))}</div>` : ''}
-        ${status ? `<div><strong>Status:</strong> ${escape(String(status))}</div>` : ''}
-        ${httpStatus != null ? `<div><strong>HTTP:</strong> ${httpStatus}</div>` : ''}
+      <h3 style="color:#15803d;">✓ Data request submitted</h3>
+      <p class="sub">
+        Request <strong>#${escape(String(reqId != null ? reqId : '—'))}</strong> for <strong>${escape(formState.project)}</strong>
+        was created and is awaiting approval.
+      </p>
+      <div class="result-grid">
+        <div><strong>Project</strong><span>${escape(formState.project)}</span></div>
+        <div><strong>${escape(cohort.label.charAt(0).toUpperCase() + cohort.label.slice(1))} requested</strong><span>${cohort.count.toLocaleString()}</span></div>
+        <div><strong>Status</strong><span>${escape(friendlyStatus)}</span></div>
+        <div><strong>Request ID</strong><span>${escape(String(reqId != null ? reqId : '—'))}</span></div>
         ${optionalLines.join('')}
       </div>
-      <label>Request payload</label>
-      <pre>${escape(JSON.stringify(payload, null, 2))}</pre>
-      ${response != null ? `<label>Response</label><pre>${escape(JSON.stringify(response, null, 2))}</pre>` : ''}
-      ${note}
+      <p class="sub" style="margin-top:14px;">You'll receive an email at ${emailTarget}:</p>
+      <ul class="next-steps">
+        <li>once your request is <strong>approved</strong>, and</li>
+        <li>again when the de-identified data is <strong>ready to download or use in XNAT</strong>.</li>
+      </ul>
+      ${requestUrl ? `<p class="sub"><a href="${escape(requestUrl)}" target="_blank" rel="noopener" style="color:#2563eb;">View request in XNAT &rarr;</a></p>` : ''}
       <div class="btn-row">
         <button class="action primary" id="xnat-done" type="button">Done</button>
       </div>
@@ -442,6 +493,20 @@ class Tools:
                 "iframe POSTs the cohort + form metadata + user identity here "
                 "from a null-origin sandbox; the endpoint must serve "
                 "permissive CORS (Access-Control-Allow-Origin: *)."
+            ),
+        )
+        xnat_external_url: str = Field(
+            default="",
+            description=(
+                "External XNAT base URL shown to the user in the submission "
+                "result page as a clickable 'View request in XNAT' link "
+                "(built as {xnat_external_url}/xapi/iq/data-requests/{id}). "
+                "Cosmetic — no fetch is made to this URL. Leave empty to "
+                "hide the link entirely. Important: when set, the URL's "
+                "domain must also be in the Link Sanitizer Filter's "
+                "internal_domains valve (Workspace > Functions > Link "
+                "Sanitizer) — otherwise the filter will scrub the URL out "
+                "of the iframe HTML and break script execution."
             ),
         )
 
@@ -528,6 +593,7 @@ class Tools:
             cols,
             self._user_info(__user__),
             self.valves.bridge_url,
+            self.valves.xnat_external_url,
         )
         # Lead with OWUI's canonical "embed is active" phrasing so the LLM
         # treats the embed as the displayed answer and doesn't re-dump the
@@ -589,6 +655,7 @@ class Tools:
             reports,
             self._user_info(__user__),
             self.valves.bridge_url,
+            self.valves.xnat_external_url,
         )
 
         # Pull a few orienting fields for the LLM summary
@@ -629,19 +696,34 @@ class Tools:
 # ----------------------------------------------------------------------------
 
 
+def _safe_json(value: Any) -> str:
+    """JSON-encode a value for safe embedding in an inline <script> block.
+
+    `json.dumps` does not escape `<`, so any string in `value` containing
+    `</script>`, `<!--`, or `<script>` would prematurely end the surrounding
+    <script> tag when an HTML parser scans the document, leaving the rest of
+    the script as plain text and breaking iframe rendering. Encoding `<` as
+    `\\u003c` is read identically by JS (still a `<` character in the string
+    value) but the HTML parser never sees a tag-like sequence.
+
+    Standard mitigation; same as Django's escapejs filter and Flask's tojson.
+    """
+    return json.dumps(value, default=str).replace("<", "\\u003c")
+
+
 def _build_table_doc(
     rows: list[dict],
     columns: list[str],
     user: dict | None,
     bridge_url: str,
+    xnat_external_url: str,
 ) -> str:
-    rows_json = json.dumps(rows, default=str)
-    cols_json = json.dumps(columns)
     return (
-        _TABLE_TMPL.replace("__ROWS__", rows_json)
-        .replace("__COLS__", cols_json)
-        .replace("__USER__", json.dumps(user or None))
-        .replace("__BRIDGE_URL__", json.dumps(bridge_url or ""))
+        _TABLE_TMPL.replace("__ROWS__", _safe_json(rows))
+        .replace("__COLS__", _safe_json(columns))
+        .replace("__USER__", _safe_json(user or None))
+        .replace("__BRIDGE_URL__", _safe_json(bridge_url or ""))
+        .replace("__XNAT_EXTERNAL_URL__", _safe_json(xnat_external_url or ""))
     )
 
 
@@ -649,11 +731,13 @@ def _build_flipbook_doc(
     reports: list[dict],
     user: dict | None,
     bridge_url: str,
+    xnat_external_url: str,
 ) -> str:
     return (
-        _FLIPBOOK_TMPL.replace("__RECORDS__", json.dumps(reports, default=str))
-        .replace("__USER__", json.dumps(user or None))
-        .replace("__BRIDGE_URL__", json.dumps(bridge_url or ""))
+        _FLIPBOOK_TMPL.replace("__RECORDS__", _safe_json(reports))
+        .replace("__USER__", _safe_json(user or None))
+        .replace("__BRIDGE_URL__", _safe_json(bridge_url or ""))
+        .replace("__XNAT_EXTERNAL_URL__", _safe_json(xnat_external_url or ""))
     )
 
 
@@ -695,11 +779,11 @@ _TABLE_TMPL = f"""<!DOCTYPE html>
   .toolbar input {{
     flex: 1;
     max-width: 320px;
-    padding: 6px 10px 6px 30px;
+    padding: 6px 10px;
     border: 1px solid var(--border);
     border-radius: 6px;
     font-size: 12px;
-    background: var(--bg-soft) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='m21 21-4.3-4.3'/></svg>") 8px center/14px no-repeat;
+    background: var(--bg-soft);
     transition: border-color 120ms, background-color 120ms;
   }}
   .toolbar input:focus {{
@@ -776,6 +860,7 @@ const ROWS = __ROWS__;
 const COLS = __COLS__;
 const USER = __USER__;
 const BRIDGE_URL = __BRIDGE_URL__;
+const XNAT_EXTERNAL_URL = __XNAT_EXTERNAL_URL__;
 const CLAMP_THRESHOLD = 140; // chars — cells longer than this get clamp + expand affordance
 let sortCol = null, sortDir = 1, filter = "";
 
@@ -925,6 +1010,7 @@ _FLIPBOOK_TMPL = f"""<!DOCTYPE html>
 const RECORDS = __RECORDS__;
 const USER = __USER__;
 const BRIDGE_URL = __BRIDGE_URL__;
+const XNAT_EXTERNAL_URL = __XNAT_EXTERNAL_URL__;
 // Field-name fallback chains — the LLM sometimes aliases columns in SQL
 // (SELECT report_section_impression AS impression). Try canonical names
 // first, fall back to common shortened forms.

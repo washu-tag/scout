@@ -143,10 +143,11 @@ open_webui_enable_arena_models: false
 
 # Default selected model in the picker for new chats. Comma-separated list of
 # model IDs (must match an Ollama tag exactly under override mode). Users can
-# still pick a different Scout Explorer per chat. Currently Qwen 3.6 — best
-# reasoning benchmarks of the three resident options and supports thinking
-# mode for the analytical/multi-step queries Scout is built for.
-open_webui_default_model_id: 'qwen3.6-long:latest'
+# still pick a different Scout Explorer per chat. Defaults to Gemma 4 — fast
+# responses without thinking-step latency, which keeps the conversational
+# back-and-forth of cohort building snappy. Users who want the reasoning step
+# can pick Qwen from the picker.
+open_webui_default_model_id: 'gemma4-31b-long:latest'
 
 # Model used for OWUI's auxiliary tasks (chat title generation, follow-up
 # question suggestions, tag generation, web-search/RAG query refinement).
@@ -258,11 +259,12 @@ open_webui_scout_system_prompt_file: gpt-oss-scout-query-prompt.md
 # Each file's text is read at deploy time and concatenated under
 # `## <heading>` into params.system. Schema is ~32KB / ~8K tokens, well
 # within the 256K context window.
-open_webui_scout_system_prompt_appendices:
-  - heading: 'Scout Database Schema'
-    source_path: '{{ role_path }}/../../../docs/source/dataschema.md'
-  - heading: 'Charting Output Format'
-    source_path: '{{ role_path }}/files/gpt-oss-charting.md'
+# No appendices by default. The system prompt body documents the tables and
+# curated column-rename map. For any column the LLM doesn't already know,
+# the Trino MCP exposes a `get_table_schema` tool it can call on demand —
+# embedding the full ~32KB schema in every turn was crowding out the rules
+# the model was supposed to follow (notably the no-markdown-tables rule).
+open_webui_scout_system_prompt_appendices: []
 open_webui_scout_tool_ids:
   - 'server:mcp:{{ mcp_trino_tool_id }}'
   - 'scout_renderer'
