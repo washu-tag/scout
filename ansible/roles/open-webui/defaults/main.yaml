@@ -299,16 +299,16 @@ open_webui_hide_base_models: true
 #   - Quality metrics via `report_section_addendum`.
 #   - Demographic slices via `patient_age` + `modality`.
 open_webui_scout_default_suggestion_prompts:
-  - title: ['Pulmonary nodule cohort', 'Chest CT impression search']
-    content: 'Find chest CT reports where the impression mentions a pulmonary nodule. Show counts by year and the top reasons (e.g., incidental, follow-up, indeterminate).'
-  - title: ['Turnaround time by modality', 'Order request to final report']
-    content: 'What is the median turnaround time from order request (requested_dt) to final report (results_report_status_change_dt) by modality, over the last 12 months?'
-  - title: ['Monthly exam volume', 'Trends by modality']
-    content: 'Show monthly exam volume by modality for the past 12 months.'
-  - title: ['Addendum rate', 'Quality metric by modality']
-    content: 'How many reports issued in the last year contained an addendum, broken down by modality? Express as a rate per 1000 reports.'
-  - title: ['Pediatric CT trends', 'Patients under 18']
-    content: 'How many CT exams were performed on patients under 18 in each of the last 5 years? Break down by service name.'
+  - title: ['Pulmonary nodule cohort', 'Chest CT findings']
+    content: 'Find chest CTs showing a pulmonary nodule.'
+  - title: ['Turnaround time', 'Order to final report']
+    content: "What's the typical turnaround time from order to final report, by modality?"
+  - title: ['Exam volume trends', 'Monthly, by modality']
+    content: 'How has exam volume changed over time, by modality?'
+  - title: ['Report addendum rate', 'Quality signal']
+    content: 'How often are reports amended with an addendum, by modality?'
+  - title: ['Pediatric CT', 'Patients under 18']
+    content: 'How many pediatric CT exams have we done, broken down by year?'
 
 # Default profile image (avatar) shown next to each Scout Explorer model in
 # the picker / model tile / chat header. Loaded as a data URL from a pre-
