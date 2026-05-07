@@ -10,6 +10,14 @@ server:
 serviceAccount:
   create: false
   name: '{{ lake_reader_service_account_name }}'
+{% else %}
+# Inject S3 credentials from a Secret. The Secret is created by deploy.yaml
+# before this chart is installed. The catalog config below references these
+# via Trino's ${ENV:VAR} substitution syntax, so the rendered catalog
+# ConfigMap contains only references, not credentials.
+envFrom:
+  - secretRef:
+      name: trino-s3
 {% endif %}
 
 # JMX exporter configuration for Prometheus metrics
@@ -71,8 +79,8 @@ catalogs:
     fs.native-s3.enabled=true
     s3.region={{ s3_region }}
 {% if not aws_deployment %}
-    s3.aws-access-key={{ s3_lake_reader }}
-    s3.aws-secret-key={{ s3_lake_reader_secret }}
+    s3.aws-access-key=${ENV:S3_ACCESS_KEY}
+    s3.aws-secret-key=${ENV:S3_SECRET_KEY}
     s3.endpoint={{ s3_endpoint }}
     s3.path-style-access=true
 {% else %}
