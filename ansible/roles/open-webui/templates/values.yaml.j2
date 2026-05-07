@@ -248,6 +248,24 @@ extraEnvVars:
     value: {{ tool_server_connections | to_json | to_json }}
 {% endif %}
 
+{% if pip_proxy_url | default('') | length > 0 %}
+  # Air-gapped / Nexus-proxied pip index. OWUI's plugin loader runs `pip
+  # install <pkgs>` whenever a Tool or Function with a `requirements:`
+  # frontmatter is uploaded (utils/plugin.py: install_frontmatter_requirements).
+  # Without this, the install fails with a non-zero exit and the API returns
+  # 400, blocking the Tool from being seeded.
+  - name: PIP_INDEX_URL
+    value: '{{ pip_proxy_url }}'
+  # Nexus serves a self-signed cert (ADR 0016 distributes the staging CA to
+  # host nodes for K3s containerd, but the OWUI image's Python doesn't have
+  # the CA in its trust store). PIP_TRUSTED_HOST skips cert verification for
+  # the Nexus host only — same hostname-allowlist pattern Helm/containerd
+  # use. The connection is internal to the cluster network so the practical
+  # exposure is bounded.
+  - name: PIP_TRUSTED_HOST
+    value: '{{ nexus_host }}'
+{% endif %}
+
 # RAG_TEMPLATE is loaded from the open-webui-extra-env ConfigMap above
 # (not here in extraEnvVars) — see the comment on extraEnvFrom for why.
 
