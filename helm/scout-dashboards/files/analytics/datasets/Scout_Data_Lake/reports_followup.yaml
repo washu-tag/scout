@@ -279,6 +279,31 @@ columns:
     description: Reviewer's call on whether follow-up is needed; null until reviewed.
     python_date_format: null
     extra: {}
+  - column_name: reviewer_label
+    verbose_name: Reviewer
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: "CASE WHEN human_ground_truth THEN 'Reviewer: Yes' ELSE 'Reviewer:
+      No' END"
+    description: Display label for the confusion matrix.
+    python_date_format: null
+    extra: {}
+  - column_name: model_label
+    verbose_name: Model
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: "CASE WHEN followup_detected THEN 'Model: Yes' ELSE 'Model: No' END"
+    description: Display label for the confusion matrix.
+    python_date_format: null
+    extra: {}
   - column_name: human_notes
     is_dttm: false
     is_active: true
