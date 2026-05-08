@@ -6,6 +6,7 @@ import edu.wustl.scout.xnat.auth.model.ScoutIdentity;
 import edu.wustl.scout.xnat.auth.service.UserProvisioningService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.xdat.security.helpers.UserHelper;
 import org.nrg.xft.security.UserI;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -114,6 +115,11 @@ public class BearerTokenFilter extends OncePerRequestFilter {
             final UserI user = provisioningService.provision(identity);
             final ScoutAuthenticationToken token = new ScoutAuthenticationToken(user, "keycloak");
             SecurityContextHolder.getContext().setAuthentication(token);
+            // Mirror XDAT.loginUser: populate the session-scoped UserHelper so the
+            // Velocity browser path (eg. project pages) sees a usable permission
+            // model instead of the "no access" fallback. Required for browser
+            // round-trips that follow a bearer-authenticated REST call.
+            UserHelper.setUserHelper(request, user);
         } catch (AuthenticationException e) {
             log.warn("BearerTokenFilter provisioning failed for {}: {}", identity.getPreferredUsername(), e.getMessage());
             SecurityContextHolder.clearContext();

@@ -71,7 +71,12 @@ dependencies {
     implementAndInclude("com.nimbusds:nimbus-jose-jwt:9.37.3")
 
     testImplementation "junit:junit"
-    testImplementation "org.mockito:mockito-core"
+    // mockito-inline (and matching mockito-core) versioned outside the BOM to
+    // get Mockito.mockStatic for BearerTokenFilterTest's UserHelper.setUserHelper
+    // call. 4.11.0 is the last line that still supports Java 8; the BOM ships
+    // mockito-core 2.28.2 which predates MockedStatic.
+    testImplementation "org.mockito:mockito-core:4.11.0"
+    testImplementation "org.mockito:mockito-inline:4.11.0"
     testImplementation "org.springframework:spring-test"
 }
 
