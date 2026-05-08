@@ -9,6 +9,7 @@ from .sparkutils import (
     filter_df_for_update_inserts,
     merge_df_into_dt_on_column,
     extract_from_anticipated_column,
+    create_table_from_df,
 )
 
 from pyspark.sql import functions as F, Column, DataFrame, Window, SparkSession
@@ -22,6 +23,10 @@ mapping_schema = StructType(
         StructField("epic_mrn", StringType(), True),
         StructField("consistent", BooleanType(), True),
     ]
+)
+history_schema = StructType(
+    mapping_schema.fields
+    + [StructField("previous_scout_patient_id", StringType(), True)]
 )
 
 
@@ -418,6 +423,7 @@ class MappingTableExtractor:
         activity.logger.info("Stage 4 input count: %d", len(rows))
         complex_cases = [MappingEntry.from_df_row(row) for row in rows]
         bulk_updates = []
+        history_table_updates = []
         activity.logger.info(
             "Performing recursive search to resolve IDs for %d reports",
             len(complex_cases),
@@ -449,10 +455,13 @@ class MappingTableExtractor:
                 )
                 for entry in patient_web:
                     if entry.consistent or entry.scout_patient_id != generated_uuid:
+                        history_entry = entry.prepare_history_copy()
+                        history_entry.scout_patient_id = generated_uuid
+                        history_table_updates.append(history_entry)
+
                         entry.scout_patient_id = generated_uuid
                         entry.consistent = False
                         bulk_updates.append(entry)
-                # TODO: history table
             else:
                 if len(unique_ids) < 2:
                     for entry in patient_web:
@@ -465,9 +474,12 @@ class MappingTableExtractor:
                     generated_uuid = unique_ids[0]
                     for entry in patient_web:
                         if entry.scout_patient_id != generated_uuid:
+                            history_entry = entry.prepare_history_copy()
+                            history_entry.scout_patient_id = generated_uuid
+                            history_table_updates.append(history_entry)
+
                             entry.scout_patient_id = generated_uuid
                             bulk_updates.append(entry)
-                            # TODO: history table
             activity.logger.info(
                 "Remaining reports for recursive search: %d", len(complex_cases)
             )
@@ -477,6 +489,17 @@ class MappingTableExtractor:
                 mapping_schema,
             )
         )
+        if history_table_updates:
+            create_table_from_df(
+                self.spark.createDataFrame(
+                    [
+                        history_entry.to_dict_history()
+                        for history_entry in history_table_updates
+                    ],
+                    history_schema,
+                ),
+                f"{self.table_name}_history",
+            )
 
     def recursive_search_patient_web(
         self,

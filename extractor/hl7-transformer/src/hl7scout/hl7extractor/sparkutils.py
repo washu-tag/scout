@@ -97,4 +97,3 @@ def extract_from_anticipated_column(
         )
     else:  # particular column may not have been seen yet
         return F.lit(None)
-
