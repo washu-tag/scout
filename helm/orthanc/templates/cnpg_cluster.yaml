@@ -50,6 +50,7 @@ spec:
       {{- toYaml . | nindent 6 }}
     {{- end }}
     {{- end }}
+  {{- with .Values.postgres.cluster.managed }}
   managed:
     {{- toYaml . | nindent 4 }}
   {{- end }}
