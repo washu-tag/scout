@@ -50,6 +50,22 @@ def normalize_text(text):
     return _normalized_cache[text]
 
 
+def safe_get(row, key, default="N/A"):
+    """row.get(key, default) but None/NaN scalars also fall back to default."""
+    if key not in row:
+        return default
+    value = row[key]
+    if value is None:
+        return default
+    try:
+        if pd.isna(value):
+            return default
+    except (TypeError, ValueError):
+        # pd.isna on arrays/structs (e.g. diagnoses) raises — keep value as-is.
+        pass
+    return value
+
+
 def get_darker_shade(hex_color):
     """Get darker shade of a color."""
     hex_color = hex_color.lstrip("#")
@@ -167,6 +183,8 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
         FROM {catalog}.{schema}.{table}
         WHERE followup_processed_at IS NOT NULL
           AND modality IS NOT NULL
+          AND followup_detected IS NOT NULL
+          AND followup_confidence IS NOT NULL
     )
     SELECT
         accession_number,
@@ -901,12 +919,12 @@ def create_review_dashboard(
             row = state["df"].iloc[idx]
 
             # Get demographics with safe handling
-            accession = row.get("accession_number", "N/A")
-            age = row.get("patient_age", "N/A")
-            sex = row.get("sex", "N/A")
-            race = row.get("race", "N/A")
-            facility = row.get("sending_facility", "N/A")
-            modality = row.get("modality", "N/A")
+            accession = safe_get(row, "accession_number")
+            age = safe_get(row, "patient_age")
+            sex = safe_get(row, "sex")
+            race = safe_get(row, "race")
+            facility = safe_get(row, "sending_facility")
+            modality = safe_get(row, "modality")
 
             # Get diagnoses if available
             diagnoses_str = ""
@@ -942,7 +960,7 @@ def create_review_dashboard(
                         {'FOLLOW-UP' if row['followup_detected'] else 'NO FOLLOW-UP'}
                     </div>
                     <div style='background: {'#FF9800' if row['followup_confidence'] == 'high' else '#2196F3'}; color: white; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 10px;'>
-                        {row['followup_confidence'].upper()} CONF
+                        {(row['followup_confidence'] or 'unknown').upper()} CONF
                     </div>
                     <div style='font-size: 11px; opacity: 0.9;'>Acc: {accession}</div>
                 </div>
@@ -987,15 +1005,15 @@ def create_review_dashboard(
         )
 
         # Get patient demographics
-        age = row.get("patient_age", "N/A")
-        sex = row.get("sex", "N/A")
-        race = row.get("race", "N/A")
+        age = safe_get(row, "patient_age")
+        sex = safe_get(row, "sex")
+        race = safe_get(row, "race")
 
         # Get exam information
-        facility = row.get("sending_facility", "N/A")
-        modality = row.get("modality", "N/A")
-        service_name = row.get("service_name", "N/A")
-        service_identifier = row.get("service_identifier", "N/A")
+        facility = safe_get(row, "sending_facility")
+        modality = safe_get(row, "modality")
+        service_name = safe_get(row, "service_name")
+        service_identifier = safe_get(row, "service_identifier")
 
         # Get diagnoses
         diagnoses_str = ""
