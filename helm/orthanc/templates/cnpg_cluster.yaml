@@ -44,8 +44,12 @@ spec:
         name: orthanc-cnpg-app-credentials
         {{- end }}
   postgresql:
-    parameters: {{- .Values.postgres.cluster.parameters | toYaml | nindent 6 }}
-  {{- with .Values.postgres.cluster.managed }}
+    {{- if .Values.postgres.cluster.parameters }}
+    {{- with .Values.postgres.cluster.parameters }}
+    parameters:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- end }}
   managed:
     {{- toYaml . | nindent 4 }}
   {{- end }}
