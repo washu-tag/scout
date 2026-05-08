@@ -8,6 +8,7 @@ import edu.wustl.scout.xnat.auth.model.ScoutIdentity;
 import edu.wustl.scout.xnat.auth.service.UserProvisioningService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.xdat.security.helpers.UserHelper;
 import org.nrg.xft.security.UserI;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -127,6 +128,12 @@ public class HeaderTrustFilter extends OncePerRequestFilter {
             final UserI user = provisioningService.provision(identity);
             final ScoutAuthenticationToken token = new ScoutAuthenticationToken(user, "keycloak");
             SecurityContextHolder.getContext().setAuthentication(token);
+            // Mirror XDAT.loginUser: populate the session-scoped UserHelper so
+            // Velocity-rendered pages (eg. project pages) see a usable
+            // permission model. Without this, freshly-authenticated browser
+            // sessions render the "Security Warning: not granted access"
+            // fallback even when DB-side permissions are correct.
+            UserHelper.setUserHelper(request, user);
         } catch (Exception e) {
             log.warn("HeaderTrustFilter rejected request from {}: {}", preferredUsername, e.getMessage());
             SecurityContextHolder.clearContext();
