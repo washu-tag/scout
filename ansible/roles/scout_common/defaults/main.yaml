@@ -102,6 +102,10 @@ extractor_namespace: '{{ scout_extractor_namespace }}'
 
 # Analytics & user services
 trino_namespace: '{{ scout_analytics_namespace }}'
+trino_rw_namespace: '{{ scout_extractor_namespace }}'
+trino_rw_release_name: trino-rw
+trino_rw_endpoint_host: '{{ trino_rw_release_name }}.{{ trino_rw_namespace }}'
+trino_rw_endpoint_port: 8080
 superset_namespace: '{{ scout_analytics_namespace }}'
 jupyter_namespace: '{{ scout_analytics_namespace }}'
 chatbot_namespace: '{{ scout_analytics_namespace }}'
@@ -182,7 +186,10 @@ ingest_postgres_table_name: ingest
 hive_metastore_instance: hive-metastore
 hive_metastore_instance_readonly: hive-metastore-readonly
 
-# Trino - this is a dummy username since all Trino access is RO
+# Trino RO username — the user-facing Trino has no authN; writes are blocked
+# at the connector level (delta.security=READ_ONLY) and by the read-only
+# metastore + S3 credentials. The RW Trino instance (trino-rw) accepts
+# writes and is gated to the hl7-transformer pod via NetworkPolicy.
 trino_user: trino
 
 # Shared environment for Kubernetes operations on cluster nodes

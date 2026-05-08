@@ -41,6 +41,16 @@ env:
     value: default
   - name: REPORT_DELTA_TABLE_NAME
     value: '{{ report_delta_table_name }}'
+  - name: TRINO_HOST
+    value: '{{ trino_rw_endpoint_host }}'
+  - name: TRINO_PORT
+    value: '{{ trino_rw_endpoint_port | string }}'
+  - name: TRINO_USER
+    value: '{{ trino_user }}'
+  - name: TRINO_CATALOG
+    value: delta
+  - name: TRINO_SCHEME
+    value: http
 resources:
   requests:
     cpu: '{{ hl7_transformer_cpu_request }}'
