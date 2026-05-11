@@ -23,7 +23,6 @@ orthanc_resources_default:
 orthanc_dicom_service_annotations: {}
 orthanc_dicom_service_load_balancer_class: ''
 
-
 # CNPG Specific Options
 # Options: disabled, cnpg
 orthanc_postgres_mode: disabled
