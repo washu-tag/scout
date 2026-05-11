@@ -2,8 +2,8 @@
 title: Scout Renderer
 description: Execute SQL against Scout's Trino and render the rows as an inline interactive HTML iframe — a sortable, filterable, paginated table where any row click opens a focused detail modal with full Findings / Impression / metadata and arrow-key navigation through the cohort. The Tool runs the query itself; the LLM passes a SELECT, NOT rows. Iframe ships the cohort's full accession_number list (from a separate wrapper query) to XNAT regardless of how many rows display. Returns (HTMLResponse, summary) so the iframe renders inline while only row count, column names, sample rows, and any SQL error feed back to the LLM.
 author: Scout
-version: 0.4.0
-requirements: trino
+version: 0.5.0
+requirements: trino, pyjwt
 """
 
 import html as html_lib
@@ -277,22 +277,26 @@ _XNAT_MODAL_JS = """
     renderSubmitting();
     const payload = buildRequestPayload();
 
-    if (BRIDGE_URL) {
-      // Real path — POST to bridge service. Bridge holds XNAT creds and
-      // returns the XNAT IQ response (or an error). Two cross-origin gates
-      // to satisfy when wiring this up:
-      //   1. CSP: srcdoc iframes inherit the parent's connect-src. OWUI's
-      //      Traefik csp-middleware sets connect-src 'self' (see ADR 0009);
-      //      put the bridge under chat.<host>/<path> so 'self' covers it,
-      //      OR add the bridge host explicitly to connect-src.
-      //   2. CORS: srcdoc iframes have null origin, so the bridge must
-      //      respond Access-Control-Allow-Origin: '*' (no credentials).
-      //      User identity travels in the body (USER captured at render
-      //      time by the Tool, server-side).
+    if (BRIDGE_URL && BRIDGE_JWT) {
+      // Real path — POST to bridge service with capability JWT in the
+      // Authorization header. Bridge validates audience+scope+exp+jti and
+      // refuses anything else. JWT was minted server-side at iframe-render
+      // time by the renderer Tool (using the bridge's shared secret) and
+      // is scoped to xnat:submit + this user + ~15min TTL — so even if
+      // someone reads the iframe HTML, the worst they can do is one XNAT
+      // submission for that user in the TTL, not get into the rest of Scout.
+      // Cross-origin gates:
+      //   1. CSP: srcdoc iframes inherit OWUI's connect-src; bridge URL
+      //      must be on chat.<host> ('self' coverage) or in connect-src
+      //   2. CORS: bridge must serve ACAO:'*' for null-origin srcdoc
+      //   3. Authorization header is on the CORS preflight allowlist
       try {
         const resp = await fetch(BRIDGE_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + BRIDGE_JWT,
+          },
           body: JSON.stringify(payload),
           mode: 'cors',
           credentials: 'omit',
@@ -558,11 +562,75 @@ class Tools:
                 "of the iframe HTML and break script execution."
             ),
         )
+        bridge_jwt_secret: str = Field(
+            default="",
+            description=(
+                "Shared HS256 secret used to mint capability JWTs for "
+                "Send-to-XNAT. Must match the bridge service's "
+                "XNAT_BRIDGE_SECRET. Leave empty to disable real submission "
+                "(iframe falls back to client-side mock response). The Tool "
+                "mints a fresh JWT per render with audience='scout-xnat-bridge', "
+                "scope='xnat:submit', short TTL, and a unique jti so the "
+                "bridge can refuse replay. Stealing this token (e.g., from "
+                "the iframe HTML) only authorizes one XNAT submission for "
+                "that user within the TTL — bounded blast radius."
+            ),
+        )
+        bridge_jwt_audience: str = Field(
+            default="scout-xnat-bridge",
+            description="JWT `aud` claim. Must match the bridge's EXPECTED_AUDIENCE.",
+        )
+        bridge_jwt_ttl_seconds: int = Field(
+            default=900,
+            description=(
+                "JWT TTL in seconds. Long enough for the user to fill the "
+                "form and review (typical: 5–15 min); short enough to bound "
+                "the theft window."
+            ),
+        )
 
     def __init__(self):
         self.valves = self.Valves()
         # OWUI inspects this; True surfaces a citation marker on the rendered output.
         self.citation = True
+
+    def _mint_capability_jwt(self, user: dict | None) -> str:
+        """Mint an HS256 capability JWT scoped to one XNAT submission.
+
+        Returns empty string when bridge_jwt_secret is unset (disables real
+        submission; iframe falls back to client-side mock). Returns empty
+        string on any signing error (defensive — iframe still works).
+
+        Claims:
+        - sub: user id (so bridge can verify body.user.id matches)
+        - email: surfaced in bridge audit logs as the requesting user
+        - aud: 'scout-xnat-bridge' — bridge rejects tokens with other audiences
+        - scope: 'xnat:submit' — bridge rejects tokens without this scope
+        - iat / exp: short TTL (default 15 min)
+        - jti: random uuid — bridge tracks seen jti's to refuse replay
+        """
+        if not self.valves.bridge_jwt_secret:
+            return ""
+        try:
+            import time
+            import uuid
+            import jwt as _jwt
+
+            now = int(time.time())
+            payload = {
+                "sub": (user or {}).get("id") or "",
+                "email": (user or {}).get("email") or "",
+                "aud": self.valves.bridge_jwt_audience,
+                "scope": "xnat:submit",
+                "iat": now,
+                "exp": now + int(self.valves.bridge_jwt_ttl_seconds),
+                "jti": str(uuid.uuid4()),
+            }
+            return _jwt.encode(
+                payload, self.valves.bridge_jwt_secret, algorithm="HS256"
+            )
+        except Exception:
+            return ""
 
     @staticmethod
     def _user_info(user: dict | None) -> dict | None:
@@ -806,6 +874,7 @@ class Tools:
             self.valves.bridge_url,
             self.valves.xnat_external_url,
             self.valves.page_size,
+            self._mint_capability_jwt(__user__),
         )
 
         display_capped = len(rows) >= self.valves.max_display_rows
@@ -876,6 +945,7 @@ def _build_table_doc(
     bridge_url: str,
     xnat_external_url: str,
     page_size: int,
+    bridge_jwt: str,
 ) -> str:
     return (
         _TABLE_TMPL.replace("__ROWS__", _safe_json(rows))
@@ -885,6 +955,7 @@ def _build_table_doc(
         .replace("__BRIDGE_URL__", _safe_json(bridge_url or ""))
         .replace("__XNAT_EXTERNAL_URL__", _safe_json(xnat_external_url or ""))
         .replace("__PAGE_SIZE__", str(int(page_size)))
+        .replace("__BRIDGE_JWT__", _safe_json(bridge_jwt or ""))
     )
 
 
@@ -1179,6 +1250,7 @@ const COLS = __COLS__;
 const ALL_ACCESSIONS = __ACCESSIONS__;
 const USER = __USER__;
 const BRIDGE_URL = __BRIDGE_URL__;
+const BRIDGE_JWT = __BRIDGE_JWT__;
 const XNAT_EXTERNAL_URL = __XNAT_EXTERNAL_URL__;
 const PAGE_SIZE = __PAGE_SIZE__;
 const CLAMP_THRESHOLD = 140;
