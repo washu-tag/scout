@@ -258,7 +258,7 @@ class Filter:
 
             # Continue loop to process rest of buffer
 
-    def stream(self, event: dict, __metadata__: dict = None) -> dict:
+    async def stream(self, event: dict, __metadata__: dict = None) -> dict:
         """
         Process streaming chunks in real-time, sanitizing URLs as they arrive.
 
