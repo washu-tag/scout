@@ -476,15 +476,12 @@ export default function HomeClient({
     setSubdomainUrls({
       jupyter: getUrl('jupyter'),
       superset: getUrl('superset'),
-      // `chat` goes through OWUI's OIDC entrypoint so the user is silently
-      // SSO'd via Keycloak. `chatRoot` is the bare URL for deep-links with
-      // URL params (e.g. ?q=, ?models=, ?tools=) — OWUI's /oauth/oidc/login
-      // strips query params during the OIDC roundtrip, so deep-links can't
-      // share the OIDC path. The pre-warm effect below sets the OWUI session
-      // cookie up front so the first deep-link click doesn't bounce to /auth.
+      // Bare chat URL — works for both the card click and deep-links with
+      // URL params (e.g. ?q=, ?models=, ?tools=). The pre-warm effect below
+      // silently completes OWUI's OIDC handshake on mount so the first
+      // click lands on an authenticated session instead of bouncing to /auth.
       // See https://docs.openwebui.com/features/chat-conversations/chat-features/url-params/
-      chat: getUrl('chat', '/oauth/oidc/login'),
-      chatRoot: getUrl('chat'),
+      chat: getUrl('chat'),
       playbooks: getUrl('playbooks'),
       minio: getUrl('minio'),
       temporal: getUrl('temporal', '/auth/sso'),
@@ -493,22 +490,24 @@ export default function HomeClient({
     });
   }, []);
 
-  // Pre-warm the OWUI session once per browser session so deep-links to
-  // chat (e.g. /?q=foo) land on an authenticated page directly. OWUI's
-  // /oauth/oidc/login drops query params, so we can't route deep-links
-  // through OIDC and preserve them. Triggering OIDC silently in a hidden
-  // iframe sets the OWUI cookie up front. Iframe is removed after 15s.
+  // Pre-warm the OWUI session once per browser session so links to chat
+  // (card + deep-links like /?q=foo) land on an authenticated page directly.
+  // A bare chat URL would bounce unauthenticated visitors to /auth, and
+  // OWUI's /oauth/oidc/login drops query params during the OIDC roundtrip
+  // so we can't route deep-links through it and preserve them. Triggering
+  // OIDC silently in a hidden iframe sets the OWUI cookie up front.
+  // Iframe is removed after 15s.
   useEffect(() => {
     if (!enableChat) return;
-    const chatLoginUrl = subdomainUrls.chat;
-    if (!chatLoginUrl) return;
+    if (!subdomainUrls.chat) return;
     if (window.sessionStorage.getItem('scout:chat-prewarmed')) return;
 
+    const prewarmUrl = `${subdomainUrls.chat}/oauth/oidc/login`;
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     iframe.setAttribute('aria-hidden', 'true');
     iframe.setAttribute('title', 'pre-warm chat session');
-    iframe.src = chatLoginUrl;
+    iframe.src = prewarmUrl;
     document.body.appendChild(iframe);
     window.sessionStorage.setItem('scout:chat-prewarmed', '1');
 
@@ -602,8 +601,8 @@ export default function HomeClient({
             onSubmit={(e) => {
               e.preventDefault();
               const q = searchValue.trim();
-              if (!q || !subdomainUrls.chatRoot) return;
-              const url = `${subdomainUrls.chatRoot}/?q=${encodeURIComponent(q)}`;
+              if (!q || !subdomainUrls.chat) return;
+              const url = `${subdomainUrls.chat}/?q=${encodeURIComponent(q)}`;
               window.open(url, '_blank', 'noopener,noreferrer');
               setSearchValue('');
             }}
@@ -652,10 +651,8 @@ export default function HomeClient({
               },
             ].map((q) => {
               const Icon = q.icon;
-              const ready = Boolean(subdomainUrls.chatRoot);
-              const href = ready
-                ? `${subdomainUrls.chatRoot}/?q=${encodeURIComponent(q.prompt)}`
-                : '#';
+              const ready = Boolean(subdomainUrls.chat);
+              const href = ready ? `${subdomainUrls.chat}/?q=${encodeURIComponent(q.prompt)}` : '#';
               return (
                 <a
                   key={q.prompt}
