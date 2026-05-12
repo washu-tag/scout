@@ -18,12 +18,16 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^25",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "eslint": "^9",
     "eslint-config-next": "^16.2.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^6"
+  },
+  "//overrides": "postcss pinned to >=8.5.10 to patch GHSA-qx2v-qp2m-jg93 (XSS in CSS stringify); the fix only lives on next canary as of 16.3.0-canary.6. Remove once a stable next release ships it.",
+  "overrides": {
+    "postcss": "^8.5.10"
   }
 }
