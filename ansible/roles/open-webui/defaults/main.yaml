@@ -164,6 +164,12 @@ mcp_trino_tool_id: 'scout-db'
 tool_server_connections:
   - type: mcp # OWUI defaults to 'openapi'; MCP servers must declare explicitly
     url: '{{ mcp_trino_url }}'
+    # `path` is openapi-spec-specific (appended to `url` to fetch openapi.json)
+    # and meaningless for `type: mcp`. Set explicitly so the entry passes the
+    # ToolServerConnection Pydantic model if an admin ever round-trips it
+    # through the configs UI (the env-var ingest path bypasses validation,
+    # but the UI write path doesn't).
+    path: ''
     auth_type: none
     config:
       enable: true
@@ -205,7 +211,8 @@ open_webui_rag_template_file: rag-prompt.md
 # is empty) or /signin (on subsequent runs) through the in-cluster Service.
 # `ENABLE_INITIAL_ADMIN_SIGNUP=true` lets /signup create the very first user
 # as admin even when ENABLE_SIGNUP is false; once any user exists the endpoint
-# self-blocks (auths.py:651 `if has_users or not ENABLE_INITIAL_ADMIN_SIGNUP`),
+# self-blocks via the `has_users or not ENABLE_INITIAL_ADMIN_SIGNUP` check in
+# OWUI's auths router (signup handler in backend/open_webui/routers/auths.py),
 # so the env var is safe to leave on permanently. The bootstrap password is
 # derived deterministically from open_webui_secret_key (already vault-secured)
 # so we don't need to track another secret.

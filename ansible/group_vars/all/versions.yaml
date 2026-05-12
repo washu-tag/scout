@@ -91,7 +91,7 @@ jupyter_helm_chart_version: ~4.3.0
 
 # AI & ML
 # renovate: datasource=helm registryUrl=https://helm.openwebui.com/ depName=open-webui
-open_webui_helm_chart_version: ~14.2.0
+open_webui_helm_chart_version: ~14.5.0
 # renovate: datasource=docker depName=ollama/ollama
 ollama_image_tag: 0.22.1
 
