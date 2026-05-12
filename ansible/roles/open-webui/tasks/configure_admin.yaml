@@ -1,0 +1,221 @@
+---
+# Mints an OWUI admin JWT by calling /signin or /signup through the in-cluster
+# Service. The token is exported as `owui_admin_token` for follow-up tasks
+# (Functions, Models, Knowledge — added in subsequent PRs) to seed admin
+# config via OWUI's REST API.
+#
+# Bootstrap flow (idempotent, handles all cluster states):
+#   1. Migration UPDATE: set the bootstrap user's password to our derived
+#      hash. No-op on clean clusters (the row doesn't exist yet); on clusters
+#      previously bootstrapped via trusted-header SSO it overwrites the random
+#      UUID password (which we never persisted) with a deterministic one we
+#      can sign in with on every subsequent run.
+#   2. POST /signin with the derived password. Succeeds on existing/migrated
+#      clusters.
+#   3. POST /signup with the derived password as a fallback. Succeeds on a
+#      truly empty DB (auths.py allows the very first user to register as
+#      admin when ENABLE_INITIAL_ADMIN_SIGNUP=true; once any user exists, the
+#      `has_users` short-circuit blocks /signup permanently).
+#
+# Look up the OWUI pod by label rather than guessing the Deployment name
+# (the Helm chart's release/chart naming combo doesn't always produce a
+# Deployment literally named "open-webui"). Used for all subsequent kubectl
+# exec / kubectl cp commands in this file and the per-resource sub-tasks.
+- name: 'Discover OWUI pod name'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - get
+      - pod
+      - -n
+      - '{{ chatbot_namespace }}'
+      - -l
+      - app.kubernetes.io/name=open-webui
+      - -o
+      - jsonpath={.items[0].metadata.name}
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _owui_pod_lookup
+  changed_when: false
+
+- name: 'Set OWUI pod name fact'
+  ansible.builtin.set_fact:
+    _owui_pod_name: '{{ _owui_pod_lookup.stdout }}'
+
+- name: 'Fail early if OWUI pod was not found'
+  ansible.builtin.fail:
+    msg: |-
+      Could not find an Open WebUI pod in namespace {{ chatbot_namespace }}.
+      Tried: kubectl get pod -l app.kubernetes.io/name=open-webui
+      Helm deploy may not have rolled out, or the chart's pod label changed.
+  when: _owui_pod_name | length == 0
+
+# Migration step: ensure the bootstrap user's stored password hash matches
+# our derived password. Runs every time but is idempotent — if the row
+# doesn't exist (clean DB) UPDATE affects 0 rows; if it does exist (legacy
+# trusted-header bootstrap, or prior run with this same password), the
+# password is set to a fresh bcrypt hash of the same plaintext (different
+# salt, equivalent semantics). Uses OWUI's own bcrypt + SQLAlchemy session
+# so we don't have to interrogate postgres directly or duplicate schema.
+- name: 'Migrate bootstrap user password to derived hash (idempotent, no-op on clean DB)'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - '{{ _owui_pod_name }}'
+      - --
+      - /bin/sh
+      - -c
+      - |
+        BOOTSTRAP_EMAIL='{{ open_webui_bootstrap_email }}' \
+        BOOTSTRAP_PASSWORD='{{ open_webui_bootstrap_password }}' \
+        python -c '
+        import os
+        import bcrypt
+        from open_webui.internal.db import get_db
+        from open_webui.models.auths import Auth
+        email = os.environ["BOOTSTRAP_EMAIL"]
+        password = os.environ["BOOTSTRAP_PASSWORD"]
+        hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        with get_db() as db:
+            row = db.query(Auth).filter(Auth.email == email).first()
+            if row is not None:
+                row.password = hashed
+                db.commit()
+                print("migrated")
+            else:
+                print("no-op (clean DB)")
+        '
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _owui_password_migration
+  changed_when: "'migrated' in _owui_password_migration.stdout"
+  no_log: true
+  retries: 20
+  delay: 3
+  until: _owui_password_migration.rc == 0
+
+# Try /signin first. Succeeds on any cluster where the bootstrap user already
+# exists (with the migrated password). Captures HTTP status separately from
+# body so we can branch on 400 (no such user → fall through to signup).
+- name: 'Try OWUI signin with derived bootstrap password'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - '{{ _owui_pod_name }}'
+      - --
+      - /bin/sh
+      - -c
+      - |
+        body=$(mktemp)
+        code=$(curl -sS -o "$body" -w '%{http_code}' -X POST http://localhost:8080/api/v1/auths/signin \
+          -H "Content-Type: application/json" \
+          --data '{"email": "{{ open_webui_bootstrap_email }}", "password": "{{ open_webui_bootstrap_password }}"}')
+        resp=$(cat "$body"); rm -f "$body"
+        printf '%s\n%s' "$code" "$resp"
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _owui_signin_attempt
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: 'Parse signin response'
+  ansible.builtin.set_fact:
+    # Default to '000' if signin task somehow produced no stdout (kubectl exec
+    # error, etc.) — same code curl uses for "could not reach server".
+    _owui_signin_code: "{{ ((_owui_signin_attempt.stdout_lines | default([])) + ['000'])[0] }}"
+    _owui_signin_body: "{{ (_owui_signin_attempt.stdout_lines | default([]))[1:] | join('\n') }}"
+  no_log: true
+
+# Fallback to /signup on a truly empty DB. ENABLE_INITIAL_ADMIN_SIGNUP=true
+# (set in values.yaml.j2) lets this create the first user as admin even with
+# ENABLE_SIGNUP=false. Once /signup succeeds once, the `has_users` check
+# blocks it forever, so this is a one-shot fallback.
+- name: 'Fallback: signup the bootstrap user on a fresh DB'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - '{{ _owui_pod_name }}'
+      - --
+      - /bin/sh
+      - -c
+      - |
+        body=$(mktemp)
+        code=$(curl -sS -o "$body" -w '%{http_code}' -X POST http://localhost:8080/api/v1/auths/signup \
+          -H "Content-Type: application/json" \
+          --data '{"name": "{{ open_webui_bootstrap_name }}", "email": "{{ open_webui_bootstrap_email }}", "password": "{{ open_webui_bootstrap_password }}"}')
+        resp=$(cat "$body"); rm -f "$body"
+        if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+          echo "OWUI signup failed: HTTP $code" >&2
+          echo "$resp" >&2
+          exit 1
+        fi
+        echo "$resp"
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _owui_signup_attempt
+  changed_when: true
+  failed_when: false
+  no_log: true
+  when: _owui_signin_code != '200'
+
+- name: 'Surface bootstrap failure (both signin and signup unsuccessful)'
+  ansible.builtin.fail:
+    msg: |-
+      OWUI admin bootstrap failed.
+        Signin HTTP {{ _owui_signin_code }}: {{ _owui_signin_body }}
+        Signup rc={{ _owui_signup_attempt.rc | default('n/a') }} stderr={{ _owui_signup_attempt.stderr | default('') }}
+      Diagnostic checklist:
+        - Is ENABLE_INITIAL_ADMIN_SIGNUP=true in the pod env? (kubectl exec ... -- env | grep ENABLE_INITIAL)
+        - Did the OWUI pod restart after Helm picked up the env vars? (helm upgrade rolls pods)
+        - Did the migration step run? Check stdout of "Migrate bootstrap user password..."
+        - On a non-clean cluster where scout-deploy@internal was deleted but other users exist,
+          /signup will fail with ACCESS_PROHIBITED — recreate the row manually.
+  when:
+    - _owui_signin_code != '200'
+    - _owui_signup_attempt.rc | default(1) != 0
+
+- name: 'Extract admin JWT from signin or signup response'
+  ansible.builtin.set_fact:
+    owui_admin_token: >-
+      {{ (_owui_signin_body | from_json).token
+         if _owui_signin_code == '200'
+         else (_owui_signup_attempt.stdout | from_json).token }}
+  no_log: true
+
+- name: 'Verify admin JWT works (GET /api/v1/auths/ should return user info with role=admin)'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - '{{ _owui_pod_name }}'
+      - --
+      - curl
+      - -sf
+      - 'http://localhost:8080/api/v1/auths/'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: owui_admin_verify
+  changed_when: false
+  no_log: true
+  failed_when:
+    - owui_admin_verify.rc != 0 or (owui_admin_verify.stdout | from_json).role != 'admin'
+
+- name: 'Bootstrap complete — admin JWT minted'
+  ansible.builtin.debug:
+    msg: >-
+      Admin JWT minted for {{ open_webui_bootstrap_email }} (role=admin)
+      via {{ 'signin' if _owui_signin_code == '200' else 'signup' }}.

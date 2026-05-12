@@ -84,6 +84,19 @@
     definition: "{{ lookup('template', 'csp-middleware.yaml.j2') | from_yaml }}"
   when: open_webui_csp_enabled | bool
 
+# Clean up the strip-bootstrap-headers middleware from clusters that were
+# bootstrapped under the old trusted-header scheme. The new scheme uses
+# ENABLE_INITIAL_ADMIN_SIGNUP + signup-or-signin (no trusted headers ever
+# leave Ansible), so this middleware no longer has a job. Safe to remove
+# unconditionally — `state: absent` is a no-op when the resource is gone.
+- name: Remove obsolete strip-bootstrap-headers middleware (legacy trusted-header scheme)
+  kubernetes.core.k8s:
+    state: absent
+    api_version: traefik.io/v1alpha1
+    kind: Middleware
+    name: open-webui-strip-bootstrap-headers
+    namespace: '{{ chatbot_namespace }}'
+
 - name: Parse Helm values
   ansible.builtin.set_fact:
     owui_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
@@ -154,3 +167,11 @@
 - name: Pull Ollama models
   ansible.builtin.include_tasks: pull_models.yaml
   when: ollama_models is defined and ollama_models | length > 0
+
+# Bootstrap the OWUI admin user via signup-or-signin on the in-cluster
+# Service (bypassing Traefik). The minted admin JWT is exported as
+# `owui_admin_token` so follow-up tasks can seed Functions / Models /
+# Knowledge via the REST API. See tasks/configure_admin.yaml.
+- name: Bootstrap Open WebUI admin user
+  ansible.builtin.include_tasks: configure_admin.yaml
+  when: open_webui_admin_setup_enabled | bool

@@ -114,12 +114,15 @@ open_webui_csp_enabled: true
 # Override `tool_server_connections: []` to skip registration (e.g., environments
 # without MCP Trino deployed).
 mcp_trino_url: 'http://mcp-trino.{{ scout_analytics_namespace }}:8080/mcp'
+mcp_trino_tool_id: 'scout-db'
 tool_server_connections:
-  - url: '{{ mcp_trino_url }}'
+  - type: mcp # OWUI defaults to 'openapi'; MCP servers must declare explicitly
+    url: '{{ mcp_trino_url }}'
     auth_type: none
     config:
       enable: true
     info:
+      id: '{{ mcp_trino_tool_id }}' # Referenced from models as `server:mcp:{id}`
       name: 'Trino MCP'
       description: 'Query Scout Delta Lake with Trino'
 
@@ -129,3 +132,31 @@ open_webui_enable_arena_models: false
 # RAG template — injected at chat time when knowledge is attached to a model.
 # Path is relative to this role's `files/` directory.
 open_webui_rag_template_file: rag-prompt.md
+
+# ----------------------------------------------------------------------------
+# Admin bootstrap (Phase 2 of automation)
+# ----------------------------------------------------------------------------
+# We mint an admin session JWT by calling OWUI's /signup endpoint (when the DB
+# is empty) or /signin (on subsequent runs) through the in-cluster Service.
+# `ENABLE_INITIAL_ADMIN_SIGNUP=true` lets /signup create the very first user
+# as admin even when ENABLE_SIGNUP is false; once any user exists the endpoint
+# self-blocks (auths.py:651 `if has_users or not ENABLE_INITIAL_ADMIN_SIGNUP`),
+# so the env var is safe to leave on permanently. The bootstrap password is
+# derived deterministically from open_webui_secret_key (already vault-secured)
+# so we don't need to track another secret.
+#
+# This replaces the earlier WEBUI_AUTH_TRUSTED_*_HEADER trusted-header bootstrap.
+# That mechanism set the `auth_trusted_header` frontend feature flag which made
+# /auth auto-call /signin on every page load — surfacing a "trusted header"
+# error toast to any user whose token expired or who passed through /auth.
+# Signup-or-signin has no equivalent frontend coupling.
+open_webui_bootstrap_email: 'scout-deploy@internal'
+open_webui_bootstrap_name: 'Scout Deploy Bot'
+
+# Deterministic bootstrap password derived from the WebUI secret key. SHA256
+# hex (64 chars) fits bcrypt's 72-byte limit and rotates with the secret key
+# (so a secret rotation forces a re-bootstrap, which is the right semantics).
+open_webui_bootstrap_password: '{{ open_webui_secret_key | hash("sha256") }}'
+
+# Set to false to skip post-deploy admin configuration entirely.
+open_webui_admin_setup_enabled: true
