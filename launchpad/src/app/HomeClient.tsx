@@ -11,6 +11,7 @@ import {
   HiOutlineDocumentText,
   HiUserGroup,
   HiChartBar,
+  HiClipboardCheck,
   HiSparkles,
   HiOutlineChartBar,
   HiOutlineChat,
@@ -141,7 +142,7 @@ const ToolsGrid = ({ subdomainUrls, enableChat }: ToolsGridProps) => {
 };
 
 // Playbook definitions with icons and colors
-const STATIC_PLAYBOOKS = [
+const PLAYBOOKS = [
   {
     id: 'cohort',
     title: 'Research Cohorting',
@@ -165,6 +166,14 @@ const STATIC_PLAYBOOKS = [
     notebook: 'FollowUpDetection.ipynb',
     icon: HiSparkles,
     color: 'cyan',
+  },
+  {
+    id: 'quality-metrics',
+    title: 'Quality Metrics',
+    description: 'Turnaround times, report completeness, and reporting trends',
+    notebook: 'QualityMetrics.ipynb',
+    icon: HiClipboardCheck,
+    color: 'emerald',
   },
 ];
 
@@ -215,7 +224,7 @@ const PlaybookRow = ({ href, title, description, icon, colors }: PlaybookRowProp
 const PlaybooksGrid = ({ playbooksUrl }: PlaybooksGridProps) => {
   return (
     <div className="space-y-3">
-      {STATIC_PLAYBOOKS.map((playbook) => {
+      {PLAYBOOKS.map((playbook) => {
         const IconComponent = playbook.icon;
         return (
           <PlaybookRow
