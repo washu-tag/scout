@@ -229,6 +229,16 @@ After applying the commit, `make install-monitor` does **not** delete the promta
 - Loki queries from Phase 2 still work via alloy.
 - Grafana dashboards (keycloak, oauth2-proxy, jupyterhub, k8s, trino) still display log panels.
 
+**Results:**
+- ✅ `kubectl get ds -n scout-monitoring` now shows only `alloy`, `loki-canary`, and `prometheus-prometheus-node-exporter`. No promtail DaemonSet.
+- ✅ `kubectl get all,sa,cm,secret -n scout-monitoring | grep promtail` → empty. No cluster-scoped promtail roles or bindings either. Helm release cleanly removed.
+- ✅ Alloy pods unchanged (no restart needed — only `loki/tasks/deploy.yaml` changed, which doesn't affect the alloy release).
+- ✅ Fresh logs (last 2m) flowing from every namespace: scout-monitoring 1308, scout-analytics 162, scout-data 144, kube-system 36, scout-extractor 29, scout-core 28 lines/2m.
+- ✅ **Rejection rate is now ~0.** Alloy `loki_write_request_duration_seconds_count{status_code="400"}` is flat at 103 (unchanged from the pre-removal reading) while `status_code="204"` has grown from 74 → 2247. Every recent push is succeeding. The cumulative `dropped_entries{reason="ingester_error"} = 706696` is also frozen — it captures only the one-time startup history replay, not ongoing traffic.
+- ✅ Ansible idempotent across reruns: the `state: absent` task runs cleanly when promtail is already gone.
+
+**Migration complete.**
+
 ### Phase 4: Optional cleanup follow-up (not in this branch)
 
 - Remove the temporary `helm uninstall promtail` task once the change has propagated to all deployment targets.
