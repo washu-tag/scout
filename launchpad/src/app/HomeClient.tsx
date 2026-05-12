@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { SiGrafana, SiKeycloak, SiMinio, SiTemporal, SiPython } from 'react-icons/si';
 import {
@@ -15,7 +15,6 @@ import {
   HiSparkles,
   HiOutlineChartBar,
   HiOutlineChat,
-  HiOutlineSearch,
 } from 'react-icons/hi';
 import TopBar from '@/components/TopBar';
 import AdminSection from '@/components/AdminSection';
@@ -459,8 +458,6 @@ export default function HomeClient({
 }: HomeClientProps) {
   const [mounted, setMounted] = useState(false);
   const { data: session, status } = useSession();
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const [searchValue, setSearchValue] = useState('');
   const [subdomainUrls, setSubdomainUrls] = useState<Record<string, string>>({});
 
   const environment = scoutEnv ?? 'local';
@@ -476,58 +473,15 @@ export default function HomeClient({
     setSubdomainUrls({
       jupyter: getUrl('jupyter'),
       superset: getUrl('superset'),
-      // Bare chat URL — works for both the card click and deep-links with
-      // URL params (e.g. ?q=, ?models=, ?tools=). The pre-warm effect below
-      // silently completes OWUI's OIDC handshake on mount so the first
-      // click lands on an authenticated session instead of bouncing to /auth.
-      // See https://docs.openwebui.com/features/chat-conversations/chat-features/url-params/
-      chat: getUrl('chat'),
+      // Route Chat through OWUI's OIDC entrypoint so cold-session clicks
+      // silent-SSO via Keycloak instead of bouncing to OWUI's /auth page.
+      chat: getUrl('chat', '/oauth/oidc/login'),
       playbooks: getUrl('playbooks'),
       minio: getUrl('minio'),
       temporal: getUrl('temporal', '/auth/sso'),
       grafana: getUrl('grafana'),
       keycloak: getUrl('keycloak', '/admin/scout/console'),
     });
-  }, []);
-
-  // Pre-warm the OWUI session once per browser session so links to chat
-  // (card + deep-links like /?q=foo) land on an authenticated page directly.
-  // A bare chat URL would bounce unauthenticated visitors to /auth, and
-  // OWUI's /oauth/oidc/login drops query params during the OIDC roundtrip
-  // so we can't route deep-links through it and preserve them. Triggering
-  // OIDC silently in a hidden iframe sets the OWUI cookie up front.
-  // Iframe is removed after 15s.
-  useEffect(() => {
-    if (!enableChat) return;
-    if (!subdomainUrls.chat) return;
-    if (window.sessionStorage.getItem('scout:chat-prewarmed')) return;
-
-    const prewarmUrl = `${subdomainUrls.chat}/oauth/oidc/login`;
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.setAttribute('aria-hidden', 'true');
-    iframe.setAttribute('title', 'pre-warm chat session');
-    iframe.src = prewarmUrl;
-    document.body.appendChild(iframe);
-    window.sessionStorage.setItem('scout:chat-prewarmed', '1');
-
-    const removeTimer = window.setTimeout(() => iframe.remove(), 15000);
-    return () => {
-      window.clearTimeout(removeTimer);
-      iframe.remove();
-    };
-  }, [enableChat, subdomainUrls.chat]);
-
-  // Cmd/Ctrl+K focuses the search input.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   useEffect(() => {
@@ -594,86 +548,6 @@ export default function HomeClient({
       <div
         className={`w-full max-w-7xl px-6 pt-12 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
-        {/* Hero — search-first */}
-        <div className="mb-14">
-          {/* Search input — Enter redirects to Chat with the query prefilled and auto-submitted. */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const q = searchValue.trim();
-              if (!q || !subdomainUrls.chat) return;
-              const url = `${subdomainUrls.chat}/?q=${encodeURIComponent(q)}`;
-              window.open(url, '_blank', 'noopener,noreferrer');
-              setSearchValue('');
-            }}
-            className="relative max-w-2xl mx-auto"
-          >
-            <div className="relative group">
-              <HiOutlineSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-xl text-slate-400 dark:text-slate-500 pointer-events-none" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                placeholder="Ask Scout…"
-                className="w-full pl-14 pr-20 py-4 text-base bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-950 transition-all duration-200"
-              />
-              <kbd className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 px-2 py-1 text-[0.7rem] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
-                <span>⌘</span>
-                <span>K</span>
-              </kbd>
-            </div>
-          </form>
-
-          {/* Starter prompts — each opens Chat with the prompt prefilled and auto-submitted. */}
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto">
-            <span className="text-xs text-slate-400 dark:text-slate-500 mr-1">Try</span>
-            {[
-              {
-                icon: HiOutlineChartBar,
-                prompt: 'Show MR volume trends over the last 12 months',
-                iconColor: 'text-amber-600 dark:text-amber-400',
-              },
-              {
-                icon: HiOutlineChat,
-                prompt: 'Find reports mentioning sepsis',
-                iconColor: 'text-emerald-600 dark:text-emerald-400',
-              },
-              {
-                icon: HiUserGroup,
-                prompt: 'Build a cohort of patients with multiple chest CTs',
-                iconColor: 'text-indigo-600 dark:text-indigo-400',
-              },
-              {
-                icon: HiSparkles,
-                prompt: 'How often do reports recommend follow-up?',
-                iconColor: 'text-violet-600 dark:text-violet-400',
-              },
-            ].map((q) => {
-              const Icon = q.icon;
-              const ready = Boolean(subdomainUrls.chat);
-              const href = ready ? `${subdomainUrls.chat}/?q=${encodeURIComponent(q.prompt)}` : '#';
-              return (
-                <a
-                  key={q.prompt}
-                  href={href}
-                  target={ready ? '_blank' : undefined}
-                  rel={ready ? 'noopener noreferrer' : undefined}
-                  aria-disabled={!ready}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full transition-all duration-200 no-underline ${
-                    ready
-                      ? 'text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-white'
-                      : 'text-slate-400 dark:text-slate-600 pointer-events-none'
-                  }`}
-                >
-                  <Icon className={`text-sm ${q.iconColor}`} />
-                  {q.prompt}
-                </a>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Content Grid */}
         <ContentGrid
           enableChat={enableChat}
