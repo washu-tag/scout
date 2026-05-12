@@ -16,7 +16,7 @@ import {
   HiOutlineChat,
   HiOutlineSearch,
 } from 'react-icons/hi';
-import { getPlaybookIcon, getPlaybookColors } from '@/lib/playbook-config';
+import { getPlaybookColors } from '@/lib/playbook-config';
 import TopBar from '@/components/TopBar';
 import AdminSection from '@/components/AdminSection';
 
@@ -140,17 +140,7 @@ const ToolsGrid = ({ subdomainUrls, enableChat }: ToolsGridProps) => {
   );
 };
 
-// Type for dynamic playbooks loaded from API
-interface DynamicPlaybook {
-  id: string;
-  title: string;
-  description: string;
-  notebook: string;
-  icon: string;
-  color: string;
-}
-
-// Playbook definitions with icons and colors (hardcoded/static playbooks)
+// Playbook definitions with icons and colors
 const STATIC_PLAYBOOKS = [
   {
     id: 'cohort',
@@ -180,7 +170,6 @@ const STATIC_PLAYBOOKS = [
 
 interface PlaybooksGridProps {
   playbooksUrl: string;
-  dynamicPlaybooks: DynamicPlaybook[];
 }
 
 interface PlaybookRowProps {
@@ -223,25 +212,11 @@ const PlaybookRow = ({ href, title, description, icon, colors }: PlaybookRowProp
   </a>
 );
 
-const PlaybooksGrid = ({ playbooksUrl, dynamicPlaybooks }: PlaybooksGridProps) => {
+const PlaybooksGrid = ({ playbooksUrl }: PlaybooksGridProps) => {
   return (
     <div className="space-y-3">
       {STATIC_PLAYBOOKS.map((playbook) => {
         const IconComponent = playbook.icon;
-        return (
-          <PlaybookRow
-            key={playbook.id}
-            href={`${playbooksUrl}/voila/render/${playbook.id}/${playbook.notebook}`}
-            title={playbook.title}
-            description={playbook.description}
-            icon={<IconComponent />}
-            colors={getPlaybookColors(playbook.color)}
-          />
-        );
-      })}
-
-      {dynamicPlaybooks.map((playbook) => {
-        const IconComponent = getPlaybookIcon(playbook.icon);
         return (
           <PlaybookRow
             key={playbook.id}
@@ -264,28 +239,6 @@ interface ContentGridProps {
 }
 
 const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGridProps) => {
-  const [dynamicPlaybooks, setDynamicPlaybooks] = useState<DynamicPlaybook[]>([]);
-
-  // Fetch dynamic playbooks from API
-  useEffect(() => {
-    if (!enablePlaybooks) return;
-
-    const fetchPlaybooks = async () => {
-      try {
-        const response = await fetch('/api/playbooks');
-        if (response.ok) {
-          const playbooks = await response.json();
-          setDynamicPlaybooks(playbooks);
-          console.debug('[Scout] Loaded dynamic playbooks:', playbooks.length);
-        }
-      } catch (error) {
-        console.error('[Scout] Failed to fetch dynamic playbooks:', error);
-      }
-    };
-
-    fetchPlaybooks();
-  }, [enablePlaybooks]);
-
   // Don't render until subdomain URLs are set on client side
   if (Object.keys(subdomainUrls).length === 0) {
     return (
@@ -355,10 +308,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                   Pluggable workflows and dashboards
                 </p>
               </div>
-              <PlaybooksGrid
-                playbooksUrl={subdomainUrls.playbooks}
-                dynamicPlaybooks={dynamicPlaybooks}
-              />
+              <PlaybooksGrid playbooksUrl={subdomainUrls.playbooks} />
             </div>
           ) : null
         }
@@ -381,10 +331,7 @@ const ContentGrid = ({ enableChat, enablePlaybooks, subdomainUrls }: ContentGrid
                   Pluggable workflows and dashboards
                 </p>
               </div>
-              <PlaybooksGrid
-                playbooksUrl={subdomainUrls.playbooks}
-                dynamicPlaybooks={dynamicPlaybooks}
-              />
+              <PlaybooksGrid playbooksUrl={subdomainUrls.playbooks} />
             </div>
           )}
 
@@ -535,8 +482,7 @@ export default function HomeClient({
 
   useEffect(() => {
     setMounted(true);
-    console.log('[Scout Client] Props received:', { enableChat, enablePlaybooks });
-  }, [enableChat, enablePlaybooks]);
+  }, []);
 
   const skipAuth =
     process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';

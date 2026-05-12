@@ -10,13 +10,6 @@ export default function Home() {
   const scoutEnv = process.env.SCOUT_ENV;
   const deployerName = process.env.DEPLOYER_NAME;
 
-  console.log('[Scout Server] Environment variables:', {
-    enableChat,
-    enablePlaybooks,
-    scoutEnv,
-    deployerName,
-  });
-
   return (
     <HomeClient
       enableChat={enableChat}
