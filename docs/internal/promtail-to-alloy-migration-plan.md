@@ -179,6 +179,16 @@ Files added:
 - In Grafana → Explore → Loki, query `{namespace="scout-monitoring", pod=~"alloy-.*"}` returns alloy's own logs.
 - Query `count_over_time({namespace="scout-monitoring"}[5m])` shows logs from alloy itself flowing.
 
+**Results:**
+- ✅ `kubectl get ds -n scout-monitoring alloy` → 2/2 Ready (one pod per node — `tagdev-big-03` and `tagdev-control-03`).
+- ✅ All 4 River components healthy via `http://<alloy-pod>:12345/api/v0/web/components`: `discovery.kubernetes.pods`, `discovery.relabel.pods`, `loki.source.kubernetes.pods`, `loki.write.default`.
+- ✅ No errors or warnings in alloy pod logs.
+- ✅ Alloy's own logs flowing to Loki within 3 min of startup — 262 + 260 lines in the first 10 min.
+- ✅ **Label parity confirmed on alloy's own streams** — labels emitted: `namespace=scout-monitoring`, `pod=alloy-b5zd2`, `container=alloy`, `app=alloy`, `instance=alloy`, `job=scout-monitoring/alloy`, `node_name=tagdev-big-03.nrg.wustl.edu`, plus auto-added `stream`, `service_name`, `filename`, `detected_level`. Matches promtail's schema exactly. (`component` is absent because alloy's pod doesn't carry `app.kubernetes.io/component` — promtail handles this case identically.)
+- Notable bonus: `loki.source.kubernetes` *does* synthesize a `filename` label from kubelet metadata, so even that label (previously flagged as expected-to-be-missing) is preserved.
+
+**Bug found and fixed during Phase 1 verification:** Initial alloy config used `loki-gateway:3100`. The actual `loki-gateway` Service only exposes port 80 (nginx) — port 3100 is on a different Service (`loki`). Symptom: `loki_write_sent_bytes_total=0` with `status_code="-1"` on alloy pods, while alloy's own logs *still appeared* in Loki — those were being shipped by promtail (which was scraping alloy and using the correct port-80 URL). Fixed by dropping the explicit `:3100` so the URL matches promtail's default. The teammate's experimental commit had the same off-by-port bug, but masked because it pointed at `loki.<ns>` instead of `loki-gateway.<ns>`, and the `loki` Service does expose 3100.
+
 ### Phase 2: Verify label parity
 
 **Test:** With both promtail and alloy running, both ship to Loki. Manually compare on a known service (e.g. keycloak):

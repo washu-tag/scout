@@ -10,5 +10,7 @@ alloy_helm_timeout: 5m
 # Namespace (defaults to the shared monitoring namespace from scout_common)
 alloy_namespace: '{{ scout_monitoring_namespace }}'
 
-# Loki write endpoint (DaemonSet ships logs here)
-alloy_loki_write_url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local:3100/loki/api/v1/push'
+# Loki write endpoint (DaemonSet ships logs here).
+# The loki-gateway Service exposes only port 80 (nginx proxy), not 3100 —
+# port 3100 is on the underlying loki Service. Matches the promtail default.
+alloy_loki_write_url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local/loki/api/v1/push'
