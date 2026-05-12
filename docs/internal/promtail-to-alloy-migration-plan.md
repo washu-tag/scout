@@ -199,6 +199,13 @@ Files added:
 
 If any label mismatches, iterate on `discovery.relabel` rules in the values template, re-run `make install-monitor`, re-check.
 
+**Results:**
+- ✅ Label parity is **byte-identical**. For shared pods (`grafana-864677d4f4-msdvc`, `keycloak-operator-676cff98b6-xpgzc`, `postgresql-cluster-1`), Loki returns exactly **one** series per pod — meaning promtail and alloy produce identical label sets and Loki treats them as a single stream. Confirmed via `/loki/api/v1/series` matching by pod name.
+- ✅ The CNPG-specific `component=database` label is preserved correctly for postgres pods (proves the `app.kubernetes.io/component` fallback chain works).
+- ✅ Alloy is successfully POSTing to `loki-gateway`: per-pod metrics show ~3.3M `status_code=204` successes across the alloy DaemonSet.
+- ⚠️ **Startup transient (not a steady-state issue):** alloy's `loki.source.kubernetes` reads from the kubelet pod-logs API and replays old log history on first start. Loki rejects entries older than ~1h with `too_far_behind` / `greater_than_max_sample_age` (~800K dropped across both pods). These were already shipped to Loki by promtail in the past, so no data is lost — Loki just refuses the duplicate replay. After alloy catches up to "now", new entries flow without rejection. Worth noting that any future alloy pod restart will replay this transient briefly; acceptable for now, can refine later by setting a `tail_from_end`-style option if it becomes noisy.
+- Verdict: parity confirmed; safe to remove promtail.
+
 ### Phase 3: Remove promtail
 
 **Commit 2:** Remove promtail.
