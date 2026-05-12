@@ -17,22 +17,10 @@ import {
   HiOutlineChat,
   HiOutlineSearch,
 } from 'react-icons/hi';
-import { getPlaybookColors } from '@/lib/playbook-config';
 import TopBar from '@/components/TopBar';
 import AdminSection from '@/components/AdminSection';
 
-type ServiceTone = 'indigo' | 'emerald' | 'amber';
-
-const SERVICE_TONE: Record<
-  ServiceTone,
-  {
-    iconBg: string;
-    icon: string;
-    cta: string;
-    hoverBorder: string;
-    hoverShadow: string;
-  }
-> = {
+const TONE = {
   indigo: {
     iconBg: 'bg-indigo-50 border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/50',
     icon: 'text-indigo-600 dark:text-indigo-400',
@@ -54,14 +42,37 @@ const SERVICE_TONE: Record<
     hoverBorder: 'hover:border-amber-200 dark:hover:border-amber-900/60',
     hoverShadow: 'hover:shadow-amber-200/50 dark:hover:shadow-amber-500/15',
   },
-};
+  violet: {
+    iconBg: 'bg-violet-50 border-violet-100 dark:bg-violet-950/40 dark:border-violet-900/50',
+    icon: 'text-violet-600 dark:text-violet-400',
+    cta: 'text-violet-600 dark:text-violet-400',
+    hoverBorder: 'hover:border-violet-200 dark:hover:border-violet-900/60',
+    hoverShadow: 'hover:shadow-violet-200/50 dark:hover:shadow-violet-500/15',
+  },
+  rose: {
+    iconBg: 'bg-rose-50 border-rose-100 dark:bg-rose-950/40 dark:border-rose-900/50',
+    icon: 'text-rose-600 dark:text-rose-400',
+    cta: 'text-rose-600 dark:text-rose-400',
+    hoverBorder: 'hover:border-rose-200 dark:hover:border-rose-900/60',
+    hoverShadow: 'hover:shadow-rose-200/50 dark:hover:shadow-rose-500/15',
+  },
+  cyan: {
+    iconBg: 'bg-cyan-50 border-cyan-100 dark:bg-cyan-950/40 dark:border-cyan-900/50',
+    icon: 'text-cyan-600 dark:text-cyan-400',
+    cta: 'text-cyan-600 dark:text-cyan-400',
+    hoverBorder: 'hover:border-cyan-200 dark:hover:border-cyan-900/60',
+    hoverShadow: 'hover:shadow-cyan-200/50 dark:hover:shadow-cyan-500/15',
+  },
+} as const;
+
+type Tone = keyof typeof TONE;
 
 interface ServiceCardProps {
   href: string;
   icon: React.ReactNode;
   title: string;
   description: string;
-  tone: ServiceTone;
+  tone: Tone;
   external?: boolean;
 }
 
@@ -73,7 +84,7 @@ const ServiceCard = ({
   tone,
   external = false,
 }: ServiceCardProps) => {
-  const t = SERVICE_TONE[tone];
+  const t = TONE[tone];
   return (
     <a
       href={href}
@@ -233,7 +244,7 @@ const PlaybooksGrid = ({ playbooksUrl }: PlaybooksGridProps) => {
             title={playbook.title}
             description={playbook.description}
             icon={<IconComponent />}
-            colors={getPlaybookColors(playbook.color)}
+            colors={TONE[playbook.color as Tone]}
           />
         );
       })}
@@ -465,9 +476,14 @@ export default function HomeClient({
     setSubdomainUrls({
       jupyter: getUrl('jupyter'),
       superset: getUrl('superset'),
-      chat: getUrl('chat', '/oauth/oidc/login'),
-      // Chat root for deep links with URL params (e.g. ?q=, ?models=, ?tools=).
+      // `chat` goes through OWUI's OIDC entrypoint so the user is silently
+      // SSO'd via Keycloak. `chatRoot` is the bare URL for deep-links with
+      // URL params (e.g. ?q=, ?models=, ?tools=) — OWUI's /oauth/oidc/login
+      // strips query params during the OIDC roundtrip, so deep-links can't
+      // share the OIDC path. The pre-warm effect below sets the OWUI session
+      // cookie up front so the first deep-link click doesn't bounce to /auth.
       // See https://docs.openwebui.com/features/chat-conversations/chat-features/url-params/
+      chat: getUrl('chat', '/oauth/oidc/login'),
       chatRoot: getUrl('chat'),
       playbooks: getUrl('playbooks'),
       minio: getUrl('minio'),
@@ -476,6 +492,32 @@ export default function HomeClient({
       keycloak: getUrl('keycloak', '/admin/scout/console'),
     });
   }, []);
+
+  // Pre-warm the OWUI session once per browser session so deep-links to
+  // chat (e.g. /?q=foo) land on an authenticated page directly. OWUI's
+  // /oauth/oidc/login drops query params, so we can't route deep-links
+  // through OIDC and preserve them. Triggering OIDC silently in a hidden
+  // iframe sets the OWUI cookie up front. Iframe is removed after 15s.
+  useEffect(() => {
+    if (!enableChat) return;
+    const chatLoginUrl = subdomainUrls.chat;
+    if (!chatLoginUrl) return;
+    if (window.sessionStorage.getItem('scout:chat-prewarmed')) return;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.setAttribute('title', 'pre-warm chat session');
+    iframe.src = chatLoginUrl;
+    document.body.appendChild(iframe);
+    window.sessionStorage.setItem('scout:chat-prewarmed', '1');
+
+    const removeTimer = window.setTimeout(() => iframe.remove(), 15000);
+    return () => {
+      window.clearTimeout(removeTimer);
+      iframe.remove();
+    };
+  }, [enableChat, subdomainUrls.chat]);
 
   // Cmd/Ctrl+K focuses the search input.
   useEffect(() => {
