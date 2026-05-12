@@ -1,0 +1,31 @@
+slice_name: Precision
+description: Of reports the model flagged among reviewed ones, the share the reviewer
+  confirmed.
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  datasource: 3__table
+  viz_type: big_number_total
+  slice_id: 49
+  metric: precision_pct
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+  subheader: TP / (TP + FP)
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: ',.1f'
+  time_format: smart_date
+  extra_form_data: {}
+  dashboards:
+    - 3
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 7a1aba09-e711-45ad-880d-856607b87a03
+version: 1.0.0
+dataset_uuid: cf33626a-2b35-423b-9a9d-7d8e62a6b021

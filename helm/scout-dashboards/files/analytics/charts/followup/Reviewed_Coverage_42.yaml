@@ -1,0 +1,40 @@
+slice_name: Reviewed Coverage
+description: Share of detected follow-ups that a human reviewer has labeled.
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  datasource: 3__table
+  viz_type: big_number_total
+  slice_id: 42
+  metric:
+    aggregate: null
+    column: null
+    expressionType: SQL
+    hasCustomLabel: true
+    label: Reviewed Coverage %
+    optionName: metric_reviewed_coverage
+    sqlExpression:
+      100.0 * SUM(CASE WHEN followup_detected = TRUE AND human_reviewed_at
+      IS NOT NULL THEN 1 ELSE 0 END) / NULLIF(SUM(CASE WHEN followup_detected
+      = TRUE THEN 1 ELSE 0 END), 0)
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+  subheader: '% of detected, reviewed'
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: ',.1f'
+  time_format: smart_date
+  extra_form_data: {}
+  dashboards:
+    - 3
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 8121b8dd-1a45-4228-9850-bfafc9792062
+version: 1.0.0
+dataset_uuid: cf33626a-2b35-423b-9a9d-7d8e62a6b021

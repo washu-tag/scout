@@ -1,0 +1,61 @@
+slice_name: Detection Rate Over Time
+description: Weekly trend of follow-up detection rate.
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_line
+params:
+  datasource: 3__table
+  viz_type: echarts_timeseries_line
+  slice_id: 43
+  x_axis: message_dt
+  time_grain_sqla: P1W
+  metrics:
+    - detection_rate
+  groupby: []
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: followup_processed_at
+      operator: IS NOT NULL
+      operatorId: IS_NOT_NULL
+      expressionType: SIMPLE
+  row_limit: 10000
+  truncate_metric: true
+  show_empty_columns: true
+  comparison_type: values
+  annotation_layers: []
+  x_axis_title: Report Date (weekly)
+  x_axis_title_margin: 30
+  y_axis_title: '% follow-up detected'
+  y_axis_title_margin: 60
+  y_axis_title_position: Left
+  sort_series_type: sum
+  sort_series_ascending: false
+  color_scheme: presetColors
+  seriesType: line
+  show_value: false
+  only_total: true
+  markerEnabled: true
+  markerSize: 6
+  show_legend: false
+  legendType: scroll
+  legendOrientation: top
+  x_axis_time_format: smart_date
+  rich_tooltip: true
+  y_axis_format: ',.1f'
+  truncateXAxis: true
+  y_axis_bounds:
+    - 0
+    - 100
+  extra_form_data: {}
+  dashboards:
+    - 3
+query_context: null
+cache_timeout: null
+uuid: 3f345bb4-bf77-43e4-ac92-d945ffaf2b61
+version: 1.0.0
+dataset_uuid: cf33626a-2b35-423b-9a9d-7d8e62a6b021

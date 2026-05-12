@@ -214,6 +214,10 @@ keycloak_subdomain: keycloak
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
 enable_playbooks: false
+# Superset dashboard families. The Scout core dashboard always ships;
+# these toggle the optional Quality/TAT and Follow-up Detection dashboards.
+enable_quality_dashboard: false
+enable_followup_dashboard: false
 
 # Package proxy configuration (per ADR-0016, following ADR-0011 service-mode pattern)
 # Options: none, nexus, external

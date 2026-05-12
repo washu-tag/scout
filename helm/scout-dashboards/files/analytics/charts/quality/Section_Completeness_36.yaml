@@ -1,0 +1,81 @@
+slice_name: Section Completeness
+description: Percentage of reports populated for each parsed section. Higher is better
+  for findings/impression; addendum is informational.
+certified_by: null
+certification_details: null
+viz_type: table
+params:
+  datasource: 1__table
+  viz_type: table
+  slice_id: 36
+  query_mode: aggregate
+  groupby: []
+  time_grain_sqla: P1D
+  temporal_columns_lookup:
+    message_dt: true
+  metrics:
+    - aggregate: null
+      column: null
+      expressionType: SQL
+      hasCustomLabel: true
+      label: '% Findings'
+      optionName: metric_findings_rate
+      sqlExpression: 100.0 * SUM(CASE WHEN report_section_findings IS NOT NULL AND
+        TRIM(report_section_findings) <> '' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)
+    - aggregate: null
+      column: null
+      expressionType: SQL
+      hasCustomLabel: true
+      label: '% Impression'
+      optionName: metric_impression_rate
+      sqlExpression: 100.0 * SUM(CASE WHEN report_section_impression IS NOT NULL AND
+        TRIM(report_section_impression) <> '' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),
+        0)
+    - aggregate: null
+      column: null
+      expressionType: SQL
+      hasCustomLabel: true
+      label: '% Addendum'
+      optionName: metric_addendum_rate
+      sqlExpression: 100.0 * SUM(CASE WHEN report_section_addendum IS NOT NULL AND
+        TRIM(report_section_addendum) <> '' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)
+    - aggregate: null
+      column: null
+      expressionType: SQL
+      hasCustomLabel: true
+      label: '% with Diagnosis'
+      optionName: metric_diagnosis_rate
+      sqlExpression: 100.0 * SUM(CASE WHEN cardinality(diagnoses) > 0 THEN 1 ELSE 0
+        END) / NULLIF(COUNT(*), 0)
+    - aggregate: null
+      column: null
+      expressionType: SQL
+      hasCustomLabel: true
+      label: Reports
+      optionName: metric_total_reports
+      sqlExpression: COUNT(*)
+  all_columns: []
+  percent_metrics: []
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+  order_by_cols: []
+  row_limit: 10
+  table_timestamp_format: smart_date
+  show_cell_bars: true
+  color_pn: false
+  comparison_color_scheme: Green
+  comparison_type: values
+  number_format: ',.1f'
+  extra_form_data: {}
+  dashboards:
+    - 2
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: ac9a1139-4447-4f50-92df-25b36f523382
+version: 1.0.0
+dataset_uuid: 14cdaed5-905e-499a-b020-13e1b54097c8

@@ -1,0 +1,58 @@
+slice_name: Recent Recommendations
+description: Most recent reports the model flagged for follow-up, with the extracted
+  excerpt alongside the modality and finding category.
+certified_by: null
+certification_details: null
+viz_type: table
+params:
+  datasource: 3__table
+  viz_type: table
+  slice_id: 53
+  query_mode: raw
+  all_columns:
+    - message_dt
+    - modality
+    - finding_category
+    - followup_snippet
+  groupby: []
+  metrics: []
+  percent_metrics: []
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: followup_detected
+      operator: ==
+      operatorId: EQUALS
+      comparator: 'true'
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: followup_snippet
+      operator: IS NOT NULL
+      operatorId: IS_NOT_NULL
+      expressionType: SIMPLE
+  order_by_cols:
+    - '["message_dt", false]'
+  row_limit: 10000
+  server_pagination: false
+  server_page_length: 25
+  order_desc: true
+  include_search: true
+  show_totals: false
+  table_timestamp_format: smart_date
+  show_cell_bars: false
+  color_pn: false
+  comparison_color_scheme: Green
+  comparison_type: values
+  extra_form_data: {}
+  dashboards:
+    - 3
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 791eec3c-cc03-4d41-a250-0d530ea36695
+version: 1.0.0
+dataset_uuid: cf33626a-2b35-423b-9a9d-7d8e62a6b021

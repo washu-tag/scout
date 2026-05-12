@@ -133,12 +133,27 @@ position:
       - GRID_ID
       - ROW-I9XV1xbdaofN3nsCygooy
     type: CHART
+  CHART-diagnoses-22-1:
+    children: []
+    id: CHART-diagnoses-22-1
+    meta:
+      chartId: 22
+      height: 60
+      sliceName: Diagnoses
+      uuid: fb89a053-b7d6-4d66-9cf9-25aa382ccba7
+      width: 12
+    parents:
+      - ROOT_ID
+      - GRID_ID
+      - ROW-diagnoses-row-1
+    type: CHART
   DASHBOARD_VERSION_KEY: v2
   GRID_ID:
     children:
       - ROW-zi8CO3tw0mUEjxP4JEHdZ
       - ROW-b1bRsaicW__1lBGZ-5EqP
       - ROW-I9XV1xbdaofN3nsCygooy
+      - ROW-diagnoses-row-1
       - ROW-mXRI5NFejrZ9v32hZRlel
     id: GRID_ID
     parents:
@@ -202,6 +217,17 @@ position:
       - ROOT_ID
       - GRID_ID
     type: ROW
+  ROW-diagnoses-row-1:
+    children:
+      - CHART-diagnoses-22-1
+    id: ROW-diagnoses-row-1
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+      - ROOT_ID
+      - GRID_ID
+    type: ROW
 metadata:
   chart_configuration:
     '1':
@@ -217,6 +243,7 @@ metadata:
           - 7
           - 8
           - 21
+          - 22
     '3':
       id: 3
       crossFilters:
@@ -230,6 +257,7 @@ metadata:
           - 7
           - 8
           - 21
+          - 22
     '4':
       id: 4
       crossFilters:
@@ -243,6 +271,7 @@ metadata:
           - 7
           - 8
           - 21
+          - 22
     '6':
       id: 6
       crossFilters:
@@ -256,6 +285,7 @@ metadata:
           - 7
           - 8
           - 21
+          - 22
     '7':
       id: 8
       crossFilters:
@@ -269,6 +299,7 @@ metadata:
           - 6
           - 8
           - 21
+          - 22
     '8':
       id: 8
       crossFilters:
@@ -282,6 +313,7 @@ metadata:
           - 6
           - 7
           - 21
+          - 22
     '21':
       id: 21
       crossFilters:
@@ -295,6 +327,21 @@ metadata:
           - 6
           - 7
           - 8
+          - 22
+    '22':
+      id: 22
+      crossFilters:
+        scope: global
+        chartsInScope:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 21
   global_chart_configuration:
     scope:
       rootPath:
@@ -310,6 +357,7 @@ metadata:
       - 7
       - 8
       - 21
+      - 22
   color_scheme: presetColors
   refresh_frequency: 0
   expanded_slices: {}
@@ -344,6 +392,7 @@ metadata:
         - 2
         - 4
         - 5
+        - 22
       tabsInScope: []
     - id: NATIVE_FILTER-ie1rZ_G0ycH9rUzx93_Z2
       controlValues:
@@ -358,6 +407,9 @@ metadata:
         - column:
             name: modality
           datasetUuid: 14cdaed5-905e-499a-b020-13e1b54097c8
+        - column:
+            name: modality
+          datasetUuid: 32d5849e-ae01-4933-a81c-7697cc254092
       defaultDataMask:
         extraFormData: {}
         filterState: {}
@@ -378,6 +430,7 @@ metadata:
         - 2
         - 4
         - 5
+        - 22
       tabsInScope: []
     - id: NATIVE_FILTER-P9Oiirax3nYJgUfF1j-7s
       controlValues:
@@ -392,6 +445,9 @@ metadata:
         - column:
             name: service_identifier
           datasetUuid: 14cdaed5-905e-499a-b020-13e1b54097c8
+        - column:
+            name: service_identifier
+          datasetUuid: 32d5849e-ae01-4933-a81c-7697cc254092
       defaultDataMask:
         extraFormData: {}
         filterState: {}
@@ -416,6 +472,9 @@ metadata:
         - column:
             name: service_name
           datasetUuid: 14cdaed5-905e-499a-b020-13e1b54097c8
+        - column:
+            name: service_name
+          datasetUuid: 32d5849e-ae01-4933-a81c-7697cc254092
       defaultDataMask:
         extraFormData: {}
         filterState: {}
@@ -440,6 +499,9 @@ metadata:
         - column:
             name: sending_facility
           datasetUuid: 14cdaed5-905e-499a-b020-13e1b54097c8
+        - column:
+            name: sending_facility
+          datasetUuid: 32d5849e-ae01-4933-a81c-7697cc254092
       defaultDataMask:
         extraFormData: {}
         filterState: {}
@@ -460,6 +522,7 @@ metadata:
         - 2
         - 4
         - 5
+        - 22
       tabsInScope: []
   shared_label_colors:
     - <NULL>

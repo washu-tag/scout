@@ -1,0 +1,177 @@
+table_name: diagnoses_flat
+main_dttm_col: message_dt
+description: Flattened view of report diagnoses; one row per diagnosis code in the
+  diagnoses array.
+default_endpoint: null
+offset: 0
+cache_timeout: 7200
+catalog: delta
+schema: default
+sql: |
+  SELECT
+    r.message_dt,
+    r.message_control_id,
+    r.modality,
+    r.service_name,
+    r.service_identifier,
+    r.sending_facility,
+    r.year,
+    d.diagnosis_code,
+    d.diagnosis_code_text,
+    d.diagnosis_code_coding_system
+  FROM delta.default.reports r
+  CROSS JOIN UNNEST(r.diagnoses) AS d (
+    diagnosis_code, diagnosis_code_text, diagnosis_code_coding_system
+  )
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+normalize_columns: false
+always_filter_main_dttm: false
+uuid: 32d5849e-ae01-4933-a81c-7697cc254092
+metrics:
+  - metric_name: count
+    verbose_name: COUNT(*)
+    metric_type: count
+    expression: COUNT(*)
+    description: null
+    d3format: null
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+  - metric_name: distinct_reports
+    verbose_name: Reports with this diagnosis
+    metric_type: count_distinct
+    expression: COUNT(DISTINCT message_control_id)
+    description: null
+    d3format: null
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+columns:
+  - column_name: message_dt
+    verbose_name: null
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP(3) WITH TIME ZONE
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: message_control_id
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: modality
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: service_name
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: service_identifier
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: sending_facility
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: year
+    verbose_name: null
+    is_dttm: false
+    is_active: true
+    type: INTEGER
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: diagnosis_code
+    verbose_name: Diagnosis Code
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: diagnosis_code_text
+    verbose_name: Diagnosis Description
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: diagnosis_code_coding_system
+    verbose_name: Coding System
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+version: 1.0.0
+database_uuid: 9ed918e7-ef5a-4aa4-9574-f1946b58d520
