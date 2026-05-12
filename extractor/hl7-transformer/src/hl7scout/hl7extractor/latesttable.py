@@ -36,7 +36,7 @@ def process_latest_table(batch_df, spark, table_name):
             update_set,  # Use exact columns as in source
         ).whenNotMatchedInsertAll().execute()  # If no existing row for accession number, insert it as-is
     else:
-        create_table_from_df(deduped_df, table_name, cluster_col="accession_number")
+        create_table_from_df(deduped_df, table_name, cluster_col="accession_number") # improves merge performance
 
     spark.sql(
         f"OPTIMIZE {table_name}"
