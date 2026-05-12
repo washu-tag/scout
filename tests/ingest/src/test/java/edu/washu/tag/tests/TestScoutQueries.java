@@ -10,6 +10,7 @@ import edu.washu.tag.TestQuery;
 import edu.washu.tag.TestQuerySuite;
 import edu.washu.tag.model.IngestJobInput;
 import edu.washu.tag.model.ReportPatientMappingEntry;
+import edu.washu.tag.model.ReportPatientMappingHistoryEntry;
 import edu.washu.tag.util.FileIOUtils;
 import edu.washu.tag.validation.ExactNumberObjectsResult;
 import edu.washu.tag.validation.ExactRowsResult;
@@ -287,7 +288,7 @@ public class TestScoutQueries extends BaseTest {
         expectedPatients.add(new ExpectedPatientCluster(false, report9, report10));
         expectedPatients.add(new ExpectedPatientCluster(true, report11, report12));
 
-        validateMappingTable(mappingTableName, expectedPatients);
+        final List<ReportPatientMappingEntry> actualMappingsAfterDay1 = validateMappingTable(mappingTableName, expectedPatients);
 
         ingest(
             new IngestJobInput()
@@ -320,6 +321,12 @@ public class TestScoutQueries extends BaseTest {
         expectedPatients.add(new ExpectedPatientCluster(false, report11, report12, reportSecondDay10));
 
         validateMappingTable(mappingTableName, expectedPatients);
+        final List<ReportPatientMappingHistoryEntry> actualMappingsAfterDay2 = readMappingHistoryTable(mappingTableName);
+        for (MappingLookup lookup : Arrays.asList(report0, report1, report2, report3, report4, report5, report6, report11, report12)) {
+            final ReportPatientMappingEntry originalMapping = findExpectedMapping(actualMappingsAfterDay1, lookup);
+            final ReportPatientMappingHistoryEntry postMergeHistory = findExpectedMapping(actualMappingsAfterDay2, lookup);
+            assertThat(postMergeHistory.getPreviousScoutId()).as("Previous Scout id in history table").isEqualTo(originalMapping.getScoutPatientId());
+        }
 
         final String curatedEpicView = baseTableName + "_curated_spark_epic_view";
 
@@ -420,7 +427,21 @@ public class TestScoutQueries extends BaseTest {
             }).toList();
     }
 
-    private ReportPatientMappingEntry findExpectedMapping(List<ReportPatientMappingEntry> mappingsToSearch, MappingLookup expectedMapping) {
+    private List<ReportPatientMappingHistoryEntry> readMappingHistoryTable(String tableName) {
+        return spark.sql("SELECT * FROM " + tableName + "_history")
+            .toJSON()
+            .collectAsList()
+            .stream()
+            .map(row -> {
+                try {
+                    return objectMapper.readValue(row, ReportPatientMappingHistoryEntry.class);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+            }).toList();
+    }
+
+    private <X extends ReportPatientMappingEntry> X findExpectedMapping(List<X> mappingsToSearch, MappingLookup expectedMapping) {
         return mappingsToSearch.stream()
             .filter(mapping -> {
                 final String reportId = mapping.getPrimaryReportIdentifier();
@@ -431,7 +452,7 @@ public class TestScoutQueries extends BaseTest {
             .orElseThrow(RuntimeException::new);
     }
 
-    private void validateMappingTable(String tableName, List<ExpectedPatientCluster> expectedPatientClusters) {
+    private List<ReportPatientMappingEntry> validateMappingTable(String tableName, List<ExpectedPatientCluster> expectedPatientClusters) {
         final List<ReportPatientMappingEntry> actualState = readMappingTable(tableName);
 
         assertThat(actualState).as("mapping table").hasSize(
@@ -478,6 +499,7 @@ public class TestScoutQueries extends BaseTest {
             }
             logger.info("Validated mappings associated to scout patient id {}", scoutIdForPatient);
         }
+        return actualState;
     }
 
     private void assertSubsetOfMappingsHasExactlyNumberOfScoutIds(List<ReportPatientMappingEntry> mappingSubset, int expectedSize) {
