@@ -1,0 +1,63 @@
+---
+# Configures one Open WebUI custom model entry idempotently for a scout_models
+# entry that defines a `ui:` block. Applies up to TWO overrides per entry:
+#
+#   1. Scout Explorer override on the long variant (e.g., gemma4-31b-long:latest)
+#      — visible in the picker with our display name, system prompt, tools,
+#      and advanced params (function_calling, reasoning_effort, keep_alive).
+#      OWUI's merge logic replaces the auto-discovered Ollama base entry in
+#      place because base_model_id is null and id matches.
+#
+#   2. Hide-base override on the raw Ollama tag (e.g., gemma4:31b) — created
+#      with is_active: false so OWUI's merge code drops it from the picker
+#      (utils/models.py: `else: models.remove(model)`). Skipped when
+#      open_webui_hide_base_models is false or when base == long-variant name.
+#
+# Required loop var: `m` (one entry from scout_models with `ui:` block)
+# Required vars from configure_admin.yaml: `owui_admin_token`,
+#   `_scout_system_prompt`
+
+- name: 'Build Scout Explorer override payload: {{ m.name }}'
+  ansible.builtin.set_fact:
+    _scout_payload:
+      id: '{{ m.ui.id | default(m.name) }}'
+      base_model_id: null
+      name: '{{ m.ui.name }}'
+      meta:
+        profile_image_url: '{{ m.ui.profile_image_url | default(open_webui_scout_default_profile_image_url) }}'
+        description: '{{ m.ui.description | default("") }}'
+        toolIds: '{{ m.ui.tool_ids | default(open_webui_scout_tool_ids) }}'
+        suggestion_prompts: '{{ m.ui.suggestion_prompts | default(open_webui_scout_default_suggestion_prompts) }}'
+        capabilities: '{{ m.ui.capabilities | default(open_webui_scout_default_capabilities) }}'
+      params:
+        system: '{{ _scout_system_prompt }}'
+        function_calling: '{{ m.ui.function_calling | default(open_webui_scout_default_function_calling) }}'
+        reasoning_effort: '{{ m.ui.reasoning_effort | default(open_webui_scout_default_reasoning_effort) }}'
+        keep_alive: '{{ m.ui.keep_alive | default(open_webui_scout_keep_alive_resident if (m.preload | default(true)) else open_webui_scout_keep_alive_cold_load) }}'
+      is_active: true
+
+- name: 'Apply Scout Explorer override: {{ m.ui.name }}'
+  ansible.builtin.include_tasks: _apply_model_payload.yaml
+  vars:
+    _payload: '{{ _scout_payload }}'
+
+- name: 'Build hide-base override payload: {{ m.base }}'
+  ansible.builtin.set_fact:
+    _hide_payload:
+      id: '{{ m.base }}'
+      base_model_id: null
+      name: '{{ m.base }}' # Cosmetic — never shown since the entry is hidden
+      meta: {}
+      params: {}
+      is_active: false
+  when:
+    - open_webui_hide_base_models | default(true) | bool
+    - m.base != (m.ui.id | default(m.name))
+
+- name: 'Apply hide-base override: {{ m.base }}'
+  ansible.builtin.include_tasks: _apply_model_payload.yaml
+  vars:
+    _payload: '{{ _hide_payload }}'
+  when:
+    - open_webui_hide_base_models | default(true) | bool
+    - m.base != (m.ui.id | default(m.name))

@@ -7,9 +7,15 @@
     that:
       - open_webui_postgres_password is defined
       - open_webui_postgres_password | length > 0
+      - open_webui_secret_key is defined
+      - open_webui_secret_key | length > 0
     fail_msg: >
-      open_webui_postgres_password is required but not set.
-      Please set it in your inventory.yaml (use vault encryption).
+      open_webui_postgres_password and open_webui_secret_key are both required.
+      Please set them in your inventory.yaml (use vault encryption).
+      open_webui_secret_key backs both session signing and the deterministic
+      bootstrap admin password — rotating it invalidates the bootstrap login,
+      which the password-migration step in configure_admin.yaml then recovers
+      on the next deploy.
       Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 
@@ -155,13 +161,11 @@
     - ollama_nfs_path is defined
     - ollama_nfs_path | length > 0
 
-# Ensure Scout base model is in ollama_models list if Scout model creation is enabled
-- name: Add Scout base model to ollama_models if needed
+# Ensure all Scout base models are in ollama_models list if Scout model creation is enabled
+- name: Add Scout base models to ollama_models
   ansible.builtin.set_fact:
-    ollama_models: '{{ (ollama_models | default([])) | union([scout_base_model]) }}'
-  when:
-    - scout_model_create | bool
-    - scout_base_model not in (ollama_models | default([]))
+    ollama_models: "{{ (ollama_models | default([])) | union(scout_models | map(attribute='base') | list) }}"
+  when: scout_model_create | bool
 
 # Pull Ollama models and create Scout model (combined into single job)
 - name: Pull Ollama models

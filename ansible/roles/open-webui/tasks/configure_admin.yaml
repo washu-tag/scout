@@ -219,3 +219,34 @@
     msg: >-
       Admin JWT minted for {{ open_webui_bootstrap_email }} (role=admin)
       via {{ 'signin' if _owui_signin_code == '200' else 'signup' }}.
+
+# ---------------------------------------------------------------------------
+# Phase 2b: Filter Functions (Link Sanitizer, Context Summarization)
+# ---------------------------------------------------------------------------
+- name: 'Configure filter functions'
+  ansible.builtin.include_tasks: configure_filter_function.yaml
+  loop: '{{ open_webui_filter_functions | default([]) }}'
+  loop_control:
+    loop_var: fn
+    label: '{{ fn.id }}'
+
+# ---------------------------------------------------------------------------
+# Phase 2c: Custom UI models (Scout Explorer variants)
+# ---------------------------------------------------------------------------
+# Schema docs (dataschema, charting guidance) are inlined into the system
+# prompt file rather than attached as Knowledge collections. OWUI's RAG
+# auto-injection path is gated on `function_calling != 'native'`
+# (utils/middleware.py); Scout models run native, so attached knowledge
+# only surfaces via LLM-initiated list_knowledge / query_knowledge_files
+# tool calls — which thinking-mode models often skip. Inlining guarantees
+# the schema is in context every turn.
+- name: 'Read shared Scout system prompt'
+  ansible.builtin.set_fact:
+    _scout_system_prompt: "{{ lookup('file', role_path ~ '/files/' ~ open_webui_scout_system_prompt_file) }}"
+
+- name: 'Configure OWUI custom models for scout_models entries with ui: block'
+  ansible.builtin.include_tasks: configure_model.yaml
+  loop: '{{ scout_models | default([]) | selectattr("ui", "defined") | list }}'
+  loop_control:
+    loop_var: m
+    label: '{{ m.ui.name | default(m.name) }}'

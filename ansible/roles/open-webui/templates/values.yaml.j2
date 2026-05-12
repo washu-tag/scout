@@ -64,8 +64,10 @@ ollama:
     size: {{ ollama_storage_size }}
 {% endif %}
 {% if scout_model_create %}
-  # Load Scout model into memory on pod startup (if present)
-  # Runs in background to avoid blocking pod readiness
+  # Warm Scout models with `preload: true` into VRAM on pod startup.
+  # Runs in background to avoid blocking pod readiness.
+  # `preload: false` models cold-load on first request (intentional — e.g., when
+  # total resident weights would exceed GPU memory).
   lifecycle:
     postStart:
       exec:
@@ -79,11 +81,12 @@ ollama:
                 ollama list >/dev/null 2>&1 && break
                 sleep 5
               done
-              # Load model into memory if present
-              if ollama list 2>/dev/null | grep -q "{{ scout_model_name }}"; then
-                echo "Loading Scout model {{ scout_model_name }} into memory..."
-                ollama run "{{ scout_model_name }}" "hi" || true
+{% for m in scout_models if m.preload | default(true) %}
+              if ollama list 2>/dev/null | grep -q "{{ m.name }}"; then
+                echo "Loading Scout model {{ m.name }} into memory..."
+                ollama run "{{ m.name }}" "hi" || true
               fi
+{% endfor %}
             ) &
 {% endif %}
 
@@ -224,6 +227,17 @@ extraEnvVars:
   # Disable Arena Model evaluations
   - name: ENABLE_EVALUATION_ARENA_MODELS
     value: '{{ open_webui_enable_arena_models | string | lower }}'
+
+  # Pin auxiliary tasks (title gen, follow-ups, tags, RAG/web-search query
+  # refinement) to a model that's already resident in VRAM, so a 5-word
+  # title generation never cold-loads a 120B model or waits on Qwen's
+  # thinking step. Must match an Ollama tag exactly — see defaults/main.yaml.
+  - name: TASK_MODEL
+    value: '{{ open_webui_task_model_id }}'
+
+  # Default model selected in the picker for new chats.
+  - name: DEFAULT_MODELS
+    value: '{{ open_webui_default_model_id }}'
 
 {% if tool_server_connections | default([]) | length > 0 %}
   # External MCP/OpenAPI tool servers (e.g., Trino MCP for Scout SQL queries).

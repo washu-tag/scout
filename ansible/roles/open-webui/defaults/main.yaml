@@ -32,14 +32,52 @@ ollama_nfs_mount_path: /nfs/ollama
 staging_ollama_namespace: '{{ package_download_namespace }}'
 
 # Scout custom model configuration
-scout_base_model: gpt-oss:120b
-scout_model_name: gpt-oss-120b-long:latest
-scout_model_num_predict: -1 # Unlimited token generation
-scout_model_num_ctx: 131072 # 128K context window
-scout_model_num_keep: 32768 # Keep 32K tokens in memory
-scout_model_create: true # Set to false to skip Scout model creation
-# List of Ollama models to pull automatically (see https://ollama.com/library)
-# `scout_base_model` will be included by default
+# Each entry creates a Modelfile-based variant on top of `base` with extended-context
+# parameters baked in. Required because Ollama's runtime default num_ctx is 4096
+# regardless of the model's native max, which silently truncates long inputs.
+# All `base` models are added to `ollama_models` automatically for pull.
+#
+# `preload`: whether the values.yaml lifecycle postStart hook warms the model
+# into VRAM at pod start. Set false for models that should cold-load on demand
+# (e.g., when total resident weights+KV would exceed GPU memory). Default: true.
+# Per-model keep-alive must be configured in Open WebUI (Admin → Models → Advanced).
+#
+# Entries with a `ui:` block also get a customized OWUI "Scout Explorer" model
+# created via the Phase 2c automation (system prompt, tool refs, suggestion
+# prompts, capability flags). Entries without `ui:` remain plain Ollama tags —
+# selectable in the picker but without Scout Explorer dressing.
+scout_models:
+  - base: gemma4:31b
+    name: gemma4-31b-long:latest
+    num_ctx: 131072 # 128K context window
+    num_keep: 32768 # Keep 32K tokens in memory
+    num_predict: -1 # Unlimited token generation
+    preload: true # Resident — small enough to keep warm; serves as default and task model
+    ui:
+      name: 'Scout Explorer'
+      description: 'Intelligent data exploration'
+  - base: qwen3.6:35b
+    name: qwen3.6-long:latest
+    num_ctx: 131072
+    num_keep: 32768
+    num_predict: -1
+    preload: false # Cold-load — thinking-mode model used selectively for analytical / multi-step queries
+    ui:
+      name: 'Scout Explorer (thinking)'
+      description: 'Multi-step analytical reasoning'
+  - base: gpt-oss:120b
+    name: gpt-oss-120b-long:latest
+    num_ctx: 131072
+    num_keep: 32768
+    num_predict: -1
+    preload: false # Cold-load — large weights, used only when explicitly selected
+    ui:
+      name: 'Scout Explorer (large)'
+      description: 'Cohort-building and broad recall over Scout reports'
+scout_model_create: true # Set to false to skip Scout model creation entirely
+
+# List of additional Ollama models to pull (see https://ollama.com/library)
+# Bases from `scout_models` are added automatically.
 ollama_models: []
 
 open_webui_storage_size: 2Gi
@@ -105,9 +143,17 @@ open_webui_csp_enabled: true
 # Declarative Open WebUI configuration (env-var-driven)
 # ----------------------------------------------------------------------------
 # These settings move admin-UI clickthrough config into Helm/Ansible. Open WebUI
-# stores them as PersistentConfig — env vars seed initial values on first launch
-# and are then editable in the admin UI. To force a fresh re-seed on existing
-# deployments, drop the OWUI persistence PVC or wipe the relevant config rows.
+# stores them as PersistentConfig in the `config` table of its Postgres DB:
+# env vars seed initial values on first launch only, and the admin UI is
+# authoritative thereafter. To force a re-seed from updated inventory values
+# on an existing deployment, delete the corresponding row(s) from the OWUI
+# Postgres `config` table (not the PVC — PVC holds vector store + uploads,
+# not PersistentConfig). The pod re-reads env on the next restart.
+#
+# This applies only to the env-var-driven settings in this block (tool servers,
+# RAG template, default/task model IDs, arena evaluation). Filters and custom
+# models (Phase 2b/c below) are seeded via OWUI's REST API on every deploy
+# and ARE declarative — inventory changes auto-propagate.
 
 # Trino MCP tool server — registered automatically as an Open WebUI external tool
 # so users don't have to add it via Admin → Settings → Integrations.
@@ -128,6 +174,25 @@ tool_server_connections:
 
 # Disable Arena Model evaluation feature (per README post-deploy step 7)
 open_webui_enable_arena_models: false
+
+# Default selected model in the picker for new chats. MUST match an Ollama tag
+# exactly — point this at whichever Scout Explorer variant should be the default
+# first impression. The default `gemma4-31b-long` is resident, dense, no thinking-
+# step latency, and fast enough for most asks; users can pick gpt-oss-120b-long
+# (cohort building) or qwen3.6-long (thinking-mode analysis) per chat.
+open_webui_default_model_id: 'gemma4-31b-long:latest'
+
+# Model used for OWUI's auxiliary tasks (chat title generation, follow-up
+# question suggestions, tag generation, web-search/RAG query refinement).
+# Without this, OWUI uses whichever Scout Explorer the user selected — which
+# means a 5-word title generation can trigger a slow cold-load of gpt-oss-120b
+# or an unnecessary thinking-mode roundtrip through qwen3.6.
+#
+# Pick a model that's already preloaded (preload: true) so task gen reuses
+# VRAM. MUST match the `name` of a resident scout_models entry exactly — the
+# raw `gemma4:31b` would be a different Ollama model loaded into a separate
+# VRAM slot.
+open_webui_task_model_id: 'gemma4-31b-long:latest'
 
 # RAG template — injected at chat time when knowledge is attached to a model.
 # Path is relative to this role's `files/` directory.
@@ -156,7 +221,127 @@ open_webui_bootstrap_name: 'Scout Deploy Bot'
 # Deterministic bootstrap password derived from the WebUI secret key. SHA256
 # hex (64 chars) fits bcrypt's 72-byte limit and rotates with the secret key
 # (so a secret rotation forces a re-bootstrap, which is the right semantics).
+# Rotation flow: change open_webui_secret_key in inventory → next deploy's
+# password-migration step rewrites the bootstrap user's bcrypt hash to match
+# the new derived password before /signin → seamless recovery, no manual ops.
 open_webui_bootstrap_password: '{{ open_webui_secret_key | hash("sha256") }}'
 
 # Set to false to skip post-deploy admin configuration entirely.
 open_webui_admin_setup_enabled: true
+
+# Internal domain(s) for the Link Sanitizer filter (Phase 2b).
+# Comma-separated. URLs matching these domains are kept; all other external
+# URLs in LLM responses are stripped to prevent PHI exfiltration via clicked
+# links. See ADR 0010.
+open_webui_link_sanitizer_internal_domains: '{{ server_hostname }}'
+
+# Filter functions seeded into Open WebUI on every deploy. Each entry maps to
+# one Function in OWUI Admin → Functions. The role reads `source_file` from
+# its files/ directory, creates/updates the function, sets valves, and
+# toggles state to match `enable_global` and `enable_active`. Note that this
+# re-asserts state every deploy — if an operator disables a filter in the UI
+# to debug, the next `make install-chat` re-enables it. To temporarily disable
+# the re-assert, set `enable_active: false` (and/or `enable_global: false`)
+# on the entry in inventory.
+open_webui_filter_functions:
+  - id: link_sanitizer_filter
+    name: Link Sanitizer Filter
+    description: Removes external URLs from LLM responses to prevent data exfiltration (ADR 0010).
+    source_file: link_sanitizer_filter.py
+    enable_global: true
+    enable_active: true
+    valves:
+      internal_domains: '{{ open_webui_link_sanitizer_internal_domains }}'
+  - id: context_summarization_filter
+    name: Context Summarization Filter
+    description: Summarizes older conversation history when approaching context limits (ADR 0014).
+    source_file: context_summarization_filter.py
+    enable_global: true
+    enable_active: true
+    valves:
+      token_threshold: 100000
+      messages_to_keep: 10
+      min_messages_to_keep: 2
+      tool_result_token_threshold: 500
+      ollama_url: 'http://ollama:11434'
+      summarizer_model: ''
+      debug_logging: false
+
+# ----------------------------------------------------------------------------
+# Scout Explorer custom model UI config (Phase 2c)
+# ----------------------------------------------------------------------------
+# Shared settings for every scout_models entry that opts into UI customization
+# via a `ui:` sub-block. The role builds an OWUI ModelForm payload combining
+# these shared defaults with each entry's per-model overrides, then POSTs
+# /api/v1/models/create or /model/update.
+#
+# A scout_models entry with NO `ui:` block is left as a plain Ollama model
+# (still selectable but without Scout Explorer system prompt / tools / display
+# name / advanced params).
+open_webui_scout_system_prompt_file: gpt-oss-scout-query-prompt.md
+open_webui_scout_tool_ids:
+  - 'server:mcp:{{ mcp_trino_tool_id }}'
+open_webui_scout_default_reasoning_effort: high
+open_webui_scout_default_function_calling: native
+# keep_alive defaults are derived from each scout_models entry's `preload`:
+#   preload: true  → '-1' (resident)
+#   preload: false → '5m' (cold-load, unloads on idle)
+open_webui_scout_keep_alive_resident: '-1'
+open_webui_scout_keep_alive_cold_load: '5m'
+
+# Hide each scout_models entry's raw base Ollama tag (e.g., gemma4:31b) from
+# the model picker so users only see the customized Scout Explorer entries
+# (built on the long-context Modelfile derivations). Implemented by creating
+# a custom model row with id=base, base_model_id=null, is_active=false; OWUI's
+# merge logic removes it from the picker. Set false to keep raw bases visible
+# (e.g., for debugging or to let users compare raw vs Scout-configured behavior).
+open_webui_hide_base_models: true
+
+# Default suggestion prompt cards shown when starting a new chat with a Scout
+# Explorer model. Each entry is {content, title: [short, subtitle]} per OWUI's
+# ModelMeta schema.
+#
+# Prompts are grounded in the Scout report schema (docs/source/dataschema.md)
+# and span the axes radiology researchers and ops actually query:
+#   - Cohort identification via free-text search of `report_section_impression`
+#     (the canonical NLP-on-radiology use case — see literature on incidental
+#     pulmonary nodule cohorts).
+#   - TAT analysis via `requested_dt` → `results_report_status_change_dt`
+#     (per memory: requested_dt is more reliably populated than observation_dt).
+#   - Modality utilization trends via `modality` + time bucketing.
+#   - Quality metrics via `report_section_addendum`.
+#   - Demographic slices via `patient_age` + `modality`.
+open_webui_scout_default_suggestion_prompts:
+  - title: ['Pulmonary nodule cohort', 'Chest CT findings']
+    content: 'Find chest CTs showing a pulmonary nodule.'
+  - title: ['Turnaround time', 'Order to final report']
+    content: "What's the typical turnaround time from order to final report, by modality?"
+  - title: ['Exam volume trends', 'Monthly, by modality']
+    content: 'How has exam volume changed over time, by modality?'
+  - title: ['Report addendum rate', 'Quality signal']
+    content: 'How often are reports amended with an addendum, by modality?'
+  - title: ['Pediatric CT', 'Patients under 18']
+    content: 'How many pediatric CT exams have we done, broken down by year?'
+
+# Default profile image (avatar) shown next to each Scout Explorer model in
+# the picker / model tile / chat header. Loaded as a data URL from a pre-
+# encoded base64 file in this role's files/ directory so it works in
+# air-gapped deployments with no external image-hosting dependency.
+# Source: docs/diagrams/logos/scout.png resized to 128×128 (~24 KB base64).
+open_webui_scout_default_profile_image_url: 'data:image/png;base64,{{ lookup("file", role_path ~ "/files/scout-logo-128.png.b64") }}'
+
+# Default capability flags. OWUI's DEFAULT_CAPABILITIES has everything `true`,
+# but a few are unsafe for Scout's air-gapped + PHI-handling deployment:
+#   - web_search:        needs internet; LLM-crafted queries can exfiltrate PHI
+#   - image_generation:  needs internet (DALL-E etc.) and same exfil risk
+#   - code_interpreter:  arbitrary code execution can exfiltrate or escape
+#   - terminal:          shell access — same risks, broader blast radius
+#   - vision:            unused by Scout (no images in the data)
+# Capabilities not listed here keep their OWUI default (true): file_context,
+# file_upload, citations, status_updates.
+open_webui_scout_default_capabilities:
+  vision: false
+  web_search: false
+  image_generation: false
+  code_interpreter: false
+  terminal: false

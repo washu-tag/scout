@@ -20,7 +20,7 @@ The role automatically:
 - Creates PostgreSQL database and Redis instance for Open WebUI
 - Deploys Ollama and Open WebUI via Helm
 - Pulls configured Ollama models
-- Creates the Scout custom model `gpt-oss-120b-long:latest`
+- Creates each entry in `scout_models` as a Modelfile-derived variant with extended-context parameters baked in (default: `gpt-oss-120b-long:latest` from `gpt-oss:120b`)
 
 ### Air-Gapped Deployment
 
@@ -35,22 +35,22 @@ In air-gapped environments (`air_gapped: true`), both model pulling and Scout mo
 
 **First install - manual model load required:**
 
-After the initial `make install-chat`, the Scout model exists on NFS but is not loaded into memory on the air-gapped Ollama instance. The first user request will experience a slow cold start while the model loads.
+After the initial `make install-chat`, Scout models exist on NFS but are not loaded into memory on the air-gapped Ollama instance. The first user request to each model experiences a slow cold start.
 
 To wait for the pull Job **on staging cluster**:
 ```bash
 # Wait for the pull Job to complete
-kubectl get jobs -n ollama -l app=ollama-pull-models -w
+kubectl get jobs -n scout-analytics -l app=ollama-pull-models -w
 ```
 
-To pre-load the model after the pull Job completes (replace the model name with your `scout_model_name` if customized) **on Scout cluster**:
+To pre-load each Scout model after the pull Job completes **on Scout cluster**:
 ```bash
-# Load the Scout model into memory (default: gpt-oss-120b-long:latest)
-kubectl exec -n ollama deploy/ollama -- ollama run gpt-oss-120b-long:latest "hi"
+# Load each Scout model into memory (use the names from your scout_models list)
+kubectl exec -n scout-analytics deploy/ollama -- ollama run gpt-oss-120b-long:latest "hi"
 ```
 Or, execute a chat in Open WebUI after you've configured the appropriate settings (see [Post-Deployment Configuration](#post-deployment-configuration)).
 
-On subsequent Ollama pod restarts, the model loads automatically via a lifecycle hook.
+On subsequent Ollama pod restarts, models with `preload: true` (default) load automatically via the lifecycle hook. Models with `preload: false` cold-load on first request.
 
 ### Required Configuration
 
@@ -63,11 +63,16 @@ See `defaults/main.yaml` for all available variables. Key requirements in `inven
 - `keycloak_open_webui_client_secret`
 
 **Optional Overrides:**
-- `ollama_models`: List of additional models to pull
-- `scout_model_create`: Set to `false` to skip Scout model creation (default: `true`)
+- `scout_models`: List of derived Scout model variants (each with `base`, `name`, `num_ctx`, `num_keep`, `num_predict`, `preload`). Bases are pulled automatically. See `defaults/main.yaml` for schema.
+- `ollama_models`: List of additional models to pull (beyond `scout_models` bases)
+- `scout_model_create`: Set to `false` to skip Scout model creation entirely (default: `true`)
 - `ollama_storage_class` / `open_webui_storage_class`: Custom storage class (uses cluster default if not specified)
 - `ollama_storage_size` / `open_webui_storage_size`: PVC storage sizes (defaults: 5Gi / 2Gi)
 - Resource limits, etc.
+
+**Multi-model VRAM management:**
+
+Ollama's runtime default `num_ctx` is 4096 regardless of the model's native max — that's why each Scout model bakes its `num_ctx` into a Modelfile-derived variant. With multiple `scout_models`, total resident weights + KV cache may exceed GPU memory if all models are kept hot. Use `preload: false` for models that should cold-load on demand, and configure per-model **Keep Alive** in Open WebUI (Admin → Models → Advanced Params): `-1` for resident models, a finite value (e.g., `5m`) for cold-load models so they unload when idle and free VRAM for the resident set.
 
 See `inventory.example.yaml` for configuration examples
 
@@ -78,24 +83,24 @@ After deploying via Ansible, configure Open WebUI through the web interface to c
 ### Prerequisites
 
 - Open WebUI deployed and accessible
-- Scout custom model `gpt-oss-120b-long:latest` created (automated by Ansible)
-- Trino MCP server deployed (automatically deployed with Trino if `mcp_trino_enabled: true`)
+- Scout custom models from `scout_models` created (automated by Ansible)
+- Trino MCP server deployed (the trino role deploys mcp-trino alongside Trino — see `ansible/roles/trino`)
 
 ### Configuration Steps
 
-#### 1. Verify Scout Model (Automated)
+#### 1. Verify Scout Models (Automated)
 
-The Scout custom model is automatically created by Ansible. You can verify it exists:
+Scout custom models are automatically created by Ansible. You can verify they exist:
 
 ```bash
-kubectl exec -n ollama deploy/ollama -- ollama list
+kubectl exec -n scout-analytics deploy/ollama -- ollama list
 ```
 
-You should see `gpt-oss-120b-long:latest` in the list.
+You should see each entry from `scout_models` (default: `gpt-oss-120b-long:latest`) in the list.
 
-**Note:** If you need to manually create or recreate the model:
+**Note:** If you need to manually create or recreate a model, substitute the values from your `scout_models` entry:
 ```bash
-kubectl exec -it -n ollama deploy/ollama -- sh
+kubectl exec -it -n scout-analytics deploy/ollama -- sh
 cat > Modelfile <<EOF
 FROM gpt-oss:120b
 PARAMETER num_predict -1
@@ -117,86 +122,60 @@ kubectl exec -n {{ chatbot_namespace }} deploy/open-webui -- \
   curl -s http://localhost:8080/api/v1/configs/tool_servers
 ```
 
-**Note:** Open WebUI stores tool config as PersistentConfig — env vars seed initial values on first launch. To re-seed an existing deployment from updated env values, drop the corresponding row from the OWUI `config` table or wipe the persistence PVC.
+**Note (PersistentConfig semantics):** Open WebUI stores tool-server config — like RAG template, arena evaluation, default/task model IDs — in its Postgres `config` table as PersistentConfig. Env vars seed initial values on **first launch only**; the admin UI is authoritative thereafter, so changing `tool_server_connections` (or any of the other env-var-driven knobs listed in `defaults/main.yaml`'s "Declarative Open WebUI configuration" block) in inventory does NOT update OWUI on subsequent deploys. To force a re-seed from updated inventory values, delete the corresponding row(s) from the OWUI Postgres `config` table; the pod re-reads env vars on the next restart. (Wiping the OWUI PVC does **not** re-seed — PersistentConfig lives in Postgres, not the PVC.)
 
-#### 3. Add Knowledge in Open WebUI
+This applies only to env-var-driven settings. **Filters and custom models (sections 4 and 5/6 below) are pushed via OWUI's REST API on every deploy and ARE declarative** — inventory changes auto-propagate.
 
-1. Navigate to **Workspace (left sidebar) → Knowledge → New Knowledge**
-2. Create a new knowledge base, tweaking name/description if desired:
-   - **Name**: `Scout Capabilities`
-   - **Description**: `Provides extra context to the model on information about the Scout database and how to interact with it`
-   - **Visibility**: `Public`
-3. Using **+ button → Upload files**, add documents to the collection:
-   - `docs/source/dataschema.md`
-   - (optional) `ansible/roles/open-webui/files/gpt-oss-charting.md`
+#### 3. Schema reference in the system prompt
 
-#### 4. Configure Model in Open WebUI
+Scout's models run with `function_calling: native`, and OWUI's RAG auto-injection path is gated on `function_calling != 'native'`. Attached knowledge collections only surface via LLM-initiated `list_knowledge` / `query_knowledge_files` tool calls — which thinking-mode models often skip. To guarantee the schema is in context every turn, the database schema reference and charting-output instructions are **inlined into the system prompt file** (`files/gpt-oss-scout-query-prompt.md`).
 
-The RAG Template is now seeded automatically from `files/rag-prompt.md` via the `RAG_TEMPLATE` env var; steps below cover only the model-specific config that still requires the admin UI (Phase 2 of the automation roadmap).
+To update the schema reference, edit `files/gpt-oss-scout-query-prompt.md` directly. The `docs/source/dataschema.md` doc remains the canonical reference for humans and notebooks; the prompt is a trimmed, query-focused subset.
 
-1. ~~Navigate to **Admin Panel → Settings → Documents** and replace the `RAG Template`~~ — automated via the `RAG_TEMPLATE` env var. Override `open_webui_rag_template_file` to point at a different bundled file.
-2. Load the **Models** tab and find your Scout model (e.g., `gpt-oss-120b-long:latest`) in the list
-3. Optionally disable all other models
-4. Click the **edit icon** (pencil) next to your Scout model
-5. Configure the following settings:
-   - **Model Name**: `Scout Explorer`
-   - **Description**: `Intelligent data exploration`
-   - **Visibility**: `Public`
-   - **System Prompt**: Copy contents of `ansible/roles/open-webui/files/gpt-oss-scout-query-prompt.md`
-   - **Advanced Params**:
-     - **Function calling**: `Native`
-     - **Keep alive**: `-1` for resident models (gemma4-31b-long, qwen3.6-long); `5m` for cold-load models (gpt-oss-120b-long) so they unload when idle and free VRAM
-     - **Reasoning Effort**: `high`
-   - **Prompt Suggestions**: Select "Custom" and add sample prompts
-   - **Knowledge**: Using "Select Knowledge" add `dataschema.md` and optionally `gpt-oss-charting.md`
-   - **Tools**: Enable "Trino MCP", disable "Web Search" and "Code Interpreter"
-6. Click **Save**
+#### 4. Configure Scout Explorer model — automated
 
-Repeat for each model in your `scout_models` list.
+For every `scout_models` entry with a `ui:` block (or for every entry when defaults apply), the role creates/updates a Scout Explorer OWUI model with:
 
-#### 5. Install Link Sanitizer Filter
+- Display name and description
+- System prompt (`files/gpt-oss-scout-query-prompt.md`, with the schema reference inlined)
+- Tool reference (`server:mcp:{scout-db}` — the Trino MCP server registered in step 2)
+- Suggestion prompts (the starter prompts that show up on a new chat)
+- Profile image (the Scout logo)
+- Capability flags (web_search/code_interpreter/terminal/image_generation disabled for data-handling safety)
+- Advanced params: `function_calling: native`, `reasoning_effort: high`, `keep_alive` derived from `preload`
+- The corresponding raw Ollama tag (e.g. `gemma4:31b`) is hidden from the picker so users see only the customized Scout Explorer entries
 
-Install a security filter to prevent data exfiltration via external links in LLM responses. This complements the CSP middleware (which blocks automatic resource loading) by also blocking clickable links. See [ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md) for details.
+Override any of these via the entry's `ui:` block in inventory:
 
-1. Navigate to **Admin Panel → Functions** (requires admin access)
-2. Click **+ (New Function)**
-3. Set Name to "Link Sanitizer Filter"
-4. Set Description to "Removes external URLs from LLM responses to prevent data exfiltration."
-5. Copy the contents of `ansible/roles/open-webui/files/link_sanitizer_filter.py` into the code editor and click **Save**
-6. Click the **gear icon** next to the new function to configure Valves:
-   - **internal_domains**: Your organization's domain (e.g., `example.com`)
-     - This allows all subdomains: `scout.example.com`, `api.example.com`, etc.
-   - **replacement_text**: Text shown in place of removed links (default is fine)
-7. Enable the filter (you still have to add it to each model) AND/OR enable the filter globally:
-   - Click the **"..." menu** next to the function
-   - Toggle **Global** to enable for all models
+```yaml
+scout_models:
+  - base: gemma4:31b
+    name: gemma4-31b-long:latest
+    preload: true
+    ui:
+      id: gemma4-31b-long:latest  # defaults to `name`
+      name: 'Scout Explorer'      # display name in picker
+      description: 'Intelligent data exploration'
+      # tool_ids:, suggestion_prompts:, capabilities:, function_calling:, etc.
+```
 
-**What the filter does:**
-- Removes external URLs from LLM responses before display
-- Preserves internal URLs matching your configured domain
-- Handles both markdown links `[text](url)` and raw URLs
-- Prevents HIPAA violations from PHI being transmitted via clicked links
+#### 5 & 6. Install Filter Functions — automated
 
-#### 6. Install Context Summarization Filter
+Both the Link Sanitizer ([ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)) and Context Summarization ([ADR 0014](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md)) filters are created/updated, configured with valves, and toggled global on every deploy. Source list: `open_webui_filter_functions` in `defaults/main.yaml`.
 
-Install a filter to handle long conversations that approach the 128K context window limit. Without this filter, Ollama silently truncates older messages, causing conversations to "fall apart." See [ADR 0014](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md) for details.
+To customize valves per environment (e.g., Link Sanitizer's `internal_domains`), override in inventory:
+```yaml
+open_webui_link_sanitizer_internal_domains: 'example.com'
+```
 
-1. Navigate to **Admin Panel → Functions** (requires admin access)
-2. Click **+ (New Function)**
-3. Set Name to "Context Summarization Filter"
-4. Set Description to "Summarizes older conversation history when approaching context limits."
-5. Copy the contents of `ansible/roles/open-webui/files/context_summarization_filter.py` into the code editor and click **Save**
-6. Click the **gear icon** next to the new function to configure Valves:
-   - **token_threshold**: `100000` (triggers at ~77% of 128K context)
-   - **messages_to_keep**: `10` (recent messages to preserve intact)
-   - **min_messages_to_keep**: `2` (minimum to keep when dynamically reducing)
-   - **tool_result_token_threshold**: `500` (compact tool results exceeding this in old messages)
-   - **ollama_url**: `http://ollama:11434` (default is correct for most deployments)
-   - **summarizer_model**: Leave empty to use chat model, or specify a smaller/faster model
-   - **debug_logging**: `true` (enable detailed logging for troubleshooting)
-7. Enable the filter globally:
-   - Click the **"..." menu** next to the function
-   - Toggle **Global** to enable for all models
+To skip a filter, override the list to omit it. To disable Phase 2 entirely, set `open_webui_admin_setup_enabled: false`.
+
+Verify after deploy:
+```bash
+kubectl exec -n {{ chatbot_namespace }} deploy/open-webui -- \
+  curl -s http://localhost:8080/api/v1/functions/ \
+  -H "Authorization: Bearer <admin-jwt>" | jq '.[].id'
+```
 
 **What the filter does:**
 - Detects when conversation approaches context limit (100K tokens by default)
@@ -213,7 +192,7 @@ Install a filter to handle long conversations that approach the 128K context win
 
 **Debugging:** When `debug_logging` is enabled, detailed logs are printed showing before/after message counts, token counts, and message previews. View logs with:
 ```bash
-kubectl logs -n ollama deploy/open-webui -f | grep "\[ContextSummarization\]"
+kubectl logs -n scout-analytics deploy/open-webui -f | grep "\[ContextSummarization\]"
 ```
 
 #### 7. Disable Arena Model — automated
@@ -270,26 +249,26 @@ Once configured, try these example queries:
 
 ```bash
 # Check pods
-kubectl get pods -n ollama
+kubectl get pods -n scout-analytics
 
 # Check logs
-kubectl logs -n ollama deploy/open-webui
-kubectl logs -n ollama deploy/ollama
+kubectl logs -n scout-analytics deploy/open-webui
+kubectl logs -n scout-analytics deploy/ollama
 
-# Verify Scout model was created
-kubectl get jobs -n ollama -l app=ollama-create-scout-model
-kubectl exec -n ollama deploy/ollama -- ollama list
+# Verify Scout models were created (pull + Modelfile create run in one Job)
+kubectl get jobs -n scout-analytics -l app=ollama-pull-models
+kubectl exec -n scout-analytics deploy/ollama -- ollama list
 ```
 
 ### Common Issues
 
 **Scout model not created:**
-- Check job logs: `kubectl logs -n ollama job/<job-name>`
-- Verify base model was pulled: `kubectl exec -n ollama deploy/ollama -- ollama list`
+- Check job logs: `kubectl logs -n scout-analytics job/<job-name>`
+- Verify base model was pulled: `kubectl exec -n scout-analytics deploy/ollama -- ollama list`
 
 **MCP tool not working:**
 - Verify MCP server is running: `kubectl get pods -n scout-analytics -l app.kubernetes.io/name=mcp-trino`
-- Test connectivity: `kubectl exec -n ollama deploy/open-webui -- curl http://mcp-trino.scout-analytics:8080/health`
+- Test connectivity: `kubectl exec -n scout-analytics deploy/open-webui -- curl http://mcp-trino.scout-analytics:8080/health`
 - In Open WebUI model settings, ensure Function Calling is set to "Native"
 
 **Authentication issues:**

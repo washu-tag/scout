@@ -1,0 +1,92 @@
+---
+# Idempotent helper: GET-then-create-or-update a single OWUI ModelForm payload.
+# Required vars: `_payload` (dict), `owui_admin_token`, `_owui_pod_name`
+
+- name: 'Validate model payload id'
+  ansible.builtin.assert:
+    that:
+      - _payload.id is defined
+      - _payload.id | length > 0
+    fail_msg: >-
+      _apply_model_payload was called with an empty or missing `id`. This
+      usually means a scout_models entry is missing `name` (and `ui.id` if
+      `ui:` is set). Without a valid id the OWUI API call would 404 silently.
+    quiet: true
+
+- name: 'Check if OWUI model exists: {{ _payload.id }}'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - '{{ _owui_pod_name }}'
+      - --
+      - curl
+      - -sS
+      - -o
+      - /dev/null
+      - -w
+      - '%{http_code}'
+      - 'http://localhost:8080/api/v1/models/model?id={{ _payload.id | urlencode }}'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  register: _model_exists_check
+  changed_when: false
+  no_log: true
+
+- name: 'Create OWUI model (POST /create): {{ _payload.id }}'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - -i
+      - '{{ _owui_pod_name }}'
+      - --
+      - curl
+      - -sfS
+      - -X
+      - POST
+      - 'http://localhost:8080/api/v1/models/create'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+      - -H
+      - 'Content-Type: application/json'
+      - --data-binary
+      - '@-'
+    stdin: '{{ _payload | to_json }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  when: _model_exists_check.stdout != '200'
+  no_log: true
+
+- name: 'Update existing OWUI model (POST /model/update): {{ _payload.id }}'
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - exec
+      - -n
+      - '{{ chatbot_namespace }}'
+      - -i
+      - '{{ _owui_pod_name }}'
+      - --
+      - curl
+      - -sfS
+      - -X
+      - POST
+      - 'http://localhost:8080/api/v1/models/model/update?id={{ _payload.id | urlencode }}'
+      - -H
+      - 'Authorization: Bearer {{ owui_admin_token }}'
+      - -H
+      - 'Content-Type: application/json'
+      - --data-binary
+      - '@-'
+    stdin: '{{ _payload | to_json }}'
+  environment:
+    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  when: _model_exists_check.stdout == '200'
+  no_log: true
