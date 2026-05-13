@@ -42,10 +42,13 @@ position:
     id: MARKDOWN-fu-banner
     meta:
       code: |-
-        ### About this dashboard
-
-        Scout's follow-up classifier flags radiology reports that recommend additional imaging follow-up, tagging each with a yes/no detection and a finding category. Run the classifier notebook in Scout Notebooks to score new reports.
-      height: 22
+        <div style="display:flex;gap:14px;align-items:flex-start;padding:6px 4px;border-left:3px solid #3b82f6;padding-left:14px;">
+          <span style="font-size:22px;line-height:1;flex-shrink:0;">🔬</span>
+          <div style="font-size:13px;line-height:1.5;color:#334155;">
+            <strong style="color:#0f172a;">About the algorithm.</strong> Scout's follow-up classifier reads every radiology report and flags those that recommend additional imaging follow-up, tagging each with a yes/no detection and a finding category. To score newly ingested reports, run the classifier notebook in Scout Notebooks.
+          </div>
+        </div>
+      height: 10
       width: 12
     parents:
       - ROOT_ID
