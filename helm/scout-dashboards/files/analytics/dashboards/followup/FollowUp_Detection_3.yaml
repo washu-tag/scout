@@ -28,7 +28,7 @@ position:
     type: GRID
   ROW-fu-banner:
     children:
-      - CHART-fu-54
+      - MARKDOWN-fu-banner
     id: ROW-fu-banner
     meta:
       '0': ROOT_ID
@@ -37,20 +37,21 @@ position:
       - ROOT_ID
       - GRID_ID
     type: ROW
-  CHART-fu-54:
+  MARKDOWN-fu-banner:
     children: []
-    id: CHART-fu-54
+    id: MARKDOWN-fu-banner
     meta:
-      chartId: 54
-      height: 30
-      sliceName: About this dashboard
-      uuid: 4a4f1e8c-7a8e-4c91-bf9e-e58a2f5e2c64
+      code: |-
+        ### About this dashboard
+
+        Scout's follow-up classifier flags radiology reports that recommend additional imaging follow-up, tagging each with a yes/no detection and a finding category. Run the classifier notebook in Scout Notebooks to score new reports.
+      height: 22
       width: 12
     parents:
       - ROOT_ID
       - GRID_ID
       - ROW-fu-banner
-    type: CHART
+    type: MARKDOWN
   TABS-fu:
     children:
       - TAB-fu-operations
@@ -410,7 +411,6 @@ metadata:
       - 51
       - 52
       - 53
-      - 54
   color_scheme: presetColors
   refresh_frequency: 0
   expanded_slices: {}
