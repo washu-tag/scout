@@ -140,20 +140,28 @@ open_webui_resources_default:
 open_webui_csp_enabled: true
 
 # ----------------------------------------------------------------------------
-# Declarative Open WebUI configuration (env-var-driven)
+# Declarative Open WebUI configuration
 # ----------------------------------------------------------------------------
-# These settings move admin-UI clickthrough config into Helm/Ansible. Open WebUI
-# stores them as PersistentConfig in the `config` table of its Postgres DB:
-# env vars seed initial values on first launch only, and the admin UI is
-# authoritative thereafter. To force a re-seed from updated inventory values
-# on an existing deployment, delete the corresponding row(s) from the OWUI
-# Postgres `config` table (not the PVC — PVC holds vector store + uploads,
-# not PersistentConfig). The pod re-reads env on the next restart.
+# These settings move admin-UI clickthrough config into Helm/Ansible. OWUI
+# stores most of them as PersistentConfig in the `config` table of its
+# Postgres DB. Naively, env-var changes after first launch would be silent
+# no-ops because the admin UI is authoritative thereafter.
 #
-# This applies only to the env-var-driven settings in this block (tool servers,
-# RAG template, default/task model IDs, arena evaluation). Filters and custom
-# models (Phase 2b/c below) are seeded via OWUI's REST API on every deploy
-# and ARE declarative — inventory changes auto-propagate.
+# To work around that, configure_admin.yaml (Phase 1.5) re-pushes the four
+# inventory-tunable fields through OWUI's REST API on every deploy:
+#   - tool_server_connections   → POST /api/v1/configs/tool_servers
+#   - open_webui_rag_template_file → POST /api/v1/retrieval/config/update
+#   - open_webui_default_model_id  → POST /api/v1/configs/models
+#   - open_webui_task_model_id     → POST /api/v1/tasks/config/update
+# So these ARE fully declarative — change inventory, re-run make install-chat,
+# done. No SQL surgery on the `config` table needed.
+#
+# Genuinely seed-only (we set once at first launch and don't expect to change):
+#   - ENABLE_EVALUATION_ARENA_MODELS, ENABLE_SIGNUP, ENABLE_LOGIN_FORM,
+#     ENABLE_COMMUNITY_SHARING (scout-fixed false), WEBUI_URL (derived from
+#     server_hostname — DNS/TLS rotation has bigger fish to fry first)
+# OAuth fields are env-only (ENABLE_OAUTH_PERSISTENT_CONFIG=false skips
+# loading them from the config table).
 
 # Trino MCP tool server — registered automatically as an Open WebUI external tool
 # so users don't have to add it via Admin → Settings → Integrations.

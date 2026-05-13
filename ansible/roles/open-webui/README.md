@@ -164,9 +164,13 @@ kubectl exec -n {{ chatbot_namespace }} deploy/open-webui -- \
   curl -s http://localhost:8080/api/v1/configs/tool_servers
 ```
 
-**Note (PersistentConfig semantics):** Open WebUI stores tool-server config — like RAG template, arena evaluation, default/task model IDs — in its Postgres `config` table as PersistentConfig. Env vars seed initial values on **first launch only**; the admin UI is authoritative thereafter, so changing `tool_server_connections` (or any of the other env-var-driven knobs listed in `defaults/main.yaml`'s "Declarative Open WebUI configuration" block) in inventory does NOT update OWUI on subsequent deploys. To force a re-seed from updated inventory values, delete the corresponding row(s) from the OWUI Postgres `config` table; the pod re-reads env vars on the next restart. (Wiping the OWUI PVC does **not** re-seed — PersistentConfig lives in Postgres, not the PVC.)
+**Note (PersistentConfig semantics):** OWUI stores tool servers, RAG template, default/task model IDs, etc. in its Postgres `config` table as PersistentConfig — naively, env-var changes after first launch are silent no-ops because the admin UI is authoritative.
 
-This applies only to env-var-driven settings. **Filters and custom models (sections 4 and 5/6 below) are pushed via OWUI's REST API on every deploy and ARE declarative** — inventory changes auto-propagate.
+To work around that for the four inventory-tunable fields, `configure_admin.yaml` re-pushes them through OWUI's REST API on every deploy using the admin JWT it just minted (`/api/v1/configs/tool_servers`, `/api/v1/retrieval/config/update`, `/api/v1/configs/models`, `/api/v1/tasks/config/update`). So `tool_server_connections`, `open_webui_rag_template_file`, `open_webui_default_model_id`, and `open_webui_task_model_id` ARE fully declarative — change inventory, re-run `make install-chat`, done. No SQL surgery needed.
+
+Fields that remain genuinely seed-only (set once at first launch, expected stable thereafter): `WEBUI_URL` (derived from `server_hostname`), `ENABLE_EVALUATION_ARENA_MODELS`, `ENABLE_SIGNUP`, `ENABLE_LOGIN_FORM`, `ENABLE_COMMUNITY_SHARING`. If you ever need to flip one of these on an existing cluster, delete its row from `config` in OWUI's Postgres and restart the OWUI pod — env will re-seed on next boot. (Wiping the OWUI PVC does **not** re-seed — PersistentConfig lives in Postgres, not the PVC.)
+
+OAuth fields (`OAUTH_*`, `OPENID_*`) are env-only because `ENABLE_OAUTH_PERSISTENT_CONFIG=false` skips loading them from the config table — env always wins.
 
 #### 3. Schema reference in the system prompt
 
