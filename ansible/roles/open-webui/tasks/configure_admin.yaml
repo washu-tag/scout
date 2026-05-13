@@ -14,10 +14,15 @@
 # the Job mounts. Pure gitops: the work happens in-cluster, observable via
 # `kubectl logs job/open-webui-bootstrap-<release>`.
 
-# Build the Scout Explorer system prompt once (used by every model payload).
-- name: 'Read shared Scout system prompt'
+# Build the Scout Explorer system prompt + RAG template once. Both must be
+# resolved in THIS role's `role_path` context — if we left the lookup inline
+# in helm_chart_values, Ansible would re-evaluate it when scout_common's
+# deploy_helm_chart task materializes the dict, and `role_path` would then
+# point at scout_common (wrong directory, file not found).
+- name: 'Read shared Scout system prompt + RAG template'
   ansible.builtin.set_fact:
     _bootstrap_system_prompt: "{{ lookup('file', role_path ~ '/files/' ~ open_webui_scout_system_prompt_file) }}"
+    _bootstrap_rag_template: "{{ lookup('file', role_path ~ '/files/' ~ open_webui_rag_template_file) if open_webui_rag_template_file | default('') | length > 0 else '' }}"
 
 # Filter function payloads — fold inventory + source code from files/ into a
 # single list the chart serializes into filters.json for the Job to consume.
@@ -103,7 +108,7 @@
       databaseUrl: 'postgresql://{{ open_webui_postgres_user }}:{{ open_webui_postgres_password }}@{{ db_host }}:{{ db_port }}/{{ open_webui_database }}'
       persistentConfig:
         tool_server_connections: '{{ tool_server_connections | default([]) }}'
-        rag_template: "{{ lookup('file', role_path ~ '/files/' ~ open_webui_rag_template_file) if open_webui_rag_template_file | default('') | length > 0 else '' }}"
+        rag_template: '{{ _bootstrap_rag_template }}'
         default_model_id: '{{ open_webui_default_model_id | default("") }}'
         task_model_id: '{{ open_webui_task_model_id | default("") }}'
       filterFunctions: '{{ _bootstrap_filter_functions | default([]) }}'
