@@ -1,8 +1,8 @@
-slice_name: ' '
-description: Banner shown only when the follow-up classifier has emitted errors.
-  The chart aggregates COUNT(*) over followup_errors and filters via HAVING so the
-  query returns one row when N>0 and zero rows when clean — the Handlebars
-  template renders the warning only on a non-empty result.
+slice_name: About this dashboard
+description: Always-on banner with a short description of the follow-up classifier.
+  Aggregates COUNT(*) over followup_errors with no HAVING clause so a single row
+  is always returned; the Handlebars template renders the description
+  unconditionally and appends an amber warning only when the count is non-zero.
 certified_by: null
 certification_details: null
 viz_type: handlebars
@@ -15,21 +15,28 @@ params:
   metrics:
     - count
   percent_metrics: []
-  adhoc_filters:
-    - clause: HAVING
-      sqlExpression: COUNT(*) > 0
-      expressionType: SQL
+  adhoc_filters: []
   row_limit: 1
   order_by_cols: []
   server_pagination: false
   styleTemplate: ''
   handlebarsTemplate: |
-    {{#if data.length}}
-    <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;background:#fef3c7;border-left:4px solid #f59e0b;border-radius:4px;color:#78350f;font-size:14px;line-height:1.45;">
-      <span style="font-size:20px;">&#9888;</span>
-      <span><strong style="color:#92400e;">Follow-up classifier needs attention.</strong> Recent classifier errors were logged. Run the classifier notebook in Scout Notebooks to retry stalled reports.</span>
+    <div style="overflow:hidden;color:#334155;font-size:13px;line-height:1.55;padding:2px 4px;">
+      <strong style="color:#0f172a;">About the follow-up classifier.</strong>
+      Scout scans every radiology report for recommendations of additional
+      imaging follow-up, assigning each report a yes/no detection and a
+      finding category. Re-run the classifier notebook in Scout Notebooks
+      to score new reports.
+      {{#each data}}
+        {{#if this.count}}
+        <div style="margin-top:8px;padding:8px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:3px;color:#78350f;">
+          <strong style="color:#92400e;">&#9888; Classifier errors detected.</strong>
+          {{this.count}} recent errors logged — re-run the notebook to retry
+          stalled reports.
+        </div>
+        {{/if}}
+      {{/each}}
     </div>
-    {{/if}}
   extra_form_data: {}
   dashboards:
     - 3

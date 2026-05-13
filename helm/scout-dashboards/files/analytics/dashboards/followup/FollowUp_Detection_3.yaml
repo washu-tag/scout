@@ -42,8 +42,8 @@ position:
     id: CHART-fu-54
     meta:
       chartId: 54
-      height: 14
-      sliceName: ' '
+      height: 30
+      sliceName: About this dashboard
       uuid: 4a4f1e8c-7a8e-4c91-bf9e-e58a2f5e2c64
       width: 12
     parents:
