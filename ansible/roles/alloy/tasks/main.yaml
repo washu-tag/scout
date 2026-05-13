@@ -1,3 +1,6 @@
 ---
 - name: Deploy Grafana Alloy
   ansible.builtin.include_tasks: deploy.yaml
+
+- name: Clean up legacy Promtail release
+  ansible.builtin.include_tasks: cleanup_legacy.yaml
