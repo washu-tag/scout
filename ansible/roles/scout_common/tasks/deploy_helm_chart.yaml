@@ -22,7 +22,8 @@
 #
 # Required variables:
 # - helm_chart_name: Helm release name
-# - helm_chart_ref: Chart reference (repo/chart or local path)
+# - helm_chart_ref: Chart reference (repo/chart or local path) — required when installing,
+#   not used when uninstalling (helm_chart_state: absent)
 # - helm_chart_namespace: Target namespace
 #
 # Optional variables:
@@ -32,6 +33,9 @@
 # - helm_chart_timeout: Timeout for wait (default: '5m')
 # - helm_chart_values: Values dict
 # - helm_chart_values_files: List of values files
+# - helm_chart_state: 'present' (default) or 'absent' to uninstall
+# - helm_chart_failed_when: Optional failure predicate for the helm task (e.g. to tolerate
+#   "release not found" on uninstall). Defaults to ansible's standard error handling.
 # - helm_repo_name: Repository name (for repo charts)
 # - helm_repo_url: Repository URL (for repo charts)
 
@@ -59,17 +63,19 @@
         - helm_repo_name | length > 0
         - helm_repo_url | length > 0
 
-    - name: 'Install {{ helm_chart_name }}'
+    - name: "{{ 'Uninstall' if (helm_chart_state | default('present')) == 'absent' else 'Install' }} {{ helm_chart_name }}"
       kubernetes.core.helm:
         name: '{{ helm_chart_name }}'
-        chart_ref: '{{ helm_chart_ref }}'
+        chart_ref: '{{ helm_chart_ref | default(omit) }}'
         chart_version: '{{ helm_chart_version | default(omit) }}'
         release_namespace: '{{ helm_chart_namespace }}'
         create_namespace: '{{ helm_chart_create_namespace | default(true) }}'
-        release_state: present
+        release_state: "{{ helm_chart_state | default('present') }}"
         update_repo_cache: '{{ not is_local_chart | bool }}'
         wait: '{{ helm_chart_wait | default(true) }}'
         wait_timeout: "{{ helm_chart_timeout | default('5m') }}"
         atomic: '{{ helm_chart_atomic | default(true) }}'
         values: '{{ helm_chart_values | default(omit) }}'
         values_files: '{{ helm_chart_values_files | default(omit) }}'
+      register: helm_chart_result
+      failed_when: '{{ helm_chart_failed_when | default(helm_chart_result.failed) }}'
