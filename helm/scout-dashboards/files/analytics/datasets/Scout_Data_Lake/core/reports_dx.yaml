@@ -1,28 +1,14 @@
-table_name: diagnoses_flat
+table_name: reports_dx
 main_dttm_col: message_dt
-description: Flattened view of report diagnoses; one row per diagnosis code in the
-  diagnoses array.
+description: Canonical one-row-per-diagnosis view from the data lake. Built on
+  reports_latest, so version amendments are already deduped; replaces the legacy
+  in-Superset diagnoses_flat virtual table.
 default_endpoint: null
 offset: 0
 cache_timeout: 7200
 catalog: delta
 schema: default
-sql: |
-  SELECT
-    r.message_dt,
-    r.message_control_id,
-    r.modality,
-    r.service_name,
-    r.service_identifier,
-    r.sending_facility,
-    r.year,
-    d.diagnosis_code,
-    d.diagnosis_code_text,
-    d.diagnosis_code_coding_system
-  FROM delta.default.reports r
-  CROSS JOIN UNNEST(r.diagnoses) AS d (
-    diagnosis_code, diagnosis_code_text, diagnosis_code_coding_system
-  )
+sql: null
 params: null
 template_params: null
 filter_select_enabled: true
