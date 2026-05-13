@@ -55,7 +55,7 @@ scout_models:
     preload: true # Resident — small enough to keep warm; serves as default and task model
     ui:
       name: 'Scout Explorer'
-      description: 'Fast default for everyday questions — counts, filters, basic cohorts. No thinking-step latency. (Gemma 4 31B, 256K context, Google DeepMind)'
+      description: 'Default everyday model — capable reasoner with opt-in thinking (Gemma 4 uses a `<|think|>` system-prompt token). Strong on counts, filters, and single-cohort queries. (Gemma 4 31B, 256K context, Google DeepMind)'
   - base: qwen3.6:35b
     name: qwen3.6-long:latest
     num_ctx: 131072
@@ -64,7 +64,7 @@ scout_models:
     preload: false # Cold-load — thinking-mode model used selectively for analytical / multi-step queries
     ui:
       name: 'Scout Explorer (Reasoning)'
-      description: 'Step-by-step analysis with visible chain of thought. Pick for multi-cohort comparisons or iterative refinement; slower per turn. (Qwen 3.6 35B, 256K context, Alibaba)'
+      description: "Thinks step-by-step by default (Qwen 3.6 inherits Qwen 3's /think + /no_think toggle). Pick for multi-cohort comparisons, iterative refinement, or queries that benefit from explicit chain of thought. Slower per turn. (Qwen 3.6 35B, 256K context, Alibaba)"
   - base: gpt-oss:120b
     name: gpt-oss-120b-long:latest
     num_ctx: 131072
@@ -73,7 +73,7 @@ scout_models:
     preload: false # Cold-load — large weights, used only when explicitly selected
     ui:
       name: 'Scout Explorer (Large)'
-      description: 'Largest model — broadest medical/clinical recall for complex cohort building and nuanced free-text searches. Cold-loads on first selection. (gpt-oss 120B MoE, 128K context, OpenAI, Apache 2.0)'
+      description: 'Largest model with broadest medical/clinical recall. Full chain-of-thought reasoning with adjustable effort (low/medium/high). Pick for complex cohort building, nuanced free-text searches, or when smaller models miss cases. Cold-loads on first selection. (gpt-oss 120B MoE, 128K context, OpenAI, Apache 2.0)'
 scout_model_create: true # Set to false to skip Scout model creation entirely
 
 # List of additional Ollama models to pull (see https://ollama.com/library)
@@ -164,12 +164,15 @@ mcp_trino_tool_id: 'scout-db'
 tool_server_connections:
   - type: mcp # OWUI defaults to 'openapi'; MCP servers must declare explicitly
     url: '{{ mcp_trino_url }}'
-    # `path` is openapi-spec-specific (appended to `url` to fetch openapi.json)
-    # and meaningless for `type: mcp`. Set explicitly so the entry passes the
-    # ToolServerConnection Pydantic model if an admin ever round-trips it
-    # through the configs UI (the env-var ingest path bypasses validation,
-    # but the UI write path doesn't).
-    path: ''
+    # `path`, `key`, `auth_type`, and `config` are all REQUIRED dict keys on
+    # OWUI's ToolServerConnection Pydantic model (Optional[X] without default
+    # = required-but-nullable in Pydantic v2). Missing any of them causes
+    # GET /api/v1/configs/tool_servers to return 500 because the response
+    # serializer validates against the model — that breaks the admin
+    # Integrations page. The runtime hot path uses .get() with defaults so
+    # the MCP tool itself works regardless, but the admin UI doesn't.
+    path: '' # openapi-spec path; meaningless for MCP but required by the model
+    key: null # API key for openapi/oauth tool servers; null for MCP-anonymous
     auth_type: none
     config:
       enable: true
