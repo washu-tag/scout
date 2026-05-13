@@ -22,21 +22,32 @@ supersetRelease:
 # (created by the apache/superset chart's init Job).
 importUser: admin
 
-# Toggle dashboard families. Each family corresponds to a subdirectory under
-# files/analytics/{charts,dashboards,datasets/Scout_Data_Lake}/<family>/.
-# Adding a new family is a matter of dropping files into a new subdirectory
-# and adding an entry here — no template edits required.
+# Built-in dashboard bundles to install. Each name corresponds to a
+# subdirectory under files/analytics/{charts,dashboards,datasets/Scout_Data_Lake}/.
+# Available built-ins: core, quality, followup.
 #
-# Disabling a family stops new installs from importing its assets. Assets that
-# were already imported into Superset are NOT removed automatically; Superset
-# import is one-way. Drop them via the UI or `superset fab` if needed.
-dashboards:
-  core:
-    enabled: true
-  quality:
-    enabled: false
-  followup:
-    enabled: false
+# Adding a new built-in bundle is a matter of dropping files into a new
+# subdirectory under each kind and adding its name here — no template
+# edits required.
+#
+# Removing a bundle stops new installs from importing its assets. Assets
+# that were already imported into Superset are NOT removed automatically;
+# Superset import is one-way. Drop them via the UI or `superset fab` if needed.
+bundles:
+  enabled:
+    - core
+
+# Site-overlay ConfigMaps. Each entry is the name of a ConfigMap in the
+# release namespace whose contents are merged into the import. Each
+# ConfigMap must structure its items so they map under analytics/ — e.g.
+# items with paths like "charts/my_chart.yaml", "dashboards/my_dashboard.yaml",
+# "datasets/Scout_Data_Lake/my_dataset.yaml". The Job mounts each one and
+# rsync-style copies its tree into a single analytics/ before zipping.
+#
+# Use this to layer site-specific dashboards on top of the built-in
+# bundles without forking the chart. Files with the same name as a
+# built-in are overwritten by the overlay (later entries win).
+extraConfigMaps: []
 
 # Resources for the import Job pod.
 resources:

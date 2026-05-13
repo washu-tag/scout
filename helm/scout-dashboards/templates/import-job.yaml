@@ -7,10 +7,11 @@ metadata:
     {{- include "scout-dashboards.labels" . | nindent 4 }}
   annotations:
     # Re-create the Job (which re-runs the import) whenever any dashboard YAML
-    # or family toggle changes. The hash covers the rendered ConfigMap, so any
-    # analytics file edit or .Values.dashboards.*.enabled flip produces a
-    # different annotation, Helm sees the Job spec as changed, and the
-    # helm-hook delete-policy below replaces the existing Job.
+    # or bundle list changes. The hash covers the rendered ConfigMap, so any
+    # analytics file edit or .Values.bundles.enabled change produces a
+    # different annotation. Helm's hook semantics (post-install,post-upgrade
+    # + before-hook-creation) also recreate the Job on every upgrade, which
+    # catches .Values.extraConfigMaps changes that flip volume mounts.
     checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation
@@ -44,6 +45,22 @@ spec:
             - |
               set -eu
               cd /app/dashboard-config
+              {{- if .Values.extraConfigMaps }}
+              # Merge site-overlay ConfigMaps into analytics/. Each extra
+              # ConfigMap is expected to expose items at paths under
+              # analytics/ (e.g. items[].path "charts/my_chart.yaml").
+              # find+cp preserves the directory structure; later entries
+              # in extraConfigMaps overwrite earlier ones on name collision.
+              for d in /app/dashboard-config-extras/*/; do
+                [ -d "$d" ] || continue
+                find "$d" -type f | while read -r f; do
+                  rel="${f#$d}"
+                  dest="analytics/$rel"
+                  mkdir -p "$(dirname "$dest")"
+                  cp "$f" "$dest"
+                done
+              done
+              {{- end }}
               zip -rq /tmp/dashboard.zip analytics
               # Creates new assets; v1 importer skips any UUID that already
               # exists, so this alone won't update edited charts/dashboards.
@@ -61,6 +78,11 @@ spec:
               readOnly: true
             - name: dashboard-config
               mountPath: /app/dashboard-config
+            {{- range $i, $cm := .Values.extraConfigMaps }}
+            - name: extra-{{ $i }}
+              mountPath: /app/dashboard-config-extras/{{ $i }}
+              readOnly: true
+            {{- end }}
       volumes:
         - name: superset-config
           secret:
@@ -70,3 +92,8 @@ spec:
             name: dashboard-config
             items:
               {{- include "scout-dashboards.configMapItems" . | nindent 14 }}
+        {{- range $i, $cm := .Values.extraConfigMaps }}
+        - name: extra-{{ $i }}
+          configMap:
+            name: {{ $cm }}
+        {{- end }}

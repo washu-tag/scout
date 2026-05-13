@@ -12,19 +12,17 @@ data:
 {{ .Files.Get "files/analytics/metadata.yaml" | indent 4 }}
   Scout_Data_Lake.yaml: |-
 {{ include "scout-dashboards.databaseYaml" . | indent 4 }}
-{{- range $family, $cfg := .Values.dashboards }}
-{{- if $cfg.enabled }}
-{{- range $path, $_ := $.Files.Glob (printf "files/analytics/charts/%s/*.yaml" $family) }}
+{{- range $bundle := .Values.bundles.enabled }}
+{{- range $path, $_ := $.Files.Glob (printf "files/analytics/charts/%s/*.yaml" $bundle) }}
   {{ base $path }}: |-
 {{ $.Files.Get $path | indent 4 }}
 {{- end }}
-{{- range $path, $_ := $.Files.Glob (printf "files/analytics/dashboards/%s/*.yaml" $family) }}
+{{- range $path, $_ := $.Files.Glob (printf "files/analytics/dashboards/%s/*.yaml" $bundle) }}
   {{ base $path }}: |-
 {{ $.Files.Get $path | indent 4 }}
 {{- end }}
-{{- range $path, $_ := $.Files.Glob (printf "files/analytics/datasets/Scout_Data_Lake/%s/*.yaml" $family) }}
+{{- range $path, $_ := $.Files.Glob (printf "files/analytics/datasets/Scout_Data_Lake/%s/*.yaml" $bundle) }}
   {{ base $path }}: |-
 {{ $.Files.Get $path | indent 4 }}
-{{- end }}
 {{- end }}
 {{- end }}

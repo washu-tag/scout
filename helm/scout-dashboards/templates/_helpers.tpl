@@ -76,25 +76,24 @@ version: 1.0.0
 {{/*
 Render the configmap items list — one entry per enabled analytics file,
 mapping the configmap key (file basename) to the mount path Superset's
-import-dashboards command expects (analytics/<kind>/<file>, with the family
-subdir dropped from the mount path). Iterates over .Values.dashboards so
-families can be toggled without touching templates.
+import-dashboards command expects (analytics/<kind>/<file>, with the
+bundle subdir dropped from the mount path). Iterates over the
+.Values.bundles.enabled list so bundles can be toggled without touching
+templates.
 */}}
 {{- define "scout-dashboards.configMapItems" -}}
-{{- range $family, $cfg := .Values.dashboards }}
-{{- if $cfg.enabled }}
-{{- range $path, $_ := $.Files.Glob (printf "files/analytics/charts/%s/*.yaml" $family) }}
+{{- range $bundle := .Values.bundles.enabled }}
+{{- range $path, $_ := $.Files.Glob (printf "files/analytics/charts/%s/*.yaml" $bundle) }}
 - key: {{ base $path }}
   path: analytics/charts/{{ base $path }}
 {{- end }}
-{{- range $path, $_ := $.Files.Glob (printf "files/analytics/dashboards/%s/*.yaml" $family) }}
+{{- range $path, $_ := $.Files.Glob (printf "files/analytics/dashboards/%s/*.yaml" $bundle) }}
 - key: {{ base $path }}
   path: analytics/dashboards/{{ base $path }}
 {{- end }}
-{{- range $path, $_ := $.Files.Glob (printf "files/analytics/datasets/Scout_Data_Lake/%s/*.yaml" $family) }}
+{{- range $path, $_ := $.Files.Glob (printf "files/analytics/datasets/Scout_Data_Lake/%s/*.yaml" $bundle) }}
 - key: {{ base $path }}
   path: analytics/datasets/Scout_Data_Lake/{{ base $path }}
-{{- end }}
 {{- end }}
 {{- end }}
 - key: metadata.yaml

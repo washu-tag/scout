@@ -214,10 +214,18 @@ keycloak_subdomain: keycloak
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
 enable_playbooks: false
-# Superset dashboard families. The Scout core dashboard always ships;
-# these toggle the optional Quality/TAT and Follow-up Detection dashboards.
-enable_quality_dashboard: false
-enable_followup_dashboard: false
+
+# Superset dashboard bundles to install. Built-in bundles: core, quality,
+# followup. Override in inventory to add more (e.g. [core, quality]).
+scout_dashboard_bundles:
+  - core
+
+# Names of additional ConfigMaps in the Superset namespace whose contents
+# should be merged into the dashboard import. Each ConfigMap must expose
+# items at paths under analytics/ (e.g. items[].path "charts/X.yaml").
+# Use this to overlay site-specific dashboards on top of the built-in
+# bundles without forking the scout-dashboards chart.
+scout_dashboard_extra_configmaps: []
 
 # Package proxy configuration (per ADR-0016, following ADR-0011 service-mode pattern)
 # Options: none, nexus, external

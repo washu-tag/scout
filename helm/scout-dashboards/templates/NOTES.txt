@@ -1,9 +1,14 @@
 {{ .Chart.Name }} deployed.
 
-Enabled dashboard families:
-{{- range $family, $cfg := .Values.dashboards }}
-{{- if $cfg.enabled }}
-  - {{ $family }}
+Built-in bundles enabled:
+{{- range $bundle := .Values.bundles.enabled }}
+  - {{ $bundle }}
+{{- end }}
+{{- if .Values.extraConfigMaps }}
+
+Site overlays merged from ConfigMaps:
+{{- range .Values.extraConfigMaps }}
+  - {{ . }}
 {{- end }}
 {{- end }}
 
@@ -13,7 +18,6 @@ The import Job runs once per Helm install/upgrade. Watch progress with:
       -l app.kubernetes.io/instance={{ .Release.Name }},component=dashboard-import \
       --tail=200 -f
 
-Whenever any enabled analytics file changes — or a family toggle flips — the
-rendered ConfigMap's sha256sum changes, the import Job pod template's
-checksum/config annotation changes, and Helm replaces the Job on the next
-`helm upgrade`. No Ansible glue required.
+Whenever any enabled analytics file changes — or .Values.bundles.enabled
+or .Values.extraConfigMaps changes — Helm replaces the import Job and
+the import re-runs. No Ansible glue required.

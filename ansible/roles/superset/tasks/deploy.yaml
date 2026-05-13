@@ -144,10 +144,6 @@
       trino:
         user: '{{ trino_user }}'
         namespace: '{{ trino_namespace }}'
-      dashboards:
-        core:
-          enabled: true
-        quality:
-          enabled: '{{ enable_quality_dashboard | default(false) | bool }}'
-        followup:
-          enabled: '{{ enable_followup_dashboard | default(false) | bool }}'
+      bundles:
+        enabled: '{{ scout_dashboard_bundles }}'
+      extraConfigMaps: '{{ scout_dashboard_extra_configmaps }}'

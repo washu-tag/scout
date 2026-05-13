@@ -554,12 +554,20 @@ k3s_cluster:
       limits:
         cpu: 2
         memory: 8Gi
-    # Optional Superset dashboard families (the Scout core dashboard always
-    # installs). Toggle these to add the Quality/TAT and Follow-up Detection
-    # dashboards. Disabling later won't remove already-imported assets — drop
-    # them via the Superset UI if needed.
-    # enable_quality_dashboard: true
-    # enable_followup_dashboard: true
+    # Superset dashboard bundles to install. Built-in bundles: core (Scout
+    # main dashboard), quality (Quality & TAT dashboard), followup (Follow-up
+    # Detection dashboard). Removing a bundle later won't remove already-
+    # imported assets — drop them via the Superset UI if needed.
+    # scout_dashboard_bundles: [core, quality, followup]
+    #
+    # Site-overlay ConfigMaps. Each entry is the name of a ConfigMap in the
+    # Superset namespace whose items must expose paths under analytics/
+    # (e.g. items[].path "charts/my_chart.yaml"). Manage these ConfigMaps
+    # however you like — Kustomize, a separate Helm chart, plain kubectl
+    # apply — and reference them here to overlay site-specific dashboards
+    # on top of the built-in bundles without forking the chart.
+    # scout_dashboard_extra_configmaps:
+    #   - mysite-dashboards
 
     #---------------------------------------------------------------------------
     # Hive Metastore
