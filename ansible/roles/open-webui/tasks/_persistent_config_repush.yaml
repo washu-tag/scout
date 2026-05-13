@@ -39,21 +39,16 @@
 # from the form, so a partial POST would clobber MODEL_ORDER_LIST etc. with
 # nulls. GET first to preserve the other fields.
 - name: 'GET current /api/v1/configs/models (preserve sibling fields)'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - curl
       - -sfS
       - http://localhost:8080/api/v1/configs/models
       - -H
       - 'Authorization: Bearer {{ owui_admin_token }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _owui_models_config_current
   changed_when: false
   no_log: true
@@ -70,21 +65,16 @@
 
 # Same partial-payload concern for tasks/config/update — GET + merge + POST.
 - name: 'GET current /api/v1/tasks/config (preserve sibling fields)'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - curl
       - -sfS
       - http://localhost:8080/api/v1/tasks/config
       - -H
       - 'Authorization: Bearer {{ owui_admin_token }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _owui_tasks_config_current
   changed_when: false
   no_log: true

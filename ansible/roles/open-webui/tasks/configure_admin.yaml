@@ -19,28 +19,21 @@
 #
 # Look up the OWUI pod by label rather than guessing the Deployment name
 # (the Helm chart's release/chart naming combo doesn't always produce a
-# Deployment literally named "open-webui"). Used for all subsequent kubectl
-# exec / kubectl cp commands in this file and the per-resource sub-tasks.
+# Deployment literally named "open-webui"). Used for all subsequent
+# kubernetes.core.k8s_exec calls in this file and the per-resource sub-tasks.
 - name: 'Discover OWUI pod name'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - get
-      - pod
-      - -n
-      - '{{ chatbot_namespace }}'
-      - -l
+  kubernetes.core.k8s_info:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    api_version: v1
+    kind: Pod
+    namespace: '{{ chatbot_namespace }}'
+    label_selectors:
       - app.kubernetes.io/name=open-webui
-      - -o
-      - jsonpath={.items[0].metadata.name}
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _owui_pod_lookup
-  changed_when: false
 
 - name: 'Set OWUI pod name fact'
   ansible.builtin.set_fact:
-    _owui_pod_name: '{{ _owui_pod_lookup.stdout }}'
+    _owui_pod_name: '{{ (_owui_pod_lookup.resources | default([]) | first | default({})).metadata.name | default("") }}'
 
 - name: 'Fail early if OWUI pod was not found'
   ansible.builtin.fail:
@@ -61,14 +54,11 @@
 # strings without interpolating them into the shell or curl bodies, so a `,
 # ", $, \, or backtick in any of them can't break the script or inject.
 - name: 'Migrate bootstrap user password to derived hash (idempotent, no-op on clean DB)'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - /bin/sh
       - -c
       - |
@@ -92,8 +82,6 @@
       - _shell
       - '{{ open_webui_bootstrap_email }}'
       - '{{ open_webui_bootstrap_password }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _owui_password_migration
   changed_when: "'migrated' in _owui_password_migration.stdout"
   no_log: true
@@ -107,14 +95,11 @@
 # Payload JSON is built in Ansible (`to_json`) and passed via positional arg
 # so embedded quotes / shell metacharacters in email or password can't escape.
 - name: 'Try OWUI signin with derived bootstrap password'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - /bin/sh
       - -c
       - |
@@ -126,8 +111,6 @@
         printf '%s\n%s' "$code" "$resp"
       - _shell
       - '{{ {"email": open_webui_bootstrap_email, "password": open_webui_bootstrap_password} | to_json }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _owui_signin_attempt
   changed_when: false
   failed_when: false
@@ -146,14 +129,11 @@
 # ENABLE_SIGNUP=false. Once /signup succeeds once, the `has_users` check
 # blocks it forever, so this is a one-shot fallback.
 - name: 'Fallback: signup the bootstrap user on a fresh DB'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - /bin/sh
       - -c
       - |
@@ -170,8 +150,6 @@
         echo "$resp"
       - _shell
       - '{{ {"name": open_webui_bootstrap_name, "email": open_webui_bootstrap_email, "password": open_webui_bootstrap_password} | to_json }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _owui_signup_attempt
   changed_when: true
   failed_when: false
@@ -203,21 +181,16 @@
   no_log: true
 
 - name: 'Verify admin JWT works (GET /api/v1/auths/ should return user info with role=admin)'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - curl
       - -sf
       - 'http://localhost:8080/api/v1/auths/'
       - -H
       - 'Authorization: Bearer {{ owui_admin_token }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: owui_admin_verify
   changed_when: false
   no_log: true

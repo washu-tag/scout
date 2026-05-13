@@ -14,14 +14,11 @@
     quiet: true
 
 - name: 'Check if OWUI model exists: {{ _payload.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - curl
       - -sS
       - -o
@@ -31,62 +28,47 @@
       - 'http://localhost:8080/api/v1/models/model?id={{ _payload.id | urlencode }}'
       - -H
       - 'Authorization: Bearer {{ owui_admin_token }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _model_exists_check
   changed_when: false
   no_log: true
 
+# JSON payload goes via positional shell arg ($1) so embedded quotes / shell
+# metacharacters in suggestion prompts or system prompt can't break the script.
 - name: 'Create OWUI model (POST /create): {{ _payload.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - -i
-      - '{{ _owui_pod_name }}'
-      - --
-      - curl
-      - -sfS
-      - -X
-      - POST
-      - 'http://localhost:8080/api/v1/models/create'
-      - -H
-      - 'Authorization: Bearer {{ owui_admin_token }}'
-      - -H
-      - 'Content-Type: application/json'
-      - --data-binary
-      - '@-'
-    stdin: '{{ _payload | to_json }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
+      - /bin/sh
+      - -c
+      - |
+        curl -sfS -X POST http://localhost:8080/api/v1/models/create \
+          -H "Authorization: Bearer $1" \
+          -H 'Content-Type: application/json' \
+          --data "$2"
+      - _shell
+      - '{{ owui_admin_token }}'
+      - '{{ _payload | to_json }}'
   when: _model_exists_check.stdout != '200'
   no_log: true
 
 - name: 'Update existing OWUI model (POST /model/update): {{ _payload.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - -i
-      - '{{ _owui_pod_name }}'
-      - --
-      - curl
-      - -sfS
-      - -X
-      - POST
-      - 'http://localhost:8080/api/v1/models/model/update?id={{ _payload.id | urlencode }}'
-      - -H
-      - 'Authorization: Bearer {{ owui_admin_token }}'
-      - -H
-      - 'Content-Type: application/json'
-      - --data-binary
-      - '@-'
-    stdin: '{{ _payload | to_json }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
+      - /bin/sh
+      - -c
+      - |
+        curl -sfS -X POST "http://localhost:8080/api/v1/models/model/update?id=$1" \
+          -H "Authorization: Bearer $2" \
+          -H 'Content-Type: application/json' \
+          --data "$3"
+      - _shell
+      - '{{ _payload.id | urlencode }}'
+      - '{{ owui_admin_token }}'
+      - '{{ _payload | to_json }}'
   when: _model_exists_check.stdout == '200'
   no_log: true

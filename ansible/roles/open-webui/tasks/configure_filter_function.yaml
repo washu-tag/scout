@@ -3,7 +3,7 @@
 # Called by configure_admin.yaml in a loop over open_webui_filter_functions.
 #
 # Required loop var: `fn` (one entry from open_webui_filter_functions)
-# Required vars from configure_admin.yaml: `owui_admin_token`
+# Required vars from configure_admin.yaml: `owui_admin_token`, `_owui_pod_name`
 #
 # All curl commands run inside the OWUI pod against localhost:8080 — bypasses
 # Traefik (and thus OAuth2 Proxy) so the OWUI Bearer JWT is the only credential
@@ -14,14 +14,11 @@
     _fn_content: "{{ lookup('file', role_path ~ '/files/' ~ fn.source_file) }}"
 
 - name: 'Check if function exists: {{ fn.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - curl
       - -sS
       - -o
@@ -31,8 +28,6 @@
       - 'http://localhost:8080/api/v1/functions/id/{{ fn.id }}'
       - -H
       - 'Authorization: Bearer {{ owui_admin_token }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _fn_exists_check
   changed_when: false
   no_log: true
@@ -47,87 +42,69 @@
         description: '{{ fn.description }}'
 
 - name: 'Create function (POST /create): {{ fn.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - -i
-      - '{{ _owui_pod_name }}'
-      - --
-      - curl
-      - -sfS
-      - -X
-      - POST
-      - 'http://localhost:8080/api/v1/functions/create'
-      - -H
-      - 'Authorization: Bearer {{ owui_admin_token }}'
-      - -H
-      - 'Content-Type: application/json'
-      - --data-binary
-      - '@-'
-    stdin: '{{ _fn_payload | to_json }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
+      - /bin/sh
+      - -c
+      - |
+        curl -sfS -X POST http://localhost:8080/api/v1/functions/create \
+          -H "Authorization: Bearer $1" \
+          -H 'Content-Type: application/json' \
+          --data "$2"
+      - _shell
+      - '{{ owui_admin_token }}'
+      - '{{ _fn_payload | to_json }}'
   when: _fn_exists_check.stdout != '200'
   no_log: true
 
 - name: 'Update existing function (POST /id/{id}/update): {{ fn.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - -i
-      - '{{ _owui_pod_name }}'
-      - --
-      - curl
-      - -sfS
-      - -X
-      - POST
-      - 'http://localhost:8080/api/v1/functions/id/{{ fn.id }}/update'
-      - -H
-      - 'Authorization: Bearer {{ owui_admin_token }}'
-      - -H
-      - 'Content-Type: application/json'
-      - --data-binary
-      - '@-'
-    stdin: '{{ _fn_payload | to_json }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
+      - /bin/sh
+      - -c
+      - |
+        curl -sfS -X POST "http://localhost:8080/api/v1/functions/id/$1/update" \
+          -H "Authorization: Bearer $2" \
+          -H 'Content-Type: application/json' \
+          --data "$3"
+      - _shell
+      - '{{ fn.id }}'
+      - '{{ owui_admin_token }}'
+      - '{{ _fn_payload | to_json }}'
   when: _fn_exists_check.stdout == '200'
   no_log: true
 
 - name: 'Set valves for function: {{ fn.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - -i
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - /bin/sh
       - -c
       - |
         body=$(mktemp)
         code=$(curl -sS -o "$body" -w '%{http_code}' -X POST \
-          'http://localhost:8080/api/v1/functions/id/{{ fn.id }}/valves/update' \
-          -H 'Authorization: Bearer {{ owui_admin_token }}' \
+          "http://localhost:8080/api/v1/functions/id/$1/valves/update" \
+          -H "Authorization: Bearer $2" \
           -H 'Content-Type: application/json' \
-          --data-binary @-)
+          --data "$3")
         resp=$(cat "$body"); rm -f "$body"
         if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
           echo "POST .../valves/update failed: HTTP $code" >&2
           echo "$resp" >&2
           exit 1
         fi
-    stdin: '{{ fn.valves | default({}) | to_json }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
+      - _shell
+      - '{{ fn.id }}'
+      - '{{ owui_admin_token }}'
+      - '{{ fn.valves | default({}) | to_json }}'
   when: fn.valves is defined and fn.valves | length > 0
   register: _fn_valves_result
   failed_when: false
@@ -141,34 +118,26 @@
   when: _fn_valves_result is defined and _fn_valves_result.rc is defined and _fn_valves_result.rc != 0
 
 - name: 'Get current global state: {{ fn.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - curl
       - -sfS
       - 'http://localhost:8080/api/v1/functions/id/{{ fn.id }}'
       - -H
       - 'Authorization: Bearer {{ owui_admin_token }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _fn_current
   changed_when: false
   no_log: true
 
 - name: 'Toggle global to match enable_global: {{ fn.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - curl
       - -sfS
       - -X
@@ -176,8 +145,6 @@
       - 'http://localhost:8080/api/v1/functions/id/{{ fn.id }}/toggle/global'
       - -H
       - 'Authorization: Bearer {{ owui_admin_token }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   when: (_fn_current.stdout | from_json).is_global | default(false) != (fn.enable_global | default(false))
   no_log: true
 
@@ -186,14 +153,11 @@
 # never runs until is_active is true. /toggle is a TOGGLE not a setter, so
 # we GET state and only flip when the current value differs from desired.
 - name: 'Toggle is_active to match enable_active: {{ fn.id }}'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - curl
       - -sfS
       - -X
@@ -201,7 +165,5 @@
       - 'http://localhost:8080/api/v1/functions/id/{{ fn.id }}/toggle'
       - -H
       - 'Authorization: Bearer {{ owui_admin_token }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   when: (_fn_current.stdout | from_json).is_active | default(false) != (fn.enable_active | default(true))
   no_log: true

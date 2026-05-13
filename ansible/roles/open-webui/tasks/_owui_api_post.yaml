@@ -13,14 +13,11 @@
 # Positional args to the inner shell ($1=path, $2=token, $3=json body) keep
 # the JSON payload out of shell parsing.
 - name: 'POST {{ _post_path }} (declarative push)'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
+  kubernetes.core.k8s_exec:
+    kubeconfig: '{{ kubeconfig_yaml }}'
+    namespace: '{{ chatbot_namespace }}'
+    pod: '{{ _owui_pod_name }}'
+    command:
       - /bin/sh
       - -c
       - |
@@ -40,8 +37,6 @@
       - '{{ _post_path }}'
       - '{{ owui_admin_token }}'
       - '{{ _post_payload | to_json }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _owui_api_post_response
   changed_when: true
   no_log: true
