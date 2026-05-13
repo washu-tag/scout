@@ -1,8 +1,10 @@
 ---
 # Grafana Alloy DaemonSet values.
-# Collects pod logs cluster-wide via the kubelet pod-logs API (loki.source.kubernetes)
-# and ships them to Loki. Reproduces the label set previously emitted by Promtail
-# so existing Grafana dashboards continue to work without changes.
+# Collects pod logs cluster-wide via the kubelet pod-logs API
+# (loki.source.kubernetes) and ships them to Loki. The discovery.relabel
+# block produces the label set that Scout's Grafana dashboards depend on:
+# namespace, pod, container, app, instance, component, node_name, and
+# job (= <namespace>/<app>).
 
 controller:
   tolerations: {{ alloy_tolerations | to_json }}

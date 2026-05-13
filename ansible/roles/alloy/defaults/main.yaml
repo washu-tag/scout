@@ -7,9 +7,9 @@ alloy_helm_repo_name: grafana
 alloy_helm_repo_url: https://grafana.github.io/helm-charts
 alloy_helm_timeout: 5m
 
-# Loki write endpoint (DaemonSet ships logs here).
-# The loki-gateway Service exposes only port 80 (nginx proxy), not 3100 —
-# port 3100 is on the underlying loki Service. Matches the promtail default.
+# Loki write endpoint (DaemonSet ships logs here). loki-gateway is the
+# nginx fronting Loki and exposes port 80 (the underlying loki Service
+# exposes 3100, but the gateway is the supported entry point).
 alloy_loki_write_url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local/loki/api/v1/push'
 
 # DaemonSet tolerations. Default tolerates every taint so log collection
