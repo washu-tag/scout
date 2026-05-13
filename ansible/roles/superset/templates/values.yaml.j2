@@ -179,5 +179,12 @@ extraVolumeMounts:
     subPath: favicon.ico
     readOnly: true
 init:
+  # Override the apache/superset chart's default firstname/lastname so the
+  # local admin user shows as "Scout Admin" in the Superset UI. Only takes
+  # effect on first install (the init job creates the admin row if absent).
+  adminUser:
+    firstname: Scout
+    lastname: Admin
+    email: admin@scout.local
   initscript: |
     {{ lookup('template', 'init_script.sh.j2') | indent(4) }}

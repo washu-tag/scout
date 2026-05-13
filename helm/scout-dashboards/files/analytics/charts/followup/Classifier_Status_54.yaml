@@ -1,0 +1,41 @@
+slice_name: ' '
+description: Banner shown only when the follow-up classifier has emitted errors.
+  The chart aggregates COUNT(*) over followup_errors and filters via HAVING so the
+  query returns one row when N>0 and zero rows when clean — the Handlebars
+  template renders the warning only on a non-empty result.
+certified_by: null
+certification_details: null
+viz_type: handlebars
+params:
+  datasource: 5__table
+  viz_type: handlebars
+  slice_id: 54
+  query_mode: aggregate
+  groupby: []
+  metrics:
+    - count
+  percent_metrics: []
+  adhoc_filters:
+    - clause: HAVING
+      sqlExpression: COUNT(*) > 0
+      expressionType: SQL
+  row_limit: 1
+  order_by_cols: []
+  server_pagination: false
+  styleTemplate: ''
+  handlebarsTemplate: |
+    {{#if data.length}}
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;background:#fef3c7;border-left:4px solid #f59e0b;border-radius:4px;color:#78350f;font-size:14px;line-height:1.45;">
+      <span style="font-size:20px;">&#9888;</span>
+      <span><strong style="color:#92400e;">Follow-up classifier needs attention.</strong> Recent classifier errors were logged. Run the classifier notebook in Scout Notebooks to retry stalled reports.</span>
+    </div>
+    {{/if}}
+  extra_form_data: {}
+  dashboards:
+    - 3
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 4a4f1e8c-7a8e-4c91-bf9e-e58a2f5e2c64
+version: 1.0.0
+dataset_uuid: 0b2024fb-e34f-4c25-adba-e27a35a49f9d
