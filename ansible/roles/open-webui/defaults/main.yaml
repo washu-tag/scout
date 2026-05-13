@@ -285,7 +285,7 @@ open_webui_filter_functions:
 # A scout_models entry with NO `ui:` block is left as a plain Ollama model
 # (still selectable but without Scout Explorer system prompt / tools / display
 # name / advanced params).
-open_webui_scout_system_prompt_file: gpt-oss-scout-query-prompt.md
+open_webui_scout_system_prompt_file: scout-system-prompt.md
 open_webui_scout_tool_ids:
   - 'server:mcp:{{ mcp_trino_tool_id }}'
 open_webui_scout_default_reasoning_effort: high

@@ -128,16 +128,16 @@ This applies only to env-var-driven settings. **Filters and custom models (secti
 
 #### 3. Schema reference in the system prompt
 
-Scout's models run with `function_calling: native`, and OWUI's RAG auto-injection path is gated on `function_calling != 'native'`. Attached knowledge collections only surface via LLM-initiated `list_knowledge` / `query_knowledge_files` tool calls — which thinking-mode models often skip. To guarantee the schema is in context every turn, the database schema reference and charting-output instructions are **inlined into the system prompt file** (`files/gpt-oss-scout-query-prompt.md`).
+Scout's models run with `function_calling: native`, and OWUI's RAG auto-injection path is gated on `function_calling != 'native'`. Attached knowledge collections only surface via LLM-initiated `list_knowledge` / `query_knowledge_files` tool calls — which thinking-mode models often skip. To guarantee the schema is in context every turn, the database schema reference and charting-output instructions are **inlined into the system prompt file** (`files/scout-system-prompt.md`).
 
-To update the schema reference, edit `files/gpt-oss-scout-query-prompt.md` directly. The `docs/source/dataschema.md` doc remains the canonical reference for humans and notebooks; the prompt is a trimmed, query-focused subset.
+To update the schema reference, edit `files/scout-system-prompt.md` directly. The `docs/source/dataschema.md` doc remains the canonical reference for humans and notebooks; the prompt is a trimmed, query-focused subset.
 
 #### 4. Configure Scout Explorer model — automated
 
 For every `scout_models` entry with a `ui:` block (or for every entry when defaults apply), the role creates/updates a Scout Explorer OWUI model with:
 
 - Display name and description
-- System prompt (`files/gpt-oss-scout-query-prompt.md`, with the schema reference inlined)
+- System prompt (`files/scout-system-prompt.md`, with the schema reference inlined)
 - Tool reference (`server:mcp:{scout-db}` — the Trino MCP server registered in step 2)
 - Suggestion prompts (the starter prompts that show up on a new chat)
 - Profile image (the Scout logo)
@@ -278,7 +278,7 @@ kubectl exec -n scout-analytics deploy/ollama -- ollama list
 
 - **Main Scout Docs**: https://washu-scout.readthedocs.io/
 - **Open WebUI Docs**: https://docs.openwebui.com/
-- **Scout Query Prompt**: `files/gpt-oss-scout-query-prompt.md`
+- **Scout Query Prompt**: `files/scout-system-prompt.md`
 - **Link Sanitizer Filter**: `files/link_sanitizer_filter.py`
 - **Context Summarization Filter**: `files/context_summarization_filter.py`
 - **ADRs**:
