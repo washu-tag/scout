@@ -81,13 +81,23 @@ See `inventory.example.yaml` for configuration examples
 
 ## Bootstrap & Migration
 
-The role mints an OWUI admin JWT during deploy by calling `/api/v1/auths/signin` or `/auths/signup` on the in-cluster `open-webui` Service (bypassing Traefik), and uses that token to seed filter functions and custom Scout Explorer models via the REST API. The bootstrap user is `scout-deploy@internal` (configurable via `open_webui_bootstrap_email`).
+All Phase 2 work (admin user, filter functions, custom models, PersistentConfig re-push) runs as a Kubernetes Job deployed via a separate Helm chart at [`helm/open-webui-bootstrap/`](../../../helm/open-webui-bootstrap/). The Job is hooked as `helm.sh/hook: post-install,post-upgrade` so it runs after the OWUI chart finishes installing/upgrading, and re-runs on every `make install-chat` (its manifest carries a `checksum/config` annotation over the rendered ConfigMap).
+
+The bootstrap user is `scout-deploy@scout-deploy.local` (configurable via `open_webui_bootstrap_email`).
 
 ### How it works
 
-- **Password is derived from `open_webui_secret_key`** (SHA256 hex). No separate secret to track; rotating the secret-key auto-rotates the bootstrap login.
-- **`ENABLE_INITIAL_ADMIN_SIGNUP=true`** lets `/signup` create the very first user as admin even with `ENABLE_SIGNUP=false`. Once any user exists, OWUI's `has_users` short-circuit blocks `/signup` permanently — so the env var is safe to leave on.
-- **Migration step (idempotent)** runs every deploy. It rewrites the `scout-deploy@internal` bcrypt hash to match the currently derived password. No-op on a clean DB; on an existing cluster it ensures `/signin` works even after a secret-key rotation. Implemented as a `kubectl exec` calling OWUI's own `bcrypt` + SQLAlchemy session — no direct postgres access from Ansible.
+- **The Job uses OWUI's own container image** so the password-migration step can `import open_webui.internal.db` / `open_webui.models.auths` (same modules the app uses), and bcrypt versions match.
+- **Password is derived from `open_webui_secret_key`** (SHA256 hex) inside the script. No separate secret to track; rotating the secret-key auto-rotates the bootstrap login.
+- **`ENABLE_INITIAL_ADMIN_SIGNUP=true`** (set on the OWUI deployment via extraEnvVars) lets `/signup` create the very first user as admin even with `ENABLE_SIGNUP=false`. Once any user exists, OWUI's `has_users` short-circuit blocks `/signup` permanently — so the env var is safe to leave on.
+- **Migration step (idempotent)** runs on every Job execution. It rewrites the `scout-deploy@internal` bcrypt hash to match the currently derived password. No-op on a clean DB; on an existing cluster it ensures `/signin` works even after a secret-key rotation.
+- **Inputs to the Job come from a ConfigMap** the chart renders from inventory: filter function source code, full Scout Explorer model payloads (system prompt inlined, capability flags, suggestion prompts, tool refs), and the PersistentConfig field values. Edit inventory, `make install-chat`, Helm replaces the ConfigMap+Job and the new state takes effect — no SQL surgery.
+
+The full script lives at `helm/open-webui-bootstrap/files/bootstrap.py`. Watch a deploy in real time:
+
+```bash
+kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -f
+```
 
 ### Why signup-or-signin (and not trusted-header SSO)
 
@@ -103,10 +113,10 @@ Signup-or-signin has no equivalent frontend coupling: the env var that enables i
 
 **B) Cluster previously bootstrapped under the trusted-header alpha.** No action needed. The `scout-deploy@internal` user already exists; the migration step rewrites its bcrypt hash to the derived password on the next deploy, then `/signin` succeeds.
 
-**C) Existing OWUI cluster with other users but no `scout-deploy@internal`.** The only case requiring manual action — OWUI's `has_users` check blocks `/signup` once any user exists, so a fresh signup attempt returns `ACCESS_PROHIBITED`. The role surfaces a diagnostic at this point pointing at this section. **One-time manual step**, signed in as an existing admin:
+**C) Existing OWUI cluster with other users but no `scout-deploy@scout-deploy.local`.** The only case requiring manual action — OWUI's `has_users` check blocks `/signup` once any user exists, so a fresh signup attempt returns `ACCESS_PROHIBITED`. The bootstrap Job will exit non-zero with a diagnostic pointing at this section. **One-time manual step**, signed in as an existing admin:
 
 1. **Admin Panel → Users → Create new user**
-2. Email: `scout-deploy@internal` (or whatever `open_webui_bootstrap_email` is set to)
+2. Email: `scout-deploy@scout-deploy.local` (or whatever `open_webui_bootstrap_email` is set to)
 3. Name: `Scout Deploy Bot`
 4. Password: any value — the migration step rewrites it on the next deploy
 5. Role: `admin`
@@ -116,7 +126,7 @@ Signup-or-signin has no equivalent frontend coupling: the env var that enables i
 
 ### Disabling Phase 2 entirely
 
-Set `open_webui_admin_setup_enabled: false` in inventory. The Helm deploy still runs; the role skips bootstrap, filter function seeding, and model seeding. Useful for environments where the in-cluster admin API isn't reachable or where the operator wants to manage post-deploy state out of band.
+Set `open_webui_admin_setup_enabled: false` in inventory. The OWUI Helm deploy still runs; the role skips the `open-webui-bootstrap` chart entirely (no Job, no ConfigMap). Useful for environments where the operator wants to manage post-deploy state out of band.
 
 ## Post-Deployment Configuration
 
@@ -155,20 +165,19 @@ exit
 
 #### 2. Add Trino MCP Tool — automated
 
-Registered automatically via the `TOOL_SERVER_CONNECTIONS` env var (see `tool_server_connections` in `defaults/main.yaml`). To override the URL, set `mcp_trino_url` in inventory; to skip registration, set `tool_server_connections: []`.
+Registered automatically by the bootstrap Job (POST `/api/v1/configs/tool_servers`). Override `tool_server_connections` in inventory to add more servers or change the URL; set to `[]` to skip registration.
 
 Verify after deploy:
 
 ```bash
-kubectl exec -n {{ chatbot_namespace }} deploy/open-webui -- \
-  curl -s http://localhost:8080/api/v1/configs/tool_servers
+kubectl exec -n scout-analytics open-webui-0 -- curl -s http://localhost:8080/api/v1/configs/tool_servers
 ```
 
 **Note (PersistentConfig semantics):** OWUI stores tool servers, RAG template, default/task model IDs, etc. in its Postgres `config` table as PersistentConfig — naively, env-var changes after first launch are silent no-ops because the admin UI is authoritative.
 
-To work around that for the four inventory-tunable fields, `configure_admin.yaml` re-pushes them through OWUI's REST API on every deploy using the admin JWT it just minted (`/api/v1/configs/tool_servers`, `/api/v1/retrieval/config/update`, `/api/v1/configs/models`, `/api/v1/tasks/config/update`). So `tool_server_connections`, `open_webui_rag_template_file`, `open_webui_default_model_id`, and `open_webui_task_model_id` ARE fully declarative — change inventory, re-run `make install-chat`, done. No SQL surgery needed.
+The bootstrap Job side-steps this by POSTing those fields through OWUI's REST API on every Helm install/upgrade (`/api/v1/configs/tool_servers`, `/api/v1/retrieval/config/update`, `/api/v1/configs/models`, `/api/v1/tasks/config/update`). So `tool_server_connections`, `open_webui_rag_template_file`, `open_webui_default_model_id`, and `open_webui_task_model_id` ARE fully declarative — change inventory, `make install-chat`, done.
 
-Fields that remain genuinely seed-only (set once at first launch, expected stable thereafter): `WEBUI_URL` (derived from `server_hostname`), `ENABLE_EVALUATION_ARENA_MODELS`, `ENABLE_SIGNUP`, `ENABLE_LOGIN_FORM`, `ENABLE_COMMUNITY_SHARING`. If you ever need to flip one of these on an existing cluster, delete its row from `config` in OWUI's Postgres and restart the OWUI pod — env will re-seed on next boot. (Wiping the OWUI PVC does **not** re-seed — PersistentConfig lives in Postgres, not the PVC.)
+Fields that remain genuinely seed-only (set once at first launch via Helm extraEnvVars, expected stable thereafter): `WEBUI_URL` (derived from `server_hostname`), `ENABLE_EVALUATION_ARENA_MODELS`, `ENABLE_SIGNUP`, `ENABLE_LOGIN_FORM`, `ENABLE_COMMUNITY_SHARING`. If you ever need to flip one of these on an existing cluster, delete its row from `config` in OWUI's Postgres and restart the OWUI pod — env will re-seed on next boot. (Wiping the OWUI PVC does **not** re-seed — PersistentConfig lives in Postgres, not the PVC.)
 
 OAuth fields (`OAUTH_*`, `OPENID_*`) are env-only because `ENABLE_OAUTH_PERSISTENT_CONFIG=false` skips loading them from the config table — env always wins.
 
