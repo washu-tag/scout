@@ -33,9 +33,9 @@
 # - helm_chart_timeout: Timeout for wait (default: '5m')
 # - helm_chart_values: Values dict
 # - helm_chart_values_files: List of values files
-# - helm_chart_state: 'present' (default) or 'absent' to uninstall
-# - helm_chart_failed_when: Optional failure predicate for the helm task (e.g. to tolerate
-#   "release not found" on uninstall). Defaults to ansible's standard error handling.
+# - helm_chart_state: 'present' (default) or 'absent' to uninstall. On uninstall
+#   the wrapper tolerates "release not found" so the call is idempotent against
+#   already-removed releases.
 # - helm_repo_name: Repository name (for repo charts)
 # - helm_repo_url: Repository URL (for repo charts)
 
@@ -78,4 +78,12 @@
         values: '{{ helm_chart_values | default(omit) }}'
         values_files: '{{ helm_chart_values_files | default(omit) }}'
       register: helm_chart_result
-      failed_when: '{{ helm_chart_failed_when | default(helm_chart_result.failed) }}'
+      # On uninstall, tolerate "release not found" so the call is idempotent.
+      # Other failures (including the install path) fall through to ansible's
+      # standard error handling.
+      failed_when: >-
+        helm_chart_result.failed
+        and not (
+          (helm_chart_state | default('present')) == 'absent'
+          and 'not found' in (helm_chart_result.stderr | default(''))
+        )

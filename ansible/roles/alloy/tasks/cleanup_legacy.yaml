@@ -11,9 +11,6 @@
     helm_chart_namespace: '{{ alloy_namespace }}'
     helm_chart_state: absent
     helm_chart_timeout: '{{ alloy_helm_timeout }}'
-    # Tolerate a release stuck in pending-* states; ignore "not found" since
-    # that's the steady-state once the migration has propagated.
-    helm_chart_failed_when: "helm_chart_result.failed and 'not found' not in (helm_chart_result.stderr | default(''))"
     # Setting helm_repo_name (without helm_repo_url) keeps the wrapper's
     # is_local_chart=false branch so use_localhost still tracks air_gapped.
     helm_repo_name: '{{ alloy_helm_repo_name }}'

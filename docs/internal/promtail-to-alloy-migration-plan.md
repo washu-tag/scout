@@ -364,7 +364,7 @@ A code review of the merged migration surfaced findings that were not addressed 
 
 5. **Reuse `scout_common/deploy_helm_chart` for the promtail uninstall.** The uninstall task hand-rolls the `use_localhost / delegate_to / KUBECONFIG` pattern that already lives in `scout_common/tasks/deploy_helm_chart.yaml` — a duplication that commit e29cb025 had to fix once already. Extend the wrapper with a `helm_chart_state` parameter (default `present`) so the uninstall can call the same wrapper and the air-gapped localhost-vs-cluster logic lives in exactly one place.
 
-   **Resolution:** Done — wrapper now accepts `helm_chart_state` and optional `helm_chart_failed_when`. The promtail uninstall calls the wrapper.
+   **Resolution:** Done — wrapper now accepts `helm_chart_state`. The promtail uninstall calls the wrapper. The initial draft also exposed a `helm_chart_failed_when` parameter (per #11), but that approach relied on double-rendering of a Jinja-expression string through `{{ ... }}`, which Ansible 2.18+ deprecates and 2.23 removes. The wrapper now bakes uninstall-tolerance for "release not found" into a single state-aware `failed_when` instead.
 
 6. **Move the promtail uninstall out of the `loki` role.** Addressed jointly with #3 above — the uninstall now lives in `ansible/roles/alloy/tasks/cleanup_legacy.yaml`.
 
@@ -388,7 +388,7 @@ A code review of the merged migration surfaced findings that were not addressed 
 
 11. **Harden the uninstall against partially-failed releases.**
 
-    **Resolution:** Done via the wrapper extension (#5). The uninstall caller passes `helm_chart_failed_when: "helm_chart_result.failed and 'not found' not in (helm_chart_result.stderr | default(''))"`. Because the wrapper is shared between install and uninstall, the predicate is per-caller (default omit = ansible's standard behavior on install).
+    **Resolution:** Done in the wrapper itself: when `helm_chart_state == 'absent'`, the wrapper's `failed_when` tolerates `'not found'` in stderr. Other uninstall failures (e.g. release stuck in `pending-*`) still surface, which matches the original intent.
 
 12. **Add `wait_timeout` to the uninstall task** to match the explicit `loki_helm_timeout` on the install side.
 
