@@ -4,6 +4,9 @@
 # and ships them to Loki. Reproduces the label set previously emitted by Promtail
 # so existing Grafana dashboards continue to work without changes.
 
+controller:
+  tolerations: {{ alloy_tolerations | to_json }}
+
 alloy:
   configMap:
     content: |

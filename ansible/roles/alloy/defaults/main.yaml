@@ -11,3 +11,9 @@ alloy_helm_timeout: 5m
 # The loki-gateway Service exposes only port 80 (nginx proxy), not 3100 —
 # port 3100 is on the underlying loki Service. Matches the promtail default.
 alloy_loki_write_url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local/loki/api/v1/push'
+
+# DaemonSet tolerations. Default tolerates every taint so log collection
+# follows pods onto control-plane, GPU, and custom-tainted nodes. Override
+# in inventory.yaml with a narrower list if some nodes should be excluded.
+alloy_tolerations:
+  - operator: Exists
