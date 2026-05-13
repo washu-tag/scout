@@ -761,6 +761,39 @@ grafana_smtp_skip_verify: false
 grafana_email_recipients: ['admin@example.com']
 ```
 
+#### Superset Dashboards
+
+Scout ships its Superset dashboards via a separate Helm chart
+(`helm/scout-dashboards/`). The Scout main dashboard is always installed;
+two additional dashboards are opt-in per inventory.
+
+```yaml
+# Built-in dashboard bundles to install. The Scout core dashboard always
+# ships. Add bundle names to install more.
+#   core      - Scout main dashboard (default)
+#   quality   - Quality & TAT dashboard
+#   followup  - Follow-up Detection dashboard
+scout_dashboard_bundles:
+  - core
+  - quality
+  - followup
+
+# Site-overlay ConfigMaps. Each entry is the name of a ConfigMap in the
+# Superset namespace whose items must expose paths under analytics/ (e.g.
+# items[].path "charts/my_chart.yaml"). Manage these ConfigMaps however
+# you like — Kustomize, plain kubectl apply, a small site-owned Helm
+# chart — and reference them here to overlay site-specific dashboards on
+# top of the built-in bundles without forking scout-dashboards.
+scout_dashboard_extra_configmaps:
+  - mysite-dashboards
+```
+
+Removing a bundle or extra ConfigMap entry stops **new** installs from
+receiving its assets, but **does not** delete already-imported assets from
+existing Superset installations (the import Job is one-way; drop unwanted
+assets via the Superset UI). See `helm/scout-dashboards/README.md` for the
+file layout and overlay-ConfigMap structure.
+
 #### Ollama Models
 
 Specify which AI models to pull automatically:

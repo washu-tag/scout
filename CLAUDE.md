@@ -535,7 +535,8 @@ ADRs in `docs/internal/adr/` document significant architectural decisions. Consu
 - **Add HL7 field**: Update `extractor/hl7-transformer/` parser, update `docs/source/dataschema.md`
 - **Modify workflow**: Edit TypeScript in `orchestrator/`, redeploy extractor role
 - **Adjust resources**: Override in `inventory.yaml` (JVM heap, CPU, memory, storage)
-- **Add dashboard**: Create in Grafana UI, export JSON to `ansible/roles/grafana/files/dashboards/`
+- **Add a Grafana dashboard**: Create in Grafana UI, export JSON to `ansible/roles/grafana/files/dashboards/`
+- **Add a Superset dashboard, chart, or dataset**: Export the asset YAML from Superset and drop it into `helm/scout-dashboards/files/analytics/<charts|dashboards|datasets/Scout_Data_Lake>/<bundle>/`. New bundles also need their name added to `scout_dashboard_bundles` in inventory. Site-specific dashboards can ship via `scout_dashboard_extra_configmaps` without forking the chart — see `helm/scout-dashboards/README.md`.
 - **Update dependency versions**: Edit `ansible/group_vars/all/versions.yaml`, redeploy component
 - **Release new Scout version**: See `docs/internal/versions-and-releases.md` for complete checklist of files to update
 - **Configure namespaces**: Override namespace variables in `inventory.yaml`
