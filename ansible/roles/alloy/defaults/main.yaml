@@ -7,9 +7,6 @@ alloy_helm_repo_name: grafana
 alloy_helm_repo_url: https://grafana.github.io/helm-charts
 alloy_helm_timeout: 5m
 
-# Namespace (defaults to the shared monitoring namespace from scout_common)
-alloy_namespace: '{{ scout_monitoring_namespace }}'
-
 # Loki write endpoint (DaemonSet ships logs here).
 # The loki-gateway Service exposes only port 80 (nginx proxy), not 3100 —
 # port 3100 is on the underlying loki Service. Matches the promtail default.
