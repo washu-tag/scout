@@ -1,0 +1,6 @@
+apiVersion: v2
+name: open-webui-bootstrap
+description: Post-deploy admin bootstrap + declarative config push for Open WebUI. Runs as a Helm post-install/post-upgrade Job; mints an admin JWT against OWUI's in-cluster Service and pushes filter functions, custom models, and PersistentConfig (tool servers, RAG template, default + task models) via the REST API.
+type: application
+version: 0.0.0-dev
+appVersion: 'latest'

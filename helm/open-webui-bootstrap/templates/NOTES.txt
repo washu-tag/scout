@@ -1,0 +1,17 @@
+Open WebUI bootstrap Job deployed.
+
+The Job runs as a Helm post-install/post-upgrade hook and:
+  1. Migrates the {{ .Values.bootstrap.email }} bcrypt hash (idempotent).
+  2. Mints an admin JWT via /signin or /signup (one-shot fallback on fresh DB).
+  3. Re-pushes PersistentConfig that's seed-only in OWUI:
+       - tool_server_connections ({{ len .Values.persistentConfig.tool_server_connections }} entries)
+       - RAG_TEMPLATE ({{ if .Values.persistentConfig.rag_template }}{{ len .Values.persistentConfig.rag_template }} chars{{ else }}skipped{{ end }})
+       - DEFAULT_MODELS={{ .Values.persistentConfig.default_model_id }}
+       - TASK_MODEL={{ .Values.persistentConfig.task_model_id }}
+  4. Reconciles {{ len .Values.filterFunctions }} filter function(s) and {{ len .Values.models }} custom model(s).
+
+Watch progress:
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name=open-webui-bootstrap -f
+
+Re-run by editing inventory and `make install-chat` again — Helm replaces the
+Job whenever any payload changes (config hash annotation).

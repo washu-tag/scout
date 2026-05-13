@@ -1,0 +1,65 @@
+# Image — must match OWUI's deployed image. The bootstrap Job reuses OWUI's
+# own container so the password-migration step can `import open_webui.internal.db`
+# and `open_webui.models.auths` (same modules the app uses), and so the Python
+# version + bcrypt version are guaranteed to match.
+image:
+  repository: ghcr.io/open-webui/open-webui
+  tag: '0.9.5'
+  pullPolicy: IfNotPresent
+
+# In-cluster URL for OWUI. Bypasses Traefik (no oauth2-proxy gate) so the
+# minted Bearer JWT is the only credential needed.
+owuiBaseUrl: http://open-webui:8080
+
+# Bootstrap admin user. Password is derived deterministically from the
+# WEBUI_SECRET_KEY referenced below — no separate secret to manage.
+bootstrap:
+  email: scout-deploy@scout-deploy.local
+  name: Scout Deploy Bot
+  webuiSecretKeySecret:
+    name: open-webui-secrets
+    key: WEBUI_SECRET_KEY
+
+# Database URL — needed by the password-migration step so OWUI's
+# `open_webui.internal.db` can connect to the same Postgres the running OWUI
+# pod uses. Same value passed to the upstream OWUI chart's `databaseUrl`.
+# Set by Ansible from inventory.
+databaseUrl: ''
+
+# Job behavior. backoffLimit=1 because retries don't help: if bootstrap fails
+# it's because OWUI is unreachable or config is malformed, and retrying won't
+# fix either. ttlSecondsAfterFinished cleans the Pod after an hour so kubectl
+# get pods stays tidy.
+backoffLimit: 1
+ttlSecondsAfterFinished: 3600
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1
+    memory: 512Mi
+
+# --- PAYLOADS — rendered by Ansible from inventory --------------------------
+# Each block becomes one JSON file in the mounted ConfigMap; bootstrap.py
+# reads them by name. Empty defaults render to empty arrays/strings so the
+# chart installs cleanly even with no configuration.
+
+# PersistentConfig fields to re-push on every run (OWUI is seed-only otherwise).
+persistentConfig:
+  tool_server_connections: []
+  rag_template: ''
+  default_model_id: ''
+  task_model_id: ''
+
+# OWUI Functions (filter / pipe / action). Each entry: id, name, description,
+# content (full source code, inline), enable_global, enable_active, valves.
+filterFunctions: []
+
+# OWUI custom models. Each entry: complete ModelForm payload (id,
+# base_model_id, name, meta{description,profile_image_url,toolIds,builtinTools,
+# suggestion_prompts,capabilities}, params{system,function_calling,
+# reasoning_effort,keep_alive}, is_active). The Ansible role builds these
+# from scout_models[].ui blocks plus the open_webui_scout_default_* fields.
+models: []

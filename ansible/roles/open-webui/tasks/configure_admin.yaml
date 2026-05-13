@@ -1,242 +1,110 @@
 ---
-# Mints an OWUI admin JWT by calling /signin or /signup through the in-cluster
-# Service. The token is exported as `owui_admin_token` for follow-up tasks
-# (Functions, Models, Knowledge — added in subsequent PRs) to seed admin
-# config via OWUI's REST API.
+# Deploy the open-webui-bootstrap Helm chart. The chart runs a post-install/
+# post-upgrade Job in the OWUI namespace that:
+#   1. Migrates the bootstrap user's bcrypt hash to match the derived password.
+#   2. Mints an admin JWT via /signin or (on fresh DB) /signup.
+#   3. Re-pushes env-var-seeded PersistentConfig (tool servers, RAG template,
+#      DEFAULT_MODELS, TASK_MODEL) — OWUI is seed-only for these otherwise.
+#   4. Creates/updates filter functions + sets valves + toggles global/active.
+#   5. Creates/updates custom Scout Explorer models + hide-base overrides.
 #
-# Bootstrap flow (idempotent, handles all cluster states):
-#   1. Migration UPDATE: set the bootstrap user's password to our derived
-#      hash. No-op on clean clusters (the row doesn't exist yet); on clusters
-#      previously bootstrapped via trusted-header SSO it overwrites the random
-#      UUID password (which we never persisted) with a deterministic one we
-#      can sign in with on every subsequent run.
-#   2. POST /signin with the derived password. Succeeds on existing/migrated
-#      clusters.
-#   3. POST /signup with the derived password as a fallback. Succeeds on a
-#      truly empty DB (auths.py allows the very first user to register as
-#      admin when ENABLE_INITIAL_ADMIN_SIGNUP=true; once any user exists, the
-#      `has_users` short-circuit blocks /signup permanently).
-#
-# Look up the OWUI pod by label rather than guessing the Deployment name
-# (the Helm chart's release/chart naming combo doesn't always produce a
-# Deployment literally named "open-webui"). Used for all subsequent
-# kubernetes.core.k8s_exec calls in this file and the per-resource sub-tasks.
-- name: 'Discover OWUI pod name'
-  kubernetes.core.k8s_info:
-    kubeconfig: '{{ kubeconfig_yaml }}'
-    api_version: v1
-    kind: Pod
-    namespace: '{{ chatbot_namespace }}'
-    label_selectors:
-      - app.kubernetes.io/name=open-webui
-  register: _owui_pod_lookup
+# Replaces what used to be ~6 kubectl-exec'd Ansible task files. The script
+# lives in helm/open-webui-bootstrap/files/bootstrap.py; everything else here
+# just renders inventory → Helm values that the chart turns into a ConfigMap
+# the Job mounts. Pure gitops: the work happens in-cluster, observable via
+# `kubectl logs job/open-webui-bootstrap-<release>`.
 
-- name: 'Set OWUI pod name fact'
-  ansible.builtin.set_fact:
-    _owui_pod_name: '{{ (_owui_pod_lookup.resources | default([]) | first | default({})).metadata.name | default("") }}'
-
-- name: 'Fail early if OWUI pod was not found'
-  ansible.builtin.fail:
-    msg: |-
-      Could not find an Open WebUI pod in namespace {{ chatbot_namespace }}.
-      Tried: kubectl get pod -l app.kubernetes.io/name=open-webui
-      Helm deploy may not have rolled out, or the chart's pod label changed.
-  when: _owui_pod_name | length == 0
-
-# Migration step: ensure the bootstrap user's stored password hash matches
-# our derived password. Runs every time but is idempotent — if the row
-# doesn't exist (clean DB) UPDATE affects 0 rows; if it does exist (legacy
-# trusted-header bootstrap, or prior run with this same password), the
-# password is set to a fresh bcrypt hash of the same plaintext (different
-# salt, equivalent semantics). Uses OWUI's own bcrypt + SQLAlchemy session
-# so we don't have to interrogate postgres directly or duplicate schema.
-# Positional args ($1=email, $2=password, $3=name) pass operator-provided
-# strings without interpolating them into the shell or curl bodies, so a `,
-# ", $, \, or backtick in any of them can't break the script or inject.
-- name: 'Migrate bootstrap user password to derived hash (idempotent, no-op on clean DB)'
-  kubernetes.core.k8s_exec:
-    kubeconfig: '{{ kubeconfig_yaml }}'
-    namespace: '{{ chatbot_namespace }}'
-    pod: '{{ _owui_pod_name }}'
-    command:
-      - /bin/sh
-      - -c
-      - |
-        BOOTSTRAP_EMAIL="$1" BOOTSTRAP_PASSWORD="$2" python -c '
-        import os
-        import bcrypt
-        from open_webui.internal.db import get_db
-        from open_webui.models.auths import Auth
-        email = os.environ["BOOTSTRAP_EMAIL"]
-        password = os.environ["BOOTSTRAP_PASSWORD"]
-        hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-        with get_db() as db:
-            row = db.query(Auth).filter(Auth.email == email).first()
-            if row is not None:
-                row.password = hashed
-                db.commit()
-                print("migrated")
-            else:
-                print("no-op (clean DB)")
-        '
-      - _shell
-      - '{{ open_webui_bootstrap_email }}'
-      - '{{ open_webui_bootstrap_password }}'
-  register: _owui_password_migration
-  changed_when: "'migrated' in _owui_password_migration.stdout"
-  no_log: true
-  retries: 20
-  delay: 3
-  until: _owui_password_migration.rc == 0
-
-# Try /signin first. Succeeds on any cluster where the bootstrap user already
-# exists (with the migrated password). Captures HTTP status separately from
-# body so we can branch on 400 (no such user → fall through to signup).
-# Payload JSON is built in Ansible (`to_json`) and passed via positional arg
-# so embedded quotes / shell metacharacters in email or password can't escape.
-- name: 'Try OWUI signin with derived bootstrap password'
-  kubernetes.core.k8s_exec:
-    kubeconfig: '{{ kubeconfig_yaml }}'
-    namespace: '{{ chatbot_namespace }}'
-    pod: '{{ _owui_pod_name }}'
-    command:
-      - /bin/sh
-      - -c
-      - |
-        body=$(mktemp)
-        code=$(curl -sS -o "$body" -w '%{http_code}' -X POST http://localhost:8080/api/v1/auths/signin \
-          -H "Content-Type: application/json" \
-          --data "$1")
-        resp=$(cat "$body"); rm -f "$body"
-        printf '%s\n%s' "$code" "$resp"
-      - _shell
-      - '{{ {"email": open_webui_bootstrap_email, "password": open_webui_bootstrap_password} | to_json }}'
-  register: _owui_signin_attempt
-  changed_when: false
-  failed_when: false
-  no_log: true
-
-- name: 'Parse signin response'
-  ansible.builtin.set_fact:
-    # Default to '000' if signin task somehow produced no stdout (kubectl exec
-    # error, etc.) — same code curl uses for "could not reach server".
-    _owui_signin_code: "{{ ((_owui_signin_attempt.stdout_lines | default([])) + ['000'])[0] }}"
-    _owui_signin_body: "{{ (_owui_signin_attempt.stdout_lines | default([]))[1:] | join('\n') }}"
-  no_log: true
-
-# Fallback to /signup on a truly empty DB. ENABLE_INITIAL_ADMIN_SIGNUP=true
-# (set in values.yaml.j2) lets this create the first user as admin even with
-# ENABLE_SIGNUP=false. Once /signup succeeds once, the `has_users` check
-# blocks it forever, so this is a one-shot fallback.
-- name: 'Fallback: signup the bootstrap user on a fresh DB'
-  kubernetes.core.k8s_exec:
-    kubeconfig: '{{ kubeconfig_yaml }}'
-    namespace: '{{ chatbot_namespace }}'
-    pod: '{{ _owui_pod_name }}'
-    command:
-      - /bin/sh
-      - -c
-      - |
-        body=$(mktemp)
-        code=$(curl -sS -o "$body" -w '%{http_code}' -X POST http://localhost:8080/api/v1/auths/signup \
-          -H "Content-Type: application/json" \
-          --data "$1")
-        resp=$(cat "$body"); rm -f "$body"
-        if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
-          echo "OWUI signup failed: HTTP $code" >&2
-          echo "$resp" >&2
-          exit 1
-        fi
-        echo "$resp"
-      - _shell
-      - '{{ {"name": open_webui_bootstrap_name, "email": open_webui_bootstrap_email, "password": open_webui_bootstrap_password} | to_json }}'
-  register: _owui_signup_attempt
-  changed_when: true
-  failed_when: false
-  no_log: true
-  when: _owui_signin_code != '200'
-
-- name: 'Surface bootstrap failure (both signin and signup unsuccessful)'
-  ansible.builtin.fail:
-    msg: |-
-      OWUI admin bootstrap failed.
-        Signin HTTP {{ _owui_signin_code }}: {{ _owui_signin_body }}
-        Signup rc={{ _owui_signup_attempt.rc | default('n/a') }} stderr={{ _owui_signup_attempt.stderr | default('') }}
-      Diagnostic checklist:
-        - Is ENABLE_INITIAL_ADMIN_SIGNUP=true in the pod env? (kubectl exec ... -- env | grep ENABLE_INITIAL)
-        - Did the OWUI pod restart after Helm picked up the env vars? (helm upgrade rolls pods)
-        - Did the migration step run? Check stdout of "Migrate bootstrap user password..."
-        - On a non-clean cluster where scout-deploy@internal was deleted but other users exist,
-          /signup will fail with ACCESS_PROHIBITED — recreate the row manually.
-  when:
-    - _owui_signin_code != '200'
-    - _owui_signup_attempt.rc | default(1) != 0
-
-- name: 'Extract admin JWT from signin or signup response'
-  ansible.builtin.set_fact:
-    owui_admin_token: >-
-      {{ (_owui_signin_body | from_json).token
-         if _owui_signin_code == '200'
-         else (_owui_signup_attempt.stdout | from_json).token }}
-  no_log: true
-
-- name: 'Verify admin JWT works (GET /api/v1/auths/ should return user info with role=admin)'
-  kubernetes.core.k8s_exec:
-    kubeconfig: '{{ kubeconfig_yaml }}'
-    namespace: '{{ chatbot_namespace }}'
-    pod: '{{ _owui_pod_name }}'
-    command:
-      - curl
-      - -sf
-      - 'http://localhost:8080/api/v1/auths/'
-      - -H
-      - 'Authorization: Bearer {{ owui_admin_token }}'
-  register: owui_admin_verify
-  changed_when: false
-  no_log: true
-  failed_when:
-    - owui_admin_verify.rc != 0 or (owui_admin_verify.stdout | from_json).role != 'admin'
-
-- name: 'Bootstrap complete — admin JWT minted'
-  ansible.builtin.debug:
-    msg: >-
-      Admin JWT minted for {{ open_webui_bootstrap_email }} (role=admin)
-      via {{ 'signin' if _owui_signin_code == '200' else 'signup' }}.
-
-# Phase 1.5: re-push env-var-seeded PersistentConfig fields through REST so
-# inventory edits actually take effect on existing clusters (PersistentConfig
-# is seed-only otherwise). See _persistent_config_repush.yaml for the full
-# rationale and per-field handling.
-- name: 'Re-push PersistentConfig (tool servers, RAG template, default + task models)'
-  ansible.builtin.include_tasks: _persistent_config_repush.yaml
-
-# ---------------------------------------------------------------------------
-# Phase 2b: Filter Functions (Link Sanitizer, Context Summarization)
-# ---------------------------------------------------------------------------
-- name: 'Configure filter functions'
-  ansible.builtin.include_tasks: configure_filter_function.yaml
-  loop: '{{ open_webui_filter_functions | default([]) }}'
-  loop_control:
-    loop_var: fn
-    label: '{{ fn.id }}'
-
-# ---------------------------------------------------------------------------
-# Phase 2c: Custom UI models (Scout Explorer variants)
-# ---------------------------------------------------------------------------
-# Schema docs (dataschema, charting guidance) are inlined into the system
-# prompt file rather than attached as Knowledge collections. OWUI's RAG
-# auto-injection path is gated on `function_calling != 'native'`
-# (utils/middleware.py); Scout models run native, so attached knowledge
-# only surfaces via LLM-initiated list_knowledge / query_knowledge_files
-# tool calls — which thinking-mode models often skip. Inlining guarantees
-# the schema is in context every turn.
+# Build the Scout Explorer system prompt once (used by every model payload).
 - name: 'Read shared Scout system prompt'
   ansible.builtin.set_fact:
-    _scout_system_prompt: "{{ lookup('file', role_path ~ '/files/' ~ open_webui_scout_system_prompt_file) }}"
+    _bootstrap_system_prompt: "{{ lookup('file', role_path ~ '/files/' ~ open_webui_scout_system_prompt_file) }}"
 
-- name: 'Configure OWUI custom models for scout_models entries with ui: block'
-  ansible.builtin.include_tasks: configure_model.yaml
+# Filter function payloads — fold inventory + source code from files/ into a
+# single list the chart serializes into filters.json for the Job to consume.
+- name: 'Build filter function payloads'
+  ansible.builtin.set_fact:
+    _bootstrap_filter_functions: '{{ _bootstrap_filter_functions | default([]) + [_one] }}'
+  loop: '{{ open_webui_filter_functions | default([]) }}'
+  loop_control:
+    label: '{{ item.id }}'
+  vars:
+    _one:
+      id: '{{ item.id }}'
+      name: '{{ item.name }}'
+      description: '{{ item.description | default("") }}'
+      content: "{{ lookup('file', role_path ~ '/files/' ~ item.source_file) }}"
+      enable_global: '{{ item.enable_global | default(false) }}'
+      enable_active: '{{ item.enable_active | default(true) }}'
+      valves: '{{ item.valves | default({}) }}'
+
+# Custom model payloads — one Scout Explorer per scout_models[].ui entry, plus
+# a hidden override on each raw Ollama tag (unless open_webui_hide_base_models
+# is false or base equals the long-variant name).
+- name: 'Build Scout Explorer model payloads'
+  ansible.builtin.set_fact:
+    _bootstrap_models: '{{ _bootstrap_models | default([]) + [_explorer] + _hide_base }}'
   loop: '{{ scout_models | default([]) | selectattr("ui", "defined") | list }}'
   loop_control:
-    loop_var: m
-    label: '{{ m.ui.name | default(m.name) }}'
+    label: '{{ item.ui.name | default(item.name) }}'
+  vars:
+    _id: '{{ item.ui.id | default(item.name) }}'
+    _keep_alive_resident: '{{ open_webui_scout_keep_alive_resident }}'
+    _keep_alive_cold: '{{ open_webui_scout_keep_alive_cold_load }}'
+    _explorer:
+      id: '{{ _id }}'
+      base_model_id: null
+      name: '{{ item.ui.name }}'
+      meta:
+        profile_image_url: '{{ item.ui.profile_image_url | default(open_webui_scout_default_profile_image_url) }}'
+        description: '{{ item.ui.description | default("") }}'
+        toolIds: '{{ item.ui.tool_ids | default(open_webui_scout_tool_ids) }}'
+        suggestion_prompts: '{{ item.ui.suggestion_prompts | default(open_webui_scout_default_suggestion_prompts) }}'
+        capabilities: '{{ item.ui.capabilities | default(open_webui_scout_default_capabilities) }}'
+        builtinTools: '{{ item.ui.builtin_tools | default(open_webui_scout_default_builtin_tools) }}'
+      params:
+        system: '{{ _bootstrap_system_prompt }}'
+        function_calling: '{{ item.ui.function_calling | default(open_webui_scout_default_function_calling) }}'
+        reasoning_effort: '{{ item.ui.reasoning_effort | default(open_webui_scout_default_reasoning_effort) }}'
+        keep_alive: '{{ item.ui.keep_alive | default(_keep_alive_resident if (item.preload | default(true)) else _keep_alive_cold) }}'
+      is_active: true
+    _hide_base: >-
+      {{
+        [{
+          'id': item.base,
+          'base_model_id': none,
+          'name': item.base,
+          'meta': {},
+          'params': {},
+          'is_active': false
+        }]
+        if (open_webui_hide_base_models | default(true) | bool and item.base != _id)
+        else []
+      }}
+
+- name: 'Deploy open-webui-bootstrap Helm chart (post-install/upgrade Job)'
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: open-webui-bootstrap
+    helm_chart_ref: '{{ role_path }}/../../../helm/open-webui-bootstrap'
+    helm_chart_namespace: '{{ chatbot_namespace }}'
+    helm_chart_values:
+      # image: omitted — chart's default (matches OWUI's chart appVersion)
+      # is correct for our deploys. Override via inventory if running a custom
+      # OWUI build: pass `open-webui-bootstrap` chart values directly.
+      owuiBaseUrl: 'http://open-webui.{{ chatbot_namespace }}:8080'
+      bootstrap:
+        email: '{{ open_webui_bootstrap_email }}'
+        name: '{{ open_webui_bootstrap_name }}'
+        webuiSecretKeySecret:
+          name: open-webui-secrets
+          key: WEBUI_SECRET_KEY
+      databaseUrl: 'postgresql://{{ open_webui_postgres_user }}:{{ open_webui_postgres_password }}@{{ db_host }}:{{ db_port }}/{{ open_webui_database }}'
+      persistentConfig:
+        tool_server_connections: '{{ tool_server_connections | default([]) }}'
+        rag_template: "{{ lookup('file', role_path ~ '/files/' ~ open_webui_rag_template_file) if open_webui_rag_template_file | default('') | length > 0 else '' }}"
+        default_model_id: '{{ open_webui_default_model_id | default("") }}'
+        task_model_id: '{{ open_webui_task_model_id | default("") }}'
+      filterFunctions: '{{ _bootstrap_filter_functions | default([]) }}'
+      models: '{{ _bootstrap_models | default([]) }}'

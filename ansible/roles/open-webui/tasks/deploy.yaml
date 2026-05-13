@@ -46,21 +46,20 @@
 - name: Create Kubernetes Secret for sensitive env vars
   ansible.builtin.include_tasks: create_secret.yaml
 
-# RAG_TEMPLATE goes in a ConfigMap (not Helm extraEnvVars) because the OWUI chart
-# pipes every extraEnvVars value through Go's `tpl` function, which mis-evaluates
-# OWUI's own `{{CONTEXT}}` placeholder as a Helm function call.
-- name: Create ConfigMap for env vars containing OWUI placeholder syntax
+# RAG_TEMPLATE and TOOL_SERVER_CONNECTIONS used to seed via extraEnvVars / a
+# dedicated ConfigMap (to dodge the chart's `tpl` mishandling of OWUI's
+# `{{CONTEXT}}` placeholder). Now pushed declaratively by the open-webui-
+# bootstrap Helm chart via REST, so the env-var seed path is no longer needed.
+
+# Clean up the legacy ConfigMap if it exists from a pre-bootstrap deploy.
+- name: Remove obsolete open-webui-extra-env ConfigMap (RAG template moved to bootstrap Job)
   kubernetes.core.k8s:
     kubeconfig: '{{ kubeconfig_yaml }}'
-    state: present
-    definition:
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: open-webui-extra-env
-        namespace: '{{ chatbot_namespace }}'
-      data:
-        RAG_TEMPLATE: "{{ lookup('file', role_path ~ '/files/' ~ open_webui_rag_template_file) }}"
+    state: absent
+    api_version: v1
+    kind: ConfigMap
+    name: open-webui-extra-env
+    namespace: '{{ chatbot_namespace }}'
 
 # For air-gapped deployments: ensure NFS directory structure exists BEFORE deploying Ollama
 # Production Ollama mounts NFS read-only, so it can't create these directories itself
@@ -172,10 +171,11 @@
   ansible.builtin.include_tasks: pull_models.yaml
   when: ollama_models is defined and ollama_models | length > 0
 
-# Bootstrap the OWUI admin user via signup-or-signin on the in-cluster
-# Service (bypassing Traefik). The minted admin JWT is exported as
-# `owui_admin_token` so follow-up tasks can seed Functions / Models /
-# Knowledge via the REST API. See tasks/configure_admin.yaml.
-- name: Bootstrap Open WebUI admin user
+# Deploy the open-webui-bootstrap Helm chart. Its post-install/post-upgrade
+# Job mints an admin JWT against OWUI's in-cluster Service and pushes filter
+# functions, custom models, and PersistentConfig (tool servers, RAG template,
+# DEFAULT_MODELS, TASK_MODEL) via the REST API — see helm/open-webui-bootstrap/
+# and configure_admin.yaml for details.
+- name: Bootstrap Open WebUI admin + push declarative config
   ansible.builtin.include_tasks: configure_admin.yaml
   when: open_webui_admin_setup_enabled | bool

@@ -139,12 +139,6 @@ websocket:
 extraEnvFrom:
   - secretRef:
       name: open-webui-secrets
-  # RAG_TEMPLATE lives in this ConfigMap (not extraEnvVars) because the OWUI
-  # Helm chart pipes every extraEnvVars value through Go templating, which
-  # mis-evaluates the OWUI placeholder syntax inside the RAG template as a Helm
-  # function call and fails. ConfigMap-via-envFrom bypasses Helm templating.
-  - configMapRef:
-      name: open-webui-extra-env
 
 # OAuth/OIDC Configuration for Keycloak integration
 # OAuth2 Proxy provides initial authentication gate (checks scout-user group)
@@ -221,43 +215,20 @@ extraEnvVars:
     value: '{{ oauth2_proxy_signout_url }}'
 
   # ------------------------------------------------------------------
-  # Declarative admin-UI config seeded as PersistentConfig on first launch
-  # (defined in defaults/main.yaml — Phase 1 of OWUI config automation).
+  # Seeded once at first launch (PersistentConfig); not expected to change.
+  # Tool servers, RAG template, DEFAULT_MODELS, and TASK_MODEL — which DO
+  # change with inventory — are pushed declaratively by the open-webui-
+  # bootstrap Helm chart (see helm/open-webui-bootstrap/ and configure_admin.yaml)
+  # rather than via env-var seed, so changes auto-propagate on every deploy.
   # ------------------------------------------------------------------
   # Disable Arena Model evaluations
   - name: ENABLE_EVALUATION_ARENA_MODELS
     value: '{{ open_webui_enable_arena_models | string | lower }}'
 
-  # Pin auxiliary tasks (title gen, follow-ups, tags, RAG/web-search query
-  # refinement) to a model that's already resident in VRAM, so a 5-word
-  # title generation never cold-loads a 120B model or waits on Qwen's
-  # thinking step. Must match an Ollama tag exactly — see defaults/main.yaml.
-  - name: TASK_MODEL
-    value: '{{ open_webui_task_model_id }}'
-
-  # Default model selected in the picker for new chats.
-  - name: DEFAULT_MODELS
-    value: '{{ open_webui_default_model_id }}'
-
-{% if tool_server_connections | default([]) | length > 0 %}
-  # External MCP/OpenAPI tool servers (e.g., Trino MCP for Scout SQL queries).
-  # Double `to_json` produces a YAML-safe string scalar carrying the JSON OWUI
-  # expects. Safe in extraEnvVars only because the JSON contains no Helm
-  # template-syntax patterns that the chart's `tpl` would mis-evaluate.
-  - name: TOOL_SERVER_CONNECTIONS
-    value: {{ tool_server_connections | to_json | to_json }}
-{% endif %}
-
-# RAG_TEMPLATE is loaded from the open-webui-extra-env ConfigMap above
-# (not here in extraEnvVars) — see the comment on extraEnvFrom for why.
-
-  # ------------------------------------------------------------------
-  # Admin bootstrap (Phase 2): allow /signup to create the very first user
-  # (auto-promoted to admin) when the DB is empty, even though ENABLE_SIGNUP
-  # is false. Once any user exists, /signup self-blocks via OWUI's `has_users`
-  # short-circuit (auths.py:651), so leaving this on permanently is safe and
-  # does not expose a backdoor. Subsequent bootstrap runs sign in with the
-  # derived bootstrap password instead.
-  # ------------------------------------------------------------------
+  # Allow /signup to create the very first user (auto-promoted to admin) on a
+  # fresh DB even though ENABLE_SIGNUP is false. Once any user exists, /signup
+  # self-blocks via OWUI's `has_users` short-circuit in auths.py, so leaving
+  # this on permanently is safe. The bootstrap Job uses this on first deploy
+  # to mint its admin user; subsequent runs sign in instead.
   - name: ENABLE_INITIAL_ADMIN_SIGNUP
     value: 'true'
