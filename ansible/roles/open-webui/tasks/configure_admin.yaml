@@ -57,6 +57,9 @@
 # password is set to a fresh bcrypt hash of the same plaintext (different
 # salt, equivalent semantics). Uses OWUI's own bcrypt + SQLAlchemy session
 # so we don't have to interrogate postgres directly or duplicate schema.
+# Positional args ($1=email, $2=password, $3=name) pass operator-provided
+# strings without interpolating them into the shell or curl bodies, so a `,
+# ", $, \, or backtick in any of them can't break the script or inject.
 - name: 'Migrate bootstrap user password to derived hash (idempotent, no-op on clean DB)'
   ansible.builtin.command:
     argv:
@@ -69,9 +72,7 @@
       - /bin/sh
       - -c
       - |
-        BOOTSTRAP_EMAIL='{{ open_webui_bootstrap_email }}' \
-        BOOTSTRAP_PASSWORD='{{ open_webui_bootstrap_password }}' \
-        python -c '
+        BOOTSTRAP_EMAIL="$1" BOOTSTRAP_PASSWORD="$2" python -c '
         import os
         import bcrypt
         from open_webui.internal.db import get_db
@@ -88,6 +89,9 @@
             else:
                 print("no-op (clean DB)")
         '
+      - _shell
+      - '{{ open_webui_bootstrap_email }}'
+      - '{{ open_webui_bootstrap_password }}'
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _owui_password_migration
@@ -100,6 +104,8 @@
 # Try /signin first. Succeeds on any cluster where the bootstrap user already
 # exists (with the migrated password). Captures HTTP status separately from
 # body so we can branch on 400 (no such user → fall through to signup).
+# Payload JSON is built in Ansible (`to_json`) and passed via positional arg
+# so embedded quotes / shell metacharacters in email or password can't escape.
 - name: 'Try OWUI signin with derived bootstrap password'
   ansible.builtin.command:
     argv:
@@ -115,9 +121,11 @@
         body=$(mktemp)
         code=$(curl -sS -o "$body" -w '%{http_code}' -X POST http://localhost:8080/api/v1/auths/signin \
           -H "Content-Type: application/json" \
-          --data '{"email": "{{ open_webui_bootstrap_email }}", "password": "{{ open_webui_bootstrap_password }}"}')
+          --data "$1")
         resp=$(cat "$body"); rm -f "$body"
         printf '%s\n%s' "$code" "$resp"
+      - _shell
+      - '{{ {"email": open_webui_bootstrap_email, "password": open_webui_bootstrap_password} | to_json }}'
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _owui_signin_attempt
@@ -152,7 +160,7 @@
         body=$(mktemp)
         code=$(curl -sS -o "$body" -w '%{http_code}' -X POST http://localhost:8080/api/v1/auths/signup \
           -H "Content-Type: application/json" \
-          --data '{"name": "{{ open_webui_bootstrap_name }}", "email": "{{ open_webui_bootstrap_email }}", "password": "{{ open_webui_bootstrap_password }}"}')
+          --data "$1")
         resp=$(cat "$body"); rm -f "$body"
         if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
           echo "OWUI signup failed: HTTP $code" >&2
@@ -160,6 +168,8 @@
           exit 1
         fi
         echo "$resp"
+      - _shell
+      - '{{ {"name": open_webui_bootstrap_name, "email": open_webui_bootstrap_email, "password": open_webui_bootstrap_password} | to_json }}'
   environment:
     KUBECONFIG: '{{ kubeconfig_yaml }}'
   register: _owui_signup_attempt
@@ -220,103 +230,12 @@
       Admin JWT minted for {{ open_webui_bootstrap_email }} (role=admin)
       via {{ 'signin' if _owui_signin_code == '200' else 'signup' }}.
 
-# ---------------------------------------------------------------------------
-# Phase 1.5: Re-push env-var-seeded PersistentConfig fields
-# ---------------------------------------------------------------------------
-# OWUI stores tool servers, RAG template, default + task model IDs, etc. in
-# the Postgres `config` table on first launch — env-var changes after that
-# are silent no-ops (the admin UI is authoritative). Re-pushing through the
-# REST API every deploy keeps inventory authoritative for these fields and
-# eliminates the need to delete `config` rows after editing inventory.
-#
-# Fields explicitly NOT pushed here:
-#   - WEBUI_URL: derived from server_hostname; expected to be stable after
-#     first deploy. If it ever changes, an operator already has bigger
-#     things to update (DNS, TLS, Keycloak redirect URIs).
-#   - ENABLE_EVALUATION_ARENA_MODELS / ENABLE_SIGNUP / ENABLE_LOGIN_FORM /
-#     ENABLE_COMMUNITY_SHARING: scout-fixed defaults; we set them false at
-#     first deploy and don't expect them to change.
-#   - OAuth.* PersistentConfig fields: already declarative via
-#     ENABLE_OAUTH_PERSISTENT_CONFIG=false (env wins over stored).
-
-- name: 'Push tool_server_connections to /api/v1/configs/tool_servers'
-  ansible.builtin.include_tasks: _owui_api_post.yaml
-  vars:
-    _post_path: /api/v1/configs/tool_servers
-    _post_payload:
-      TOOL_SERVER_CONNECTIONS: '{{ tool_server_connections | default([]) }}'
-
-- name: 'Push RAG_TEMPLATE to /api/v1/retrieval/config/update (partial — only RAG_TEMPLATE)'
-  ansible.builtin.include_tasks: _owui_api_post.yaml
-  vars:
-    _post_path: /api/v1/retrieval/config/update
-    _post_payload:
-      RAG_TEMPLATE: "{{ lookup('file', role_path ~ '/files/' ~ open_webui_rag_template_file) }}"
-  when: open_webui_rag_template_file | default('') | length > 0
-
-# /api/v1/configs/models's POST handler unconditionally assigns every field
-# from the form, so a partial POST would clobber MODEL_ORDER_LIST etc. with
-# nulls. GET first to preserve the other fields.
-- name: 'GET current /api/v1/configs/models (preserve sibling fields)'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
-      - curl
-      - -sfS
-      - http://localhost:8080/api/v1/configs/models
-      - -H
-      - 'Authorization: Bearer {{ owui_admin_token }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-  register: _owui_models_config_current
-  changed_when: false
-  no_log: true
-  when: open_webui_default_model_id | default('') | length > 0
-
-- name: 'Push DEFAULT_MODELS to /api/v1/configs/models (merging with current)'
-  ansible.builtin.include_tasks: _owui_api_post.yaml
-  vars:
-    _post_path: /api/v1/configs/models
-    _post_payload: >-
-      {{ (_owui_models_config_current.stdout | from_json)
-         | combine({'DEFAULT_MODELS': open_webui_default_model_id}) }}
-  when: open_webui_default_model_id | default('') | length > 0
-
-# Same partial-payload concern for tasks/config/update — GET + merge + POST.
-- name: 'GET current /api/v1/tasks/config (preserve sibling fields)'
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - exec
-      - -n
-      - '{{ chatbot_namespace }}'
-      - '{{ _owui_pod_name }}'
-      - --
-      - curl
-      - -sfS
-      - http://localhost:8080/api/v1/tasks/config
-      - -H
-      - 'Authorization: Bearer {{ owui_admin_token }}'
-  environment:
-    KUBECONFIG: '{{ kubeconfig_yaml }}'
-  register: _owui_tasks_config_current
-  changed_when: false
-  no_log: true
-  when: open_webui_task_model_id | default('') | length > 0
-
-- name: 'Push TASK_MODEL to /api/v1/tasks/config/update (merging with current)'
-  ansible.builtin.include_tasks: _owui_api_post.yaml
-  vars:
-    _post_path: /api/v1/tasks/config/update
-    _post_payload: >-
-      {{ (_owui_tasks_config_current.stdout | from_json)
-         | combine({'TASK_MODEL': open_webui_task_model_id}) }}
-  when: open_webui_task_model_id | default('') | length > 0
+# Phase 1.5: re-push env-var-seeded PersistentConfig fields through REST so
+# inventory edits actually take effect on existing clusters (PersistentConfig
+# is seed-only otherwise). See _persistent_config_repush.yaml for the full
+# rationale and per-field handling.
+- name: 'Re-push PersistentConfig (tool servers, RAG template, default + task models)'
+  ansible.builtin.include_tasks: _persistent_config_repush.yaml
 
 # ---------------------------------------------------------------------------
 # Phase 2b: Filter Functions (Link Sanitizer, Context Summarization)

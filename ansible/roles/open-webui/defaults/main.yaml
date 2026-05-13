@@ -233,7 +233,11 @@ open_webui_rag_template_file: rag-prompt.md
 # /auth auto-call /signin on every page load — surfacing a "trusted header"
 # error toast to any user whose token expired or who passed through /auth.
 # Signup-or-signin has no equivalent frontend coupling.
-open_webui_bootstrap_email: 'scout-deploy@internal'
+# `.local` is reserved (RFC 6762, mDNS) — guaranteed not to collide with a
+# real public domain and passes email-validator's strict checks if upstream
+# OWUI ever tightens its Pydantic EmailStr validation. The address is never
+# delivered to — only used as a primary key in OWUI's auth table.
+open_webui_bootstrap_email: 'scout-deploy@scout-deploy.local'
 open_webui_bootstrap_name: 'Scout Deploy Bot'
 
 # Deterministic bootstrap password derived from the WebUI secret key. SHA256
