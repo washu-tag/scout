@@ -20,7 +20,8 @@ The role automatically:
 - Creates PostgreSQL database and Redis instance for Open WebUI
 - Deploys Ollama and Open WebUI via Helm
 - Pulls configured Ollama models
-- Creates each entry in `scout_models` as a Modelfile-derived variant with extended-context parameters baked in (default: `gpt-oss-120b-long:latest` from `gpt-oss:120b`)
+- Creates each entry in `scout_models` as a Modelfile-derived variant with extended-context parameters baked in. Default ships three: `gemma4-31b-long` (preload, default + task model), `qwen3.6-long` (cold-load, thinking-mode), and `gpt-oss-120b-long` (cold-load, large/cohort-building)
+- Mints an admin JWT via the in-cluster Service and uses it to seed filter functions, custom Scout Explorer models, and other OWUI resources via the REST API on every deploy (Phase 2 — see [Bootstrap & Migration](#bootstrap--migration) and [Post-Deployment Configuration](#post-deployment-configuration))
 
 ### Air-Gapped Deployment
 
@@ -46,6 +47,8 @@ kubectl get jobs -n scout-analytics -l app=ollama-pull-models -w
 To pre-load each Scout model after the pull Job completes **on Scout cluster**:
 ```bash
 # Load each Scout model into memory (use the names from your scout_models list)
+kubectl exec -n scout-analytics deploy/ollama -- ollama run gemma4-31b-long:latest "hi"
+kubectl exec -n scout-analytics deploy/ollama -- ollama run qwen3.6-long:latest "hi"
 kubectl exec -n scout-analytics deploy/ollama -- ollama run gpt-oss-120b-long:latest "hi"
 ```
 Or, execute a chat in Open WebUI after you've configured the appropriate settings (see [Post-Deployment Configuration](#post-deployment-configuration)).
@@ -76,6 +79,45 @@ Ollama's runtime default `num_ctx` is 4096 regardless of the model's native max 
 
 See `inventory.example.yaml` for configuration examples
 
+## Bootstrap & Migration
+
+The role mints an OWUI admin JWT during deploy by calling `/api/v1/auths/signin` or `/auths/signup` on the in-cluster `open-webui` Service (bypassing Traefik), and uses that token to seed filter functions and custom Scout Explorer models via the REST API. The bootstrap user is `scout-deploy@internal` (configurable via `open_webui_bootstrap_email`).
+
+### How it works
+
+- **Password is derived from `open_webui_secret_key`** (SHA256 hex). No separate secret to track; rotating the secret-key auto-rotates the bootstrap login.
+- **`ENABLE_INITIAL_ADMIN_SIGNUP=true`** lets `/signup` create the very first user as admin even with `ENABLE_SIGNUP=false`. Once any user exists, OWUI's `has_users` short-circuit blocks `/signup` permanently — so the env var is safe to leave on.
+- **Migration step (idempotent)** runs every deploy. It rewrites the `scout-deploy@internal` bcrypt hash to match the currently derived password. No-op on a clean DB; on an existing cluster it ensures `/signin` works even after a secret-key rotation. Implemented as a `kubectl exec` calling OWUI's own `bcrypt` + SQLAlchemy session — no direct postgres access from Ansible.
+
+### Why signup-or-signin (and not trusted-header SSO)
+
+An earlier design (never merged but its Traefik middleware is still removed by the role) used `WEBUI_AUTH_TRUSTED_*_HEADER`: requests bearing `X-Scout-Bootstrap-*` headers would auto-authenticate as the bot user. A Traefik middleware (`open-webui-strip-bootstrap-headers`) stripped those headers from inbound external traffic so only Ansible (via the in-cluster Service) could pass them.
+
+That design was rejected because setting `WEBUI_AUTH_TRUSTED_*_HEADER` **also** flips OWUI's `auth_trusted_header` *frontend* feature flag. With that flag set, OWUI's `/auth` page auto-calls `/signin` on every page load. External browsers don't carry the bootstrap headers (Traefik strips them, correctly), so the auto-`/signin` always fails — surfacing a "Your provider has not provided a trusted header" error toast to any user whose token expired or who routed through `/auth` (logout, OAuth round-trip, etc.).
+
+Signup-or-signin has no equivalent frontend coupling: the env var that enables it (`ENABLE_INITIAL_ADMIN_SIGNUP`) only affects whether `/signup` accepts the first user — no side effect on user-facing auth UX. The legacy `strip-bootstrap-headers` middleware is removed unconditionally on every deploy via `state: absent` (cheap no-op once gone).
+
+### Migration steps for existing OWUI deployments
+
+**A) Fresh cluster (empty DB).** No action needed. `/signup` runs on the first `make install-chat` and creates `scout-deploy@internal` as admin.
+
+**B) Cluster previously bootstrapped under the trusted-header alpha.** No action needed. The `scout-deploy@internal` user already exists; the migration step rewrites its bcrypt hash to the derived password on the next deploy, then `/signin` succeeds.
+
+**C) Existing OWUI cluster with other users but no `scout-deploy@internal`.** The only case requiring manual action — OWUI's `has_users` check blocks `/signup` once any user exists, so a fresh signup attempt returns `ACCESS_PROHIBITED`. The role surfaces a diagnostic at this point pointing at this section. **One-time manual step**, signed in as an existing admin:
+
+1. **Admin Panel → Users → Create new user**
+2. Email: `scout-deploy@internal` (or whatever `open_webui_bootstrap_email` is set to)
+3. Name: `Scout Deploy Bot`
+4. Password: any value — the migration step rewrites it on the next deploy
+5. Role: `admin`
+6. Re-run `make install-chat`
+
+**Rotating `open_webui_secret_key`.** Update inventory, re-run `make install-chat`. The migration step rewrites the bcrypt hash to match the new derived password before attempting `/signin`. No other intervention required.
+
+### Disabling Phase 2 entirely
+
+Set `open_webui_admin_setup_enabled: false` in inventory. The Helm deploy still runs; the role skips bootstrap, filter function seeding, and model seeding. Useful for environments where the in-cluster admin API isn't reachable or where the operator wants to manage post-deploy state out of band.
+
 ## Post-Deployment Configuration
 
 After deploying via Ansible, configure Open WebUI through the web interface to complete the Scout Explorer setup.
@@ -96,18 +138,18 @@ Scout custom models are automatically created by Ansible. You can verify they ex
 kubectl exec -n scout-analytics deploy/ollama -- ollama list
 ```
 
-You should see each entry from `scout_models` (default: `gpt-oss-120b-long:latest`) in the list.
+You should see each entry from `scout_models` in the list — the defaults ship three (`gemma4-31b-long:latest`, `qwen3.6-long:latest`, `gpt-oss-120b-long:latest`).
 
-**Note:** If you need to manually create or recreate a model, substitute the values from your `scout_models` entry:
+**Note:** If you need to manually create or recreate a model, substitute the values from the relevant `scout_models` entry (example below for the default model):
 ```bash
 kubectl exec -it -n scout-analytics deploy/ollama -- sh
 cat > Modelfile <<EOF
-FROM gpt-oss:120b
+FROM gemma4:31b
 PARAMETER num_predict -1
 PARAMETER num_ctx 131072
 PARAMETER num_keep 32768
 EOF
-ollama create gpt-oss-120b-long:latest -f Modelfile
+ollama create gemma4-31b-long:latest -f Modelfile
 exit
 ```
 
