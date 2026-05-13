@@ -340,39 +340,61 @@ Each phase is its own commit. To roll back Phase 2: revert that commit and re-ru
 
 ## Addendum: Post-merge code review follow-ups
 
-A code review of the merged migration surfaced findings that were not addressed in the original phases. Fixes are tracked here, ordered by severity.
+A code review of the merged migration surfaced findings that were not addressed in the original phases. The user's resolutions and the resulting work are noted under each item.
 
 ### High
 
-1. **Set `controller.tolerations` in alloy values.** The plan's risk table (line 326) committed to replicating promtail's chart-default tolerations on the Alloy DaemonSet, but the values template ships with none. Today this is benign because the k3s role only applies `PreferNoSchedule` to control-plane nodes, but any taint outside Alloy's chart defaults (e.g. `nvidia.com/gpu:NoSchedule`, custom dedicated-workload taints) will silently drop log collection on those nodes. Add `controller.tolerations: [{ operator: "Exists" }]` (or an equivalent configurable list) to `ansible/roles/alloy/templates/alloy.values.yaml.j2`.
+1. **Set `controller.tolerations` in alloy values.** The plan's risk table (line 326) committed to replicating promtail's chart-default tolerations on the Alloy DaemonSet, but the values template ships with none. Today this is benign because the k3s role only applies `PreferNoSchedule` to control-plane nodes, but any taint outside Alloy's chart defaults (e.g. `nvidia.com/gpu:NoSchedule`, custom dedicated-workload taints) will silently drop log collection on those nodes.
 
-2. **Move `alloy_namespace` to `scout_common/defaults/main.yaml`.** Every other Scout service namespace (`loki_namespace`, `prometheus_namespace`, `grafana_namespace`, …) is defined in `scout_common/defaults/main.yaml` and documented in `ansible/README.md` as the single place to find/override namespaces. `alloy_namespace` was defined inside the role instead. Add `alloy_namespace: '{{ scout_monitoring_namespace }}'` to `scout_common/defaults/main.yaml` next to the other monitoring namespaces and remove it from `ansible/roles/alloy/defaults/main.yaml`.
+   **Resolution:** Add a configurable `alloy_tolerations` default that tolerates every taint (`[{ operator: Exists }]`), overridable in `inventory.yaml`. Wired into the values template via `controller.tolerations`.
 
-3. **Reorder roles in `monitor.yaml` to avoid a log-collection gap on first re-run.** Current order (`prometheus, loki, alloy, grafana`) runs the promtail uninstall inside the `loki` role *before* the `alloy` role installs Alloy. On any pre-existing cluster, that window with neither collector running can swallow several minutes of pod logs during the very re-run that does the migration. Either run `alloy` before `loki`, or move the promtail uninstall task to the alloy role's deploy path so it runs after Alloy is healthy (the latter also addresses finding #6 below).
+2. **Move `alloy_namespace` to `scout_common/defaults/main.yaml`.** Every other Scout service namespace (`loki_namespace`, `prometheus_namespace`, `grafana_namespace`, …) is defined in `scout_common/defaults/main.yaml` and documented in `ansible/README.md` as the single place to find/override namespaces. `alloy_namespace` was defined inside the role instead.
+
+   **Resolution:** Done — moved to `scout_common/defaults/main.yaml` alongside the other monitoring namespaces.
+
+3. **Reorder roles in `monitor.yaml` to avoid a log-collection gap on first re-run.** Current order (`prometheus, loki, alloy, grafana`) runs the promtail uninstall inside the `loki` role *before* the `alloy` role installs Alloy. On any pre-existing cluster, that window with neither collector running can swallow several minutes of pod logs during the very re-run that does the migration.
+
+   **Resolution:** Move the promtail uninstall task to the alloy role, included from the alloy role's `main.yaml` *after* the alloy install — Alloy is healthy before promtail is uninstalled, no playbook reorder needed. Also addresses finding #6.
 
 ### Medium
 
-4. **Pin the Alloy image tag separately from the chart version.** `versions.yaml` pins `alloy_helm_chart_version: ~1.5.1` but the actual `grafana/alloy` image tag floats with the chart's `appVersion`. ADR 0015 expects image tags to be Renovate-annotated and pinned independently (cf. `keycloak_config_cli_image_tag`). Add an `alloy_image_tag` variable with a `# renovate:` annotation and reference it in the values template via `image.tag`.
+4. **Pin the Alloy image tag separately from the chart version.** `versions.yaml` pins `alloy_helm_chart_version: ~1.5.1` but the actual `grafana/alloy` image tag floats with the chart's `appVersion`. ADR 0015 expects image tags to be Renovate-annotated and pinned independently (cf. `keycloak_config_cli_image_tag`).
+
+   **Resolution (rejected):** Surveying `ansible/group_vars/all/versions.yaml`, the dominant Scout pattern is to pin **only** the chart version for Helm-deployed services (loki, grafana, prometheus, trino, superset, jupyter, valkey, oauth2-proxy, temporal, harbor, gpu-operator, etc. — none pin their main image tag independently). Separate `*_image_tag` pins are used only for (a) raw images with no chart (`hive_image_tag`, `dcm4che_*`, `orthanc_version`), (b) sidecars (`trino_jmx_exporter_version`, `superset_statsd_exporter_tag`), or (c) operator-managed sub-components (`cassandra_server_version`, `ollama_image_tag`). Alloy follows the dominant pattern. Leaving as is.
 
 5. **Reuse `scout_common/deploy_helm_chart` for the promtail uninstall.** The uninstall task hand-rolls the `use_localhost / delegate_to / KUBECONFIG` pattern that already lives in `scout_common/tasks/deploy_helm_chart.yaml` — a duplication that commit e29cb025 had to fix once already. Extend the wrapper with a `helm_chart_state` parameter (default `present`) so the uninstall can call the same wrapper and the air-gapped localhost-vs-cluster logic lives in exactly one place.
 
-6. **Move the promtail uninstall out of the `loki` role.** The `loki` role no longer conceptually owns anything promtail-related. The natural home for the legacy-uninstall task is the `alloy` role (the role that "owns" the replacement). Combining with finding #3, the task becomes `ansible/roles/alloy/tasks/cleanup_legacy.yaml`, included from the alloy role's deploy path *after* Alloy is healthy.
+   **Resolution:** Done — wrapper now accepts `helm_chart_state` and optional `helm_chart_failed_when`. The promtail uninstall calls the wrapper.
 
-7. **Clean up stale promtail references in comments.** Once the uninstall task moves, scrub the remaining promtail references:
-   - The verbose explanatory block-comment around the uninstall task should collapse to one line plus a link to this plan.
-   - `alloy_loki_write_url`'s "Matches the promtail default" comment should be rewritten to explain *why* port 80 is correct on its own terms (the `loki-gateway` Service is an nginx proxy exposing 80; the underlying `loki` Service exposes 3100).
+6. **Move the promtail uninstall out of the `loki` role.** Addressed jointly with #3 above — the uninstall now lives in `ansible/roles/alloy/tasks/cleanup_legacy.yaml`.
 
-8. **Fix `helm/loki/README.md` standalone install instructions.** The README's `helm upgrade --install alloy grafana/alloy …` snippet has no `--values` flag, so a developer following it will get an Alloy install with no source, no relabeling, and no destination — exactly the broken state Phase 0 was designed to prevent. Point the README at the rendered values from the Ansible template (or commit a minimal working values file under `helm/loki/`). While there, link the hardcoded `--version` numbers to `ansible/group_vars/all/versions.yaml` as the source of truth.
+7. **Clean up stale promtail references in comments.**
+
+   **Resolution:** Done — verbose explanatory comment removed, `alloy_loki_write_url` comment and template header rewritten to stand on their own. This plan is *not* referenced from any code or doc comment (it's ephemeral).
+
+8. **Fix `helm/loki/README.md` standalone install instructions.** The README's `helm upgrade --install alloy grafana/alloy …` snippet has no `--values` flag, so a developer following it will get a broken Alloy install.
+
+   **Resolution:** Removed all standalone install instructions from `helm/loki/README.md`. Scout deploys exclusively via Ansible (`make install-monitor`); the snippets duplicated that and the alloy snippet was actively broken.
 
 ### Low
 
-9. **Drop the leading `---` document marker from `alloy.values.yaml.j2`.** Peer templates (`loki.values.yaml.j2`, `grafana.values.yaml.j2`, `prometheus/templates/values.yaml.j2`) don't use it. Functionally harmless; style consistency only.
+9. **Drop the leading `---` document marker from `alloy.values.yaml.j2`.**
 
-10. **Add a removal trigger to the temporary uninstall task.** Phase 4 of this plan said "remove in a follow-up once all environments have transitioned." With no tracking ticket or version-pinned removal condition, this code will linger. Once the task moves to the alloy role (finding #6), add a one-line comment with a removal target (e.g. "remove after Scout 0.X.0" or a Jira ticket reference).
+   **Resolution (rejected):** Cosmetic only. Leaving as is.
 
-11. **Harden the uninstall against partially-failed releases.** `kubernetes.core.helm` with `state: absent` is safe in the happy path but can return non-zero against a release stuck in `pending-*`. Add `failed_when: result.failed and 'not found' not in (result.stderr | default(''))` (or equivalent existence-check) for defensiveness.
+10. **Add a removal trigger to the temporary uninstall task.**
 
-12. **Add `wait_timeout` to the uninstall task** to match the explicit `loki_helm_timeout` on the install side. Style symmetry only.
+    **Resolution:** Done — comment now says "Safe to remove after Scout 3.1.0 or 4.0.0 (whichever ships first)."
+
+11. **Harden the uninstall against partially-failed releases.**
+
+    **Resolution:** Done via the wrapper extension (#5). The uninstall caller passes `helm_chart_failed_when: "helm_chart_result.failed and 'not found' not in (helm_chart_result.stderr | default(''))"`. Because the wrapper is shared between install and uninstall, the predicate is per-caller (default omit = ansible's standard behavior on install).
+
+12. **Add `wait_timeout` to the uninstall task** to match the explicit `loki_helm_timeout` on the install side.
+
+    **Resolution:** Done implicitly — the shared wrapper already accepted `helm_chart_timeout`, and the uninstall caller passes `alloy_helm_timeout` to it.
 
 13. **Informational — `__tmp_controller_name` relabel rule.** The regex `([0-9a-z-.]+?)(-[0-9a-f]{8,10})?` with `action="replace"` (default) overwrites the target even when the source label is empty. Behavior was empirically verified byte-identical to promtail in Phase 2; flagged here only for future reference.
+
+    **Resolution:** No action — informational only.
 
