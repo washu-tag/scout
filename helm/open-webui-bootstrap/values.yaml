@@ -8,8 +8,10 @@ image:
   pullPolicy: IfNotPresent
 
 # In-cluster URL for OWUI. Bypasses Traefik (no oauth2-proxy gate) so the
-# minted Bearer JWT is the only credential needed.
-owuiBaseUrl: http://open-webui:8080
+# minted Bearer JWT is the only credential needed. The upstream OWUI chart
+# exposes the Service on port 80 (forwarding to pod port 8080) — point at
+# the Service port, not the pod port.
+owuiBaseUrl: http://open-webui:80
 
 # Bootstrap admin user. Password is derived deterministically from the
 # WEBUI_SECRET_KEY referenced below — no separate secret to manage.

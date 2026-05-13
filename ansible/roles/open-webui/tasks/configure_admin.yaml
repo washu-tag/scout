@@ -98,7 +98,7 @@
       # image: omitted — chart's default (matches OWUI's chart appVersion)
       # is correct for our deploys. Override via inventory if running a custom
       # OWUI build: pass `open-webui-bootstrap` chart values directly.
-      owuiBaseUrl: 'http://open-webui.{{ chatbot_namespace }}:8080'
+      owuiBaseUrl: 'http://open-webui.{{ chatbot_namespace }}:80'
       bootstrap:
         email: '{{ open_webui_bootstrap_email }}'
         name: '{{ open_webui_bootstrap_name }}'
