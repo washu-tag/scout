@@ -55,7 +55,7 @@ scout_models:
     preload: true # Resident — small enough to keep warm; serves as default and task model
     ui:
       name: 'Scout Explorer'
-      description: 'Intelligent data exploration'
+      description: 'Fast default for everyday questions — counts, filters, basic cohorts. No thinking-step latency. (Gemma 4 31B, 256K context, Google DeepMind)'
   - base: qwen3.6:35b
     name: qwen3.6-long:latest
     num_ctx: 131072
@@ -63,8 +63,8 @@ scout_models:
     num_predict: -1
     preload: false # Cold-load — thinking-mode model used selectively for analytical / multi-step queries
     ui:
-      name: 'Scout Explorer (thinking)'
-      description: 'Multi-step analytical reasoning'
+      name: 'Scout Explorer (Reasoning)'
+      description: 'Step-by-step analysis with visible chain of thought. Pick for multi-cohort comparisons or iterative refinement; slower per turn. (Qwen 3.6 35B, 256K context, Alibaba)'
   - base: gpt-oss:120b
     name: gpt-oss-120b-long:latest
     num_ctx: 131072
@@ -72,8 +72,8 @@ scout_models:
     num_predict: -1
     preload: false # Cold-load — large weights, used only when explicitly selected
     ui:
-      name: 'Scout Explorer (large)'
-      description: 'Cohort-building and broad recall over Scout reports'
+      name: 'Scout Explorer (Large)'
+      description: 'Largest model — broadest medical/clinical recall for complex cohort building and nuanced free-text searches. Cold-loads on first selection. (gpt-oss 120B MoE, 128K context, OpenAI, Apache 2.0)'
 scout_model_create: true # Set to false to skip Scout model creation entirely
 
 # List of additional Ollama models to pull (see https://ollama.com/library)
@@ -352,3 +352,25 @@ open_webui_scout_default_capabilities:
   image_generation: false
   code_interpreter: false
   terminal: false
+
+# Builtin tools (OWUI 0.9.x) — per-category enable/disable for the helper
+# functions OWUI auto-injects into a model's tool list under native function-
+# calling (time, knowledge, chats, memory, web_search, image_generation,
+# code_interpreter, notes, channels, tasks, automations, calendar). Different
+# from `capabilities`: capabilities are coarse master toggles also consulted
+# by UI/permissions; builtinTools is the granular per-tool switch for the
+# auto-injection path in utils/tools.py:get_builtin_tools().
+#
+# All categories default true upstream. Disable the ones that need outbound
+# internet (won't work air-gapped) and the ones that would inject empty/risky
+# tools given Scout's setup: knowledge (no knowledge attached after Phase 2),
+# code_interpreter (already capability-blocked; defensive redundant gate).
+# Leave the rest at default — `time` and `tasks` are useful; `chats` and
+# `memory` are gated further by env/permission and have local-only effect;
+# `notes`/`channels`/`automations`/`calendar` are gated by ENABLE_X envs
+# that default off in Scout's Helm values.
+open_webui_scout_default_builtin_tools:
+  web_search: false # requires internet
+  image_generation: false # requires internet (DALL-E etc.)
+  code_interpreter: false # arbitrary code execution; already blocked via capabilities, kept here for defense in depth
+  knowledge: false # no knowledge attached (Phase 2 removed Knowledge collections); would inject empty discovery tools

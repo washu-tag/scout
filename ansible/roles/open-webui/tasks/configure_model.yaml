@@ -29,6 +29,7 @@
         toolIds: '{{ m.ui.tool_ids | default(open_webui_scout_tool_ids) }}'
         suggestion_prompts: '{{ m.ui.suggestion_prompts | default(open_webui_scout_default_suggestion_prompts) }}'
         capabilities: '{{ m.ui.capabilities | default(open_webui_scout_default_capabilities) }}'
+        builtinTools: '{{ m.ui.builtin_tools | default(open_webui_scout_default_builtin_tools) }}'
       params:
         system: '{{ _scout_system_prompt }}'
         function_calling: '{{ m.ui.function_calling | default(open_webui_scout_default_function_calling) }}'
