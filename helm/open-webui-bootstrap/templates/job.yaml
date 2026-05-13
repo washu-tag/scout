@@ -31,7 +31,14 @@ spec:
           # bootstrap script instead. Same image = same Python deps + same
           # bcrypt version + access to open_webui.* modules for the migration.
           command: ["python", "/app/config/bootstrap.py"]
+          # The image's WORKDIR is /app/backend (where the open_webui package
+          # lives), but `python /app/config/bootstrap.py` puts /app/config on
+          # sys.path — not cwd — so import open_webui fails. Set PYTHONPATH
+          # explicitly so the migration step's imports resolve.
+          workingDir: /app/backend
           env:
+            - name: PYTHONPATH
+              value: /app/backend
             - name: OWUI_BASE_URL
               value: {{ .Values.owuiBaseUrl | quote }}
             - name: BOOTSTRAP_EMAIL
