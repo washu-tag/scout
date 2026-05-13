@@ -19,9 +19,12 @@
     helm_chart_values:
       enableChat: '{{ enable_chat }}'
       enablePlaybooks: '{{ enable_playbooks }}'
+      scoutEnv: '{{ scout_env }}'
+      deployerName: '{{ deployer_name }}'
       image:
         repository: '{{ launchpad_image_repository }}'
         tag: '{{ launchpad_image_tag }}'
+        pullPolicy: '{{ launchpad_image_pull_policy }}'
       auth:
         keycloak:
           enabled: true
