@@ -46,21 +46,6 @@
 - name: Create Kubernetes Secret for sensitive env vars
   ansible.builtin.include_tasks: create_secret.yaml
 
-# RAG_TEMPLATE and TOOL_SERVER_CONNECTIONS used to seed via extraEnvVars / a
-# dedicated ConfigMap (to dodge the chart's `tpl` mishandling of OWUI's
-# `{{CONTEXT}}` placeholder). Now pushed declaratively by the open-webui-
-# bootstrap Helm chart via REST, so the env-var seed path is no longer needed.
-
-# Clean up the legacy ConfigMap if it exists from a pre-bootstrap deploy.
-- name: Remove obsolete open-webui-extra-env ConfigMap (RAG template moved to bootstrap Job)
-  kubernetes.core.k8s:
-    kubeconfig: '{{ kubeconfig_yaml }}'
-    state: absent
-    api_version: v1
-    kind: ConfigMap
-    name: open-webui-extra-env
-    namespace: '{{ chatbot_namespace }}'
-
 # For air-gapped deployments: ensure NFS directory structure exists BEFORE deploying Ollama
 # Production Ollama mounts NFS read-only, so it can't create these directories itself
 - name: Pre-create Ollama directory structure on NFS (air-gapped)
