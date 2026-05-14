@@ -23,10 +23,7 @@ params:
   dashboards:
     - 2
   annotation_layers: []
-query_context:
-  '{"datasource":{"id":1,"type":"table"},"force":false,"queries":[{"filters":[{"col":"message_dt","op":"TEMPORAL_RANGE","val":"No
-  filter"}],"extras":{"having":"","where":""},"applied_time_extras":{},"columns":[],"metrics":["count"],"annotation_layers":[],"series_limit":0,"order_desc":true,"url_params":{},"custom_params":{},"custom_form_data":{}}],"form_data":{"datasource":"1__table","viz_type":"big_number_total","slice_id":30,"metric":"count","adhoc_filters":[{"clause":"WHERE","subject":"message_dt","operator":"TEMPORAL_RANGE","comparator":"No
-  filter","expressionType":"SIMPLE"}],"subheader":"Radiology Reports","header_font_size":0.4,"subheader_font_size":0.15,"y_axis_format":"SMART_NUMBER","time_format":"smart_date","extra_form_data":{},"dashboards":[2],"force":false,"result_format":"json","result_type":"full"},"result_format":"json","result_type":"full"}'
+query_context: null
 cache_timeout: null
 uuid: 7b7f8a3a-44c8-4975-a6f3-5c3f4c67bb05
 version: 1.0.0
