@@ -3,4 +3,8 @@ name: open-webui-bootstrap
 description: Post-deploy admin bootstrap + declarative config push for Open WebUI. Runs as a Helm post-install/post-upgrade Job; mints an admin JWT against OWUI's in-cluster Service and pushes filter functions, custom models, and PersistentConfig (tool servers, RAG template, default + task models) via the REST API.
 type: application
 version: 0.0.0-dev
-appVersion: "0.9.5"
+# appVersion is unused — this chart orchestrates a Job against whatever OWUI
+# image is running on the cluster (discovered at deploy time from the OWUI Pod),
+# not a versioned Scout artifact. Kept at "latest" as a placeholder to match
+# scout-dashboards convention; the release-bump script leaves it alone.
+appVersion: "latest"
