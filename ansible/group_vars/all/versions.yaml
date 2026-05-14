@@ -99,11 +99,11 @@ ollama_image_tag: 0.22.1
 # renovate: datasource=helm registryUrl=https://prometheus-community.github.io/helm-charts depName=kube-prometheus-stack
 prometheus_helm_chart_version: ~27.52.0
 
-# Monitoring & Observability - Loki & Promtail
+# Monitoring & Observability - Loki & Alloy
 # renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=loki
 loki_helm_chart_version: ~6.49.0
-# renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=promtail
-promtail_helm_chart_version: ~6.17.0
+# renovate: datasource=helm registryUrl=https://grafana.github.io/helm-charts depName=alloy
+alloy_helm_chart_version: ~1.8.1
 
 # Container Registry
 # renovate: datasource=helm registryUrl=https://helm.goharbor.io depName=harbor
