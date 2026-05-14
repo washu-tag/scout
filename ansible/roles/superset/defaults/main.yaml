@@ -8,6 +8,10 @@ superset_helm_repo_url: https://apache.github.io/superset
 superset_helm_chart_name: superset
 superset_helm_timeout: 15m
 
+# Local scout-dashboards Helm chart location (overridable from inventory
+# if the chart is sourced from somewhere other than the bundled repo).
+scout_dashboards_helm_chart_ref: '{{ scout_repo_dir }}/helm/scout-dashboards'
+
 # Custom Superset image (override from inventory for CI/CD)
 superset_image_repository: ghcr.io/washu-tag/superset
 superset_image_tag: 5.0.0

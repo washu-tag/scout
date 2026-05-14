@@ -135,7 +135,7 @@
     tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: scout-dashboards
-    helm_chart_ref: '{{ scout_repo_dir }}/helm/scout-dashboards'
+    helm_chart_ref: '{{ scout_dashboards_helm_chart_ref }}'
     helm_chart_namespace: '{{ superset_namespace }}'
     helm_chart_values:
       image:
