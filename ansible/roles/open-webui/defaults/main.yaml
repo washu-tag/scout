@@ -49,17 +49,17 @@ staging_ollama_namespace: '{{ package_download_namespace }}'
 scout_models:
   - base: gemma4:31b
     name: gemma4-31b-long:latest
-    num_ctx: 131072 # 128K context window
-    num_keep: 32768 # Keep 32K tokens in memory
+    num_ctx: 262144 # 256K context window
+    num_keep: 65536 # Keep 64K tokens in memory
     num_predict: -1 # Unlimited token generation
     preload: true # Resident — small enough to keep warm; serves as default and task model
     ui:
       name: 'Scout Explorer (Gemma 4 31B)'
       description: 'Recommended. Fast and reliable for cohort queries, filters, and free-text searches. Best general-purpose option for Scout.'
   - base: qwen3.6:35b
-    name: qwen3.6-long:latest
-    num_ctx: 131072
-    num_keep: 32768
+    name: qwen3.6-35b-long:latest
+    num_ctx: 262144
+    num_keep: 65536
     num_predict: -1
     preload: false # Cold-load — thinking-mode model used selectively for analytical / multi-step queries
     ui:
