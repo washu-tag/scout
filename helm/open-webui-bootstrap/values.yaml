@@ -18,25 +18,20 @@ image:
 # the Service port, not the pod port.
 owuiBaseUrl: http://open-webui:80
 
-# Bootstrap admin user. Password is read at deploy time from a Secret —
-# defaults to the `open-webui-secrets` Secret created by Scout's open-webui
-# Ansible role (`BOOTSTRAP_PASSWORD` key, populated from
-# open_webui_bootstrap_password in inventory).
 bootstrap:
   email: scout-deploy@scout-deploy.local
   name: Scout Deploy Bot
-  passwordSecret:
-    name: open-webui-secrets
-    key: BOOTSTRAP_PASSWORD
 
-# Postgres connection URL for the password-migration step (OWUI's
-# `open_webui.internal.db` reads DATABASE_URL from env). Sourced from a
-# Secret instead of a literal value so the password stays out of the rendered
-# Job + Helm release Secret. Defaults match the `open-webui-secrets` Secret
-# created by Scout's open-webui Ansible role.
-databaseUrlSecret:
-  name: open-webui-secrets
-  key: DATABASE_URL
+# Name of the Secret holding all sensitive env vars consumed by the Job.
+# Mounted via envFrom so every key becomes an env var on the container —
+# matches the upstream OWUI chart's `extraEnvFrom` pattern. Default is the
+# Secret Scout's open-webui role creates; it must contain at least
+# BOOTSTRAP_PASSWORD (signin), DATABASE_URL (password-migration step), and
+# WEBUI_SECRET_KEY (required at module-load time when bootstrap.py imports
+# open_webui.internal.db; open_webui.config raises on its absence). Other
+# keys in the Secret (OAUTH_CLIENT_SECRET, REDIS_URL) are mounted too and
+# ignored by the script — harmless.
+secretName: open-webui-secrets
 
 # Job behavior. backoffLimit=1 because retries don't help: if bootstrap fails
 # it's because OWUI is unreachable or config is malformed, and retrying won't

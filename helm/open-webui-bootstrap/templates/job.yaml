@@ -50,19 +50,16 @@ spec:
               value: {{ .Values.bootstrap.email | quote }}
             - name: BOOTSTRAP_NAME
               value: {{ .Values.bootstrap.name | quote }}
-            - name: BOOTSTRAP_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.bootstrap.passwordSecret.name }}
-                  key: {{ .Values.bootstrap.passwordSecret.key }}
-            # OWUI's open_webui.internal.db reads DATABASE_URL from env.
-            # Sourced from a Secret to keep the password out of the rendered
-            # Job + Helm release Secret.
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.databaseUrlSecret.name }}
-                  key: {{ .Values.databaseUrlSecret.key }}
+          # All sensitive values come from a Secret (matches the upstream OWUI
+          # chart's `extraEnvFrom` pattern). The bootstrap script reads
+          # BOOTSTRAP_PASSWORD and DATABASE_URL directly; WEBUI_SECRET_KEY and
+          # other vars are required at module-load time by open_webui.config
+          # when bootstrap.py imports open_webui.internal.db for the password-
+          # migration step — pulling the whole Secret in one shot covers any
+          # OWUI module-load env requirements without listing them individually.
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secretName }}
           volumeMounts:
             - name: config
               mountPath: /app/config

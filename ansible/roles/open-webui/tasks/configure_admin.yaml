@@ -56,12 +56,9 @@
       bootstrap:
         email: '{{ open_webui_bootstrap_email }}'
         name: '{{ open_webui_bootstrap_name }}'
-        passwordSecret:
-          name: open-webui-secrets
-          key: BOOTSTRAP_PASSWORD
-      # databaseUrlSecret is left at the chart default
-      # (open-webui-secrets / DATABASE_URL) — the open-webui role creates that
-      # Secret in create_secret.yaml before this Helm install runs.
+      # secretName is left at the chart default (open-webui-secrets) — the
+      # open-webui role creates that Secret in create_secret.yaml before this
+      # Helm install runs.
       persistentConfig:
         tool_server_connections: '{{ tool_server_connections | default([]) }}'
         default_model_id: '{{ open_webui_default_model_id | default("") }}'
