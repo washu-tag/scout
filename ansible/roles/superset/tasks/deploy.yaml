@@ -146,4 +146,3 @@
         namespace: '{{ trino_namespace }}'
       bundles:
         enabled: '{{ scout_dashboard_bundles }}'
-      extraConfigMaps: '{{ scout_dashboard_extra_configmaps }}'

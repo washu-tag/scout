@@ -10,7 +10,7 @@ The chart packages a tree of analytics YAML files (the same format
 `superset export-dashboards` produces) into a ConfigMap and runs a post-install
 Job against the apache/superset chart's image. The Job:
 
-1. Zips the analytics tree from the mounted ConfigMap(s).
+1. Zips the analytics tree from the mounted ConfigMap.
 2. Calls `superset import-dashboards` — creates any asset whose UUID is not yet
    in the metadata DB.
 3. Runs `import.py`, a force-overwrite Python pass — updates `params`,
@@ -69,53 +69,18 @@ subdirectory and adding its name to `bundles.enabled` — no template edits.
 Don't generate UUIDs manually — keep the ones Superset assigned. The
 force-overwrite pass keys on those.
 
-## Site overlays
+## Site-specific dashboards
 
-Sites can ship their own dashboards on top of the built-in bundles without
-forking the chart. The mechanism is `extraConfigMaps` — a list of ConfigMap
-names in the same namespace that the import Job also mounts:
+For dashboards that don't belong upstream, two pragmatic options:
 
-```yaml
-# values.yaml (or via Ansible: scout_dashboard_extra_configmaps)
-extraConfigMaps:
-  - mysite-dashboards
-```
-
-Each extra ConfigMap **must structure its items so they mount at paths under
-`analytics/`** — e.g.:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: mysite-dashboards
-  namespace: scout-analytics
-data:
-  my_chart.yaml: |
-    slice_name: My Chart
-    uuid: <site-owned uuid>
-    ...
-  my_dashboard.yaml: |
-    dashboard_title: My Dashboard
-    uuid: <site-owned uuid>
-    ...
-```
-
-…and reference each with an `items[].path` so they land in the right subdir:
-
-```yaml
-binaryData: {}
-data: {...}  # keys above
-# Or define items in the ConfigMap's mount spec, but here the simpler
-# convention is for each key's basename to be the file basename, and
-# the JOB's merge step copies them into analytics/<kind>/.
-```
-
-The Job mounts each extra ConfigMap into `/app/dashboard-config-extras/<i>/`,
-walks every file via `find`, and copies into the single `analytics/` tree
-before zipping. Files in later `extraConfigMaps` entries overwrite earlier
-ones (and overwrite built-in files of the same basename), so layered overrides
-are first-class.
+- **Add a new bundle here** — drop the YAMLs into a new
+  `files/analytics/<kind>/<your-bundle>/` subdir and have your inventory
+  set `scout_dashboard_bundles: [core, your-bundle]`. Keeps the dashboards
+  versioned alongside the chart.
+- **Run a separate site-owned Helm chart** that mounts your dashboard YAMLs
+  from its own `files/` and runs its own `superset import-dashboards` Job
+  against the same Superset metadata DB. This chart is a working example to
+  model from.
 
 ## Design rationale
 
@@ -137,16 +102,6 @@ features and depend on data products (TAT calculations, the follow-up
 classifier) that not every Scout site runs. Bundling them lets sites opt in
 without modifying the chart. The Scout core dashboard ships by default and is
 the only bundle that's always on.
-
-### Why `extraConfigMaps` and not a sub-chart?
-
-Helm subcharts can declare dependencies but they can't contribute additional
-files into a parent chart's `.Files.Glob` (Helm's file context is per-chart).
-A second Helm release can't share the parent's import Job either. So the
-clean way to layer in additional dashboards is a sibling ConfigMap that the
-chart's existing Job knows how to merge in. Sites manage that ConfigMap with
-whatever tool they already use — Kustomize, kubectl apply, their own tiny
-Helm chart, an in-cluster GitOps controller.
 
 ### Why the force-overwrite Python pass on top of `import-dashboards`?
 
@@ -170,8 +125,8 @@ cluster, so the lack of fullname-prefixing doesn't cause collisions.
 ## One-way sync
 
 The Job only imports / updates. It never deletes. Removing a bundle from
-`bundles.enabled`, removing a file from a bundle, or removing a ConfigMap from
-`extraConfigMaps` stops new installs from receiving those assets but doesn't
-remove already-imported dashboards / charts / datasets from existing Superset
-installations. To drop a stale asset, delete it via the Superset UI or via a
-`superset fab` invocation (or surgically via SQLAlchemy in the Superset pod).
+`bundles.enabled` or removing a file from a bundle stops new installs from
+receiving those assets but doesn't remove already-imported dashboards /
+charts / datasets from existing Superset installations. To drop a stale
+asset, delete it via the Superset UI or via a `superset fab` invocation (or
+surgically via SQLAlchemy in the Superset pod).

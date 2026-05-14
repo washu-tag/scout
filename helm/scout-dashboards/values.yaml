@@ -37,18 +37,6 @@ bundles:
   enabled:
     - core
 
-# Site-overlay ConfigMaps. Each entry is the name of a ConfigMap in the
-# release namespace whose contents are merged into the import. Each
-# ConfigMap must structure its items so they map under analytics/ — e.g.
-# items with paths like "charts/my_chart.yaml", "dashboards/my_dashboard.yaml",
-# "datasets/Scout_Data_Lake/my_dataset.yaml". The Job mounts each one and
-# rsync-style copies its tree into a single analytics/ before zipping.
-#
-# Use this to layer site-specific dashboards on top of the built-in
-# bundles without forking the chart. Files with the same name as a
-# built-in are overwritten by the overlay (later entries win).
-extraConfigMaps: []
-
 # Resources for the import Job pod.
 resources:
   requests:

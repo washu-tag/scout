@@ -220,13 +220,6 @@ enable_playbooks: false
 scout_dashboard_bundles:
   - core
 
-# Names of additional ConfigMaps in the Superset namespace whose contents
-# should be merged into the dashboard import. Each ConfigMap must expose
-# items at paths under analytics/ (e.g. items[].path "charts/X.yaml").
-# Use this to overlay site-specific dashboards on top of the built-in
-# bundles without forking the scout-dashboards chart.
-scout_dashboard_extra_configmaps: []
-
 # Package proxy configuration (per ADR-0016, following ADR-0011 service-mode pattern)
 # Options: none, nexus, external
 #   none     - No proxy; packages resolve directly from upstream (internet required)

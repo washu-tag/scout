@@ -1,15 +1,8 @@
 {{ .Chart.Name }} deployed.
 
-Built-in bundles enabled:
+Bundles enabled:
 {{- range $bundle := .Values.bundles.enabled }}
   - {{ $bundle }}
-{{- end }}
-{{- if .Values.extraConfigMaps }}
-
-Site overlays merged from ConfigMaps:
-{{- range .Values.extraConfigMaps }}
-  - {{ . }}
-{{- end }}
 {{- end }}
 
 The import Job runs once per Helm install/upgrade. Watch progress with:
@@ -19,5 +12,5 @@ The import Job runs once per Helm install/upgrade. Watch progress with:
       --tail=200 -f
 
 Whenever any enabled analytics file changes — or .Values.bundles.enabled
-or .Values.extraConfigMaps changes — Helm replaces the import Job and
-the import re-runs. No Ansible glue required.
+changes — Helm replaces the import Job and the import re-runs. No
+Ansible glue required.
