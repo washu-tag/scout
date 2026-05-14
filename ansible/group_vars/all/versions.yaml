@@ -25,7 +25,7 @@ elasticsearch_version: 9.2.3
 # renovate: datasource=helm registryUrl=https://charts.jetstack.io depName=cert-manager
 cert_manager_version: ~1.19.0
 # renovate: datasource=helm registryUrl=https://helm.k8ssandra.io/stable depName=cass-operator
-cass_operator_version: ~0.60.0
+cass_operator_version: ~0.64.1
 # cassandra_server_version is managed by K8ssandra cass-operator, which pulls k8ssandra/cass-management-api
 # renovate: datasource=docker depName=k8ssandra/cass-management-api extractVersion=^(?<version>\d+\.\d+\.\d+)-ubi$
 cassandra_server_version: 5.0.3
