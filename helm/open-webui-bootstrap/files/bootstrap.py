@@ -6,7 +6,7 @@ helm/open-webui-bootstrap/templates/job.yaml). Replaces what used to be a
 chain of Ansible tasks doing kubectl-exec'd curls.
 
 Five phases:
-1. Password migration. Rewrite scout-deploy@internal's bcrypt hash to match
+1. Password migration. Rewrite the bootstrap user's bcrypt hash to match
    the derived password (no-op on a clean DB; recovers signin on any cluster
    where `open_webui_secret_key` was rotated).
 2. Signin or signup. Mint an admin JWT against OWUI's in-cluster Service.
@@ -106,12 +106,11 @@ def load_text(filename):
 
 
 def migrate_password():
-    """Set scout-deploy@internal's bcrypt hash via OWUI's own DB session.
+    """Set the bootstrap user's bcrypt hash via OWUI's own DB session.
 
     Idempotent: rows that don't exist (clean DB) get a no-op; rows that exist
-    get rehashed with a fresh salt. Used by callers who want signin to succeed
-    on the next attempt — handles rotated secret keys, prior trusted-header
-    bootstraps, or normal re-runs.
+    get rehashed with a fresh salt. Lets signin succeed on the next attempt
+    after a secret-key rotation (which changes the derived password).
     """
     import bcrypt  # noqa: PLC0415  (kept lazy to give a cleaner error if missing)
     from open_webui.internal.db import get_db  # noqa: PLC0415

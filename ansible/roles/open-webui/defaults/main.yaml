@@ -8,6 +8,11 @@ open_webui_helm_repo_url: https://helm.openwebui.com/
 open_webui_helm_chart_name: open-webui
 open_webui_helm_release_name: open-webui
 
+# Local Helm chart for the post-deploy bootstrap Job (admin user, filter
+# functions, custom models, PersistentConfig re-push). Override to point at
+# a fork or alternate path.
+open_webui_bootstrap_helm_chart_ref: '{{ scout_repo_dir }}/helm/open-webui-bootstrap'
+
 # Component names
 ollama_name: ollama
 open_webui_name: open-webui
@@ -40,11 +45,10 @@ staging_ollama_namespace: '{{ package_download_namespace }}'
 # `preload`: whether the values.yaml lifecycle postStart hook warms the model
 # into VRAM at pod start. Set false for models that should cold-load on demand
 # (e.g., when total resident weights+KV would exceed GPU memory). Default: true.
-# Per-model keep-alive must be configured in Open WebUI (Admin → Models → Advanced).
 #
 # Entries with a `ui:` block also get a customized OWUI "Scout Explorer" model
-# created via the Phase 2c automation (system prompt, tool refs, suggestion
-# prompts, capability flags). Entries without `ui:` remain plain Ollama tags —
+# created by the bootstrap Job (system prompt, tool refs, suggestion prompts,
+# capability flags). Entries without `ui:` remain plain Ollama tags —
 # selectable in the picker but without Scout Explorer dressing.
 scout_models:
   - base: gemma4:31b
@@ -147,8 +151,8 @@ open_webui_csp_enabled: true
 # Postgres DB. Naively, env-var changes after first launch would be silent
 # no-ops because the admin UI is authoritative thereafter.
 #
-# To work around that, configure_admin.yaml (Phase 1.5) re-pushes the three
-# inventory-tunable fields through OWUI's REST API on every deploy:
+# To work around that, the bootstrap Job re-pushes the three inventory-tunable
+# fields through OWUI's REST API on every deploy:
 #   - tool_server_connections   → POST /api/v1/configs/tool_servers
 #   - open_webui_default_model_id  → POST /api/v1/configs/models
 #   - open_webui_task_model_id     → POST /api/v1/tasks/config/update
@@ -217,7 +221,7 @@ open_webui_default_model_id: 'gemma4-31b-long:latest'
 open_webui_task_model_id: 'gemma4-31b-long:latest'
 
 # ----------------------------------------------------------------------------
-# Admin bootstrap (Phase 2 of automation)
+# Admin bootstrap
 # ----------------------------------------------------------------------------
 # We mint an admin session JWT by calling OWUI's /signup endpoint (when the DB
 # is empty) or /signin (on subsequent runs) through the in-cluster Service.
@@ -229,11 +233,6 @@ open_webui_task_model_id: 'gemma4-31b-long:latest'
 # derived deterministically from open_webui_secret_key (already vault-secured)
 # so we don't need to track another secret.
 #
-# This replaces the earlier WEBUI_AUTH_TRUSTED_*_HEADER trusted-header bootstrap.
-# That mechanism set the `auth_trusted_header` frontend feature flag which made
-# /auth auto-call /signin on every page load — surfacing a "trusted header"
-# error toast to any user whose token expired or who passed through /auth.
-# Signup-or-signin has no equivalent frontend coupling.
 # `.local` is reserved (RFC 6762, mDNS) — guaranteed not to collide with a
 # real public domain and passes email-validator's strict checks if upstream
 # OWUI ever tightens its Pydantic EmailStr validation. The address is never
@@ -252,10 +251,9 @@ open_webui_bootstrap_password: '{{ open_webui_secret_key | hash("sha256") }}'
 # Set to false to skip post-deploy admin configuration entirely.
 open_webui_admin_setup_enabled: true
 
-# Internal domain(s) for the Link Sanitizer filter (Phase 2b).
-# Comma-separated. URLs matching these domains are kept; all other external
-# URLs in LLM responses are stripped to prevent PHI exfiltration via clicked
-# links. See ADR 0010.
+# Internal domain(s) for the Link Sanitizer filter. Comma-separated. URLs
+# matching these domains are kept; all other external URLs in LLM responses
+# are stripped to prevent PHI exfiltration via clicked links. See ADR 0010.
 open_webui_link_sanitizer_internal_domains: '{{ server_hostname }}'
 
 # Filter functions seeded into Open WebUI on every deploy. Each entry maps to
@@ -304,7 +302,7 @@ open_webui_filter_functions:
       debug_logging: false
 
 # ----------------------------------------------------------------------------
-# Scout Explorer custom model UI config (Phase 2c)
+# Scout Explorer custom model UI config
 # ----------------------------------------------------------------------------
 # Shared settings for every scout_models entry that opts into UI customization
 # via a `ui:` sub-block. The role builds an OWUI ModelForm payload combining
@@ -391,8 +389,9 @@ open_webui_scout_default_capabilities:
 #
 # All categories default true upstream. Disable the ones that need outbound
 # internet (won't work air-gapped) and the ones that would inject empty/risky
-# tools given Scout's setup: knowledge (no knowledge attached after Phase 2),
-# code_interpreter (already capability-blocked; defensive redundant gate).
+# tools given Scout's setup: knowledge (no knowledge collections attached —
+# schema docs are inlined into the system prompt), code_interpreter (already
+# capability-blocked; defensive redundant gate).
 # Leave the rest at default — `time` and `tasks` are useful; `chats` and
 # `memory` are gated further by env/permission and have local-only effect;
 # `notes`/`channels`/`automations`/`calendar` are gated by ENABLE_X envs
@@ -401,4 +400,4 @@ open_webui_scout_default_builtin_tools:
   web_search: false # requires internet
   image_generation: false # requires internet (DALL-E etc.)
   code_interpreter: false # arbitrary code execution; already blocked via capabilities, kept here for defense in depth
-  knowledge: false # no knowledge attached (Phase 2 removed Knowledge collections); would inject empty discovery tools
+  knowledge: false # no knowledge collections attached; would inject empty discovery tools

@@ -47,7 +47,7 @@
     tasks_from: deploy_helm_chart
   vars:
     helm_chart_name: open-webui-bootstrap
-    helm_chart_ref: '{{ role_path }}/../../../helm/open-webui-bootstrap'
+    helm_chart_ref: '{{ open_webui_bootstrap_helm_chart_ref }}'
     helm_chart_namespace: '{{ chatbot_namespace }}'
     helm_chart_values:
       image:
