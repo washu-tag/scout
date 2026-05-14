@@ -30,7 +30,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: bootstrap
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: {{ .Values.image.ref | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           # OWUI's image expects to be the API server; we override to run our
           # bootstrap script instead. Same image = same Python deps + same
@@ -56,9 +56,13 @@ spec:
                   name: {{ .Values.bootstrap.webuiSecretKeySecret.name }}
                   key: {{ .Values.bootstrap.webuiSecretKeySecret.key }}
             # OWUI's open_webui.internal.db reads DATABASE_URL from env.
-            # Same value used by the OWUI Helm chart's databaseUrl knob.
+            # Sourced from a Secret to keep the password out of the rendered
+            # Job + Helm release Secret.
             - name: DATABASE_URL
-              value: {{ .Values.databaseUrl | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.databaseUrlSecret.name }}
+                  key: {{ .Values.databaseUrlSecret.key }}
           volumeMounts:
             - name: config
               mountPath: /app/config

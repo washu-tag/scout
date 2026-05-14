@@ -87,7 +87,7 @@ The bootstrap user is `scout-deploy@scout-deploy.local` (configurable via `open_
 
 ### How it works
 
-- **The Job uses OWUI's own container image** so the password-migration step can `import open_webui.internal.db` / `open_webui.models.auths` (same modules the app uses), and bcrypt versions match.
+- **The Job uses OWUI's own container image** so the password-migration step can `import open_webui.internal.db` / `open_webui.models.auths` (same modules the app uses), and bcrypt versions match. The image tag is **discovered at deploy time** from the running OWUI Pod, not pinned separately — Renovate bumps `open_webui_helm_chart_version` in `versions.yaml`, the chart's `appVersion` determines the image that runs, and `configure_admin.yaml` reads it back via `kubernetes.core.k8s_info` before installing the bootstrap chart. One pin, no drift.
 - **Password is derived from `open_webui_secret_key`** (SHA256 hex) inside the script. No separate secret to track; rotating the secret-key auto-rotates the bootstrap login.
 - **`ENABLE_INITIAL_ADMIN_SIGNUP=true`** (set on the OWUI deployment via extraEnvVars) lets `/signup` create the very first user as admin even with `ENABLE_SIGNUP=false`. Once any user exists, OWUI's `has_users` short-circuit blocks `/signup` permanently — so the env var is safe to leave on.
 - **Migration step (idempotent)** runs on every Job execution. It rewrites the `scout-deploy@internal` bcrypt hash to match the currently derived password. No-op on a clean DB; on an existing cluster it ensures `/signin` works even after a secret-key rotation.
@@ -127,6 +127,14 @@ Signup-or-signin has no equivalent frontend coupling: the env var that enables i
 ### Disabling Phase 2 entirely
 
 Set `open_webui_admin_setup_enabled: false` in inventory. The OWUI Helm deploy still runs; the role skips the `open-webui-bootstrap` chart entirely (no Job, no ConfigMap). Useful for environments where the operator wants to manage post-deploy state out of band.
+
+### Future: GitOps via Flux
+
+The bootstrap chart is pure-data-driven (raw inventory shapes in Helm values; no Ansible-only logic in the chart). To migrate from Ansible-driven `make install-chat` to a Flux `HelmRelease`:
+
+- Express OWUI and the bootstrap chart as two `HelmRelease` resources in the same namespace, with `spec.dependsOn` on the bootstrap release pointing at the OWUI release. Flux's `helm-controller` uses the Helm SDK so the chart's `helm.sh/hook: post-install,post-upgrade` annotations work natively — no sync-wave equivalents needed.
+- The image-discovery step currently lives in Ansible (`configure_admin.yaml`). In a Flux world, either: (a) move discovery into a `pre-install` Helm hook inside the bootstrap chart that reads the OWUI Pod and writes the image into a separate ConfigMap the main bootstrap Job consumes, or (b) keep both `HelmRelease`s pointing at the same `image.tag` value sourced from a shared ConfigMap that Renovate updates. (a) preserves auto-discovery; (b) is simpler but requires Renovate to bump two places.
+- Secrets (currently Ansible Vault → in-cluster Secret) will need a source like SOPS, External Secrets, or Sealed Secrets. The bootstrap chart already consumes `WEBUI_SECRET_KEY` and `DATABASE_URL` via `secretKeyRef` — only the upstream Secret-creation path changes.
 
 ## Post-Deployment Configuration
 
@@ -216,7 +224,9 @@ scout_models:
 
 #### 5 & 6. Install Filter Functions — automated
 
-Both the Link Sanitizer ([ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)) and Context Summarization ([ADR 0014](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md)) filters are created/updated, configured with valves, and toggled global on every deploy. Source list: `open_webui_filter_functions` in `defaults/main.yaml`.
+The Link Sanitizer ([ADR 0010](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)), Context Summarization ([ADR 0014](../../../docs/internal/adr/0014-open-webui-context-summarization-filter.md)), and Tool Result Body→Attribute Migrator filters are created/updated, configured with valves, and toggled global on every deploy. Source list: `open_webui_filter_functions` in `defaults/main.yaml`.
+
+> **Diagnostic (remove when upstream is fixed)** — Tool Result Body→Attribute Migrator (`tool_result_attr_filter.py`) works around an OWUI 0.9.5 rendering regression where tool-call Output panels render empty even though results reach the LLM. Upstream commit 45e49d33e (Apr 2026) moved results from a `result="..."` attribute on the `<details>` tag into the body, and the new body-content path doesn't display. The filter rewrites the body back to the legacy attribute on outlet, hitting `ToolCallDisplay.svelte`'s fallback. **When bumping `open_webui_helm_chart_version` past `~14.5.0`** (which raises the chart's appVersion past 0.9.5), test without the filter (set its `enable_active: false` in inventory). If the upstream display path is fixed, delete the inventory entry, `helm/open-webui-bootstrap/files/payloads/tool_result_attr_filter.py`, and its tests.
 
 To customize valves per environment (e.g., Link Sanitizer's `internal_domains`), override in inventory:
 ```yaml
@@ -336,6 +346,7 @@ kubectl exec -n scout-analytics deploy/ollama -- ollama list
 - **Scout Query Prompt**: `helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`
 - **Link Sanitizer Filter**: `helm/open-webui-bootstrap/files/payloads/link_sanitizer_filter.py`
 - **Context Summarization Filter**: `helm/open-webui-bootstrap/files/payloads/context_summarization_filter.py`
+- **Tool Result Body→Attribute Migrator (diagnostic — remove when upstream bug is fixed)**: `helm/open-webui-bootstrap/files/payloads/tool_result_attr_filter.py`
 - **ADRs**:
   - [ADR 0009: Content Security Policy](../../../docs/internal/adr/0009-open-webui-content-security-policy.md)
   - [ADR 0010: Link Exfiltration Filter](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)

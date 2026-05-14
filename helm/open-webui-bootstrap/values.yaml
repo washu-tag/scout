@@ -1,12 +1,15 @@
 # Image — must match OWUI's deployed image. The bootstrap Job reuses OWUI's
 # own container so the password-migration step can `import open_webui.internal.db`
 # and `open_webui.models.auths` (same modules the app uses), and so the Python
-# version + bcrypt version are guaranteed to match. In a Scout deployment,
-# Ansible overrides `image.tag` from `open_webui_image_tag` in versions.yaml;
-# the literal default below is a fallback for standalone chart use.
+# version + bcrypt version are guaranteed to match.
+#
+# Scout deployments overwrite `image.ref` with whatever image is actually
+# running on the OWUI Pod (discovered post-`helm install` in configure_admin.yaml),
+# so the bootstrap Job stays in lockstep with the upstream chart's appVersion
+# without needing a separate pin. Standalone chart users should override
+# `image.ref` to match their OWUI deployment.
 image:
-  repository: ghcr.io/open-webui/open-webui
-  tag: '0.9.5'
+  ref: 'ghcr.io/open-webui/open-webui:0.9.5'
   pullPolicy: IfNotPresent
 
 # In-cluster URL for OWUI. Bypasses Traefik (no oauth2-proxy gate) so the
@@ -24,11 +27,14 @@ bootstrap:
     name: open-webui-secrets
     key: WEBUI_SECRET_KEY
 
-# Database URL — needed by the password-migration step so OWUI's
-# `open_webui.internal.db` can connect to the same Postgres the running OWUI
-# pod uses. Same value passed to the upstream OWUI chart's `databaseUrl`.
-# Set by Ansible from inventory.
-databaseUrl: ''
+# Postgres connection URL for the password-migration step (OWUI's
+# `open_webui.internal.db` reads DATABASE_URL from env). Sourced from a
+# Secret instead of a literal value so the password stays out of the rendered
+# Job + Helm release Secret. Defaults match the `open-webui-secrets` Secret
+# created by Scout's open-webui Ansible role.
+databaseUrlSecret:
+  name: open-webui-secrets
+  key: DATABASE_URL
 
 # Job behavior. backoffLimit=1 because retries don't help: if bootstrap fails
 # it's because OWUI is unreachable or config is malformed, and retrying won't

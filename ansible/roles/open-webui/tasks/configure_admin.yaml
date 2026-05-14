@@ -11,8 +11,36 @@
 # All payload rendering happens inside the chart (configmap.yaml template
 # transforms `filterFunctions`/`scoutModels` raw inventory shapes into the
 # JSON keys bootstrap.py consumes; files/payloads/* are globbed into separate
-# CM keys). Ansible's job here is to pass inventory values through; ArgoCD
-# can render the same chart against the same value shapes once we cut over.
+# CM keys). Ansible's job here is to pass inventory values through; under Flux
+# the same value shapes go in a HelmRelease spec, with `dependsOn` ordering
+# this release after the OWUI HelmRelease.
+
+# The bootstrap Job reuses OWUI's own container image so the password-migration
+# step's `import open_webui.internal.db` resolves against the same SQLAlchemy
+# models + bcrypt version the running Pod uses. Rather than pin the tag in two
+# places (and risk drift), discover the running OWUI image at deploy time and
+# pass it through. Renovate bumps `open_webui_helm_chart_version` →  chart
+# appVersion changes → next deploy's `kubectl wait` sees the new image →
+# bootstrap Job picks it up automatically.
+- name: 'Discover running Open WebUI image (for bootstrap Job ORM/bcrypt lockstep)'
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: '{{ chatbot_namespace }}'
+    label_selectors:
+      - app.kubernetes.io/name=open-webui
+  register: _owui_pods
+
+- name: 'Set bootstrap image fact'
+  ansible.builtin.set_fact:
+    _owui_bootstrap_image: >-
+      {{ (_owui_pods.resources[0].spec.containers
+          | selectattr('name', 'equalto', 'open-webui')
+          | map(attribute='image')
+          | list
+          | first) }}
+  failed_when: _owui_bootstrap_image | length == 0
+
 - name: 'Deploy open-webui-bootstrap Helm chart (post-install/upgrade Job)'
   ansible.builtin.include_role:
     name: scout_common
@@ -23,7 +51,7 @@
     helm_chart_namespace: '{{ chatbot_namespace }}'
     helm_chart_values:
       image:
-        tag: '{{ open_webui_image_tag }}'
+        ref: '{{ _owui_bootstrap_image }}'
       owuiBaseUrl: 'http://open-webui.{{ chatbot_namespace }}:80'
       bootstrap:
         email: '{{ open_webui_bootstrap_email }}'
@@ -31,7 +59,9 @@
         webuiSecretKeySecret:
           name: open-webui-secrets
           key: WEBUI_SECRET_KEY
-      databaseUrl: 'postgresql://{{ open_webui_postgres_user }}:{{ open_webui_postgres_password }}@{{ db_host }}:{{ db_port }}/{{ open_webui_database }}'
+      # databaseUrlSecret is left at the chart default
+      # (open-webui-secrets / DATABASE_URL) — the open-webui role creates that
+      # Secret in create_secret.yaml before this Helm install runs.
       persistentConfig:
         tool_server_connections: '{{ tool_server_connections | default([]) }}'
         default_model_id: '{{ open_webui_default_model_id | default("") }}'
