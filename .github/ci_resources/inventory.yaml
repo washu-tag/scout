@@ -178,8 +178,10 @@ k3s_cluster:
     loki_chunks_cache_enabled: false
     loki_results_cache_enabled: false
 
-    # Helm config for CI
-    helm_chart_timeout: '10m'
+    # Helm config for CI. Bumped from 10m → 15m after Grafana installs
+    # started exceeding the budget on the GH runner (twice in a row);
+    # we hadn't seen this 10m headroom problem until mid-May 2026.
+    helm_chart_timeout: '15m'
 
     # Resources (reduced for 7GB CI runner)
     hive_resources:
