@@ -72,7 +72,7 @@ scout_models:
     num_predict: -1
     preload: false # Cold-load — large weights, used only when explicitly selected
     ui:
-      name: 'Scout Explorer (gpt-oss 120B)'
+      name: 'Scout Explorer (GPT-OSS 120B)'
       description: 'Largest alternative. Broadest medical knowledge — pick for nuanced free-text searches or edge cases the recommended model misses. Slower first response.'
 scout_model_create: true # Set to false to skip Scout model creation entirely
 
