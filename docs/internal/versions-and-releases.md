@@ -438,7 +438,6 @@ This section documents all files containing version strings. The Release Workflo
 | `helm/launchpad/values.yaml` | `image.tag` | `latest` |
 | `helm/extractor/hl7-transformer/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 | `helm/extractor/hl7log-extractor/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
-| `helm/open-webui-bootstrap/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 
 **Charts for External Applications** (do NOT update `appVersion`):
 
@@ -446,6 +445,7 @@ This section documents all files containing version strings. The Release Workflo
 |------|-------|-----------|------|
 | `helm/hive-metastore/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` tracks Hive version |
 | `helm/voila/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` tracks Voila version |
+| `helm/open-webui-bootstrap/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` tracks Open WebUI version |
 | `helm/voila/values.yaml` | `image.tag` | `latest` | Uses pyspark-notebook image |
 | `helm/scout-dashboards/Chart.yaml` | `version` only | `0.0.0-dev` | `appVersion` is unused — chart orchestrates Superset asset imports |
 
