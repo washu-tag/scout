@@ -72,9 +72,8 @@ def http(method, path, body=None, token=None):
     data = json.dumps(body).encode("utf-8") if body is not None else None
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
     try:
-        with urllib.request.urlopen(
-            req, timeout=HTTP_TIMEOUT
-        ) as resp:  # noqa: S310  # nosemgrep
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:  # noqa: S310
             return resp.status, resp.read().decode("utf-8")
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode("utf-8")
