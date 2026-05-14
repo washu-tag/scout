@@ -196,6 +196,13 @@ k3s_cluster:
       requests:
         cpu: 50m
         memory: 256Mi
+    # Voila's default request (100m cpu / 512Mi memory) is too big for
+    # the runner once the rest of the stack is up. Trim to small
+    # requests with no limits.
+    voila_resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
     hl7_transformer_spark_memory: 1G
     cassandra_init_heap: 1G
     cassandra_max_heap: 1G
