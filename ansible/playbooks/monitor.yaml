@@ -6,4 +6,5 @@
   roles:
     - role: prometheus
     - role: loki
+    - role: alloy
     - role: grafana

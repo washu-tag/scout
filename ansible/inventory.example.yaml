@@ -554,6 +554,11 @@ k3s_cluster:
       limits:
         cpu: 2
         memory: 8Gi
+    # Superset dashboard bundles to install. Built-in bundles: core (Scout
+    # main dashboard), quality (Quality & TAT dashboard), followup (Follow-up
+    # Detection dashboard). Removing a bundle later won't remove already-
+    # imported assets — drop them via the Superset UI if needed.
+    # scout_dashboard_bundles: [core, quality, followup]
 
     #---------------------------------------------------------------------------
     # Hive Metastore

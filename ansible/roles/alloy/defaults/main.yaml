@@ -1,0 +1,19 @@
+---
+# Alloy role defaults
+# User-configurable settings are in inventory.yaml
+
+# Helm configuration
+alloy_helm_repo_name: grafana
+alloy_helm_repo_url: https://grafana.github.io/helm-charts
+alloy_helm_timeout: 5m
+
+# Loki write endpoint (DaemonSet ships logs here). loki-gateway is the
+# nginx fronting Loki and exposes port 80 (the underlying loki Service
+# exposes 3100, but the gateway is the supported entry point).
+alloy_loki_write_url: 'http://loki-gateway.{{ loki_namespace }}.svc.cluster.local/loki/api/v1/push'
+
+# DaemonSet tolerations. Default tolerates every taint so log collection
+# follows pods onto control-plane, GPU, and custom-tainted nodes. Override
+# in inventory.yaml with a narrower list if some nodes should be excluded.
+alloy_tolerations:
+  - operator: Exists

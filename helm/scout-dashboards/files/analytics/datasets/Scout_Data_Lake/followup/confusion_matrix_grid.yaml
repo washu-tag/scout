@@ -1,0 +1,130 @@
+table_name: confusion_matrix_grid
+main_dttm_col: null
+description: Pre-padded 2x2 confusion-matrix grid. Always returns the four cells
+  (TP/FP/FN/TN) so heatmap chart cells render even when a quadrant is empty.
+default_endpoint: null
+offset: 0
+cache_timeout: 7200
+catalog: delta
+schema: default
+sql: |
+  SELECT
+    CASE WHEN c.human_ground_truth THEN 'Reviewer: Yes' ELSE 'Reviewer: No' END
+      AS reviewer,
+    CASE WHEN c.followup_detected   THEN 'Model: Yes'    ELSE 'Model: No'    END
+      AS model,
+    COALESCE(counts.cell_count, 0) AS cell_count,
+    -- Signed count for color: positive on the diagonal (concordance, green),
+    -- negative off-diagonal (discordance, red). Magnitude == cell_count.
+    CASE
+      WHEN c.human_ground_truth = c.followup_detected
+        THEN  COALESCE(counts.cell_count, 0)
+      ELSE -COALESCE(counts.cell_count, 0)
+    END AS signed_count
+  FROM (
+    VALUES
+      (TRUE,  TRUE),
+      (TRUE,  FALSE),
+      (FALSE, TRUE),
+      (FALSE, FALSE)
+  ) AS c (human_ground_truth, followup_detected)
+  LEFT JOIN (
+    SELECT
+      human_ground_truth,
+      followup_detected,
+      COUNT(*) AS cell_count
+    FROM delta.default.reports_followup
+    WHERE human_ground_truth IS NOT NULL
+    GROUP BY human_ground_truth, followup_detected
+  ) counts
+    ON c.human_ground_truth = counts.human_ground_truth
+   AND c.followup_detected = counts.followup_detected
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+normalize_columns: false
+always_filter_main_dttm: false
+uuid: 30af1b30-ba9e-4ec1-9a1b-9ed9fd66e801
+metrics:
+  - metric_name: count
+    verbose_name: COUNT(*)
+    metric_type: count
+    expression: COUNT(*)
+    description: null
+    d3format: null
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+  - metric_name: cell_count_sum
+    verbose_name: Cell count
+    metric_type: null
+    expression: SUM(cell_count)
+    description: null
+    d3format: ',d'
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+  - metric_name: signed_concordance
+    verbose_name: Signed concordance
+    metric_type: null
+    expression: SUM(signed_count)
+    description: 'Same magnitude as cell count, positive on the diagonal
+      (concordance) and negative off-diagonal (discordance).'
+    d3format: ',d'
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+columns:
+  - column_name: reviewer
+    verbose_name: Reviewer ground truth
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: model
+    verbose_name: Model detected
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: cell_count
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    advanced_data_type: null
+    groupby: false
+    filterable: false
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: signed_count
+    is_dttm: false
+    is_active: true
+    type: BIGINT
+    advanced_data_type: null
+    groupby: false
+    filterable: false
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+version: 1.0.0
+database_uuid: 9ed918e7-ef5a-4aa4-9574-f1946b58d520

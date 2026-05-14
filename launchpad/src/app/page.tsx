@@ -7,11 +7,15 @@ export const dynamic = 'force-dynamic';
 export default function Home() {
   const enableChat = process.env.ENABLE_CHAT === 'true';
   const enablePlaybooks = process.env.ENABLE_PLAYBOOKS === 'true';
+  const scoutEnv = process.env.SCOUT_ENV;
+  const deployerName = process.env.DEPLOYER_NAME;
 
-  console.log('[Scout Server] Environment variables:', {
-    enableChat,
-    enablePlaybooks,
-  });
-
-  return <HomeClient enableChat={enableChat} enablePlaybooks={enablePlaybooks} />;
+  return (
+    <HomeClient
+      enableChat={enableChat}
+      enablePlaybooks={enablePlaybooks}
+      scoutEnv={scoutEnv}
+      deployerName={deployerName}
+    />
+  );
 }

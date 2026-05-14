@@ -1,0 +1,52 @@
+slice_name: Confusion Matrix
+description: Heatmap of model vs reviewer agreement. Rows = reviewer ground truth,
+  columns = model detection. Cells with zero rows after filtering won't render.
+certified_by: null
+certification_details: null
+viz_type: heatmap_v2
+params:
+  datasource: 3__table
+  viz_type: heatmap_v2
+  slice_id: 51
+  x_axis: model_label
+  groupby:
+    - reviewer_label
+  metric: count
+  adhoc_filters:
+    - clause: WHERE
+      subject: human_ground_truth
+      operator: IS NOT NULL
+      operatorId: IS_NOT_NULL
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+  row_limit: 10000
+  normalize_across: heatmap
+  legend_type: continuous
+  show_legend: false
+  show_percentage: false
+  show_values: true
+  linear_color_scheme: schemeGreens
+  xscale_interval: -1
+  yscale_interval: -1
+  left_margin: auto
+  bottom_margin: auto
+  y_axis_format: ',d'
+  time_format: smart_date
+  sort_x_axis: alpha_asc
+  sort_y_axis: alpha_asc
+  value_bounds:
+    - 0
+    - null
+  extra_form_data: {}
+  dashboards:
+    - 3
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 9be736da-d474-4379-b4a1-ce74476be5fb
+version: 1.0.0
+dataset_uuid: cf33626a-2b35-423b-9a9d-7d8e62a6b021
