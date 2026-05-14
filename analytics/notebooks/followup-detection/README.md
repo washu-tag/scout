@@ -4,6 +4,49 @@ Classifies radiology reports for follow-up recommendations using an LLM, then ex
 
 The pipeline classifies each report from the curated silver-layer table `default.reports_latest`, persists results into a working table `default.reports_followup`, and routes failures to `default.followup_errors`. The review playbook reads `reports_followup`, presents a stratified sample, and writes reviewer verdicts back into the same table.
 
+## Prerequisites: writable Hive metastore egress
+
+The pipeline notebook creates the working table `default.reports_followup`, which requires writing to the **writable** Hive Metastore instance (`hive-metastore.scout-data:9083`) and to the lake bucket with **writable** S3 credentials. JupyterHub's default Helm-rendered NetworkPolicy (`ansible/roles/jupyter/templates/values.yaml.j2`) only permits egress to the **readonly** metastore instance (`hive-metastore-readonly`), so the metastore Thrift connection will time out unless an additional policy grants writable-Hive egress. (On clusters that already have the writable-Hive egress in place — e.g., from a manual `kubectl edit` — the notebook works as-is.)
+
+Apply the drop-in policy below to grant writable-Hive egress without modifying the Jupyter role:
+
+```yaml
+# jupyter-writable-hive-egress.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: jupyter-writable-hive-egress
+  namespace: scout-analytics  # jupyter_namespace
+spec:
+  podSelector:
+    matchLabels:
+      app: jupyterhub
+      component: singleuser-server
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: scout-data  # hive_namespace
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: hive-metastore  # writable; readonly is hive-metastore-readonly
+      ports:
+        - port: 9083
+          protocol: TCP
+```
+
+```bash
+kubectl apply -f jupyter-writable-hive-egress.yaml
+```
+
+NetworkPolicies are additive (multiple policies OR together), so this layers on top of the Helm-rendered policy without conflicts. To revert: `kubectl delete networkpolicy -n scout-analytics jupyter-writable-hive-egress`.
+
+The pipeline also needs writable S3 credentials. The notebook prompts for the secret key via `getpass` (or reads `S3_ACCESS_KEY` / `S3_SECRET_KEY` from env if pre-set) — point those at a MinIO user with `consoleAdmin` or an equivalent RW policy on the lake bucket.
+
+A longer-term improvement (deferred) would be a `jupyter_allow_writable_hive` inventory flag that adds this egress rule conditionally to the Helm-rendered policy.
+
 ## Contents
 
 | File | Role |

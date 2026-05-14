@@ -547,9 +547,47 @@ def create_review_dashboard(
     # Load from Trino if table_name provided
     if df is None and table_name is not None:
         # Load data (when called from landing page, this happens on button click)
-        df = _load_from_trino(
-            table_name, samples_per_category, report_col, status_output=None
-        )
+        try:
+            df = _load_from_trino(
+                table_name, samples_per_category, report_col, status_output=None
+            )
+        except Exception as e:
+            # Friendly message when the working table hasn't been created yet —
+            # e.g., a reviewer opens the playbook before the pipeline notebook
+            # has run on a fresh cluster. Trino raises with "does not exist" or
+            # error_name=TABLE_NOT_FOUND in the message.
+            err_text = str(e).lower()
+            is_missing_table = (
+                "does not exist" in err_text or "table_not_found" in err_text
+            )
+            if not is_missing_table:
+                raise
+            display(
+                widgets.HTML(
+                    f"""
+                <div style="padding:24px;border:1px solid #f59e0b;border-radius:8px;
+                            background:#fffbeb;color:#92400e;max-width:720px;
+                            margin:24px auto;font-family:'Inter',-apple-system,sans-serif;
+                            line-height:1.55;">
+                    <h3 style="margin:0 0 12px 0;color:#92400e;">
+                        Follow-up classifier hasn't run yet
+                    </h3>
+                    <p style="margin:0 0 10px 0;">
+                        This dashboard reads from
+                        <code style="background:#fef3c7;padding:1px 6px;border-radius:3px;">{html_lib.escape(table_name)}</code>,
+                        but that table doesn't exist in the lake yet.
+                    </p>
+                    <p style="margin:0 0 6px 0;"><strong>To populate it:</strong></p>
+                    <ol style="margin:0;padding-left:22px;">
+                        <li>In JupyterHub, open the <strong>Follow-Up Detection</strong> pipeline notebook.</li>
+                        <li>Run cells in order through the <strong>Full pipeline</strong> section.</li>
+                        <li>Refresh this page when the pipeline finishes.</li>
+                    </ol>
+                </div>
+                """
+                )
+            )
+            return
 
     elif df is None:
         raise ValueError("Either 'df' or 'table_name' must be provided")
