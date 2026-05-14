@@ -131,7 +131,8 @@ echo ""
 echo "Helm charts (Scout applications - version + appVersion)..."
 for chart in helm/launchpad/Chart.yaml \
              helm/extractor/hl7-transformer/Chart.yaml \
-             helm/extractor/hl7log-extractor/Chart.yaml; do
+             helm/extractor/hl7log-extractor/Chart.yaml \
+             helm/open-webui-bootstrap/Chart.yaml; do
     update_file "$chart" \
         "^(version:) .+$" \
         "\\1 $HELM_VERSION" \

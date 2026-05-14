@@ -438,6 +438,7 @@ This section documents all files containing version strings. The Release Workflo
 | `helm/launchpad/values.yaml` | `image.tag` | `latest` |
 | `helm/extractor/hl7-transformer/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 | `helm/extractor/hl7log-extractor/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
+| `helm/open-webui-bootstrap/Chart.yaml` | `version`, `appVersion` | `0.0.0-dev`, `"latest"` |
 
 **Charts for External Applications** (do NOT update `appVersion`):
 

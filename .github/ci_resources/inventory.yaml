@@ -159,6 +159,7 @@ k3s_cluster:
     enable_chat: true
     open_webui_postgres_password: openwebui123
     open_webui_secret_key: ciopenwebuisecretkeyvalue12345678
+    open_webui_bootstrap_password: cibootstrappasswordvalue12345678
     scout_model_create: false
     ollama_models: []
     ollama_gpu_enabled: false
