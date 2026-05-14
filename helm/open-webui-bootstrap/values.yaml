@@ -18,14 +18,16 @@ image:
 # the Service port, not the pod port.
 owuiBaseUrl: http://open-webui:80
 
-# Bootstrap admin user. Password is derived deterministically from the
-# WEBUI_SECRET_KEY referenced below — no separate secret to manage.
+# Bootstrap admin user. Password is read at deploy time from a Secret —
+# defaults to the `open-webui-secrets` Secret created by Scout's open-webui
+# Ansible role (`BOOTSTRAP_PASSWORD` key, populated from
+# open_webui_bootstrap_password in inventory).
 bootstrap:
   email: scout-deploy@scout-deploy.local
   name: Scout Deploy Bot
-  webuiSecretKeySecret:
+  passwordSecret:
     name: open-webui-secrets
-    key: WEBUI_SECRET_KEY
+    key: BOOTSTRAP_PASSWORD
 
 # Postgres connection URL for the password-migration step (OWUI's
 # `open_webui.internal.db` reads DATABASE_URL from env). Sourced from a

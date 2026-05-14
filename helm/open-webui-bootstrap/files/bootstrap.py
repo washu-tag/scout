@@ -7,8 +7,8 @@ chain of Ansible tasks doing kubectl-exec'd curls.
 
 Five phases:
 1. Password migration. Rewrite the bootstrap user's bcrypt hash to match
-   the derived password (no-op on a clean DB; recovers signin on any cluster
-   where `open_webui_secret_key` was rotated).
+   the configured password (no-op on a clean DB; recovers signin on any
+   cluster where `open_webui_bootstrap_password` was rotated).
 2. Signin or signup. Mint an admin JWT against OWUI's in-cluster Service.
    Falls through to /signup on a truly empty DB (gated by ENABLE_INITIAL_ADMIN_SIGNUP).
 3. PersistentConfig re-push. Tool servers (full overwrite); DEFAULT_MODELS
@@ -21,10 +21,10 @@ Five phases:
    entry, plus hide-base overrides on the raw Ollama tags.
 
 Inputs (from env, set by the Job spec):
-  OWUI_BASE_URL          — e.g., http://open-webui:8080
+  OWUI_BASE_URL          — e.g., http://open-webui:80
   BOOTSTRAP_EMAIL        — primary key for the bootstrap admin user
   BOOTSTRAP_NAME         — display name
-  WEBUI_SECRET_KEY       — used to derive the bootstrap password
+  BOOTSTRAP_PASSWORD     — bootstrap admin password (from a Secret)
 
 Inputs (from /app/config/, mounted from a ConfigMap the chart renders):
   persistent_config.json — dict with tool_server_connections / default_model_id
@@ -37,7 +37,6 @@ Inputs (from /app/config/, mounted from a ConfigMap the chart renders):
                            contents are inlined as `params.system`.
 """
 
-import hashlib
 import json
 import os
 import sys
@@ -54,9 +53,7 @@ SIGNIN_RETRY_DELAY_SEC = 3
 OWUI_BASE = os.environ["OWUI_BASE_URL"]
 BOOTSTRAP_EMAIL = os.environ["BOOTSTRAP_EMAIL"]
 BOOTSTRAP_NAME = os.environ["BOOTSTRAP_NAME"]
-BOOTSTRAP_PASSWORD = hashlib.sha256(
-    os.environ["WEBUI_SECRET_KEY"].encode("utf-8")
-).hexdigest()
+BOOTSTRAP_PASSWORD = os.environ["BOOTSTRAP_PASSWORD"]
 
 
 def http(method, path, body=None, token=None):
@@ -75,12 +72,31 @@ def http(method, path, body=None, token=None):
     data = json.dumps(body).encode("utf-8") if body is not None else None
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:  # noqa: S310
+        with urllib.request.urlopen(
+            req, timeout=HTTP_TIMEOUT
+        ) as resp:  # noqa: S310  # nosemgrep
             return resp.status, resp.read().decode("utf-8")
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode("utf-8")
     except urllib.error.URLError as e:
         return 0, str(e)
+
+
+def http_or_raise(method, path, body=None, token=None):
+    """http() that raises on non-2xx. Returns response body text."""
+    code, response = http(method, path, body=body, token=token)
+    if not 200 <= code < 300:
+        raise RuntimeError(f"{method} {path} failed: HTTP {code} {response}")
+    return response
+
+
+def get_merge_post(get_path, post_path, key, value, token):
+    """OWUI's models/tasks config handlers unconditionally assign every form
+    field — partial POSTs would clobber siblings. Read current, set one key,
+    write back."""
+    current = json.loads(http_or_raise("GET", get_path, token=token))
+    current[key] = value
+    http_or_raise("POST", post_path, current, token)
 
 
 def load_config(filename):
@@ -110,7 +126,7 @@ def migrate_password():
 
     Idempotent: rows that don't exist (clean DB) get a no-op; rows that exist
     get rehashed with a fresh salt. Lets signin succeed on the next attempt
-    after a secret-key rotation (which changes the derived password).
+    after a bootstrap-password rotation.
     """
     import bcrypt  # noqa: PLC0415  (kept lazy to give a cleaner error if missing)
     from open_webui.internal.db import get_db  # noqa: PLC0415
@@ -135,39 +151,35 @@ def mint_admin_jwt():
     Retries the initial signin call to absorb pod-not-quite-ready races: OWUI's
     readiness probe can flip Ready before the Python process is bound to :8080.
     """
-    signin_body = {"email": BOOTSTRAP_EMAIL, "password": BOOTSTRAP_PASSWORD}
-    last_signin = (0, "")
+    signin_payload = {"email": BOOTSTRAP_EMAIL, "password": BOOTSTRAP_PASSWORD}
+    last_code, last_body = 0, ""
 
     for attempt in range(SIGNIN_RETRIES):
-        code, body = http("POST", "/api/v1/auths/signin", signin_body)
-        last_signin = (code, body)
-        if code == 200:
-            return json.loads(body)["token"], "signin"
-        if code == 400:
+        last_code, last_body = http("POST", "/api/v1/auths/signin", signin_payload)
+        if last_code == 200:
+            return json.loads(last_body)["token"], "signin"
+        if last_code == 400:
             # Pydantic / auth-level rejection — won't fix itself on retry.
             break
         print(
-            f"  signin attempt {attempt + 1}: HTTP {code}; retrying in {SIGNIN_RETRY_DELAY_SEC}s",
+            f"  signin attempt {attempt + 1}: HTTP {last_code}; retrying in {SIGNIN_RETRY_DELAY_SEC}s",
             file=sys.stderr,
         )
         time.sleep(SIGNIN_RETRY_DELAY_SEC)
 
-    code, body = http(
-        "POST",
-        "/api/v1/auths/signup",
-        {
-            "name": BOOTSTRAP_NAME,
-            "email": BOOTSTRAP_EMAIL,
-            "password": BOOTSTRAP_PASSWORD,
-        },
-    )
-    if code == 200:
-        return json.loads(body)["token"], "signup"
+    signup_payload = {
+        "name": BOOTSTRAP_NAME,
+        "email": BOOTSTRAP_EMAIL,
+        "password": BOOTSTRAP_PASSWORD,
+    }
+    signup_code, signup_body = http("POST", "/api/v1/auths/signup", signup_payload)
+    if signup_code == 200:
+        return json.loads(signup_body)["token"], "signup"
 
     raise RuntimeError(
         f"Bootstrap failed.\n"
-        f"  signin: HTTP {last_signin[0]} {last_signin[1]}\n"
-        f"  signup: HTTP {code} {body}\n"
+        f"  signin: HTTP {last_code} {last_body}\n"
+        f"  signup: HTTP {signup_code} {signup_body}\n"
         f"Diagnostic checklist:\n"
         f"  - Is ENABLE_INITIAL_ADMIN_SIGNUP=true in the OWUI pod env?\n"
         f"  - Did the OWUI pod restart after Helm picked up the env vars?\n"
@@ -177,102 +189,90 @@ def mint_admin_jwt():
     )
 
 
-def assert_2xx(method, path, code, body):
-    if not 200 <= code < 300:
-        raise RuntimeError(f"{method} {path} failed: HTTP {code} {body}")
-
-
 def push_persistent_config(token):
     cfg = load_config("persistent_config.json") or {}
 
     # Tool servers — full overwrite by design (handler unconditionally assigns).
     if cfg.get("tool_server_connections") is not None:
-        code, body = http(
+        http_or_raise(
             "POST",
             "/api/v1/configs/tool_servers",
             {"TOOL_SERVER_CONNECTIONS": cfg["tool_server_connections"]},
             token,
         )
-        assert_2xx("POST", "/api/v1/configs/tool_servers", code, body)
         print(
             f'  tool_server_connections: pushed {len(cfg["tool_server_connections"])} entries'
         )
 
-    # DEFAULT_MODELS — handler unconditionally assigns; GET-merge-POST.
     if cfg.get("default_model_id"):
-        code, body = http("GET", "/api/v1/configs/models", token=token)
-        assert_2xx("GET", "/api/v1/configs/models", code, body)
-        merged = json.loads(body)
-        merged["DEFAULT_MODELS"] = cfg["default_model_id"]
-        code, body = http("POST", "/api/v1/configs/models", merged, token)
-        assert_2xx("POST", "/api/v1/configs/models", code, body)
+        get_merge_post(
+            "/api/v1/configs/models",
+            "/api/v1/configs/models",
+            "DEFAULT_MODELS",
+            cfg["default_model_id"],
+            token,
+        )
         print(f'  default_model_id: {cfg["default_model_id"]}')
 
-    # TASK_MODEL — same GET-merge-POST.
     if cfg.get("task_model_id"):
-        code, body = http("GET", "/api/v1/tasks/config", token=token)
-        assert_2xx("GET", "/api/v1/tasks/config", code, body)
-        merged = json.loads(body)
-        merged["TASK_MODEL"] = cfg["task_model_id"]
-        code, body = http("POST", "/api/v1/tasks/config/update", merged, token)
-        assert_2xx("POST", "/api/v1/tasks/config/update", code, body)
+        get_merge_post(
+            "/api/v1/tasks/config",
+            "/api/v1/tasks/config/update",
+            "TASK_MODEL",
+            cfg["task_model_id"],
+            token,
+        )
         print(f'  task_model_id: {cfg["task_model_id"]}')
 
 
 def push_filter_functions(token):
-    filters = load_config("filters.json") or []
-    for fn in filters:
+    for fn in load_config("filters.json") or []:
         fn_id = fn["id"]
-        # Exists?
-        code, _ = http("GET", f"/api/v1/functions/id/{fn_id}", token=token)
         payload = {
             "id": fn_id,
             "name": fn["name"],
             "content": load_text(fn["content_file"]),
             "meta": {"description": fn.get("description", "")},
         }
-        if code == 200:
-            c, b = http("POST", f"/api/v1/functions/id/{fn_id}/update", payload, token)
-            assert_2xx("POST", f"/api/v1/functions/id/{fn_id}/update", c, b)
+
+        exists_code, _ = http("GET", f"/api/v1/functions/id/{fn_id}", token=token)
+        if exists_code == 200:
+            http_or_raise(
+                "POST", f"/api/v1/functions/id/{fn_id}/update", payload, token
+            )
             print(f"  {fn_id}: updated")
         else:
-            c, b = http("POST", "/api/v1/functions/create", payload, token)
-            assert_2xx("POST", "/api/v1/functions/create", c, b)
+            http_or_raise("POST", "/api/v1/functions/create", payload, token)
             print(f"  {fn_id}: created")
 
-        # Valves
         if fn.get("valves"):
-            c, b = http(
+            http_or_raise(
                 "POST",
                 f"/api/v1/functions/id/{fn_id}/valves/update",
                 fn["valves"],
                 token,
             )
-            assert_2xx("POST", f"/api/v1/functions/id/{fn_id}/valves/update", c, b)
 
         # Toggles — GET current, only flip when state differs.
-        c, b = http("GET", f"/api/v1/functions/id/{fn_id}", token=token)
-        assert_2xx("GET", f"/api/v1/functions/id/{fn_id}", c, b)
-        current = json.loads(b)
+        current = json.loads(
+            http_or_raise("GET", f"/api/v1/functions/id/{fn_id}", token=token)
+        )
 
         desired_global = fn.get("enable_global", False)
         if current.get("is_global", False) != desired_global:
-            c, b = http(
+            http_or_raise(
                 "POST", f"/api/v1/functions/id/{fn_id}/toggle/global", token=token
             )
-            assert_2xx("POST", f"/api/v1/functions/id/{fn_id}/toggle/global", c, b)
             print(f"  {fn_id}: is_global → {desired_global}")
 
         desired_active = fn.get("enable_active", True)
         if current.get("is_active", False) != desired_active:
-            c, b = http("POST", f"/api/v1/functions/id/{fn_id}/toggle", token=token)
-            assert_2xx("POST", f"/api/v1/functions/id/{fn_id}/toggle", c, b)
+            http_or_raise("POST", f"/api/v1/functions/id/{fn_id}/toggle", token=token)
             print(f"  {fn_id}: is_active → {desired_active}")
 
 
 def push_models(token):
-    models = load_config("models.json") or []
-    for m in models:
+    for m in load_config("models.json") or []:
         if not m.get("id"):
             raise RuntimeError(f"model payload missing id: {m}")
         # Inline the system prompt from its referenced file. Keeps the JSON
@@ -282,17 +282,18 @@ def push_models(token):
         system_file = m.get("params", {}).pop("system_file", None)
         if system_file:
             m["params"]["system"] = load_text(system_file)
+
         model_id_q = urllib.parse.quote(m["id"])
-        code, _ = http("GET", f"/api/v1/models/model?id={model_id_q}", token=token)
-        if code == 200:
-            c, b = http(
+        exists_code, _ = http(
+            "GET", f"/api/v1/models/model?id={model_id_q}", token=token
+        )
+        if exists_code == 200:
+            http_or_raise(
                 "POST", f"/api/v1/models/model/update?id={model_id_q}", m, token
             )
-            assert_2xx("POST", f'/api/v1/models/model/update?id={m["id"]}', c, b)
             print(f'  {m["id"]}: updated')
         else:
-            c, b = http("POST", "/api/v1/models/create", m, token)
-            assert_2xx("POST", "/api/v1/models/create", c, b)
+            http_or_raise("POST", "/api/v1/models/create", m, token)
             print(f'  {m["id"]}: created')
 
 

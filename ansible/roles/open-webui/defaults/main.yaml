@@ -205,7 +205,7 @@ open_webui_enable_arena_models: false
 # exactly — point this at whichever Scout Explorer variant should be the default
 # first impression. The default `gemma4-31b-long` is resident, dense, no thinking-
 # step latency, and fast enough for most asks; users can pick gpt-oss-120b-long
-# (cohort building) or qwen3.6-long (thinking-mode analysis) per chat.
+# (cohort building) or qwen3.6-35b-long (thinking-mode analysis) per chat.
 open_webui_default_model_id: 'gemma4-31b-long:latest'
 
 # Model used for OWUI's auxiliary tasks (chat title generation, follow-up
@@ -240,13 +240,11 @@ open_webui_task_model_id: 'gemma4-31b-long:latest'
 open_webui_bootstrap_email: 'scout-deploy@scout-deploy.local'
 open_webui_bootstrap_name: 'Scout Deploy Bot'
 
-# Deterministic bootstrap password derived from the WebUI secret key. SHA256
-# hex (64 chars) fits bcrypt's 72-byte limit and rotates with the secret key
-# (so a secret rotation forces a re-bootstrap, which is the right semantics).
-# Rotation flow: change open_webui_secret_key in inventory → next deploy's
-# password-migration step rewrites the bootstrap user's bcrypt hash to match
-# the new derived password before /signin → seamless recovery, no manual ops.
-open_webui_bootstrap_password: '{{ open_webui_secret_key | hash("sha256") }}'
+# Bootstrap admin password. Vault-encrypt in inventory.yaml. To rotate,
+# update the inventory value and re-run make install-chat — the bootstrap
+# Job's migration step rewrites the stored bcrypt hash to match before
+# attempting /signin, so no manual cleanup is needed.
+# (no default — required in inventory; deploy.yaml asserts presence)
 
 # Set to false to skip post-deploy admin configuration entirely.
 open_webui_admin_setup_enabled: true

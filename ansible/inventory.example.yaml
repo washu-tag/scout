@@ -614,6 +614,7 @@ k3s_cluster:
     # enable_chat: true
     open_webui_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     open_webui_secret_key: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    open_webui_bootstrap_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     ollama_resources:
       requests:
         cpu: 4
@@ -629,7 +630,7 @@ k3s_cluster:
         cpu: 4
         memory: 4Gi
     # Scout custom models. Defaults ship gemma4-31b-long (default + task model),
-    # qwen3.6-long (thinking-mode), and gpt-oss-120b-long (large, cold-load),
+    # qwen3.6-35b-long (thinking-mode), and gpt-oss-120b-long (large, cold-load),
     # each with a `ui:` block that produces a Scout Explorer entry in the
     # OWUI picker. Override here to add bases, change context windows, or
     # customize per-model UI fields. See ansible/roles/open-webui/defaults/main.yaml

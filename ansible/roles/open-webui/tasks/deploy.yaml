@@ -9,13 +9,12 @@
       - open_webui_postgres_password | length > 0
       - open_webui_secret_key is defined
       - open_webui_secret_key | length > 0
+      - open_webui_bootstrap_password is defined
+      - open_webui_bootstrap_password | length > 0
     fail_msg: >
-      open_webui_postgres_password and open_webui_secret_key are both required.
-      Please set them in your inventory.yaml (use vault encryption).
-      open_webui_secret_key backs both session signing and the deterministic
-      bootstrap admin password — rotating it invalidates the bootstrap login,
-      which the password-migration step in configure_admin.yaml then recovers
-      on the next deploy.
+      open_webui_postgres_password, open_webui_secret_key, and
+      open_webui_bootstrap_password are all required. Set them in your
+      inventory.yaml (use vault encryption).
       Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 

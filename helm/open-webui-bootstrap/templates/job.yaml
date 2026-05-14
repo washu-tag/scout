@@ -50,11 +50,11 @@ spec:
               value: {{ .Values.bootstrap.email | quote }}
             - name: BOOTSTRAP_NAME
               value: {{ .Values.bootstrap.name | quote }}
-            - name: WEBUI_SECRET_KEY
+            - name: BOOTSTRAP_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.bootstrap.webuiSecretKeySecret.name }}
-                  key: {{ .Values.bootstrap.webuiSecretKeySecret.key }}
+                  name: {{ .Values.bootstrap.passwordSecret.name }}
+                  key: {{ .Values.bootstrap.passwordSecret.key }}
             # OWUI's open_webui.internal.db reads DATABASE_URL from env.
             # Sourced from a Secret to keep the password out of the rendered
             # Job + Helm release Secret.

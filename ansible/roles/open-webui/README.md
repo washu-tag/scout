@@ -7,7 +7,7 @@ Deploys Open WebUI with Ollama for AI-powered chat interface in Scout.
 Open WebUI provides a user-friendly interface for interacting with language models via Ollama. In Scout, it's configured with:
 - **Keycloak OAuth** for authentication and role-based access control
 - **Trino MCP tool** for natural language querying of radiology reports in the Delta Lake
-- **Redis** for distributed websocket coordination
+- **Valkey** for distributed websocket coordination
 
 ## Deployment
 
@@ -17,10 +17,10 @@ make install-chat
 ```
 
 The role automatically:
-- Creates PostgreSQL database and Redis instance for Open WebUI
+- Creates PostgreSQL database and Valkey instance for Open WebUI
 - Deploys Ollama and Open WebUI via Helm
 - Pulls configured Ollama models
-- Creates each entry in `scout_models` as a Modelfile-derived variant with extended-context parameters baked in. Default ships three: `gemma4-31b-long` (preload, default + task model), `qwen3.6-long` (cold-load, thinking-mode), and `gpt-oss-120b-long` (cold-load, large/cohort-building)
+- Creates each entry in `scout_models` as a Modelfile-derived variant with extended-context parameters baked in. Default ships three: `gemma4-31b-long` (preload, default + task model), `qwen3.6-35b-long` (cold-load, thinking-mode), and `gpt-oss-120b-long` (cold-load, large/cohort-building)
 - Mints an admin JWT via the in-cluster Service and uses it to seed filter functions, custom Scout Explorer models, and other OWUI resources via the REST API on every deploy (see [Bootstrap & Migration](#bootstrap--migration) and [Post-Deployment Configuration](#post-deployment-configuration))
 
 ### Air-Gapped Deployment
@@ -52,7 +52,8 @@ See `defaults/main.yaml` for all available variables. Key requirements in `inven
 
 **Required Secrets** (use Ansible Vault):
 - `open_webui_postgres_password`
-- `open_webui_secret_key`
+- `open_webui_secret_key` — backs OWUI session signing
+- `open_webui_bootstrap_password` — bootstrap admin user's password
 - `open_webui_redis_password`
 - `keycloak_open_webui_client_secret`
 
@@ -79,9 +80,9 @@ The bootstrap user is `scout-deploy@scout-deploy.local` (configurable via `open_
 ### How it works
 
 - **The Job uses OWUI's own container image** so the password-migration step can `import open_webui.internal.db` / `open_webui.models.auths` (same modules the app uses), and bcrypt versions match. The image tag is **discovered at deploy time** from the running OWUI Pod, not pinned separately — Renovate bumps `open_webui_helm_chart_version` in `versions.yaml`, the chart's `appVersion` determines the image that runs, and `configure_admin.yaml` reads it back via `kubernetes.core.k8s_info` before installing the bootstrap chart. One pin, no drift.
-- **Password is derived from `open_webui_secret_key`** (SHA256 hex) inside the script. No separate secret to track; rotating the secret-key auto-rotates the bootstrap login.
+- **Password comes from `open_webui_bootstrap_password`** in inventory (vault-encrypted), mounted into the Job via `secretKeyRef` from the `open-webui-secrets` Secret. Rotate by updating inventory and re-running `make install-chat`.
 - **`ENABLE_INITIAL_ADMIN_SIGNUP=true`** (set on the OWUI deployment via extraEnvVars) lets `/signup` create the very first user as admin even with `ENABLE_SIGNUP=false`. Once any user exists, OWUI's `has_users` short-circuit blocks `/signup` permanently — so the env var is safe to leave on.
-- **Migration step (idempotent)** runs on every Job execution. It rewrites the `scout-deploy@scout-deploy.local` bcrypt hash to match the currently derived password. No-op on a clean DB; on an existing cluster it ensures `/signin` works even after a secret-key rotation.
+- **Migration step (idempotent)** runs on every Job execution. It rewrites the `scout-deploy@scout-deploy.local` bcrypt hash to match the current `open_webui_bootstrap_password`. No-op on a clean DB; on an existing cluster it ensures `/signin` works after a password rotation.
 - **Inputs to the Job come from a ConfigMap** the chart renders from inventory: filter function source code, full Scout Explorer model payloads (system prompt inlined, capability flags, suggestion prompts, tool refs), and the PersistentConfig field values. Edit inventory, `make install-chat`, Helm replaces the ConfigMap+Job and the new state takes effect — no SQL surgery.
 
 The full script lives at `helm/open-webui-bootstrap/files/bootstrap.py`. Watch a deploy in real time:
@@ -103,19 +104,11 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 5. Role: `admin`
 6. Re-run `make install-chat`
 
-**Rotating `open_webui_secret_key`.** Update inventory, re-run `make install-chat`. The migration step rewrites the bcrypt hash to match the new derived password before attempting `/signin`. No other intervention required.
+**Rotating `open_webui_bootstrap_password`.** Update inventory, re-run `make install-chat`. The migration step rewrites the bcrypt hash to match the new password before attempting `/signin`. No other intervention required.
 
 ### Disabling the bootstrap Job entirely
 
 Set `open_webui_admin_setup_enabled: false` in inventory. The OWUI Helm deploy still runs; the role skips the `open-webui-bootstrap` chart entirely (no Job, no ConfigMap). Useful for environments where the operator wants to manage post-deploy state out of band.
-
-### Future: GitOps via Flux
-
-The bootstrap chart is pure-data-driven (raw inventory shapes in Helm values; no Ansible-only logic in the chart). To migrate from Ansible-driven `make install-chat` to a Flux `HelmRelease`:
-
-- Express OWUI and the bootstrap chart as two `HelmRelease` resources in the same namespace, with `spec.dependsOn` on the bootstrap release pointing at the OWUI release. Flux's `helm-controller` uses the Helm SDK so the chart's `helm.sh/hook: post-install,post-upgrade` annotations work natively — no sync-wave equivalents needed.
-- The image-discovery step currently lives in Ansible (`configure_admin.yaml`). In a Flux world, either: (a) move discovery into a `pre-install` Helm hook inside the bootstrap chart that reads the OWUI Pod and writes the image into a separate ConfigMap the main bootstrap Job consumes, or (b) keep both `HelmRelease`s pointing at the same `image.tag` value sourced from a shared ConfigMap that Renovate updates. (a) preserves auto-discovery; (b) is simpler but requires Renovate to bump two places.
-- Secrets (currently Ansible Vault → in-cluster Secret) will need a source like SOPS, External Secrets, or Sealed Secrets. The bootstrap chart already consumes `WEBUI_SECRET_KEY` and `DATABASE_URL` via `secretKeyRef` — only the upstream Secret-creation path changes.
 
 ## Reference & Verification
 
@@ -151,7 +144,7 @@ kubectl logs -n scout-analytics -l app.kubernetes.io/name=open-webui-bootstrap -
 ```yaml
 # inventory.yaml
 
-open_webui_default_model_id: 'qwen3.6-long:latest'
+open_webui_default_model_id: 'qwen3.6-35b-long:latest'
 open_webui_task_model_id: 'gemma4-31b-long:latest'
 
 # Link Sanitizer allowlist (defaults to server_hostname)
