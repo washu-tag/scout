@@ -1,0 +1,30 @@
+slice_name: Recall
+description: Of reports the reviewer said needed follow-up, the share the model caught.
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  datasource: 3__table
+  viz_type: big_number_total
+  slice_id: 50
+  metric: recall_pct
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+  subheader: TP / (TP + FN)
+  header_font_size: 0.4
+  subheader_font_size: 0.125
+  y_axis_format: ',.1f'
+  time_format: smart_date
+  extra_form_data: {}
+  dashboards:
+    - 3
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 247e0898-5239-4d0a-868c-a74c4ce9c405
+version: 1.0.0
+dataset_uuid: cf33626a-2b35-423b-9a9d-7d8e62a6b021

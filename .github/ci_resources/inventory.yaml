@@ -178,15 +178,31 @@ k3s_cluster:
     loki_chunks_cache_enabled: false
     loki_results_cache_enabled: false
 
-    # Helm config for CI
+    # Helm config for CI.
     helm_chart_timeout: '10m'
 
-    # Resources (reduced for 7GB CI runner)
+    # Resources (reduced for the constrained CI runner)
     hive_resources:
       requests:
         memory: 256Mi
       limits:
         memory: 512Mi
+    # Grafana's defaults (100m cpu / 512Mi memory request) tipped CI's
+    # runner over after promtail→alloy added a new DaemonSet pod and the
+    # Grafana sidecar gained an auth container. Trim to small requests
+    # with no limits — Helm --wait still observes readiness, but the
+    # scheduler can place the pod immediately.
+    grafana_resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+    # Voila's default request (100m cpu / 512Mi memory) is too big for
+    # the runner once the rest of the stack is up. Trim to small
+    # requests with no limits.
+    voila_resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
     hl7_transformer_spark_memory: 1G
     cassandra_init_heap: 1G
     cassandra_max_heap: 1G

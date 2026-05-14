@@ -1,0 +1,52 @@
+slice_name: Race
+description: null
+certified_by: null
+certification_details: null
+viz_type: pie
+params:
+  datasource: 1__table
+  viz_type: pie
+  slice_id: 4
+  groupby:
+    - race
+  metric: count
+  adhoc_filters:
+    - clause: WHERE
+      comparator: No filter
+      expressionType: SIMPLE
+      operator: TEMPORAL_RANGE
+      subject: message_dt
+    - clause: WHERE
+      subject: race
+      operator: NOT IN
+      operatorId: NOT_IN
+      comparator:
+        - ''
+        - null
+      expressionType: SIMPLE
+  row_limit: 100
+  sort_by_metric: true
+  color_scheme: supersetColors
+  show_labels_threshold: 5
+  show_legend: true
+  legendType: scroll
+  legendOrientation: top
+  label_type: key
+  number_format: SMART_NUMBER
+  date_format: smart_date
+  show_labels: true
+  labels_outside: true
+  label_line: true
+  show_total: false
+  outerRadius: 70
+  donut: true
+  innerRadius: 30
+  extra_form_data: {}
+  dashboards:
+    - 1
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: a2b4a702-3484-4939-ae87-1421e9721917
+version: 1.0.0
+dataset_uuid: 14cdaed5-905e-499a-b020-13e1b54097c8

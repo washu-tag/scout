@@ -216,6 +216,11 @@ keycloak_subdomain: keycloak
 enable_chat: false
 enable_playbooks: false
 
+# Superset dashboard bundles to install. Built-in bundles: core, quality,
+# followup. Override in inventory to add more (e.g. [core, quality]).
+scout_dashboard_bundles:
+  - core
+
 # Package proxy configuration (per ADR-0016, following ADR-0011 service-mode pattern)
 # Options: none, nexus, external
 #   none     - No proxy; packages resolve directly from upstream (internet required)

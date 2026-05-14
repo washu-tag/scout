@@ -1,0 +1,51 @@
+slice_name: Top Finding Categories
+description: Word cloud of follow-up findings by category (text before the first ":"
+  in the model's finding label). Larger word = more reports.
+certified_by: null
+certification_details: null
+viz_type: word_cloud
+params:
+  datasource: 3__table
+  viz_type: word_cloud
+  slice_id: 46
+  series: finding_category
+  metric: count
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: finding_category
+      operator: IS NOT NULL
+      operatorId: IS_NOT_NULL
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: finding_category
+      operator: NOT IN
+      operatorId: NOT_IN
+      comparator:
+        - ''
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: followup_detected
+      operator: ==
+      operatorId: EQUALS
+      comparator: 'true'
+      expressionType: SIMPLE
+  row_limit: 250
+  sort_by_metric: true
+  size_from: 12
+  size_to: 80
+  rotation: flat
+  color_scheme: presetColors
+  extra_form_data: {}
+  dashboards:
+    - 3
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 9d9c0bdd-9fa4-4979-a704-31e040fd6037
+version: 1.0.0
+dataset_uuid: cf33626a-2b35-423b-9a9d-7d8e62a6b021

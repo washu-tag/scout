@@ -1,0 +1,76 @@
+slice_name: TAT by Modality
+description: Median turn-around time grouped by imaging modality.
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_bar
+params:
+  datasource: 1__table
+  viz_type: echarts_timeseries_bar
+  slice_id: 34
+  x_axis: modality
+  metrics:
+    - aggregate: null
+      column: null
+      datasourceWarning: false
+      expressionType: SQL
+      hasCustomLabel: true
+      label: Median TAT (hours)
+      optionName: metric_modality_median_tat
+      sqlExpression: APPROX_PERCENTILE(date_diff('minute', requested_dt, message_dt) / 60.0,
+        0.5)
+  groupby: []
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: modality
+      operator: NOT IN
+      operatorId: NOT_IN
+      comparator:
+        - null
+        - ''
+      expressionType: SIMPLE
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: requested_dt IS NOT NULL AND message_dt IS
+        NOT NULL AND message_dt > requested_dt
+      filterOptionName: filter_tat_valid_modality
+  row_limit: 100
+  truncate_metric: true
+  show_empty_columns: true
+  annotation_layers: []
+  orientation: vertical
+  x_axis_title: Modality
+  x_axis_title_margin: 30
+  y_axis_title: Hours (median)
+  y_axis_title_margin: 30
+  y_axis_title_position: Left
+  sort_series_type: sum
+  sort_series_ascending: false
+  color_scheme: presetColors
+  time_shift_color: true
+  show_value: true
+  only_total: true
+  show_legend: false
+  legendType: scroll
+  legendOrientation: top
+  x_axis_time_format: smart_date
+  y_axis_format: ',.1f'
+  y_axis_bounds:
+    - 0
+    - null
+  truncateXAxis: true
+  rich_tooltip: true
+  showTooltipTotal: false
+  tooltipTimeFormat: smart_date
+  extra_form_data: {}
+  dashboards:
+    - 2
+query_context: null
+cache_timeout: null
+uuid: 169b5c5d-67bd-46d6-bc77-e4837ad1f9bf
+version: 1.0.0
+dataset_uuid: 14cdaed5-905e-499a-b020-13e1b54097c8

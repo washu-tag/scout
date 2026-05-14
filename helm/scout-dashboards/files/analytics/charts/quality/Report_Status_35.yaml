@@ -1,0 +1,45 @@
+slice_name: Report Status
+description: Distribution of HL7 report_status values (final, preliminary, corrected,
+  etc.).
+certified_by: null
+certification_details: null
+viz_type: pie
+params:
+  datasource: 1__table
+  viz_type: pie
+  slice_id: 35
+  groupby:
+    - report_status
+  metric: count
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+  row_limit: 100
+  sort_by_metric: true
+  color_scheme: presetColors
+  show_labels_threshold: 5
+  show_legend: true
+  legendType: scroll
+  legendOrientation: top
+  label_type: key_value_percent
+  number_format: SMART_NUMBER
+  date_format: smart_date
+  show_labels: true
+  labels_outside: true
+  label_line: true
+  show_total: true
+  outerRadius: 70
+  donut: true
+  innerRadius: 30
+  extra_form_data: {}
+  dashboards:
+    - 2
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 17a67449-7a55-43d9-9e29-3bd3cd17607d
+version: 1.0.0
+dataset_uuid: 14cdaed5-905e-499a-b020-13e1b54097c8

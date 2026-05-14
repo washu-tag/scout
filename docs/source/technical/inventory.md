@@ -761,6 +761,30 @@ grafana_smtp_skip_verify: false
 grafana_email_recipients: ['admin@example.com']
 ```
 
+#### Superset Dashboards
+
+Scout ships its Superset dashboards via a separate Helm chart
+(`helm/scout-dashboards/`). The Scout main dashboard is always installed;
+two additional dashboards are opt-in per inventory.
+
+```yaml
+# Built-in dashboard bundles to install. The Scout core dashboard always
+# ships. Add bundle names to install more.
+#   core      - Scout main dashboard (default)
+#   quality   - Quality & TAT dashboard
+#   followup  - Follow-up Detection dashboard
+scout_dashboard_bundles:
+  - core
+  - quality
+  - followup
+```
+
+Removing a bundle stops **new** installs from receiving its assets, but
+**does not** delete already-imported assets from existing Superset
+installations (the import Job is one-way; drop unwanted assets via the
+Superset UI). For site-specific dashboards see the README in
+`helm/scout-dashboards/`.
+
 #### Ollama Models
 
 Specify which AI models to pull automatically:
