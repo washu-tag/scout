@@ -138,10 +138,13 @@ jobs:
         run: cd ansible && pytest tests/unit/filter_plugins/ -v
       - name: 'Unit tests: Open WebUI link sanitizer filter'
         shell: bash
-        run: cd ansible/roles/open-webui/files && pytest test_link_sanitizer_filter.py -v
+        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_link_sanitizer_filter.py -v
       - name: 'Unit tests: Open WebUI context summarization filter'
         shell: bash
-        run: cd ansible/roles/open-webui/files && pytest test_context_summarization_filter.py -v
+        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_context_summarization_filter.py -v
+      - name: 'Unit tests: Open WebUI tool result attribute migrator filter'
+        shell: bash
+        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_tool_result_attr_filter.py -v
       - name: 'Unit tests: verify-node'
         shell: bash
         run: cd verify-node && pytest tests/ -v

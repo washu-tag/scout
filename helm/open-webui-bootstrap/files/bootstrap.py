@@ -62,13 +62,20 @@ BOOTSTRAP_PASSWORD = hashlib.sha256(
 def http(method, path, body=None, token=None):
     """Call OWUI and return (status_code, response_body_text)."""
     url = f"{OWUI_BASE}{path}"
+    # urllib.urlopen accepts file://, ftp://, etc. by default. OWUI_BASE comes
+    # from chart values (always http://open-webui:80 in Scout) and `path` is
+    # hardcoded below — so this is defense in depth, not a real attack surface,
+    # but the allowlist makes the intent explicit and quiets static-analysis
+    # warnings about urllib + dynamic URLs.
+    if not url.startswith(("http://", "https://")):
+        raise ValueError(f"Refusing to call non-HTTP(S) URL: {url}")
     headers = {"Content-Type": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     data = json.dumps(body).encode("utf-8") if body is not None else None
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
+        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:  # noqa: S310
             return resp.status, resp.read().decode("utf-8")
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode("utf-8")
