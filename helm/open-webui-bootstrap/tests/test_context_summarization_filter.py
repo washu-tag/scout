@@ -2,8 +2,9 @@
 Unit tests for context_summarization_filter.
 
 Run with:
-    cd ansible/roles/open-webui/files
-    uvx --with tiktoken --with httpx --with pydantic --with pytest-asyncio pytest test_context_summarization_filter.py -v
+    cd helm/open-webui-bootstrap
+    PYTHONPATH=files/payloads uvx --with tiktoken --with httpx --with pydantic --with pytest-asyncio \
+        pytest tests/test_context_summarization_filter.py -v
 
 Message Format (verified via debug filter 2024-12):
     The inlet() function receives messages in a simplified format:

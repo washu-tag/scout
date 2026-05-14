@@ -175,7 +175,7 @@ kubectl exec -n scout-analytics open-webui-0 -- curl -s http://localhost:8080/ap
 
 **Note (PersistentConfig semantics):** OWUI stores tool servers, RAG template, default/task model IDs, etc. in its Postgres `config` table as PersistentConfig — naively, env-var changes after first launch are silent no-ops because the admin UI is authoritative.
 
-The bootstrap Job side-steps this by POSTing those fields through OWUI's REST API on every Helm install/upgrade (`/api/v1/configs/tool_servers`, `/api/v1/retrieval/config/update`, `/api/v1/configs/models`, `/api/v1/tasks/config/update`). So `tool_server_connections`, `open_webui_rag_template_file`, `open_webui_default_model_id`, and `open_webui_task_model_id` ARE fully declarative — change inventory, `make install-chat`, done.
+The bootstrap Job side-steps this by POSTing those fields through OWUI's REST API on every Helm install/upgrade (`/api/v1/configs/tool_servers`, `/api/v1/configs/models`, `/api/v1/tasks/config/update`). So `tool_server_connections`, `open_webui_default_model_id`, and `open_webui_task_model_id` ARE fully declarative — change inventory, `make install-chat`, done. (`RAG_TEMPLATE` isn't pushed: Scout Explorer models use `function_calling: native`, which bypasses OWUI's RAG auto-injection — see "Schema reference in the system prompt" below.)
 
 Fields that remain genuinely seed-only (set once at first launch via Helm extraEnvVars, expected stable thereafter): `WEBUI_URL` (derived from `server_hostname`), `ENABLE_EVALUATION_ARENA_MODELS`, `ENABLE_SIGNUP`, `ENABLE_LOGIN_FORM`, `ENABLE_COMMUNITY_SHARING`. If you ever need to flip one of these on an existing cluster, delete its row from `config` in OWUI's Postgres and restart the OWUI pod — env will re-seed on next boot. (Wiping the OWUI PVC does **not** re-seed — PersistentConfig lives in Postgres, not the PVC.)
 
@@ -183,16 +183,16 @@ OAuth fields (`OAUTH_*`, `OPENID_*`) are env-only because `ENABLE_OAUTH_PERSISTE
 
 #### 3. Schema reference in the system prompt
 
-Scout's models run with `function_calling: native`, and OWUI's RAG auto-injection path is gated on `function_calling != 'native'`. Attached knowledge collections only surface via LLM-initiated `list_knowledge` / `query_knowledge_files` tool calls — which thinking-mode models often skip. To guarantee the schema is in context every turn, the database schema reference and charting-output instructions are **inlined into the system prompt file** (`files/scout-system-prompt.md`).
+Scout's models run with `function_calling: native`, and OWUI's RAG auto-injection path is gated on `function_calling != 'native'`. Attached knowledge collections only surface via LLM-initiated `list_knowledge` / `query_knowledge_files` tool calls — which thinking-mode models often skip. To guarantee the schema is in context every turn, the database schema reference and charting-output instructions are **inlined into the system prompt file** (`helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`).
 
-To update the schema reference, edit `files/scout-system-prompt.md` directly. The `docs/source/dataschema.md` doc remains the canonical reference for humans and notebooks; the prompt is a trimmed, query-focused subset.
+To update the schema reference, edit `helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md` directly. The `docs/source/dataschema.md` doc remains the canonical reference for humans and notebooks; the prompt is a trimmed, query-focused subset.
 
 #### 4. Configure Scout Explorer model — automated
 
 For every `scout_models` entry with a `ui:` block (or for every entry when defaults apply), the role creates/updates a Scout Explorer OWUI model with:
 
 - Display name and description
-- System prompt (`files/scout-system-prompt.md`, with the schema reference inlined)
+- System prompt (`helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`, with the schema reference inlined)
 - Tool reference (`server:mcp:{scout-db}` — the Trino MCP server registered in step 2)
 - Suggestion prompts (the starter prompts that show up on a new chat)
 - Profile image (the Scout logo)
@@ -333,9 +333,9 @@ kubectl exec -n scout-analytics deploy/ollama -- ollama list
 
 - **Main Scout Docs**: https://washu-scout.readthedocs.io/
 - **Open WebUI Docs**: https://docs.openwebui.com/
-- **Scout Query Prompt**: `files/scout-system-prompt.md`
-- **Link Sanitizer Filter**: `files/link_sanitizer_filter.py`
-- **Context Summarization Filter**: `files/context_summarization_filter.py`
+- **Scout Query Prompt**: `helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md`
+- **Link Sanitizer Filter**: `helm/open-webui-bootstrap/files/payloads/link_sanitizer_filter.py`
+- **Context Summarization Filter**: `helm/open-webui-bootstrap/files/payloads/context_summarization_filter.py`
 - **ADRs**:
   - [ADR 0009: Content Security Policy](../../../docs/internal/adr/0009-open-webui-content-security-policy.md)
   - [ADR 0010: Link Exfiltration Filter](../../../docs/internal/adr/0010-open-webui-link-exfiltration-filter.md)

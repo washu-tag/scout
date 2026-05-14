@@ -1,5 +1,13 @@
 nameOverride: ''
 namespaceOverride: ''
+
+# Pin the OWUI image explicitly rather than relying on the chart's default
+# (which floats with chart appVersion). Same tag is reused by the
+# open-webui-bootstrap Job — see versions.yaml for the rationale.
+image:
+  repository: ghcr.io/open-webui/open-webui
+  tag: '{{ open_webui_image_tag }}'
+
 ollama:
   # -- Automatically install Ollama Helm chart from https://otwld.github.io/ollama-helm/. Use [Helm Values](https://github.com/otwld/ollama-helm/#helm-values) to configure
   enabled: true

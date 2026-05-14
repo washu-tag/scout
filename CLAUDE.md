@@ -532,7 +532,7 @@ ADRs in `docs/internal/adr/` document significant architectural decisions. Consu
 - **Operator-managed**: PostgreSQL (CloudNativePG), Cassandra (K8ssandra), Elasticsearch (ECK)
 
 ### Common Modification Patterns
-- **Add HL7 field**: Update `extractor/hl7-transformer/` parser, update `docs/source/dataschema.md`, and update the "Tables & Columns Reference" section in `ansible/roles/open-webui/files/scout-system-prompt.md` so the Scout Explorer model sees the new field (OWUI's RAG auto-injection is bypassed under native function-calling, so schema docs are inlined into the prompt instead of attached as knowledge)
+- **Add HL7 field**: Update `extractor/hl7-transformer/` parser, update `docs/source/dataschema.md`, and update the "Tables & Columns Reference" section in `helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md` so the Scout Explorer model sees the new field (OWUI's RAG auto-injection is bypassed under native function-calling, so schema docs are inlined into the prompt instead of attached as knowledge)
 - **Modify workflow**: Edit TypeScript in `orchestrator/`, redeploy extractor role
 - **Adjust resources**: Override in `inventory.yaml` (JVM heap, CPU, memory, storage)
 - **Add dashboard**: Create in Grafana UI, export JSON to `ansible/roles/grafana/files/dashboards/`

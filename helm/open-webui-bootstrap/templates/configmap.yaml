@@ -5,19 +5,97 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "open-webui-bootstrap.labels" . | nindent 4 }}
-  annotations:
-    # Pre-install/pre-upgrade so the ConfigMap exists before the post-install
-    # Job tries to mount it. before-hook-creation delete-policy replaces the
-    # CM on every upgrade so payload edits propagate.
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "1"
-    "helm.sh/hook-delete-policy": before-hook-creation
+# Tracked as a regular release resource (not a Helm hook) so it's updated on
+# `helm upgrade` and deleted on `helm uninstall`. The post-install/post-upgrade
+# Job that mounts this CM runs after regular resources are applied, so the CM
+# is in place before the Job starts. Payload edits propagate via the Job's
+# checksum/config annotation, which forces the Job to be recreated.
 data:
   bootstrap.py: |-
 {{ .Files.Get "files/bootstrap.py" | indent 4 }}
+
+  # PersistentConfig fields re-pushed on every run.
   persistent_config.json: |-
-    {{ .Values.persistentConfig | toJson }}
+    {{ dict
+        "tool_server_connections" (.Values.persistentConfig.tool_server_connections | default list)
+        "default_model_id" (.Values.persistentConfig.default_model_id | default "")
+        "task_model_id" (.Values.persistentConfig.task_model_id | default "")
+    | toJson }}
+
+  # Filter function payloads — bootstrap.py inlines each entry's content_file
+  # contents as the function `content` before POSTing to /api/v1/functions.
+  # `dig` is used for boolean fields because Helm's `default` treats `false`
+  # as "value missing" and returns the default — biting any user who sets
+  # `enable_active: false` expecting the filter to stay disabled.
   filters.json: |-
-    {{ .Values.filterFunctions | toJson }}
+    {{- $filters := list -}}
+    {{- range $f := .Values.filterFunctions -}}
+    {{- $filters = append $filters (dict
+        "id" $f.id
+        "name" $f.name
+        "description" (default "" $f.description)
+        "content_file" $f.source_file
+        "enable_global" (dig "enable_global" false $f)
+        "enable_active" (dig "enable_active" true $f)
+        "valves" (default (dict) $f.valves)
+    ) -}}
+    {{- end }}
+    {{ $filters | toJson }}
+
+  # Scout Explorer model payloads — one per scoutModels[].ui entry, plus a
+  # hide-base override per raw Ollama tag (unless hideBaseModels=false or the
+  # base name equals the explorer id). bootstrap.py inlines params.system_file
+  # as params.system before POSTing to /api/v1/models.
   models.json: |-
-    {{ .Values.models | toJson }}
+    {{- $defaults := .Values.scoutDefaults -}}
+    {{- $profile := printf "data:image/png;base64,%s" ($.Files.Get (printf "files/payloads/%s" $defaults.profileImageFile)) -}}
+    {{- $hideBase := dig "hideBaseModels" true $defaults -}}
+    {{- $models := list -}}
+    {{- range $m := .Values.scoutModels -}}
+    {{- if $m.ui -}}
+    {{- $modelId := default $m.name $m.ui.id -}}
+    {{- /* dig (not default) because preload: false would otherwise be coerced to true */ -}}
+    {{- $preload := dig "preload" true $m -}}
+    {{- $keepDefault := ternary $defaults.keepAliveResident $defaults.keepAliveCold $preload -}}
+    {{- $models = append $models (dict
+        "id" $modelId
+        "base_model_id" nil
+        "name" $m.ui.name
+        "meta" (dict
+            "profile_image_url" (default $profile $m.ui.profile_image_url)
+            "description" (default "" $m.ui.description)
+            "toolIds" (default $defaults.toolIds $m.ui.tool_ids)
+            "suggestion_prompts" (default $defaults.suggestionPrompts $m.ui.suggestion_prompts)
+            "capabilities" (default $defaults.capabilities $m.ui.capabilities)
+            "builtinTools" (default $defaults.builtinTools $m.ui.builtin_tools)
+        )
+        "params" (dict
+            "system_file" $defaults.systemPromptFile
+            "function_calling" (default $defaults.functionCalling $m.ui.function_calling)
+            "reasoning_effort" (default $defaults.reasoningEffort $m.ui.reasoning_effort)
+            "keep_alive" (default $keepDefault $m.ui.keep_alive)
+        )
+        "is_active" true
+    ) -}}
+    {{- if and $hideBase (ne $m.base $modelId) -}}
+    {{- $models = append $models (dict
+        "id" $m.base
+        "base_model_id" nil
+        "name" $m.base
+        "meta" (dict)
+        "params" (dict)
+        "is_active" false
+    ) -}}
+    {{- end -}}
+    {{- end -}}
+    {{- end }}
+    {{ $models | toJson }}
+
+  # Payload files referenced by filters.json[].content_file and
+  # models.json[].params.system_file — globbed straight from the chart's
+  # files/payloads/ directory so adding a new file there + referencing it
+  # from inventory just works.
+{{- range $path, $_ := .Files.Glob "files/payloads/*" }}
+  {{ base $path }}: |-
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}

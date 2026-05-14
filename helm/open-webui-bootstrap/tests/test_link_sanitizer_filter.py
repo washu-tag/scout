@@ -2,8 +2,9 @@
 Unit tests for link_sanitizer_filter.
 
 Run with:
-    cd ansible/roles/open-webui/files
-    uvx --with pytest-asyncio --with pydantic pytest test_link_sanitizer_filter.py -v
+    cd helm/open-webui-bootstrap
+    PYTHONPATH=files/payloads uvx --with pytest-asyncio --with pydantic \
+        pytest tests/test_link_sanitizer_filter.py -v
 """
 
 import pytest

@@ -92,8 +92,14 @@ jupyter_helm_chart_version: ~4.3.0
 # AI & ML
 # renovate: datasource=helm registryUrl=https://helm.openwebui.com/ depName=open-webui
 open_webui_helm_chart_version: ~14.5.0
+# Must track the OWUI chart's appVersion above. The bootstrap Job
+# (helm/open-webui-bootstrap) reuses this image so its password-migration step
+# can `import open_webui.internal.db` against the same SQLAlchemy models +
+# bcrypt version the running OWUI pod uses. Bump together with the chart.
+# renovate: datasource=docker depName=ghcr.io/open-webui/open-webui
+open_webui_image_tag: 0.9.5
 # renovate: datasource=docker depName=ollama/ollama
-ollama_image_tag: 0.22.1
+ollama_image_tag: 0.23.4
 
 # Monitoring & Observability - Prometheus
 # renovate: datasource=helm registryUrl=https://prometheus-community.github.io/helm-charts depName=kube-prometheus-stack

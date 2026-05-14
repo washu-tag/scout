@@ -1,7 +1,9 @@
 # Image — must match OWUI's deployed image. The bootstrap Job reuses OWUI's
 # own container so the password-migration step can `import open_webui.internal.db`
 # and `open_webui.models.auths` (same modules the app uses), and so the Python
-# version + bcrypt version are guaranteed to match.
+# version + bcrypt version are guaranteed to match. In a Scout deployment,
+# Ansible overrides `image.tag` from `open_webui_image_tag` in versions.yaml;
+# the literal default below is a fallback for standalone chart use.
 image:
   repository: ghcr.io/open-webui/open-webui
   tag: '0.9.5'
@@ -43,25 +45,44 @@ resources:
     cpu: 1
     memory: 512Mi
 
-# --- PAYLOADS — rendered by Ansible from inventory --------------------------
-# Each block becomes one JSON file in the mounted ConfigMap; bootstrap.py
-# reads them by name. Empty defaults render to empty arrays/strings so the
-# chart installs cleanly even with no configuration.
+# --- PAYLOADS — raw inventory shapes, rendered into ConfigMap JSON by the
+# chart's configmap.yaml template. Files referenced from these (filter source
+# code via source_file, system prompt + profile image via scoutDefaults) live
+# in this chart's files/payloads/ directory and are auto-included as separate
+# ConfigMap keys.
 
-# PersistentConfig fields to re-push on every run (OWUI is seed-only otherwise).
+# PersistentConfig fields re-pushed on every run (OWUI is seed-only otherwise).
 persistentConfig:
   tool_server_connections: []
-  rag_template: ''
   default_model_id: ''
   task_model_id: ''
 
-# OWUI Functions (filter / pipe / action). Each entry: id, name, description,
-# content (full source code, inline), enable_global, enable_active, valves.
+# OWUI Functions (filter / pipe / action). Each entry mirrors the inventory
+# shape: id, name, description, source_file (a filename in files/payloads/),
+# enable_global, enable_active, valves. The chart transforms these into
+# bootstrap-ready filter payloads (`source_file` → `content_file`, defaulting
+# of optional fields). Empty list = skip filter seeding.
 filterFunctions: []
 
-# OWUI custom models. Each entry: complete ModelForm payload (id,
-# base_model_id, name, meta{description,profile_image_url,toolIds,builtinTools,
-# suggestion_prompts,capabilities}, params{system,function_calling,
-# reasoning_effort,keep_alive}, is_active). The Ansible role builds these
-# from scout_models[].ui blocks plus the open_webui_scout_default_* fields.
-models: []
+# Scout custom models, raw inventory shape: name, base, num_ctx, num_keep,
+# num_predict, preload (default true), ui: {id?, name, description?, ...}.
+# Without `ui:`, an entry is left as a plain Ollama tag. The chart emits one
+# Scout Explorer entry per ui block and a hide-base override per raw Ollama
+# tag (unless scoutDefaults.hideBaseModels is false or base == id).
+scoutModels: []
+
+# Defaults applied to every Scout Explorer model. Per-entry `ui:` overrides
+# always win. Mirrors the open_webui_scout_default_* role variables that
+# Ansible passes through.
+scoutDefaults:
+  systemPromptFile: scout-system-prompt.md
+  profileImageFile: scout-logo-128.png.b64
+  toolIds: []
+  suggestionPrompts: []
+  capabilities: {}
+  builtinTools: {}
+  functionCalling: native
+  reasoningEffort: high
+  keepAliveResident: '-1'
+  keepAliveCold: '5m'
+  hideBaseModels: true

@@ -11,8 +11,10 @@ Five phases:
    where `open_webui_secret_key` was rotated).
 2. Signin or signup. Mint an admin JWT against OWUI's in-cluster Service.
    Falls through to /signup on a truly empty DB (gated by ENABLE_INITIAL_ADMIN_SIGNUP).
-3. PersistentConfig re-push. Tool servers (full overwrite), RAG template
-   (partial), DEFAULT_MODELS + TASK_MODEL (GET-merge-POST to preserve siblings).
+3. PersistentConfig re-push. Tool servers (full overwrite); DEFAULT_MODELS
+   + TASK_MODEL (GET-merge-POST to preserve siblings). RAG template is not
+   pushed — Scout Explorer models use function_calling: native, which
+   bypasses OWUI's RAG auto-injection path entirely.
 4. Filter functions. Idempotent GET-create-or-update; then set valves and
    toggle global+active to the desired state.
 5. Custom models. Idempotent GET-create-or-update one per scout_models[].ui
@@ -25,10 +27,14 @@ Inputs (from env, set by the Job spec):
   WEBUI_SECRET_KEY       — used to derive the bootstrap password
 
 Inputs (from /app/config/, mounted from a ConfigMap the chart renders):
-  persistent_config.json — dict with tool_server_connections / rag_template /
-                           default_model_id / task_model_id (any subset)
-  filters.json           — list of filter-function specs
-  models.json            — list of ModelForm payloads
+  persistent_config.json — dict with tool_server_connections / default_model_id
+                           / task_model_id (any subset)
+  filters.json           — list of filter-function specs; each entry's
+                           `content_file` names a sibling file in /app/config/
+                           whose contents are inlined as the filter `content`.
+  models.json            — list of ModelForm payloads; each entry's
+                           `params.system_file` names a sibling file whose
+                           contents are inlined as `params.system`.
 """
 
 import hashlib
@@ -77,6 +83,19 @@ def load_config(filename):
         return None
     with open(path, encoding="utf-8") as f:
         return json.load(f)
+
+
+def load_text(filename):
+    """Read /app/config/<filename> as raw text.
+
+    Used to resolve filter `content_file` and model `params.system_file`
+    references in the JSON payloads — bootstrap.py inlines these as `content`
+    / `params.system` before POSTing to OWUI. Missing file is fatal: the
+    payload references it explicitly, so silent skip would mask a bug.
+    """
+    path = os.path.join(CONFIG_DIR, filename)
+    with open(path, encoding="utf-8") as f:
+        return f.read()
 
 
 def migrate_password():
@@ -173,17 +192,6 @@ def push_persistent_config(token):
             f'  tool_server_connections: pushed {len(cfg["tool_server_connections"])} entries'
         )
 
-    # RAG template — partial works because the handler null-merges siblings.
-    if cfg.get("rag_template"):
-        code, body = http(
-            "POST",
-            "/api/v1/retrieval/config/update",
-            {"RAG_TEMPLATE": cfg["rag_template"]},
-            token,
-        )
-        assert_2xx("POST", "/api/v1/retrieval/config/update", code, body)
-        print(f'  rag_template: pushed ({len(cfg["rag_template"])} chars)')
-
     # DEFAULT_MODELS — handler unconditionally assigns; GET-merge-POST.
     if cfg.get("default_model_id"):
         code, body = http("GET", "/api/v1/configs/models", token=token)
@@ -214,7 +222,7 @@ def push_filter_functions(token):
         payload = {
             "id": fn_id,
             "name": fn["name"],
-            "content": fn["content"],
+            "content": load_text(fn["content_file"]),
             "meta": {"description": fn.get("description", "")},
         }
         if code == 200:
@@ -261,6 +269,13 @@ def push_models(token):
     for m in models:
         if not m.get("id"):
             raise RuntimeError(f"model payload missing id: {m}")
+        # Inline the system prompt from its referenced file. Keeps the JSON
+        # payload small and avoids duplicating ~24 KB of prompt across every
+        # Scout Explorer entry. Hide-base entries leave `params` empty, so
+        # there's nothing to inline for them.
+        system_file = m.get("params", {}).pop("system_file", None)
+        if system_file:
+            m["params"]["system"] = load_text(system_file)
         model_id_q = urllib.parse.quote(m["id"])
         code, _ = http("GET", f"/api/v1/models/model?id={model_id_q}", token=token)
         if code == 200:

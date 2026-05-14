@@ -12,7 +12,12 @@ metadata:
     checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "5"
-    "helm.sh/hook-delete-policy": before-hook-creation
+    # before-hook-creation: clears any leftover Job from a previous failed run
+    # before installing the new one (Jobs are immutable, can't be patched).
+    # hook-succeeded: garbage-collect the Job once it completes successfully —
+    # keeps `kubectl get jobs` tidy and avoids orphans in ArgoCD diff views.
+    # On failure the Job sticks around for diagnostics until ttlSecondsAfterFinished.
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
   backoffLimit: {{ .Values.backoffLimit }}
