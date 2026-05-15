@@ -371,12 +371,13 @@ class MappingTableExtractor:
             ).dropDuplicates(["primary_report_identifier"])
         )
 
-        self.merge_to_dt(reports_with_partial_existing_match_df)
-
-        activity.logger.info(
-            "Merged %s mapping records with partial existing matches",
-            reports_with_partial_existing_match_df.count(),
-        )
+        partial_match_count = reports_with_partial_existing_match_df.count()
+        if partial_match_count > 0:
+            self.merge_to_dt(reports_with_partial_existing_match_df)
+            activity.logger.info(
+                "Merged %d mapping records with partial existing matches",
+                partial_match_count,
+            )
 
         reports_with_no_existing_match_df = self.cache(
             reports_with_single_id_df.join(
@@ -394,12 +395,16 @@ class MappingTableExtractor:
             )
         )
 
-        self.merge_to_dt(reports_with_no_existing_match_df)
+        no_match_count = reports_with_no_existing_match_df.count()
+        if no_match_count > 0:
+            self.merge_to_dt(reports_with_no_existing_match_df)
+            activity.logger.info(
+                "Merged %d mapping records with no partial existing matches",
+                no_match_count,
+            )
 
-        activity.logger.info(
-            "Merged %s mapping records with no partial existing matches",
-            reports_with_no_existing_match_df.count(),
-        )
+        if partial_match_count > 0 or no_match_count > 0:
+            self.recache_existing_mapping()
 
         activity.logger.info("Stage 3 completed on mapping table derivation")
 
