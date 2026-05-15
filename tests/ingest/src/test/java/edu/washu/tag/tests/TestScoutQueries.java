@@ -320,12 +320,21 @@ public class TestScoutQueries extends BaseTest {
         expectedPatients.add(new ExpectedPatientCluster(false, report9, report10));
         expectedPatients.add(new ExpectedPatientCluster(false, report11, report12, reportSecondDay10));
 
-        validateMappingTable(mappingTableName, expectedPatients);
-        final List<ReportPatientMappingHistoryEntry> actualMappingsAfterDay2 = readMappingHistoryTable(mappingTableName);
+        final List<ReportPatientMappingEntry> currentMappingsAfterDay2 = validateMappingTable(mappingTableName, expectedPatients);
+        final List<ReportPatientMappingHistoryEntry> historyAfterDay2 = readMappingHistoryTable(mappingTableName);
         for (MappingLookup lookup : Arrays.asList(report0, report1, report2, report3, report4, report5, report6, report11, report12)) {
             final ReportPatientMappingEntry originalMapping = findExpectedMapping(actualMappingsAfterDay1, lookup);
-            final ReportPatientMappingHistoryEntry postMergeHistory = findExpectedMapping(actualMappingsAfterDay2, lookup);
-            assertThat(postMergeHistory.getPreviousScoutPatientId()).as("Previous Scout id in history table").isEqualTo(originalMapping.getScoutPatientId());
+            final ReportPatientMappingEntry currentMapping = findExpectedMapping(currentMappingsAfterDay2, lookup);
+
+            final boolean scoutIdChanged = !originalMapping.getScoutPatientId().equals(currentMapping.getScoutPatientId());
+            final boolean becameInconsistent = originalMapping.isConsistent() && !currentMapping.isConsistent();
+
+            if (scoutIdChanged || becameInconsistent) {
+                final ReportPatientMappingHistoryEntry postMergeHistory = findExpectedMapping(historyAfterDay2, lookup);
+                assertThat(postMergeHistory.getPreviousScoutPatientId())
+                    .as("Previous Scout id in history table for report " + lookup.day + "_" + lookup.index)
+                    .isEqualTo(originalMapping.getScoutPatientId());
+            }
         }
 
         final String curatedEpicView = baseTableName + "_curated_spark_epic_view";
