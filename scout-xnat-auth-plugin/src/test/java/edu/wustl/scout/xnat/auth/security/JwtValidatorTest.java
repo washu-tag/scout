@@ -44,7 +44,7 @@ public class JwtValidatorTest {
                 .build();
         privateKey = (RSAPrivateKey) signingKey.toRSAPrivateKey();
         jwkSource = new ImmutableJWKSet<>(new JWKSet(signingKey.toPublicJWK()));
-        validator = new JwtValidator(ISSUER, jwkSource);
+        validator = new DefaultJwtValidator(ISSUER, jwkSource);
     }
 
     @Test

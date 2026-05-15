@@ -36,7 +36,7 @@ public class TokenExchangeServiceTest {
 
     private ScoutAuthProperties properties;
     private RestTemplate restTemplate;
-    private Cache<String, TokenExchangeService.CachedExchange> cache;
+    private Cache<String, DefaultTokenExchangeService.CachedExchange> cache;
     private TokenExchangeService service;
 
     @Before
@@ -48,7 +48,7 @@ public class TokenExchangeServiceTest {
 
         restTemplate = mock(RestTemplate.class);
         cache = CacheBuilder.newBuilder().maximumSize(8).build();
-        service = new TokenExchangeService(properties, restTemplate, cache);
+        service = new DefaultTokenExchangeService(properties, restTemplate, cache);
     }
 
     @Test
@@ -70,7 +70,7 @@ public class TokenExchangeServiceTest {
         assertEquals(null, body.getFirst("audience"));
 
         HttpHeaders headers = entity.getHeaders();
-        assertEquals(TokenExchangeService.basicAuth(CLIENT_ID, CLIENT_SECRET),
+        assertEquals(DefaultTokenExchangeService.basicAuth(CLIENT_ID, CLIENT_SECRET),
                 headers.getFirst(HttpHeaders.AUTHORIZATION));
     }
 
@@ -169,9 +169,9 @@ public class TokenExchangeServiceTest {
 
     @Test
     public void sha256Hex_isStableAndDistinct() {
-        String a = TokenExchangeService.sha256Hex("alpha");
-        String b = TokenExchangeService.sha256Hex("alpha");
-        String c = TokenExchangeService.sha256Hex("beta");
+        String a = DefaultTokenExchangeService.sha256Hex("alpha");
+        String b = DefaultTokenExchangeService.sha256Hex("alpha");
+        String c = DefaultTokenExchangeService.sha256Hex("beta");
         assertEquals(64, a.length());
         assertEquals(a, b);
         assertNotEquals(a, c);
