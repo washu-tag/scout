@@ -29,12 +29,18 @@ Usage (service, per-request token from a header)::
 """
 
 from .client import connect
-from .errors import ScoutXnatAuthError
+from .errors import (
+    ScoutXnatAuthError,
+    XnatBearerRejectedError,
+    XnatUnreachableError,
+)
 from .token_providers import JupyterHubTokenProvider, TokenProvider
 
 __all__ = [
     "connect",
     "ScoutXnatAuthError",
+    "XnatBearerRejectedError",
+    "XnatUnreachableError",
     "TokenProvider",
     "JupyterHubTokenProvider",
 ]

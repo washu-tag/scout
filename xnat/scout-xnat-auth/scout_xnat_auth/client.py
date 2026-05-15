@@ -7,7 +7,11 @@ from typing import Any, Optional
 import requests
 import xnat
 
-from .errors import ScoutXnatAuthError
+from .errors import (
+    ScoutXnatAuthError,
+    XnatBearerRejectedError,
+    XnatUnreachableError,
+)
 from .retry import install_refresh_hook
 from .token_providers import JupyterHubTokenProvider, TokenProvider
 
@@ -24,9 +28,9 @@ def _mint_jsessionid(server: str, token: str, verify: Any = True) -> str:
             allow_redirects=False,
         )
     except requests.RequestException as exc:
-        raise ScoutXnatAuthError(f"XNAT unreachable at {server}: {exc}") from exc
+        raise XnatUnreachableError(f"XNAT unreachable at {server}: {exc}") from exc
     if resp.status_code in (401, 403):
-        raise ScoutXnatAuthError(
+        raise XnatBearerRejectedError(
             f"XNAT rejected the bearer token ({resp.status_code}). "
             "User probably lacks the xnat-access role; check Keycloak group "
             "membership for scout-user."
