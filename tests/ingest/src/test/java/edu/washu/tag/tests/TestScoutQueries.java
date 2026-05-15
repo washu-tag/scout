@@ -325,7 +325,7 @@ public class TestScoutQueries extends BaseTest {
         for (MappingLookup lookup : Arrays.asList(report0, report1, report2, report3, report4, report5, report6, report11, report12)) {
             final ReportPatientMappingEntry originalMapping = findExpectedMapping(actualMappingsAfterDay1, lookup);
             final ReportPatientMappingHistoryEntry postMergeHistory = findExpectedMapping(actualMappingsAfterDay2, lookup);
-            assertThat(postMergeHistory.getPreviousScoutId()).as("Previous Scout id in history table").isEqualTo(originalMapping.getScoutPatientId());
+            assertThat(postMergeHistory.getPreviousScoutPatientId()).as("Previous Scout id in history table").isEqualTo(originalMapping.getScoutPatientId());
         }
 
         final String curatedEpicView = baseTableName + "_curated_spark_epic_view";

@@ -6,14 +6,14 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class ReportPatientMappingHistoryEntry extends ReportPatientMappingEntry {
 
-    private String previousScoutId;
+    private String previousScoutPatientId;
 
-    public String getPreviousScoutId() {
-        return previousScoutId;
+    public String getPreviousScoutPatientId() {
+        return previousScoutPatientId;
     }
 
-    public void setPreviousScoutId(String previousScoutId) {
-        this.previousScoutId = previousScoutId;
+    public void setPreviousScoutPatientId(String previousScoutPatientId) {
+        this.previousScoutPatientId = previousScoutPatientId;
     }
     
 }
