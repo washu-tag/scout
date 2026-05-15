@@ -1,18 +1,24 @@
-# xnat-scout-auth-plugin
+# scout-xnat-auth-plugin
+
+> **Status: checked in for review.** This plugin is the output of a
+> POC that explored how XNAT could be integrated into Scout's auth
+> posture. Scout doesn't deploy XNAT in `main` yet, so nothing in the
+> deployed cluster loads this plugin today. The code and tests are
+> in-tree so reviewers can read it, comment on it, and so the work
+> isn't lost while the broader integration decision is pending. The
+> matching Keycloak realm changes, the `xnat-values.yaml` helm values
+> that install the plugin, and the deployment runbooks all live on
+> the original POC branch (`xnat-dev-wt`).
 
 XNAT plugin that integrates XNAT into Scout's auth posture:
 
 - **`HeaderTrustFilter`** — trusts oauth2-proxy's `X-Auth-Request-*`
   identity headers for browser-path traffic. Provisions the matching
   XNAT user on first sight via `UserProvisioningService`.
-- **`BearerTokenFilter`** — currently a Phase A stub. Phase B will fill
-  it in to validate Keycloak JWTs, exchange them via Keycloak's
-  Standard Token Exchange V2 to an `xnat`-audience token, and provision
-  the user.
-
-Plan: see `docs/internal/xnat-auth-implementation-plan.md`.
-
-Deploy runbook: see `docs/internal/xnat-auth-phase-a-runbook.md`.
+- **`BearerTokenFilter`** — validates Keycloak JWTs from
+  `Authorization: Bearer …`, exchanges them via Keycloak's Standard
+  Token Exchange V2 for an `xnat`-audience token, validates that, and
+  provisions the user.
 
 ## Build
 
@@ -21,22 +27,24 @@ JAVA_HOME=$(/usr/libexec/java_home -v 1.8) PATH=$JAVA_HOME/bin:$PATH \
   ./gradlew --no-daemon xnatPluginJar
 ```
 
-Output: `build/libs/xnat-scout-auth-plugin-0.1.0-SNAPSHOT-xpl.jar`.
+Output: `build/libs/scout-xnat-auth-plugin-0.1.0-SNAPSHOT-xpl.jar`.
 
-Gradle 7.5.1 needs Java 8–18. Java 22 fails with `Unsupported class
-file major version 66`.
+Gradle 8.10.2 (vendored as the wrapper) needs Java 8–22.
 
 ## Layout
 
 ```
 src/main/java/edu/wustl/scout/xnat/auth/
 ├── ScoutAuthPlugin.java                 # @XnatPlugin discovery seam
+├── ScoutAuthConfig.java                 # @Configuration; @Beans for filters + services
 ├── ScoutAuthProperties.java             # Spring @Value config
 ├── model/ScoutIdentity.java             # normalized {sub, email, roles, groups}
 ├── security/
 │   ├── ScoutSecurityExtension.java      # extends BaseXnatSecurityExtension
 │   ├── HeaderTrustFilter.java           # OncePerRequestFilter, oauth2-proxy headers
-│   ├── BearerTokenFilter.java           # OncePerRequestFilter, Phase B stub
+│   ├── BearerTokenFilter.java           # OncePerRequestFilter, JWT + STX V2 + provision
+│   ├── JwtValidator.java                # Nimbus-backed JWT/JWKS validator
+│   ├── TokenExchangeService.java        # STX V2 client + Guava cache
 │   └── ScoutAuthenticationToken.java
 └── service/
     └── UserProvisioningService.java     # XNAT user lookup/create + role gate
@@ -49,11 +57,11 @@ Properties consumed via Spring `@Value` and read from
 
 | Property | Default | Purpose |
 | --- | --- | --- |
-| `scout.keycloak.issuer` | (empty) | Phase B: JWT issuer to validate against |
-| `scout.keycloak.jwks_uri` | (empty) | Phase B: JWKS endpoint |
-| `scout.keycloak.token_uri` | (empty) | Phase B: token-exchange endpoint |
-| `scout.keycloak.client_id` | `xnat` | Phase B: STX target client |
-| `scout.keycloak.client_secret` | (empty) | Phase B: STX client auth |
+| `scout.keycloak.issuer` | (empty) | JWT issuer to validate against |
+| `scout.keycloak.jwks_uri` | (empty) | JWKS endpoint |
+| `scout.keycloak.token_uri` | (empty) | Token-exchange endpoint (public hostname) |
+| `scout.keycloak.client_id` | `xnat` | STX target client |
+| `scout.keycloak.client_secret` | (empty) | STX client auth |
 | `scout.keycloak.required_role` | `xnat-access` | Required role on validated identity |
 | `scout.headers.user_header` | `X-Auth-Request-User` | oauth2-proxy preferred_username |
 | `scout.headers.email_header` | `X-Auth-Request-Email` | oauth2-proxy email |
