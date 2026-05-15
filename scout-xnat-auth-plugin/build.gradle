@@ -1,4 +1,4 @@
-// xnat-scout-auth-plugin: build.gradle
+// scout-xnat-auth-plugin: build.gradle
 //
 // Structure cribbed from xnat-openid-auth-plugin (1.4.x). XNAT plugin SDK
 // version is pinned to match the XNAT release we're deploying against.
