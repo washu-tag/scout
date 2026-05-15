@@ -43,7 +43,7 @@ def install_refresh_hook(
             new_token = token_provider()
             new_jsession = mint_jsessionid(server, new_token, verify)
         except ScoutXnatAuthError as exc:
-            _log.warning("scout_xnat_auth re-auth failed: %s", exc)
+            _log.warning("scout_xnat re-auth failed: %s", exc)
             return None
         interface.cookies.set("JSESSIONID", new_jsession)
         retried = response.request.copy()

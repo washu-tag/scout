@@ -1,4 +1,4 @@
-"""scout_xnat_auth: bearer-token XNAT auth wrapper for Scout.
+"""scout_xnat: bearer-token XNAT auth wrapper for Scout.
 
 Two consumers today:
 
@@ -14,14 +14,14 @@ Both call ``connect()``; only the ``token_provider`` differs. With no
 
 Usage (Jupyter)::
 
-    import scout_xnat_auth
-    conn = scout_xnat_auth.connect()
+    import scout_xnat
+    conn = scout_xnat.connect()
     for p in conn.projects.values():
         print(p.id, p.name)
 
 Usage (service, per-request token from a header)::
 
-    from scout_xnat_auth import connect
+    from scout_xnat import connect
     conn = connect(
         server="http://xnat.xnat.svc.cluster.local",
         token_provider=lambda: request.headers["X-Auth-Request-Access-Token"],
