@@ -93,11 +93,11 @@ public class TokenExchangeService {
         form.add("grant_type", GRANT_TYPE);
         form.add("subject_token", subjectJwt);
         form.add("subject_token_type", SUBJECT_TOKEN_TYPE);
-        // The exchange's target audience defaults to the requester (the xnat
-        // client) per RFC 8693, but Keycloak honors an explicit audience param;
-        // setting it makes intent legible in the request and unambiguous in
-        // multi-aud subject tokens.
-        form.add("audience", properties.getClientId());
+        // No `audience` param: in Keycloak STX V2, the requester is implicitly
+        // the audience. Passing `audience=<our own client_id>` produces a
+        // 400 "Requested audience not available" because the requester isn't a
+        // valid *additional* audience in the subject token from its own
+        // perspective.
 
         final HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(form, headers);
 

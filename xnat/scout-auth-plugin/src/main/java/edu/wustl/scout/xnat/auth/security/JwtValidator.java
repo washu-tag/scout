@@ -80,20 +80,35 @@ public class JwtValidator {
     }
 
     /**
-     * Validate signature/issuer/expiry plus an aud claim and a client role.
-     * Used for the exchanged-token pass: aud must contain {@code expectedAudience}
-     * and {@code resource_access.<clientId>.roles} must contain {@code requiredRole}.
+     * Validate signature/issuer/expiry plus the {@code azp} claim and a client
+     * role. Used for the exchanged-token pass.
+     *
+     * On {@code aud} vs {@code azp}: Keycloak STX V2 puts the *requester*
+     * client in {@code azp} (authorized party) and uses {@code aud} for any
+     * *other* audiences — sibling clients that the user can also reach. So
+     * the right "this token was issued for xnat" check is {@code azp == xnat},
+     * not {@code aud contains xnat} (which is empty, since xnat is the
+     * requester).
+     *
+     * Required role check looks at {@code resource_access.<clientId>.roles},
+     * which gates on {@code xnat-access} per the realm template's mapping
+     * from {@code scout-user} group to xnat client roles.
      */
     public JWTClaimsSet validateExchanged(final String jwt,
-                                          final String expectedAudience,
+                                          final String expectedAuthorizedParty,
                                           final String clientId,
                                           final String requiredRole)
             throws InvalidJwtException {
         JWTClaimsSet claims = validate(jwt);
-        List<String> aud = claims.getAudience();
-        if (aud == null || !aud.contains(expectedAudience)) {
+        String azp = null;
+        try {
+            azp = claims.getStringClaim("azp");
+        } catch (java.text.ParseException e) {
+            // fall through; azp will be null and the check below fails
+        }
+        if (!expectedAuthorizedParty.equals(azp)) {
             throw new InvalidJwtException(
-                    "exchanged token aud does not contain '" + expectedAudience + "'");
+                    "exchanged token azp '" + azp + "' is not '" + expectedAuthorizedParty + "'");
         }
         List<String> clientRoles = extractClientRoles(claims, clientId);
         if (!clientRoles.contains(requiredRole)) {

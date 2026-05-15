@@ -66,7 +66,8 @@ public class TokenExchangeServiceTest {
         assertEquals("urn:ietf:params:oauth:grant-type:token-exchange", body.getFirst("grant_type"));
         assertEquals("urn:ietf:params:oauth:token-type:access_token", body.getFirst("subject_token_type"));
         assertEquals("subject-jwt", body.getFirst("subject_token"));
-        assertEquals("xnat", body.getFirst("audience"));
+        // No `audience` param: Keycloak rejects audience=<own client_id>.
+        assertEquals(null, body.getFirst("audience"));
 
         HttpHeaders headers = entity.getHeaders();
         assertEquals(TokenExchangeService.basicAuth(CLIENT_ID, CLIENT_SECRET),

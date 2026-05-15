@@ -126,7 +126,8 @@ public class JwtValidatorTest {
     public void validateExchanged_acceptsHappyPath() throws Exception {
         String jwt = signToken(claims()
                 .subject("user-1")
-                .audience("xnat")
+                .audience("account")
+                .claim("azp", "xnat")
                 .claim("resource_access", clientRoles("xnat", "xnat-access"))
                 .build());
         JWTClaimsSet result = validator.validateExchanged(jwt, "xnat", "xnat", "xnat-access");
@@ -134,17 +135,31 @@ public class JwtValidatorTest {
     }
 
     @Test
-    public void validateExchanged_rejectsWrongAudience() throws Exception {
+    public void validateExchanged_rejectsWrongAuthorizedParty() throws Exception {
         String jwt = signToken(claims()
                 .subject("user-1")
-                .audience("not-xnat")
+                .claim("azp", "not-xnat")
                 .claim("resource_access", clientRoles("xnat", "xnat-access"))
                 .build());
         try {
             validator.validateExchanged(jwt, "xnat", "xnat", "xnat-access");
-            fail("expected InvalidJwtException for wrong audience");
+            fail("expected InvalidJwtException for wrong azp");
         } catch (JwtValidator.InvalidJwtException e) {
-            assertTrue(e.getMessage().contains("aud"));
+            assertTrue(e.getMessage().contains("azp"));
+        }
+    }
+
+    @Test
+    public void validateExchanged_rejectsMissingAuthorizedParty() throws Exception {
+        String jwt = signToken(claims()
+                .subject("user-1")
+                .claim("resource_access", clientRoles("xnat", "xnat-access"))
+                .build());
+        try {
+            validator.validateExchanged(jwt, "xnat", "xnat", "xnat-access");
+            fail("expected InvalidJwtException for missing azp");
+        } catch (JwtValidator.InvalidJwtException e) {
+            assertTrue(e.getMessage().contains("azp"));
         }
     }
 
@@ -152,7 +167,7 @@ public class JwtValidatorTest {
     public void validateExchanged_rejectsMissingRole() throws Exception {
         String jwt = signToken(claims()
                 .subject("user-1")
-                .audience("xnat")
+                .claim("azp", "xnat")
                 .claim("resource_access", clientRoles("xnat", "xnat-user"))  // wrong role
                 .build());
         try {
@@ -167,7 +182,7 @@ public class JwtValidatorTest {
     public void validateExchanged_rejectsMissingResourceAccess() throws Exception {
         String jwt = signToken(claims()
                 .subject("user-1")
-                .audience("xnat")
+                .claim("azp", "xnat")
                 .build());
         try {
             validator.validateExchanged(jwt, "xnat", "xnat", "xnat-access");
