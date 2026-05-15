@@ -227,6 +227,9 @@ def push_persistent_config(token):
 def push_filter_functions(token):
     for fn in load_config("filters.json") or []:
         fn_id = fn["id"]
+        # Inventory-overridable, so encode for safety even though current entries
+        # (link_sanitizer_filter, etc.) are all URL-safe. Matches push_models.
+        fn_id_q = urllib.parse.quote(fn_id, safe="")
         payload = {
             "id": fn_id,
             "name": fn["name"],
@@ -234,10 +237,10 @@ def push_filter_functions(token):
             "meta": {"description": fn.get("description", "")},
         }
 
-        exists_code, _ = http("GET", f"/api/v1/functions/id/{fn_id}", token=token)
+        exists_code, _ = http("GET", f"/api/v1/functions/id/{fn_id_q}", token=token)
         if exists_code == 200:
             http_or_raise(
-                "POST", f"/api/v1/functions/id/{fn_id}/update", payload, token
+                "POST", f"/api/v1/functions/id/{fn_id_q}/update", payload, token
             )
             print(f"  {fn_id}: updated")
         else:
@@ -247,26 +250,26 @@ def push_filter_functions(token):
         if fn.get("valves"):
             http_or_raise(
                 "POST",
-                f"/api/v1/functions/id/{fn_id}/valves/update",
+                f"/api/v1/functions/id/{fn_id_q}/valves/update",
                 fn["valves"],
                 token,
             )
 
         # Toggles — GET current, only flip when state differs.
         current = json.loads(
-            http_or_raise("GET", f"/api/v1/functions/id/{fn_id}", token=token)
+            http_or_raise("GET", f"/api/v1/functions/id/{fn_id_q}", token=token)
         )
 
         desired_global = fn.get("enable_global", False)
         if current.get("is_global", False) != desired_global:
             http_or_raise(
-                "POST", f"/api/v1/functions/id/{fn_id}/toggle/global", token=token
+                "POST", f"/api/v1/functions/id/{fn_id_q}/toggle/global", token=token
             )
             print(f"  {fn_id}: is_global → {desired_global}")
 
         desired_active = fn.get("enable_active", True)
         if current.get("is_active", False) != desired_active:
-            http_or_raise("POST", f"/api/v1/functions/id/{fn_id}/toggle", token=token)
+            http_or_raise("POST", f"/api/v1/functions/id/{fn_id_q}/toggle", token=token)
             print(f"  {fn_id}: is_active → {desired_active}")
 
 
@@ -282,7 +285,7 @@ def push_models(token):
         if system_file:
             m["params"]["system"] = load_text(system_file)
 
-        model_id_q = urllib.parse.quote(m["id"])
+        model_id_q = urllib.parse.quote(m["id"], safe="")
         exists_code, _ = http(
             "GET", f"/api/v1/models/model?id={model_id_q}", token=token
         )

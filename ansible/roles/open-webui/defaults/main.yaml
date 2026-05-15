@@ -354,6 +354,12 @@ open_webui_scout_default_suggestion_prompts:
     content: 'How often are reports amended with an addendum, by modality?'
   - title: ['Pediatric CT', 'Patients under 18']
     content: 'How many pediatric CT exams have we done, broken down by year?'
+  - title: ['Ischemic vs hemorrhagic stroke', 'Stroke comparison']
+    content: 'How many reports mention ischemic stroke versus hemorrhagic stroke?'
+  - title: ['Long-term neuroimaging', 'Patients with multi-year history']
+    content: 'How many patients have brain MRI reports spanning more than five years?'
+  - title: ['Dementia progression imaging', 'Repeat brain MRI']
+    content: 'How many patients have more than one brain MRI report mentioning dementia?'
 
 # Default profile image (avatar): the bootstrap chart embeds
 # helm/open-webui-bootstrap/files/payloads/scout-logo-128.png.b64 as a data

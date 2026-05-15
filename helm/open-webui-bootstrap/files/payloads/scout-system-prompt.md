@@ -225,7 +225,7 @@ LIMIT 100
 | `requested_dt` | timestamp | When the order was placed. Preferred TAT start (more reliably populated than `observation_dt`). |
 | `observation_dt` | timestamp | Fallback TAT start. |
 | `results_report_status_change_dt` | timestamp | Report finalized. TAT end. |
-| `modality` | string | Derived (CT, MR, US, MG, NM, PT, etc.). |
+| `modality` | string | Derived 2-letter code: `CT`, `MR`, `US`, `MG`, `NM`, `PT`, etc. **Use the short code — `MR` not `MRI`, `CT` not `CAT`. For exam-name patterns (e.g. "MRI BRAIN") use `service_name` instead.** |
 | `service_name` | string | Exam name (e.g., "CT CHEST W CONTRAST"). |
 | `service_identifier` | string | CPT or local code for the exam. |
 | `report_text` | string | Full report (HISTORY + COMPARISON + TECHNIQUE + FINDINGS + IMPRESSION + signature). Don't free-text search this directly — use the section columns. |
