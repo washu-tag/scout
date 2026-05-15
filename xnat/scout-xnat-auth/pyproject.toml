@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scout-xnat-auth"
+version = "0.1.0"
+description = "Bearer-token XNAT auth wrapper for Scout (Jupyter notebooks + scout-xnat-frontend service)."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Scout developers" }]
+dependencies = [
+    "requests>=2.31",
+    "xnat>=0.5",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["scout_xnat_auth*"]
