@@ -44,12 +44,12 @@ valkey_chart_version: 0.9.3
 
 # OAuth2 Proxy
 # renovate: datasource=helm registryUrl=https://oauth2-proxy.github.io/manifests depName=oauth2-proxy
-oauth2_proxy_chart_version: ~10.0.0
+oauth2_proxy_chart_version: ~10.4.0
 
 # Keycloak Config CLI
 keycloak_config_cli_image: docker.io/adorsys/keycloak-config-cli
 # renovate: datasource=docker depName=adorsys/keycloak-config-cli versioning=loose
-keycloak_config_cli_image_tag: 6.4.0-26
+keycloak_config_cli_image_tag: 6.5.0-26.5.4
 
 # Databases & Data Storage - MinIO
 # renovate: datasource=helm registryUrl=https://operator.min.io depName=operator
