@@ -91,7 +91,7 @@
           trustForwardHeader: true
           authResponseHeaders:
             # Identity headers consumed by services that trust oauth2-proxy
-            # (eg. xnat-scout-auth-plugin's HeaderTrustFilter). The Access-Token
+            # (eg. scout-xnat-auth-plugin's HeaderTrustFilter). The Access-Token
             # header lets downstream services parse role / sub claims without
             # an extra round-trip; the User/Email/Groups headers are useful
             # fallbacks when a service can't or shouldn't decode the JWT.
