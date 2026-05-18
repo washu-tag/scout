@@ -164,6 +164,11 @@ update_file "helm/scout-dashboards/Chart.yaml" \
     "\\1 $HELM_VERSION" \
     "scout-dashboards chart version"
 
+update_file "helm/open-webui-bootstrap/Chart.yaml" \
+    "^(version:) .+$" \
+    "\\1 $HELM_VERSION" \
+    "open-webui-bootstrap chart version"
+
 echo ""
 echo "Helm values.yaml files (image.tag)..."
 update_file "helm/launchpad/values.yaml" \

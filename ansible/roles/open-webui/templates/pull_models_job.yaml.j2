@@ -51,34 +51,35 @@ spec:
               echo "All models pulled successfully"
 
 {% if scout_model_create %}
-              echo "Creating Scout custom model {{ scout_model_name }}..."
+{% for m in scout_models %}
+              echo "Creating Scout custom model {{ m.name }}..."
               {
-                echo "FROM {{ scout_base_model }}"
-                echo "PARAMETER num_predict {{ scout_model_num_predict }}"
-                echo "PARAMETER num_ctx {{ scout_model_num_ctx }}"
-                echo "PARAMETER num_keep {{ scout_model_num_keep }}"
+                echo "FROM {{ m.base }}"
+                echo "PARAMETER num_predict {{ m.num_predict }}"
+                echo "PARAMETER num_ctx {{ m.num_ctx }}"
+                echo "PARAMETER num_keep {{ m.num_keep }}"
               } > /tmp/Modelfile
 
-              ollama create {{ scout_model_name }} -f /tmp/Modelfile
+              ollama create {{ m.name }} -f /tmp/Modelfile
 
               echo "Verifying model creation..."
-              if ollama list | grep -q "{{ scout_model_name }}"; then
-                echo "Scout model {{ scout_model_name }} created successfully"
+              if ollama list | grep -q "{{ m.name }}"; then
+                echo "Scout model {{ m.name }} created successfully"
               else
                 echo "Failed to verify Scout model creation"
                 exit 1
               fi
 
-{# Model loading into memory:
-   - Non-air-gapped: This Job connects to the persistent Ollama server, so we can
-     load the model now for immediate use.
-   - Air-gapped: This Job runs a temporary Ollama to write models to NFS and cannot
-     reach the production Ollama instance. Manual load required after first install,
-     then the lifecycle hook handles subsequent pod restarts. See README.md. #}
-{% if not _pull_air_gapped %}
-              echo "Loading Scout model into memory (best effort)..."
-              ollama run "{{ scout_model_name }}" "hi" || true
+{# Non-air-gapped: this Job connects to the persistent Ollama server and can preload
+   the model now. Air-gapped: the Job runs a temporary Ollama writing to NFS only, so
+   the values.yaml lifecycle hook handles preload on production pod start.
+   `preload: false` entries skip the warmup to avoid VRAM exhaustion when total
+   resident model weights would exceed GPU memory. #}
+{% if not _pull_air_gapped and m.preload | default(true) %}
+              echo "Loading Scout model {{ m.name }} into memory (best effort)..."
+              ollama run "{{ m.name }}" "hi" || true
 {% endif %}
+{% endfor %}
 {% endif %}
 {% if _pull_air_gapped %}
           volumeMounts:

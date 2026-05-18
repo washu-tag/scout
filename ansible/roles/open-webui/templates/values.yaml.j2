@@ -1,5 +1,12 @@
 nameOverride: ''
 namespaceOverride: ''
+
+# Image is intentionally NOT pinned here — the OWUI chart's appVersion is the
+# single source of truth. Renovate bumps `open_webui_helm_chart_version` in
+# versions.yaml; the chart's default `image.tag` (= appVersion) then determines
+# what runs. The open-webui-bootstrap Job reads the running Pod's image at
+# deploy time (see configure_admin.yaml) so it stays in lockstep automatically.
+
 ollama:
   # -- Automatically install Ollama Helm chart from https://otwld.github.io/ollama-helm/. Use [Helm Values](https://github.com/otwld/ollama-helm/#helm-values) to configure
   enabled: true
@@ -64,8 +71,10 @@ ollama:
     size: {{ ollama_storage_size }}
 {% endif %}
 {% if scout_model_create %}
-  # Load Scout model into memory on pod startup (if present)
-  # Runs in background to avoid blocking pod readiness
+  # Warm Scout models with `preload: true` into VRAM on pod startup.
+  # Runs in background to avoid blocking pod readiness.
+  # `preload: false` models cold-load on first request (intentional — e.g., when
+  # total resident weights would exceed GPU memory).
   lifecycle:
     postStart:
       exec:
@@ -79,11 +88,12 @@ ollama:
                 ollama list >/dev/null 2>&1 && break
                 sleep 5
               done
-              # Load model into memory if present
-              if ollama list 2>/dev/null | grep -q "{{ scout_model_name }}"; then
-                echo "Loading Scout model {{ scout_model_name }} into memory..."
-                ollama run "{{ scout_model_name }}" "hi" || true
+{% for m in scout_models if m.preload | default(true) %}
+              if ollama list 2>/dev/null | grep -q "{{ m.name }}"; then
+                echo "Loading Scout model {{ m.name }} into memory..."
+                ollama run "{{ m.name }}" "hi" || true
               fi
+{% endfor %}
             ) &
 {% endif %}
 
@@ -94,10 +104,10 @@ ingress:
   enabled: true
   class: traefik
   annotations:
-    # Middleware order matters for CSP:
-    # 1. Error first: catches 401 and serves sign_in page (bypasses CSP)
-    # 2. Auth second: checks authentication
-    # 3. CSP third: sets stricter CSP for Open WebUI (overrides global baseline)
+    # Middleware order matters:
+    # 1. Error: catches 401 and serves sign_in page (bypasses CSP)
+    # 2. Auth: checks authentication
+    # 3. CSP: sets stricter CSP for Open WebUI (overrides global baseline)
     # 4. Security headers last: sets baseline security headers for all responses
     traefik.ingress.kubernetes.io/router.middlewares: >-
       kube-system-oauth2-proxy-error@kubernetescrd,
@@ -115,8 +125,13 @@ persistence:
 
 resources: {{ open_webui_resources_default | combine(open_webui_resources | default({}), recursive=true) | to_json }}
 
-# -- Configure database URL, needed to work with Postgres (example: `postgresql://<user>:<password>@<service>:<port>/<database>`), leave empty to use the default sqlite database
-databaseUrl: 'postgresql://{{ open_webui_postgres_user }}:{{ open_webui_postgres_password }}@{{ db_host }}:{{ db_port }}/{{ open_webui_database }}'
+# Database URL is sourced from the `open-webui-secrets` Secret (key DATABASE_URL),
+# loaded into the Pod via `extraEnvFrom` below — keeps the password out of the
+# rendered Helm release Secret and Pod manifest. Leaving `databaseUrl` empty
+# here skips the chart's `env: - name: DATABASE_URL value: ...` literal block
+# (see chart templates/workload-manager.yaml: the env entry is gated on the
+# value being truthy), so the envFrom-sourced value is the only one set.
+databaseUrl: ''
 
 enableOpenaiApi: false
 
@@ -210,3 +225,22 @@ extraEnvVars:
   # Logout redirect URL (OAuth2 Proxy signout)
   - name: WEBUI_AUTH_SIGNOUT_REDIRECT_URL
     value: '{{ oauth2_proxy_signout_url }}'
+
+  # ------------------------------------------------------------------
+  # Seeded once at first launch (PersistentConfig); not expected to change.
+  # Tool servers, RAG template, DEFAULT_MODELS, and TASK_MODEL — which DO
+  # change with inventory — are pushed declaratively by the open-webui-
+  # bootstrap Helm chart (see helm/open-webui-bootstrap/ and configure_admin.yaml)
+  # rather than via env-var seed, so changes auto-propagate on every deploy.
+  # ------------------------------------------------------------------
+  # Disable Arena Model evaluations
+  - name: ENABLE_EVALUATION_ARENA_MODELS
+    value: '{{ open_webui_enable_arena_models | string | lower }}'
+
+  # Allow /signup to create the very first user (auto-promoted to admin) on a
+  # fresh DB even though ENABLE_SIGNUP is false. Once any user exists, /signup
+  # self-blocks via OWUI's `has_users` short-circuit in auths.py, so leaving
+  # this on permanently is safe. The bootstrap Job uses this on first deploy
+  # to mint its admin user; subsequent runs sign in instead.
+  - name: ENABLE_INITIAL_ADMIN_SIGNUP
+    value: 'true'

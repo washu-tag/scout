@@ -1,0 +1,72 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "open-webui-bootstrap.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "open-webui-bootstrap.labels" . | nindent 4 }}
+  annotations:
+    # Re-create (and therefore re-run) the Job whenever any payload changes —
+    # the ConfigMap's rendered content hashes here, so any inventory edit
+    # produces a different annotation and Helm replaces the Job.
+    checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    # before-hook-creation: clears any leftover Job from a previous failed run
+    # before installing the new one (Jobs are immutable, can't be patched).
+    # hook-succeeded: garbage-collect the Job once it completes successfully —
+    # keeps `kubectl get jobs` tidy and avoids orphans in ArgoCD diff views.
+    # On failure the Job sticks around for diagnostics until ttlSecondsAfterFinished.
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
+  backoffLimit: {{ .Values.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "open-webui-bootstrap.selectorLabels" . | nindent 8 }}
+        component: bootstrap
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: bootstrap
+          image: {{ .Values.image.ref | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # OWUI's image expects to be the API server; we override to run our
+          # bootstrap script instead. Same image = same Python deps + same
+          # bcrypt version + access to open_webui.* modules for the migration.
+          command: ["python", "/app/config/bootstrap.py"]
+          # The image's WORKDIR is /app/backend (where the open_webui package
+          # lives), but `python /app/config/bootstrap.py` puts /app/config on
+          # sys.path — not cwd — so import open_webui fails. Set PYTHONPATH
+          # explicitly so the migration step's imports resolve.
+          workingDir: /app/backend
+          env:
+            - name: PYTHONPATH
+              value: /app/backend
+            - name: OWUI_BASE_URL
+              value: {{ .Values.owuiBaseUrl | quote }}
+            - name: BOOTSTRAP_EMAIL
+              value: {{ .Values.bootstrap.email | quote }}
+            - name: BOOTSTRAP_NAME
+              value: {{ .Values.bootstrap.name | quote }}
+          # All sensitive values come from a Secret (matches the upstream OWUI
+          # chart's `extraEnvFrom` pattern). The bootstrap script reads
+          # BOOTSTRAP_PASSWORD and DATABASE_URL directly; WEBUI_SECRET_KEY and
+          # other vars are required at module-load time by open_webui.config
+          # when bootstrap.py imports open_webui.internal.db for the password-
+          # migration step — pulling the whole Secret in one shot covers any
+          # OWUI module-load env requirements without listing them individually.
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secretName }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "open-webui-bootstrap.fullname" . }}-config
