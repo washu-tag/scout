@@ -14,6 +14,9 @@ package edu.washu.tag.extractor.hl7log.model;
  * @param splitAndUploadConcurrency How many logs we should process before continuing as new.
  * @param reportTableName Name of the report table to be created in Delta Lake.
  * @param deltaIngestTimeout The timeout for the delta lake ingest job in minutes.
+ * @param createMapping Whether to derive the report-patient mapping table and the epic views that depend on it.
+ *                      Defaults to true. Set false to skip mapping work for ingests that don't need it
+ *                      (faster, used by tests that don't assert on mapping output).
  * @param continued Do not set this on initial workflow run. Parameters needed to resume when workflow is Continued As New.
  */
 public record IngestHl7LogWorkflowInput(
@@ -27,9 +30,11 @@ public record IngestHl7LogWorkflowInput(
         Integer splitAndUploadConcurrency,
         String reportTableName,
         Integer deltaIngestTimeout,
+        Boolean createMapping,
         ContinueIngestWorkflow continued
 ) {
     public static IngestHl7LogWorkflowInput EMPTY = new IngestHl7LogWorkflowInput(
+        null,
         null,
         null,
         null,

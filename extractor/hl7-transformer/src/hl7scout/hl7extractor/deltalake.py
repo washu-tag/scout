@@ -93,6 +93,7 @@ def import_hl7_files_to_deltalake(
     modality_map_csv_path: str,
     report_table_name: str,
     health_file: Path,
+    create_mapping: bool = True,
 ) -> int:
     """Extract data from HL7 messages and write to Delta Lake."""
     activity_info = activity.info()
@@ -251,7 +252,7 @@ def import_hl7_files_to_deltalake(
                 F.col("Exam Code").alias("service_identifier"),
                 F.col("Modality").alias("modality"),
             )
-        )
+        ).cache()
 
         activity.heartbeat()
         activity.logger.info("Creating report df")
@@ -482,7 +483,9 @@ def import_hl7_files_to_deltalake(
             .join(modality_map, "service_identifier", "left")
             .withColumn("year", F.year("message_dt"))
             .withColumn("updated", F.current_timestamp())
-        )
+        ).cache()
+
+        modality_map.unpersist()
 
         # Create table if it doesn't yet exist
         activity.heartbeat()
@@ -507,7 +510,8 @@ def import_hl7_files_to_deltalake(
         activity.heartbeat()
         success_paths = [row.source_file for row in df.select("source_file").collect()]
 
-        process_derivative_data(spark, report_table_name)
+        df.unpersist()
+        process_derivative_data(spark, report_table_name, create_mapping=create_mapping)
 
     except (Py4JError, ConnectionError) as e:
         activity.logger.error(
