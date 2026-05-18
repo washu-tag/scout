@@ -1,0 +1,99 @@
+---
+# Grafana Alloy DaemonSet values.
+# Collects pod logs cluster-wide via the kubelet pod-logs API
+# (loki.source.kubernetes) and ships them to Loki. The discovery.relabel
+# block produces the label set that Scout's Grafana dashboards depend on:
+# namespace, pod, container, app, instance, component, node_name, and
+# job (= <namespace>/<app>).
+
+controller:
+  tolerations: {{ alloy_tolerations | to_json }}
+
+alloy:
+  configMap:
+    content: |
+      discovery.kubernetes "pods" {
+        role = "pod"
+      }
+
+      discovery.relabel "pods" {
+        targets = discovery.kubernetes.pods.targets
+
+        // Strip the controller-hash suffix so the controller name can act as a
+        // fallback for the `app` label.
+        rule {
+          source_labels = ["__meta_kubernetes_pod_controller_name"]
+          regex         = "([0-9a-z-.]+?)(-[0-9a-f]{8,10})?"
+          target_label  = "__tmp_controller_name"
+        }
+
+        // app: first non-empty of app.kubernetes.io/name, app, controller, pod
+        rule {
+          source_labels = [
+            "__meta_kubernetes_pod_label_app_kubernetes_io_name",
+            "__meta_kubernetes_pod_label_app",
+            "__tmp_controller_name",
+            "__meta_kubernetes_pod_name",
+          ]
+          regex        = "^;*([^;]+)(;.*)?$"
+          target_label = "app"
+        }
+
+        // instance: first non-empty of app.kubernetes.io/instance, instance
+        rule {
+          source_labels = [
+            "__meta_kubernetes_pod_label_app_kubernetes_io_instance",
+            "__meta_kubernetes_pod_label_instance",
+          ]
+          regex        = "^;*([^;]+)(;.*)?$"
+          target_label = "instance"
+        }
+
+        // component: first non-empty of app.kubernetes.io/component, component
+        rule {
+          source_labels = [
+            "__meta_kubernetes_pod_label_app_kubernetes_io_component",
+            "__meta_kubernetes_pod_label_component",
+          ]
+          regex        = "^;*([^;]+)(;.*)?$"
+          target_label = "component"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_node_name"]
+          target_label  = "node_name"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+
+        // job = <namespace>/<app>
+        rule {
+          source_labels = ["namespace", "app"]
+          separator     = "/"
+          target_label  = "job"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+      }
+
+      loki.source.kubernetes "pods" {
+        targets    = discovery.relabel.pods.output
+        forward_to = [loki.write.default.receiver]
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "{{ alloy_loki_write_url }}"
+        }
+      }

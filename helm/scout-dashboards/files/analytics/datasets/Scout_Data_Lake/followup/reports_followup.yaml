@@ -1,0 +1,352 @@
+table_name: reports_followup
+main_dttm_col: message_dt
+description: Per-report follow-up classifier output, with optional human ground-truth
+  columns that get merged in by the reviewer Voila dashboard.
+default_endpoint: null
+offset: 0
+cache_timeout: 7200
+catalog: delta
+schema: default
+sql: null
+params: null
+template_params: null
+filter_select_enabled: true
+fetch_values_predicate: null
+extra: null
+normalize_columns: false
+always_filter_main_dttm: false
+uuid: cf33626a-2b35-423b-9a9d-7d8e62a6b021
+metrics:
+  - metric_name: count
+    verbose_name: COUNT(*)
+    metric_type: count
+    expression: COUNT(*)
+    description: null
+    d3format: null
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+  - metric_name: processed_count
+    verbose_name: Reports processed
+    metric_type: null
+    expression: SUM(CASE WHEN followup_processed_at IS NOT NULL THEN 1 ELSE 0 END)
+    description: Reports the classifier has scored at least once.
+    d3format: ',d'
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+  - metric_name: detection_rate
+    verbose_name: '% follow-up detected'
+    metric_type: null
+    expression: 100.0 * SUM(CASE WHEN followup_detected = TRUE THEN 1 ELSE 0 END) /
+      NULLIF(SUM(CASE WHEN followup_processed_at IS NOT NULL THEN 1 ELSE 0 END), 0)
+    description: Share of processed reports flagged for follow-up.
+    d3format: ',.1f'
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+  - metric_name: reviewed_count
+    verbose_name: Reviewed
+    metric_type: null
+    expression: SUM(CASE WHEN human_reviewed_at IS NOT NULL AND human_ground_truth IS
+      NOT NULL THEN 1 ELSE 0 END)
+    description: Reports a human reviewer has labeled with a definitive ground truth.
+    d3format: ',d'
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+  - metric_name: agreement_pct
+    verbose_name: Agreement %
+    metric_type: null
+    expression: 100.0 * SUM(CASE WHEN human_ground_truth IS NOT NULL AND followup_detected
+      = human_ground_truth THEN 1 ELSE 0 END) / NULLIF(SUM(CASE WHEN human_ground_truth
+      IS NOT NULL THEN 1 ELSE 0 END), 0)
+    description: Fraction of reviewed reports where the model and the human agree.
+    d3format: ',.1f'
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+  - metric_name: precision_pct
+    verbose_name: Precision %
+    metric_type: null
+    expression: 100.0 * SUM(CASE WHEN followup_detected = TRUE AND human_ground_truth
+      = TRUE THEN 1 ELSE 0 END) / NULLIF(SUM(CASE WHEN followup_detected = TRUE AND
+      human_ground_truth IS NOT NULL THEN 1 ELSE 0 END), 0)
+    description: Of reports the model flagged among reviewed ones, what fraction the
+      human confirmed.
+    d3format: ',.1f'
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+  - metric_name: recall_pct
+    verbose_name: Recall %
+    metric_type: null
+    expression: 100.0 * SUM(CASE WHEN followup_detected = TRUE AND human_ground_truth
+      = TRUE THEN 1 ELSE 0 END) / NULLIF(SUM(CASE WHEN human_ground_truth = TRUE THEN
+      1 ELSE 0 END), 0)
+    description: Of reports the human said needed follow-up, what fraction the model
+      caught.
+    d3format: ',.1f'
+    currency: null
+    extra:
+      warning_markdown: ''
+    warning_text: null
+columns:
+  - column_name: message_dt
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP(3) WITH TIME ZONE
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: followup_processed_at
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP(3) WITH TIME ZONE
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: human_reviewed_at
+    is_dttm: true
+    is_active: true
+    type: TIMESTAMP(3) WITH TIME ZONE
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: accession_number
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: modality
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: sending_facility
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: service_name
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: principal_result_interpreter
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: followup_detected
+    verbose_name: Model detected
+    is_dttm: false
+    is_active: true
+    type: BOOLEAN
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: Classifier output - did the report mention or recommend a follow-up?
+    python_date_format: null
+    extra: {}
+  - column_name: followup_confidence
+    verbose_name: Model confidence
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: followup_finding
+    verbose_name: Finding (full)
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: 'Full finding text emitted by the model, e.g. "Pulmonary nodule:
+      1.5 cm hyperechoic in right upper lobe".'
+    python_date_format: null
+    extra: {}
+  - column_name: finding_category
+    verbose_name: Finding category
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: TRIM(SPLIT_PART(followup_finding, ':', 1))
+    description: Part of the finding before the first colon, or the whole string
+      when there's no colon.
+    python_date_format: null
+    extra: {}
+  - column_name: finding_detail
+    verbose_name: Finding detail
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: |-
+      CASE
+        WHEN POSITION(':' IN followup_finding) > 0
+          THEN TRIM(SUBSTRING(followup_finding FROM POSITION(':' IN followup_finding) + 1))
+        ELSE NULL
+      END
+    description: Part of the finding after the first colon, or NULL when there's
+      no colon.
+    python_date_format: null
+    extra: {}
+  - column_name: followup_snippet
+    verbose_name: Excerpt
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: false
+    filterable: false
+    expression: null
+    description: Verbatim excerpt from the report supporting the model's
+      follow-up recommendation.
+    python_date_format: null
+    extra: {}
+  - column_name: human_ground_truth
+    verbose_name: Reviewer ground truth
+    is_dttm: false
+    is_active: true
+    type: BOOLEAN
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: Reviewer's call on whether follow-up is needed; null until reviewed.
+    python_date_format: null
+    extra: {}
+  - column_name: reviewer_label
+    verbose_name: Reviewer
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: "CASE WHEN human_ground_truth THEN 'Reviewer: Yes' ELSE 'Reviewer:
+      No' END"
+    description: Display label for the confusion matrix.
+    python_date_format: null
+    extra: {}
+  - column_name: model_label
+    verbose_name: Model
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: "CASE WHEN followup_detected THEN 'Model: Yes' ELSE 'Model: No' END"
+    description: Display label for the confusion matrix.
+    python_date_format: null
+    extra: {}
+  - column_name: human_notes
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: false
+    filterable: false
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: patient_age
+    is_dttm: false
+    is_active: true
+    type: INTEGER
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: sex
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+  - column_name: race
+    is_dttm: false
+    is_active: true
+    type: VARCHAR
+    advanced_data_type: null
+    groupby: true
+    filterable: true
+    expression: null
+    description: null
+    python_date_format: null
+    extra: {}
+version: 1.0.0
+database_uuid: 9ed918e7-ef5a-4aa4-9574-f1946b58d520

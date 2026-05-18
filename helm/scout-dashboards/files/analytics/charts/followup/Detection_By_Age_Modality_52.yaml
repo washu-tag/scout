@@ -1,0 +1,93 @@
+slice_name: Detection by Age & Modality
+description: One bubble per modality. X = average patient age served, Y = follow-up
+  detection probability, bubble size = report volume.
+certified_by: null
+certification_details: null
+viz_type: bubble_v2
+params:
+  datasource: 3__table
+  viz_type: bubble_v2
+  slice_id: 52
+  entity: modality
+  x:
+    aggregate: null
+    column: null
+    expressionType: SQL
+    hasCustomLabel: true
+    label: Average patient age (years)
+    optionName: metric_age_bubble_x
+    sqlExpression: AVG(patient_age)
+  y:
+    aggregate: null
+    column: null
+    expressionType: SQL
+    hasCustomLabel: true
+    label: '% follow-up detected'
+    optionName: metric_age_bubble_y
+    sqlExpression: 100.0 * SUM(CASE WHEN followup_detected = TRUE THEN 1 ELSE 0 END)
+      / NULLIF(COUNT(*), 0)
+  size:
+    aggregate: null
+    column: null
+    expressionType: SQL
+    hasCustomLabel: true
+    label: Reports
+    optionName: metric_age_bubble_size
+    sqlExpression: COUNT(*)
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: followup_processed_at
+      operator: IS NOT NULL
+      operatorId: IS_NOT_NULL
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: modality
+      operator: NOT IN
+      operatorId: NOT_IN
+      comparator:
+        - null
+        - ''
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: patient_age
+      operator: IS NOT NULL
+      operatorId: IS_NOT_NULL
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: patient_age
+      operator: '<'
+      operatorId: LESS_THAN
+      comparator: 110
+      expressionType: SIMPLE
+  row_limit: 50
+  order_desc: true
+  color_scheme: presetColors
+  show_legend: true
+  legendType: scroll
+  legendOrientation: top
+  max_bubble_size: '40'
+  x_axis_label: Average patient age (years)
+  x_axis_title_margin: 30
+  y_axis_label: '% follow-up detected'
+  y_axis_title_margin: 30
+  y_axis_title_position: Left
+  x_axis_format: ',.1f'
+  y_axis_format: ',.1f'
+  truncateXAxis: false
+  truncateYAxis: false
+  show_value: false
+  tooltipSizeFormat: ',d'
+  extra_form_data: {}
+  dashboards:
+    - 3
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 9109dcb4-7f82-4c4b-b438-223abb2dfda6
+version: 1.0.0
+dataset_uuid: cf33626a-2b35-423b-9a9d-7d8e62a6b021

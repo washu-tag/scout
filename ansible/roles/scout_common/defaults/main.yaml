@@ -121,6 +121,7 @@ cert_manager_namespace: '{{ scout_operators_namespace }}'
 prometheus_namespace: '{{ scout_monitoring_namespace }}'
 grafana_namespace: '{{ scout_monitoring_namespace }}'
 loki_namespace: '{{ scout_monitoring_namespace }}'
+alloy_namespace: '{{ scout_monitoring_namespace }}'
 
 # OAuth configuration
 oauth_provider_name: Keycloak # User-facing name for OAuth provider (e.g., 'WashU Key', 'Keycloak')
@@ -214,6 +215,11 @@ keycloak_subdomain: keycloak
 # Feature flags (override from inventory to enable/disable features)
 enable_chat: false
 enable_playbooks: false
+
+# Superset dashboard bundles to install. Built-in bundles: core, quality,
+# followup. Override in inventory to add more (e.g. [core, quality]).
+scout_dashboard_bundles:
+  - core
 
 # Package proxy configuration (per ADR-0016, following ADR-0011 service-mode pattern)
 # Options: none, nexus, external

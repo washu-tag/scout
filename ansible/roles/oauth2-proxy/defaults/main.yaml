@@ -12,5 +12,11 @@ oauth2_proxy_chart_repo: https://oauth2-proxy.github.io/manifests
 # OAuth2 Proxy cookie configuration (cookie_secret must be defined in inventory)
 oauth2_proxy_cookie_expire: 8h
 
+# Trusted reverse-proxy CIDRs that may set X-Forwarded-* headers.
+# Default = K3s pod CIDR (Traefik pods). Override in inventory if your
+# cluster uses a non-default pod CIDR.
+oauth2_proxy_trusted_proxy_ips:
+  - 10.42.0.0/16
+
 # OAuth2 Proxy UI customization
 oauth2_proxy_banner: 'Continue with {{ oauth_provider_name }}'

@@ -1,0 +1,29 @@
+---
+- name: Create namespace
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ alloy_namespace }}'
+
+# Render the values template into a fact so a template error fails the
+# play immediately. An inline lookup() in helm_chart_values would
+# silently coerce a render error to null.
+- name: Parse Helm values
+  ansible.builtin.set_fact:
+    alloy_helm_chart_values: "{{ lookup('template', 'alloy.values.yaml.j2') | from_yaml }}"
+
+- name: Deploy Alloy
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: alloy
+    helm_chart_ref: '{{ alloy_helm_repo_name }}/alloy'
+    helm_chart_namespace: '{{ alloy_namespace }}'
+    helm_repo_name: '{{ alloy_helm_repo_name }}'
+    helm_repo_url: '{{ alloy_helm_repo_url }}'
+    helm_chart_version: '{{ alloy_helm_chart_version }}'
+    helm_chart_create_namespace: false
+    helm_chart_timeout: '{{ alloy_helm_timeout }}'
+    helm_chart_values: '{{ alloy_helm_chart_values }}'
