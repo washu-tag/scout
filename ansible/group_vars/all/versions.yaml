@@ -40,7 +40,7 @@ cnpg_version: ~0.27.0
 
 # Databases & Data Storage - Valkey
 # renovate: datasource=helm registryUrl=https://valkey-io.github.io/valkey-helm/ depName=valkey
-valkey_chart_version: 0.9.3
+valkey_chart_version: 0.9.4
 
 # OAuth2 Proxy
 # renovate: datasource=helm registryUrl=https://oauth2-proxy.github.io/manifests depName=oauth2-proxy
