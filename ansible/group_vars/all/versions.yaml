@@ -88,7 +88,7 @@ grafana_helm_chart_version: ~10.4.0
 
 # Notebooks & Interactive Computing
 # renovate: datasource=helm registryUrl=https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/ depName=jupyterhub
-jupyter_helm_chart_version: ~4.3.0
+jupyter_helm_chart_version: ~4.3.5
 
 # AI & ML
 # The OWUI chart's appVersion is the single source of truth for the OWUI image
