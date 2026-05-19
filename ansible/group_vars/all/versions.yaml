@@ -70,7 +70,7 @@ trino_helm_chart_version: ~1.40.0
 # renovate: datasource=docker depName=bitnamilegacy/jmx-exporter
 trino_jmx_exporter_version: 1.0.1
 # renovate: datasource=github-releases depName=tuannvm/mcp-trino
-mcp_trino_version: 4.1.0
+mcp_trino_version: 4.3.1
 
 # Analytics & Query Engines - Hive
 # renovate: datasource=docker depName=starburstdata/hive versioning=loose
