@@ -53,7 +53,7 @@ keycloak_config_cli_image_tag: 6.5.0-26.5.4
 
 # Databases & Data Storage - MinIO
 # renovate: datasource=helm registryUrl=https://operator.min.io depName=operator
-minio_version: ~7.1.0
+minio_version: ~7.1.1
 minio_client_image: quay.io/minio/mc
 # renovate: datasource=docker depName=quay.io/minio/mc
 minio_client_image_tag: RELEASE.2025-08-13T08-35-41Z
