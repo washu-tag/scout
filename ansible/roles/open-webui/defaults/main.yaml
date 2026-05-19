@@ -229,9 +229,7 @@ open_webui_task_model_id: 'gemma4-31b-long:latest'
 # as admin even when ENABLE_SIGNUP is false; once any user exists the endpoint
 # self-blocks via the `has_users or not ENABLE_INITIAL_ADMIN_SIGNUP` check in
 # OWUI's auths router (signup handler in backend/open_webui/routers/auths.py),
-# so the env var is safe to leave on permanently. The bootstrap password is
-# derived deterministically from open_webui_secret_key (already vault-secured)
-# so we don't need to track another secret.
+# so the env var is safe to leave on permanently.
 #
 # `.local` is reserved (RFC 6762, mDNS) — guaranteed not to collide with a
 # real public domain and passes email-validator's strict checks if upstream
