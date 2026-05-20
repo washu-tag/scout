@@ -66,7 +66,7 @@ temporal_version: ~0.67.0
 # Note: Trino 1.41.0+ requires x86-64-v3 CPU support. If you see
 # "Fatal glibc error: CPU does not support x86-64-v3", use ~1.40.0
 # renovate: datasource=helm registryUrl=https://trinodb.github.io/charts depName=trino
-trino_helm_chart_version: ~1.40.0
+trino_helm_chart_version: ~1.42.2
 # renovate: datasource=docker depName=bitnamilegacy/jmx-exporter
 trino_jmx_exporter_version: 1.0.1
 # renovate: datasource=github-releases depName=tuannvm/mcp-trino
