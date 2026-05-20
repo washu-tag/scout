@@ -122,7 +122,7 @@ alloy_helm_chart_version: ~1.8.1
 
 # Container Registry
 # renovate: datasource=helm registryUrl=https://helm.goharbor.io depName=harbor
-harbor_version: ~1.14.0
+harbor_version: ~1.19.0
 
 # Package Proxy - Nexus Repository Manager
 # renovate: datasource=helm registryUrl=https://stevehipwell.github.io/helm-charts/ depName=nexus3
