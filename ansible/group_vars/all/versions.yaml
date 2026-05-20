@@ -63,8 +63,6 @@ minio_client_image_tag: RELEASE.2025-08-13T08-35-41Z
 temporal_version: ~0.67.0
 
 # Analytics & Query Engines - Trino
-# Note: Trino 1.41.0+ requires x86-64-v3 CPU support. If you see
-# "Fatal glibc error: CPU does not support x86-64-v3", use ~1.40.0
 # renovate: datasource=helm registryUrl=https://trinodb.github.io/charts depName=trino
 trino_helm_chart_version: ~1.42.2
 # renovate: datasource=docker depName=bitnamilegacy/jmx-exporter
