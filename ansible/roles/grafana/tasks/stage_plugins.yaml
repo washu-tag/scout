@@ -28,9 +28,22 @@
   run_once: true
 
 # Robot account and K8s secret must be in sync - if either is missing, recreate both
+- name: Get Grafana plugins Harbor project details
+  ansible.builtin.uri:
+    url: '{{ harbor_registry_url }}/api/v2.0/projects/{{ grafana_plugins_harbor_project }}'
+    validate_certs: false
+    user: admin
+    password: '{{ harbor_admin_password }}'
+    force_basic_auth: true
+  register: grafana_plugins_project
+  delegate_to: "{{ groups['staging'][0] }}"
+  run_once: true
+
+# Harbor 2.14 removed the legacy /projects/{name}/robots endpoint; use the
+# global /robots endpoint with a ProjectID filter instead.
 - name: Check if robot account exists in Harbor
   ansible.builtin.uri:
-    url: '{{ harbor_registry_url }}/api/v2.0/projects/{{ grafana_plugins_harbor_project }}/robots'
+    url: '{{ harbor_registry_url }}/api/v2.0/robots?q=Level%3Dproject%2CProjectID%3D{{ grafana_plugins_project.json.project_id }}'
     validate_certs: false
     user: admin
     password: '{{ harbor_admin_password }}'
