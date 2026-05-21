@@ -29,21 +29,6 @@ repositories {
 
 configurations {
     implementation.extendsFrom(implementAndInclude)
-
-    all {
-        // Mirror exclusions from openid-auth-plugin: XNAT brings these
-        // pipeline modules in transitively and they break the plugin classpath.
-        exclude group: "log4j"
-        exclude group: "net.logstash.logback"
-        exclude group: "org.nrg", module: "pipelineBase"
-        exclude group: "org.nrg", module: "pipelineBuild"
-        exclude group: "org.nrg", module: "pipelineWorkflow"
-        exclude group: "org.nrg", module: "pipelineXNAT"
-        exclude group: "org.nrg.xnat.pipeline"
-        exclude group: "org.slf4j", module: "jcl-over-slf4j"
-        exclude group: "org.slf4j", module: "jul-to-slf4j"
-        exclude group: "org.slf4j", module: "slf4j-simple"
-    }
 }
 
 dependencyManagement {
