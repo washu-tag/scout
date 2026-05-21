@@ -51,7 +51,7 @@
         "epic_mrn": "999999-EPIC0001",
         "mbmc_mr": null,
         "patient_mpi": "999999-001",
-        "patient_ids": "[[999999-001,EMPI,MR,null], [999999-EPIC0001,EPIC,MRN,null]]"
+        "patient_ids": "[[999999-001,EMPI,MR,null], [999999-EPIC0001,EPIC,MRN,null]]",
         "empi_mr": "999999-001"
     },
     "1.2.3.4.10": {

@@ -16,6 +16,7 @@ import edu.washu.tag.validation.ExactNumberObjectsResult;
 import edu.washu.tag.validation.ExactRowsResult;
 import edu.washu.tag.validation.column.ArrayType;
 import edu.washu.tag.validation.column.IntegerType;
+import edu.washu.tag.validation.column.LocalDateType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -385,7 +386,12 @@ public class TestScoutQueries extends BaseTest {
         final ExactRowsResult expected = new ExactRowsResult();
         expected.setRowAssertions(ageAssertions);
         expected.setUniqueIdColumnName(COLUMN_MESSAGE_CONTROL_ID);
-        expected.setColumnTypes(Collections.singleton(new IntegerType("patient_age")));
+        expected.setColumnTypes(
+            Set.of(
+                new IntegerType("patient_age"),
+                new LocalDateType("birth_date")
+            )
+        );
         final TestQuery<?> testQuery = new TestQuery<>(
             "patient_ages",
             "SELECT * FROM " + TestQuerySuite.TABLE_PLACEHOLDER + " WHERE message_control_id IN ("
