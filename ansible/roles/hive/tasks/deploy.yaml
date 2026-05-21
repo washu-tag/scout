@@ -72,7 +72,7 @@
         HIVE_METASTORE_PASSWORD: '{{ hive_readonly_postgres_password }}'
         S3_SECRET_KEY: '{{ s3_lake_reader_secret }}'
 
-# Deploy readonly metastore (for Jupyter/PySpark)
+# Deploy readonly metastore
 - name: Deploy readonly metastore
   ansible.builtin.include_tasks: deploy_metastore.yaml
   vars:

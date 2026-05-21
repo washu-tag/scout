@@ -21,9 +21,13 @@ helm_chart_values_files: []
 # Superset: superset_image_repository and superset_image_tag (see roles/superset/defaults/main.yaml)
 # Extractors: hl7log_extractor_image_repository/tag and hl7_transformer_image_repository/tag (see roles/extractor/defaults/main.yaml)
 
-# Jupyter singleuser image (shared by JupyterHub and Voila)
-jupyter_singleuser_image_name: ghcr.io/washu-tag/pyspark-notebook
+# JupyterHub singleuser image
+jupyter_singleuser_image_name: ghcr.io/washu-tag/scipy-notebook
 jupyter_singleuser_image_tag: latest
+
+# Voila dashboard image
+voila_image_name: ghcr.io/washu-tag/pyspark-notebook
+voila_image_tag: latest
 
 # Kubernetes configuration
 kubeconfig_yaml: /etc/rancher/k3s/k3s.yaml

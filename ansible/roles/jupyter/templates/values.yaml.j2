@@ -119,23 +119,8 @@ singleuser:
     kubernetes.io/hostname: '{{ jupyter_target_node_name }}'
 {% endif %}
   cmd: null
-  initContainers:
-    - name: spark-config-setup
-      image: '{{ jupyter_singleuser_image_name }}:{{ jupyter_singleuser_image_tag }}'
-      command: ["/bin/sh", "-c"]
-      args:
-        - |
-          # Copy original ConfigMap to writable location
-          # The initContainer does not have the necessary env vars to make the needed updates,
-          # so we just copy the original file here and make updates in the postStart hook
-          cp /mnt/spark-config-original/spark-defaults.conf /mnt/spark-config/spark-defaults.conf
-      volumeMounts:
-        - name: spark-defaults
-          mountPath: /mnt/spark-config-original
-          readOnly: true
-        - name: spark-config-writable
-          mountPath: /mnt/spark-config
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
+  initContainers:
     - name: staging-ca-setup
       image: '{{ jupyter_singleuser_image_name }}:{{ jupyter_singleuser_image_tag }}'
       command: ["/bin/sh", "-c"]
@@ -158,14 +143,6 @@ singleuser:
           - '/bin/sh'
           - '-c'
           - |
-            # Append Spark memory settings based on profile environment variables
-            if [ -n "$SPARK_DRIVER_MEMORY" ]; then
-              echo "spark.driver.memory $SPARK_DRIVER_MEMORY" >> /usr/local/spark/conf/spark-defaults.conf
-            fi
-            if [ -n "$SPARK_EXECUTOR_MEMORY" ]; then
-              echo "spark.executor.memory $SPARK_EXECUTOR_MEMORY" >> /usr/local/spark/conf/spark-defaults.conf
-            fi
-
             # Copy Scout quickstart samples on first login
             FLAG_FILE=/home/$NB_USER/.scout_quickstart
             if [ ! -f $FLAG_FILE ]; then
@@ -253,13 +230,6 @@ singleuser:
 {% endif %}
       subPath: '{username}'
     extraVolumes:
-      spark-defaults:
-        name: spark-defaults
-        configMap:
-          name: {{ jupyter_spark_defaults_configmap_name }}
-      spark-config-writable:
-        name: spark-config-writable
-        emptyDir: {}
       jupyterlab-custom-css:
         name: jupyterlab-custom-css
         configMap:
@@ -283,10 +253,6 @@ singleuser:
         emptyDir: {}
 {% endif %}
     extraVolumeMounts:
-      spark-defaults:
-        name: spark-config-writable
-        mountPath: /usr/local/spark/conf/spark-defaults.conf
-        subPath: spark-defaults.conf
       jupyterlab-custom-css:
         name: jupyterlab-custom-css
         mountPath: /home/jovyan/.jupyter/custom/custom.css
@@ -316,16 +282,6 @@ singleuser:
         ports:
           - port: 9000
 {% endif %}
-      # Allow access to Hive Metastore (readonly) for metadata queries
-      - to:
-          - namespaceSelector:
-              matchLabels:
-                kubernetes.io/metadata.name: '{{ hive_namespace }}'
-            podSelector:
-              matchLabels:
-                app.kubernetes.io/instance: '{{ hive_metastore_instance_readonly }}'
-        ports:
-          - port: 9083
       # Allow access to Ollama for AI model inference
       - to:
           - namespaceSelector:

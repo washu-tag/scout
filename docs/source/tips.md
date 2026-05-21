@@ -35,20 +35,24 @@ This page provides helpful tips for using Scout services effectively.
 (notebooks_ref)=
 ## Notebooks (JupyterHub)
 
-### PySpark Best Practices
+### Query Best Practices
 
-- **Filter early**: Apply filters as early as possible to reduce data processing
-- **Use array functions**: Filter array columns with `F.exists()`:
+- **Filter early**: Apply `WHERE` clauses as narrowly as possible so Trino's pushdown limits the scan
+- **Partition on `year`**: All report tables partition by year — `WHERE year = 2024` prunes whole files, much faster than a `requested_dt` range
+- **Use array functions**: Filter array columns with `any_match`:
   ```python
-  from pyspark.sql import functions as F
-  df.filter(F.exists("diagnoses", lambda x: x.diagnosis_code == "J18.9"))
+  pd.read_sql("""
+      SELECT accession_number, diagnoses
+      FROM reports_latest_epic_view
+      WHERE any_match(diagnoses, x -> x.diagnosis_code = 'J18.9')
+  """, engine)
   ```
-- **Leverage convenience columns**: Use `epic_mrn` or dynamically-created ID columns instead of parsing `patient_ids` array
-- **Cache frequently-used DataFrames**: Use `.cache()` on DataFrames you'll query multiple times
+- **Leverage convenience columns**: Use `resolved_epic_mrn` (or `resolved_mpi`) on the `_epic_view` views or dynamically-created ID columns instead of parsing `patient_ids` array
+- **Reuse query results**: Save the returned DataFrame to a variable and slice/filter that in-memory instead of re-issuing the SQL — each `pd.read_sql` call hits Trino again
 
 ### Installing Additional Packages
 
-The base Jupyter environment includes PySpark, Delta Lake, Trino, pandas, matplotlib, seaborn, and other core data analysis packages. For ML, NLP, or other specialized libraries, create a conda environment:
+The base Jupyter environment includes Trino client, pandas, matplotlib, seaborn, scikit-learn, statsmodels, pyarrow, and other core data analysis packages. For ML, NLP, or other specialized libraries, create a conda environment:
 
 ```bash
 # Create an environment with specific packages
@@ -85,15 +89,6 @@ Jupyter notebook servers automatically shut down after a configurable period of 
 ![Jupyter Server Timeout Notification](images/JupyterServerTimeoutNotification.png)
 
 Your notebook files and home directory (`/home/jovyan/`) persist, but in-memory variables are lost. To avoid potentially losing any important work, save notebooks frequently (Ctrl+S / Cmd+S) and save large DataFrames and intermediate results to disk.
-
-**Spark DataFrames (Parquet):**
-```python
-# Save after expensive computation
-df.write.parquet('/home/jovyan/checkpoints/results.parquet')
-
-# Resume later
-df = spark.read.parquet('/home/jovyan/checkpoints/results.parquet')
-```
 
 **Pandas DataFrames:**
 ```python
@@ -187,7 +182,7 @@ This is especially useful for debugging issues that span multiple components.
 
 - **From Analytics**: Click Export in query results (CSV, Excel, etc.)
 - **From Chat**: Copy data from chat responses, or use the SQL query in Analytics/Notebooks for larger exports
-- **From Notebooks**: Use `.toPandas().to_csv()`, `.write.parquet()`, or other PySpark export methods
+- **From Notebooks**: Use `df.to_csv()`, `df.to_parquet()`, or other pandas export methods on the result of `pd.read_sql(...)`
 
 ### Getting Help
 
