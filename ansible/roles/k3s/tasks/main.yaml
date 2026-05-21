@@ -53,25 +53,17 @@
   ansible.builtin.include_tasks: agent.yaml
   when: "'agents' in group_names"
 
-################################################################################
-# GPU node taint - Reserves GPU nodes for GPU-needing workloads (Ollama,
-# Jupyter singleuser) and cluster-wide storage that spans every node by
-# design (MinIO). Non-GPU workloads avoid the GPU node so it always has
-# memory headroom for the things that actually need it. See
-# enable_gpu_node_taint in scout_common/defaults for the toggle; taints
-# flip with the var (state=present/absent) so disabling it converges
-# either way. Runs after agent install so every GPU node is registered
-# with the API server by the time we taint.
-################################################################################
-# delegate_to: localhost + run_once together — task fires once per
-# playbook run from the jump node, using the fetched `local_kubeconfig_yaml`
-# (Scout's standard kubernetes.core convention). Loops over the gpu_workers
-# group to taint each GPU node.
+# Taint every gpu_workers node (see enable_gpu_node_taint in
+# scout_common/defaults). Flips with the var, so disabling it converges.
+# Runs after agent install so GPU nodes are registered with the API
+# server. Skipped on single-node clusters — same reason server.yaml
+# skips the control-plane taint there. Delegates to the first server so
+# the cluster kubeconfig path is stable regardless of which host triggers
+# run_once, matching the pattern used by the control-plane taint.
 - name: Apply GPU node taints
-  delegate_to: localhost
+  delegate_to: "{{ groups['server'][0] }}"
   run_once: true
   kubernetes.core.k8s_taint:
-    kubeconfig: '{{ local_kubeconfig_yaml }}'
     name: '{{ item }}'
     state: "{{ 'present' if enable_gpu_node_taint else 'absent' }}"
     taints:
@@ -79,3 +71,4 @@
         value: present
         effect: NoSchedule
   loop: "{{ groups['gpu_workers'] | default([]) }}"
+  when: (groups['k3s_cluster'] | default([]) | length) > 1
