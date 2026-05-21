@@ -15,6 +15,7 @@ import edu.washu.tag.util.FileIOUtils;
 import edu.washu.tag.validation.ExactNumberObjectsResult;
 import edu.washu.tag.validation.ExactRowsResult;
 import edu.washu.tag.validation.column.ArrayType;
+import edu.washu.tag.validation.column.IntegerType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -89,57 +90,12 @@ public class TestScoutQueries extends BaseTest {
 
     @Test
     public void testProcessedPatientIdIngestion() {
-        final String baseTableName = newTable();
+        final String baseTableName = newTable("testProcessedPatientIdIngestion");
         ingest(
             new IngestJobInput().setReportTableName(baseTableName).setLogsRootPath("/data/patient_ids")
         );
 
-        final Map<String, Map<String, String>> rowAssertions = new HashMap<>();
-        final Function<String, Map<String, String>> baseAssertionMap = (messageId) -> {
-            final Map<String, String> map = new HashMap<>();
-            rowAssertions.put(messageId, map);
-            for (String id : Arrays.asList("mpi", "slch_mr", "bjwc_mr", "bjh_mr", "epic_mrn", "mbmc_mr", "patient_mpi")) {
-                map.put(id, null);
-            }
-            return map;
-        };
-        final String patientIdColumn = "primary_patient_identifier";
-
-        final Map<String, String> legacyReport = baseAssertionMap.apply("1.2.3.4.5");
-        legacyReport.put("mpi", "999999-001");
-        legacyReport.put(patientIdColumn, "mpi_999999-001");
-        legacyReport.put("patient_mpi", "999999-001");
-
-        final Map<String, String> slchReport = baseAssertionMap.apply("1.2.3.4.6");
-        slchReport.put("slch_mr", "999999-S001");
-        slchReport.put(patientIdColumn, "slch_mr_999999-S001");
-        slchReport.put("patient_ids", "[[999999-W126,SLCH,EE,null], [999999-S001,SLCH,MR,null]]");
-        slchReport.put("patient_mpi", "999999-W126");
-
-        final Map<String, String> bjwcReport = baseAssertionMap.apply("1.2.3.4.7");
-        bjwcReport.put("bjwc_mr", "999999-B001");
-        bjwcReport.put(patientIdColumn, "bjwc_mr_999999-B001");
-        bjwcReport.put("patient_ids", "[[999999-W127,BJWC,EE,null], [999999-B001,BJWC,MR,null]]");
-        bjwcReport.put("patient_mpi", "999999-W127");
-
-        final Map<String, String> bjhReport = baseAssertionMap.apply("1.2.3.4.8");
-        bjhReport.put("bjh_mr", "999999-H001");
-        bjhReport.put(patientIdColumn, "bjh_mr_999999-H001");
-        bjhReport.put("patient_ids", "[[999999-W128,BJH,EE,null], [999999-H001,BJH,MR,null]]");
-        bjhReport.put("patient_mpi", "999999-W128");
-
-        final Map<String, String> epicReport = baseAssertionMap.apply("1.2.3.4.9");
-        epicReport.put("epic_mrn", "999999-EPIC0001");
-        epicReport.put("empi_mr", "999999-001");
-        epicReport.put(patientIdColumn, "epic_mrn_999999-EPIC0001");
-        epicReport.put("patient_ids", "[[999999-001,EMPI,MR,null], [999999-EPIC0001,EPIC,MRN,null]]");
-        epicReport.put("patient_mpi", "999999-001");
-
-        final Map<String, String> mbmcReport = baseAssertionMap.apply("1.2.3.4.10");
-        mbmcReport.put("mbmc_mr", "999999-M00001");
-        mbmcReport.put(patientIdColumn, "mbmc_mr_999999-M00001");
-        mbmcReport.put("patient_ids", "[[999999-M00001,MBMC,MR,null]]");
-        mbmcReport.put("patient_mpi", null);
+        final Map<String, Map<String, String>> rowAssertions = readFileAs("patient_mpis.json", new TypeReference<>() {});
 
         final ExactRowsResult expected = new ExactRowsResult();
         expected.setRowAssertions(rowAssertions);
@@ -248,7 +204,8 @@ public class TestScoutQueries extends BaseTest {
             "filler_order_number",
             "bjh_ss",
             "bjwc_ss",
-            "slch_ss"
+            "slch_ss",
+            "scan_date_proxy"
         ));
     }
 
@@ -422,6 +379,23 @@ public class TestScoutQueries extends BaseTest {
         queryAndValidate(viewResolvedQuery, curatedEpicView);
     }
 
+    @Test
+    public void testPatientAges() {
+        final Map<String, Map<String, String>> ageAssertions = readFileAs("patient_ages.json", new TypeReference<>() {});
+        final ExactRowsResult expected = new ExactRowsResult();
+        expected.setRowAssertions(ageAssertions);
+        expected.setUniqueIdColumnName(COLUMN_MESSAGE_CONTROL_ID);
+        expected.setColumnTypes(Collections.singleton(new IntegerType("patient_age")));
+        final TestQuery<?> testQuery = new TestQuery<>(
+            "patient_ages",
+            "SELECT * FROM " + TestQuerySuite.TABLE_PLACEHOLDER + " WHERE message_control_id IN ("
+                + ageAssertions.keySet().stream().map(uid -> "'" + uid + "'").collect(Collectors.joining(", "))
+                + ")"
+            );
+        testQuery.setExpectedQueryResult(expected);
+        queryAndValidate(testQuery, curatedTable(TABLE));
+    }
+
     private List<ReportPatientMappingEntry> readMappingTable(String tableName) {
         return spark.sql("SELECT * FROM " + tableName)
             .toJSON()
@@ -568,8 +542,12 @@ public class TestScoutQueries extends BaseTest {
         return baseTableName + "_dx";
     }
 
+    private static String newTable(String prefix) {
+        return prefix + System.currentTimeMillis();
+    }
+
     private static String newTable() {
-        return "testdata" + System.currentTimeMillis();
+        return newTable("testdata");
     }
 
     private record MappingLookup(int day, int index, String mpi, String epicMrn) {

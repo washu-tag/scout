@@ -1,0 +1,68 @@
+{
+    "1.2.3.4.5": {
+        "mpi": "999999-001",
+        "slch_mr": null,
+        "primary_patient_identifier": "mpi_999999-001",
+        "bjwc_mr": null,
+        "bjh_mr": null,
+        "epic_mrn": null,
+        "mbmc_mr": null,
+        "patient_mpi": "999999-001"
+    },
+    "1.2.3.4.6": {
+        "mpi": null,
+        "slch_mr": "999999-S001",
+        "primary_patient_identifier": "slch_mr_999999-S001",
+        "bjwc_mr": null,
+        "bjh_mr": null,
+        "epic_mrn": null,
+        "mbmc_mr": null,
+        "patient_mpi": "999999-W126",
+        "patient_ids": "[[999999-W126,SLCH,EE,null], [999999-S001,SLCH,MR,null]]"
+    },
+    "1.2.3.4.7": {
+        "mpi": null,
+        "slch_mr": null,
+        "primary_patient_identifier": "bjwc_mr_999999-B001",
+        "bjwc_mr": "999999-B001",
+        "bjh_mr": null,
+        "epic_mrn": null,
+        "mbmc_mr": null,
+        "patient_mpi": "999999-W127",
+        "patient_ids": "[[999999-W127,BJWC,EE,null], [999999-B001,BJWC,MR,null]]"
+    },
+    "1.2.3.4.8": {
+        "mpi": null,
+        "slch_mr": null,
+        "primary_patient_identifier": "bjh_mr_999999-H001",
+        "bjwc_mr": null,
+        "bjh_mr": "999999-H001",
+        "epic_mrn": null,
+        "mbmc_mr": null,
+        "patient_mpi": "999999-W128",
+        "patient_ids": "[[999999-W128,BJH,EE,null], [999999-H001,BJH,MR,null]]"
+    },
+    "1.2.3.4.9": {
+        "mpi": null,
+        "slch_mr": null,
+        "primary_patient_identifier": "epic_mrn_999999-EPIC0001",
+        "bjwc_mr": null,
+        "bjh_mr": null,
+        "epic_mrn": "999999-EPIC0001",
+        "mbmc_mr": null,
+        "patient_mpi": "999999-001",
+        "patient_ids": "[[999999-001,EMPI,MR,null], [999999-EPIC0001,EPIC,MRN,null]]"
+        "empi_mr": "999999-001"
+    },
+    "1.2.3.4.10": {
+        "mpi": null,
+        "slch_mr": null,
+        "primary_patient_identifier": "mbmc_mr_999999-M00001",
+        "bjwc_mr": null,
+        "bjh_mr": null,
+        "epic_mrn": null,
+        "mbmc_mr": "999999-M00001",
+        "patient_mpi": null,
+        "patient_ids": "[[999999-M00001,MBMC,MR,null]]"
+    }
+}
