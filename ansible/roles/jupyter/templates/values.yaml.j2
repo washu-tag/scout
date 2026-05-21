@@ -95,6 +95,14 @@ ingress:
     - '*.jupyter.{{ server_hostname }}'
 
 prePuller:
+  # Tolerate the GPU-node taint so the hook image-puller DaemonSet pre-pulls
+  # singleuser images onto the GPU node too — singleuser pods are pinned
+  # there (ADR 0006) so a cold pull would otherwise hit every first spawn.
+  # Harmless when the taint isn't present.
+  extraTolerations:
+    - key: nvidia.com/gpu
+      value: present
+      effect: NoSchedule
   hook:
     enabled: {{ jupyter_prepuller_hook | default(true) }}
   continuous:
@@ -121,8 +129,10 @@ singleuser:
   # Tolerate the GPU-node taint. Singleuser pods are pinned to the GPU
   # node via nodeSelector above (ADR 0006) so they MUST tolerate when
   # enable_gpu_node_taint is set, or no pod will ever schedule. Harmless
-  # when the taint isn't present.
-  tolerations:
+  # when the taint isn't present. Field name is `extraTolerations` — the
+  # Z2JH chart reads only that key for singleuser pods (plain
+  # `tolerations` is silently ignored).
+  extraTolerations:
     - key: nvidia.com/gpu
       value: present
       effect: NoSchedule

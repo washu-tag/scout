@@ -227,6 +227,13 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
+    # GPU node taint - on by default. Taints every host in `gpu_workers` with
+    # `nvidia.com/gpu=present:NoSchedule` so only GPU-needing workloads
+    # (Ollama, Jupyter singleuser) and cluster-wide storage that spans every
+    # node by design (MinIO) land there. Disable on small/dev clusters where
+    # the GPU node's spare capacity is genuinely useful for non-GPU pods.
+    # enable_gpu_node_taint: false
+
     # CoreDNS custom DNS configuration (see docs/source/technical/inventory.md)
     # When air_gapped: true, CoreDNS automatically gets deny-all + cluster.local blocks
     #

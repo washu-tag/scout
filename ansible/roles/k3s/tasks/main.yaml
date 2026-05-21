@@ -63,12 +63,13 @@
 # either way. Runs after agent install so every GPU node is registered
 # with the API server by the time we taint.
 ################################################################################
-# Scoped to the server iteration so `local_kubeconfig_yaml` resolves to
-# the server's fetched kubeconfig on the jump node (Scout's standard
-# kubernetes.core convention). Loops over groups['gpu_workers'] inside
-# the task to taint each GPU node.
+# delegate_to: localhost + run_once together — task fires once per
+# playbook run from the jump node, using the fetched `local_kubeconfig_yaml`
+# (Scout's standard kubernetes.core convention). Loops over the gpu_workers
+# group to taint each GPU node.
 - name: Apply GPU node taints
   delegate_to: localhost
+  run_once: true
   kubernetes.core.k8s_taint:
     kubeconfig: '{{ local_kubeconfig_yaml }}'
     name: '{{ item }}'
@@ -78,4 +79,3 @@
         value: present
         effect: NoSchedule
   loop: "{{ groups['gpu_workers'] | default([]) }}"
-  when: inventory_hostname in groups['server']
