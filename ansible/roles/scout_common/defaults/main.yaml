@@ -216,6 +216,15 @@ keycloak_subdomain: keycloak
 enable_chat: false
 enable_playbooks: false
 
+# Reserve GPU nodes for workloads that either need GPU hardware (Ollama,
+# Jupyter singleuser) or are cluster-wide storage layers that span every
+# node by design (MinIO pool). With this on, the GPU node gets
+# `nvidia.com/gpu=present:NoSchedule` and the above workloads carry
+# matching tolerations; everything else avoids the GPU node. Disable
+# for small/dev clusters where the GPU node's spare capacity is
+# genuinely useful for non-GPU pods.
+enable_gpu_node_taint: true
+
 # Superset dashboard bundles to install. Built-in bundles: core, quality,
 # followup. Override in inventory to add more (e.g. [core, quality]).
 scout_dashboard_bundles:

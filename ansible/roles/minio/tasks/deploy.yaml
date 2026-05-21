@@ -92,6 +92,14 @@
               - key: 'node-role.kubernetes.io/control-plane'
                 operator: Exists
                 effect: PreferNoSchedule
+              # Tolerate the GPU-node taint — MinIO pool spans every cluster
+              # node by design (one server per host for EC topology), so the
+              # GPU node is an intentional pool member. Harmless when the
+              # taint isn't present (see enable_gpu_node_taint in
+              # scout_common defaults).
+              - key: nvidia.com/gpu
+                value: present
+                effect: NoSchedule
             affinity:
               podAntiAffinity:
                 requiredDuringSchedulingIgnoredDuringExecution:

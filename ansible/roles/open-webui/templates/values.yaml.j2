@@ -34,6 +34,13 @@ ollama:
                 values:
                   - '{{ ollama_min_gpu_memory_gb }}'
 {% endif %}
+  # Tolerate the GPU-node taint so Ollama can schedule on reserved GPU
+  # nodes (see scout_common defaults `enable_gpu_node_taint`). Harmless
+  # when the taint isn't present.
+  tolerations:
+    - key: nvidia.com/gpu
+      value: present
+      effect: NoSchedule
   extraEnv:
     - name: OLLAMA_KEEP_ALIVE
       value: '-1'

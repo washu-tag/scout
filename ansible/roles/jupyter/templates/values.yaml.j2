@@ -118,6 +118,14 @@ singleuser:
   nodeSelector:
     kubernetes.io/hostname: '{{ jupyter_target_node_name }}'
 {% endif %}
+  # Tolerate the GPU-node taint. Singleuser pods are pinned to the GPU
+  # node via nodeSelector above (ADR 0006) so they MUST tolerate when
+  # enable_gpu_node_taint is set, or no pod will ever schedule. Harmless
+  # when the taint isn't present.
+  tolerations:
+    - key: nvidia.com/gpu
+      value: present
+      effect: NoSchedule
   cmd: null
   initContainers:
     - name: spark-config-setup
