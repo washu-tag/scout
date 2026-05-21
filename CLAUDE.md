@@ -128,7 +128,7 @@ The Delta Lake silver layer contains a `reports` table with HL7 radiology report
 - **Patient IDs**: `patient_ids` (array of structs), `epic_mrn`, and dynamically-created ID columns per assigning authority
 - **Orders**: `orc_2_placer_order_number`, `obr_2_placer_order_number`, `orc_3_filler_order_number`, `obr_3_filler_order_number`
 - **Service**: `service_identifier`, `service_name`, `service_coding_system`, `diagnostic_service_id`, `modality` (derived)
-- **Timing**: `requested_dt`, `observation_dt`, `observation_end_dt`, `results_report_status_change_dt`, `patient_age` (derived)
+- **Timing**: `requested_dt`, `observation_dt`, `observation_end_dt`, `results_report_status_change_dt`
 - **Personnel**: `principal_result_interpreter`, `assistant_result_interpreter`, `technician` (arrays)
 - **Report Content**: `report_text` (full), `report_status`, `study_instance_uid`
 - **Parsed Sections**: `report_section_addendum`, `report_section_findings`, `report_section_impression`, `report_section_technician_note`
