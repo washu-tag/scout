@@ -92,6 +92,11 @@
               - key: 'node-role.kubernetes.io/control-plane'
                 operator: Exists
                 effect: PreferNoSchedule
+              # Allows the MinIO pool to include the GPU node when
+              # `minio_hosts` lists it.
+              - key: nvidia.com/gpu
+                value: present
+                effect: NoSchedule
             affinity:
               podAntiAffinity:
                 requiredDuringSchedulingIgnoredDuringExecution:

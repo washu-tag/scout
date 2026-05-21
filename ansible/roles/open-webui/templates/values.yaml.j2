@@ -34,6 +34,11 @@ ollama:
                 values:
                   - '{{ ollama_min_gpu_memory_gb }}'
 {% endif %}
+  # Required so Ollama can schedule on the reserved GPU node.
+  tolerations:
+    - key: nvidia.com/gpu
+      value: present
+      effect: NoSchedule
   extraEnv:
     - name: OLLAMA_KEEP_ALIVE
       value: '-1'
