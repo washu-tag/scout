@@ -1,12 +1,11 @@
 package edu.wustl.scout.xnat.auth.security;
 
+import edu.wustl.scout.xnat.auth.ScoutAuthMethod;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xnat.security.BaseXnatSecurityExtension;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.stereotype.Component;
-
-import static org.nrg.xdat.services.XdatUserAuthService.OPENID;
 
 /**
  * XNAT plugin-discovery seam. Inserts both filters before the default
@@ -43,8 +42,6 @@ public class ScoutSecurityExtension extends BaseXnatSecurityExtension {
 
     @Override
     public String getAuthMethod() {
-        // We reuse the OPENID auth method so XdatUserAuth rows are consistent
-        // with anything the prior OIDC plugin may have created in this DB.
-        return OPENID;
+        return ScoutAuthMethod.VALUE;
     }
 }
