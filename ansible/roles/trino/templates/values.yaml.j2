@@ -1,23 +1,104 @@
-# Server configuration (cluster-wide settings)
+# Server configuration (cluster-wide settings).
+# Phase 1 of ADR 0020: JWT auth over HTTPS terminated by Trino itself, OPA
+# access control, internal-communication shared-secret.
 server:
   workers: {{ trino_worker_count }}
   config:
     query:
       # Cluster-wide max memory = workers × worker_heap × per_node_fraction
       maxMemory: "{{ trino_worker_max_heap | multiply_memory(trino_worker_count * trino_per_node_query_memory_fraction) }}B"
+    # Dual-mode auth. JWT is the primary path (user JWTs from Jupyter,
+    # service-account JWTs from Superset/Voila); PASSWORD is the interim
+    # accommodation for upstream `tuannvm/mcp-trino`, which only supports
+    # HTTP Basic outbound (see `trino_password_authenticator_users`
+    # below and the ADR 0020 deviations section). When the custom MCP
+    # tool ships and starts speaking JWT, the password authenticator and
+    # the PASSWORD entry on this line are removed.
+    authenticationType: PASSWORD,JWT
+    https:
+      enabled: true
+      port: {{ trino_https_port }}
+      keystore:
+        path: /etc/trino/tls/keystore.p12
+  # Coordinator-only config. JWT settings + keystore password aren't
+  # recognized by workers (they don't serve auth or HTTPS), so the chart
+  # writes them only to the coordinator's config.properties. The file-
+  # based PASSWORD authenticator is also coordinator-only — workers
+  # don't terminate client auth.
+  coordinatorExtraConfig: |
+    http-server.authentication.jwt.key-file={{ trino_keycloak_jwks_url }}
+    http-server.authentication.jwt.required-audience={{ trino_keycloak_required_audience }}
+    http-server.authentication.jwt.principal-field=preferred_username
+    http-server.authentication.jwt.user-mapping.pattern=(?:service-account-)?(.+)
+    http-server.https.keystore.key=${ENV:KEYSTORE_PASSWORD}
+    password-authenticator.config-files=/etc/trino/password-auth/password-authenticator.properties
+
+# Service exposes both ports per the chart's design:
+#   - 8080/http: worker→coordinator internal-communication (shared-secret-
+#     authenticated), liveness/readiness probes (/v1/info is unauthenticated
+#     in Trino). NOT for external client traffic.
+#   - 8443/https: external client traffic (JWT-authenticated).
+# JWT auth is rejected on HTTP because allow-insecure-over-http is left at
+# the default (false). Internal-comm and probes bypass that via the
+# shared-secret + unauthenticated /v1/info endpoint. Clients use 8443.
+
+# Additional Trino properties layered onto the coordinator/worker configs.
+# The chart sets keystore.path from server.config.https.keystore.path; the
+# password and the rest go here. JWT validation uses Keycloak's JWKS; OPA is
+# the system access controller; workers authenticate to coordinator via the
+# internal-communication shared secret over HTTPS.
+# Common to both coordinator and worker. Workers reject JWT and HTTPS
+# keystore settings ("not used" config errors), so those go in
+# coordinatorExtraConfig below — only properties valid on both nodes
+# belong here. The shared secret authenticates worker→coordinator
+# internal-comm and must be set on both.
+additionalConfigProperties:
+  - internal-communication.shared-secret=${ENV:INTERNAL_SHARED_SECRET}
+
+# Access control via OPA. The chart writes this to etc/access-control.properties
+# (a separate file from config.properties); putting these into
+# additionalConfigProperties would land them in the wrong file and Trino
+# rejects them as unused config keys.
+accessControl:
+  type: properties
+  properties: |
+    access-control.name=opa
+    opa.policy.uri={{ trino_opa_endpoint }}/v1/data/trino/allow
+    opa.policy.row-filters-uri={{ trino_opa_endpoint }}/v1/data/trino/rowFilters
+    opa.policy.batch-column-masking-uri={{ trino_opa_endpoint }}/v1/data/trino/batchColumnMasks
+
+# TLS bundle for the coordinator's HTTPS listener (keystore.p12). The
+# chart mounts on every pod (coordinator + workers); workers don't read
+# keystore.p12 since internal-comm runs over HTTP, but the mount is
+# harmless and keeps the values structure simple.
+#
+# trino-password-auth: contains password-authenticator.properties +
+# password.db for the file-based PASSWORD authenticator. Coordinator
+# reads it on startup and again every `file.refresh-period` so adding
+# / rotating a service principal doesn't need a pod restart. Mount is
+# also harmless on workers (they don't terminate client auth).
+secretMounts:
+  - name: trino-tls
+    secretName: trino-tls
+    path: /etc/trino/tls
+  - name: trino-password-auth
+    secretName: trino-password-auth
+    path: /etc/trino/password-auth
 
 {% if aws_deployment %}
 serviceAccount:
   create: false
   name: '{{ lake_reader_service_account_name }}'
 {% else %}
-# Inject S3 credentials from a Secret. The Secret is created by deploy.yaml
-# before this chart is installed. The catalog config below references these
-# via Trino's ${ENV:VAR} substitution syntax, so the rendered catalog
-# ConfigMap contains only references, not credentials.
+# Inject credentials Secrets:
+#   trino-s3:        S3_ACCESS_KEY, S3_SECRET_KEY (Delta connector)
+#   trino-rbac-env:  KEYSTORE_PASSWORD, INTERNAL_SHARED_SECRET (HTTPS + worker auth)
+# Both referenced from properties via Trino's ${ENV:VAR} substitution syntax.
 envFrom:
   - secretRef:
       name: trino-s3
+  - secretRef:
+      name: trino-rbac-env
 {% endif %}
 
 # JMX exporter configuration for Prometheus metrics
@@ -48,6 +129,9 @@ coordinator:
       heapHeadroomPerNode: "" # Per https://trino.io/docs/current/admin/properties-resource-management.html#memory-heap-headroom-per-node defaults to 30% of maxHeapSize
     query:
       maxMemoryPerNode: "{{ trino_coordinator_max_heap | multiply_memory(trino_per_node_query_memory_fraction) }}B"
+  # Probes use the chart's defaults: liveness GETs /v1/info on the HTTP
+  # port (unauthenticated endpoint), readiness execs the bundled health-check
+  # script. Both work in the dual-listener config.
   resources: {{ trino_coordinator_resources | to_json }}
   annotations:
     prometheus.io/scrape: 'true'
@@ -69,6 +153,39 @@ worker:
     prometheus.io/scrape: 'true'
     prometheus.io/port: '5556'
     prometheus.io/path: '/metrics'
+
+# NetworkPolicy: restrict the HTTP listener (port 8080) to Trino-internal
+# traffic only. The chart's networkPolicy support auto-allows Trino-pod-to-
+# Trino-pod traffic when enabled — we just declare the external allowances:
+#   - 8443 (HTTPS, JWT-authenticated): from any pod in the same namespace
+#     (Superset, Jupyter, Voila, MCP).
+#   - 5556 (JMX exporter): from Prometheus in the monitoring namespace.
+#
+# Port 8080 is intentionally absent from these rules. It stays reachable
+# only by the chart's auto-allow (worker↔coordinator internal-comm).
+# Closes the "malicious in-cluster pod hitting HTTP with a stolen JWT"
+# attack — a pod outside this set can't reach the HTTP listener at all.
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: '{{ trino_namespace }}'
+      ports:
+        - port: {{ trino_https_port }}
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: '{{ prometheus_namespace }}'
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+              app.kubernetes.io/component: server
+      ports:
+        - port: 5556
+          protocol: TCP
 
 # Catalogs
 catalogs:

@@ -2,9 +2,6 @@
 # Jupyter role defaults
 # User-configurable settings are in inventory.yaml
 
-# Spark ConfigMap name (unique per role to avoid collisions in shared namespaces)
-jupyter_spark_defaults_configmap_name: spark-defaults-jupyter
-
 # Helm configuration
 jupyter_helm_repo_name: jupyterhub
 jupyter_helm_repo_url: https://raw.githubusercontent.com/jupyterhub/helm-chart/refs/heads/gh-pages/
@@ -15,9 +12,9 @@ jupyter_hub_storage_size: 1Gi
 jupyter_singleuser_storage_size: 10Gi
 
 # Ephemeral storage limit for singleuser pods
-# Prevents Spark shuffle/temp data from filling the node's disk (/var/lib/rancher)
-# When exceeded, the pod is evicted. Users who need more scratch space should
-# configure Spark to use their home directory (persistent storage) instead.
+# Prevents notebook scratch data (pip caches, conda envs, temp files) from
+# filling the node's disk (/var/lib/rancher). Users who need more scratch
+# space should write to their home directory (persistent storage) instead.
 jupyter_singleuser_ephemeral_storage_limit: 10Gi
 
 # Storage class for JupyterHub database
@@ -75,9 +72,6 @@ jupyter_cpu_profile:
             cpu_limit: 1
             mem_guarantee: '1G'
             mem_limit: '4G'
-            environment:
-              SPARK_DRIVER_MEMORY: '3g'
-              SPARK_EXECUTOR_MEMORY: '3g'
         medium:
           display_name: 'Medium (2 CPU, 8Gi RAM)'
           kubespawner_override:
@@ -85,9 +79,6 @@ jupyter_cpu_profile:
             cpu_limit: 2
             mem_guarantee: '2G'
             mem_limit: '8G'
-            environment:
-              SPARK_DRIVER_MEMORY: '6g'
-              SPARK_EXECUTOR_MEMORY: '6g'
         large:
           display_name: 'Large (4 CPU, 16Gi RAM)'
           default: true
@@ -96,9 +87,6 @@ jupyter_cpu_profile:
             cpu_limit: 4
             mem_guarantee: '4G'
             mem_limit: '16G'
-            environment:
-              SPARK_DRIVER_MEMORY: '12g'
-              SPARK_EXECUTOR_MEMORY: '12g'
 jupyter_profiles:
   - '{{ jupyter_cpu_profile }}'
 

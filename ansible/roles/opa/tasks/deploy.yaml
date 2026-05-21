@@ -1,0 +1,176 @@
+---
+# Deploy OPA as a Deployment + Service in the Trino namespace.
+# Trino's access-control plugin queries the Service URL set in the trino role.
+#
+# Policy and data are loaded from a ConfigMap mounted as files. OPA polls
+# /policies for changes; updating the ConfigMap propagates without restart.
+# A policy-hash annotation forces a rollout on policy or data changes so the
+# clean-cache guarantee is explicit.
+
+- name: Resolve OPA policy path on disk
+  ansible.builtin.set_fact:
+    # policy/trino/ at repo root. Relative from this role:
+    #   ansible/roles/opa/tasks → ../../../../policy/trino
+    opa_policy_path: '{{ role_path }}/../../../policy/trino/main.rego'
+
+- name: Render OPA data document
+  ansible.builtin.set_fact:
+    opa_data_json: >-
+      {{ {
+        "filtered_tables": (trino_filtered_tables | default([])),
+        "view_only_tables": (trino_view_only_tables | default([])),
+        "view_owner_principals": (trino_view_owner_principals | default([])),
+        "attribute_filters": (trino_attribute_filters | default({})),
+        "masked_columns": (trino_masked_columns | default([])),
+        "keycloak": {
+          "url": opa_keycloak_url,
+          "realm": opa_keycloak_realm,
+          "reader_client_id": opa_keycloak_reader_client_id,
+        },
+      } | to_json }}
+
+- name: Create OPA policy + data ConfigMap
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+    # Rendered as a string (not a dict) so we can embed the multi-line .rego
+    # via `indent` — single quotes in the Rego source would break a single-
+    # quoted YAML scalar.
+    definition: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: opa-trino-policy
+        namespace: {{ opa_namespace }}
+        labels:
+          app: opa-trino
+      data:
+        policy.rego: |-
+          {{ lookup('file', opa_policy_path) | indent(10) }}
+        data.json: |-
+          {{ opa_data_json | indent(10) }}
+
+- name: Create OPA Keycloak-reader secret
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: opa-keycloak-reader
+        namespace: '{{ opa_namespace }}'
+        labels:
+          app: opa-trino
+      type: Opaque
+      stringData:
+        # Inventory sets keycloak_opa_reader_client_secret; the same value
+        # also lands in the rendered Keycloak realm for the client.
+        client-secret: '{{ keycloak_opa_reader_client_secret }}'
+
+- name: Deploy OPA
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: opa-trino
+        namespace: '{{ opa_namespace }}'
+        labels:
+          app: opa-trino
+      spec:
+        replicas: '{{ opa_replicas }}'
+        selector:
+          matchLabels:
+            app: opa-trino
+        template:
+          metadata:
+            labels:
+              app: opa-trino
+            annotations:
+              # Force a rollout when policy OR data changes. OPA also watches
+              # /policies on disk, but a Pod restart guarantees clean cache state.
+              policy-hash: '{{ (lookup("file", opa_policy_path) ~ opa_data_json) | hash("sha256") | truncate(8, True, "") }}'
+          spec:
+            containers:
+              - name: opa
+                image: '{{ opa_image }}:{{ opa_image_tag }}'
+                args:
+                  - run
+                  - --server
+                  - --addr=0.0.0.0:8181
+                  - --log-level=info
+                  - --log-format=json
+                  - --set=decision_logs.console=true
+                  - --set=decision_logs.reporting.min_delay_seconds={{ opa_decision_log_min_delay_seconds }}
+                  - --set=decision_logs.reporting.max_delay_seconds={{ opa_decision_log_max_delay_seconds }}
+                  - /policies/policy.rego
+                  - /policies/data.json
+                ports:
+                  - name: http
+                    containerPort: 8181
+                env:
+                  - name: KEYCLOAK_READER_CLIENT_SECRET
+                    valueFrom:
+                      secretKeyRef:
+                        name: opa-keycloak-reader
+                        key: client-secret
+                resources:
+                  requests:
+                    cpu: '{{ opa_cpu_request }}'
+                    memory: '{{ opa_memory_request }}'
+                  limits:
+                    cpu: '{{ opa_cpu_limit }}'
+                    memory: '{{ opa_memory_limit }}'
+                readinessProbe:
+                  httpGet:
+                    path: /health?bundles
+                    port: http
+                  initialDelaySeconds: 3
+                  periodSeconds: 5
+                livenessProbe:
+                  httpGet:
+                    path: /health
+                    port: http
+                  initialDelaySeconds: 5
+                  periodSeconds: 30
+                volumeMounts:
+                  - name: policies
+                    mountPath: /policies
+                    readOnly: true
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+                  capabilities:
+                    drop: [ALL]
+            volumes:
+              - name: policies
+                configMap:
+                  name: opa-trino-policy
+
+- name: Expose OPA via ClusterIP Service
+  delegate_to: localhost
+  kubernetes.core.k8s:
+    state: present
+    kubeconfig: '{{ local_kubeconfig_yaml }}'
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: opa-trino
+        namespace: '{{ opa_namespace }}'
+        labels:
+          app: opa-trino
+      spec:
+        selector:
+          app: opa-trino
+        ports:
+          - name: http
+            port: 8181
+            targetPort: http
+            protocol: TCP

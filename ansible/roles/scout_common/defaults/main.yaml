@@ -102,6 +102,10 @@ extractor_namespace: '{{ scout_extractor_namespace }}'
 
 # Analytics & user services
 trino_namespace: '{{ scout_analytics_namespace }}'
+# HTTPS listener port for client traffic. Lives in scout_common (not the
+# trino role) so consumer roles (jupyter, superset, scout-dashboards)
+# can reference it without depending on the trino role being loaded.
+trino_https_port: 8443
 trino_rw_namespace: '{{ scout_extractor_namespace }}'
 trino_rw_release_name: trino-rw
 trino_rw_endpoint_host: '{{ trino_rw_release_name }}.{{ trino_rw_namespace }}'
@@ -216,8 +220,6 @@ keycloak_subdomain: keycloak
 enable_chat: false
 enable_playbooks: false
 
-# Reserve GPU nodes for workloads that either need GPU hardware (Ollama,
-# Jupyter singleuser) or are cluster-wide storage layers that span every
 # node by design (MinIO pool). With this on, the GPU node gets
 # `nvidia.com/gpu=present:NoSchedule` and the above workloads carry
 # matching tolerations; everything else avoids the GPU node. Disable
@@ -225,8 +227,26 @@ enable_playbooks: false
 # genuinely useful for non-GPU pods.
 enable_gpu_node_taint: true
 
+# Scout RBAC: maps Keycloak user attributes to the SQL columns the Trino
+# OPA policy filters on. Single source of truth consumed by two roles:
+#   - keycloak: renders one User Profile attribute per key here so each
+#     becomes editable in the Keycloak admin UI (admin-only view/edit).
+#   - opa: renders the same map into data.attribute_filters so the
+#     policy emits `column IN ('v1','v2')` filters for tables in
+#     trino_filtered_tables. Wildcard `*` disables that filter.
+#
+# Adding a new restriction dimension is one inventory edit — both
+# Keycloak and OPA pick it up on next deploy. Optional per-attribute
+# overrides for display name / validation pattern live alongside
+# `column`, see ansible/roles/keycloak/templates/scout-realm.json.j2
+# for the rendered shape.
+trino_attribute_filters:
+  allowed_facilities:
+    column: sending_facility
+
 # Superset dashboard bundles to install. Built-in bundles: core, quality,
-# followup. Override in inventory to add more (e.g. [core, quality]).
+# followup, longitudinal. Override in inventory to add more
+# (e.g. [core, quality]).
 scout_dashboard_bundles:
   - core
 

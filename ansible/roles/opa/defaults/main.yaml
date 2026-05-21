@@ -1,0 +1,105 @@
+---
+# OPA role defaults
+#
+# OPA enforces Trino's access-control policy (see policy/trino/main.rego).
+# Deployed as a Deployment + Service in the same namespace as Trino so the
+# query path stays in-cluster (and so a single NetworkPolicy on OPA can
+# allow only the Trino coordinator).
+
+# Namespace: deploy alongside Trino.
+opa_namespace: '{{ trino_namespace }}'
+
+# Image tag pinned in group_vars/all/versions.yaml.
+opa_image: openpolicyagent/opa
+
+# Resource sizing — OPA is CPU-bound on policy evaluation, memory-bound on
+# the policy + decision log buffer. 2 replicas for HA.
+opa_replicas: 2
+opa_cpu_request: 50m
+opa_cpu_limit: 500m
+opa_memory_request: 64Mi
+opa_memory_limit: 256Mi
+
+# === Data document (rendered into /policies/data.json alongside the Rego)
+
+# Trino service principals that own SECURITY DEFINER views. When an
+# invoker queries a view, Trino re-evaluates the view's underlying
+# reads against the view OWNER's identity — both /allow and /rowFilters
+# /batchColumnMasks. If the owner has restrictive RBAC attributes (or
+# none, like the default `trino` admin user), the underlying reads get
+# clamped to zero rows, breaking the view for every invoker.
+#
+# Owners listed here bypass row filters and column masks so the view
+# can materialize unrestricted; the invoker's RBAC is still applied at
+# the view level via filtered_tables (the views ARE listed above).
+# Defaults to the Trino password-auth admin (`trino`), which is what
+# hl7-transformer connects as when running CREATE VIEW.
+trino_view_owner_principals:
+  - trino
+
+# Scout data tables that receive row-filter enforcement. Every attribute
+# in trino_attribute_filters scopes to this list by default — adding a
+# table here turns on row filters for that table across all configured
+# attributes. Tables NOT on this list (information_schema, system, the
+# patient mapping table, etc.) receive no row filter.
+#
+# Per-attribute overrides are supported via the optional `tables` key
+# on an attribute_filters entry (see below) — useful when a column
+# only exists on a subset of these tables.
+trino_filtered_tables:
+  - { catalog: delta, schema: default, table: reports }
+  - { catalog: delta, schema: default, table: reports_curated }
+  - { catalog: delta, schema: default, table: reports_latest }
+  - { catalog: delta, schema: default, table: reports_dx }
+  - { catalog: delta, schema: default, table: reports_curated_epic_view }
+  - { catalog: delta, schema: default, table: reports_latest_epic_view }
+  - { catalog: delta, schema: default, table: reports_dx_epic_view }
+
+# Tables denied for direct access. Users querying these by name get a
+# permission error, and the tables are hidden from SHOW TABLES output.
+# Intended for join-target tables (e.g. the patient mapping) where the
+# row filters can't reach — a user restricted to WUSM could otherwise
+# enumerate every patient identifier by selecting from the mapping
+# table directly.
+#
+# Caveat — Trino view security: views can still join to these tables
+# only when the view was created with SECURITY DEFINER (Trino's
+# CREATE VIEW default is SECURITY INVOKER, which would propagate the
+# deny). Verify with `SHOW CREATE VIEW <name>` before adding a table
+# whose views need to keep working. Defaults to empty so this is an
+# explicit opt-in per deployment.
+trino_view_only_tables: []
+
+# `trino_attribute_filters` lives in scout_common/defaults/main.yaml —
+# it's the single source of truth shared by the keycloak role (renders
+# user-profile attribute editors) and this role (renders the OPA data
+# document). Override in inventory.yaml to add restriction dimensions.
+
+# Columns the policy redacts when the calling user's mask_phi_fields
+# attribute is unset or "true". Mask expression depends on column type:
+# varchar columns get the literal '[REDACTED]' (visible to the user);
+# anything else gets `NULL` (Trino's expression analyzer coerces the
+# unknown-typed null to the column's declared type). Adding columns is
+# an inventory edit — no policy change needed.
+#
+# full_patient_name is the structured-array twin of patient_name, so
+# masking both prevents recovery of the redacted simple name through
+# the typed twin.
+trino_masked_columns:
+  - patient_name
+  - full_patient_name
+  - zip_or_postal_code
+
+# Keycloak admin API config consumed by the policy's http.send. The
+# matching client secret lives in a Secret mounted as the
+# KEYCLOAK_READER_CLIENT_SECRET env var (read via opa.runtime().env in Rego).
+opa_keycloak_url: 'http://keycloak-service.{{ keycloak_namespace }}:8080'
+opa_keycloak_realm: '{{ keycloak_realm_name }}'
+opa_keycloak_reader_client_id: opa-keycloak-reader
+# The client secret comes from inventory as `keycloak_opa_reader_client_secret`
+# (same variable rendered into the Keycloak realm template). The OPA deploy
+# task reads it directly — no rename needed.
+
+# Decision logs go to stdout (Loki picks them up via existing Scout log shipping).
+opa_decision_log_min_delay_seconds: 5
+opa_decision_log_max_delay_seconds: 15

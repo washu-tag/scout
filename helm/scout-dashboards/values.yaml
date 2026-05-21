@@ -6,9 +6,14 @@ image:
   pullPolicy: IfNotPresent
 
 # Trino connection details that get baked into the Scout Data Lake database YAML.
+# Port + scheme default to the chart's pre-RBAC HTTP listener (8080/http);
+# RBAC-enabled deploys set port=8443 and scheme=https to hit the HTTPS
+# listener (DB_CONNECTION_MUTATOR adds the JWT + CA verify on top).
 trino:
   user: admin
   namespace: scout-analytics
+  port: 8080
+  scheme: http
 
 # Names of secrets/configmaps already created by the apache/superset Helm
 # release. The import Job mounts these so it has the same DB/Redis/config as
@@ -17,6 +22,10 @@ supersetRelease:
   envSecret: superset-env # envFrom (DB connection, secret key)
   configSecret: superset-config # mounted at /app/pythonpath
   valkeyAuthSecret: superset-valkey-auth # REDIS_PASSWORD
+  # When set, the import Job mounts this Secret's `ca.crt` at /etc/trino-ca/
+  # so DB_CONNECTION_MUTATOR can verify Trino's self-signed TLS cert during
+  # dataset validation. Leave empty for non-RBAC clusters.
+  trinoCaSecret: ''
 
 # Admin username dashboards are imported as. Must exist in Superset already
 # (created by the apache/superset chart's init Job).
@@ -24,7 +33,7 @@ importUser: admin
 
 # Built-in dashboard bundles to install. Each name corresponds to a
 # subdirectory under files/analytics/{charts,dashboards,datasets/Scout_Data_Lake}/.
-# Available built-ins: core, quality, followup.
+# Available built-ins: core, quality, followup, longitudinal.
 #
 # Adding a new built-in bundle is a matter of dropping files into a new
 # subdirectory under each kind and adding its name here — no template

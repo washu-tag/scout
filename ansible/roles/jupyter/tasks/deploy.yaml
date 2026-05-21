@@ -33,17 +33,6 @@
     sa_namespace: '{{ jupyter_namespace }}'
     sa_role_arn: '{{ lake_reader_role_arn }}'
 
-- name: Setup Spark Defaults ConfigMap
-  ansible.builtin.include_role:
-    name: scout_common
-    tasks_from: spark_config_setup
-  vars:
-    spark_defaults_configmap_name: '{{ jupyter_spark_defaults_configmap_name }}'
-    spark_defaults_configmap_namespace: '{{ jupyter_namespace }}'
-    spark_hive_metastore_uri: '{{ hive_metastore_endpoint_readonly }}'
-    spark_s3_username: '{{ s3_lake_reader }}'
-    spark_s3_password: '{{ s3_lake_reader_secret }}'
-
 - name: Create ConfigMap with Scout logo for JupyterHub branding
   delegate_to: localhost
   no_log: true

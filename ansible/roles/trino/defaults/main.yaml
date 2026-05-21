@@ -7,6 +7,40 @@ trino_helm_repo_name: trino
 trino_helm_repo_url: https://trinodb.github.io/charts
 trino_helm_chart_name: trino
 
+# Trino RBAC / TLS / OPA configuration (Phase 1 of ADR 0020).
+# JWT auth requires TLS — Trino terminates HTTPS directly using a cert from
+# the Scout internal CA (cert-manager); the chart's HTTP listener is disabled.
+# The user-facing Service port (`trino_https_port`) is defined in
+# scout_common/defaults/main.yaml so consumer roles can reference it without
+# loading the trino role.
+trino_keystore_password: trinokeystorepass # protects the in-pod keystore; not a network secret
+
+# === Password authenticator (interim) =======================================
+# Service principals that authenticate to Trino via HTTP Basic auth. Used
+# by clients that can't yet speak JWT outbound — currently only
+# `tuannvm/mcp-trino` (HTTP Basic only). Each entry becomes a
+# `username:bcrypt-hash` line in the password file the coordinator loads
+# (refreshed every 30s, no pod restart for add/rotate).
+#
+# Removal trigger: when the custom MCP tool replaces upstream mcp-trino
+# (target: one quarter from ADR 0020 acceptance), drop this entirely and
+# remove `PASSWORD` from `authenticationType` in values.yaml.j2.
+#
+# The value is the plaintext password; bcrypt hashing happens at deploy
+# time via `htpasswd -bnBC 10` shelled out from the Ansible controller
+# (see password.db.j2). We don't use Ansible's `password_hash` filter
+# because passlib's bcrypt path breaks on modern bcrypt >=4.x / Python
+# 3.14. `htpasswd` ships on macOS (built-in) and on Linux via
+# apache2-utils / httpd-tools.
+#
+# Override in inventory:
+#   trino_password_authenticator_users:
+#     openwebui_mcp_svc: '{{ trino_openwebui_mcp_svc_password }}'
+trino_password_authenticator_users: {}
+trino_keycloak_jwks_url: 'http://keycloak-service.{{ keycloak_namespace }}:8080/realms/{{ keycloak_realm_name }}/protocol/openid-connect/certs'
+trino_keycloak_required_audience: trino
+trino_opa_endpoint: 'http://opa-trino.{{ trino_namespace }}:8181'
+
 # Resource sizing - users should override these in inventory
 # Worker count
 trino_worker_count: 2 # Number of worker replicas

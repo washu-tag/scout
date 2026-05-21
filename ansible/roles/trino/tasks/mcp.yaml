@@ -2,12 +2,31 @@
 # Deploy Trino MCP server in the Trino namespace
 # Provides MCP interface to Trino for AI assistants
 
+# If a previous run was interrupted mid-clone, the destination exists but
+# contains no `.git` directory — git refuses to clone into a non-empty
+# non-repo dir. Detect and remove that case before cloning.
+- name: Check mcp-trino chart dir is a valid git repo
+  ansible.builtin.stat:
+    path: '{{ mcp_trino_chart_path }}/.git'
+  register: mcp_trino_git_check
+  delegate_to: localhost
+  run_once: true
+
+- name: Remove stale (non-repo) mcp-trino chart dir if present
+  ansible.builtin.file:
+    path: '{{ mcp_trino_chart_path }}'
+    state: absent
+  when: not mcp_trino_git_check.stat.exists
+  delegate_to: localhost
+  run_once: true
+
 - name: Clone or update mcp-trino repository
   ansible.builtin.git:
     repo: '{{ mcp_trino_repo_url }}'
     dest: '{{ mcp_trino_chart_path }}'
     version: '{{ mcp_trino_repo_version }}'
     update: true
+    force: true
   delegate_to: localhost
   run_once: true
 

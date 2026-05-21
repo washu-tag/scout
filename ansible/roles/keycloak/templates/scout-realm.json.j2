@@ -2,6 +2,13 @@
     "enabled": true,
     "realm": "{{ keycloak_realm_name }}",
     "displayName": "{{ keycloak_realm_name | capitalize }}",
+    {#- userProfileEnabled gates whether keycloak-config-cli imports the
+        userProfile block below. Without this realm attribute, the importer
+        logs "skipping profile import" and the userProfile section is
+        silently ignored. -#}
+    "attributes": {
+      "userProfileEnabled": "true"
+    },
     "eventsEnabled": true,
     "adminEventsEnabled": true,
     "adminEventsDetailsEnabled": true,
@@ -279,6 +286,12 @@
         "webOrigins": [
           "https://jupyter.{{ server_hostname }}"
         ],
+        {#- trino-audience scope adds aud=trino to access tokens so notebooks
+            can forward the user's JupyterHub token directly to Trino (JWT
+            pass-through, ADR 0020). The notebook pod never holds the token
+            long-term — the scout_trino helper fetches a current value from
+            the Hub via JUPYTERHUB_API_TOKEN (Hub refreshes via auth_state
+            on demand), so realm-default access-token TTL is fine. -#}
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -286,7 +299,8 @@
           "roles",
           "basic",
           "email",
-          "microprofile-jwt"
+          "microprofile-jwt",
+          "trino-audience"
         ],
         "optionalClientScopes": [
           "address",
@@ -457,6 +471,9 @@
         "webOrigins": [
           "https://chat.{{ server_hostname }}"
         ],
+        {#- mcp-trino-audience adds aud=mcp-trino to access tokens so the
+            MCP server (tuannvm/mcp-trino) can validate them and impersonate
+            the chat user on the outbound Trino call (ADR 0020). -#}
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -464,13 +481,115 @@
           "roles",
           "basic",
           "email",
-          "microprofile-jwt"
+          "microprofile-jwt",
+          "mcp-trino-audience"
         ],
         "optionalClientScopes": [
           "address",
           "phone",
           "organization",
           "offline_access",
+        ]
+      },
+      {#- Service principal for OPA. Used by the trino RBAC policy to fetch
+          per-user attributes from Keycloak's admin API via http.send. Granted
+          only the realm-management:view-users role (see the `users` array
+          below for the service-account user's role mapping). -#}
+      {
+        "name": "opa-keycloak-reader",
+        "description": "OPA service account for fetching per-user attributes from Keycloak",
+        "enabled": true,
+        "clientId": "opa-keycloak-reader",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_opa_reader_client_secret }}",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect"
+      },
+      {#- Service principals for the three Trino client surfaces. Each
+          authenticates to Trino via client_credentials and impersonates the
+          end user via X-Trino-User. Token lifespan is 4h so long-running
+          notebook/dashboard queries don't expire mid-session (per-user
+          offboarding still propagates within seconds via the OPA cache
+          invalidation event listener — see ADR 0020). -#}
+      {
+        "name": "superset_svc",
+        "description": "Service principal for Superset connecting to Trino (impersonates the logged-in user via X-Trino-User)",
+        "enabled": true,
+        "clientId": "superset_svc",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_superset_svc_client_secret }}",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect",
+        "attributes": {
+          "access.token.lifespan": "14400"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "trino-audience"
+        ]
+      },
+      {
+        "name": "jupyter_svc",
+        "description": "Service principal for Voila (and any non-auth_state Jupyter consumer) connecting to Trino",
+        "enabled": true,
+        "clientId": "jupyter_svc",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_jupyter_svc_client_secret }}",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect",
+        "attributes": {
+          "access.token.lifespan": "14400"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "trino-audience"
+        ]
+      },
+      {
+        "name": "openwebui_mcp_svc",
+        "description": "Service principal for the Open WebUI Trino MCP sidecar (sets X-Trino-User from X-OpenWebUI-User-Email)",
+        "enabled": true,
+        "clientId": "openwebui_mcp_svc",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_openwebui_mcp_svc_client_secret }}",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect",
+        "attributes": {
+          "access.token.lifespan": "14400"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "trino-audience"
         ]
       }
     ],
@@ -657,6 +776,48 @@
           },
           "group": "scout",
           "multivalued": false
+        },
+        {#- RBAC scoping attributes consumed by the Trino OPA policy via
+            http.send to the Keycloak admin API. Rendered from
+            `trino_attribute_filters` in scout_common/defaults so adding
+            a dimension is a one-line inventory edit. Admin-only view/edit
+            so only realm admins (site admins) can grant data-access
+            scopes. Per-attribute display_name / value_pattern / max_length
+            overrides are honored; defaults fit alphanumeric category codes
+            with a `*` wildcard. -#}
+{% for attr_name, attr_config in trino_attribute_filters.items() %}
+        {
+          "name": "{{ attr_name }}",
+          "displayName": "{{ attr_config.display_name | default('Scout RBAC — ' ~ attr_name) }}",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": true,
+          "validations": {
+            "length": {"max": {{ attr_config.max_length | default(64) }}},
+            "pattern": {
+              "pattern": "{{ attr_config.value_pattern | default('^([A-Za-z0-9_-]+|\\\\*)$') }}",
+              "error-message": "{{ attr_config.value_pattern_error | default('Use an alphanumeric code (letters, digits, hyphen, underscore) or the * wildcard for all values.') }}"
+            }
+          }
+        },
+{% endfor %}
+        {
+          "name": "mask_phi_fields",
+          "displayName": "Scout RBAC — mask PHI fields",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": false,
+          "validations": {
+            "options": {
+              "options": ["true", "false"]
+            }
+          }
         }
       ],
       "groups": [
@@ -708,6 +869,66 @@
               "access.token.claim": "true",
               "claim.name": "policy",
               "jsonType.label": "String"
+            }
+          }
+        ]
+      },
+      {#- Adds aud=trino to access tokens for clients that call the Trino
+          service. Trino's JWT authenticator validates required-audience=trino;
+          tokens lacking this claim are rejected with 401. -#}
+      {
+        "name": "trino-audience",
+        "description": "Adds aud=trino to access tokens for clients calling Trino",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "false",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "trino-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "trino",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
+            }
+          }
+        ]
+      },
+      {#- Adds aud=mcp-trino to access tokens for the Open WebUI client.
+          The MCP Trino tool server (tuannvm/mcp-trino) validates inbound
+          tokens against this audience to authenticate the chat user
+          before impersonating them on the outbound Trino call. Without
+          this mapper Keycloak doesn't put a deterministic aud on OWUI
+          tokens, so oauth-mcp-proxy's audience check fails silently and
+          the user context never makes it to the impersonation path —
+          every chat query then hits Trino as the service account with
+          no row-filter attributes, and returns zero rows. -#}
+      {
+        "name": "mcp-trino-audience",
+        "description": "Adds aud=mcp-trino to access tokens for Open WebUI users querying via the MCP tool",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "false",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "mcp-trino-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "mcp-trino",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
             }
           }
         ]
@@ -767,8 +988,44 @@
               "claim.name": "groups",
               "jsonType.label": "String"
             }
+          },
+          {#- Scout RBAC: surface the user's allowed_facilities attribute as a
+              JWT claim so the Trino audit event listener can derive the
+              tenant tag without a second Keycloak round-trip per query. OPA
+              fetches the same attribute via the admin API; this is purely
+              for the audit-side derivation. -#}
+          {
+            "name": "scout_allowed_facilities",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-usermodel-attribute-mapper",
+            "consentRequired": false,
+            "config": {
+              "introspection.token.claim": "true",
+              "multivalued": "true",
+              "userinfo.token.claim": "true",
+              "user.attribute": "allowed_facilities",
+              "id.token.claim": "true",
+              "lightweight.claim": "false",
+              "access.token.claim": "true",
+              "claim.name": "scout_allowed_facilities",
+              "jsonType.label": "String"
+            }
           }
         ]
+      }
+    ],
+    {#- Service-account user for opa-keycloak-reader. Keycloak auto-creates
+        the user when the client has serviceAccountsEnabled=true; this entry
+        assigns the realm-management:view-users role to it so the
+        client_credentials token can query /admin/realms/{r}/users. -#}
+    "users": [
+      {
+        "username": "service-account-opa-keycloak-reader",
+        "enabled": true,
+        "serviceAccountClientId": "opa-keycloak-reader",
+        "clientRoles": {
+          "realm-management": ["view-users"]
+        }
       }
     ]
   }
