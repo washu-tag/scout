@@ -105,7 +105,7 @@ spark:
 sparkDefaults:
   enabled: true
   mode: "{{ 'aws' if aws_deployment else 'on-prem' }}"
-  shufflePartitions: {{ spark_sql_shuffle_partitions | default(200) }}
+  shufflePartitions: {{ spark_sql_shuffle_partitions | default(16) }}
   hiveMetastoreUri: "{{ hive_metastore_endpoint }}"
   warehouseDir: "{{ delta_lake_path }}"
   s3Region: "{{ s3_region | default('us-east-1') }}"

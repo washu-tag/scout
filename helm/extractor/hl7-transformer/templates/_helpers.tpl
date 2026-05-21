@@ -90,6 +90,8 @@ spark.sql.ansi.enabled false
 spark.databricks.delta.schema.autoMerge.enabled true
 spark.databricks.delta.merge.repartitionBeforeWrite.enabled true
 spark.databricks.delta.constraints.allowUnenforcedNotNull.enabled true
+spark.databricks.delta.optimizeWrite.enabled true
+spark.databricks.delta.autoCompact.enabled true
 spark.sql.extensions io.delta.sql.DeltaSparkSessionExtension
 spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog
 spark.hadoop.fs.s3a.path.style.access {{ if $aws }}false{{ else }}true{{ end }}
