@@ -456,9 +456,10 @@ def create_navigation_controls(state):
         if "load_annotation" in state:
             state["load_annotation"](idx)
 
-        # Render report
+        # Render report. epic_mrn is the resolved Epic MRN; mpi is the resolved legacy
+        # MPI used as a fallback for pre-Epic-only patients.
         patient_id = html.escape(
-            str(row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"])
+            str(row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"])
         )
         requested_dt = (
             row["requested_dt"].strftime("%Y-%m-%d")
@@ -601,7 +602,7 @@ def create_navigation_controls(state):
                         <!-- Patient Demographics -->
                         <div style='background: #f8f9fa; padding: 12px; border-radius: 4px; font-size: 14px;'>
                             <div style='font-weight: 600; margin-bottom: 8px; font-size: 15px;'>Patient</div>
-                            <div style='margin-bottom: 4px;'><strong>Epic MRN:</strong> {patient_id}</div>
+                            <div style='margin-bottom: 4px;'><strong>Patient MRN:</strong> {patient_id}</div>
                             <div><strong>Age:</strong> {patient_age} • <strong>Sex:</strong> {sex}</div>
                         </div>
 

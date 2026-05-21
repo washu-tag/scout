@@ -535,11 +535,12 @@ def _create_search_form(container, config=None):
         layout=widgets.Layout(width="45%"),
     )
 
-    # Patient ID filtering
+    # Patient ID filtering — accepts Epic MRNs or legacy MPIs (mixed lists are fine).
+    # SQL also ORs against scout_patient_id as a silent power-user path.
     patient_ids_input = widgets.Textarea(
         value=config.get("patient_ids", ""),
-        placeholder="Paste Epic MRNs (one per line or comma-separated)",
-        description="Epic MRNs:",
+        placeholder="Paste patient MRNs (one per line or comma-separated)",
+        description="Patient MRNs:",
         layout=widgets.Layout(width="98%", height="80px"),
         style={"description_width": "100px"},
     )
@@ -564,33 +565,45 @@ def _create_search_form(container, config=None):
             content = bytes(uploaded["content"]).decode("utf-8")
             csv_df = pd.read_csv(io.StringIO(content))
 
-            # Look for epic_mrn column (case-insensitive)
-            mrn_col = None
-            for col in csv_df.columns:
-                if col.strip().lower() in ("epic_mrn", "mrn", "epicmrn", "patient_id"):
-                    mrn_col = col
-                    break
+            # Look for any recognized patient-ID column (case-insensitive).
+            # If multiple are present (e.g. epic_mrn AND mpi), union all non-null values.
+            id_aliases = {
+                "epic_mrn",
+                "mrn",
+                "epicmrn",
+                "patient_id",
+                "mpi",
+                "resolved_mpi",
+                "resolved_epic_mrn",
+            }
+            id_cols = [c for c in csv_df.columns if c.strip().lower() in id_aliases]
 
-            if mrn_col is None:
+            if not id_cols:
                 upload_status.value = (
                     "<div style='font-size: 11px; color: #dc2626; margin-top: 4px;'>"
-                    "No epic_mrn, mrn, or patient_id column found in CSV"
+                    "No epic_mrn or mpi column found in CSV"
                     "</div>"
                 )
                 return
 
-            mrns = csv_df[mrn_col].dropna().astype(str).str.strip().tolist()
-            mrns = [m for m in mrns if m]
+            ids = []
+            seen = set()
+            for col in id_cols:
+                for v in csv_df[col].dropna().astype(str).str.strip():
+                    if v and v not in seen:
+                        seen.add(v)
+                        ids.append(v)
 
             # Append to existing text
             existing = patient_ids_input.value.strip()
-            new_mrns = "\n".join(mrns)
+            new_ids = "\n".join(ids)
             patient_ids_input.value = (
-                f"{existing}\n{new_mrns}".strip() if existing else new_mrns
+                f"{existing}\n{new_ids}".strip() if existing else new_ids
             )
+            cols_label = ", ".join(id_cols)
             upload_status.value = (
                 f"<div style='font-size: 11px; color: #10b981; margin-top: 4px;'>"
-                f"Loaded {len(mrns)} MRNs from CSV"
+                f"Loaded {len(ids)} IDs from CSV ({cols_label})"
                 f"</div>"
             )
         except Exception as e:
@@ -678,7 +691,7 @@ def _create_search_form(container, config=None):
             ),
             widgets.HTML(
                 "<div style='font-size: 11px; color: #6b7280; margin-top: 4px;'>"
-                "CSV must have an <code>epic_mrn</code> column"
+                "CSV must have an <code>epic_mrn</code> or <code>mpi</code> column"
                 "</div>"
             ),
         ],
@@ -919,16 +932,7 @@ def _build_dashboard_ui(df, criteria_summary, config, sql, container, status_out
         }
 
         # Summary section - compact header showing only included count
-        unique_patients = (
-            df[["epic_mrn", "empi_mr"]]
-            .apply(
-                lambda row: (
-                    row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"]
-                ),
-                axis=1,
-            )
-            .nunique()
-        )
+        unique_patients = df["scout_patient_id"].nunique()
 
         # Get included count
         cohort_included_count = (
