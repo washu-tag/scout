@@ -127,23 +127,27 @@ def curate_silver_table(batch_df, spark, table_name):
                 )
                 .otherwise(F.col("mpi")),
                 "scan_date_proxy": F.when(
-                    F.col("version_id") == "2.7",
-                    F.col("requested_dt")
-                )
-                .otherwise(F.col("observation_dt")),
-                "birth_date": F.when(F.col("birth_date") > "1905-01-01", F.col("birth_date")).otherwise(F.lit(None))
+                    F.col("version_id") == "2.7", F.col("requested_dt")
+                ).otherwise(F.col("observation_dt")),
+                "birth_date": F.when(
+                    F.col("birth_date") > "1905-01-01", F.col("birth_date")
+                ).otherwise(F.lit(None)),
             }
         )
         .withColumns(
             {
                 "accession_number": F.col("filler_order_number"),
                 "primary_study_identifier": F.col("filler_order_number"),
-                "patient_age": F.expr("CAST(datediff(YEAR, birth_date, scan_date_proxy) AS INT)")
+                "patient_age": F.expr(
+                    "CAST(datediff(YEAR, birth_date, scan_date_proxy) AS INT)"
+                ),
             }
         )
         .withColumns(
             {
-                col: F.when(unreasonable_age_for_scans, F.lit(None)).otherwise(F.col(col))
+                col: F.when(unreasonable_age_for_scans, F.lit(None)).otherwise(
+                    F.col(col)
+                )
                 for col in ["patient_age", "birth_date"]
             }
         )
@@ -153,7 +157,7 @@ def curate_silver_table(batch_df, spark, table_name):
             "orc_3_filler_order_number",
             "obr_3_filler_order_number",
             "filler_order_number",
-            "scan_date_proxy"
+            "scan_date_proxy",
         )
     )
 
