@@ -252,8 +252,9 @@ for a 2.7 report. This gives us moderate confidence in an identifier that remain
 be present (such as for 2.7 reports without an EMPI id). For an easier to use alternative, see
 {ref}`Longitudinal Patient ID Resolution <longitudinal_pat_id_ref>`.
 
-Scout derives a `patient_age` as the difference between `birth_date` and a chosen scan date proxy based on the HL7 version. For 2.3 or 2.4 reports,
-`observation_dt` is used as the proxy, with `requested_dt` for 2.7 reports. There are a couple of data integrity checks for this process:
+Scout derives a `patient_age` as the difference between `birth_date` and a chosen scan date proxy, because our source data does not have a clear
+field mapping to the date of the scan. We use `observation_dt` as this proxy with a fallback to `requested_dt`. There are a couple of data integrity
+checks for this process:
 1. For cases where the recorded `birth_date` is before 1905, we replace it with `NULL` in the curated table as it is almost certainly incorrect.
 2. For cases where the derived `patient_age` is 110 or above, we `NULL` out both `birth_date` and `patient_age` in the curated table for the same reason.
 

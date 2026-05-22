@@ -12,6 +12,7 @@ from .sparkutils import (
 
 from pyspark.sql import functions as F, Column, DataFrame
 
+UNREASONABLE_AGE_THRESHOLD = 109
 
 def curated_table(base_report_table_name: str) -> DerivativeTable:
     return DerivativeTable(
@@ -77,7 +78,7 @@ def curate_silver_table(batch_df, spark, table_name):
             id_column, df, F.concat_ws("_", F.lit(id_column), F.col(id_column))
         )
 
-    unreasonable_age_for_scans = F.col("patient_age") > 109
+    unreasonable_age_for_scans = F.col("patient_age") > UNREASONABLE_AGE_THRESHOLD
 
     curated_df = (
         filtered_df.withColumnRenamed("source_file", "primary_report_identifier")
