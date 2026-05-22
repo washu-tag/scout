@@ -10,7 +10,10 @@
 > for the most important differences from the original proposal —
 > notably **SECURITY DEFINER (not INVOKER) for the `_epic_view`
 > tables**, the **`view_owner_principals` exemption** that pairs with
-> it, and **deferred items** (real-time cache invalidation, MCP, Voila).
+> it, **MCP impersonation shipped** (originally deferred), **Voila
+> brought into scope** for the same impersonation pattern (originally
+> out of scope), and **real-time invalidation shipped** as a Keycloak
+> SPI event listener (originally deferred).
 
 ## Context
 
@@ -29,14 +32,14 @@ This was an acceptable posture while Scout was a single-tenant deployment whose 
 
 ### What this ADR does *not* cover
 
-- **PySpark in JupyterHub** previously bypassed Trino by reading Delta files directly from MinIO with shared `s3a` credentials. **This release removes Spark and direct MinIO access from the notebook image entirely** — notebooks now use `trino-python-client` exclusively, so every notebook read is governed by Trino's OPA-enforced RBAC. The quickstart notebook is rewritten to demonstrate the Trino-only pattern. Voila playbooks (a separate service) still use Spark and are out of scope for this ADR.
+- **PySpark in JupyterHub** previously bypassed Trino by reading Delta files directly from MinIO with shared `s3a` credentials. **This release removes Spark and direct MinIO access from the notebook image entirely** — notebooks now use `trino-python-client` exclusively, so every notebook read is governed by Trino's OPA-enforced RBAC. The quickstart notebook is rewritten to demonstrate the Trino-only pattern. **Voila** was originally scoped out here but has since been brought into scope under the same impersonation pattern as MCP — see the Voila row in the architecture table and the Voila deviations entry.
 - **Storage-layer multitenancy** (per-site Delta schemas, per-tenant buckets) is independent of Trino RBAC. Strong logical isolation at the storage layer is also a future ADR; this one is solely about query-time RBAC.
 - **The write-enabled `trino-rw` instance** stays gated by NetworkPolicy per ADR 0019. RBAC applies only to the user-facing `trino-analytics`.
 - **Cohort/project-based access** (membership lists managed by PIs) is deferred until the use case materializes. The architecture chosen here supports adding it later via a Trino ACL table without rework, but we don't even have a cohort entity today.
 
 ## Decision
 
-**Trino enforces RBAC via Open Policy Agent (OPA). User identity is established via Keycloak-issued JWT (programmatic clients). Authorization attributes are stored on the user object in Keycloak; OPA fetches them at policy-evaluation time and caches with a Keycloak event-listener-driven invalidation for real-time offboarding. Per-client identity propagation uses the impersonation pattern (Superset, Open WebUI MCP) or JWT pass-through (JupyterHub), depending on which mechanism each client supports natively.**
+**Trino enforces RBAC via Open Policy Agent (OPA). User identity is established via Keycloak-issued JWT (programmatic clients). Authorization attributes are stored on the user object in Keycloak; OPA fetches them at policy-evaluation time and caches with a Keycloak event-listener-driven invalidation for real-time offboarding. Per-client identity propagation uses the impersonation pattern (Superset, Open WebUI MCP, Voila) or JWT pass-through (JupyterHub), depending on which mechanism each client supports natively.**
 
 ### Architecture summary
 
@@ -46,13 +49,13 @@ This was an acceptable posture while Scout was a single-tenant deployment whose 
 | Authorization | `access-control.name=opa`; `delta.security=SYSTEM` (changed from `READ_ONLY` on `trino-analytics`) |
 | Identity model | Existing `scout-admin` and `scout-user` Keycloak groups continue to gate admin/user permissions in other Scout apps; OPA's Trino policy itself is **purely attribute-driven** (no group check). Per-user attributes: `allowed_facilities` (multivalued, supports `*` wildcard) for row scoping; `mask_phi_fields` (boolean, default-mask) for column masking. Admins set their own attributes to test restricted views; opt into unrestricted access via `allowed_facilities: ["*"]` + `mask_phi_fields: "false"` |
 | Attribute fetch | OPA `http.send` to Keycloak admin API, cached (~60 s TTL) |
-| Real-time invalidation | *(Deferred from v1)* Keycloak event listener pushes cache-busts to OPA on user update/disable. v1 ships with the 60 s TTL only; manual OPA pod restart for immediate revocation. |
+| Real-time invalidation | Keycloak SPI event listener (`OpaInvalidationEventListenerProvider` in `keycloak/event-listener/`) catches admin USER UPDATE/DELETE events and PUTs a per-user timestamp to OPA's data API. The Rego policy threads that timestamp into the `http.send` URL as an `_inv` query param, so the next decision on that user pays a fresh fetch instead of waiting out the 60 s `force_cache_duration_seconds` floor. |
 | Policy language | Rego, in `policy/` at the repo root; `opa test` in CI |
 | OPA topology | 2-replica Deployment behind ClusterIP in `scout-analytics` namespace |
-| Superset → Trino | Built-in impersonation; Superset authenticates as `superset_svc` (Keycloak client_credentials) |
+| Superset → Trino | Custom `DB_CONNECTION_MUTATOR` (`ansible/roles/superset/files/superset_trino_auth.py`) mints a `superset_svc` JWT via Keycloak client_credentials, attaches it as `JWTAuthentication`, and sets `X-Trino-User` to the logged-in Superset user. OPA evaluates against the impersonated user. |
 | JupyterHub → Trino | JupyterHub `auth_state` exposes Keycloak access token to spawned notebooks; clients use `JWTAuthentication` |
-| Voila → Trino | *(Deferred from v1)* Voila authenticates as `jupyter_svc` (Keycloak client_credentials) and impersonates the session user via `X-Trino-User`. The `jupyter_svc` Keycloak client and the OPA impersonation allowlist entry are pre-provisioned. |
-| Open WebUI MCP → Trino | *(Deferred from v1)* MCP authenticates as `openwebui_mcp_svc`; reads `X-OpenWebUI-User-Email` and sets `X-Trino-User`; gated by NetworkPolicy. v1 ships with the Keycloak client + OPA impersonation rule provisioned, but the MCP itself isn't wired through to user-specific identities. `tuannvm/mcp-trino` only supports HTTP Basic outbound — wiring it requires enabling Trino `PASSWORD,JWT` dual auth. |
+| Voila → Trino | Voila authenticates as `voila_svc` (HTTP Basic) and impersonates the session user via `X-Trino-User`, mirroring the MCP pattern. oauth2-proxy `pass_access_token` forwards the user's OIDC token to the Voila pod; a Voila-side helper extracts `preferred_username` and sets `X-Trino-User` per `trino.dbapi.connect` call. NetworkPolicy restricts the `voila_svc` credential to the Voila pod. Implementation pending — see deviations. |
+| Open WebUI MCP → Trino | MCP authenticates as `openwebui_mcp_svc` (HTTP Basic), validates the inbound Keycloak OIDC token from Open WebUI, extracts `preferred_username`, and sets `X-Trino-User` per request via `TRINO_ENABLE_IMPERSONATION=true` / `TRINO_IMPERSONATION_FIELD=username`. Trino runs in `PASSWORD,JWT` dual-auth mode to accommodate `tuannvm/mcp-trino` v4.x's HTTP Basic-only outbound. Gated by NetworkPolicy. |
 | Audit | *(Deferred from v1)* Trino event listener → Loki, with `tenant` tag derived from user's `allowed_facilities` attribute. v1 relies on OPA's decision logs + Trino's standard event-log; the custom tenant tag is a follow-up. |
 | Release model | Full coordinated release across all client roles; no flag-gated rollout or dual-auth window |
 
@@ -92,7 +95,7 @@ JVM plugin that, given a username, fetches groups from Keycloak's admin API in r
 
 Superset, JupyterHub, and the MCP each forward the user's Keycloak token to Trino on every query. No service principal, no impersonation rules.
 
-**Rejected for Superset and the MCP**: implementation cost vs. marginal security benefit. Superset's built-in impersonation, plus a properly authenticated service principal on the Trino connection, gives equivalent authorization semantics for every threat model except "insider with Kubernetes namespace access steals the `superset_svc` credential" — a threat better addressed through K8s controls (sealed secrets, restricted RBAC on Secrets, rotation, NetworkPolicy on Trino) than through bespoke Superset code that pulls Keycloak tokens out of session state and forwards them. The MCP situation is similar: `mcpo` does not store OAuth tokens per-user (it caches them per server), so per-user JWT pass-through through the MCP path is not natively available today; trusting `X-OpenWebUI-User-Email` from a network-policy-gated MCP is the practical equivalent. **Accepted for JupyterHub**: per-user JWT is the natural model when each notebook server is already spawned with the user's session token via `auth_state`.
+**Rejected for Superset and the MCP**: implementation cost vs. marginal security benefit. For Superset, a custom `DB_CONNECTION_MUTATOR` (`ansible/roles/superset/files/superset_trino_auth.py`) mints a `superset_svc` JWT via Keycloak client_credentials and sets `X-Trino-User` to the logged-in user — equivalent authorization semantics to forwarding the user's Keycloak token, without the per-user token-refresh lifecycle on long dashboard sessions. Scout writes bespoke Superset code either way; the real distinction is service-token minting vs. pulling the user's session token through the Flask security manager. The "insider with Kubernetes namespace access steals the `superset_svc` credential" threat is addressed via K8s controls (sealed secrets, restricted RBAC on Secrets, rotation, NetworkPolicy on Trino). For the MCP, `tuannvm/mcp-trino` v4.x validates the inbound Keycloak OIDC token from Open WebUI, extracts `preferred_username`, and sets `X-Trino-User` outbound on a service-principal HTTP Basic connection — end-user identity propagates to Trino, just via header on a service-principal channel rather than as a forwarded JWT. **Accepted for JupyterHub**: per-user JWT is the natural model when each notebook server is already spawned with the user's session token via `auth_state`.
 
 ### Extending RBAC to `trino-rw`
 
@@ -119,15 +122,15 @@ Authenticate and authorize transformer DDL through Trino RBAC instead of the Net
 - **Full-reinstall release.** RBAC ships as a single coordinated update across Trino, OPA, Keycloak, and every client role. The shared `trino` user is removed in the same release; any saved Superset connections, notebook configs, or dashboard queries that hardcoded it are migrated as part of the release rather than at a separate cutover moment. The implementation plan inventories these consumers before release.
 - **New infrastructure to operate.** An OPA Deployment (small, but new) and a Keycloak event listener component (location TBD in the implementation plan) join the operational surface. Both have their own lifecycle, monitoring, and patch concerns.
 - **Token audience handling is a recurring gotcha.** Keycloak issues tokens with `aud=<client>` by default; clients (Superset, Jupyter, MCP) need either an explicit audience-mapper for `trino` or Trino must accept multiple audience values. Misconfiguration produces 401s with limited diagnostic information. The implementation plan documents the per-client mapper setup.
-- **Notebook image loses Spark.** The previous `pyspark-notebook`-based image is replaced with `scipy-notebook` plus `trino-python-client`. Existing notebooks that import `pyspark` or call `spark.sql(...)` need to be migrated to the Trino DB-API pattern shown in the new quickstart. The Voila playbooks service is unaffected.
+- **Notebook image loses Spark.** The previous `pyspark-notebook`-based image is replaced with `scipy-notebook` plus `trino-python-client`. Existing notebooks that import `pyspark` or call `spark.sql(...)` need to be migrated to the Trino DB-API pattern shown in the new quickstart. Voila is covered by a parallel migration to the same impersonation pattern (see Voila row in the architecture table and the Voila deviations entry).
 
 ## Implementation Notes
 
 - **Policy location**: `policy/` at the root of scout-demo. Subdirectories per concern (`policy/trino/`, `policy/trino/test/`).
 - **OPA topology**: 2-replica `Deployment` in `scout-analytics` namespace, exposed via ClusterIP `opa.scout-analytics:8181`. Resource baseline ~100m CPU / 256 MiB per replica.
 - **Trino TLS**: cert-manager-issued PKCS12 keystore mounted into the coordinator; Trino listens on `https://trino.scout-analytics:8443`. Internal CA bundle distributed to client namespaces (Superset, Jupyter, MCP) via a ConfigMap that clients mount and pass to their HTTP libraries as `verify=<ca-path>`. JWT auth requires TLS per Trino's auth model.
-- **Keycloak event listener**: design choice between an in-process Keycloak SPI plugin and a sidecar consuming the Keycloak admin events API is open at the time of this ADR; the implementation plan picks one. The contract is "on user-update or user-disable, invalidate any cached attribute lookup keyed on that user's username in OPA's `http.send` cache." OPA does not natively expose per-key cache invalidation; the implementation plan documents the chosen pattern.
-- **Trino impersonation rules** (in Rego): only `superset_svc`, `jupyter_svc` (if used), and `openwebui_mcp_svc` are permitted impersonators. No wildcard principal.
+- **Keycloak event listener**: in-process SPI plugin (`OpaInvalidationEventListenerProvider`) extending Scout's existing event-listener JAR (which already ships the `user-approval-email` listener — same dependency, same operator additionalOption pattern), not a sidecar. The contract is "on user-update or user-delete, push a per-user timestamp to OPA so the cached attribute lookup for that user is invalidated on the next decision." OPA does not expose native per-key cache invalidation, so the policy reads `data.keycloak_invalidations[<username>]` and threads the value into the `http.send` URL — a change in value yields a different cache key, forcing a fresh fetch. Targets are read once at provider init from `KC_OPA_INVALIDATION_BASE_URLS` (comma-separated for multi-replica push; ClusterIP is sufficient for the common case where the 60 s `force_cache_duration_seconds` floor bounds the worst-case staleness window). See the deviations section for the trade-offs against an event-side sidecar.
+- **Trino impersonation rules** (in Rego): only `superset_svc`, `jupyter_svc` (if used), `openwebui_mcp_svc`, and `voila_svc` are permitted impersonators. No wildcard principal.
 - **Network gate on the MCP**: a NetworkPolicy in `ansible/roles/open-webui/` restricts ingress to the MCP to the Open WebUI pod only, eliminating the "forge the `X-OpenWebUI-User-Email` header from another pod" attack.
 - **Audit tag derivation**: the `tenant` label on Loki entries is derived from the user's `allowed_facilities` attribute at audit-event-emit time. Single facility → that facility code; multi-valued → `multi`; wildcard (`*`) → `all`; empty/unset → `none`. Group membership is captured separately in the audit record (so admin actions remain queryable) but does not affect the tenant tag.
 - **Implementation plan**: separate document tracking work units (Phases 0–5: Keycloak prerequisites → Trino auth → OPA scaffolding → identity propagation → row filters → column masks + audit). Phases are PR-shaped work units within a single coordinated release, not deployment phases — there is no flag-gated rollout.
@@ -192,12 +195,42 @@ how a reader interprets the rego and the inventory shape.
   `view_owner_principals` check) can use bare `superset_svc` /
   `jupyter_svc` / `openwebui_mcp_svc` names.
 
-- **`mcp-trino` outbound capability.** The original ADR assumed the MCP
-  could use JWT outbound. `tuannvm/mcp-trino` v4.x only supports HTTP
-  Basic outbound; wiring full MCP integration will require enabling
-  Trino's `PASSWORD,JWT` dual-auth mode and giving `openwebui_mcp_svc`
-  a Trino password. The Keycloak client + OPA impersonation rule are
-  provisioned; the Trino-side dual auth is the remaining work.
+- **`mcp-trino` outbound capability** (shipped). The original ADR
+  assumed the MCP could use JWT outbound. `tuannvm/mcp-trino` v4.x
+  only supports HTTP Basic outbound; the integration ships with Trino
+  in `PASSWORD,JWT` dual-auth mode and `openwebui_mcp_svc` holding a
+  Trino password. The MCP validates the inbound Keycloak OIDC token,
+  extracts `preferred_username`, and sets `X-Trino-User` per request
+  (`TRINO_ENABLE_IMPERSONATION=true`, `TRINO_IMPERSONATION_FIELD=username`).
+  OPA's `ImpersonateUser` allow rule for `openwebui_mcp_svc` plus the
+  attribute lookup on `input.context.identity.user` means row filters
+  and column masks evaluate against the impersonated end-user, not
+  the service principal. See `policy/trino/main.rego` and
+  `ansible/roles/trino/templates/mcp_trino_values.yaml.j2`.
+
+- **Voila brought into scope.** The original ADR scoped Voila out on
+  the assumption its Spark + direct-MinIO usage was a separate
+  problem. In practice every served playbook already queries Trino
+  directly — only `followup_review_dashboard.py`'s `MERGE INTO
+  default.reports_followup` uses Spark — so the bypass to close is
+  identity propagation, not Spark removal. Today every Voila playbook
+  connects as the shared `trino` user, so OPA sees the same principal
+  for every viewer and Keycloak-driven row filtering / column masking
+  never fires. Voila adopts MCP's pattern: a **separate `voila_svc`**
+  Trino service principal — distinct from `jupyter_svc` so
+  NetworkPolicy and audit stay per-client — with an OPA
+  `ImpersonateUser` allow rule mirroring `openwebui_mcp_svc`'s.
+  oauth2-proxy `pass_access_token` forwards the user's OIDC token to
+  the Voila pod; a Voila-side helper extracts `preferred_username`
+  and sets `X-Trino-User` per `trino.dbapi.connect` call.
+  Implementation tasks: provision `voila_svc` + OPA rule; configure
+  oauth2-proxy token forwarding on the Voila ingress; write the
+  helper; NetworkPolicy restricting `voila_svc` to the Voila pod;
+  drop `s3_lake_writer` credentials from `spark-defaults.conf`
+  (closes the residual direct-MinIO write path); rewrite the
+  followup-review `MERGE` as a Trino `UPDATE` (Trino now supports
+  this on Delta — contrary to an inline comment in
+  `followup_review_dashboard.py`).
 
 - **Spark removal from Jupyter notebook image** shipped as part of this
   ADR (notebooks use `trino-python-client` only). The CA cert plumbing
@@ -206,9 +239,33 @@ how a reader interprets the rego and the inventory shape.
   that, the air-gapped staging cert bundle silently overrode per-call
   `verify=` kwargs.
 
+- **Real-time invalidation shipped as a Keycloak SPI plugin**
+  (originally deferred). The ADR left the choice between an
+  in-process Keycloak SPI plugin and an event-side sidecar open. We
+  chose the SPI route — Scout already ships a custom event-listener
+  JAR (`keycloak/event-listener/`) for `user-approval-email`, so the
+  new `opa-invalidation` listener is a second class in the same
+  artifact rather than a new deployable. The plugin catches
+  `AdminEvent` UPDATE/DELETE on the USER resource, resolves the
+  affected username (via `session.users()` for UPDATE, via
+  `event.getDetails().get("username")` for DELETE since the user is
+  already gone when delete fires), and PUTs a timestamp to
+  `/v1/data/keycloak_invalidations/<username>` on each configured OPA
+  URL. The Rego policy reads `data.keycloak_invalidations[user]` (via
+  a path expression, not `object.get(data, ...)`, so the compiler
+  doesn't pull every package as a transitive dep — see the test-suite
+  recursion error if you try the `object.get` form) and threads the
+  value into the `http.send` URL as `_inv=<ts>`; Keycloak's admin API
+  ignores the param, but OPA's cache key is the full request, so a
+  changed value forces a fresh fetch. Targets are configured via
+  `KC_OPA_INVALIDATION_BASE_URLS` (env var threaded through the
+  Keycloak operator's `additionalOptions` — same trick the existing
+  `scout-url` option uses). A single ClusterIP URL hits one replica;
+  for stronger convergence, override to a comma-separated list of
+  per-pod URLs.
+
 ## Future Considerations
 
-- **Voila playbooks Spark bypass** — Voila still uses Spark + direct MinIO access. The same Trino-only migration could be applied to the Voila playbook image and any Spark-dependent playbooks, or per-user MinIO STS could be retrofitted there if Voila needs to keep Spark. Deferred to a future decision.
 - **Per-site Delta schemas** — strong logical isolation at the storage layer (one schema per partner with independent Delta transaction logs). Independent of this ADR; pursue when a tenant explicitly requires storage-level separation or when eviction tooling needs to be demonstrably clean.
 - **Cohort/ACL table** for project-based access — a Scout-owned table joined to in row filters via subquery. The architecture chosen here accepts this addition without rework.
 - **Trino resource groups** — per-tenant CPU/memory caps to mitigate noisy-neighbor risk when query volume grows.

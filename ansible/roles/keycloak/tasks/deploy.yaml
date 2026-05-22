@@ -160,6 +160,16 @@
         # Hacky way to get an env variable into the Keycloak pod until the operator supports it natively
       - name: scout-url
         value: '{{ server_hostname }}'
+        # Same env-var-via-additionalOption trick. The opa-invalidation
+        # event listener reads KC_OPA_INVALIDATION_BASE_URLS to know
+        # where to PUT cache-busting timestamps when a user's RBAC-
+        # relevant state changes (ADR 0020). Comma-separated list of
+        # OPA base URLs — one per replica when stronger invalidation
+        # convergence is needed; ClusterIP is fine for the common case
+        # where the worst-case staleness window is bounded by the 60s
+        # http.send cache TTL.
+      - name: opa-invalidation-base-urls
+        value: '{{ keycloak_opa_invalidation_base_urls }}'
   kubernetes.core.k8s:
     state: present
     namespace: '{{ keycloak_namespace }}'

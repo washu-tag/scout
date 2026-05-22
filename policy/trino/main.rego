@@ -31,11 +31,32 @@ default user_groups := []
 user_groups := input.context.identity.groups
 
 # === Keycloak attribute fetch =================================================
-# http.send is cached by request body; the cache_duration here is the steady-
-# state floor. Real-time offboarding will be wired separately via a Keycloak
-# event listener that pushes per-user invalidations into OPA's data store
-# (Phase 5 of the implementation plan); the policy will then read an
-# invalidation timestamp and shrink cache_duration dynamically.
+# http.send is cached by request body; the cache_duration here is the
+# steady-state floor for staleness. Real-time invalidation is layered on
+# top via the OpaInvalidationEventListener SPI in keycloak/event-listener:
+# when an admin updates or deletes a user, the listener PUTs a fresh
+# timestamp to /v1/data/keycloak_invalidations/<username> on each
+# configured OPA replica. The timestamp is threaded into the http.send
+# URL below as an `_inv` query param — Keycloak ignores unknown params,
+# but OPA's cache key is the full request, so any new value forces a
+# fresh fetch on the next decision. Absent a push, attrs may be up to
+# force_cache_duration_seconds stale.
+
+# Per-user cache-busting timestamp written by the Keycloak event
+# listener. Defaults to 0 when no listener has fired for this user
+# (which includes pre-listener-deploy, when the data document doesn't
+# have a `keycloak_invalidations` key at all). The path is written as
+# a specific reference (not `object.get(data, ...)`) so the Rego
+# compiler treats `data.keycloak_invalidations` as a single virtual
+# document — using `data` as a whole would force OPA to see every
+# package as a transitive dep and the test suite would fail with
+# recursion errors.
+default user_invalidation_ts := 0
+
+user_invalidation_ts := ts if {
+	identity_present
+	ts := data.keycloak_invalidations[input.context.identity.user]
+}
 
 default user_attrs := {}
 
@@ -46,8 +67,8 @@ user_attrs := attrs if {
 	response := http.send({
 		"method": "GET",
 		"url": sprintf(
-			"%s/admin/realms/%s/users?username=%s&exact=true",
-			[data.keycloak.url, data.keycloak.realm, input.context.identity.user],
+			"%s/admin/realms/%s/users?username=%s&exact=true&_inv=%v",
+			[data.keycloak.url, data.keycloak.realm, input.context.identity.user, user_invalidation_ts],
 		),
 		"headers": {"Authorization": sprintf("Bearer %s", [token])},
 		"cache": true,

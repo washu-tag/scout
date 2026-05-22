@@ -712,3 +712,36 @@ test_user_attrs_empty_when_admin_token_empty if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	trino.user_attrs == {} with input as inp with trino._keycloak_admin_token as ""
 }
+
+# === Keycloak event-listener invalidation ====================================
+# `user_invalidation_ts` is threaded into the http.send URL so a new
+# value (PUT by the Keycloak event listener) busts OPA's cache key. The
+# rule must default to 0 when no listener has fired, and return the
+# per-user timestamp when the data document is populated.
+
+test_user_invalidation_ts_defaults_to_zero_when_data_absent if {
+	# Pre-listener-deploy: the data document has no
+	# `keycloak_invalidations` key. The rule must not error — it should
+	# resolve to 0 so the http.send URL is stable and the existing TTL
+	# governs staleness.
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
+	trino.user_invalidation_ts == 0 with input as inp
+}
+
+test_user_invalidation_ts_defaults_to_zero_when_user_absent if {
+	# data.keycloak_invalidations exists but doesn't contain this user
+	# — most common steady-state case, since the listener only writes
+	# for users whose admin events have fired since OPA's start.
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
+	trino.user_invalidation_ts == 0 with input as inp
+		with data.keycloak_invalidations as {"bob": 1716000000}
+}
+
+test_user_invalidation_ts_picks_up_per_user_timestamp if {
+	# After the listener fires for alice, her per-user timestamp is in
+	# the data document. The rule returns it verbatim so the URL
+	# changes and OPA's cache is invalidated for her next decision.
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
+	trino.user_invalidation_ts == 1716000000 with input as inp
+		with data.keycloak_invalidations as {"alice": 1716000000, "bob": 1715900000}
+}

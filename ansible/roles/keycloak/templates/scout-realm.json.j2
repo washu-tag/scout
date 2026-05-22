@@ -36,8 +36,16 @@
     },
     "eventsListeners": [
       "user-approval-email",
+      "opa-invalidation",
       "jboss-logging"
     ],
+    {#- adminEventsEnabled drives admin-event delivery to listeners. The
+        opa-invalidation listener consumes USER admin events (UPDATE,
+        DELETE) to push cache-busting timestamps to OPA so a disabled
+        user loses Trino access immediately, not after the 60s http.send
+        cache TTL elapses. -#}
+    "adminEventsEnabled": true,
+    "adminEventsDetailsEnabled": true,
     "smtpServer": {
       "debug": "{{ keycloak_smtp_debug }}",
       "replyToDisplayName": "{{ keycloak_smtp_reply_to_display_name }}",
