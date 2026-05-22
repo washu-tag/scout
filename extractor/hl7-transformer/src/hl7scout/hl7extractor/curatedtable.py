@@ -1,5 +1,3 @@
-from typing import Optional
-
 from delta import DeltaTable
 from temporalio import activity
 
@@ -126,9 +124,9 @@ def curate_silver_table(batch_df, spark, table_name):
                     ),
                 )
                 .otherwise(F.col("mpi")),
-                "scan_date_proxy": F.when(
-                    F.col("version_id") == "2.7", F.col("requested_dt")
-                ).otherwise(F.col("observation_dt")),
+                "scan_date_proxy": F.coalesce(
+                    F.col("observation_dt"), F.col("requested_dt")
+                ),
                 "birth_date": F.when(
                     F.col("birth_date") > "1905-01-01", F.col("birth_date")
                 ).otherwise(F.lit(None)),
