@@ -71,4 +71,6 @@
         value: present
         effect: NoSchedule
   loop: "{{ groups['gpu_workers'] | default([]) }}"
-  when: (groups['k3s_cluster'] | default([]) | length) > 1
+  when:
+    - "'staging' not in group_names"
+    - (groups['k3s_cluster'] | default([]) | length) > 1
