@@ -268,9 +268,7 @@ def build_cohort_query(config):
             date_end = config["date_end"]
             conditions.append(f"requested_dt <= DATE '{date_end}'")
             criteria_summary.append(f"To: {date_end}")
-    # Patient ID list filter — accepts Epic MRNs, legacy MPIs, or scout_patient_id UUIDs
-    # (mixed in the same list is fine). resolved_* columns let a pasted Epic MRN catch
-    # reports where the MRN was inferred rather than carried on the message.
+    # Patient ID list filter
     if config.get("patient_ids"):
         raw = config["patient_ids"].strip()
         if raw:
@@ -296,8 +294,7 @@ def build_cohort_query(config):
             f"⚠️ LIMITED to {config['sample_limit']} results for testing"
         )
 
-    # Build full query. resolved_* are aliased to the names downstream code expects;
-    # for cohort users the inferred-vs-direct distinction is noise.
+    # Build full query
     sql = f"""
     SELECT DISTINCT
         accession_number,

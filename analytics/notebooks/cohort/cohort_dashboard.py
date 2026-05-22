@@ -535,8 +535,7 @@ def _create_search_form(container, config=None):
         layout=widgets.Layout(width="45%"),
     )
 
-    # Patient ID filtering — accepts Epic MRNs or legacy MPIs (mixed lists are fine).
-    # SQL also ORs against scout_patient_id as a silent power-user path.
+    # Patient ID filtering
     patient_ids_input = widgets.Textarea(
         value=config.get("patient_ids", ""),
         placeholder="Paste patient MRNs (one per line or comma-separated)",
@@ -565,8 +564,7 @@ def _create_search_form(container, config=None):
             content = bytes(uploaded["content"]).decode("utf-8")
             csv_df = pd.read_csv(io.StringIO(content))
 
-            # Look for any recognized patient-ID column (case-insensitive).
-            # If multiple are present (e.g. epic_mrn AND mpi), union all non-null values.
+            # Pick the first recognized patient-ID column (case-insensitive).
             id_aliases = {
                 "epic_mrn",
                 "mrn",
@@ -576,9 +574,12 @@ def _create_search_form(container, config=None):
                 "resolved_mpi",
                 "resolved_epic_mrn",
             }
-            id_cols = [c for c in csv_df.columns if c.strip().lower() in id_aliases]
+            id_col = next(
+                (c for c in csv_df.columns if c.strip().lower() in id_aliases),
+                None,
+            )
 
-            if not id_cols:
+            if id_col is None:
                 upload_status.value = (
                     "<div style='font-size: 11px; color: #dc2626; margin-top: 4px;'>"
                     "No epic_mrn or mpi column found in CSV"
@@ -586,13 +587,8 @@ def _create_search_form(container, config=None):
                 )
                 return
 
-            ids = []
-            seen = set()
-            for col in id_cols:
-                for v in csv_df[col].dropna().astype(str).str.strip():
-                    if v and v not in seen:
-                        seen.add(v)
-                        ids.append(v)
+            ids = csv_df[id_col].dropna().astype(str).str.strip().tolist()
+            ids = [v for v in ids if v]
 
             # Append to existing text
             existing = patient_ids_input.value.strip()
@@ -600,10 +596,9 @@ def _create_search_form(container, config=None):
             patient_ids_input.value = (
                 f"{existing}\n{new_ids}".strip() if existing else new_ids
             )
-            cols_label = ", ".join(id_cols)
             upload_status.value = (
                 f"<div style='font-size: 11px; color: #10b981; margin-top: 4px;'>"
-                f"Loaded {len(ids)} IDs from CSV ({cols_label})"
+                f"Loaded {len(ids)} IDs from CSV (col: {id_col})"
                 f"</div>"
             )
         except Exception as e:

@@ -456,8 +456,7 @@ def create_navigation_controls(state):
         if "load_annotation" in state:
             state["load_annotation"](idx)
 
-        # Render report. epic_mrn is the resolved Epic MRN; mpi is the resolved legacy
-        # MPI used as a fallback for pre-Epic-only patients.
+        # Render report
         patient_id = html.escape(
             str(row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["mpi"])
         )

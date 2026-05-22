@@ -136,7 +136,7 @@ WHERE year >= YEAR(CURRENT_DATE) - 1
 
 **Chest CTs for pneumonia patients:**
 ```sql
-SELECT resolved_epic_mrn AS epic_mrn, patient_age, service_name, message_dt, report_section_impression
+SELECT resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi, patient_age, service_name, message_dt, report_section_impression
 FROM reports_latest_epic_view
 WHERE modality = 'CT'
   AND REGEXP_LIKE(service_name, '(?i)(chest|thorax)')
@@ -151,6 +151,7 @@ LIMIT 50
 ```sql
 SELECT
   resolved_epic_mrn AS epic_mrn,
+  resolved_mpi AS mpi,
   accession_number, patient_age, sex, service_name, message_dt,
   report_section_impression
 FROM reports_latest_epic_view
@@ -174,18 +175,18 @@ WHERE modality = 'CT'
   )
 ```
 
-**Return diagnosis details (prefer `reports_dx` or `reports_dx_epic_view` for one-row-per-diagnosis):**
+**Return diagnosis details (prefer `reports_dx_epic_view` for one-row-per-diagnosis):**
 ```sql
-SELECT epic_mrn, diagnosis_code, diagnosis_code_text
-FROM reports_dx
+SELECT resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi, diagnosis_code, diagnosis_code_text
+FROM reports_dx_epic_view
 WHERE diagnosis_code LIKE 'I26%'
 LIMIT 100
 ```
 
-If you need fields beyond what's in `reports_dx` or `reports_dx_epic_view`, fall back to `reports_latest` or `reports_latest_epic_view` with `CROSS JOIN UNNEST`:
+If you need fields beyond what's in `reports_dx_epic_view`, fall back to `reports_latest_epic_view` with `CROSS JOIN UNNEST`:
 ```sql
-SELECT r.epic_mrn, d.diagnosis_code, d.diagnosis_code_text
-FROM reports r
+SELECT r.resolved_epic_mrn AS epic_mrn, r.resolved_mpi AS mpi, d.diagnosis_code, d.diagnosis_code_text
+FROM reports_latest_epic_view r
 CROSS JOIN UNNEST(r.diagnoses) AS t(d)
 WHERE d.diagnosis_code LIKE 'I26%' AND r.year >= 2024
 LIMIT 100
