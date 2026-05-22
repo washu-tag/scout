@@ -1,5 +1,3 @@
-from typing import Optional
-
 from delta import DeltaTable
 from temporalio import activity
 
@@ -13,6 +11,9 @@ from .sparkutils import (
 )
 
 from pyspark.sql import functions as F, Column, DataFrame
+
+UNREASONABLE_AGE_THRESHOLD = 109
+UNREASONABLE_DOB_THRESHOLD = "1905-01-01"
 
 
 def curated_table(base_report_table_name: str) -> DerivativeTable:
@@ -79,6 +80,8 @@ def curate_silver_table(batch_df, spark, table_name):
             id_column, df, F.concat_ws("_", F.lit(id_column), F.col(id_column))
         )
 
+    unreasonable_age_for_scans = F.col("patient_age") > UNREASONABLE_AGE_THRESHOLD
+
     curated_df = (
         filtered_df.withColumnRenamed("source_file", "primary_report_identifier")
         .withColumns(
@@ -124,12 +127,30 @@ def curate_silver_table(batch_df, spark, table_name):
                     ),
                 )
                 .otherwise(F.col("mpi")),
+                "scan_date_proxy": F.coalesce(
+                    F.col("observation_dt"), F.col("requested_dt")
+                ),
+                "birth_date": F.when(
+                    F.col("birth_date") > UNREASONABLE_DOB_THRESHOLD,
+                    F.col("birth_date"),
+                ).otherwise(F.lit(None)),
             }
         )
         .withColumns(
             {
                 "accession_number": F.col("filler_order_number"),
                 "primary_study_identifier": F.col("filler_order_number"),
+                "patient_age": F.expr(
+                    "CAST(datediff(YEAR, birth_date, scan_date_proxy) AS INT)"
+                ),
+            }
+        )
+        .withColumns(
+            {
+                col: F.when(unreasonable_age_for_scans, F.lit(None)).otherwise(
+                    F.col(col)
+                )
+                for col in ["patient_age", "birth_date"]
             }
         )
         .drop(
@@ -138,6 +159,7 @@ def curate_silver_table(batch_df, spark, table_name):
             "orc_3_filler_order_number",
             "obr_3_filler_order_number",
             "filler_order_number",
+            "scan_date_proxy",
         )
     )
 
