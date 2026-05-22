@@ -21,7 +21,7 @@
               "datasourceUid": "prometheus_datasource_01",
               "model": {
                 "editorMode": "code",
-                "expr": "sum by (namespace) (rate(workflow_failed{operation=\"CompletionStats\", job=\"kubernetes-pods\"}[1h]))",
+                "expr": "sum by (namespace) (rate(workflow_failed{operation=\"CompletionStats\", job=\"kubernetes-pods\"}[1h])) or 0 * sum by (namespace) (rate(workflow_success{operation=\"CompletionStats\", job=\"kubernetes-pods\"}[1h]))",
                 "instant": true,
                 "intervalMs": 1000,
                 "legendFormat": "__auto",
