@@ -473,12 +473,24 @@
         ],
         {#- mcp-trino-audience adds aud=mcp-trino to access tokens so the
             MCP server (tuannvm/mcp-trino) can validate them and impersonate
-            the chat user on the outbound Trino call (ADR 0020). -#}
+            the chat user on the outbound Trino call (ADR 0020).
+
+            "roles" is intentionally absent from defaultClientScopes here.
+            Keycloak's built-in roles scope carries an audience-resolve
+            protocol mapper that adds an `aud` entry for every client the
+            user has any role in — for an admin user that swelled the
+            token to 9 audiences (mcp-trino, oauth2-proxy, realm-management,
+            launchpad, superset, jupyterhub, grafana, account, temporal),
+            so a stolen OWUI token had implicit grants against half the
+            cluster including realm-management. OWUI uses the `groups`
+            claim (via microprofile-jwt) for role mapping and doesn't
+            consume realm_access.roles, so dropping the scope here is
+            safe for OWUI's own auth flow while tightening downstream
+            (mcp-trino) trust. -#}
         "defaultClientScopes": [
           "web-origins",
           "acr",
           "profile",
-          "roles",
           "basic",
           "email",
           "microprofile-jwt",
