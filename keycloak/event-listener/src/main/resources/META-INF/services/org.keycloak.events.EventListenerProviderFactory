@@ -1,2 +1,2 @@
 edu.washu.tag.keycloak.events.UserApprovalEmailEventListenerProviderFactory
-edu.washu.tag.keycloak.events.OpaInvalidationEventListenerProviderFactory
+edu.washu.tag.keycloak.events.OpaUserBundlePublisherProviderFactory

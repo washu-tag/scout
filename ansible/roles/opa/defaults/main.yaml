@@ -90,15 +90,21 @@ trino_masked_columns:
   - full_patient_name
   - zip_or_postal_code
 
-# Keycloak admin API config consumed by the policy's http.send. The
-# matching client secret lives in a Secret mounted as the
-# KEYCLOAK_READER_CLIENT_SECRET env var (read via opa.runtime().env in Rego).
-opa_keycloak_url: 'http://keycloak-service.{{ keycloak_namespace }}:8080'
-opa_keycloak_realm: '{{ keycloak_realm_name }}'
-opa_keycloak_reader_client_id: opa-keycloak-reader
-# The client secret comes from inventory as `keycloak_opa_reader_client_secret`
-# (same variable rendered into the Keycloak realm template). The OPA deploy
-# task reads it directly — no rename needed.
+# MinIO bundle endpoint (ADR 0021). OPA's bundle plugin pulls
+# /opa-bundles/scout/bundle.tar.gz from MinIO every 5–10s; the bundle is
+# published by the Keycloak SPI listener (OpaUserBundlePublisherProvider).
+# Headless service explicitly chosen so DNS resolves to all MinIO pods —
+# Helm tenant's primary Service ("minio.<ns>") isn't named consistently
+# across our environments, but "-hl" is set by the operator.
+opa_bundle_minio_url: 'http://{{ minio_tenant_name }}-hl.{{ minio_tenant_namespace }}:9000'
+
+# Bundle pull cadence. Lower bound on staleness for a Keycloak admin
+# action propagating to a Trino decision. Comfortably inside ADR 0020's
+# "user disabled at their partner institution must lose access within
+# seconds" requirement; tune downward at proportional MinIO request-rate
+# cost if a deployment needs tighter convergence.
+opa_bundle_min_delay_seconds: 5
+opa_bundle_max_delay_seconds: 10
 
 # Decision logs go to stdout (Loki picks them up via existing Scout log shipping).
 opa_decision_log_min_delay_seconds: 5

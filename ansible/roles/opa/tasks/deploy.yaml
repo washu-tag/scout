@@ -2,10 +2,13 @@
 # Deploy OPA as a Deployment + Service in the Trino namespace.
 # Trino's access-control plugin queries the Service URL set in the trino role.
 #
-# Policy and data are loaded from a ConfigMap mounted as files. OPA polls
-# /policies for changes; updating the ConfigMap propagates without restart.
-# A policy-hash annotation forces a rollout on policy or data changes so the
-# clean-cache guarantee is explicit.
+# Policy + static data are loaded from a ConfigMap mounted as files. Per-user
+# attribute data is layered on top by OPA's bundle plugin (ADR 0021): the
+# Keycloak SPI listener publishes a bundle to MinIO; OPA polls and atomically
+# swaps the `data.users` subtree. A policy-hash annotation forces a rollout
+# on policy or static-data changes so the clean-cache guarantee is explicit;
+# the bundle plugin's own readiness gate keeps new pods from serving until
+# the first bundle load completes.
 
 - name: Resolve OPA policy path on disk
   ansible.builtin.set_fact:
@@ -13,7 +16,7 @@
     #   ansible/roles/opa/tasks → ../../../../policy/trino
     opa_policy_path: '{{ role_path }}/../../../policy/trino/main.rego'
 
-- name: Render OPA data document
+- name: Render OPA static data document
   ansible.builtin.set_fact:
     opa_data_json: >-
       {{ {
@@ -22,14 +25,40 @@
         "view_owner_principals": (trino_view_owner_principals | default([])),
         "attribute_filters": (trino_attribute_filters | default({})),
         "masked_columns": (trino_masked_columns | default([])),
-        "keycloak": {
-          "url": opa_keycloak_url,
-          "realm": opa_keycloak_realm,
-          "reader_client_id": opa_keycloak_reader_client_id,
-        },
       } | to_json }}
 
-- name: Create OPA policy + data ConfigMap
+- name: Render OPA bundle plugin config
+  ansible.builtin.set_fact:
+    # `services.minio` + `bundles.scout-users` wire the bundle plugin to
+    # the MinIO endpoint and credentials. `roots: ["users"]` in the
+    # bundle's .manifest scopes the atomic swap to the `data.users`
+    # subtree, so the static document above isn't replaced on every pull.
+    # `persist: true` writes the last successfully loaded bundle to a
+    # pod-local emptyDir so a restart during a MinIO outage doesn't drop
+    # OPA to deny-all. Polling interval 5–10s comfortably hits ADR 0020's
+    # real-time-offboarding requirement.
+    opa_config_yaml: |
+      services:
+        minio:
+          url: {{ opa_bundle_minio_url }}
+          credentials:
+            s3_signing:
+              environment_credentials: {}
+      bundles:
+        scout-users:
+          service: minio
+          resource: {{ opa_bundles_bucket }}/scout/bundle.tar.gz
+          polling:
+            min_delay_seconds: {{ opa_bundle_min_delay_seconds }}
+            max_delay_seconds: {{ opa_bundle_max_delay_seconds }}
+          persist: true
+      decision_logs:
+        console: true
+        reporting:
+          min_delay_seconds: {{ opa_decision_log_min_delay_seconds }}
+          max_delay_seconds: {{ opa_decision_log_max_delay_seconds }}
+
+- name: Create OPA policy + data + config ConfigMap
   delegate_to: localhost
   kubernetes.core.k8s:
     state: present
@@ -50,8 +79,10 @@
           {{ lookup('file', opa_policy_path) | indent(10) }}
         data.json: |-
           {{ opa_data_json | indent(10) }}
+        config.yaml: |-
+          {{ opa_config_yaml | indent(10) }}
 
-- name: Create OPA Keycloak-reader secret
+- name: Create OPA bundle reader Secret
   delegate_to: localhost
   kubernetes.core.k8s:
     state: present
@@ -60,15 +91,18 @@
       apiVersion: v1
       kind: Secret
       metadata:
-        name: opa-keycloak-reader
+        name: opa-bundle-reader
         namespace: '{{ opa_namespace }}'
         labels:
           app: opa-trino
       type: Opaque
       stringData:
-        # Inventory sets keycloak_opa_reader_client_secret; the same value
-        # also lands in the rendered Keycloak realm for the client.
-        client-secret: '{{ keycloak_opa_reader_client_secret }}'
+        # AWS-style env vars are what OPA's `environment_credentials` reads
+        # at bundle-pull time. These are the same values rendered into
+        # MinIO's `{{ s3_opa_bundle_reader }}-creds` Secret in scout-data;
+        # mirrored here so the cross-namespace dependency stays explicit.
+        AWS_ACCESS_KEY_ID: '{{ s3_opa_bundle_reader }}'
+        AWS_SECRET_ACCESS_KEY: '{{ s3_opa_bundle_reader_secret }}'
 
 - name: Deploy OPA
   delegate_to: localhost
@@ -93,9 +127,10 @@
             labels:
               app: opa-trino
             annotations:
-              # Force a rollout when policy OR data changes. OPA also watches
-              # /policies on disk, but a Pod restart guarantees clean cache state.
-              policy-hash: '{{ (lookup("file", opa_policy_path) ~ opa_data_json) | hash("sha256") | truncate(8, True, "") }}'
+              # Force a rollout when policy OR static data OR bundle config
+              # changes. The bundle itself is pulled at runtime and doesn't
+              # need a rollout — that's the whole point of ADR 0021.
+              policy-hash: '{{ (lookup("file", opa_policy_path) ~ opa_data_json ~ opa_config_yaml) | hash("sha256") | truncate(8, True, "") }}'
           spec:
             containers:
               - name: opa
@@ -106,20 +141,15 @@
                   - --addr=0.0.0.0:8181
                   - --log-level=info
                   - --log-format=json
-                  - --set=decision_logs.console=true
-                  - --set=decision_logs.reporting.min_delay_seconds={{ opa_decision_log_min_delay_seconds }}
-                  - --set=decision_logs.reporting.max_delay_seconds={{ opa_decision_log_max_delay_seconds }}
+                  - --config-file=/policies/config.yaml
                   - /policies/policy.rego
                   - /policies/data.json
                 ports:
                   - name: http
                     containerPort: 8181
-                env:
-                  - name: KEYCLOAK_READER_CLIENT_SECRET
-                    valueFrom:
-                      secretKeyRef:
-                        name: opa-keycloak-reader
-                        key: client-secret
+                envFrom:
+                  - secretRef:
+                      name: opa-bundle-reader
                 resources:
                   requests:
                     cpu: '{{ opa_cpu_request }}'
@@ -129,6 +159,11 @@
                     memory: '{{ opa_memory_limit }}'
                 readinessProbe:
                   httpGet:
+                    # ?bundles makes the probe block on a successful first
+                    # bundle activation — new pods stay out of the Service
+                    # endpoint list until they hold valid data.users. Cold
+                    # start under the previous pull-on-decision model didn't
+                    # need this; under ADR 0021 it's essential.
                     path: /health?bundles
                     port: http
                   initialDelaySeconds: 3
@@ -143,6 +178,8 @@
                   - name: policies
                     mountPath: /policies
                     readOnly: true
+                  - name: bundle-cache
+                    mountPath: /.opa
                 securityContext:
                   allowPrivilegeEscalation: false
                   readOnlyRootFilesystem: true
@@ -152,6 +189,12 @@
               - name: policies
                 configMap:
                   name: opa-trino-policy
+              - name: bundle-cache
+                # OPA's bundle plugin writes the last-known-good tarball
+                # here when persist:true is set. EmptyDir is fine — on
+                # pod restart the bundle plugin re-pulls from MinIO
+                # before the readiness probe lets the pod serve traffic.
+                emptyDir: {}
 
 - name: Expose OPA via ClusterIP Service
   delegate_to: localhost

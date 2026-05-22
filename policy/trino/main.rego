@@ -7,19 +7,29 @@ package trino
 #   POST /v1/data/trino/rowFilters        -> [{expression}]  (WHERE clauses AND-merged)
 #   POST /v1/data/trino/batchColumnMasks  -> [{index, viewExpression}]  (per-column mask)
 #
-# Per-user attributes (`allowed_facilities`, `mask_phi_fields`) come from
-# Keycloak via http.send. Trino's OPA plugin only forwards identity.user +
-# identity.groups in `input.context.identity` — no JWT claims, no extra
-# credentials — so Rego must fetch attributes on its own.
+# Per-user attributes (`allowed_facilities`, `mask_phi_fields`, ...) live in
+# OPA's data document under `data.users.<username>`, populated by an OPA
+# bundle that the Keycloak SPI listener publishes to MinIO (see ADR 0021).
+# OPA's bundle plugin pulls every 5–10s, so a Keycloak change converges to
+# all replicas within one pull interval — no per-decision Keycloak call,
+# no admin-API client, no cache-busting trick.
 #
-# Data document (rendered by the opa Ansible role from inventory):
-#   data.row_filter_tables.sending_facility : [{catalog, schema, table}]
-#   data.masked_columns                     : [column_name]
-#   data.keycloak.url                       : "http://keycloak.scout-core.svc:8080"
-#   data.keycloak.realm                     : "scout"
-#   data.keycloak.reader_client_id          : "opa-keycloak-reader"
-# The matching client secret is mounted into OPA as env var
-# KEYCLOAK_READER_CLIENT_SECRET (read via opa.runtime().env at policy time).
+# Data document (rendered by the opa Ansible role from inventory + bundle):
+#   data.filtered_tables       : [{catalog, schema, table}]      # static (inventory)
+#   data.view_only_tables      : [{catalog, schema, table}]      # static (inventory)
+#   data.view_owner_principals : [identity_name]                 # static (inventory)
+#   data.attribute_filters     : {<attr_name>: {column, tables?}} # static (inventory)
+#   data.masked_columns        : [column_name]                   # static (inventory)
+#   data.users.<username>      : {
+#                                  "enabled": bool,
+#                                  "allowed_facilities": [...],
+#                                  "allowed_modalities": [...],
+#                                  "mask_phi_fields": ["true"|"false"],
+#                                  ...
+#                                }                               # bundled (Keycloak)
+# Attribute values mirror Keycloak's `Map<String, List<String>>` user-
+# attribute shape (multivalued by default) so the listener writes them
+# verbatim — no per-key schema in two places.
 
 import rego.v1
 
@@ -30,108 +40,45 @@ identity_present if input.context.identity.user != ""
 default user_groups := []
 user_groups := input.context.identity.groups
 
-# === Keycloak attribute fetch =================================================
-# http.send is cached by request body; the cache_duration here is the
-# steady-state floor for staleness. Real-time invalidation is layered on
-# top via the OpaInvalidationEventListener SPI in keycloak/event-listener:
-# when an admin updates or deletes a user, the listener PUTs a fresh
-# timestamp to /v1/data/keycloak_invalidations/<username> on each
-# configured OPA replica. The timestamp is threaded into the http.send
-# URL below as an `_inv` query param — Keycloak ignores unknown params,
-# but OPA's cache key is the full request, so any new value forces a
-# fresh fetch on the next decision. Absent a push, attrs may be up to
-# force_cache_duration_seconds stale.
+# === Per-user attributes (from OPA bundle) ====================================
+# `data.users[user]` returns the bundled record if present, otherwise the
+# default {} which yields deny-all via the gates below. The default is
+# scoped to `{"enabled": false}` so `user_attrs.enabled == false` reads
+# correctly even for users absent from the bundle.
 
-# Per-user cache-busting timestamp written by the Keycloak event
-# listener. Defaults to 0 when no listener has fired for this user
-# (which includes pre-listener-deploy, when the data document doesn't
-# have a `keycloak_invalidations` key at all). The path is written as
-# a specific reference (not `object.get(data, ...)`) so the Rego
-# compiler treats `data.keycloak_invalidations` as a single virtual
-# document — using `data` as a whole would force OPA to see every
-# package as a transitive dep and the test suite would fail with
-# recursion errors.
-default user_invalidation_ts := 0
-
-user_invalidation_ts := ts if {
-	identity_present
-	ts := data.keycloak_invalidations[input.context.identity.user]
-}
-
-default user_attrs := {}
+default user_attrs := {"enabled": false}
 
 user_attrs := attrs if {
 	identity_present
-	token := _keycloak_admin_token
-	token != ""
-	response := http.send({
-		"method": "GET",
-		"url": sprintf(
-			"%s/admin/realms/%s/users?username=%s&exact=true&_inv=%v",
-			[data.keycloak.url, data.keycloak.realm, input.context.identity.user, user_invalidation_ts],
-		),
-		"headers": {"Authorization": sprintf("Bearer %s", [token])},
-		"cache": true,
-		"force_cache": true,
-		"force_cache_duration_seconds": 60,
-	})
-	response.status_code == 200
-	count(response.body) > 0
-	attrs := object.get(response.body[0], "attributes", {})
+	attrs := data.users[input.context.identity.user]
 }
 
-# === Keycloak admin token =====================================================
-# The JWT `exp` claim is the authoritative validity check — the cache TTL
-# is a performance knob, not a correctness gate. With Keycloak's typical
-# 300s access-token lifespan and the short cache TTL below, a cached token
-# is refreshed well before its exp, so `_token_still_valid` rarely rejects
-# in practice. If it ever does (clock skew above the safety margin, or
-# Keycloak issues a short-lived token), the rule fails and `user_attrs`
-# falls back to its default `{}` — yielding a deny-all row filter until
-# the cache refreshes on the next request after TTL.
+# === System identities exempt from the `enabled` gate =========================
+# Two identity classes don't go through Keycloak's user-attribute store:
+#   * View-owner principals (`trino`, used by hl7-transformer for DEFINER
+#     views) — see the `is_view_owner` carve-out in row filters / masks.
+#   * Impersonation service principals (`superset_svc`, `openwebui_mcp_svc`)
+#     — only ever issue ImpersonateUser; the impersonated end-user is what
+#     subsequent /allow calls evaluate.
+# These don't appear in the bundle. Gating /allow on `user_attrs.enabled`
+# without a carve-out would deny their queries entirely, so they get an
+# explicit exemption from the enabled check.
 
-# Safety margin (seconds) deducted from the JWT exp claim before deciding
-# the token is still usable. Covers clock skew between OPA and Keycloak
-# (sub-second in-cluster) plus the time between this check and the
-# subsequent http.send to Keycloak's user endpoint.
-_token_safety_margin_seconds := 30
+trino_service_principals := {"superset_svc", "openwebui_mcp_svc"}
 
-# Inter-query cache TTL. Performance knob only — JWT exp is the validity
-# gate. Short enough that the cached token stays far from expiry under any
-# reasonable Keycloak lifespan; long enough to amortize round-trips within
-# a single user's burst of queries.
-_token_cache_ttl_seconds := 60
+is_system_identity if input.context.identity.user in view_owner_principals_set
 
-default _keycloak_admin_token := ""
+is_system_identity if input.context.identity.user in trino_service_principals
 
-_keycloak_admin_token := token if {
-	response := http.send({
-		"method": "POST",
-		"url": sprintf(
-			"%s/realms/%s/protocol/openid-connect/token",
-			[data.keycloak.url, data.keycloak.realm],
-		),
-		"headers": {"Content-Type": "application/x-www-form-urlencoded"},
-		"raw_body": sprintf(
-			"grant_type=client_credentials&client_id=%s&client_secret=%s",
-			[data.keycloak.reader_client_id, opa.runtime().env.KEYCLOAK_READER_CLIENT_SECRET],
-		),
-		"cache": true,
-		"force_cache": true,
-		"force_cache_duration_seconds": _token_cache_ttl_seconds,
-	})
-	response.status_code == 200
-	token := response.body.access_token
-	_token_still_valid(token)
-}
+# `user_enabled` is the deny-on-disabled gate. True for system identities
+# (carve-out above) and for end-users whose bundle entry has enabled=true.
+# Absent/disabled human users fall through to the default false and are
+# denied at /allow before any row filter or mask runs.
+default user_enabled := false
 
-# Token validity is read directly from the JWT's `exp` claim — the
-# authoritative source. `io.jwt.decode` returns undefined on a malformed
-# token, which causes this rule to fail and is treated as "not valid".
-_token_still_valid(token) if {
-	[_, payload, _] := io.jwt.decode(token)
-	payload.exp > (time.now_ns() / 1000000000) + _token_safety_margin_seconds
-}
+user_enabled if is_system_identity
+
+user_enabled if user_attrs.enabled == true
 
 # === Allow rules ==============================================================
 
@@ -157,6 +104,7 @@ allowed_catalogs := guarded_catalogs | {"system", "jmx", "information_schema"}
 # Catalog-level ops: AccessCatalog, ShowSchemas, FilterCatalogs.
 allow if {
 	identity_present
+	user_enabled
 	input.action.operation in {"AccessCatalog", "ShowSchemas", "FilterCatalogs"}
 	input.action.resource.catalog.name in allowed_catalogs
 }
@@ -164,6 +112,7 @@ allow if {
 # Schema-level ops: ShowTables, FilterSchemas (per-schema call).
 allow if {
 	identity_present
+	user_enabled
 	input.action.operation in {"ShowTables", "FilterSchemas"}
 	input.action.resource.schema.catalogName in allowed_catalogs
 }
@@ -182,6 +131,7 @@ allow if {
 # was created with SECURITY DEFINER.
 allow if {
 	identity_present
+	user_enabled
 	input.action.operation in {
 		"SelectFromColumns",
 		"ShowColumns",
@@ -197,6 +147,7 @@ allow if {
 # the dedicated rule below.
 allow if {
 	identity_present
+	user_enabled
 	input.action.operation in {"ExecuteQuery", "ReadSystemInformation", "ShowCatalogs"}
 	not input.action.resource
 }
@@ -210,6 +161,7 @@ allow if {
 # any DEFINER view targeting our delta tables fails for every invoker.
 allow if {
 	identity_present
+	user_enabled
 	input.action.operation == "CreateViewWithSelectFromColumns"
 	input.action.resource.table.catalogName in allowed_catalogs
 }
@@ -217,11 +169,10 @@ allow if {
 # ImpersonateUser: only the configured Trino service principals may set
 # X-Trino-User to override the effective query identity. End users connecting
 # directly via JWT (Jupyter) cannot impersonate; only the impersonation-pattern
-# clients (Superset, Voila/jupyter_svc, Open WebUI MCP) can. The Trino JWT
-# user-mapping strips the Keycloak `service-account-` prefix, so identity.user
-# matches the bare client_id here.
-trino_service_principals := {"superset_svc", "jupyter_svc", "openwebui_mcp_svc"}
-
+# clients (Superset, Open WebUI MCP) can. The Trino JWT user-mapping strips
+# the Keycloak `service-account-` prefix, so identity.user matches the bare
+# client_id here. Deliberately does NOT check user_enabled — service
+# principals aren't in data.users.
 allow if {
 	input.action.operation == "ImpersonateUser"
 	input.context.identity.user in trino_service_principals
@@ -380,6 +331,7 @@ attribute_snapshot[attr_name] := values if {
 decision_context := {
 	"user": input.context.identity.user,
 	"groups": user_groups,
+	"enabled": user_enabled,
 	"attribute_values": attribute_snapshot,
 	"mask_phi_fields": object.get(user_attrs, "mask_phi_fields", ["unset"]),
 	"row_filters": rowFilters,

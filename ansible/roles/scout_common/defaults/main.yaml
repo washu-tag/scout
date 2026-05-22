@@ -155,11 +155,20 @@ s3_username: minio
 s3_lake_reader: lake-reader
 s3_lake_writer: lake-writer
 s3_loki_writer: loki-writer
+# OPA bundle service accounts (ADR 0021). Writer is mounted into the
+# Keycloak pod (event listener publishes the bundle); reader is mounted
+# into each OPA pod (bundle plugin pulls).
+s3_opa_bundle_writer: opa-bundle-writer
+s3_opa_bundle_reader: opa-bundle-reader
 lake_bucket: lake
 scratch_bucket: scratch
 loki_chunks_bucket: loki-chunks
 loki_ruler_bucket: loki-ruler
 loki_admin_bucket: loki-admin
+# OPA bundle storage (ADR 0021). One object per Scout deployment:
+# opa-bundles/scout/bundle.tar.gz, replacing per-request Keycloak admin
+# API fetches with a periodic pull from MinIO.
+opa_bundles_bucket: opa-bundles
 
 # Service Account names
 lake_reader_service_account_name: lake-reader

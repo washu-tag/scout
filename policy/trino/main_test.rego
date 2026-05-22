@@ -36,12 +36,6 @@ fixture_view_owner_principals := ["trino"]
 
 fixture_masked_columns := ["patient_name", "full_patient_name", "zip_or_postal_code"]
 
-fixture_keycloak := {
-	"url": "http://keycloak.scout-core.svc:8080",
-	"realm": "scout",
-	"reader_client_id": "opa-keycloak-reader",
-}
-
 # Standard `with data.*` clauses every test injects. Concatenated inline below.
 
 # === Input builders ===========================================================
@@ -111,27 +105,27 @@ test_missing_identity_denied if {
 
 test_user_select_on_delta_allowed if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
-	trino.allow with input as inp with trino.user_attrs as {}
+	trino.allow with input as inp with trino.user_attrs as {"enabled": true}
 }
 
 test_admin_select_on_delta_allowed if {
 	inp := select_input("admin", ["scout-admin"], "delta", "default", "reports")
-	trino.allow with input as inp with trino.user_attrs as {}
+	trino.allow with input as inp with trino.user_attrs as {"enabled": true}
 }
 
 test_information_schema_allowed if {
 	inp := select_input("alice", ["scout-user"], "delta", "information_schema", "tables")
-	trino.allow with input as inp with trino.user_attrs as {}
+	trino.allow with input as inp with trino.user_attrs as {"enabled": true}
 }
 
 test_system_catalog_allowed if {
 	inp := select_input("alice", ["scout-user"], "system", "runtime", "queries")
-	trino.allow with input as inp with trino.user_attrs as {}
+	trino.allow with input as inp with trino.user_attrs as {"enabled": true}
 }
 
 test_execute_query_no_resource_allowed if {
 	inp := execute_query_input("alice", ["scout-user"])
-	trino.allow with input as inp with trino.user_attrs as {}
+	trino.allow with input as inp with trino.user_attrs as {"enabled": true}
 }
 
 test_access_catalog_delta_allowed if {
@@ -139,7 +133,7 @@ test_access_catalog_delta_allowed if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "AccessCatalog", "resource": {"catalog": {"name": "delta"}}},
 	}
-	trino.allow with input as inp with trino.user_attrs as {}
+	trino.allow with input as inp with trino.user_attrs as {"enabled": true}
 }
 
 test_filter_catalogs_delta_allowed if {
@@ -150,7 +144,7 @@ test_filter_catalogs_delta_allowed if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "FilterCatalogs", "resource": {"catalog": {"name": "delta"}}},
 	}
-	trino.allow with input as inp with trino.user_attrs as {}
+	trino.allow with input as inp with trino.user_attrs as {"enabled": true}
 }
 
 test_filter_catalogs_system_allowed if {
@@ -158,7 +152,7 @@ test_filter_catalogs_system_allowed if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "FilterCatalogs", "resource": {"catalog": {"name": "system"}}},
 	}
-	trino.allow with input as inp with trino.user_attrs as {}
+	trino.allow with input as inp with trino.user_attrs as {"enabled": true}
 }
 
 test_filter_catalogs_unknown_denied if {
@@ -166,7 +160,7 @@ test_filter_catalogs_unknown_denied if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "FilterCatalogs", "resource": {"catalog": {"name": "iceberg"}}},
 	}
-	not trino.allow with input as inp with trino.user_attrs as {}
+	not trino.allow with input as inp with trino.user_attrs as {"enabled": true}
 }
 
 test_show_catalogs_no_resource_allowed if {
@@ -174,7 +168,7 @@ test_show_catalogs_no_resource_allowed if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "ShowCatalogs"},
 	}
-	trino.allow with input as inp with trino.user_attrs as {}
+	trino.allow with input as inp with trino.user_attrs as {"enabled": true}
 }
 
 test_show_tables_schema_allowed if {
@@ -182,7 +176,7 @@ test_show_tables_schema_allowed if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "ShowTables", "resource": {"schema": {"catalogName": "delta", "schemaName": "default"}}},
 	}
-	trino.allow with input as inp with trino.user_attrs as {}
+	trino.allow with input as inp with trino.user_attrs as {"enabled": true}
 }
 
 test_filter_schemas_allowed if {
@@ -190,7 +184,7 @@ test_filter_schemas_allowed if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "FilterSchemas", "resource": {"schema": {"catalogName": "delta", "schemaName": "default"}}},
 	}
-	trino.allow with input as inp with trino.user_attrs as {}
+	trino.allow with input as inp with trino.user_attrs as {"enabled": true}
 }
 
 # === View-only tables =========================================================
@@ -202,7 +196,7 @@ test_filter_schemas_allowed if {
 test_select_from_view_only_table_denied if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_report_patient_mapping")
 	not trino.allow with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.view_only_tables as fixture_view_only_tables
 }
 
@@ -217,7 +211,7 @@ test_filter_tables_hides_view_only_table if {
 		},
 	}
 	not trino.allow with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.view_only_tables as fixture_view_only_tables
 }
 
@@ -230,7 +224,7 @@ test_show_columns_on_view_only_table_denied if {
 		},
 	}
 	not trino.allow with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.view_only_tables as fixture_view_only_tables
 }
 
@@ -239,7 +233,7 @@ test_non_view_only_table_still_allowed if {
 	# affect tables outside the list.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	trino.allow with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.view_only_tables as fixture_view_only_tables
 }
 
@@ -256,7 +250,7 @@ test_create_view_with_select_bypasses_view_only_block if {
 		},
 	}
 	trino.allow with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.view_only_tables as fixture_view_only_tables
 }
 
@@ -272,7 +266,7 @@ test_select_from_view_only_table_still_denied_for_invoker if {
 		},
 	}
 	not trino.allow with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.view_only_tables as fixture_view_only_tables
 }
 
@@ -282,7 +276,7 @@ test_no_attrs_emits_zero_row_clamp if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "1=0"}}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -291,7 +285,7 @@ test_single_facility_emits_in_clause if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "sending_facility IN ('WUSM')"}}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -300,7 +294,7 @@ test_multi_facility_emits_in_clause if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "sending_facility IN ('WUSM','BJH')"}}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["WUSM", "BJH"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM", "BJH"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -308,7 +302,7 @@ test_multi_facility_emits_in_clause if {
 test_wildcard_facility_emits_no_filter if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	count(trino.rowFilters) == 0 with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["*"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["*"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -318,7 +312,7 @@ test_wildcard_mixed_with_codes_emits_no_filter if {
 	# in the presence of the wildcard.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	count(trino.rowFilters) == 0 with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["WUSM", "*"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM", "*"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -329,7 +323,7 @@ test_admin_without_wildcard_gets_filter if {
 	inp := select_input("admin", ["scout-admin"], "delta", "default", "reports")
 	expected := {{"expression": "sending_facility IN ('WUSM')"}}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -338,7 +332,7 @@ test_admin_without_attrs_gets_zero_row_clamp if {
 	inp := select_input("admin", ["scout-admin"], "delta", "default", "reports")
 	expected := {{"expression": "1=0"}}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -349,7 +343,7 @@ test_injection_attempt_dropped if {
 	inp := select_input("mallory", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "sending_facility IN ('WUSM')"}}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["WUSM", "'); DROP TABLE reports; --"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM", "'); DROP TABLE reports; --"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -358,7 +352,7 @@ test_only_invalid_values_emits_zero_row_clamp if {
 	inp := select_input("mallory", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "1=0"}}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["bad with spaces", "$%^"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["bad with spaces", "$%^"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -369,7 +363,7 @@ test_only_invalid_values_emits_zero_row_clamp if {
 test_no_filter_on_information_schema if {
 	inp := select_input("alice", ["scout-user"], "delta", "information_schema", "tables")
 	count(trino.rowFilters) == 0 with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -379,7 +373,7 @@ test_no_filter_on_unscoped_delta_table if {
 	# — even when the user has attributes that would otherwise filter.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "other_table")
 	count(trino.rowFilters) == 0 with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -387,7 +381,7 @@ test_no_filter_on_unscoped_delta_table if {
 test_no_filter_on_system_catalog if {
 	inp := select_input("alice", ["scout-user"], "system", "runtime", "queries")
 	count(trino.rowFilters) == 0 with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -406,7 +400,7 @@ test_two_attributes_emit_two_filters if {
 		{"expression": "modality IN ('CT')"},
 	}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["WUSM"], "allowed_modalities": ["CT"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM"], "allowed_modalities": ["CT"]}
 		with data.attribute_filters as fixture_two_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -417,7 +411,7 @@ test_wildcard_one_attribute_still_filters_other if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "modality IN ('CT','MR')"}}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["*"], "allowed_modalities": ["CT", "MR"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["*"], "allowed_modalities": ["CT", "MR"]}
 		with data.attribute_filters as fixture_two_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -433,7 +427,7 @@ test_missing_attribute_clamps_to_zero_rows if {
 		{"expression": "1=0"},
 	}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_two_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -449,7 +443,7 @@ test_view_owner_bypasses_row_filter if {
 	# attributes (which would normally trigger the 1=0 clamp).
 	inp := select_input("trino", [], "delta", "default", "reports")
 	count(trino.rowFilters) == 0 with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 		with data.view_owner_principals as fixture_view_owner_principals
@@ -462,7 +456,7 @@ test_view_owner_bypasses_column_mask if {
 	inp := batch_mask_input("trino", [], "delta", "default", "reports",
 		["patient_name"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.masked_columns as fixture_masked_columns
 		with data.view_owner_principals as fixture_view_owner_principals
 }
@@ -473,7 +467,7 @@ test_non_view_owner_still_gets_row_filter if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "1=0"}}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 		with data.view_owner_principals as fixture_view_owner_principals
@@ -492,7 +486,7 @@ test_attribute_tables_override_scopes_filter if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "sending_facility IN ('WUSM')"}}
 	trino.rowFilters == expected with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as override_filters
 		with data.filtered_tables as [{"catalog": "delta", "schema": "default", "table": "other"}]
 }
@@ -506,7 +500,7 @@ test_attribute_tables_override_skips_unscoped_table if {
 	}}
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_dx")
 	count(trino.rowFilters) == 0 with input as inp
-		with trino.user_attrs as {"allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as override_filters
 		with data.filtered_tables as [{"catalog": "delta", "schema": "default", "table": "reports_dx"}]
 }
@@ -519,7 +513,7 @@ test_phi_columns_masked_when_default_unset if {
 		["patient_name", "modality", "sending_facility"])
 	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -528,7 +522,7 @@ test_phi_columns_masked_when_explicit_true if {
 		["patient_name"])
 	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as {"mask_phi_fields": ["true"]}
+		with trino.user_attrs as {"enabled": true, "mask_phi_fields": ["true"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -536,7 +530,7 @@ test_phi_columns_unmasked_when_explicit_false if {
 	inp := batch_mask_input("alice", ["scout-user"], "delta", "default", "reports",
 		["patient_name", "full_patient_name", "zip_or_postal_code"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with trino.user_attrs as {"mask_phi_fields": ["false"]}
+		with trino.user_attrs as {"enabled": true, "mask_phi_fields": ["false"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -545,7 +539,7 @@ test_admin_phi_unmasked_when_explicit_false if {
 	inp := batch_mask_input("admin", ["scout-admin"], "delta", "default", "reports",
 		["patient_name"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with trino.user_attrs as {"mask_phi_fields": ["false"]}
+		with trino.user_attrs as {"enabled": true, "mask_phi_fields": ["false"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -555,7 +549,7 @@ test_admin_phi_masked_when_default if {
 		["patient_name"])
 	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -567,7 +561,7 @@ test_multiple_phi_columns_in_batch_all_masked if {
 		{"index": 2, "viewExpression": {"expression": "'[REDACTED]'"}},
 	}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -575,7 +569,7 @@ test_no_masked_columns_in_batch_emits_empty if {
 	inp := batch_mask_input("alice", ["scout-user"], "delta", "default", "reports",
 		["modality", "sending_facility"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -584,7 +578,7 @@ test_mask_only_in_delta_catalog if {
 	inp := batch_mask_input("alice", ["scout-user"], "system", "runtime", "queries",
 		["patient_name"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -595,7 +589,7 @@ test_mask_applies_to_any_delta_table if {
 		["patient_name"])
 	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -611,7 +605,7 @@ test_complex_type_masked_with_null if {
 		[{"name": "full_patient_name", "type": complex_type}])
 	expected := {{"index": 0, "viewExpression": {"expression": "NULL"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -622,7 +616,7 @@ test_varchar_with_length_masked_with_redacted if {
 		[{"name": "patient_name", "type": "varchar(255)"}])
 	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -638,7 +632,7 @@ test_mixed_types_in_batch if {
 		{"index": 1, "viewExpression": {"expression": "NULL"}},
 	}
 	trino.batchColumnMasks == expected with input as inp
-		with trino.user_attrs as {}
+		with trino.user_attrs as {"enabled": true}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -659,10 +653,6 @@ test_superset_svc_can_impersonate if {
 	trino.allow with input as impersonate_input("superset_svc", "alice@example.org")
 }
 
-test_jupyter_svc_can_impersonate if {
-	trino.allow with input as impersonate_input("jupyter_svc", "alice@example.org")
-}
-
 test_openwebui_mcp_svc_can_impersonate if {
 	trino.allow with input as impersonate_input("openwebui_mcp_svc", "alice@example.org")
 }
@@ -677,71 +667,100 @@ test_admin_cannot_impersonate if {
 	not trino.allow with input as impersonate_input("admin@example.org", "bob@example.org")
 }
 
-# === Keycloak admin token (JWT-exp validation) ================================
-# The token fetch rule is gated by the JWT's own `exp` claim, not by OPA's
-# cache TTL. Direct unit tests of `_token_still_valid` cover the validation
-# logic; the user_attrs guard test confirms downstream deny-all when the
-# token isn't available. JWT fixtures are static — `io.jwt.decode` ignores
-# the signature, so any base64url-encoded header.payload.signature with a
-# valid `exp` claim is enough.
-#
-# FUTURE_JWT: exp = 253402300799 (year 9999) — always valid.
-# PAST_JWT:   exp = 1577836800   (year 2020) — always expired.
+# === Bundle-driven user attributes (data.users) ==============================
+# ADR 0021: per-user attributes come from OPA's data document (populated
+# by the Keycloak SPI listener via a MinIO-hosted bundle), not from
+# http.send. Tests below verify the end-to-end /allow gate honors the
+# bundle's `enabled` flag and treats absent-from-bundle as deny.
 
-future_jwt := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJleHAiOjI1MzQwMjMwMDc5OX0.c2lnbmF0dXJlLWJ5dGVz"
-
-past_jwt := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJleHAiOjE1Nzc4MzY4MDB9.c2lnbmF0dXJlLWJ5dGVz"
-
-test_token_still_valid_accepts_future_exp if {
-	trino._token_still_valid(future_jwt)
-}
-
-test_token_still_valid_rejects_past_exp if {
-	not trino._token_still_valid(past_jwt)
-}
-
-test_token_still_valid_rejects_malformed if {
-	not trino._token_still_valid("not-a-jwt")
-}
-
-test_user_attrs_empty_when_admin_token_empty if {
-	# When `_keycloak_admin_token` is empty (token fetch failed or JWT
-	# validation rejected the response), the user_attrs rule must not
-	# call Keycloak with an empty bearer — it should fall through to the
-	# `{}` default. Verified without mocking the user-lookup http.send.
+test_user_attrs_reads_from_data_users if {
+	# The end-to-end rule: identity → data.users[user] → attrs map.
+	# Tests for downstream rules use `with trino.user_attrs as {...}`
+	# directly; this one nails down that the lookup path itself works.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
-	trino.user_attrs == {} with input as inp with trino._keycloak_admin_token as ""
+	expected := {"enabled": true, "allowed_facilities": ["WUSM"]}
+	trino.user_attrs == expected with input as inp
+		with data.users as {"alice": expected, "bob": {"enabled": false}}
 }
 
-# === Keycloak event-listener invalidation ====================================
-# `user_invalidation_ts` is threaded into the http.send URL so a new
-# value (PUT by the Keycloak event listener) busts OPA's cache key. The
-# rule must default to 0 when no listener has fired, and return the
-# per-user timestamp when the data document is populated.
-
-test_user_invalidation_ts_defaults_to_zero_when_data_absent if {
-	# Pre-listener-deploy: the data document has no
-	# `keycloak_invalidations` key. The rule must not error — it should
-	# resolve to 0 so the http.send URL is stable and the existing TTL
-	# governs staleness.
+test_user_attrs_defaults_to_disabled_when_absent_from_bundle if {
+	# A user not in the bundle gets the default {"enabled": false}.
+	# This is the "newly onboarded but not yet provisioned" case, and
+	# also the "listener hasn't published a bundle yet" case during
+	# the very first deploy.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
-	trino.user_invalidation_ts == 0 with input as inp
+	trino.user_attrs == {"enabled": false} with input as inp
+		with data.users as {"bob": {"enabled": true}}
 }
 
-test_user_invalidation_ts_defaults_to_zero_when_user_absent if {
-	# data.keycloak_invalidations exists but doesn't contain this user
-	# — most common steady-state case, since the listener only writes
-	# for users whose admin events have fired since OPA's start.
+test_user_attrs_default_when_data_users_missing_entirely if {
+	# Pre-bundle-load (OPA pod just started, bundle plugin hasn't
+	# finished its first pull): data.users key may not exist yet.
+	# Default must still resolve cleanly.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
-	trino.user_invalidation_ts == 0 with input as inp
-		with data.keycloak_invalidations as {"bob": 1716000000}
+	trino.user_attrs == {"enabled": false} with input as inp
 }
 
-test_user_invalidation_ts_picks_up_per_user_timestamp if {
-	# After the listener fires for alice, her per-user timestamp is in
-	# the data document. The rule returns it verbatim so the URL
-	# changes and OPA's cache is invalidated for her next decision.
+test_enabled_user_in_bundle_can_select if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
-	trino.user_invalidation_ts == 1716000000 with input as inp
-		with data.keycloak_invalidations as {"alice": 1716000000, "bob": 1715900000}
+	trino.allow with input as inp
+		with data.users as {"alice": {"enabled": true, "allowed_facilities": ["WUSM"]}}
+}
+
+test_disabled_user_in_bundle_denied_at_allow if {
+	# An admin disabling alice in Keycloak → listener publishes
+	# enabled:false → next decision after bundle pull denies at /allow,
+	# not just at row-filter level. Defense in depth over the 1=0
+	# zero-row clamp.
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
+	not trino.allow with input as inp
+		with data.users as {"alice": {"enabled": false, "allowed_facilities": ["WUSM"]}}
+}
+
+test_unknown_user_denied_at_allow if {
+	# Identity is set, but the user isn't in data.users. Could be a
+	# typo'd JWT, a service principal not on the impersonation
+	# allowlist, or a user provisioned in Keycloak but not yet
+	# published to the bundle. Deny.
+	inp := select_input("ghost", ["scout-user"], "delta", "default", "reports")
+	not trino.allow with input as inp with data.users as {}
+}
+
+test_disabled_user_denied_on_show_catalogs if {
+	# Catalog-less ops also gate on user_enabled — a disabled user
+	# can't even enumerate catalogs.
+	inp := {
+		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
+		"action": {"operation": "ShowCatalogs"},
+	}
+	not trino.allow with input as inp
+		with data.users as {"alice": {"enabled": false}}
+}
+
+# === System-identity carve-outs ==============================================
+# View-owner principals (trino) and impersonation service principals
+# (superset_svc, openwebui_mcp_svc) are not in data.users. The
+# is_system_identity carve-out exempts them from user_enabled so their
+# operations don't deny by default.
+
+test_view_owner_allowed_without_bundle_entry if {
+	# `trino` is the view owner for DEFINER views created by
+	# hl7-transformer. When an invoker queries one of those views,
+	# Trino evaluates the underlying-table reads as `trino`. That
+	# identity isn't in Keycloak's user list, so it won't be in the
+	# bundle — but it must still be allowed.
+	inp := select_input("trino", [], "delta", "default", "reports")
+	trino.allow with input as inp
+		with data.users as {}
+		with data.view_owner_principals as fixture_view_owner_principals
+}
+
+test_impersonation_service_principal_allowed_without_bundle_entry if {
+	# superset_svc only ever calls ImpersonateUser; the impersonated
+	# end-user is what subsequent decisions evaluate. The service
+	# principal itself isn't in the bundle.
+	not trino.user_attrs.enabled with input as impersonate_input("superset_svc", "alice@example.org")
+		with data.users as {}
+	trino.allow with input as impersonate_input("superset_svc", "alice@example.org")
+		with data.users as {}
 }

@@ -53,13 +53,5 @@ keycloak_terms_localizations: {}
 # Token lifespan (in seconds) — should match oauth2_proxy_cookie_expire
 keycloak_token_lifespan: 28800
 
-# Comma-separated OPA base URLs the opa-invalidation event listener posts
-# cache-busting timestamps to when an admin updates/deletes a Scout user.
-# Single ClusterIP URL hits whichever OPA replica the load balancer picks
-# — the other replica remains stale until its 60s http.send cache TTL
-# elapses. For multi-replica deployments where stricter invalidation
-# convergence matters, override to a comma-separated list of per-pod
-# URLs (e.g. via Endpoints discovery). Set to empty string to disable.
-keycloak_opa_invalidation_base_urls: 'http://opa-trino.{{ trino_namespace }}:8181'
 keycloak_temporal_token_lifespan: '{{ keycloak_token_lifespan }}'
 keycloak_minio_token_lifespan: '{{ keycloak_token_lifespan }}'

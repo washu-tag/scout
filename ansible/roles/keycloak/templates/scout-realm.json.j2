@@ -36,14 +36,16 @@
     },
     "eventsListeners": [
       "user-approval-email",
-      "opa-invalidation",
+      "opa-user-bundle-publisher",
       "jboss-logging"
     ],
     {#- adminEventsEnabled drives admin-event delivery to listeners. The
-        opa-invalidation listener consumes USER admin events (UPDATE,
-        DELETE) to push cache-busting timestamps to OPA so a disabled
-        user loses Trino access immediately, not after the 60s http.send
-        cache TTL elapses. -#}
+        opa-user-bundle-publisher listener (ADR 0021) consumes USER admin
+        events (CREATE, UPDATE, DELETE) to keep its in-memory snapshot
+        in sync and republishes the OPA bundle to MinIO on every change.
+        adminEventsDetailsEnabled exposes event.getDetails(), which the
+        listener reads on DELETE to recover the deleted user's username
+        (the user row itself is gone by event-fire time). -#}
     "adminEventsEnabled": true,
     "adminEventsDetailsEnabled": true,
     "smtpServer": {
@@ -511,29 +513,20 @@
           "offline_access",
         ]
       },
-      {#- Service principal for OPA. Used by the trino RBAC policy to fetch
-          per-user attributes from Keycloak's admin API via http.send. Granted
-          only the realm-management:view-users role (see the `users` array
-          below for the service-account user's role mapping). -#}
-      {
-        "name": "opa-keycloak-reader",
-        "description": "OPA service account for fetching per-user attributes from Keycloak",
-        "enabled": true,
-        "clientId": "opa-keycloak-reader",
-        "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_opa_reader_client_secret }}",
-        "serviceAccountsEnabled": true,
-        "standardFlowEnabled": false,
-        "directAccessGrantsEnabled": false,
-        "publicClient": false,
-        "protocol": "openid-connect"
-      },
-      {#- Service principals for the three Trino client surfaces. Each
-          authenticates to Trino via client_credentials and impersonates the
-          end user via X-Trino-User. Token lifespan is 4h so long-running
-          notebook/dashboard queries don't expire mid-session (per-user
-          offboarding still propagates within seconds via the OPA cache
-          invalidation event listener — see ADR 0020). -#}
+      {#- ADR 0021: OPA no longer queries Keycloak's admin API at
+          decision time. Per-user attributes flow Keycloak →
+          OpaUserBundlePublisher SPI → MinIO bundle → OPA pods. The
+          `opa-keycloak-reader` client + its `view-users` role-mapping
+          have been removed. The SPI runs inside the Keycloak pod, so
+          it doesn't need a client_credentials grant — it reads from
+          the live `session.users()` API directly.
+
+          Service principals for the three Trino client surfaces. Each
+          authenticates to Trino via client_credentials and impersonates
+          the end user via X-Trino-User. Token lifespan is 4h so
+          long-running notebook/dashboard queries don't expire mid-
+          session (per-user offboarding still propagates within seconds
+          via the OPA bundle pull — see ADR 0021). -#}
       {
         "name": "superset_svc",
         "description": "Service principal for Superset connecting to Trino (impersonates the logged-in user via X-Trino-User)",
@@ -561,34 +554,8 @@
         ]
       },
       {
-        "name": "jupyter_svc",
-        "description": "Service principal for Voila (and any non-auth_state Jupyter consumer) connecting to Trino",
-        "enabled": true,
-        "clientId": "jupyter_svc",
-        "clientAuthenticatorType": "client-secret",
-        "secret": "{{ keycloak_jupyter_svc_client_secret }}",
-        "serviceAccountsEnabled": true,
-        "standardFlowEnabled": false,
-        "directAccessGrantsEnabled": false,
-        "publicClient": false,
-        "protocol": "openid-connect",
-        "attributes": {
-          "access.token.lifespan": "14400"
-        },
-        "defaultClientScopes": [
-          "web-origins",
-          "acr",
-          "profile",
-          "roles",
-          "basic",
-          "email",
-          "microprofile-jwt",
-          "trino-audience"
-        ]
-      },
-      {
         "name": "openwebui_mcp_svc",
-        "description": "Service principal for the Open WebUI Trino MCP sidecar (sets X-Trino-User from X-OpenWebUI-User-Email)",
+        "description": "Service principal for the Open WebUI Trino MCP sidecar (validates inbound Keycloak OIDC token, sets X-Trino-User to its preferred_username claim)",
         "enabled": true,
         "clientId": "openwebui_mcp_svc",
         "clientAuthenticatorType": "client-secret",
@@ -1033,19 +1000,9 @@
           }
         ]
       }
-    ],
-    {#- Service-account user for opa-keycloak-reader. Keycloak auto-creates
-        the user when the client has serviceAccountsEnabled=true; this entry
-        assigns the realm-management:view-users role to it so the
-        client_credentials token can query /admin/realms/{r}/users. -#}
-    "users": [
-      {
-        "username": "service-account-opa-keycloak-reader",
-        "enabled": true,
-        "serviceAccountClientId": "opa-keycloak-reader",
-        "clientRoles": {
-          "realm-management": ["view-users"]
-        }
-      }
     ]
+    {#- ADR 0021: the `service-account-opa-keycloak-reader` user is
+        no longer needed. The OPA bundle publisher SPI runs inside
+        the Keycloak pod and reads users via the in-process
+        `session.users()` API — no admin REST token, no role grant. -#}
   }

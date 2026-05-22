@@ -146,6 +146,27 @@
   ansible.builtin.set_fact:
     _keycloak_proxy_options: []
 
+- name: Create OPA bundle writer Secret for Keycloak
+  no_log: true
+  kubernetes.core.k8s:
+    state: present
+    namespace: '{{ keycloak_namespace }}'
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: opa-bundle-writer
+      type: Opaque
+      stringData:
+        # Consumed by the OpaUserBundlePublisher SPI inside the Keycloak
+        # pod (ADR 0021). The same access_key/secret_key are provisioned
+        # on the MinIO side as the `{{ s3_opa_bundle_writer }}` service
+        # account; this Secret is the cross-namespace mirror so the
+        # Keycloak operator can reference them in additionalOptions
+        # without leaking secrets into the Keycloak CR.
+        access-key: '{{ s3_opa_bundle_writer }}'
+        secret-key: '{{ s3_opa_bundle_writer_secret }}'
+
 - name: Create Keycloak CR
   vars:
     _keycloak_base_options:
@@ -160,16 +181,32 @@
         # Hacky way to get an env variable into the Keycloak pod until the operator supports it natively
       - name: scout-url
         value: '{{ server_hostname }}'
-        # Same env-var-via-additionalOption trick. The opa-invalidation
-        # event listener reads KC_OPA_INVALIDATION_BASE_URLS to know
-        # where to PUT cache-busting timestamps when a user's RBAC-
-        # relevant state changes (ADR 0020). Comma-separated list of
-        # OPA base URLs — one per replica when stronger invalidation
-        # convergence is needed; ClusterIP is fine for the common case
-        # where the worst-case staleness window is bounded by the 60s
-        # http.send cache TTL.
-      - name: opa-invalidation-base-urls
-        value: '{{ keycloak_opa_invalidation_base_urls }}'
+        # ADR 0021: the OpaUserBundlePublisher SPI inside the Keycloak
+        # pod reads these env vars (via System.getenv) to know where
+        # to publish the user-attribute bundle. Keycloak's operator
+        # maps `additionalOptions[i].name=foo-bar` to env var
+        # `KC_FOO_BAR`; the SPI factory's ENV_* constants match.
+        # `value` entries land in the Keycloak CR as plaintext, which
+        # is fine for non-secret config. Credentials use `secret` refs
+        # so they stay in the Secret instead of the CR.
+      - name: opa-bundle-s3-endpoint
+        value: 'http://{{ minio_tenant_name }}-hl.{{ minio_tenant_namespace }}:9000'
+      - name: opa-bundle-s3-bucket
+        value: '{{ opa_bundles_bucket }}'
+      - name: opa-bundle-s3-object-key
+        value: 'scout/bundle.tar.gz'
+      - name: opa-bundle-s3-region
+        value: '{{ s3_region }}'
+      - name: opa-bundle-realm
+        value: '{{ keycloak_realm_name }}'
+      - name: opa-bundle-s3-access-key
+        secret:
+          name: opa-bundle-writer
+          key: access-key
+      - name: opa-bundle-s3-secret-key
+        secret:
+          name: opa-bundle-writer
+          key: secret-key
   kubernetes.core.k8s:
     state: present
     namespace: '{{ keycloak_namespace }}'
