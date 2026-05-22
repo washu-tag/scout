@@ -443,6 +443,43 @@ public class TestStatusDatabase extends BaseTest {
 
     }
 
+    /**
+     * Tests that a failed first ingestion attempt does not block a successful retry of the same
+     * log file. The first attempt uses a bogus {@code hl7OutputPath} so the S3 upload fails, which
+     * causes the activity to record placeholder {@code hl7_file_path} values
+     * (of the form {@code <logPath>_<messageNumber>}) in {@value #TABLE_HL7_FILES}. The retry
+     * with the default {@code hl7OutputPath} produces real S3 paths for the same
+     * {@code (log_file_path, message_number)} pairs; the upsert's {@code ON CONFLICT
+     * (hl7_file_path)} clause does not match the placeholder PK, so the fall-through INSERT
+     * used to trip the {@code UNIQUE (log_file_path, message_number)} constraint.
+     * The log used here lives outside {@code /data/postgres} so the shared
+     * {@link #launchIngestion() @BeforeClass} ingestion does not touch it.
+     */
+    @Test
+    public void testStatusDbHl7OutputPathFailureRetry() {
+        final String date = "20260522";
+        final String logPath = "/data/duplicate-key/" + date + ".log";
+
+        // First attempt: bogus hl7OutputPath causes the zip upload to fail. The activity's
+        // catch block writes placeholder hl7_file_path rows before throwing.
+        temporalClient.launchIngest(
+            new IngestJobInput()
+                .setLogPaths(logPath)
+                .setHl7OutputPath("s3://scout-duplicate-key-test-nonexistent/hl7"),
+            false
+        );
+
+        // Retry with the default hl7OutputPath. Should succeed and leave a single real
+        // S3-path row in hl7_files for this log.
+        temporalClient.launchIngest(
+            new IngestJobInput().setLogPaths(logPath),
+            true
+        );
+
+        final Hl7FilesRow h0 = new Hl7FilesRow("2026/05/22/" + date + "_0.hl7", 0, date);
+        runHl7FilesTest(new Hl7FileTableQuery(date), h0);
+    }
+
     private void runDbTest(SqlQuery query, Consumer<ResultSet> resultValidator) {
         final String sql = query.build();
         try (
