@@ -13,6 +13,7 @@ from .sparkutils import (
 from pyspark.sql import functions as F, Column, DataFrame
 
 UNREASONABLE_AGE_THRESHOLD = 109
+UNREASONABLE_DOB_THRESHOLD = "1905-01-01"
 
 def curated_table(base_report_table_name: str) -> DerivativeTable:
     return DerivativeTable(
@@ -129,7 +130,7 @@ def curate_silver_table(batch_df, spark, table_name):
                     F.col("observation_dt"), F.col("requested_dt")
                 ),
                 "birth_date": F.when(
-                    F.col("birth_date") > "1905-01-01", F.col("birth_date")
+                    F.col("birth_date") > UNREASONABLE_DOB_THRESHOLD, F.col("birth_date")
                 ).otherwise(F.lit(None)),
             }
         )
