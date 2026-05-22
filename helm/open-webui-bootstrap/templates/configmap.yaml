@@ -50,6 +50,7 @@ data:
     {{- $defaults := .Values.scoutDefaults -}}
     {{- $profile := printf "data:image/png;base64,%s" ($.Files.Get (printf "files/payloads/%s" $defaults.profileImageFile)) -}}
     {{- $hideBase := dig "hideBaseModels" true $defaults -}}
+    {{- $publicRead := list (dict "principal_type" "user" "principal_id" "*" "permission" "read") -}}
     {{- $models := list -}}
     {{- range $m := .Values.scoutModels -}}
     {{- if $m.ui -}}
@@ -76,6 +77,7 @@ data:
             "keep_alive" (default $keepDefault $m.ui.keep_alive)
         )
         "is_active" true
+        "access_grants" $publicRead
     ) -}}
     {{- if and $hideBase (ne $m.base $modelId) -}}
     {{- $models = append $models (dict
@@ -85,6 +87,7 @@ data:
         "meta" (dict)
         "params" (dict)
         "is_active" false
+        "access_grants" $publicRead
     ) -}}
     {{- end -}}
     {{- end -}}

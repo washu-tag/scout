@@ -52,3 +52,23 @@
 - name: Install k3s agent
   ansible.builtin.include_tasks: agent.yaml
   when: "'agents' in group_names"
+
+# Taint every gpu_workers node (see enable_gpu_node_taint in
+# scout_common/defaults). Flips with the var, so disabling it converges.
+# Runs after agent install so GPU nodes are registered with the API
+# server. Skipped on single-node clusters — same reason server.yaml
+# skips the control-plane taint there. Delegates to the first server so
+# the cluster kubeconfig path is stable regardless of which host triggers
+# run_once, matching the pattern used by the control-plane taint.
+- name: Apply GPU node taints
+  delegate_to: "{{ groups['server'][0] }}"
+  run_once: true
+  kubernetes.core.k8s_taint:
+    name: '{{ item }}'
+    state: "{{ 'present' if enable_gpu_node_taint else 'absent' }}"
+    taints:
+      - key: nvidia.com/gpu
+        value: present
+        effect: NoSchedule
+  loop: "{{ groups['gpu_workers'] | default([]) }}"
+  when: (groups['k3s_cluster'] | default([]) | length) > 1

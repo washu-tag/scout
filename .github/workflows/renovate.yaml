@@ -5,6 +5,8 @@ on:
     - cron: '0 6 * * 1' # Weekly Monday 6am UTC
   issues:
     types: [edited]
+  pull_request:
+    types: [edited, closed]
   workflow_dispatch:
 
 permissions: {}
@@ -12,9 +14,18 @@ permissions: {}
 jobs:
   renovate:
     runs-on: ubuntu-latest
+    # Default-allow events; only narrow `issues` and `pull_request`:
+    #   - issues: only the Dependency Dashboard (approval clicks).
+    #   - pull_request: any close (so merging any PR — Renovate or not —
+    #     prompts a re-evaluation, including rebasing open Renovate PRs
+    #     against the new main); plus edits to Renovate-authored PRs (so
+    #     ticking the "rebase this PR" checkbox fires promptly).
+    # Edits on non-Renovate PRs are filtered out — they're noise here.
     if: >-
-      github.event_name != 'issues' ||
-      github.event.issue.title == 'Dependency Dashboard'
+      (github.event_name != 'issues' && github.event_name != 'pull_request') ||
+      (github.event_name == 'issues' && github.event.issue.title == 'Dependency Dashboard') ||
+      (github.event_name == 'pull_request' && github.event.action == 'closed') ||
+      (github.event_name == 'pull_request' && github.event.action == 'edited' && startsWith(github.event.pull_request.head.ref, 'renovate/'))
     permissions:
       contents: read
     steps:

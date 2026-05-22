@@ -95,6 +95,12 @@ ingress:
     - '*.jupyter.{{ server_hostname }}'
 
 prePuller:
+  # Pre-pull singleuser images onto the GPU node too, since that's where
+  # they actually run (ADR 0006).
+  extraTolerations:
+    - key: nvidia.com/gpu
+      value: present
+      effect: NoSchedule
   hook:
     enabled: {{ jupyter_prepuller_hook | default(true) }}
   continuous:
@@ -118,6 +124,12 @@ singleuser:
   nodeSelector:
     kubernetes.io/hostname: '{{ jupyter_target_node_name }}'
 {% endif %}
+  # Required when enable_gpu_node_taint is set — singleuser pods are pinned
+  # to the GPU node (ADR 0006).
+  extraTolerations:
+    - key: nvidia.com/gpu
+      value: present
+      effect: NoSchedule
   cmd: null
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
   initContainers:
