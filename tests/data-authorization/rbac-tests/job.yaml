@@ -1,0 +1,108 @@
+# Data authorization integration test runner — runs run.sh in a curl
+# + jq + bash image, talking to Keycloak / OPA / Trino over in-cluster
+# service DNS. Triggered from CI's smoke-test workflow after the seed
+# Job populates test_reports.
+#
+# Lives in scout-analytics so the cert-manager-issued trino-tls cert
+# is in-namespace (mounted for TLS verification of the Trino client).
+# Keycloak (scout-core) and MinIO (scout-data) are reached over their
+# Service FQDNs.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: data-authz-test-script
+  namespace: scout-analytics
+data:
+  run.sh: |
+    PLACEHOLDER_RUN_SH
+---
+# Mirror the Keycloak admin password from scout-core so the test pod
+# can authenticate to the admin REST API without touching the
+# keycloak-admin-secret directly (cross-namespace Secret access is
+# discouraged). Created by the workflow before applying the Job.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: data-authz-test-creds
+  namespace: scout-analytics
+type: Opaque
+stringData:
+  KC_ADMIN_PASSWORD: PLACEHOLDER_KC_ADMIN_PASSWORD
+  SUPERSET_SVC_CLIENT_SECRET: PLACEHOLDER_SUPERSET_SVC_CLIENT_SECRET
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: data-authz-tests
+  namespace: scout-analytics
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: data-authz-tests
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: tests
+          image: alpine/curl:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - apk add --no-cache jq bash >/dev/null && bash /tests/run.sh
+          env:
+            - name: KC_URL
+              value: http://keycloak-service.scout-core:8080
+            - name: KC_REALM
+              value: scout
+            - name: KC_ADMIN_USERNAME
+              value: admin
+            - name: KC_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: data-authz-test-creds
+                  key: KC_ADMIN_PASSWORD
+            - name: SUPERSET_SVC_CLIENT_ID
+              value: superset_svc
+            - name: SUPERSET_SVC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: data-authz-test-creds
+                  key: SUPERSET_SVC_CLIENT_SECRET
+            - name: OPA_URL
+              value: http://opa-trino.scout-analytics:8181
+            - name: TRINO_URL
+              value: https://trino.scout-analytics:8443
+            # Mount the cert-manager-issued CA cert so curl validates
+            # Trino's TLS instead of falling back to -k. The trino-tls
+            # Secret carries the cert + key under standard names.
+            - name: TRINO_CA_BUNDLE
+              value: /trino-tls/ca.crt
+            - name: TEST_USER
+              value: rbac-ci-user
+          volumeMounts:
+            - name: tests
+              mountPath: /tests
+              readOnly: true
+            - name: trino-tls
+              mountPath: /trino-tls
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: tests
+          configMap:
+            name: data-authz-test-script
+            defaultMode: 0o755
+        - name: trino-tls
+          secret:
+            secretName: trino-tls
+            optional: true

@@ -1,0 +1,122 @@
+"""
+Seed the synthetic delta.default.test_reports table the data-authorization
+test runner asserts against. Runs as a one-shot Job in CI's smoke-test
+job after the analytics playbook deploys; uses the hl7-transformer image
+as its vehicle (PySpark + Delta + Hive metastore client + s3a + the
+right jars in $SPARK_HOME/jars).
+
+The schema mirrors the production reports table for the columns the
+rego policy filters and masks against:
+  - sending_facility (varchar)     -- row filter dimension #1
+  - modality (varchar)             -- row filter dimension #2
+  - patient_name (varchar)         -- PHI masked as '[REDACTED]'
+  - full_patient_name (struct)     -- PHI masked as NULL (non-varchar)
+  - zip_or_postal_code (varchar)   -- PHI masked as '[REDACTED]'
+
+Three facilities x two modalities = six distinct (facility, modality)
+combinations. Row counts chosen so the assertions are unambiguous:
+  ABCHOSP1: 3 rows  (2 CT, 1 MR)
+  ABCHOSP2: 2 rows  (1 CT, 1 MR)
+  ABCHOSP3: 1 row   (0 CT, 1 MR)
+  Total: 6 rows
+
+All config is read from env vars set by the Job spec — no spark-defaults
+ConfigMap dependency, since the extractor role isn't deployed in
+smoke-test and we don't want to fork that pattern for one table.
+"""
+
+import os
+import sys
+
+from pyspark.sql import SparkSession
+from pyspark.sql.types import (
+    StringType,
+    StructField,
+    StructType,
+)
+
+
+def _env(name: str) -> str:
+    val = os.environ.get(name)
+    if not val:
+        sys.stderr.write(f"missing required env var: {name}\n")
+        sys.exit(1)
+    return val
+
+
+def main() -> None:
+    hive_uri = _env("HIVE_METASTORE_URIS")
+    s3_endpoint = _env("S3_ENDPOINT")
+    s3_key = _env("AWS_ACCESS_KEY_ID")
+    s3_secret = _env("AWS_SECRET_ACCESS_KEY")
+    warehouse = _env("SPARK_SQL_WAREHOUSE_DIR")
+
+    spark = (
+        SparkSession.builder.appName("seed-test-data")
+        .config("spark.hadoop.fs.s3a.endpoint", s3_endpoint)
+        .config("spark.hadoop.fs.s3a.access.key", s3_key)
+        .config("spark.hadoop.fs.s3a.secret.key", s3_secret)
+        .config("spark.hadoop.fs.s3a.path.style.access", "true")
+        .config(
+            "spark.hadoop.fs.s3a.aws.credentials.provider",
+            "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
+        )
+        .config("spark.hadoop.hive.metastore.uris", hive_uri)
+        .config("spark.sql.warehouse.dir", warehouse)
+        .config(
+            "spark.sql.extensions",
+            "io.delta.sql.DeltaSparkSessionExtension",
+        )
+        .config(
+            "spark.sql.catalog.spark_catalog",
+            "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+        )
+        # Single shuffle partition is plenty for 6 rows; default of 200
+        # would create 200 empty Parquet part-files in the Delta table.
+        .config("spark.sql.shuffle.partitions", "1")
+        .enableHiveSupport()
+        .getOrCreate()
+    )
+
+    schema = StructType(
+        [
+            StructField("sending_facility", StringType(), nullable=False),
+            StructField("modality", StringType(), nullable=False),
+            StructField("patient_name", StringType(), nullable=False),
+            StructField(
+                "full_patient_name",
+                StructType(
+                    [
+                        StructField("given", StringType(), nullable=True),
+                        StructField("family", StringType(), nullable=True),
+                    ]
+                ),
+                nullable=True,
+            ),
+            StructField("zip_or_postal_code", StringType(), nullable=True),
+        ]
+    )
+
+    rows = [
+        ("ABCHOSP1", "CT", "Alice Anderson", ("Alice", "Anderson"), "63110"),
+        ("ABCHOSP1", "CT", "Bob Brown", ("Bob", "Brown"), "63111"),
+        ("ABCHOSP1", "MR", "Carol Chen", ("Carol", "Chen"), "63112"),
+        ("ABCHOSP2", "CT", "Dave Davis", ("Dave", "Davis"), "63113"),
+        ("ABCHOSP2", "MR", "Eve Edwards", ("Eve", "Edwards"), "63114"),
+        ("ABCHOSP3", "MR", "Frank Foster", ("Frank", "Foster"), "63115"),
+    ]
+
+    df = spark.createDataFrame(rows, schema)
+    # `overwrite` so re-running the Job (CI retries) leaves a known
+    # state; the rego policy doesn't read from this table, only Trino
+    # via the row filter / mask plan, so atomic Delta overwrite is fine.
+    df.write.format("delta").mode("overwrite").saveAsTable("default.test_reports")
+    count = spark.sql("SELECT COUNT(*) AS c FROM default.test_reports").collect()[0][
+        "c"
+    ]
+    print(f"seeded delta.default.test_reports: {count} rows")
+    spark.stop()
+
+
+if __name__ == "__main__":
+    main()

@@ -393,6 +393,17 @@ jobs:
         with:
           subproject: helm/jupyter/notebook
           image-name: pyspark-notebook
+      # hl7-transformer image is needed by the data-authorization seed
+      # Job (writes the synthetic test_reports Delta table via PySpark
+      # + Hive-Metastore-registered saveAsTable). The transformer
+      # itself isn't deployed in smoke-test (no extractor playbook),
+      # we just reuse the image as a vehicle for its Spark + Delta +
+      # s3a + Hive client.
+      - name: 'Push image to k3s - hl7-transformer'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: extractor/hl7-transformer
+          image-name: hl7-transformer
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
@@ -430,6 +441,96 @@ jobs:
         run: |
           sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- trino \
             --execute "SHOW CATALOGS; SHOW SCHEMAS FROM delta"
+      # Data authorization tests — ADR 0020 + ADR 0021. Seeds a
+      # synthetic delta.default.test_reports table, then exercises the
+      # end-to-end RBAC pipeline (Keycloak admin -> SPI listener ->
+      # MinIO bundle -> OPA pull -> Trino JWT auth + impersonation ->
+      # row filter + column mask). See tests/data-authorization/.
+      - name: 'Data authorization tests - seed'
+        shell: bash
+        env:
+          KC_ADMIN_PW: '${{ env.KEYCLOAK_ADMIN_PASSWORD }}'
+        run: |
+          set -euo pipefail
+          # Render the seed Job: substitute the seed.py contents (as a
+          # block-indented literal) and the hl7-transformer image name.
+          # Using yq would be tidier, but we already have sed/awk and
+          # this avoids adding a yq install step.
+          IMAGE_TAG=$(cat extractor/hl7-transformer/VERSION 2>/dev/null \
+            || grep '^version' extractor/hl7-transformer/build.gradle \
+            | sed "s/.*['\"]\([^'\"]*\)['\"].*/\1/" \
+            | head -1)
+          IMAGE="ghcr.io/washu-tag/hl7-transformer:${IMAGE_TAG}"
+
+          # Render seed.py inline (4-space indent matches the
+          # placeholder's YAML literal-block indent in the manifest).
+          SEED_PY_INDENTED=$(sed 's/^/    /' tests/data-authorization/seed/seed.py)
+
+          # Render the Job manifest; awk swaps the two placeholders.
+          awk \
+            -v image="$IMAGE" \
+            -v seed_py="$SEED_PY_INDENTED" \
+            '{
+              if (/PLACEHOLDER_SEED_PY/) { print seed_py }
+              else { gsub(/PLACEHOLDER_HL7_TRANSFORMER_IMAGE/, image); print }
+            }' \
+            tests/data-authorization/seed/job.yaml > /tmp/seed-job.yaml
+
+          sudo -E kubectl apply -f /tmp/seed-job.yaml
+          sudo -E kubectl wait --for=condition=complete --timeout=300s \
+            job/data-authz-seed -n scout-data &
+          completion_pid=$!
+          sudo -E kubectl wait --for=condition=failed --timeout=300s \
+            job/data-authz-seed -n scout-data && exit 1 &
+          failure_pid=$!
+          wait -n $completion_pid $failure_pid
+      - name: 'Data authorization tests - logs (seed)'
+        if: always()
+        shell: bash
+        run: |
+          sudo -E kubectl -n scout-data logs job/data-authz-seed --tail=200 || true
+      - name: 'Data authorization tests - run'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Render run.sh as an indented literal + substitute the two
+          # secrets (Keycloak admin pw, superset_svc client secret —
+          # both already in inventory.yaml and thus in the
+          # already-rendered ansible/inventory.yaml).
+          RUN_SH_INDENTED=$(sed 's/^/    /' tests/data-authorization/rbac-tests/run.sh)
+
+          KC_ADMIN_PW=$(grep '^    keycloak_bootstrap_admin_password:' \
+            ansible/inventory.yaml | awk '{print $2}')
+          SUPERSET_SVC_SECRET=$(grep '^    keycloak_superset_svc_client_secret:' \
+            ansible/inventory.yaml | awk '{print $2}')
+
+          awk \
+            -v run_sh="$RUN_SH_INDENTED" \
+            -v kc_pw="$KC_ADMIN_PW" \
+            -v svc_secret="$SUPERSET_SVC_SECRET" \
+            '{
+              if (/PLACEHOLDER_RUN_SH/) { print run_sh }
+              else {
+                gsub(/PLACEHOLDER_KC_ADMIN_PASSWORD/, kc_pw)
+                gsub(/PLACEHOLDER_SUPERSET_SVC_CLIENT_SECRET/, svc_secret)
+                print
+              }
+            }' \
+            tests/data-authorization/rbac-tests/job.yaml > /tmp/rbac-tests-job.yaml
+
+          sudo -E kubectl apply -f /tmp/rbac-tests-job.yaml
+          sudo -E kubectl wait --for=condition=complete --timeout=300s \
+            job/data-authz-tests -n scout-analytics &
+          completion_pid=$!
+          sudo -E kubectl wait --for=condition=failed --timeout=300s \
+            job/data-authz-tests -n scout-analytics && exit 1 &
+          failure_pid=$!
+          wait -n $completion_pid $failure_pid
+      - name: 'Data authorization tests - logs (run)'
+        if: always()
+        shell: bash
+        run: |
+          sudo -E kubectl -n scout-analytics logs job/data-authz-tests --tail=500 || true
       # Auth tests — verify OAuth2 Proxy blocks unauthenticated access
       - name: 'Auth curl tests'
         shell: bash

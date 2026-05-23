@@ -1,0 +1,78 @@
+# One-shot Job that seeds delta.default.test_reports with ~6 synthetic
+# rows for the data-authorization test runner to assert against (ADRs
+# 0020 + 0021). Used in CI's smoke-test job; not part of any production
+# deploy.
+#
+# Runs in scout-data so the lake-writer-creds Secret + hive-metastore
+# Service are in-namespace. Reuses the hl7-transformer image as the
+# Spark/Delta/Hive vehicle — same JARs the transformer's normal
+# ingest path uses, no per-test image to maintain.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: data-authz-seed-script
+  namespace: scout-data
+data:
+  seed.py: |
+    PLACEHOLDER_SEED_PY
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: data-authz-seed
+  namespace: scout-data
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: data-authz-seed
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: seed
+          image: PLACEHOLDER_HL7_TRANSFORMER_IMAGE
+          imagePullPolicy: IfNotPresent
+          command:
+            - /app/venv/bin/python3
+            - /seed/seed.py
+          env:
+            # Hive metastore is the analytics-writable instance (vs.
+            # hive-metastore-readonly that trino-analytics uses for
+            # reads). saveAsTable needs to register the new table.
+            - name: HIVE_METASTORE_URIS
+              value: thrift://hive-metastore.scout-data:9083
+            # MinIO S3 endpoint inside scout-data namespace.
+            - name: S3_ENDPOINT
+              value: http://minio.scout-data
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: lake-writer-creds
+                  key: CONSOLE_ACCESS_KEY
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lake-writer-creds
+                  key: CONSOLE_SECRET_KEY
+            # Delta warehouse path — matches delta_lake_path used by
+            # the rest of Scout, see scout_common defaults.
+            - name: SPARK_SQL_WAREHOUSE_DIR
+              value: s3a://lake/delta
+          volumeMounts:
+            - name: seed-script
+              mountPath: /seed
+              readOnly: true
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1Gi
+            limits:
+              cpu: 1
+              memory: 2Gi
+      volumes:
+        - name: seed-script
+          configMap:
+            name: data-authz-seed-script
