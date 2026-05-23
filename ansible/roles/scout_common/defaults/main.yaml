@@ -319,6 +319,16 @@ keycloak_oidc_userinfo_url: '{{ keycloak_realm_url }}/protocol/openid-connect/us
 keycloak_oidc_certs_url: '{{ keycloak_realm_url }}/protocol/openid-connect/certs'
 keycloak_oidc_logout_url: '{{ keycloak_realm_url }}/protocol/openid-connect/logout'
 keycloak_wellknown_url: '{{ keycloak_realm_url }}/.well-known/openid-configuration'
+
+# Internal Keycloak URL for in-cluster service-to-service token minting
+# (e.g. Superset/Voila minting a *_svc client_credentials JWT for Trino).
+# Bypasses Traefik + TLS entirely — avoids self-signed-cert trust issues
+# in CI smoke-test (which can't reach the external hostname over a
+# verified cert) and reduces a network hop on every token mint in
+# production. The same pattern the Trino role already uses for its
+# JWKS endpoint (trino_keycloak_jwks_url).
+keycloak_internal_url: 'http://keycloak-service.{{ keycloak_namespace }}:8080'
+keycloak_internal_token_url: '{{ keycloak_internal_url }}/realms/{{ keycloak_realm_name }}/protocol/openid-connect/token'
 oauth2_proxy_base_url: 'https://{{ oauth2_proxy_subdomain }}.{{ server_hostname }}'
 oauth2_proxy_callback_url: '{{ oauth2_proxy_base_url }}/oauth2/callback'
 oauth2_proxy_signout_url: '{{ oauth2_proxy_base_url }}/oauth2/sign_out'

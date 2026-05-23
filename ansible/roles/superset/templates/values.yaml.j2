@@ -20,7 +20,11 @@ extraSecretEnv:
   # Secret via envFrom and needs the same values to mint a token during
   # dashboard-import dataset validation.
   KEYCLOAK_SUPERSET_SVC_CLIENT_SECRET: "{{ keycloak_superset_svc_client_secret }}"
-  KEYCLOAK_TOKEN_URL: "{{ keycloak_oidc_token_url }}"
+  # Internal in-cluster URL for service-to-service token minting --
+  # bypasses Traefik + the external cert. The user-facing OAuth flow
+  # still uses keycloak_oidc_token_url (the external HTTPS URL) via
+  # the SUPERSET_OAUTH_USER_INFO_URL / etc. block below.
+  KEYCLOAK_TOKEN_URL: "{{ keycloak_internal_token_url }}"
   KEYCLOAK_SUPERSET_SVC_CLIENT_ID: "superset_svc"
   TRINO_CA_CERT: /etc/trino-ca/ca.crt
 ingress:
