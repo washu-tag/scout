@@ -43,17 +43,22 @@ trino_view_owner_principals:
 # attributes. Tables NOT on this list (information_schema, system, the
 # patient mapping table, etc.) receive no row filter.
 #
+# Prefix-match (table_prefix) covers the entire `reports*` family in
+# one entry: the base report_delta_table_name table plus every
+# derivative the hl7-transformer creates (reports_curated,
+# reports_latest, reports_dx, all *_epic_view joined views). New
+# derivatives sharing the prefix get filtered automatically -- no
+# inventory edit per new table -- as long as they carry the
+# trino_attribute_filters columns. Tables matched by the prefix but
+# also listed in trino_view_only_tables (e.g. the patient mapping
+# tables) are explicitly excluded from row-filter scoping by the
+# rego, so the prefix over-matching them is safe.
+#
 # Per-attribute overrides are supported via the optional `tables` key
 # on an attribute_filters entry (see below) — useful when a column
 # only exists on a subset of these tables.
 trino_filtered_tables:
-  - { catalog: delta, schema: default, table: reports }
-  - { catalog: delta, schema: default, table: reports_curated }
-  - { catalog: delta, schema: default, table: reports_latest }
-  - { catalog: delta, schema: default, table: reports_dx }
-  - { catalog: delta, schema: default, table: reports_curated_epic_view }
-  - { catalog: delta, schema: default, table: reports_latest_epic_view }
-  - { catalog: delta, schema: default, table: reports_dx_epic_view }
+  - { catalog: delta, schema: default, table_prefix: '{{ report_delta_table_name }}' }
 
 # Tables denied for direct access. Users querying these by name get a
 # permission error, and the tables are hidden from SHOW TABLES output.
