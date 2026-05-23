@@ -161,7 +161,7 @@ Files:
   c.Spawner.pre_spawn_hook = pre_spawn_hook
   ```
   Also remove the `TRINO_USER: '{{ trino_user }}'` line from singleuser env — notebooks will derive the user from the JWT. Add `TRINO_AUTH_MODE: 'jwt'` to signal client code.
-- `helm/jupyter/notebook/Dockerfile` — ensure the trino-python-client version supports `JWTAuthentication` (>=0.327).
+- `helm/scout-notebook/Dockerfile` — ensure the trino-python-client version supports `JWTAuthentication` (>=0.327).
 - `analytics/notebooks/**/*.py` — replace `trino.dbapi.connect(host=..., user=...)` with `trino.dbapi.connect(host=..., auth=trino.auth.JWTAuthentication(os.environ['KEYCLOAK_ACCESS_TOKEN']))`. Build a tiny `scout_trino.py` helper to encapsulate token-refresh logic (when access token expires, exchange refresh token for a new one). Sample notebooks: `quality_metrics_dashboard.py`, `rads_builder.py`, `followup_review_dashboard.py`, `cohort_builder.py`. Voila playbooks use the same env vars.
 **Deferred for v1.** Voila spawns notebooks server-side from its own OAuth2 session (not via JupyterHub's `auth_state`), so it doesn't have the user's Keycloak access token available to forward. The `jupyter_svc` impersonation pattern is the right design, but it depends on Voila propagating the authenticated user's email/identity to notebook execution context — which Voila doesn't expose natively. A reasonable v1.5 implementation: Voila reads the `X-Auth-Request-Email` header set by oauth2-proxy, sets it as an env var on the spawned notebook kernel, and notebook code passes it as `X-Trino-User` while authenticating as `jupyter_svc`.
 
@@ -329,7 +329,7 @@ Not a phase — this work is distributed across Phases 1 and 3 but worth listing
 - `ansible/roles/trino/templates/mcp_trino_values.yaml.j2` — drop `user:` line (Phase 3).
 - `ansible/roles/superset/tasks/deploy.yaml` — drop `trino: { user: ... }` from `scout-dashboards` Helm values (Phase 3).
 - Migration step (Ansible task or one-shot script): rewrite Superset's Trino database connection rows in Postgres to use the JWT-authenticated SQLAlchemy URI. Run as part of the Superset role's deploy task.
-- `grep -r 'user="trino"' analytics/ helm/jupyter/notebook/` and update or remove every hit.
+- `grep -r 'user="trino"' analytics/ helm/scout-notebook/` and update or remove every hit.
 
 **Validation at end of release.**
 - `kubectl exec -n scout-analytics deploy/trino-coordinator -- curl localhost:8080/v1/info` returns 401 (no token).
@@ -352,7 +352,7 @@ Not a phase — this work is distributed across Phases 1 and 3 but worth listing
 
 - **Trino view DDL needs `SECURITY INVOKER`.** The `add_epic_views` activity in `extractor/hl7-transformer/src/hl7scout/hl7extractor/dataextraction.py` must be patched to emit `CREATE OR REPLACE VIEW ... SECURITY INVOKER AS ...`. Without this, the implicit `SECURITY DEFINER` runs the underlying query as the view creator (the `trino-rw` connection's user), bypassing the row filter. Any new view created post-cutover that omits this clause silently nullifies RBAC for that view. Add a linter / unit test that grep-checks view DDL in the transformer for `SECURITY INVOKER`.
 
-- **Existing consumers using shared `trino` user.** Inventory captured in the "Pre-release inventory and cleanup" section above. Specifically grep `analytics/` and `helm/jupyter/notebook/` for hardcoded `user="trino"` and rebake the singleuser image with corrections. The `hl7-transformer` keeps its access to `trino-rw` (renamed variable for clarity); everything else flips to JWT or impersonation.
+- **Existing consumers using shared `trino` user.** Inventory captured in the "Pre-release inventory and cleanup" section above. Specifically grep `analytics/` and `helm/scout-notebook/` for hardcoded `user="trino"` and rebake the singleuser image with corrections. The `hl7-transformer` keeps its access to `trino-rw` (renamed variable for clarity); everything else flips to JWT or impersonation.
 
 - **NetworkPolicy adjustments.** Trino coordinator must reach OPA (`scout-analytics:8181`); OPA must reach Keycloak (`scout-core:8080`). The Trino Helm chart's `networkPolicy.enabled` is not currently set on `trino-analytics` (only `trino-rw` has it per `values-rw.yaml.j2`); leaving it off keeps ingress open from Superset/Jupyter/MCP pods. The OPA Deployment needs its own NetworkPolicy with explicit allow from the Trino coordinator only. The MCP NetworkPolicy in Phase 3 restricts ingress to the Open WebUI Pod by label. Trino remains intra-cluster only — **no Ingress, no Traefik route, no external exposure** — because the Trino web UI path was dropped from this design.
 

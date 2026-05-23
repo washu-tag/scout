@@ -21,7 +21,7 @@ k3s_cluster:
     superset_image_repository: docker.io/local/washu-tag/superset
     keycloak_image_repository: docker.io/local/washu-tag/keycloak
     keycloak_image_pull_policy: IfNotPresent
-    jupyter_singleuser_image_name: docker.io/local/washu-tag/scout-notebook
+    scout_notebook_image_name: docker.io/local/washu-tag/scout-notebook
 
     # TLS (self-signed certs generated in CI step)
     tls_cert_path: /tmp/scout-ci-tls/cert.pem
