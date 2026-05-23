@@ -228,6 +228,61 @@ test_show_columns_on_view_only_table_denied if {
 		with data.view_only_tables as fixture_view_only_tables
 }
 
+# === bypass_view_only_tables ==================================================
+# Per-user escape hatch from the view-only block. Setting Keycloak
+# attribute bypass_view_only_tables: ["true"] permits direct SELECT
+# on tables listed in data.view_only_tables. Default (attribute unset
+# or "false") preserves the deny-everyone behavior tested above.
+
+test_select_view_only_table_allowed_with_bypass if {
+	# Admin user with bypass_view_only_tables: ["true"] can SELECT from
+	# reports_report_patient_mapping directly.
+	inp := select_input("admin", ["scout-admin"], "delta", "default", "reports_report_patient_mapping")
+	trino.allow with input as inp
+		with trino.user_attrs as {"enabled": true, "bypass_view_only_tables": ["true"]}
+		with data.view_only_tables as fixture_view_only_tables
+}
+
+test_filter_tables_shows_view_only_table_with_bypass if {
+	# SHOW TABLES surfaces the view-only table for bypass-enabled users.
+	inp := {
+		"context": {"identity": {"user": "admin", "groups": ["scout-admin"]}},
+		"action": {
+			"operation": "FilterTables",
+			"resource": {"table": {"catalogName": "delta", "schemaName": "default", "tableName": "reports_report_patient_mapping"}},
+		},
+	}
+	trino.allow with input as inp
+		with trino.user_attrs as {"enabled": true, "bypass_view_only_tables": ["true"]}
+		with data.view_only_tables as fixture_view_only_tables
+}
+
+test_bypass_false_does_not_unlock if {
+	# Explicit "false" — same as unset — still blocks. Defense against
+	# accidental string-typo bypass (e.g. ["yes"] or [""]).
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_report_patient_mapping")
+	not trino.allow with input as inp
+		with trino.user_attrs as {"enabled": true, "bypass_view_only_tables": ["false"]}
+		with data.view_only_tables as fixture_view_only_tables
+}
+
+test_bypass_unset_does_not_unlock if {
+	# Default deny remains when the user just doesn't have the attribute.
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_report_patient_mapping")
+	not trino.allow with input as inp
+		with trino.user_attrs as {"enabled": true}
+		with data.view_only_tables as fixture_view_only_tables
+}
+
+test_bypass_only_unlocks_view_only_tables if {
+	# Bypass doesn't affect anything else — row filters, masks, and the
+	# enabled gate still apply. Disabled user with bypass is still denied.
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_report_patient_mapping")
+	not trino.allow with input as inp
+		with trino.user_attrs as {"enabled": false, "bypass_view_only_tables": ["true"]}
+		with data.view_only_tables as fixture_view_only_tables
+}
+
 test_non_view_only_table_still_allowed if {
 	# Regression: adding a view_only_tables entry doesn't accidentally
 	# affect tables outside the list.

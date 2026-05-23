@@ -1,7 +1,7 @@
 # ADR 0020: Trino RBAC via OPA with Keycloak Attributes
 
 **Date**: 2026-05-15 (proposed) / 2026-05-19 (accepted)
-**Status**: Accepted
+**Status**: Accepted; attribute distribution mechanism revised by [ADR 0021](0021-opa-user-attribute-distribution.md) (2026-05-22)
 **Decision Owner**: TAG Team
 
 > **Reader note**: the architecture in this ADR shipped, but several
@@ -42,7 +42,7 @@ This was an acceptable posture while Scout was a single-tenant deployment whose 
 
 ## Decision
 
-**Trino enforces RBAC via Open Policy Agent (OPA). User identity is established via Keycloak-issued JWT (programmatic clients). Authorization attributes are stored on the user object in Keycloak; OPA fetches them at policy-evaluation time and caches with a Keycloak event-listener-driven invalidation for real-time offboarding. Per-client identity propagation uses the impersonation pattern (Superset, Open WebUI MCP, Voila) or JWT pass-through (JupyterHub), depending on which mechanism each client supports natively.**
+**Trino enforces RBAC via Open Policy Agent (OPA). User identity is established via Keycloak-issued JWT (programmatic clients). Authorization attributes are stored on the user object in Keycloak and distributed to OPA via a Keycloak SPI listener that publishes an OPA bundle to MinIO — OPA reads `data.users[user]` directly at decision time, with no per-decision Keycloak call (see [ADR 0021](0021-opa-user-attribute-distribution.md) for the distribution mechanism). Per-client identity propagation uses the impersonation pattern (Superset, Open WebUI MCP, Voila) or JWT pass-through (JupyterHub), depending on which mechanism each client supports natively.**
 
 ### Architecture summary
 
@@ -68,7 +68,7 @@ This was an acceptable posture while Scout was a single-tenant deployment whose 
 
 JSON rules file with row filters and column masks. No new runtime; well-documented.
 
-**Rejected**: scales poorly for the policy complexity we need. The expressions allowed in `filter` and `mask` fields are single SQL expressions per rule — fine for simple cases but awkward for conditional masking (clinical-vs-research persona logic), unwieldy for cohort-style subqueries, and untestable as a unit. The deeper problem is that the attribute model lives in Keycloak; file rules require those attributes to be materialized into Trino's group provider, which means either (a) a custom group provider plugin, or (b) a cronjob materializing a `groups.txt` file — and the user has stated that file-from-cron is insufficient for real-time offboarding. OPA's `http.send` solves this without a custom plugin.
+**Rejected**: scales poorly for the policy complexity we need. The expressions allowed in `filter` and `mask` fields are single SQL expressions per rule — fine for simple cases but awkward for conditional masking (clinical-vs-research persona logic), unwieldy for cohort-style subqueries, and untestable as a unit. The deeper problem is that the attribute model lives in Keycloak; file rules require those attributes to be materialized into Trino's group provider, which means either (a) a custom group provider plugin, or (b) a cronjob materializing a `groups.txt` file — and the user has stated that file-from-cron is insufficient for real-time offboarding. OPA solves this without a custom Trino plugin: a Keycloak SPI listener publishes user attributes as an OPA bundle to MinIO, OPA pulls it natively (ADR 0021), and the rego reads `data.users[user]` at decision time.
 
 ### Apache Ranger
 
@@ -86,7 +86,7 @@ In-band `GRANT SELECT ON ... TO ROLE radiologists` syntax stored in metastore AC
 
 JVM plugin that, given a username, fetches groups from Keycloak's admin API in real time. Pairs with file-based or OPA authz.
 
-**Rejected** for v1: the work the plugin would do — fetch user attributes from Keycloak, cache for ~60 s — is exactly what OPA's `http.send` already does declaratively in Rego. Building, packaging, and maintaining a Java plugin (with its own breaking-change exposure to the Trino SystemAccessControl/GroupProvider SPIs) adds engineering surface without delivering a capability OPA lacks. Defer until either (a) `current_groups()` in raw SQL becomes a user-facing requirement, or (b) attribute derivation grows past what Rego can express cleanly.
+**Rejected** for v1: the work the plugin would do — surface per-user attributes to Trino — is delivered without a Trino plugin by the ADR 0021 bundle pipeline (Keycloak SPI → MinIO → OPA). Building, packaging, and maintaining a Java plugin (with its own breaking-change exposure to the Trino SystemAccessControl/GroupProvider SPIs) adds engineering surface without delivering a capability OPA lacks. Defer until either (a) `current_groups()` in raw SQL becomes a user-facing requirement, or (b) attribute derivation grows past what Rego can express cleanly.
 
 ### Combinatorial Keycloak groups (one group per site × modality × persona)
 

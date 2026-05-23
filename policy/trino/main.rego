@@ -215,7 +215,26 @@ input_table := {
 default view_only_tables_set := set()
 view_only_tables_set := {t | some t in data.view_only_tables}
 
-view_only_blocked if input_table in view_only_tables_set
+# Per-user escape hatch: setting Keycloak attribute
+# `bypass_view_only_tables: ["true"]` exempts the user from the
+# table-level deny. Used by site operators who legitimately need full
+# cross-facility introspection (e.g., the canonical "list all
+# scout_patient_ids for epic_mrn X" query). Default is the block-
+# everyone behavior — bypass requires an explicit attribute set by
+# an admin. Service principals don't carry user_attrs so the default
+# `["false"]` applies; the impersonation flow uses the impersonated
+# end-user's attrs, so bypass is keyed on the human user, not the
+# Trino client.
+view_only_bypass if {
+	val := object.get(user_attrs, "bypass_view_only_tables", ["false"])
+	count(val) > 0
+	val[0] == "true"
+}
+
+view_only_blocked if {
+	input_table in view_only_tables_set
+	not view_only_bypass
+}
 
 # View-owner service principals (e.g. the `trino` admin used by
 # hl7-transformer to CREATE VIEW). When an invoker queries a DEFINER
@@ -334,5 +353,6 @@ decision_context := {
 	"enabled": user_enabled,
 	"attribute_values": attribute_snapshot,
 	"mask_phi_fields": object.get(user_attrs, "mask_phi_fields", ["unset"]),
+	"bypass_view_only_tables": view_only_bypass,
 	"row_filters": rowFilters,
 }
