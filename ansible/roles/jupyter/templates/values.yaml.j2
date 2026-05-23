@@ -152,7 +152,13 @@ singleuser:
       value: present
       effect: NoSchedule
   cmd: null
-  initContainers:
+  # Keep this as an explicit empty list when the staging-CA init container
+  # isn't present — bare `initContainers:` renders as null in the Helm
+  # values, and the JupyterHub chart's image-puller helper does
+  # `concat .Values.singleuser.initContainers .Values.singleuser.extraContainers`,
+  # which nil-derefs on a null arg.
+  initContainers:{% if not (_package_proxy_needs_staging_cert | default(false) | bool) %} []{% endif %}
+
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
     - name: staging-ca-setup
       image: '{{ scout_notebook_image_name }}:{{ scout_notebook_image_tag }}'
