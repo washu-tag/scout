@@ -67,13 +67,19 @@ trino_filtered_tables:
 # enumerate every patient identifier by selecting from the mapping
 # table directly.
 #
-# Caveat — Trino view security: views can still join to these tables
-# only when the view was created with SECURITY DEFINER (Trino's
-# CREATE VIEW default is SECURITY INVOKER, which would propagate the
-# deny). Verify with `SHOW CREATE VIEW <name>` before adding a table
-# whose views need to keep working. Defaults to empty so this is an
-# explicit opt-in per deployment.
-trino_view_only_tables: []
+# Default-locks the patient mapping pair (mapping + history) that the
+# hl7-transformer writes. Both carry cross-facility patient identifiers
+# (mpi, epic_mrn, scout_patient_id) keyed on scout_patient_id rather
+# than sending_facility, so row filters can't constrain them — direct
+# SELECT has to be denied. The `_epic_view` join views over these
+# tables keep working because the hl7-transformer creates them with
+# Trino's default SECURITY DEFINER (view's underlying reads aren't
+# re-checked against the invoker's permissions). Verify with
+# `SHOW CREATE VIEW <name>` before adding a new entry whose views
+# need to keep working.
+trino_view_only_tables:
+  - { catalog: delta, schema: default, table: reports_report_patient_mapping }
+  - { catalog: delta, schema: default, table: reports_report_patient_mapping_history }
 
 # `trino_attribute_filters` lives in scout_common/defaults/main.yaml —
 # it's the single source of truth shared by the keycloak role (renders
