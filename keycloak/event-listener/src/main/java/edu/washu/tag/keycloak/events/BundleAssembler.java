@@ -1,15 +1,14 @@
 package edu.washu.tag.keycloak.events;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.keycloak.util.JsonSerialization;
 
 /**
  * Builds an OPA bundle as a gzipped tar from a user-attribute snapshot.
@@ -29,8 +28,6 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
  */
 final class BundleAssembler {
 
-    private static final ObjectMapper JSON = new ObjectMapper();
-
     private BundleAssembler() {
     }
 
@@ -44,14 +41,14 @@ final class BundleAssembler {
      * @return the bytes of the gzipped tar
      */
     static byte[] build(Map<String, Map<String, Object>> users, long revision) throws IOException {
-        byte[] dataJson = JSON.writeValueAsBytes(users);
+        byte[] dataJson = JsonSerialization.writeValueAsBytes(users);
         // LinkedHashMap to keep the manifest field order stable in the
         // serialized form — easier to diff if anybody inspects the bundle
         // contents directly with `tar -xOf bundle.tar.gz .manifest`.
         Map<String, Object> manifest = new LinkedHashMap<>();
         manifest.put("revision", Long.toString(revision));
         manifest.put("roots", List.of("users"));
-        byte[] manifestJson = JSON.writeValueAsBytes(manifest);
+        byte[] manifestJson = JsonSerialization.writeValueAsBytes(manifest);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (GZIPOutputStream gz = new GZIPOutputStream(out);

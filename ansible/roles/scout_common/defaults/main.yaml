@@ -93,6 +93,12 @@ launchpad_namespace: '{{ scout_core_namespace }}'
 
 # Data layer
 minio_tenant_namespace: '{{ scout_data_namespace }}'
+# Tenant name used by the MinIO operator. Surfaced here (rather than
+# only in roles/minio/defaults) so cross-namespace consumers — Keycloak
+# event listener publishing the OPA bundle, OPA pulling it (ADR 0021) —
+# can reference the headless service name `{tenant}-hl.{namespace}:9000`
+# without depending on role-local defaults.
+minio_tenant_name: scout
 hive_namespace: '{{ scout_data_namespace }}'
 dcm4chee_namespace: '{{ scout_data_namespace }}'
 orthanc_namespace: '{{ scout_data_namespace }}'

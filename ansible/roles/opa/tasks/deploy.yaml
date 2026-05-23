@@ -32,55 +32,72 @@
     # `services.minio` + `bundles.scout-users` wire the bundle plugin to
     # the MinIO endpoint and credentials. `roots: ["users"]` in the
     # bundle's .manifest scopes the atomic swap to the `data.users`
-    # subtree, so the static document above isn't replaced on every pull.
-    # `persist: true` writes the last successfully loaded bundle to a
-    # pod-local emptyDir so a restart during a MinIO outage doesn't drop
-    # OPA to deny-all. Polling interval 5–10s comfortably hits ADR 0020's
-    # real-time-offboarding requirement.
-    opa_config_yaml: |
-      services:
-        minio:
-          url: {{ opa_bundle_minio_url }}
-          credentials:
-            s3_signing:
-              environment_credentials: {}
-      bundles:
-        scout-users:
-          service: minio
-          resource: {{ opa_bundles_bucket }}/scout/bundle.tar.gz
-          polling:
-            min_delay_seconds: {{ opa_bundle_min_delay_seconds }}
-            max_delay_seconds: {{ opa_bundle_max_delay_seconds }}
-          persist: true
-      decision_logs:
-        console: true
-        reporting:
-          min_delay_seconds: {{ opa_decision_log_min_delay_seconds }}
-          max_delay_seconds: {{ opa_decision_log_max_delay_seconds }}
+    # subtree, so the static document above isn't replaced on every
+    # pull. `persist: true` writes the last successfully loaded bundle
+    # to a pod-local emptyDir so a restart during a MinIO outage
+    # doesn't drop OPA to deny-all. Polling interval 5–10s comfortably
+    # hits ADR 0020's real-time-offboarding requirement.
+    # Built as a dict + serialized with to_nice_yaml — the previous
+    # `| indent(N)` approach mangled block-scalar strip indentation
+    # when the result was substituted into a parent literal block.
+    opa_config_yaml: >-
+      {{ {
+        'services': {
+          'minio': {
+            'url': opa_bundle_minio_url,
+            'credentials': {'s3_signing': {'environment_credentials': {}}},
+          },
+        },
+        'bundles': {
+          'scout-users': {
+            'service': 'minio',
+            'resource': opa_bundles_bucket ~ '/scout/bundle.tar.gz',
+            'polling': {
+              'min_delay_seconds': opa_bundle_min_delay_seconds,
+              'max_delay_seconds': opa_bundle_max_delay_seconds,
+            },
+            'persist': true,
+          },
+        },
+        'decision_logs': {
+          'console': true,
+          'reporting': {
+            'min_delay_seconds': opa_decision_log_min_delay_seconds,
+            'max_delay_seconds': opa_decision_log_max_delay_seconds,
+          },
+        },
+      } | to_nice_yaml(indent=2, width=200) }}
 
 - name: Create OPA policy + data + config ConfigMap
   delegate_to: localhost
+  # ConfigMap definition built as a dict, not a templated literal-block
+  # string. Earlier iterations used `definition: |` plus `| indent(N)`
+  # to embed the multi-line .rego, but with three nested literal-block
+  # scalars (outer definition, inner policy.rego/data.json/config.yaml)
+  # the strip-indent math is fragile — config.yaml in particular
+  # rendered with top-level keys after the first at col 6 instead of
+  # col 0, which OPA's YAML parser rejected at line 8. The values are
+  # built in a `vars:` block so Jinja substitution happens at the
+  # Python-string level (newlines, quotes preserved verbatim);
+  # kubernetes.core.k8s then serializes the dict into the ConfigMap
+  # without re-parsing the value strings as YAML.
+  vars:
+    _configmap_data:
+      policy.rego: "{{ lookup('file', opa_policy_path) }}"
+      data.json: '{{ opa_data_json }}'
+      config.yaml: '{{ opa_config_yaml }}'
   kubernetes.core.k8s:
     state: present
     kubeconfig: '{{ local_kubeconfig_yaml }}'
-    # Rendered as a string (not a dict) so we can embed the multi-line .rego
-    # via `indent` — single quotes in the Rego source would break a single-
-    # quoted YAML scalar.
-    definition: |
+    definition:
       apiVersion: v1
       kind: ConfigMap
       metadata:
         name: opa-trino-policy
-        namespace: {{ opa_namespace }}
+        namespace: '{{ opa_namespace }}'
         labels:
           app: opa-trino
-      data:
-        policy.rego: |-
-          {{ lookup('file', opa_policy_path) | indent(10) }}
-        data.json: |-
-          {{ opa_data_json | indent(10) }}
-        config.yaml: |-
-          {{ opa_config_yaml | indent(10) }}
+      data: '{{ _configmap_data }}'
 
 - name: Create OPA bundle reader Secret
   delegate_to: localhost
@@ -97,12 +114,18 @@
           app: opa-trino
       type: Opaque
       stringData:
-        # AWS-style env vars are what OPA's `environment_credentials` reads
-        # at bundle-pull time. These are the same values rendered into
-        # MinIO's `{{ s3_opa_bundle_reader }}-creds` Secret in scout-data;
-        # mirrored here so the cross-namespace dependency stays explicit.
+        # AWS-style env vars are what OPA's `environment_credentials`
+        # reads at bundle-pull time. AWS_REGION is required even for
+        # MinIO (the SDK's credential resolver fails closed if it's
+        # unset — "no AWS_REGION set in environment" — regardless of
+        # whether the target server actually cares about region). The
+        # access/secret pair are the same values rendered into MinIO's
+        # `{{ s3_opa_bundle_reader }}-creds` Secret in scout-data;
+        # mirrored here so the cross-namespace dependency stays
+        # explicit.
         AWS_ACCESS_KEY_ID: '{{ s3_opa_bundle_reader }}'
         AWS_SECRET_ACCESS_KEY: '{{ s3_opa_bundle_reader_secret }}'
+        AWS_REGION: '{{ s3_region }}'
 
 - name: Deploy OPA
   delegate_to: localhost
@@ -127,10 +150,18 @@
             labels:
               app: opa-trino
             annotations:
-              # Force a rollout when policy OR static data OR bundle config
-              # changes. The bundle itself is pulled at runtime and doesn't
-              # need a rollout — that's the whole point of ADR 0021.
-              policy-hash: '{{ (lookup("file", opa_policy_path) ~ opa_data_json ~ opa_config_yaml) | hash("sha256") | truncate(8, True, "") }}'
+              # Force a rollout when policy OR static data OR bundle
+              # config OR the bundle-reader credentials change. The
+              # bundle itself is pulled at runtime and doesn't need a
+              # rollout — that's the whole point of ADR 0021 — but
+              # envFrom secretRef values are evaluated at pod-creation
+              # time, so a Secret rotation without a pod restart leaves
+              # the running pod stuck with stale credentials. Hashing
+              # the secret values into this annotation makes credential
+              # rotation observable to the Deployment controller.
+              # sha256-truncated to 8 chars so the values don't appear
+              # in clear text anywhere in the rendered manifest.
+              policy-hash: '{{ (lookup("file", opa_policy_path) ~ opa_data_json ~ opa_config_yaml ~ s3_opa_bundle_reader ~ s3_opa_bundle_reader_secret ~ s3_region) | hash("sha256") | truncate(8, True, "") }}'
           spec:
             containers:
               - name: opa

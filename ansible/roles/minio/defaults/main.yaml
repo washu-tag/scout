@@ -1,8 +1,9 @@
 ---
 # Default values for MinIO deployment
 
-# Namespace configuration
-minio_tenant_name: scout
+# minio_tenant_name moved to scout_common/defaults/main.yaml so
+# cross-namespace consumers (Keycloak listener, OPA — ADR 0021) can
+# reference it without depending on this role's defaults being loaded.
 
 # Storage configuration
 minio_storage_size: 10Gi
@@ -48,7 +49,12 @@ minio_buckets:
   - name: '{{ loki_admin_bucket }}'
   - name: '{{ lake_bucket }}'
   - name: '{{ scratch_bucket }}'
+  # Versioning enabled so a corrupt bundle PUT can be rolled back to a
+  # prior object version. Per ADR 0021 — the OPA bundle is the only
+  # bucket that needs versioning today; existing buckets stay
+  # unversioned to avoid the storage overhead on large objects.
   - name: '{{ opa_bundles_bucket }}'
+    versioned: true
 
 # S3 User credentials
 minio_users:

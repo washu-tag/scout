@@ -78,6 +78,12 @@ public class OpaUserBundlePublisherProvider implements EventListenerProvider {
         if (realm == null) {
             return;
         }
+        // The user provider's validateUser path needs a realm-bound
+        // session context (InfinispanOrganizationProvider.getRealm).
+        // AdminEvent listeners receive a session whose context isn't
+        // guaranteed to have the realm set — bind it explicitly so
+        // getUserById doesn't throw mid-call.
+        session.getContext().setRealm(realm);
         UserModel user = session.users().getUserById(realm, userId);
         if (user == null || user.getUsername() == null) {
             return;

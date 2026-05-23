@@ -44,6 +44,12 @@ final class MinioBundleUploader {
      */
     boolean upload(byte[] body) {
         String canonicalPath = "/" + bucket + "/" + objectKey;
+        // Compute the Host header value the same way the JDK HttpClient
+        // will: scheme-aware host:port for non-default ports. AwsSigV4
+        // signs THIS string as the host header; the request itself
+        // can't set Host explicitly — java.net.http rejects it as a
+        // restricted header — but the client emits the same value
+        // automatically from the URI, so the signature validates.
         String host = endpoint.getHost() + (endpoint.getPort() > 0 ? ":" + endpoint.getPort() : "");
 
         AwsSigV4.Headers headers = AwsSigV4.signPut(
@@ -53,7 +59,6 @@ final class MinioBundleUploader {
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(requestUri)
                 .timeout(Duration.ofSeconds(10))
-                .header("Host", host)
                 .header("x-amz-content-sha256", headers.contentSha256())
                 .header("x-amz-date", headers.amzDate())
                 .header("Authorization", headers.authorization())

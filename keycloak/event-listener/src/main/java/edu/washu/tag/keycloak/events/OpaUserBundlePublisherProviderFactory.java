@@ -181,6 +181,15 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
     private void publishNow() {
         Map<String, Map<String, Object>> snapshot = new HashMap<>(users);
         long revision = System.currentTimeMillis();
+        // Catch Throwable, not just Exception: a missing runtime dep
+        // (e.g. commons-compress not shipped in Keycloak's providers/)
+        // raises NoClassDefFoundError, which is an Error subclass. With
+        // only `catch (Exception)`, the scheduler's worker thread dies
+        // silently and the publish becomes a black hole — we hit
+        // exactly that during initial rollout. Catching Throwable
+        // gives us the diagnostic, at the cost of also catching things
+        // like OutOfMemoryError (acceptable for a single-threaded
+        // scheduler that we don't want to lose).
         try {
             byte[] body = BundleAssembler.build(snapshot, revision);
             boolean ok = uploader.upload(body);
@@ -188,8 +197,8 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
                 log.warnf("OPA bundle publish failed; retrying in %dms", RETRY_DELAY_MS);
                 scheduler.schedule(this::publishNow, RETRY_DELAY_MS, TimeUnit.MILLISECONDS);
             }
-        } catch (Exception e) {
-            log.errorf(e, "OPA bundle assembly failed; %d users in snapshot", snapshot.size());
+        } catch (Throwable t) {
+            log.errorf(t, "OPA bundle assembly failed; %d users in snapshot", snapshot.size());
         }
     }
 
@@ -201,6 +210,13 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
                     log.warnf("OPA bundle seed: realm %s not found; will publish empty bundle", realmName);
                     return;
                 }
+                // runJobInTransaction opens a fresh session but doesn't
+                // bind it to a realm. The user provider's validateUser
+                // path resolves the realm via session.getContext()
+                // (InfinispanOrganizationProvider.getRealm), so without
+                // an explicit setRealm() we get "Session not bound to a
+                // realm" mid-stream.
+                session.getContext().setRealm(realm);
                 session.users().searchForUserStream(realm, Map.of()).forEach(user -> {
                     String username = user.getUsername();
                     if (username == null) {
