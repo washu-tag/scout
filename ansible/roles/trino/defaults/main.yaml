@@ -7,7 +7,7 @@ trino_helm_repo_name: trino
 trino_helm_repo_url: https://trinodb.github.io/charts
 trino_helm_chart_name: trino
 
-# Trino RBAC / TLS / OPA configuration (Phase 1 of ADR 0020).
+# Trino RBAC / TLS / OPA configuration (ADR 0020 authorization, ADR 0022 auth).
 # JWT auth requires TLS — Trino terminates HTTPS directly using a cert from
 # the Scout internal CA (cert-manager); the chart's HTTP listener is disabled.
 # The user-facing Service port (`trino_https_port`) is defined in
@@ -23,7 +23,7 @@ trino_keystore_password: trinokeystorepass # protects the in-pod keystore; not a
 # (refreshed every 30s, no pod restart for add/rotate).
 #
 # Removal trigger: when the custom MCP tool replaces upstream mcp-trino
-# (target: one quarter from ADR 0020 acceptance), drop this entirely and
+# (target: one quarter from ADR 0022 acceptance), drop this entirely and
 # remove `PASSWORD` from `authenticationType` in values.yaml.j2.
 #
 # The value is the plaintext password; bcrypt hashing happens at deploy

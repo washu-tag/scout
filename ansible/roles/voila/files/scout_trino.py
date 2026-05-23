@@ -4,7 +4,7 @@ Mints a `voila_svc` JWT via Keycloak client_credentials and connects to
 Trino as that service principal with X-Trino-User set to the OIDC-authed
 end-user's preferred_username. Trino's OPA policy permits voila_svc to
 impersonate any user; row filters and column masks evaluate against the
-impersonated user's Keycloak attributes (ADR 0020).
+impersonated user's Keycloak attributes (ADR 0022).
 
 Mirrors the pattern in ansible/roles/superset/files/superset_trino_auth.py
 — same JWTAuthentication + X-Trino-User shape, different sources for

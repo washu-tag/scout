@@ -4,8 +4,8 @@
 # cert-manager is shared infrastructure with multiple Scout consumers:
 #   * cass-operator requires it (orchestrator playbook).
 #   * Trino's HTTPS Certificate uses it for the JWT-auth TLS terminator
-#     (ADR 0020, analytics playbook).
-#   * Future internal-TLS services (per ADR 0020 implementation notes
+#     (ADR 0022, analytics playbook).
+#   * Future internal-TLS services (per ADR 0022 implementation notes
 #     and the scout_common cluster_issuer_setup task) will reuse the
 #     same CA chain it underpins.
 #

@@ -28,7 +28,7 @@ Usage in Jupyter Notebook:
 
 Note: Trino connection is configured via scout_trino.connect() which
 reads TRINO_HOST, TRINO_PORT, TRINO_SCHEME, TRINO_CATALOG, TRINO_SCHEMA
-from env and applies per-user impersonation via X-Trino-User (ADR 0020).
+from env and applies per-user impersonation via X-Trino-User (ADR 0022).
 """
 
 import re
@@ -42,7 +42,7 @@ import scout_trino
 
 
 def connect_trino():
-    """Connect to Trino with per-user impersonation (ADR 0020)."""
+    """Connect to Trino with per-user impersonation (ADR 0022)."""
     return scout_trino.connect()
 
 
@@ -123,7 +123,7 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
         else:
             print(msg, flush=True)
 
-    # Connect to Trino with per-user impersonation (ADR 0020).
+    # Connect to Trino with per-user impersonation (ADR 0022).
     conn = connect_trino()
 
     # Parse table name (handle "catalog.schema.table" or "schema.table" or "table")
@@ -1537,7 +1537,7 @@ def create_review_dashboard(
             # Trino supports UPDATE on Delta tables (since 386+) and the
             # voila_svc impersonation pattern means writes are attributed
             # to the reviewer's identity, not a shared service principal
-            # (ADR 0020).
+            # (ADR 0022).
             delta_success = False
             delta_error = None
 
@@ -1555,7 +1555,7 @@ def create_review_dashboard(
 
                 # Reviewer annotations are writes — they go through
                 # trino-rw, not trino-analytics (which is read-only per
-                # ADR 0020). The human_* columns are pre-created by
+                # ADR 0022). The human_* columns are pre-created by
                 # followup_detection.ipynb at table-create time, so no
                 # ALTER is needed here.
                 conn = scout_trino.connect_rw()

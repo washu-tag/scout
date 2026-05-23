@@ -71,7 +71,7 @@
         KEYSTORE_PASSWORD: '{{ trino_keystore_password }}'
         INTERNAL_SHARED_SECRET: '{{ trino_internal_shared_secret }}'
 
-# === Password authenticator (interim, ADR 0020) =============================
+# === Password authenticator (interim, ADR 0022) =============================
 # File-based PASSWORD authenticator. Service principals on
 # trino_password_authenticator_users (defined per-deployment in inventory)
 # get a bcrypted entry in password.db; clients authenticate with HTTP Basic.

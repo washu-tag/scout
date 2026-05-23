@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Data authorization integration tests — ADR 0020 + ADR 0021.
+# Data authorization integration tests — ADR 0020 + 0021 + 0022 + 0023.
 #
 # Runs as a one-shot Kubernetes Job in scout-analytics inside CI's
 # smoke-test cluster. Exercises the end-to-end RBAC pipeline:

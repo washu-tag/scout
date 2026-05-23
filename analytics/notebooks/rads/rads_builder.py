@@ -77,7 +77,7 @@ PIRADS_SCORES = ["1", "2", "3", "4", "5"]  # PI-RADS for prostate
 
 
 def connect_trino():
-    """Connect to Trino with per-user impersonation (ADR 0020).
+    """Connect to Trino with per-user impersonation (ADR 0022).
 
     Delegates to scout_trino.connect(), which mints a voila_svc JWT and
     sets X-Trino-User to the OIDC-authed user's preferred_username so

@@ -4,7 +4,7 @@ Scout uses Ansible-driven Helm deployments. Trino is the user-facing data plane 
 
 Phases are PR-shaped work units within a single coordinated release, not deployment phases. Scout deploys this as a **full reinstall**: every client role flips to the new auth model in one release. There is no flag-gated rollout, no dual-auth window, no separate cutover phase. The shared `trino` user is removed in the same release that introduces JWT auth.
 
-Companion to [ADR 0020](adr/0020-trino-rbac-architecture.md). Working doc, expected to evolve as implementation surfaces unknowns.
+Companion to the Trino RBAC ADR family: [ADR 0020](adr/0020-trino-rbac-architecture.md) (authorization engine), [ADR 0021](adr/0021-opa-user-attribute-distribution.md) (attribute distribution), [ADR 0022](adr/0022-trino-auth-and-impersonation.md) (auth + identity propagation), [ADR 0023](adr/0023-trino-view-security-model.md) (view security). Working doc that captures the rollout sequence and tracks the per-PR scope; the ADRs are the canonical design.
 
 ---
 

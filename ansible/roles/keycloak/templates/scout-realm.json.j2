@@ -298,7 +298,7 @@
         ],
         {#- trino-audience scope adds aud=trino to access tokens so notebooks
             can forward the user's JupyterHub token directly to Trino (JWT
-            pass-through, ADR 0020). The notebook pod never holds the token
+            pass-through, ADR 0022). The notebook pod never holds the token
             long-term — the scout_trino helper fetches a current value from
             the Hub via JUPYTERHUB_API_TOKEN (Hub refreshes via auth_state
             on demand), so realm-default access-token TTL is fine. -#}
@@ -483,7 +483,7 @@
         ],
         {#- mcp-trino-audience adds aud=mcp-trino to access tokens so the
             MCP server (tuannvm/mcp-trino) can validate them and impersonate
-            the chat user on the outbound Trino call (ADR 0020).
+            the chat user on the outbound Trino call (ADR 0022).
 
             "roles" is intentionally absent from defaultClientScopes here.
             Keycloak's built-in roles scope carries an audience-resolve
@@ -581,7 +581,7 @@
       },
       {
         "name": "voila_svc",
-        "description": "Service principal for Voila playbooks impersonating the OIDC-authenticated user via X-Trino-User (ADR 0020)",
+        "description": "Service principal for Voila playbooks impersonating the OIDC-authenticated user via X-Trino-User",
         "enabled": true,
         "clientId": "voila_svc",
         "clientAuthenticatorType": "client-secret",

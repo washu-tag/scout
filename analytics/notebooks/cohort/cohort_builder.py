@@ -79,7 +79,7 @@ os.makedirs(EXPORT_DIR, exist_ok=True)
 
 
 def connect_trino():
-    """Connect to Trino with per-user impersonation (ADR 0020).
+    """Connect to Trino with per-user impersonation (ADR 0022).
 
     Delegates to scout_trino.connect(), which mints a voila_svc JWT and
     sets X-Trino-User to the OIDC-authed user's preferred_username so

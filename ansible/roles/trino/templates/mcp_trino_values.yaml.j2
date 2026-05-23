@@ -6,11 +6,11 @@
 # Per-chat-user RBAC is enforced via X-Trino-User impersonation: mcp-trino
 # reads the inbound OIDC user's preferred_username and sets the header on
 # the outbound Trino call. OPA's impersonation allow rule permits
-# openwebui_mcp_svc to impersonate any user (ADR 0020).
+# openwebui_mcp_svc to impersonate any user (ADR 0022).
 #
 # This is the interim wiring against upstream `tuannvm/mcp-trino` which
 # only supports HTTP Basic outbound. The custom MCP tool (target: one
-# quarter from ADR 0020 acceptance) will replace this with JWT outbound;
+# quarter from ADR 0022 acceptance) will replace this with JWT outbound;
 # at that point the PASSWORD authenticator in Trino + the trino.password
 # below + this whole values template gets dropped.
 

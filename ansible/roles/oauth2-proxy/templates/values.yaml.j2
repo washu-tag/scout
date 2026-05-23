@@ -17,7 +17,7 @@ config:
     # Traefik forwardAuth middleware (authResponseHeaders) propagates the
     # user's Keycloak access token to upstream services. Voila's per-user
     # Trino impersonation reads this header to extract preferred_username
-    # (ADR 0020). Safe across the rest of the stack — services that don't
+    # (ADR 0022). Safe across the rest of the stack — services that don't
     # consume the header ignore it. Both flags required in auth-request
     # mode: set_xauthrequest enables the X-Auth-Request-* response header
     # family; pass_access_token adds the access-token value to it.

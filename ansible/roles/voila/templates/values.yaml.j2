@@ -13,7 +13,7 @@ env:
   # Trino connection params consumed by scout_trino.connect() (helper
   # mounted at /opt/scout/scout_trino.py — see deploy.yaml ConfigMap).
   # No TRINO_USER: per-user identity is set as X-Trino-User from each
-  # request's X-Auth-Request-Access-Token header (ADR 0020).
+  # request's X-Auth-Request-Access-Token header (ADR 0022).
   TRINO_HOST: "trino.{{ trino_namespace }}"
   TRINO_PORT: "{{ trino_https_port }}"
   TRINO_SCHEME: "https"

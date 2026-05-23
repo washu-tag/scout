@@ -38,7 +38,7 @@
       stringData:
         KEYCLOAK_VOILA_SVC_CLIENT_SECRET: '{{ keycloak_voila_svc_client_secret }}'
 
-- name: Restrict Voila ingress to Traefik (ADR 0020)
+- name: Restrict Voila ingress to Traefik
   # The X-Trino-User impersonation pattern trusts that the
   # X-Auth-Request-Access-Token header on each request came from
   # oauth2-proxy via Traefik. Without this NetworkPolicy, an in-cluster

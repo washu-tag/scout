@@ -1,6 +1,6 @@
 # Server configuration (cluster-wide settings).
-# Phase 1 of ADR 0020: JWT auth over HTTPS terminated by Trino itself, OPA
-# access control, internal-communication shared-secret.
+# JWT auth over HTTPS terminated by Trino itself (ADR 0022), OPA access
+# control (ADR 0020), internal-communication shared-secret.
 server:
   workers: {{ trino_worker_count }}
   config:
@@ -11,7 +11,7 @@ server:
     # service-account JWTs from Superset/Voila); PASSWORD is the interim
     # accommodation for upstream `tuannvm/mcp-trino`, which only supports
     # HTTP Basic outbound (see `trino_password_authenticator_users`
-    # below and the ADR 0020 deviations section). When the custom MCP
+    # below and ADR 0022). When the custom MCP
     # tool ships and starts speaking JWT, the password authenticator and
     # the PASSWORD entry on this line are removed.
     authenticationType: PASSWORD,JWT

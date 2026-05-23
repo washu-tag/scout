@@ -446,7 +446,7 @@ jobs:
         run: |
           sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- trino \
             --execute "SHOW CATALOGS; SHOW SCHEMAS FROM delta"
-      # Data authorization tests — ADR 0020 + ADR 0021. Seeds a
+      # Data authorization tests — ADR 0020 + 0021 + 0022 + 0023. Seeds a
       # synthetic delta.default.test_reports table, then exercises the
       # end-to-end RBAC pipeline (Keycloak admin -> SPI listener ->
       # MinIO bundle -> OPA pull -> Trino JWT auth + impersonation ->
