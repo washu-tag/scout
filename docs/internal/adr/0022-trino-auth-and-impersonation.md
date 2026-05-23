@@ -8,7 +8,7 @@
 
 [ADR 0020](0020-trino-rbac-architecture.md) picks OPA as Trino's authorization engine and locks the per-user attribute model. For OPA to evaluate authorization against the actual end user, Trino has to (a) authenticate the connection cryptographically and (b) carry the real end-user identity through to the access-control plugin — not the connection's service-account identity.
 
-In the pre-RBAC state, Trino was unauthenticated and every client connected as the hardcoded user `trino`. This ADR specifies how each client authenticates after the switch and how end-user identity reaches OPA.
+In its previous state, Trino was unauthenticated and every client connected as the hardcoded user `trino`. This ADR specifies how each client authenticates after the switch and how end-user identity reaches OPA.
 
 The shape of the problem differs per client. Some have an active server-side session where the user's OIDC token is available (JupyterHub spawns the kernel with `auth_state`). Some have a logged-in session but no usable OIDC token (Superset's session manager handles auth, Flask sessions don't expose the IdP token to query-time hooks cleanly). Some receive the user's token from upstream as a header (Voila behind oauth2-proxy `pass_access_token`). And one — the Open WebUI MCP — comes from a third-party server (`tuannvm/mcp-trino`) whose outbound capabilities constrain what we can do.
 
@@ -28,7 +28,7 @@ The shape of the problem differs per client. Some have an active server-side ses
 
 | Layer | Choice |
 |---|---|
-| Authentication on Trino | `http-server.authentication.type=JWT,PASSWORD`. Client traffic on HTTPS port 8443 (TLS cert from cert-manager). The chart's HTTP listener on port 8080 stays enabled for worker↔coordinator internal-communication (authenticated via `internal-communication.shared-secret`) and Kubernetes probes (`/v1/info` is unauthenticated). HTTPS-only deployment is not supported by the Trino chart. The dual-auth mode exists so the Open WebUI MCP can connect with HTTP Basic while every other client uses JWT. |
+| Authentication on Trino | `http-server.authentication.type=JWT,PASSWORD`. Client traffic on HTTPS port 8443 (TLS cert from cert-manager). The chart's HTTP listener on port 8080 stays enabled for worker↔coordinator internal-communication (authenticated via `internal-communication.shared-secret`) and Kubernetes probes (`/v1/info` is unauthenticated). HTTPS-only deployment is not supported by the Trino chart. The dual-auth mode exists so the 1) Open WebUI MCP can connect with HTTP Basic while every other client uses JWT and 2) for health checks |
 | Service principals | One Keycloak `client_credentials`-enabled client per Trino-connecting service: `superset_svc`, `openwebui_mcp_svc`, `voila_svc`. Each has its own client secret rotated via the existing Keycloak secret pipeline. Per-principal allows per-client NetworkPolicy and per-client audit. |
 | Token lifespans | Service-principal access tokens issued at 14400 s (~4 h) to cover long dashboard / notebook sessions without per-call refresh. End-user JWT pass-through (Jupyter `auth_state`) stays at the realm default and refreshes via the refresh token between submissions. |
 | Audience handling | A `trino-audience` Keycloak client scope is attached to every Trino-connecting client; an `oidc-audience-mapper` injects `aud=trino` on tokens. Trino's JWT validator requires `aud=trino`. Misconfiguration produces 401s with sparse diagnostics; the realm template wires this once and forgets. |

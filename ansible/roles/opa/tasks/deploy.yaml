@@ -25,6 +25,7 @@
         "view_owner_principals": (trino_view_owner_principals | default([])),
         "attribute_filters": (trino_attribute_filters | default({})),
         "masked_columns": (trino_masked_columns | default([])),
+        "approved_groups": (trino_approved_groups | default([])),
       } | to_json }}
 
 - name: Render OPA bundle plugin config

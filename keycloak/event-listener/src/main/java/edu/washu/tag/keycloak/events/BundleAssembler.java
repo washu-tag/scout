@@ -72,20 +72,29 @@ final class BundleAssembler {
     /**
      * Extract the per-user attribute payload from a Keycloak UserModel-shaped
      * input. Keycloak stores user attributes as {@code Map&lt;String, List&lt;String&gt;&gt;}
-     * (multivalued by default); we pass that through verbatim plus add the
-     * top-level {@code enabled} boolean which lives on the user row, not in
-     * attributes. The rego policy reads attributes as arrays
+     * (multivalued by default); we pass that through verbatim plus add two
+     * synthesized top-level fields:
+     * <ul>
+     *   <li>{@code enabled} — boolean, from {@code UserModel.isEnabled()}.</li>
+     *   <li>{@code groups} — list of group names from
+     *       {@code UserModel.getGroupsStream()}, used by the rego policy's
+     *       approval gate (membership in {@code data.approved_groups}).</li>
+     * </ul>
+     * The rego policy reads attributes as arrays
      * ({@code user_attrs.allowed_facilities[0]}, etc.), so preserving the
      * shape here means no schema in two places.
      *
      * @param enabled    {@link org.keycloak.models.UserModel#isEnabled()}
+     * @param groups     list of group names the user belongs to; never null
      * @param attributes {@link org.keycloak.models.UserModel#getAttributes()}
      * @return a payload map suitable for inclusion under
      *         {@code data.users.&lt;username&gt;} in the bundle
      */
-    static Map<String, Object> userPayload(boolean enabled, Map<String, List<String>> attributes) {
+    static Map<String, Object> userPayload(
+            boolean enabled, List<String> groups, Map<String, List<String>> attributes) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("enabled", enabled);
+        payload.put("groups", groups != null ? groups : List.of());
         if (attributes != null) {
             // Filter out Keycloak's internal attribute keys (username,
             // firstName, lastName, etc. — present in the attributes map

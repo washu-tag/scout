@@ -1,11 +1,14 @@
 package edu.washu.tag.keycloak.events;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
 import org.keycloak.events.admin.AdminEvent;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
+import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
@@ -50,12 +53,29 @@ public class OpaUserBundlePublisherProvider implements EventListenerProvider {
 
     @Override
     public void onEvent(AdminEvent event, boolean includeRepresentation) {
-        if (!factory.isEnabled() || event.getResourceType() != ResourceType.USER) {
+        if (!factory.isEnabled()) {
+            return;
+        }
+        ResourceType rt = event.getResourceType();
+        // USER covers attribute changes; GROUP_MEMBERSHIP covers add/remove
+        // from groups (e.g., scout-user), which the rego policy's approval
+        // gate reads from `user_attrs.groups`. Without handling the latter,
+        // dropping a user from scout-user wouldn't propagate to the bundle.
+        if (rt != ResourceType.USER && rt != ResourceType.GROUP_MEMBERSHIP) {
             return;
         }
         OperationType op = event.getOperationType();
         String userId = extractUserId(event.getResourcePath());
         if (userId == null) {
+            return;
+        }
+
+        if (rt == ResourceType.GROUP_MEMBERSHIP) {
+            // CREATE = added to group, DELETE = removed. Either way, re-snapshot
+            // the user with its current group list.
+            if (op == OperationType.CREATE || op == OperationType.DELETE) {
+                upsertFromCurrentState(event.getRealmId(), userId);
+            }
             return;
         }
 
@@ -88,7 +108,10 @@ public class OpaUserBundlePublisherProvider implements EventListenerProvider {
         if (user == null || user.getUsername() == null) {
             return;
         }
-        factory.upsertUser(user.getUsername(), user.isEnabled(), user.getAttributes());
+        List<String> groups = user.getGroupsStream()
+                .map(GroupModel::getName)
+                .collect(Collectors.toList());
+        factory.upsertUser(user.getUsername(), user.isEnabled(), groups, user.getAttributes());
     }
 
     private void handleDelete(AdminEvent event, String userId) {

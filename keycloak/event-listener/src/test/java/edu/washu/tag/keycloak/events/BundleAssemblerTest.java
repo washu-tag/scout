@@ -51,16 +51,26 @@ class BundleAssemblerTest {
     }
 
     @Test
-    void user_payload_includes_enabled_as_boolean_top_level() {
+    void user_payload_includes_enabled_groups_and_attributes() {
         Map<String, List<String>> attrs = new LinkedHashMap<>();
         attrs.put("allowed_facilities", List.of("WUSM", "BJH"));
         attrs.put("mask_phi_fields", List.of("false"));
 
-        Map<String, Object> payload = BundleAssembler.userPayload(true, attrs);
+        Map<String, Object> payload = BundleAssembler.userPayload(
+                true, List.of("scout-user"), attrs);
 
         assertEquals(true, payload.get("enabled"));
+        assertEquals(List.of("scout-user"), payload.get("groups"));
         assertEquals(List.of("WUSM", "BJH"), payload.get("allowed_facilities"));
         assertEquals(List.of("false"), payload.get("mask_phi_fields"));
+    }
+
+    @Test
+    void user_payload_groups_default_to_empty_list_when_null() {
+        // The provider should always pass a non-null list, but be defensive
+        // here so a misuse doesn't produce a malformed bundle.
+        Map<String, Object> payload = BundleAssembler.userPayload(true, null, Map.of());
+        assertEquals(List.of(), payload.get("groups"));
     }
 
     @Test
@@ -75,7 +85,8 @@ class BundleAssemblerTest {
         attrs.put("firstName", List.of("Alice"));
         attrs.put("kc.something.internal", List.of("ignore"));
 
-        Map<String, Object> payload = BundleAssembler.userPayload(true, attrs);
+        Map<String, Object> payload = BundleAssembler.userPayload(
+                true, List.of("scout-user"), attrs);
 
         assertTrue(payload.containsKey("allowed_facilities"));
         assertFalse(payload.containsKey("email"), "email should be excluded");
@@ -86,7 +97,7 @@ class BundleAssemblerTest {
     @Test
     void disabled_user_serialized_as_enabled_false() {
         Map<String, Object> payload = BundleAssembler.userPayload(false,
-                Map.of("allowed_facilities", List.of("WUSM")));
+                List.of("scout-user"), Map.of("allowed_facilities", List.of("WUSM")));
         assertEquals(false, payload.get("enabled"));
     }
 

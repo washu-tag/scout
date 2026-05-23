@@ -12,9 +12,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 import org.keycloak.Config;
 import org.keycloak.events.EventListenerProviderFactory;
+import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
@@ -144,11 +146,12 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
 
     // === Mutation API (called from per-session provider) =================
 
-    void upsertUser(String username, boolean userEnabled, Map<String, List<String>> attributes) {
+    void upsertUser(String username, boolean userEnabled, List<String> groups,
+                    Map<String, List<String>> attributes) {
         if (!enabled || username == null) {
             return;
         }
-        users.put(username, BundleAssembler.userPayload(userEnabled, attributes));
+        users.put(username, BundleAssembler.userPayload(userEnabled, groups, attributes));
         scheduleDebouncedPublish();
     }
 
@@ -222,8 +225,11 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
                     if (username == null) {
                         return;
                     }
+                    List<String> groups = user.getGroupsStream()
+                            .map(GroupModel::getName)
+                            .collect(Collectors.toList());
                     Map<String, Object> payload = BundleAssembler.userPayload(
-                            user.isEnabled(), user.getAttributes());
+                            user.isEnabled(), groups, user.getAttributes());
                     users.put(username, payload);
                 });
                 log.infof("OPA bundle seed: loaded %d users from realm %s", users.size(), realmName);

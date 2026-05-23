@@ -101,6 +101,19 @@ trino_masked_columns:
   - full_patient_name
   - zip_or_postal_code
 
+# Keycloak groups whose members count as "approved Scout users" for
+# the OPA user_enabled gate. A user must have enabled=true AND belong
+# to one of these groups for any /allow decision to fire (service
+# principals get a separate carve-out via is_system_identity). The
+# distinction matters because Keycloak federates from upstream IdPs:
+# a user can land in the realm with enabled=true purely from a
+# successful upstream OIDC login, before going through Scout's
+# approval flow that adds them to scout-user. The approved-group
+# check is what catches that gap.
+trino_approved_groups:
+  - scout-user
+  - scout-admin
+
 # MinIO bundle endpoint (ADR 0021). OPA's bundle plugin pulls
 # /opa-bundles/scout/bundle.tar.gz from MinIO every 5–10s; the bundle is
 # published by the Keycloak SPI listener (OpaUserBundlePublisherProvider).

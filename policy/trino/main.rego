@@ -22,8 +22,10 @@ package trino
 #   data.view_owner_principals : [identity_name]                 # static (inventory)
 #   data.attribute_filters     : {<attr_name>: {column, tables?}} # static (inventory)
 #   data.masked_columns        : [column_name]                   # static (inventory)
+#   data.approved_groups       : [group_name]                    # static (inventory)
 #   data.users.<username>      : {
 #                                  "enabled": bool,
+#                                  "groups": [group_name, ...],
 #                                  "allowed_facilities": [...],
 #                                  "allowed_modalities": [...],
 #                                  "mask_phi_fields": ["true"|"false"],
@@ -74,15 +76,34 @@ is_system_identity if input.context.identity.user in view_owner_principals_set
 
 is_system_identity if input.context.identity.user in trino_service_principals
 
-# `user_enabled` is the deny-on-disabled gate. True for system identities
-# (carve-out above) and for end-users whose bundle entry has enabled=true.
-# Absent/disabled human users fall through to the default false and are
-# denied at /allow before any row filter or mask runs.
+# `user_enabled` is the approval+enabled gate. True for system identities
+# (carve-out above) and for end-users whose bundle entry has both
+# enabled=true AND membership in one of the inventory-configured approval
+# groups (data.approved_groups, e.g. scout-user / scout-admin). The group
+# check exists because Keycloak federates from upstream IdPs — a user can
+# land in the realm with enabled=true purely from a successful upstream
+# OIDC login, before going through Scout's approval flow that adds them
+# to scout-user. The approved-group check is what catches that gap.
+# Absent / disabled / unapproved users fall through to the default false
+# and are denied at /allow before any row filter or mask runs.
+
+default approved_groups_set := set()
+
+approved_groups_set := {g | some g in data.approved_groups}
+
+user_in_approved_group if {
+	some g in user_attrs.groups
+	g in approved_groups_set
+}
+
 default user_enabled := false
 
 user_enabled if is_system_identity
 
-user_enabled if user_attrs.enabled == true
+user_enabled if {
+	user_attrs.enabled == true
+	user_in_approved_group
+}
 
 # === Allow rules ==============================================================
 
@@ -394,6 +415,8 @@ attribute_snapshot[attr_name] := values if {
 decision_context := {
 	"user": input.context.identity.user,
 	"groups": user_groups,
+	"bundle_groups": object.get(user_attrs, "groups", []),
+	"approved": user_in_approved_group,
 	"enabled": user_enabled,
 	"attribute_values": attribute_snapshot,
 	"mask_phi_fields": object.get(user_attrs, "mask_phi_fields", ["unset"]),

@@ -24,7 +24,7 @@ The design question is **how OPA gets user attribute data**. Three families of s
 
 ## Decision
 
-**A Keycloak SPI event listener (`OpaUserBundlePublisherProvider` in `keycloak/event-listener/`) maintains an in-memory snapshot of all Scout users' RBAC-relevant attributes and publishes the snapshot as an OPA bundle (gzipped tar) to a dedicated bucket in MinIO. OPA's built-in bundle plugin pulls from MinIO every 5–10 seconds and atomically swaps its `data.users` subtree. The Rego policy reads `data.users[user]` directly — no `http.send`, no admin-API client, no cache-busting timestamps.**
+**A Keycloak SPI event listener (`OpaUserBundlePublisherProvider` in `keycloak/event-listener/`) maintains an in-memory snapshot of all Scout users' data access attributes and publishes the snapshot as an OPA bundle (gzipped tar) to a dedicated bucket in S3/MinIO. OPA's built-in bundle plugin pulls from S3 every 5–10 seconds and atomically swaps its `data.users` subtree. The Rego policy reads `data.users[user]` directly — no `http.send`, no admin-API client, no cache-busting timestamps.**
 
 ## Alternatives Considered
 
@@ -44,13 +44,13 @@ Listener resolves a headless service to all pod IPs and PUTs the full attribute 
 
 Open-source control plane from Permit.io: an OPAL Server centrally watches data sources and a git policy repo; OPAL Clients alongside each OPA receive updates via WebSocket and PUT to local OPA. Has a maintained Helm chart, ships GitOps-for-policy out of the box, and converges sub-second on data changes. Production-tested by Permit.io's commercial SaaS.
 
-**Rejected for now**: best long-term fit if Scout grows to multiple OPA-enforced services, but the additional surface today is real — two new Python/FastAPI container images to vendor at partner sites (CVE stream, registry mirror, image scanning), a control-plane component to monitor and upgrade, plus the WebSocket reconnection edge cases. Scout currently has one OPA-enforced service (Trino RBAC). The marginal benefit over MinIO+bundles for one consumer is "policy GitOps" (which we can add cheaply with a small CI bundle pipeline) and "sub-second instead of 5–10 s data propagation" (which exceeds the stated requirement). Migration to OPAL later is mechanical: the Rego and the listener's responsibilities don't change; the storage target swaps. We defer the OPAL decision until the multi-consumer case materializes.
+**Rejected for now**: best long-term fit if Scout grows to multiple OPA-enforced services, but the additional surface today doesn't seem warranted (two new Python/FastAPI container images, a control-plane component, plus WebSocket reconnection edge cases). Scout currently has one OPA-enforced service (Trino). The marginal benefit over MinIO+bundles for one consumer is "policy GitOps" (which we can add cheaply with a small CI bundle pipeline) and "sub-second instead of 5–10 s data propagation" (which exceeds the stated requirement). Migration to OPAL later is mechanical: the Rego and the listener's responsibilities don't change; the storage target swaps. We defer the OPAL decision until the multi-consumer case materializes.
 
 ### Valkey as intermediate handoff between Keycloak and OPA
 
 Listener writes per-user attributes into Valkey; OPA reads from Valkey on demand or via a bridge process. Scout already runs Valkey (ADR 0013).
 
-**Rejected**: OPA has no native Valkey/Redis reader. Every integration path either (a) requires a custom OPA binary with a Go plugin — significant lift, ongoing upstream-tracking, defeats the "use the supported pattern" benefit, (b) re-introduces per-decision network calls via `http.send` to a Valkey-fronting HTTP service — the property we're explicitly trying to eliminate, or (c) builds a sidecar that polls Valkey and PUTs to OPA — at which point Valkey is fancy intermediate storage between a listener (which already has an in-memory map) and a bundle-shaped distribution layer that does the actual work. Valkey solves problems Scout doesn't have: shared state across multiple Keycloak listener replicas (Scout's Keycloak is `instances: 1`) and listener-side restart persistence (the listener recovers by re-walking Keycloak — same pattern the existing `user-approval-email` listener uses for its own bootstrap).
+**Rejected**: OPA has no native Valkey/Redis reader. Every integration path either (a) requires a custom OPA binary with a Go plugin — significant lift, ongoing upstream-tracking, defeats the "use the supported pattern" benefit, (b) re-introduces per-decision network calls via `http.send` to a Valkey-fronting HTTP service, or (c) builds a sidecar that polls Valkey and PUTs to OPA, at which point Valkey is fancy intermediate storage between a listener (which already has an in-memory map) and a bundle-shaped distribution layer that does the actual work. Valkey solves problems Scout doesn't have: shared state across multiple Keycloak listener replicas (Scout's Keycloak is `instances: 1`) and listener-side restart persistence (the listener recovers by re-walking Keycloak, same pattern the existing `user-approval-email` listener uses for its own bootstrap).
 
 ### Single OPA replica
 
@@ -62,14 +62,14 @@ Reduce OPA to one replica. The replication problem disappears.
 
 Drop the listener entirely. Live with a multi-minute TTL as the attribute-propagation bound.
 
-**Rejected**: ADR 0020 requires Keycloak-side user changes to propagate to Trino decisions in real time. A multi-minute window between "admin grants Kate access to BJWC" and "Kate can see BJWC rows" (or the reverse — revoking access) is a poor operator experience and a real audit-window risk. Minutes-scale staleness isn't seconds.
+**Rejected**: ADR 0020 requires Keycloak-side user changes to propagate to Trino decisions in real time. A multi-minute window between "admin revokes user access to Site A" and "user no longer sees Site A rows" is a poor operator experience and a real audit-window risk.
 
 ## Consequences
 
 ### Positive
 
-- **No new infrastructure to operate.** MinIO is already a critical Scout dependency. The marginal operational footprint is one bucket and two service accounts. No new pods, no new images for partner sites to mirror through their air-gapped registries.
-- **The Rego policy is simple.** `data.users[user]` is the entire read path — no `http.send`, no admin-token-fetch rule, no JWT-`exp` self-validation, no cache-busting URL construction.
+- **No new infrastructure to operate.** MinIO is already a critical Scout dependency. The marginal operational footprint is one bucket and two service accounts. No new dependencies.
+- **The Rego policy is simple.** `data.users[user]` is the entire read path.
 - **OPA's bundle plugin handles distribution natively.** Polling, ETag-conditional GETs, atomic data-tree swap, last-known-good on-disk persistence, readiness gating on first successful load — all built in, all battle-tested in production OPA deployments at scale. Scout writes none of this code.
 - **All replicas converge without cross-replica coordination.** Each OPA pod polls independently on its own clock; they reach the same `data.users` snapshot within one pull interval. No fan-out from the listener, no gossip protocol, no leader election.
 - **Cold start works correctly.** OPA's bundle plugin doesn't let the pod declare Ready until the first bundle load succeeds, so new replicas join the Service endpoints with full data already loaded. No init-container race window.
@@ -78,10 +78,10 @@ Drop the listener entirely. Live with a multi-minute TTL as the attribute-propag
 
 ### Negative
 
-- **~200 LOC of bespoke Java in the Keycloak SPI listener** for the in-memory user map, debounce timer, tarball assembly, and S3 PUT. The subtle failure mode is concurrent-modification-during-serialization; mitigated with copy-on-write snapshot semantics. Reviewed once and maintained on Scout's normal Java cadence — the same `keycloak/event-listener/` artifact that already ships `user-approval-email`.
-- **Listener becomes (lightly) stateful.** In-memory user-attribute map, lost on listener pod restart. Recovered by walking Keycloak at `postInit` — same pattern the existing user-approval-email listener uses for its own bootstrap. No persistent storage required.
+- **~200 LOC of bespoke Java in the Keycloak SPI listener** for the in-memory user map, debounce timer, tarball assembly, and S3 PUT. The subtle failure mode is concurrent-modification-during-serialization; mitigated with copy-on-write snapshot semantics. Maintained on Scout's normal Java cadence, the same `keycloak/event-listener/` artifact that already ships `user-approval-email`.
+- **Listener becomes (lightly) stateful.** In-memory user-attribute map, lost on listener pod restart. Recovered by walking Keycloak at `postInit`, same pattern the existing user-approval-email listener uses for its own bootstrap. No persistent storage required.
 - **5–10 second steady-state staleness on data updates.** Within "seconds" as ADR 0020 phrases the requirement; tunable downward by reducing the bundle polling interval at proportional MinIO request-rate cost.
-- **Policy distribution remains manual.** Rego in `policy/` is rendered into the OPA ConfigMap by the Ansible role and applied on `make install-opa`. No automatic deploy on commit to main. Mitigated cheaply when wanted: OPA's bundle plugin supports a separate policy bundle, and a CI job that publishes one is ~30 LOC of GitHub Actions. Deferred until the manual deploy step starts to chafe.
+- **Policy distribution remains manual.** Rego in `policy/` is rendered into the OPA ConfigMap by the Ansible role and applied on `make install-opa`. No automatic deploy on commit to main. Mitigated cheaply when wanted: OPA's bundle plugin supports a separate policy bundle, and a CI job that publishes one is ~30 LOC of GitHub Actions. Deferred until we adopt gitops.
 
 ## Implementation Notes
 
@@ -100,14 +100,17 @@ bundle.tar.gz
 
 ```json
 {
-  "allowed_facilities": ["WUSM", "BJH"],
+  "enabled": true,
+  "groups": ["scout-user"],
+  "allowed_facilities": ["A", "B"],
   "allowed_modalities": ["CT", "MR"],
-  "mask_phi_fields": ["false"],
-  "enabled": true
+  "mask_phi_fields": ["true"]
 }
 ```
 
-Attribute values mirror Keycloak's `Map<String, List<String>>` user-attribute shape (multivalued by default), so the listener writes them verbatim — no per-key schema in two places. `enabled` is the one exception: it's a bare bool synthesized from the user's Keycloak enabled flag, not a user-profile attribute. `enabled: false` (and a missing user entry) both resolve to the deny-all default in Rego; the explicit `enabled: false` is preferred because operators can observe it directly in OPA's data document when diagnosing "why can't alice query."
+User-profile attribute values mirror Keycloak's `Map<String, List<String>>` shape (multivalued by default), so the listener writes them verbatim — no per-key schema in two places. Two fields are synthesized from the user row rather than the attributes map: `enabled` is the bare bool from `UserModel.isEnabled()`, and `groups` is the list of group names from `UserModel.getGroupsStream()`. Both feed the policy's `user_enabled` gate (ADR 0020): the user must have `enabled: true` AND belong to a group named in `data.approved_groups`. A missing user entry resolves to the deny-all default in Rego; an explicit `enabled: false` (or `groups: []`) is preferred when an operator wants to observe state directly in OPA's data document while diagnosing "why can't alice query."
+
+The listener handles both `USER` and `GROUP_MEMBERSHIP` admin events: attribute changes fire as `USER` UPDATE, while add/remove from a group fires as `GROUP_MEMBERSHIP` CREATE/DELETE. Both paths re-snapshot the user with their current group list, so removing someone from `scout-user` propagates to OPA on the next bundle pull.
 
 ### MinIO topology
 

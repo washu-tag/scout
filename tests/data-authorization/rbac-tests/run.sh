@@ -28,7 +28,7 @@
 #   stdout: a streaming log of each scenario + assertion
 #   exit:   0 if all pass, non-zero on first failure
 #
-# Test scenarios (8):
+# Test scenarios (9):
 #   1. enabled=true, allowed_facilities=["ABCHOSP1"], allowed_modalities=["*"]
 #      -> COUNT(*) FROM test_reports = 3   (only ABCHOSP1 rows)
 #   2. allowed_facilities=["*"]
@@ -165,6 +165,38 @@ set_user_state() {
         -d "{\"enabled\":$enabled,\"attributes\":$attrs_json}"
 }
 
+# Look up the Keycloak group id for a given group name. Returns empty
+# string if the group doesn't exist.
+get_group_id() {
+    local group_name=$1
+    local token
+    token=$(get_admin_token)
+    curl -fsS \
+        "$KC_URL/admin/realms/$KC_REALM/groups?search=$group_name&exact=true" \
+        -H "Authorization: Bearer $token" \
+        | jq -r '.[0].id // ""'
+}
+
+# Add the user to a group (idempotent — Keycloak returns 204 either way).
+add_user_to_group() {
+    local user_id=$1 group_id=$2
+    local token
+    token=$(get_admin_token)
+    curl -fsS -o /dev/null -X PUT \
+        "$KC_URL/admin/realms/$KC_REALM/users/$user_id/groups/$group_id" \
+        -H "Authorization: Bearer $token"
+}
+
+# Remove the user from a group (idempotent).
+remove_user_from_group() {
+    local user_id=$1 group_id=$2
+    local token
+    token=$(get_admin_token)
+    curl -fsS -o /dev/null -X DELETE \
+        "$KC_URL/admin/realms/$KC_REALM/users/$user_id/groups/$group_id" \
+        -H "Authorization: Bearer $token"
+}
+
 # ---------------------------------------------------------------------------
 # Bundle propagation gate
 # ---------------------------------------------------------------------------
@@ -276,6 +308,18 @@ trino_query_expect_deny() {
 USER_ID=$(ensure_test_user)
 log "test user: $TEST_USER (id=$USER_ID)"
 
+# Look up scout-user group id and put the test user in it. The OPA
+# `user_enabled` gate requires membership in an approved group; without
+# this every scenario below would fail with /allow-denied even though
+# their attributes are configured correctly.
+SCOUT_USER_GROUP_ID=$(get_group_id scout-user)
+if [[ -z "$SCOUT_USER_GROUP_ID" ]]; then
+    log "FATAL: scout-user group not found in realm $KC_REALM"
+    exit 2
+fi
+add_user_to_group "$USER_ID" "$SCOUT_USER_GROUP_ID"
+log "added $TEST_USER to scout-user (group id=$SCOUT_USER_GROUP_ID)"
+
 # Bundle propagation can take ~10-15s on first event after a fresh
 # Keycloak start (the SPI's postInit walks the realm, debounces 1s,
 # uploads, then OPA pulls at next polling tick — 5-10s default).
@@ -349,6 +393,25 @@ if trino_query_expect_deny "SELECT 1" "$TEST_USER"; then
 else
     fail "disabled user query unexpectedly succeeded"
 fi
+
+# --- Scenario 9: user removed from scout-user denied at /allow --------------
+log "scenario 9: not in scout-user -> all queries denied"
+# Re-enable + restore wildcard attrs so the gate's enabled-and-attributes
+# half is satisfied; the test isolates the group-membership half.
+set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"]}'
+remove_user_from_group "$USER_ID" "$SCOUT_USER_GROUP_ID"
+# Bundle reflects the group change as an empty "groups" list (or one
+# without scout-user). The wait_for_bundle predicate succeeds when
+# scout-user is no longer present.
+wait_for_bundle '(.result.groups // []) | index("scout-user") == null' "$PROPAGATION_TIMEOUT"
+if trino_query_expect_deny "SELECT 1" "$TEST_USER"; then
+    ok "user without scout-user denied"
+else
+    fail "unapproved user query unexpectedly succeeded"
+fi
+# Restore membership so subsequent test runs against the same Keycloak
+# instance start from a clean state.
+add_user_to_group "$USER_ID" "$SCOUT_USER_GROUP_ID"
 
 # ---------------------------------------------------------------------------
 # Cleanup
