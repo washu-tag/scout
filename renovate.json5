@@ -102,6 +102,28 @@
         //   some_version: ~1.2.3
         "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+(?:registryUrl=(?<registryUrl>[^\\s]+)\\s+)?depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\n[a-z0-9_]+(?:_version|_tag|_image_tag):\\s*[~']?(?<currentValue>[^\\s']+)"
       ]
+    },
+    // Keycloak version is also baked into two non-yaml files that need
+    // to bump in lockstep with versions.yaml: `keycloak/VERSION` (CI
+    // image-tag derivation -- ghcr.io/washu-tag/keycloak:<this>) and
+    // `keycloak/Dockerfile` FROM lines (the upstream base image used
+    // for the multi-stage build). Renovate groups updates by depName,
+    // so the three managers' matches surface as a single PR per
+    // Keycloak release.
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["keycloak/VERSION"],
+      "matchStrings": ["^(?<currentValue>\\d[\\d\\.]*)\\s*$"],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "quay.io/keycloak/keycloak"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["keycloak/Dockerfile"],
+      "matchStrings": [
+        "FROM\\s+(?<depName>quay\\.io/keycloak/keycloak):(?<currentValue>[\\d\\.]+)"
+      ],
+      "datasourceTemplate": "docker"
     }
   ]
 }
