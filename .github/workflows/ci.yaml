@@ -561,8 +561,34 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          sudo -E kubectl get pods -A
-          sudo -E kubectl get events -A --sort-by='.lastTimestamp' | tail -50
+          echo "=== Node capacity / allocatable ==="
+          sudo -E kubectl describe nodes | grep -A6 "Allocated resources\|Capacity:\|Allocatable:"
+
+          echo
+          echo "=== All pods ==="
+          sudo -E kubectl get pods -A -o wide
+
+          echo
+          echo "=== All Warning events (full history, not just tail) ==="
+          sudo -E kubectl get events -A --sort-by='.lastTimestamp' --field-selector type=Warning
+
+          echo
+          echo "=== All events (tail 200) ==="
+          sudo -E kubectl get events -A --sort-by='.lastTimestamp' | tail -200
+
+          echo
+          echo "=== Describe any pod not Running/Succeeded ==="
+          # When helm --atomic rolls back, the offending pod is gone -- but
+          # if any chart left a Pending/CrashLoopBackOff pod behind (e.g. a
+          # post-install hook, a daemonset member, the just-attempted
+          # release if --atomic was off) we get the scheduler/probe detail
+          # here that the rolled-up event stream loses to truncation.
+          sudo -E kubectl get pods -A --no-headers \
+            | awk '$4 != "Running" && $4 != "Completed" { print $1, $2 }' \
+            | while read ns name; do
+                echo "--- $ns/$name ---"
+                sudo -E kubectl describe pod -n "$ns" "$name" | tail -40
+              done
       - name: 'Debug - all pod logs'
         if: failure()
         shell: bash

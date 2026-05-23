@@ -118,6 +118,13 @@ k3s_cluster:
     trino_worker_count: 1
     trino_worker_max_heap: 512M
     trino_coordinator_max_heap: 512M
+    # The hl7-transformer view-DDL path doesn't run in smoke-test (the
+    # data-authorization seed Job writes via PySpark directly), and
+    # `trino_view_enabled: false` below already disables the only
+    # caller. Skipping the RW Trino cluster saves ~2 GiB of memory
+    # requests in CI's single-runner k3s, which is what was tipping
+    # the cluster past schedulable capacity for Grafana.
+    trino_rw_enabled: false
 
     # Trino RBAC (ADR 0020 + 0021 + 0022 + 0023): the smoke-test data-authorization
     # Job seeds delta.default.test_reports with synthetic rows across
