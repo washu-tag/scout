@@ -78,13 +78,24 @@
     // 23.x → 24.x added KeycloakSessionFactory to init()). Validate
     // the listener compiles + the integration tests pass before
     // merging Keycloak upgrades. See ADR 0021 for the SPI surface.
+    //
+    // Group the Keycloak server with keycloak-config-cli (adorsys)
+    // because the cli's tag bundles a Keycloak-compat version
+    // (e.g. `6.5.0-26.5.4`) that needs to track the server. They
+    // drift today -- 26.6.1 server, 26.5.4 cli-compat -- because
+    // adorsys doesn't publish a tag per Keycloak point release.
+    // Grouping puts both bumps in one PR so the reviewer can check
+    // the compat suffix without bouncing between two PRs.
     {
       "matchDepNames": [
         "quay.io/keycloak/keycloak",
-        "quay.io/keycloak/keycloak-operator"
+        "quay.io/keycloak/keycloak-operator",
+        "adorsys/keycloak-config-cli"
       ],
+      "groupName": "Keycloak server + config-cli",
       "prBodyNotes": [
-        "**Reminder:** Validate the custom SPIs in `keycloak/event-listener/` still compile and the integration tests pass against the new Keycloak version. The eventsListener and required-action SPIs are marked internal (KC-SERVICES0047) and have had compatibility breaks at major-version boundaries. Affected providers: `opa-user-bundle-publisher` (ADR 0021), `user-approval-email`, `ScoutTermsRequiredAction`."
+        "**SPI compatibility reminder:** Validate the custom SPIs in `keycloak/event-listener/` still compile and the integration tests pass against the new Keycloak version. The eventsListener and required-action SPIs are marked internal (KC-SERVICES0047) and have had compatibility breaks at major-version boundaries. Affected providers: `opa-user-bundle-publisher` (ADR 0021), `user-approval-email`, `ScoutTermsRequiredAction`.",
+        "**Version-coupling reminder:** When the Keycloak server bumps, `keycloak_config_cli_image_tag` should also bump to a tag whose Keycloak-compat suffix matches. E.g. server `26.7.0` → cli tag `*-26.7.0`. Adorsys publishes tags at https://hub.docker.com/r/adorsys/keycloak-config-cli/tags — pick the highest cli version with a matching Keycloak-compat tail. If no matching cli tag exists yet, hold the server bump until one is published; otherwise realm imports may fail on schema-mismatch."
       ]
     }
   ],
