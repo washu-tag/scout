@@ -153,6 +153,20 @@ k3s_cluster:
     # extractor at all, so this flag has no effect there.
     trino_view_enabled: false
 
+    # Trino RBAC secrets (ADR 0020). Required by the trino role's
+    # RBAC env Secret + bcrypt password.db. Production deployments set
+    # these in scout-inventory; CI sets fixed test values so the
+    # smoke-test deploy doesn't fail at template render.
+    trino_internal_shared_secret: ci-trino-internal-shared-secret
+    trino_openwebui_mcp_svc_password: ci-trino-mcp-svc-pw
+    # Bcrypt-hashed at deploy time via htpasswd (see roles/trino/
+    # templates/password.db.j2). The data-authorization tests don't
+    # exercise the PASSWORD auth path -- they use service-principal
+    # JWT with X-Trino-User -- but mcp-trino's HTTP Basic outbound
+    # requires the entry to exist.
+    trino_password_authenticator_users:
+      openwebui_mcp_svc: '{{ trino_openwebui_mcp_svc_password }}'
+
     # Valkey (single shared password for all services)
     valkey_password: valkey123
 
