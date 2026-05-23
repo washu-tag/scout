@@ -16,6 +16,7 @@ import os
 import time
 import threading
 import requests
+from flask import has_request_context
 from trino.auth import JWTAuthentication
 
 _TOKEN_CACHE: dict = {"access_token": None, "expires_at": 0.0}
@@ -81,6 +82,18 @@ def DB_CONNECTION_MUTATOR(
     connect_args["auth"] = JWTAuthentication(_get_token())
     connect_args.setdefault("http_scheme", "https")
     connect_args.setdefault("verify", os.environ.get("TRINO_CA_CERT", True))
-    if username:
+    # Only set X-Trino-User when this connection is being made on behalf
+    # of an actual authenticated HTTP request (Superset UI, SQL Lab, API
+    # call, dashboard render). CLI/import contexts -- e.g. the
+    # scout-dashboards-import Job's `superset import-dashboards -u admin`
+    # -- have an app context but no request context, and the username
+    # they pass is the Superset-internal bootstrap admin which doesn't
+    # exist in OPA's data.users. Falling through here means trino-
+    # python-client uses the JWT's preferred_username, the Trino user-
+    # mapping strips `service-account-` to leave `superset_svc`, and
+    # OPA's is_system_identity rule passes. The import job needs to
+    # SHOW CATALOGS / SHOW TABLES to validate dataset definitions; the
+    # service-principal identity is the right one for that work.
+    if username and has_request_context():
         connect_args["user"] = username
     return uri, params
