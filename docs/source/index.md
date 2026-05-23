@@ -48,6 +48,8 @@ Selecting **Notebooks** from the Launchpad launches JupyterHub with notebooks pr
 
 * **[Authentication](authentication.md)**: Learn about Scout's single sign-on authentication and user approval process
 
+* **[Data Authorization](data_authorization.md)**: Per-user row filtering and column masking — how Scout decides what data each user can see, and how administrators configure it
+
 * **[Report Ingestion](ingest.md)**: Understand how HL7 reports are ingested and processed into the data lake
 
 * **[Tips & Tricks](tips.md)**: Discover helpful hints for using Scout services effectively
@@ -64,5 +66,6 @@ chat
 ingest
 tips
 authentication
+data_authorization
 technical/index
 ```
