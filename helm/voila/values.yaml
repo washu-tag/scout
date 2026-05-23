@@ -3,7 +3,7 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/washu-tag/pyspark-notebook
+  repository: ghcr.io/washu-tag/scout-notebook
   tag: latest
   pullPolicy: IfNotPresent
 
