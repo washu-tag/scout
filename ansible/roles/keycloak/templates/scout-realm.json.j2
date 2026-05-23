@@ -578,6 +578,32 @@
           "microprofile-jwt",
           "trino-audience"
         ]
+      },
+      {
+        "name": "voila_svc",
+        "description": "Service principal for Voila playbooks impersonating the OIDC-authenticated user via X-Trino-User (ADR 0020)",
+        "enabled": true,
+        "clientId": "voila_svc",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_voila_svc_client_secret }}",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect",
+        "attributes": {
+          "access.token.lifespan": "14400"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "trino-audience"
+        ]
       }
     ],
     "identityProviders": [

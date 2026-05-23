@@ -110,6 +110,22 @@ networkPolicy:
       ports:
         - port: 8080
           protocol: TCP
+    # Voila playbooks write reviewer annotations back to
+    # default.reports_followup via trino-rw (trino-analytics is
+    # read-only per ADR 0020). Surface is bounded by the playbook code
+    # mounted from ConfigMaps — Voila users cannot execute arbitrary
+    # Python or arbitrary SQL, so the write paths are limited to the
+    # specific UPDATE/INSERT statements the dashboard issues.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: '{{ scout_analytics_namespace }}'
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: voila
+      ports:
+        - port: 8080
+          protocol: TCP
     - from:
         - namespaceSelector:
             matchLabels:

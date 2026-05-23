@@ -4,19 +4,46 @@ Classifies radiology reports for follow-up recommendations using an LLM, then ex
 
 The pipeline classifies each report from the curated silver-layer table `default.reports_latest`, persists results into a working table `default.reports_followup`, and routes failures to `default.followup_errors`. The review playbook reads `reports_followup`, presents a stratified sample, and writes reviewer verdicts back into the same table.
 
-## Prerequisites: writable Hive metastore egress
+## Prerequisites: trino-rw NetworkPolicy access
 
-The pipeline notebook creates the working table `default.reports_followup`, which requires writing to the **writable** Hive Metastore instance (`hive-metastore.scout-data:9083`) and to the lake bucket with **writable** S3 credentials. JupyterHub's default Helm-rendered NetworkPolicy (`ansible/roles/jupyter/templates/values.yaml.j2`) only permits egress to the **readonly** metastore instance (`hive-metastore-readonly`), so the metastore Thrift connection will time out unless an additional policy grants writable-Hive egress. (On clusters that already have the writable-Hive egress in place — e.g., from a manual `kubectl edit` — the notebook works as-is.)
+The pipeline notebook creates and writes to `default.reports_followup` via `trino-rw` (the write-enabled Trino instance in `scout-extractor`, ADR 0019). `trino-rw` is locked down by NetworkPolicy to the `hl7-transformer` pod only, so JupyterHub singleuser pods need an explicit allow added. NetworkPolicies are additive, so the drop-in YAMLs below layer on top of the Helm-rendered policies without modifying any role.
 
-Apply the drop-in policy below to grant writable-Hive egress without modifying the Jupyter role:
+Apply both — one extends `trino-rw`'s ingress, one allows Jupyter's egress (both ends need to permit the traffic):
 
 ```yaml
-# jupyter-writable-hive-egress.yaml
+# trino-rw-jupyter-access.yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: jupyter-writable-hive-egress
-  namespace: scout-analytics  # jupyter_namespace
+  name: trino-rw-jupyter-access
+  namespace: scout-extractor       # trino_rw_namespace
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: trino
+      app.kubernetes.io/instance: trino-rw
+      app.kubernetes.io/component: coordinator
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: scout-analytics   # jupyter_namespace
+          podSelector:
+            matchLabels:
+              app: jupyterhub
+              component: singleuser-server
+      ports:
+        - port: 8080
+          protocol: TCP
+---
+# jupyter-trino-rw-egress.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: jupyter-trino-rw-egress
+  namespace: scout-analytics       # jupyter_namespace
 spec:
   podSelector:
     matchLabels:
@@ -28,24 +55,23 @@ spec:
     - to:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: scout-data  # hive_namespace
+              kubernetes.io/metadata.name: scout-extractor   # trino_rw_namespace
           podSelector:
             matchLabels:
-              app.kubernetes.io/instance: hive-metastore  # writable; readonly is hive-metastore-readonly
+              app.kubernetes.io/name: trino
+              app.kubernetes.io/instance: trino-rw
       ports:
-        - port: 9083
+        - port: 8080
           protocol: TCP
 ```
 
 ```bash
-kubectl apply -f jupyter-writable-hive-egress.yaml
+kubectl apply -f trino-rw-jupyter-access.yaml -f jupyter-trino-rw-egress.yaml
 ```
 
-NetworkPolicies are additive (multiple policies OR together), so this layers on top of the Helm-rendered policy without conflicts. To revert: `kubectl delete networkpolicy -n scout-analytics jupyter-writable-hive-egress`.
+To revert: `kubectl delete networkpolicy trino-rw-jupyter-access -n scout-extractor; kubectl delete networkpolicy jupyter-trino-rw-egress -n scout-analytics`.
 
-The pipeline also needs writable S3 credentials. The notebook prompts for the secret key via `getpass` (or reads `S3_ACCESS_KEY` / `S3_SECRET_KEY` from env if pre-set) — point those at a MinIO user with `consoleAdmin` or an equivalent RW policy on the lake bucket.
-
-A longer-term improvement (deferred) would be a `jupyter_allow_writable_hive` inventory flag that adds this egress rule conditionally to the Helm-rendered policy.
+Same shape as the writable-Hive egress policy admins applied for the previous Spark-based pipeline. A longer-term improvement (deferred) would be a `jupyter_allow_trino_rw` inventory flag that adds this conditionally to the Helm-rendered policy.
 
 ## Contents
 
@@ -61,7 +87,7 @@ In JupyterHub, open `followup_detection.ipynb` and run cells top to bottom:
 
 1. **Imports + config** — reads `OLLAMA_URL`, `OLLAMA_MODEL`, etc. from env (Scout-friendly defaults baked in).
 2. **One-time setup: working table** — `DROP` + `CREATE` the `reports_followup` table from `reports_latest`. **Only run on a fresh deployment** (the cell re-drops on every run).
-3. **Top-up** — `ANTI JOIN`s new accessions from `reports_latest` into `reports_followup` without disturbing previously-classified rows. **Run whenever new HL7 ingests have landed.**
+3. **Top-up** — `INSERT … WHERE NOT EXISTS` of new accessions from `reports_latest` into `reports_followup` without disturbing previously-classified rows. **Run whenever new HL7 ingests have landed.**
 4. **Classifier** — defines the JSON-formatted prompt and the Ollama call.
 5. **Test run** — small batch (~20 reports). Sanity-check the model and prompt before a full sweep.
 6. **Full pipeline** — full sweep over unprocessed rows, parallelized via `ThreadPoolExecutor`. Failures land in `followup_errors`.
@@ -118,7 +144,8 @@ Created on first failure by `followup_detection.ipynb`. One row per classificati
 
 ## Configuration
 
-Connection details come from environment variables JupyterHub sets by default:
+Connection details come from environment variables:
 
-- **Ollama** (pipeline): `OLLAMA_URL` (default `http://ollama.scout-analytics:11434`), `OLLAMA_MODEL` (default `gemma4-31b-long:latest`)
-- **Trino** (dashboard): `TRINO_HOST`, `TRINO_PORT`, `TRINO_SCHEME`, `TRINO_USER`, `TRINO_CATALOG`, `TRINO_SCHEMA`
+- **Ollama** (pipeline): `OLLAMA_URL` (default `http://ollama.scout-analytics:11434`), `OLLAMA_MODEL` (default `gemma4-31b-long:latest`).
+- **trino-rw** (pipeline writes): `TRINO_RW_HOST` (default `trino-rw.scout-extractor`), `TRINO_RW_PORT` (default `8080`). The pipeline connects anonymously (gated by NetworkPolicy) and uses `JUPYTERHUB_USER` as the `user` for audit traceability.
+- **trino-analytics** (dashboard reads): set by the Voilà role via `scout_trino.connect()` — `TRINO_HOST`, `TRINO_PORT` (HTTPS, 8443), `TRINO_SCHEME=https`, `TRINO_CATALOG`, `TRINO_SCHEMA`, `TRINO_CA_CERT`, plus `KEYCLOAK_TOKEN_URL` and `KEYCLOAK_VOILA_SVC_CLIENT_ID` for the per-user `X-Trino-User` impersonation (ADR 0020). The dashboard pulls the user's OIDC identity from oauth2-proxy's `X-Auth-Request-Access-Token` header; no user-set env vars are required.

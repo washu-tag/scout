@@ -14,7 +14,9 @@ import ipywidgets as widgets
 from IPython.display import display, HTML
 from datetime import datetime, timedelta
 from tqdm import tqdm
-import trino
+import trino  # noqa: F401 — re-exported via scout_trino, but some queries reference trino.* directly
+
+import scout_trino
 
 
 # ============================================================================
@@ -77,16 +79,13 @@ os.makedirs(EXPORT_DIR, exist_ok=True)
 
 
 def connect_trino():
-    """Connect to Trino."""
-    conn = trino.dbapi.connect(
-        host=TRINO_HOST,
-        port=TRINO_PORT,
-        http_scheme=TRINO_SCHEME,
-        user=TRINO_USER,
-        catalog=TRINO_CATALOG,
-        schema=TRINO_SCHEMA,
-    )
-    return conn
+    """Connect to Trino with per-user impersonation (ADR 0020).
+
+    Delegates to scout_trino.connect(), which mints a voila_svc JWT and
+    sets X-Trino-User to the OIDC-authed user's preferred_username so
+    OPA evaluates row filters / column masks against that user.
+    """
+    return scout_trino.connect()
 
 
 def render_section_loading(section_name):

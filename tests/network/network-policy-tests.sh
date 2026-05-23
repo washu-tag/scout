@@ -12,7 +12,8 @@
 # fixed sleep.
 #
 # Expected matrix:
-#   - pod in scout-analytics (any labels)                     → denied (000)
+#   - pod in scout-analytics without voila label              → denied (000)
+#   - pod in scout-analytics with app=voila label             → allowed (200)
 #   - pod in scout-extractor without transformer labels       → denied (000)
 #   - pod in scout-extractor with hl7-transformer label       → allowed (200)
 #
@@ -65,8 +66,9 @@ queue_test() {
   LABELS+=("${4:-}")
 }
 
-queue_test nb-test               scout-analytics 000
+queue_test nb-test                scout-analytics 000
 queue_test chat-test              scout-analytics 000 'app.kubernetes.io/name=open-webui'
+queue_test voila-impostor         scout-analytics 200 'app.kubernetes.io/name=voila'
 queue_test extractor-rando        scout-extractor 000
 queue_test transformer-impostor   scout-extractor 200 'app.kubernetes.io/name=hl7-transformer'
 

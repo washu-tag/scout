@@ -38,7 +38,7 @@ from cohort_ui import (
 def generate_regex_with_ollama(
     user_query,
     ollama_url="http://ollama:11434",
-    model="gpt-oss-120b-long:latest",
+    model="gemma4-31b-long:latest",
 ):
     """
     Generate regex patterns for radiology report text search using Ollama.
@@ -288,7 +288,7 @@ def _create_search_form(container, config=None):
                 <div style='background: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 11px; font-family: monospace;'>
                     <div style='font-weight: 600; margin-bottom: 4px;'>Request Details:</div>
                     <div><b>URL:</b> http://ollama:11434/api/generate</div>
-                    <div><b>Model:</b> gpt-oss-120b-long:latest</div>
+                    <div><b>Model:</b> gemma4-31b-long:latest</div>
                     <div><b>Query:</b> {html_module.escape(query)}</div>
                 </div>
             """

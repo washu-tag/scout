@@ -13,6 +13,16 @@ config:
     reverse_proxy = true
     real_client_ip_header =  "X-Forwarded-For"
     trusted_proxy_ips = {{ oauth2_proxy_trusted_proxy_ips | to_json }}
+    # Emit X-Auth-Request-Access-Token on /oauth2/auth responses so the
+    # Traefik forwardAuth middleware (authResponseHeaders) propagates the
+    # user's Keycloak access token to upstream services. Voila's per-user
+    # Trino impersonation reads this header to extract preferred_username
+    # (ADR 0020). Safe across the rest of the stack — services that don't
+    # consume the header ignore it. Both flags required in auth-request
+    # mode: set_xauthrequest enables the X-Auth-Request-* response header
+    # family; pass_access_token adds the access-token value to it.
+    set_xauthrequest = true
+    pass_access_token = true
     code_challenge_method = "S256"
     custom_templates_dir = "/etc/oauth2-proxy/templates"
     custom_sign_in_logo = "/var/www/static/logo/logo.png"

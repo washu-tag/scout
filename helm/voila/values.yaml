@@ -52,17 +52,13 @@ resources:
 playbooks: []
 
 # Name of the ConfigMap containing spark-defaults.conf (created externally by Ansible)
-sparkConfigMapName: spark-defaults
-
-# Environment variables for Trino connectivity
-# S3/Spark settings come from spark-defaults.conf ConfigMap
-env:
-  TRINO_HOST: trino.trino
-  TRINO_PORT: '8080'
-  TRINO_SCHEME: http
-  TRINO_USER: scout
-  TRINO_CATALOG: delta
-  TRINO_SCHEMA: default
+# Environment variables for Trino connectivity — populated by the
+# voila role's values.yaml.j2 (TRINO_HOST/PORT/SCHEME/CATALOG/SCHEMA,
+# plus Keycloak vars for the voila_svc impersonation flow). The chart
+# leaves this empty so role-supplied env wins cleanly via Helm's
+# dict-merge (a default key here would persist even when the role
+# omits it, since merge doesn't delete).
+env: {}
 
 nodeSelector: {}
 
