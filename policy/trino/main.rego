@@ -15,8 +15,10 @@ package trino
 # no admin-API client, no cache-busting trick.
 #
 # Data document (rendered by the opa Ansible role from inventory + bundle):
-#   data.filtered_tables       : [{catalog, schema, table}]      # static (inventory)
-#   data.view_only_tables      : [{catalog, schema, table}]      # static (inventory)
+#   data.filtered_tables       : [{catalog, schema, table|table_prefix}]
+#                                                                # static (inventory)
+#   data.view_only_tables      : [{catalog, schema, table|table_prefix}]
+#                                                                # static (inventory)
 #   data.view_owner_principals : [identity_name]                 # static (inventory)
 #   data.attribute_filters     : {<attr_name>: {column, tables?}} # static (inventory)
 #   data.masked_columns        : [column_name]                   # static (inventory)
@@ -27,6 +29,8 @@ package trino
 #                                  "mask_phi_fields": ["true"|"false"],
 #                                  ...
 #                                }                               # bundled (Keycloak)
+# Table-list entries support two shapes — exact `table` match or
+# `table_prefix` startswith match. See table_entry_matches.
 # Attribute values mirror Keycloak's `Map<String, List<String>>` user-
 # attribute shape (multivalued by default) so the listener writes them
 # verbatim — no per-key schema in two places.
@@ -210,10 +214,37 @@ input_table := {
 	"table": input.action.resource.table.tableName,
 }
 
-# Tables the policy denies for direct access. Loaded with a default so
-# the rule below can reference it even when the inventory omits it.
-default view_only_tables_set := set()
-view_only_tables_set := {t | some t in data.view_only_tables}
+# Match a table-list entry against the current decision's input_table.
+# Two shapes are accepted; an entry can use either field but not both.
+#   { catalog, schema, table }         — exact match
+#   { catalog, schema, table_prefix }  — startswith match
+# Prefix matching lets an operator cover a family of tables sharing a
+# naming convention (e.g. all `reports_*` derivatives) without
+# enumerating each one. The trade-off is that prefix entries can
+# over-match — see attribute_scopes_table for the explicit
+# view_only_tables exclusion that keeps the safety property obvious
+# instead of layered.
+table_entry_matches(entry, in_table) if {
+	entry.catalog == in_table.catalog
+	entry.schema == in_table.schema
+	entry.table == in_table.table
+}
+
+table_entry_matches(entry, in_table) if {
+	entry.catalog == in_table.catalog
+	entry.schema == in_table.schema
+	entry.table_prefix
+	startswith(in_table.table, entry.table_prefix)
+}
+
+# True if the input table matches any entry in data.view_only_tables
+# (either shape — exact or prefix). Used both by view_only_blocked (the
+# /allow gate) and by attribute_scopes_table (to exclude these tables
+# from row-filter scoping; see the comment there).
+is_view_only_table if {
+	some t in data.view_only_tables
+	table_entry_matches(t, input_table)
+}
 
 # Per-user escape hatch: setting Keycloak attribute
 # `bypass_view_only_tables: ["true"]` exempts the user from the
@@ -232,7 +263,7 @@ view_only_bypass if {
 }
 
 view_only_blocked if {
-	input_table in view_only_tables_set
+	is_view_only_table
 	not view_only_bypass
 }
 
@@ -258,14 +289,27 @@ user_values_for(attr_name) := values if {
 has_wildcard(attr_name) if "*" in user_values_for(attr_name)
 
 # Tables an attribute's filter applies to: explicit override on the
-# attribute entry, otherwise the global filtered_tables list.
+# attribute entry, otherwise the global filtered_tables list. Each
+# entry uses the {catalog, schema, table|table_prefix} shape resolved
+# by table_entry_matches.
 attribute_tables(config) := object.get(config, "tables", data.filtered_tables)
 
 attribute_scopes_table(config) if {
 	some t in attribute_tables(config)
-	t.catalog == input_table.catalog
-	t.schema == input_table.schema
-	t.table == input_table.table
+	table_entry_matches(t, input_table)
+	# Tables locked down for direct access (data.view_only_tables) are
+	# excluded from row-filter scoping even when a prefix entry would
+	# otherwise catch them. Direct queries to view-only tables are
+	# denied at /allow before /rowFilters runs; DEFINER-view paths
+	# already skip row filters via the is_view_owner carve-out. The
+	# explicit exclusion here makes that safety visible in the rule
+	# instead of dependent on layered behavior the reader has to
+	# trace through three other rules. Without it, a prefix like
+	# `reports_` would emit a `sending_facility IN (...)` filter for
+	# `reports_report_patient_mapping`, which lacks that column —
+	# harmless today but a latent bug if the access-path interceptors
+	# ever change.
+	not is_view_only_table
 }
 
 # Emit `column IN ('v1','v2',...)` for each configured attribute the user

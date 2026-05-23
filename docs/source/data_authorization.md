@@ -128,6 +128,23 @@ For administrators who legitimately need direct mapping-table access (e.g., for 
 
 The set of row-filter dimensions (today: `allowed_facilities` and `allowed_modalities`) is configured per-deployment in the Ansible inventory under `trino_attribute_filters`. Adding a new dimension (e.g., `allowed_departments`) is a one-line inventory edit; the Keycloak realm template auto-renders the new user-profile attribute, and the rego policy auto-fires the new row filter. See [Inventory](technical/inventory.md) for the configuration shape.
 
+### Filtering a family of tables by prefix
+
+`trino_filtered_tables` and `trino_view_only_tables` entries accept either an exact table name or a `table_prefix` that matches every table in the catalog/schema whose name starts with that prefix:
+
+```yaml
+trino_filtered_tables:
+  - { catalog: delta, schema: default, table_prefix: reports_ }  # row filter applies to every reports_* table
+
+trino_view_only_tables:
+  - { catalog: delta, schema: default, table: reports_report_patient_mapping }
+  - { catalog: delta, schema: default, table: reports_report_patient_mapping_history }
+```
+
+Useful when the transformer adds new derivative tables sharing a naming convention — one prefix covers the whole family instead of an inventory edit per table.
+
+**Caveat for `trino_filtered_tables`:** the row filter emits `<column> IN (...)` based on `trino_attribute_filters`, so every table matched by the prefix must have those columns or queries error with `COLUMN_NOT_FOUND`. Tables that match the prefix but are also in `trino_view_only_tables` are automatically excluded from row-filter scoping (no filter is emitted for them) — that's the safety latch keeping `reports_report_patient_mapping` correct under a `reports_` prefix.
+
 ## See also
 
 * [Authentication](authentication.md) — how users log in (separate concern from what they can see)

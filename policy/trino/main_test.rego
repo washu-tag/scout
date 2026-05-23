@@ -292,6 +292,65 @@ test_non_view_only_table_still_allowed if {
 		with data.view_only_tables as fixture_view_only_tables
 }
 
+# === Prefix matching ==========================================================
+# Table-list entries support {catalog, schema, table_prefix} in addition
+# to the exact {catalog, schema, table} shape. Prefix matching covers a
+# family of derivative tables (e.g. reports_*) without enumerating each.
+
+test_view_only_prefix_match_denies_direct_select if {
+	# A `secrets_` prefix entry in view_only_tables denies any
+	# `secrets_*` table, not just one named "secrets_".
+	inp := select_input("alice", ["scout-user"], "delta", "default", "secrets_pii")
+	not trino.allow with input as inp
+		with trino.user_attrs as {"enabled": true}
+		with data.view_only_tables as [{"catalog": "delta", "schema": "default", "table_prefix": "secrets_"}]
+}
+
+test_view_only_prefix_match_does_not_overreach_to_other_schema if {
+	# A prefix entry is scoped to its catalog/schema — same prefix in
+	# a different schema should NOT be matched.
+	inp := select_input("alice", ["scout-user"], "delta", "audit", "secrets_pii")
+	trino.allow with input as inp
+		with trino.user_attrs as {"enabled": true}
+		with data.view_only_tables as [{"catalog": "delta", "schema": "default", "table_prefix": "secrets_"}]
+}
+
+test_row_filter_emitted_via_prefix_match if {
+	# A prefix entry in filtered_tables emits row filters for every
+	# matching table the same way an exact entry would.
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_curated")
+	expected := {{"expression": "sending_facility IN ('WUSM')"}}
+	trino.rowFilters == expected with input as inp
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM"]}
+		with data.attribute_filters as fixture_attribute_filters
+		with data.filtered_tables as [{"catalog": "delta", "schema": "default", "table_prefix": "reports_"}]
+}
+
+test_row_filter_not_emitted_for_view_only_table_even_if_prefix_matches if {
+	# The view_only_tables exclusion in attribute_scopes_table makes
+	# sure a `reports_` prefix doesn't accidentally emit a filter
+	# referencing a column that view_only mapping tables don't have.
+	# Without the exclusion the filter would be emitted (then never
+	# fire in practice due to the layered carve-outs), but it'd be a
+	# latent footgun. Test the explicit guarantee.
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_report_patient_mapping")
+	count(trino.rowFilters) == 0 with input as inp
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM"]}
+		with data.attribute_filters as fixture_attribute_filters
+		with data.filtered_tables as [{"catalog": "delta", "schema": "default", "table_prefix": "reports_"}]
+		with data.view_only_tables as [{"catalog": "delta", "schema": "default", "table": "reports_report_patient_mapping"}]
+}
+
+test_row_filter_not_emitted_for_non_prefixed_table if {
+	# Tables outside the prefix get no row filter, just like with
+	# explicit entries.
+	inp := select_input("alice", ["scout-user"], "delta", "default", "audit_log")
+	count(trino.rowFilters) == 0 with input as inp
+		with trino.user_attrs as {"enabled": true, "allowed_facilities": ["WUSM"]}
+		with data.attribute_filters as fixture_attribute_filters
+		with data.filtered_tables as [{"catalog": "delta", "schema": "default", "table_prefix": "reports_"}]
+}
+
 test_create_view_with_select_bypasses_view_only_block if {
 	# Trino calls CreateViewWithSelectFromColumns when validating a view's
 	# underlying reads; identity is the view OWNER. This must succeed even
