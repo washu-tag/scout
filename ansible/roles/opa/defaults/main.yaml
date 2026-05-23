@@ -50,7 +50,7 @@ trino_view_owner_principals:
 # derivatives sharing the prefix get filtered automatically -- no
 # inventory edit per new table -- as long as they carry the
 # trino_attribute_filters columns. Tables matched by the prefix but
-# also listed in trino_view_only_tables (e.g. the patient mapping
+# also listed in trino_hidden_tables (e.g. the patient mapping
 # tables) are explicitly excluded from row-filter scoping by the
 # rego, so the prefix over-matching them is safe.
 #
@@ -77,7 +77,7 @@ trino_filtered_tables:
 # re-checked against the invoker's permissions). Verify with
 # `SHOW CREATE VIEW <name>` before adding a new entry whose views
 # need to keep working.
-trino_view_only_tables:
+trino_hidden_tables:
   - { catalog: delta, schema: default, table: reports_report_patient_mapping }
   - { catalog: delta, schema: default, table: reports_report_patient_mapping_history }
 

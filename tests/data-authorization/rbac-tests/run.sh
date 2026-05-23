@@ -41,7 +41,7 @@
 #      -> SELECT patient_name LIMIT 1 = '[REDACTED]'
 #   6. SELECT * FROM reports_report_patient_mapping (no bypass)
 #      -> 403 / permission denied
-#   7. bypass_view_only_tables=["true"]
+#   7. bypass_hidden_tables=["true"]
 #      -> same query succeeds (table missing in CI, query may error on
 #         table-not-found but NOT on permission-denied)
 #   8. enabled=false
@@ -324,10 +324,10 @@ else
     fail "view-only table query unexpectedly succeeded"
 fi
 
-# --- Scenario 7: bypass_view_only_tables unlocks ----------------------------
-log "scenario 7: bypass_view_only_tables=true -> not /allow-denied"
-set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"bypass_view_only_tables":["true"]}'
-wait_for_bundle '.result.bypass_view_only_tables[0] == "true"' "$PROPAGATION_TIMEOUT"
+# --- Scenario 7: bypass_hidden_tables unlocks ----------------------------
+log "scenario 7: bypass_hidden_tables=true -> not /allow-denied"
+set_user_state "$USER_ID" true '{"allowed_facilities":["*"],"allowed_modalities":["*"],"bypass_hidden_tables":["true"]}'
+wait_for_bundle '.result.bypass_hidden_tables[0] == "true"' "$PROPAGATION_TIMEOUT"
 # The table may not exist in CI (no extractor) — Trino will return
 # TABLE_NOT_FOUND, NOT PERMISSION_DENIED. Distinguishing the two
 # proves the OPA gate was passed.

@@ -20,14 +20,14 @@ This ADR specifies the view-security choices that make both work. The naïvely i
 **Views are created with `SECURITY DEFINER` (Trino's CREATE VIEW default). The OPA policy carves out three pieces to make this work:**
 
 1. **`view_owner_principals`** — a data set whose members (e.g. `trino`, the user `hl7-transformer` creates views as) bypass row-filter and column-mask evaluation. Without this, the view owner's underlying-table reads would be clamped to zero rows by the facility filter.
-2. **`view_only_tables`** — an inventory-driven list of tables that are denied for direct SELECT and hidden from `SHOW TABLES`. Includes `reports_report_patient_mapping` and similar join-target tables that lack a filterable column.
-3. **`CreateViewWithSelectFromColumns`** allow rule — exempts the view owner from `view_only_blocked`, so DEFINER views' internal joins to `view_only_tables` succeed while direct invoker queries against those same tables are denied.
+2. **`hidden_tables`** — an inventory-driven list of tables that are denied for direct SELECT and hidden from `SHOW TABLES`. Includes `reports_report_patient_mapping` and similar join-target tables that lack a filterable column.
+3. **`CreateViewWithSelectFromColumns`** allow rule — exempts the view owner from `hidden_table_blocked`, so DEFINER views' internal joins to `hidden_tables` succeed while direct invoker queries against those same tables are denied.
 
 The invoker's RBAC is still enforced because the views themselves are listed in `data.filtered_tables`. Row filters apply to the view's output (post-DEFINER materialization), not to the view owner's underlying reads.
 
 ### Trade-offs in one paragraph
 
-`SECURITY INVOKER` would be the natural-intuition choice — "let the invoker's permissions apply." It fails for two reasons. First, the `view_only_tables` deny on `reports_report_patient_mapping` propagates: the invoker can't query the mapping table directly *and* can't query a view that joins to it. Second, the column masks on `m.mpi`/`m.epic_mrn` propagate through the window function: every user's `resolved_epic_mrn` resolves to NULL because the underlying value got masked before the `MAX(...) OVER (...)` ran. DEFINER preserves both behaviors because the view owner sees raw rows from the join target *during materialization*, and the invoker's RBAC applies to the resulting view rows.
+`SECURITY INVOKER` would be the natural-intuition choice — "let the invoker's permissions apply." It fails for two reasons. First, the `hidden_tables` deny on `reports_report_patient_mapping` propagates: the invoker can't query the mapping table directly *and* can't query a view that joins to it. Second, the column masks on `m.mpi`/`m.epic_mrn` propagate through the window function: every user's `resolved_epic_mrn` resolves to NULL because the underlying value got masked before the `MAX(...) OVER (...)` ran. DEFINER preserves both behaviors because the view owner sees raw rows from the join target *during materialization*, and the invoker's RBAC applies to the resulting view rows.
 
 ## Alternatives Considered
 
@@ -35,7 +35,7 @@ The invoker's RBAC is still enforced because the views themselves are listed in 
 
 Invoker's permissions apply to all underlying reads.
 
-**Rejected**: described above. Propagates `view_only_tables` deny to the view (breaking it for every user) and propagates column masks through window functions (NULLing out `resolved_epic_mrn`).
+**Rejected**: described above. Propagates `hidden_tables` deny to the view (breaking it for every user) and propagates column masks through window functions (NULLing out `resolved_epic_mrn`).
 
 ### Materialized views / scheduled snapshot tables
 
@@ -60,22 +60,22 @@ Generate a `_epic_view_<user>` for each user with the join already filtered by t
 ### Positive
 
 - **The `_epic_view` family works under RBAC.** Users see Epic MRN resolution joined into their facility-scoped view rows. Direct queries against the mapping table fail (as intended).
-- **The policy data model is extensible.** `view_only_tables` is inventory-driven — adding another join target table to the deny list is one inventory edit, not a Rego change.
+- **The policy data model is extensible.** `hidden_tables` is inventory-driven — adding another join target table to the deny list is one inventory edit, not a Rego change.
 - **Column masks compose naturally.** Masks on report-table columns apply to view output (the invoker is the principal); masks on mapping-table columns don't propagate through the window function (the view owner reads raw rows).
 
 ### Negative
 
-- **The DEFINER model is counterintuitive.** A future maintainer reading the OPA policy will see the `view_owner_principals` exemption, the `view_only_tables` deny, and the `CreateViewWithSelectFromColumns` allow rule and need this ADR to understand why all three exist. Without context, the policy looks like it's bypassing its own RBAC.
+- **The DEFINER model is counterintuitive.** A future maintainer reading the OPA policy will see the `view_owner_principals` exemption, the `hidden_tables` deny, and the `CreateViewWithSelectFromColumns` allow rule and need this ADR to understand why all three exist. Without context, the policy looks like it's bypassing its own RBAC.
 - **The view owner has effective superuser read access.** Any pod that can authenticate to Trino as `trino` (currently only `hl7-transformer` via `trino-rw`) can read the mapping table in full. This is the cost of DEFINER and the reason `trino-rw` access is gated by NetworkPolicy in ADR 0019.
 
 ## Implementation Notes
 
 - **View creation**: `hl7-transformer` issues `CREATE OR REPLACE VIEW … SECURITY DEFINER` against `trino-rw` (the only Trino instance that permits writes; per ADR 0019). The view's owner is `trino`, which is what the OPA policy uses as the `view_owner_principals` member.
 - **`view_owner_principals`** is inventory-driven (`trino_view_owner_principals`) and rendered into the OPA data document by the opa Ansible role. Default: `["trino"]`. Membership is checked in the row-filter and column-mask rules via the `is_view_owner` helper.
-- **`view_only_tables`** is inventory-driven (`trino_view_only_tables`) and rendered the same way. Default includes the patient-identifier join targets. Tables in the list are:
-  - Denied for direct SELECT in the table-level `allow` rule (`view_only_blocked` check).
+- **`hidden_tables`** is inventory-driven (`trino_hidden_tables`) and rendered the same way. Default includes the patient-identifier join targets. Tables in the list are:
+  - Denied for direct SELECT in the table-level `allow` rule (`hidden_table_blocked` check).
   - Hidden from `SHOW TABLES` by the same check.
-  - Reachable via DEFINER views thanks to the `CreateViewWithSelectFromColumns` allow rule that exempts the view owner from `view_only_blocked`.
+  - Reachable via DEFINER views thanks to the `CreateViewWithSelectFromColumns` allow rule that exempts the view owner from `hidden_table_blocked`.
 - **Column-mask type dispatch**: the policy emits `'[REDACTED]'` (varchar) or bare `NULL` (every other type) based on the column's declared SQL type. Bare `NULL` coerces cleanly even for complex types like `array(row(...))`, so no per-type `CAST` is needed.
 
 ## References

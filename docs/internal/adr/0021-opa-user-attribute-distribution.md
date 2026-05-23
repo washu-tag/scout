@@ -94,7 +94,7 @@ bundle.tar.gz
     └── data.json      # { "alice": {...}, "bob": {...}, ... }
 ```
 
-`roots: ["users"]` declares ownership of the `data.users` subtree. OPA's bundle plugin uses `roots` to scope atomic swaps, so the user bundle doesn't collide with the static data (`filtered_tables`, `view_only_tables`, `attribute_filters`, `masked_columns`) rendered into OPA's ConfigMap by the Ansible role.
+`roots: ["users"]` declares ownership of the `data.users` subtree. OPA's bundle plugin uses `roots` to scope atomic swaps, so the user bundle doesn't collide with the static data (`filtered_tables`, `hidden_tables`, `attribute_filters`, `masked_columns`) rendered into OPA's ConfigMap by the Ansible role.
 
 ### Per-user payload shape
 
@@ -182,4 +182,4 @@ An `enabled` check gates the rules that consume `user_attrs`, so a disabled user
 - ADR 0011: Deployment Portability via Layered Architecture — the service-mode pattern this ADR layers under.
 - ADR 0013: Redis Enterprise to Valkey Migration — explains Scout's existing Valkey footprint; relevant to the Valkey-as-handoff rejection.
 - ADR 0017: Air-Gapped Package Proxy — explains why minimizing new container images for partner sites carries operational cost.
-- ADR 0020: Trino RBAC via OPA with Keycloak Attributes — the architecture this ADR's distribution mechanism plugs into.
+- ADR 0020: Trino Authorization via OPA with Keycloak Attributes — the architecture this ADR's distribution mechanism plugs into.

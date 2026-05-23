@@ -134,11 +134,11 @@ k3s_cluster:
         column: sending_facility
       allowed_modalities:
         column: modality
-    # Lock down the patient-mapping table for the view_only/bypass tests.
+    # Lock down the patient-mapping table for the hidden-tables / bypass tests.
     # The transformer doesn't run in smoke-test so the table isn't
     # created — the deny still applies (deny on missing table is
     # still a deny, which is the correct safety posture).
-    trino_view_only_tables:
+    trino_hidden_tables:
       - { catalog: delta, schema: default, table: reports_report_patient_mapping }
 
     # Spark default of 200 shuffle partitions is far too many for CI's

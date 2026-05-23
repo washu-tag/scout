@@ -21,7 +21,7 @@
     opa_data_json: >-
       {{ {
         "filtered_tables": (trino_filtered_tables | default([])),
-        "view_only_tables": (trino_view_only_tables | default([])),
+        "hidden_tables": (trino_hidden_tables | default([])),
         "view_owner_principals": (trino_view_owner_principals | default([])),
         "attribute_filters": (trino_attribute_filters | default({})),
         "masked_columns": (trino_masked_columns | default([])),

@@ -6,25 +6,25 @@
 
 ## Context
 
-Scout's user-facing Trino instance in the pre-RBAC state connects every caller as the hardcoded user `trino` — no row-level access control, no column masking, no notion of identity at the data layer. This was acceptable for a single-tenant deployment whose only access control was cluster-network membership. It is not acceptable for a multi-tenant analytics layer over HL7 radiology reports from multiple partner institutions, each of which must see only their own data and which may further partition access by clinical-vs-research persona, by modality sub-specialty, and (eventually) by cohort/IRB project.
+Scout's user-facing Trino instance in the pre-RBAC state connects every caller as the hardcoded user `trino` — no row-level access control, no column masking, no notion of identity at the data layer. This was acceptable for a single-tenant deployment whose only access control was cluster-network membership. It is not acceptable as different user-types use the platform, with different IRB allowances. It also doesn't support multitenancy.
 
-This ADR picks the authorization engine and the policy data model. The authentication and identity-propagation pieces (JWT auth, `X-Trino-User` impersonation, per-client patterns) are covered by [ADR 0022](0022-trino-auth-and-impersonation.md). The distribution of per-user attributes from Keycloak to OPA is covered by [ADR 0021](0021-opa-user-attribute-distribution.md). View security (the `SECURITY DEFINER` model, `view_owner_principals` exemption, `view_only_tables` join-target deny) is covered by [ADR 0023](0023-trino-view-security-model.md).
+This ADR picks the authorization engine and the policy data model. The distribution of per-user attributes from Keycloak to OPA is covered by [ADR 0021](0021-opa-user-attribute-distribution.md). The authentication and identity-propagation pieces (JWT auth, `X-Trino-User` impersonation, per-client patterns) are covered by [ADR 0022](0022-trino-auth-and-impersonation.md). View security (the `SECURITY DEFINER` model, `view_owner_principals` exemption, `hidden_tables` join-target deny) is covered by [ADR 0023](0023-trino-view-security-model.md).
 
 ### Requirements driving this ADR
 
 1. **Per-user row-level access** to the `reports` family of tables, scoped by `sending_facility` at minimum, extensible to additional dimensions (modality, persona, eventual cohort).
-2. **PHI column masking.** Doing this to perfection is probably not feasible, but redacting contents of certain columns reduces risk (e.g., report text, non-Scout patient ids, dates) for users without the appropriate permission.
-3. **Real-time onboarding and offboarding.** A user disabled at their partner institution must lose access within seconds, not at the next sync interval. Stated security requirement.
+2. **PHI column masking.** Doing this to perfection is probably not feasible, but redacting contents of certain columns reduces risk (e.g., names, report text, non-Scout patient ids, dates) for certain classes of users.
+3. **Real-time onboarding and offboarding.** Users access changes should take effect in close to real time.
 4. **No combinatorial group sprawl in Keycloak.** Modeling N sites × M modalities × K personas as N×M×K Keycloak groups is operationally untenable.
 5. **GitOps-friendly policy.** Policy changes are reviewable in pull requests and tested in CI, like the rest of the codebase.
 
 ### What this ADR does *not* cover
 
-- **Authentication and identity propagation** — see [ADR 0022](0022-trino-auth-and-impersonation.md).
 - **OPA user-attribute distribution** (bundle from MinIO) — see [ADR 0021](0021-opa-user-attribute-distribution.md).
-- **View security model** (DEFINER vs INVOKER, the `view_owner_principals` exemption, `view_only_tables` join-target deny) — see [ADR 0023](0023-trino-view-security-model.md).
+- **Authentication and identity propagation** — see [ADR 0022](0022-trino-auth-and-impersonation.md).
+- **View security model** (DEFINER vs INVOKER, the `view_owner_principals` exemption, `hidden_tables` join-target deny) — see [ADR 0023](0023-trino-view-security-model.md).
 - **Storage-layer multitenancy** (per-site Delta schemas, per-tenant buckets) is a future ADR.
-- **Cohort/project-based access** (membership lists managed by PIs) is deferred until the use case materializes. The architecture chosen here supports adding it later via a Trino ACL table without rework.
+- **Cohort/project-based access** is deferred until the use case materializes.
 - **The write-enabled `trino-rw` instance** stays gated by NetworkPolicy per ADR 0019. The authorization layer described here applies only to the user-facing Trino in `scout-analytics`.
 
 ## Decision
@@ -50,7 +50,7 @@ This ADR picks the authorization engine and the policy data model. The authentic
 
 JSON rules file with row filters and column masks. No new runtime; well-documented.
 
-**Rejected**: scales poorly for the policy complexity we need. The expressions allowed in `filter` and `mask` fields are single SQL expressions per rule — fine for simple cases but awkward for conditional masking (clinical-vs-research persona logic), unwieldy for cohort-style subqueries, and untestable as a unit. The deeper problem is that the attribute model lives in Keycloak; file rules require those attributes to be materialized into Trino's group provider, which means either (a) a custom group provider plugin, or (b) a cronjob materializing a `groups.txt` file — and file-from-cron is insufficient for real-time offboarding. OPA solves this without a custom Trino plugin: a Keycloak SPI listener publishes user attributes as an OPA bundle to MinIO, OPA pulls it natively (ADR 0021), and the rego reads `data.users[user]` at decision time.
+**Rejected**: scales poorly for the policy complexity we need. Our user attribute model lives in Keycloak. File rules would require those attributes be materialized into Trino's group provider, which means either (a) a custom group provider plugin, or (b) a cronjob materializing a `groups.txt` file — and file-from-cron is insufficient for real-time offboarding. OPA solves this without a custom Trino plugin: a Keycloak SPI listener publishes user attributes as an OPA bundle to MinIO, OPA pulls it natively (ADR 0021), and the rego reads `data.users[user]` at decision time. Additionally, the expressions allowed in `filter` and `mask` fields are single SQL expressions per rule. 
 
 ### Apache Ranger
 
@@ -86,12 +86,11 @@ Authenticate and authorize transformer DDL through Trino RBAC instead of the Net
 
 ### Positive
 
-- **Multi-tenant queries become safe by construction.** Site-based row filters mean a BJH user querying `delta.default.reports` cannot read MCBC rows even if they craft an explicit `WHERE sending_facility = 'MCBC'` predicate — the filter is appended at the planner level by Trino's OPA plugin, not by the user's SQL.
-- **PHI exposure is attribute-driven.** Column masks reduce the surface of identified data for users where `mask_phi_fields` is unset or `["true"]`. The shipped masked-column list is intentionally minimal (patient names and ZIP/postal code) — the goal is to prove the masking mechanism, not full de-identification. The list is config-driven and extends without policy changes.
+- **Multi-tenant/Site-specific queries become safe by construction.** Row filters mean a user querying `delta.default.reports` cannot read restricted rows even if they craft an explicit `WHERE sending_facility = '<forbidden site>'` predicate: the filter is appended at the planner level by Trino's OPA plugin, not by the user's SQL.
+- **PHI exposure is attribute-driven.** Column masks reduce the surface of identified data for users where `mask_phi_fields` is unset or `["true"]`. The shipped masked-column list is intentionally minimal (patient names and ZIP/postal code): the goal is to prove the masking mechanism, not full de-identification. The list is config-driven and extends without policy changes.
 - **Per-query attribution via OPA decision logs.** Every access-control evaluation produces a log entry carrying the post-impersonation user; "who queried `mpi` last week" is a Loki query against the OPA decision stream.
-- **Policies live in git and are tested in CI.** Rego policies in `policy/` are reviewable in PRs, runnable through `opa test` for unit coverage, and deployable via the same Ansible flow as the rest of Scout — no UI to keep in sync, no out-of-band policy edits.
+- **Policies live in git and are tested in CI.** Rego policies in `policy/` are reviewable in PRs, runnable through `opa test` for unit coverage, and deployable via the same Ansible flow as the rest of Scout.
 - **Adding a restriction dimension is one inventory edit.** The Rego iterates `data.attribute_filters` generically; appending `{ allowed_modalities → {column: "modality"} }` to inventory + reloading OPA is the entire change. The Keycloak realm template renders the same map into a User Profile attribute, so Keycloak and OPA stay in lockstep.
-- **Delegated site-admin model unlocks partner self-service.** Site admins at each partner institution manage their own users via Keycloak's fine-grained admin permissions; Scout engineering is not a bottleneck for onboarding/offboarding.
 
 ### Negative
 
@@ -101,23 +100,22 @@ Authenticate and authorize transformer DDL through Trino RBAC instead of the Net
 ## Implementation Notes
 
 - **Policy location**: `policy/trino/main.rego` (rules), `policy/trino/main_test.rego` (unit tests run via `opa test`).
-- **OPA version pinning**: the CI lane installs the same OPA binary version the cluster deploys (read from `ansible/group_vars/all/versions.yaml`). Builtin behavior — especially `regex.match` semantics and Rego type-checking strictness — can drift across versions; pinning keeps test/prod aligned.
-- **Inventory shape**: `trino_attribute_filters` (map), `trino_filtered_tables` (list), `trino_view_only_tables` (list), `trino_masked_columns` (list), `trino_view_owner_principals` (list). The keycloak role's realm template and the opa role's data document both consume `trino_attribute_filters` so the two sides stay in lockstep.
+- **Inventory shape**: `trino_attribute_filters` (map), `trino_filtered_tables` (list), `trino_hidden_tables` (list), `trino_masked_columns` (list), `trino_view_owner_principals` (list). The keycloak role's realm template and the opa role's data document both consume `trino_attribute_filters` so the two sides stay in lockstep.
 - **`opa test policy/` runs in CI** as part of `ansible-and-python-tests`. The bundle plugin's MinIO fetch is integration-tested in the data-authorization smoke suite (`tests/data-authorization/`).
 
 ## Future Considerations
 
-- **Per-site Delta schemas** — strong logical isolation at the storage layer (one schema per partner with independent Delta transaction logs). Independent of this ADR; pursue when a tenant explicitly requires storage-level separation or when eviction tooling needs to be demonstrably clean.
+- **Per-site Delta schemas** — strong logical isolation at the storage layer (one schema per site with independent Delta transaction logs). Independent of this ADR; pursue when a tenant explicitly requires storage-level separation or when eviction tooling needs to be demonstrably clean.
 - **Cohort/ACL table** for project-based access — a Scout-owned table joined into row filters via subquery. The architecture chosen here accepts this addition without rework.
 - **Trino resource groups** — per-tenant CPU/memory caps to mitigate noisy-neighbor risk when query volume grows.
 - **Custom Trino `GroupProvider` plugin** — defer until either (a) `current_groups()` in user-authored SQL becomes a requirement, or (b) attribute derivation logic exceeds what Rego expresses cleanly.
-- **Per-tenant Keycloak realms** — stronger isolation if a partner's contract requires that their site admins cannot see other tenants' users exist. Migration from the single-realm model is non-trivial; defer until contractually driven.
+- **Per-tenant Keycloak realms** — stronger isolation if a site's contract requires that their site admins cannot see other tenants' users exist. Migration from the single-realm model is non-trivial; defer until contractually driven.
 
 ## References
 
+- ADR 0011: Deployment Portability via Layered Architecture — service-mode pattern informs how OPA and the Keycloak event-listener component are layered.
 - ADR 0019: Read-Write Trino Instance for Transformer-Issued View DDL — establishes the dual-Trino topology; clarifies that authorization applies only to the user-facing Trino.
 - ADR 0021: OPA User Attribute Distribution via MinIO Bundles — how `data.users` reaches OPA.
 - ADR 0022: Trino Authentication and Identity Propagation — how `input.context.identity.user` reaches the policy.
 - ADR 0023: Trino View Security Model — the policy's view-related carve-outs.
-- ADR 0011: Deployment Portability via Layered Architecture — service-mode pattern informs how OPA and the Keycloak event-listener component are layered.
 - Trino docs: OPA access control — <https://trino.io/docs/current/security/opa-access-control.html>

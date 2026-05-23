@@ -22,7 +22,7 @@ Set per-user in the Keycloak admin console under **Users → \[user\] → Attrib
 | `allowed_facilities` | multivalued (codes or `*`) | empty → no rows | Row filter on `sending_facility`. Multiple values OR together. `*` is a wildcard. |
 | `allowed_modalities` | multivalued (codes or `*`) | empty → no rows | Row filter on `modality`. Multiple values OR together. `*` is a wildcard. |
 | `mask_phi_fields` | single, `"true"` or `"false"` | `"true"` (mask) | Toggles PHI column masking. Set to `"false"` only for users authorized to see PHI in the clear. |
-| `bypass_view_only_tables` | single, `"true"` or `"false"` | `"false"` (block) | Lets the user `SELECT` directly from join-target tables (patient mapping). See [View-only tables](#view-only-tables) below. |
+| `bypass_hidden_tables` | single, `"true"` or `"false"` | `"false"` (block) | Lets the user `SELECT` directly from join-target tables (patient mapping). See [View-only tables](#view-only-tables) below. |
 
 ```{important}
 Empty `allowed_facilities` / `allowed_modalities` means **deny-all rows**, not "see everything." Newly approved users have no attributes set and will see zero rows from filtered tables until an admin grants them values. The `*` wildcard is the way to grant "see all facilities" / "see all modalities."
@@ -86,7 +86,7 @@ Example output:
     "allowed_modalities": ["MR", "CT"]
   },
   "mask_phi_fields": ["true"],
-  "bypass_view_only_tables": false,
+  "bypass_hidden_tables": false,
   "row_filters": [
     {"expression": "sending_facility IN ('WUSM')"},
     {"expression": "modality IN ('MR','CT')"}
@@ -122,7 +122,7 @@ Why? These tables key on `scout_patient_id` and carry cross-facility identifiers
 
 The joined `*_epic_view` views (created by the HL7 transformer with `SECURITY DEFINER`) read the underlying mapping table as the view's owner and then apply the invoker's row filters to the output. Use these views for any cross-reference query — they cover the legitimate use cases without exposing the raw join target.
 
-For administrators who legitimately need direct mapping-table access (e.g., for cross-facility patient-ID reconciliation), set `bypass_view_only_tables: true` on that specific user. Use sparingly — every user with this attribute can enumerate the full cross-facility patient population.
+For administrators who legitimately need direct mapping-table access (e.g., for cross-facility patient-ID reconciliation), set `bypass_hidden_tables: true` on that specific user. Use sparingly — every user with this attribute can enumerate the full cross-facility patient population.
 
 ### Adding a new restriction dimension
 
@@ -130,20 +130,20 @@ The set of row-filter dimensions (today: `allowed_facilities` and `allowed_modal
 
 ### Filtering a family of tables by prefix
 
-`trino_filtered_tables` and `trino_view_only_tables` entries accept either an exact table name or a `table_prefix` that matches every table in the catalog/schema whose name starts with that prefix:
+`trino_filtered_tables` and `trino_hidden_tables` entries accept either an exact table name or a `table_prefix` that matches every table in the catalog/schema whose name starts with that prefix:
 
 ```yaml
 trino_filtered_tables:
   - { catalog: delta, schema: default, table_prefix: reports_ }  # row filter applies to every reports_* table
 
-trino_view_only_tables:
+trino_hidden_tables:
   - { catalog: delta, schema: default, table: reports_report_patient_mapping }
   - { catalog: delta, schema: default, table: reports_report_patient_mapping_history }
 ```
 
 Useful when the transformer adds new derivative tables sharing a naming convention — one prefix covers the whole family instead of an inventory edit per table.
 
-**Caveat for `trino_filtered_tables`:** the row filter emits `<column> IN (...)` based on `trino_attribute_filters`, so every table matched by the prefix must have those columns or queries error with `COLUMN_NOT_FOUND`. Tables that match the prefix but are also in `trino_view_only_tables` are automatically excluded from row-filter scoping (no filter is emitted for them) — that's the safety latch keeping `reports_report_patient_mapping` correct under a `reports_` prefix.
+**Caveat for `trino_filtered_tables`:** the row filter emits `<column> IN (...)` based on `trino_attribute_filters`, so every table matched by the prefix must have those columns or queries error with `COLUMN_NOT_FOUND`. Tables that match the prefix but are also in `trino_hidden_tables` are automatically excluded from row-filter scoping (no filter is emitted for them) — that's the safety latch keeping `reports_report_patient_mapping` correct under a `reports_` prefix.
 
 ## See also
 

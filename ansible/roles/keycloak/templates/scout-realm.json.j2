@@ -832,14 +832,14 @@
             }
           }
         },
-        {#- Per-user escape hatch for the data.view_only_tables block.
+        {#- Per-user escape hatch for the data.hidden_tables block.
             Defaults to "false" (or absent) -> table-level deny applies.
-            "true" means: this user is exempt from view_only_blocked and
+            "true" means: this user is exempt from hidden_table_blocked and
             can SELECT join-target tables (e.g. patient mapping) directly.
             Intended for site operators who legitimately need full
             cross-facility introspection — set sparingly. -#}
         {
-          "name": "bypass_view_only_tables",
+          "name": "bypass_hidden_tables",
           "displayName": "Scout RBAC — bypass view-only table restrictions",
           "permissions": {
             "view": ["admin"],

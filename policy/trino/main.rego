@@ -17,7 +17,7 @@ package trino
 # Data document (rendered by the opa Ansible role from inventory + bundle):
 #   data.filtered_tables       : [{catalog, schema, table|table_prefix}]
 #                                                                # static (inventory)
-#   data.view_only_tables      : [{catalog, schema, table|table_prefix}]
+#   data.hidden_tables      : [{catalog, schema, table|table_prefix}]
 #                                                                # static (inventory)
 #   data.view_owner_principals : [identity_name]                 # static (inventory)
 #   data.attribute_filters     : {<attr_name>: {column, tables?}} # static (inventory)
@@ -128,7 +128,7 @@ allow if {
 # at parse time and runs SelectFromColumns with the full list, so
 # column-level protection has to be expressed as a mask, not a deny.
 #
-# `view_only_blocked` excludes tables that are denied for direct access
+# `hidden_table_blocked` excludes tables that are denied for direct access
 # (e.g. join-target tables that the row filters can't reach). Hiding
 # them here drops them from SHOW TABLES / SHOW COLUMNS and rejects
 # direct SELECTs; views over them keep working as long as the view
@@ -143,7 +143,7 @@ allow if {
 		"FilterColumns",
 	}
 	input.action.resource.table.catalogName in allowed_catalogs
-	not view_only_blocked
+	not hidden_table_blocked
 }
 
 # Catalog-less operations: ShowCatalogs, ExecuteQuery without a resource,
@@ -159,8 +159,8 @@ allow if {
 # CreateViewWithSelectFromColumns: Trino calls this when a user queries
 # a view to validate that the view's OWNER (definer) has read access to
 # the underlying tables. Identity here is the definer, not the invoker.
-# Deliberately does NOT consult view_only_blocked — the whole point of
-# view_only_tables is "users can't reach this directly, but views over
+# Deliberately does NOT consult hidden_table_blocked — the whole point of
+# hidden_tables is "users can't reach this directly, but views over
 # it (SECURITY DEFINER) can read it on their behalf." Without this rule,
 # any DEFINER view targeting our delta tables fails for every invoker.
 allow if {
@@ -222,7 +222,7 @@ input_table := {
 # naming convention (e.g. all `reports_*` derivatives) without
 # enumerating each one. The trade-off is that prefix entries can
 # over-match — see attribute_scopes_table for the explicit
-# view_only_tables exclusion that keeps the safety property obvious
+# hidden_tables exclusion that keeps the safety property obvious
 # instead of layered.
 table_entry_matches(entry, in_table) if {
 	entry.catalog == in_table.catalog
@@ -237,17 +237,17 @@ table_entry_matches(entry, in_table) if {
 	startswith(in_table.table, entry.table_prefix)
 }
 
-# True if the input table matches any entry in data.view_only_tables
-# (either shape — exact or prefix). Used both by view_only_blocked (the
+# True if the input table matches any entry in data.hidden_tables
+# (either shape — exact or prefix). Used both by hidden_table_blocked (the
 # /allow gate) and by attribute_scopes_table (to exclude these tables
 # from row-filter scoping; see the comment there).
-is_view_only_table if {
-	some t in data.view_only_tables
+is_hidden_table if {
+	some t in data.hidden_tables
 	table_entry_matches(t, input_table)
 }
 
 # Per-user escape hatch: setting Keycloak attribute
-# `bypass_view_only_tables: ["true"]` exempts the user from the
+# `bypass_hidden_tables: ["true"]` exempts the user from the
 # table-level deny. Used by site operators who legitimately need full
 # cross-facility introspection (e.g., the canonical "list all
 # scout_patient_ids for epic_mrn X" query). Default is the block-
@@ -256,15 +256,15 @@ is_view_only_table if {
 # `["false"]` applies; the impersonation flow uses the impersonated
 # end-user's attrs, so bypass is keyed on the human user, not the
 # Trino client.
-view_only_bypass if {
-	val := object.get(user_attrs, "bypass_view_only_tables", ["false"])
+hidden_table_bypass if {
+	val := object.get(user_attrs, "bypass_hidden_tables", ["false"])
 	count(val) > 0
 	val[0] == "true"
 }
 
-view_only_blocked if {
-	is_view_only_table
-	not view_only_bypass
+hidden_table_blocked if {
+	is_hidden_table
+	not hidden_table_bypass
 }
 
 # View-owner service principals (e.g. the `trino` admin used by
@@ -297,7 +297,7 @@ attribute_tables(config) := object.get(config, "tables", data.filtered_tables)
 attribute_scopes_table(config) if {
 	some t in attribute_tables(config)
 	table_entry_matches(t, input_table)
-	# Tables locked down for direct access (data.view_only_tables) are
+	# Tables locked down for direct access (data.hidden_tables) are
 	# excluded from row-filter scoping even when a prefix entry would
 	# otherwise catch them. Direct queries to view-only tables are
 	# denied at /allow before /rowFilters runs; DEFINER-view paths
@@ -309,7 +309,7 @@ attribute_scopes_table(config) if {
 	# `reports_report_patient_mapping`, which lacks that column —
 	# harmless today but a latent bug if the access-path interceptors
 	# ever change.
-	not is_view_only_table
+	not is_hidden_table
 }
 
 # Emit `column IN ('v1','v2',...)` for each configured attribute the user
@@ -397,6 +397,6 @@ decision_context := {
 	"enabled": user_enabled,
 	"attribute_values": attribute_snapshot,
 	"mask_phi_fields": object.get(user_attrs, "mask_phi_fields", ["unset"]),
-	"bypass_view_only_tables": view_only_bypass,
+	"bypass_hidden_tables": hidden_table_bypass,
 	"row_filters": rowFilters,
 }

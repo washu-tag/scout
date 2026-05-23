@@ -58,7 +58,7 @@ Two Kubernetes Jobs, scheduled in sequence:
 | 4 | no attributes set | same | 0 rows (`1=0` clamp) |
 | 5 | `allowed_facilities=["*"]`, `mask_phi_fields=["true"]` | `SELECT patient_name LIMIT 1` | `'[REDACTED]'` |
 | 6 | default attrs (no bypass) | `SELECT * FROM reports_report_patient_mapping` | permission denied |
-| 7 | `bypass_view_only_tables=["true"]` | same | not denied at `/allow` (may surface table-not-found in CI, that's fine) |
+| 7 | `bypass_hidden_tables=["true"]` | same | not denied at `/allow` (may surface table-not-found in CI, that's fine) |
 | 8 | `enabled=false` | `SELECT 1` | denied |
 
 Each scenario polls OPA's `/v1/data/users/<user>` before issuing the
@@ -120,7 +120,7 @@ groups so the assertions work without running HL7 ingest:
 * `trino_attribute_filters`: `allowed_facilities` + `allowed_modalities`
   (matches the default but explicit here so the multi-dimension
   scenarios are exercised).
-* `trino_view_only_tables`: `reports_report_patient_mapping` (the
+* `trino_hidden_tables`: `reports_report_patient_mapping` (the
   table itself isn't created in CI; the deny rule still fires on a
   non-existent table, which is the correct safety posture).
 
