@@ -6,15 +6,13 @@
 
 ## Context
 
-ADR 0020 established Trino RBAC via OPA with per-user attributes (`allowed_facilities`, `allowed_modalities`, `mask_phi_fields`) stored on the user object in Keycloak. The original v1 implementation has OPA fetch those attributes at policy-evaluation time via Rego's `http.send` against Keycloak's admin API, with a 60-second `force_cache_duration_seconds` floor governing steady-state staleness. ADR 0020 deferred "real-time invalidation" — the path by which a user disabled in Keycloak loses Trino access in seconds rather than waiting out the TTL.
+ADR 0020 establishes Trino RBAC via OPA with per-user attributes (`allowed_facilities`, `allowed_modalities`, `mask_phi_fields`) stored on the user object in Keycloak. OPA needs those attributes available at policy-evaluation time to compute row filters and column masks, and the system needs to satisfy a stated security requirement: a user disabled in Keycloak loses Trino access within seconds, not minutes.
 
-A first follow-up shipped real-time invalidation as a Keycloak SPI event listener that PUTs per-user timestamps into OPA's data document; the policy then threads the timestamp into the `http.send` URL as an `_inv` query parameter so the cache key changes and OPA pays a fresh Keycloak fetch on the next decision. This design works, but layering more usage on it surfaced three concerns:
+The design question is **how OPA gets user attribute data**. Three families of solutions exist:
 
-- **Conceptual load.** The URL-as-cache-key trick is non-obvious. Every future Rego reader must internalize that `_inv=...` is meaningful to OPA but ignored by Keycloak, and that policy correctness depends on the cache key actually changing. The mechanism doesn't model the problem; it works around OPA's lack of a per-key cache eviction API.
-- **Multi-replica fan-out is unsolved.** PUTs to a ClusterIP land on one OPA pod; the other replica keeps its stale cache entry until the 60-second TTL elapses. The current code accepts this with the TTL as a backstop, but the same problem reappears (and is worse) under any push-data-to-OPA model.
-- **The policy still depends on Keycloak at decision time.** Every cache miss is a Keycloak admin-API round-trip; the policy holds a client-credentials token; a Keycloak outage degrades Trino authorization. None of this is necessary if OPA already has the user data locally.
-
-The deeper question is **how OPA should get user attribute data** — not how to invalidate its cache. ADR 0020 didn't pick a distribution mechanism; it picked the pull-from-Keycloak pattern as the simplest v1, with invalidation deferred. With invalidation now in scope, the right level of decision is the distribution mechanism itself.
+- **Pull on decision** — OPA calls Keycloak's admin API (e.g., via Rego's `http.send`) for each cache miss. Simple in the policy; couples decisions to Keycloak availability; cache invalidation becomes a separate problem.
+- **Push to replicas** — a listener watches Keycloak admin events and PUTs per-user data to each OPA pod via its data API. Fast on writes; introduces multi-replica fan-out and pod-replacement edge cases.
+- **Pull from canonical store** — a listener writes the attribute snapshot to a separate store (object storage, KV, etc.) and OPA pulls from there using its native distribution mechanism. Decisions are local-only; multi-replica convergence is free.
 
 ### Goals
 
@@ -26,15 +24,15 @@ The deeper question is **how OPA should get user attribute data** — not how to
 
 ## Decision
 
-**The Keycloak SPI event listener maintains an in-memory snapshot of all Scout users' RBAC-relevant attributes and publishes the snapshot as an OPA bundle (gzipped tar) to a dedicated bucket in MinIO. OPA's built-in bundle plugin pulls from MinIO every 5–10 seconds and atomically swaps its `data.users` subtree. The Rego policy reads `data.users[user]` directly — no `http.send`, no admin-API client, no cache-busting timestamps.**
+**A Keycloak SPI event listener (`OpaUserBundlePublisherProvider` in `keycloak/event-listener/`) maintains an in-memory snapshot of all Scout users' RBAC-relevant attributes and publishes the snapshot as an OPA bundle (gzipped tar) to a dedicated bucket in MinIO. OPA's built-in bundle plugin pulls from MinIO every 5–10 seconds and atomically swaps its `data.users` subtree. The Rego policy reads `data.users[user]` directly — no `http.send`, no admin-API client, no cache-busting timestamps.**
 
 ## Alternatives Considered
 
-### Keep the cache-bust timestamp design (status quo)
+### OPA pulls attributes from Keycloak via `http.send` with a TTL cache
 
-Listener PUTs per-user timestamps to each OPA replica; Rego threads the timestamp into the `http.send` URL as `_inv=<ts>` to bust the cache key. Already implemented (commit `241efa83`).
+Rego policy issues an `http.send` to Keycloak's admin API for each unique `(user, attribute-set)` lookup, with `force_cache_duration_seconds` (e.g. 60s) as the staleness bound. Listener does nothing (or pushes per-user invalidation timestamps the policy threads into the URL to bust the cache key).
 
-**Rejected**: the URL-cache-key trick doesn't model the problem; it works around an API gap. Policy still depends on Keycloak admin API + client-credentials token on the hot path. Multi-replica fan-out requires either a static list of pod URLs (fragile under scaling/replacement) or DNS multi-resolve in the listener (custom Java that re-implements what OPA's bundle plugin already does). Every future Rego reader has to learn the convention before they can reason about correctness under cache misses.
+**Rejected**: keeps decisions coupled to Keycloak — every cache miss is a Keycloak admin-API round-trip, the policy holds a client_credentials token, and a Keycloak outage degrades Trino authorization. Multi-replica fan-out is unsolved: invalidation pushed to one OPA pod doesn't reach the others until their independent TTLs elapse. Cache-busting timestamps (URL-as-cache-key) are non-obvious for future Rego readers — the mechanism doesn't model the problem, it works around OPA's lack of a per-key cache eviction API. Misses goal 4 directly and creates ongoing conceptual debt.
 
 ### Push attributes to each OPA replica via headless service + per-pod fan-out + init-container backfill
 
@@ -46,35 +44,35 @@ Listener resolves a headless service to all pod IPs and PUTs the full attribute 
 
 Open-source control plane from Permit.io: an OPAL Server centrally watches data sources and a git policy repo; OPAL Clients alongside each OPA receive updates via WebSocket and PUT to local OPA. Has a maintained Helm chart, ships GitOps-for-policy out of the box, and converges sub-second on data changes. Production-tested by Permit.io's commercial SaaS.
 
-**Rejected for now**: best long-term fit if Scout grows to multiple OPA-enforced services, but the additional surface today is real — two new Python/FastAPI container images to vendor at partner sites (CVE stream, registry mirror, image scanning), a control-plane component to monitor and upgrade, plus the WebSocket reconnection edge cases. Scout currently has one OPA-enforced service (Trino RBAC). The marginal benefit over MinIO+bundles for one consumer is "policy GitOps" (which we can add cheaply with a small CI bundle pipeline) and "sub-second instead of 5–10s data propagation" (which exceeds the stated requirement). Migration to OPAL later is mechanical: the Rego and the listener's responsibilities don't change; the storage target swaps. We defer the OPAL decision until the multi-consumer case materializes.
+**Rejected for now**: best long-term fit if Scout grows to multiple OPA-enforced services, but the additional surface today is real — two new Python/FastAPI container images to vendor at partner sites (CVE stream, registry mirror, image scanning), a control-plane component to monitor and upgrade, plus the WebSocket reconnection edge cases. Scout currently has one OPA-enforced service (Trino RBAC). The marginal benefit over MinIO+bundles for one consumer is "policy GitOps" (which we can add cheaply with a small CI bundle pipeline) and "sub-second instead of 5–10 s data propagation" (which exceeds the stated requirement). Migration to OPAL later is mechanical: the Rego and the listener's responsibilities don't change; the storage target swaps. We defer the OPAL decision until the multi-consumer case materializes.
 
 ### Valkey as intermediate handoff between Keycloak and OPA
 
 Listener writes per-user attributes into Valkey; OPA reads from Valkey on demand or via a bridge process. Scout already runs Valkey (ADR 0013).
 
-**Rejected**: OPA has no native Valkey/Redis reader. Every integration path either (a) requires a custom OPA binary with a Go plugin — significant lift, ongoing upstream-tracking, defeats the "use the supported pattern" benefit, (b) re-introduces per-decision network calls via `http.send` to a Valkey-fronting HTTP service — the property we're explicitly trying to eliminate, or (c) builds a sidecar that polls Valkey and PUTs to OPA — at which point Valkey is fancy intermediate storage between a listener (which already has an in-memory map) and a bundle-shaped distribution layer that does the actual work. Valkey solves problems Scout doesn't have: shared state across multiple Keycloak listener replicas (Scout's Keycloak is `instances: 1`) and listener-side restart persistence (the listener recovers by re-walking Keycloak — see ADR 0020's existing `user-approval-email` listener for the same pattern).
+**Rejected**: OPA has no native Valkey/Redis reader. Every integration path either (a) requires a custom OPA binary with a Go plugin — significant lift, ongoing upstream-tracking, defeats the "use the supported pattern" benefit, (b) re-introduces per-decision network calls via `http.send` to a Valkey-fronting HTTP service — the property we're explicitly trying to eliminate, or (c) builds a sidecar that polls Valkey and PUTs to OPA — at which point Valkey is fancy intermediate storage between a listener (which already has an in-memory map) and a bundle-shaped distribution layer that does the actual work. Valkey solves problems Scout doesn't have: shared state across multiple Keycloak listener replicas (Scout's Keycloak is `instances: 1`) and listener-side restart persistence (the listener recovers by re-walking Keycloak — same pattern the existing `user-approval-email` listener uses for its own bootstrap).
 
 ### Single OPA replica
 
 Reduce OPA to one replica. The replication problem disappears.
 
-**Rejected**: makes OPA a single point of failure for every Trino decision in `delta` (`delta.security=SYSTEM` means no OPA means no decisions). A 30-second outage during rolling update or eviction is a 30-second Trino-analytics outage. Not aligned with the production-grade direction documented in ADR 0020.
+**Rejected**: makes OPA a single point of failure for every Trino decision. A 30-second outage during rolling update or eviction is a 30-second Trino-analytics outage. Not aligned with the production-grade direction documented in ADR 0020.
 
-### Accept the 60-second staleness floor; ship no invalidation
+### Accept the staleness floor; ship no invalidation
 
-Drop the listener entirely. Live with `force_cache_duration_seconds: 60` as the offboarding bound.
+Drop the listener entirely. Live with a multi-minute TTL as the offboarding bound.
 
-**Rejected**: ADR 0020 lists real-time offboarding as a stated security requirement — "a user disabled at their partner institution must lose access within seconds, not at the next sync interval." 60 seconds isn't seconds.
+**Rejected**: ADR 0020 lists real-time offboarding as a stated security requirement — "a user disabled at their partner institution must lose access within seconds, not at the next sync interval." Minutes-scale staleness isn't seconds.
 
 ## Consequences
 
 ### Positive
 
 - **No new infrastructure to operate.** MinIO is already a critical Scout dependency. The marginal operational footprint is one bucket and two service accounts. No new pods, no new images for partner sites to mirror through their air-gapped registries.
-- **The Rego policy becomes drastically simpler.** `data.users[user]` replaces the `http.send` call, the admin-token-fetch rule, the JWT-`exp` self-validation, the cache-busting URL construction, and the `_keycloak_admin_token` machinery. Roughly half of `main.rego` is deletable.
+- **The Rego policy is simple.** `data.users[user]` is the entire read path — no `http.send`, no admin-token-fetch rule, no JWT-`exp` self-validation, no cache-busting URL construction.
 - **OPA's bundle plugin handles distribution natively.** Polling, ETag-conditional GETs, atomic data-tree swap, last-known-good on-disk persistence, readiness gating on first successful load — all built in, all battle-tested in production OPA deployments at scale. Scout writes none of this code.
 - **All replicas converge without cross-replica coordination.** Each OPA pod polls independently on its own clock; they reach the same `data.users` snapshot within one pull interval. No fan-out from the listener, no gossip protocol, no leader election.
-- **Cold start works correctly.** OPA's bundle plugin doesn't let the pod declare Ready until the first bundle load succeeds, so new replicas join the Service endpoints with full data already loaded. The init-container race window we'd otherwise engineer around does not exist.
+- **Cold start works correctly.** OPA's bundle plugin doesn't let the pod declare Ready until the first bundle load succeeds, so new replicas join the Service endpoints with full data already loaded. No init-container race window.
 - **Decisions survive Keycloak outages.** OPA serves the last-pulled bundle indefinitely from its on-disk cache. Stale-but-correct authorization continues during Keycloak maintenance windows.
 - **Air-gapped friendly.** Bundle storage is in-cluster MinIO. Nothing new for partners to mirror, scan, or patch.
 
@@ -82,12 +80,8 @@ Drop the listener entirely. Live with `force_cache_duration_seconds: 60` as the 
 
 - **~200 LOC of bespoke Java in the Keycloak SPI listener** for the in-memory user map, debounce timer, tarball assembly, and S3 PUT. The subtle failure mode is concurrent-modification-during-serialization; mitigated with copy-on-write snapshot semantics. Reviewed once and maintained on Scout's normal Java cadence — the same `keycloak/event-listener/` artifact that already ships `user-approval-email`.
 - **Listener becomes (lightly) stateful.** In-memory user-attribute map, lost on listener pod restart. Recovered by walking Keycloak at `postInit` — same pattern the existing user-approval-email listener uses for its own bootstrap. No persistent storage required.
-- **5–10 second steady-state staleness on data updates.** Down from 60 seconds under the cache-bust design, but up from sub-second under WebSocket-push designs like OPAL. Within "seconds" as ADR 0020 phrases the requirement; tunable downward by reducing the bundle polling interval at proportional MinIO request-rate cost.
+- **5–10 second steady-state staleness on data updates.** Within "seconds" as ADR 0020 phrases the requirement; tunable downward by reducing the bundle polling interval at proportional MinIO request-rate cost.
 - **Policy distribution remains manual.** Rego in `policy/` is rendered into the OPA ConfigMap by the Ansible role and applied on `make install-opa`. No automatic deploy on commit to main. Mitigated cheaply when wanted: OPA's bundle plugin supports a separate policy bundle, and a CI job that publishes one is ~30 LOC of GitHub Actions. Deferred until the manual deploy step starts to chafe.
-
-### Comparison to ADR 0020's deferred-invalidation plan
-
-ADR 0020 framed real-time invalidation as "cache eviction": the listener tells OPA to drop alice's cached attribute lookup, and the next decision pays a fresh Keycloak fetch. The cache-bust timestamp implementation followed that framing. This ADR reframes: OPA shouldn't hold a cache of Keycloak data at all. OPA should hold an authoritative replica of the data, pushed by the listener. The cache-eviction problem dissolves rather than being solved with a clever URL trick.
 
 ## Implementation Notes
 
@@ -100,7 +94,7 @@ bundle.tar.gz
     └── data.json      # { "alice": {...}, "bob": {...}, ... }
 ```
 
-`roots: ["users"]` declares ownership of the `data.users` subtree. OPA's bundle plugin uses `roots` to scope atomic swaps, so the user bundle doesn't collide with the static data (`filtered_tables`, `view_only_tables`, `attribute_filters`, `masked_columns`) rendered into OPA's ConfigMap by the existing Ansible role.
+`roots: ["users"]` declares ownership of the `data.users` subtree. OPA's bundle plugin uses `roots` to scope atomic swaps, so the user bundle doesn't collide with the static data (`filtered_tables`, `view_only_tables`, `attribute_filters`, `masked_columns`) rendered into OPA's ConfigMap by the Ansible role.
 
 ### Per-user payload shape
 
@@ -108,39 +102,39 @@ bundle.tar.gz
 {
   "allowed_facilities": ["WUSM", "BJH"],
   "allowed_modalities": ["CT", "MR"],
-  "mask_phi_fields": false,
+  "mask_phi_fields": ["false"],
   "enabled": true
 }
 ```
 
-`enabled: false` (and a missing user entry) both resolve to the deny-all default in Rego. The explicit `enabled: false` is preferred because operators can observe it directly in OPA's data document when diagnosing "why can't alice query."
+Attribute values mirror Keycloak's `Map<String, List<String>>` user-attribute shape (multivalued by default), so the listener writes them verbatim — no per-key schema in two places. `enabled` is the one exception: it's a bare bool synthesized from the user's Keycloak enabled flag, not a user-profile attribute. `enabled: false` (and a missing user entry) both resolve to the deny-all default in Rego; the explicit `enabled: false` is preferred because operators can observe it directly in OPA's data document when diagnosing "why can't alice query."
 
 ### MinIO topology
 
-- New bucket: `opa-bundles`. Versioning enabled so a bad bundle can be rolled back by selecting a prior object version.
+- Bucket: `opa-bundles`. Versioning enabled so a bad bundle can be rolled back by selecting a prior object version.
 - Two service accounts via the existing MinIO Ansible pattern (mirrors `s3_lake_reader` / `s3_lake_writer`):
-  - `opa_bundle_writer`: `PutObject` on `opa-bundles/scout/bundle.tar.gz` only. Mounted into the Keycloak pod via a Kubernetes Secret + envFrom.
-  - `opa_bundle_reader`: `GetObject` on `opa-bundles/scout/*`. Mounted into each OPA pod the same way.
+  - `opa-bundle-writer`: `PutObject` on `opa-bundles/scout/bundle.tar.gz` only. Mounted into the Keycloak pod via a Kubernetes Secret + envFrom.
+  - `opa-bundle-reader`: `GetObject` on `opa-bundles/scout/*`. Mounted into each OPA pod the same way.
 
 ### Keycloak listener
 
-The current `OpaInvalidationEventListenerProvider` is replaced by a new provider (working name `OpaUserBundlePublisherProvider`) in the same `keycloak/event-listener/` artifact:
+`OpaUserBundlePublisherProvider` lives in `keycloak/event-listener/`, alongside the existing `user-approval-email` listener (same JAR, same operator `additionalOptions` plumbing).
 
-- `postInit()` walks `session.users()` (or the realm's admin API) to build the initial in-memory `Map<String, UserAttrs>` and writes the first bundle to MinIO.
-- `onEvent(AdminEvent)` handles `USER` `UPDATE` / `CREATE` (refresh that user's entry from `session.users()`) and `DELETE` (remove from map). For DELETE, the username comes from `event.getDetails().get("username")` since the user is already gone — same pattern the invalidation listener uses today.
+- `postInit()` walks `session.users()` to build the initial in-memory `Map<String, UserAttrs>` and writes the first bundle to MinIO.
+- `onEvent(AdminEvent)` handles `USER` `UPDATE` / `CREATE` (refresh that user's entry from `session.users()`) and `DELETE` (remove from map). For DELETE, the username comes from `event.getDetails().get("username")` since the user row is already gone by the time the event fires.
 - Each event marks the bundle dirty and schedules a debounced write (1-second window). The debounce coalesces a burst of admin actions into one S3 PUT.
-- Debounce fires → take a copy of the map under a lock, render JSON, build the tarball in-memory, PUT to MinIO with `Content-Type: application/gzip`.
+- On debounce fire: take a copy of the map under a lock, render JSON, build the tarball in-memory, PUT to MinIO with `Content-Type: application/gzip`.
 
-The `KC_OPA_INVALIDATION_BASE_URLS` env var goes away; the new env vars are MinIO endpoint + access key + secret key, threaded through the Keycloak operator's `additionalOptions` in the same way (see `ansible/roles/keycloak/tasks/deploy.yaml`).
+Env vars threaded through the Keycloak operator's `additionalOptions`: MinIO endpoint URL, bucket name, object key, region, realm, access key, secret key (see `ansible/roles/keycloak/tasks/deploy.yaml`).
 
 ### OPA configuration
 
-The OPA Helm values add `services` and `bundles` blocks:
+The OPA Helm values include `services` and `bundles` blocks:
 
 ```yaml
 services:
   minio:
-    url: http://minio.scout-storage.svc:9000
+    url: http://minio.scout-data.svc:9000
     credentials:
       s3_signing:
         environment_credentials: {}   # reader creds from mounted Secret env vars
@@ -157,20 +151,16 @@ bundles:
 
 `persist: true` writes the last successfully loaded bundle to a Pod-local emptyDir so a restart during a MinIO outage doesn't drop OPA to deny-all.
 
-### Rego changes
+### Rego shape
 
-In `policy/trino/main.rego`:
+`policy/trino/main.rego` reads user attributes directly from `data.users`:
 
-- Delete `user_invalidation_ts`, `_keycloak_admin_token`, `_token_still_valid`, `_token_safety_margin_seconds`, `_token_cache_ttl_seconds`, and the `http.send`-based `user_attrs` rule.
-- Replace with:
-  ```rego
-  default user_attrs := {"enabled": false}
-  user_attrs := data.users[input.context.identity.user] if identity_present
-  ```
-- Add an `enabled` check in the rules that consume `user_attrs` so a disabled user gets deny-all even if their attributes are still in the bundle (covers the "DELETE event in flight" race).
-- Remove the `data.keycloak.*` references in the OPA Ansible role's data template; the `opa-keycloak-reader` Keycloak client and its mounted secret can be deleted in a follow-up cleanup commit.
+```rego
+default user_attrs := {"enabled": false}
+user_attrs := data.users[input.context.identity.user] if identity_present
+```
 
-Tests in `policy/trino/main_test.rego` continue to override `trino.user_attrs` via `with`, so most cases don't need changes. The three new tests for invalidation timestamp behavior become obsolete and are removed; new tests covering "user absent from data.users → deny-all" and "user with enabled: false → deny-all" replace them.
+An `enabled` check gates the rules that consume `user_attrs`, so a disabled user gets deny-all even if their attributes are still in the bundle (covers the "DELETE event in flight" race). Service principals (`superset_svc`, `openwebui_mcp_svc`, `voila_svc`) aren't in `data.users` — the `is_system_identity` carve-out exempts them from the `user_enabled` gate.
 
 ### Failure modes
 
@@ -182,14 +172,14 @@ Tests in `policy/trino/main_test.rego` continue to override `trino.user_attrs` v
 ## Future Considerations
 
 - **GitOps for policy**. Add a CI job that builds an OPA policy bundle on merge to `main` and writes to MinIO alongside the data bundle. OPA's bundle plugin supports separate policy and data bundles natively. Roughly 30 LOC of GitHub Actions plus a small Ansible change to add the policy bundle to OPA's config. Defer until "deploy via Ansible to push a rego change" becomes friction.
-- **Migration to OPAL**. If Scout grows past 3+ OPA-enforced services (e.g., OPA gating Open WebUI's per-tenant model access, OPA on Voila's ingress for the same impersonation pattern as MCP per ADR 0020's Voila deviation), the operational case for OPAL strengthens. The Rego is transport-agnostic; the listener's "compute attribute payload" code is reusable; the cutover swaps "PUT bundle to MinIO" for "POST inline update to OPAL Server." Not blocking; mechanical when needed.
-- **Per-tenant bundles**. If Scout grows to per-tenant policy customization (different masking rules, different `attribute_filters` per partner), the bundle pattern supports it via multiple bundles with disjoint `roots`. Out of scope for v1.
+- **Migration to OPAL**. If Scout grows past 3+ OPA-enforced services (e.g., OPA gating Open WebUI's per-tenant model access, OPA on Voila's ingress for the same impersonation pattern as MCP per ADR 0020), the operational case for OPAL strengthens. The Rego is transport-agnostic; the listener's "compute attribute payload" code is reusable; the cutover swaps "PUT bundle to MinIO" for "POST inline update to OPAL Server." Mechanical when needed.
+- **Per-tenant bundles**. If Scout grows to per-tenant policy customization (different masking rules, different `attribute_filters` per partner), the bundle pattern supports it via multiple bundles with disjoint `roots`. Out of scope today.
 - **Bundle signing**. OPA supports bundle signature verification (`signing.keyid`, `signing.scope`). MinIO bucket policy is the integrity boundary today; if supply-chain integrity becomes a stated requirement (e.g., for a partner with stricter compliance posture), bundle signing is a small additive change on both ends.
 
 ## References
 
-- ADR 0005: MinIO STS Authentication Decision — informs the `opa_bundle_writer` / `opa_bundle_reader` service-account pattern
-- ADR 0011: Deployment Portability via Layered Architecture — the service-mode pattern this ADR layers under
-- ADR 0013: Redis Enterprise to Valkey Migration — explains Scout's existing Valkey footprint; relevant to the Valkey-as-handoff rejection
-- ADR 0017: Air-Gapped Package Proxy — explains why minimizing new container images for partner sites carries operational cost
-- ADR 0020: Trino RBAC via OPA with Keycloak Attributes — the architecture this ADR refines; the deferred-invalidation note in 0020 is superseded by this decision
+- ADR 0005: MinIO STS Authentication Decision — informs the `opa-bundle-writer` / `opa-bundle-reader` service-account pattern.
+- ADR 0011: Deployment Portability via Layered Architecture — the service-mode pattern this ADR layers under.
+- ADR 0013: Redis Enterprise to Valkey Migration — explains Scout's existing Valkey footprint; relevant to the Valkey-as-handoff rejection.
+- ADR 0017: Air-Gapped Package Proxy — explains why minimizing new container images for partner sites carries operational cost.
+- ADR 0020: Trino RBAC via OPA with Keycloak Attributes — the architecture this ADR's distribution mechanism plugs into.
