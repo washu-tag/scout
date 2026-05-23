@@ -6,7 +6,7 @@
 
 ## Context
 
-ADR 0020 establishes Trino RBAC via OPA with per-user attributes (`allowed_facilities`, `allowed_modalities`, `mask_phi_fields`) stored on the user object in Keycloak. OPA needs those attributes available at policy-evaluation time to compute row filters and column masks, and the system needs to satisfy a stated security requirement: a user disabled in Keycloak loses Trino access within seconds, not minutes.
+ADR 0020 establishes Trino Authorization via OPA with configurable, per-user attributes (e.g., `allowed_facilities`, `allowed_modalities`, `mask_phi_fields`) stored on the user object in Keycloak. OPA needs those attributes available at policy-evaluation time to compute row filters and column masks, and the system needs to satisfy a stated security requirement: user modifications via Keycloak should propagate to Trino within seconds (disabling user, changes to user attributes).
 
 The design question is **how OPA gets user attribute data**. Three families of solutions exist:
 
@@ -16,7 +16,7 @@ The design question is **how OPA gets user attribute data**. Three families of s
 
 ### Goals
 
-1. **Sub-15-second offboarding** end-to-end (a user disabled in Keycloak loses Trino access within seconds, satisfying ADR 0020's stated real-time requirement).
+1. **Sub-15-second propagation of attribute changes.** Any Keycloak-side change to a user's attributes (`allowed_facilities`, `allowed_modalities`, `mask_phi_fields`, `enabled`, etc.) takes effect on Trino decisions within seconds. Permission edits (granting/revoking a facility, toggling PHI masking) are the common case; disable is a narrower case where Keycloak's own refusal to mint new tokens does most of the work and the bundle covers the still-living-JWT window. Together these satisfy ADR 0020's "real-time" requirement.
 2. **All OPA replicas converge to the same state** without cross-replica coordination code.
 3. **Pod restarts recover without manual intervention** — new OPA replicas come up with full data before serving traffic.
 4. **Decisions don't depend on Keycloak availability**. A Keycloak outage should not degrade in-flight Trino authorization.
@@ -60,9 +60,9 @@ Reduce OPA to one replica. The replication problem disappears.
 
 ### Accept the staleness floor; ship no invalidation
 
-Drop the listener entirely. Live with a multi-minute TTL as the offboarding bound.
+Drop the listener entirely. Live with a multi-minute TTL as the attribute-propagation bound.
 
-**Rejected**: ADR 0020 lists real-time offboarding as a stated security requirement — "a user disabled at their partner institution must lose access within seconds, not at the next sync interval." Minutes-scale staleness isn't seconds.
+**Rejected**: ADR 0020 requires Keycloak-side user changes to propagate to Trino decisions in real time. A multi-minute window between "admin grants Kate access to BJWC" and "Kate can see BJWC rows" (or the reverse — revoking access) is a poor operator experience and a real audit-window risk. Minutes-scale staleness isn't seconds.
 
 ## Consequences
 
