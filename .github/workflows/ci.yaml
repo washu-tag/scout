@@ -414,7 +414,12 @@ jobs:
         shell: bash
         run: |
           cd ansible
-          for playbook in k3s traefik postgres valkey auth lake chatbot voila analytics jupyter monitor launchpad; do
+          # analytics must come before voila: voila's deployment mounts
+          # the trino-tls Secret (Trino's TLS CA) and the analytics
+          # playbook is what cert-manager issues that cert under. With
+          # voila first the pod hangs on a missing-Secret mount until
+          # the 15m helm-install timeout fires.
+          for playbook in k3s traefik postgres valkey auth lake chatbot analytics voila jupyter monitor launchpad; do
             echo "=== Deploying $playbook ==="
             sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff "playbooks/${playbook}.yaml"
           done

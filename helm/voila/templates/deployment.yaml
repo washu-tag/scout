@@ -110,6 +110,18 @@ spec:
         - name: trino-ca
           secret:
             secretName: trino-tls
+            # Tolerate the Secret being briefly missing -- cert-manager
+            # issues it as part of the analytics playbook, so during a
+            # cold deploy or a cert renewal there's a window where the
+            # Secret doesn't exist yet. With `optional: true`, the Pod
+            # starts (mount is empty) instead of hanging until the
+            # 15m helm-install timeout. scout_trino passes
+            # `verify=$TRINO_CA_CERT` to requests; with no file at
+            # that path, TLS handshake fails with FileNotFoundError
+            # rather than silently bypassing verification -- queries
+            # error out loudly until kubelet's next Secret-volume sync
+            # picks up the issued Secret (~60s default).
+            optional: true
             items:
               - key: ca.crt
                 path: ca.crt
