@@ -51,9 +51,12 @@ def main() -> None:
     s3_secret = _env("AWS_SECRET_ACCESS_KEY")
     warehouse = _env("SPARK_SQL_WAREHOUSE_DIR")
 
+    s3_region = os.environ.get("AWS_REGION", "us-east-1")
+
     spark = (
         SparkSession.builder.appName("seed-test-data")
         .config("spark.hadoop.fs.s3a.endpoint", s3_endpoint)
+        .config("spark.hadoop.fs.s3a.endpoint.region", s3_region)
         .config("spark.hadoop.fs.s3a.access.key", s3_key)
         .config("spark.hadoop.fs.s3a.secret.key", s3_secret)
         .config("spark.hadoop.fs.s3a.path.style.access", "true")
@@ -74,6 +77,11 @@ def main() -> None:
         # Single shuffle partition is plenty for 6 rows; default of 200
         # would create 200 empty Parquet part-files in the Delta table.
         .config("spark.sql.shuffle.partitions", "1")
+        # CI's k3s has tight memory; trim Spark's defaults so the Job
+        # fits inside the Pod's 1.5Gi limit. Local mode uses driver
+        # memory for both driver and executor since they're the same
+        # JVM.
+        .config("spark.driver.memory", "512m")
         .enableHiveSupport()
         .getOrCreate()
     )

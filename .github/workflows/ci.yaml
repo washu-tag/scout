@@ -462,17 +462,29 @@ jobs:
             | head -1)
           IMAGE="ghcr.io/washu-tag/hl7-transformer:${IMAGE_TAG}"
 
+          # lake_bucket differs between production ("lake") and CI
+          # ("ci-lake"); read the rendered inventory so the Delta
+          # warehouse path matches whichever bucket MinIO actually
+          # provisioned.
+          LAKE_BUCKET=$(grep '^    lake_bucket:' ansible/inventory.yaml | awk '{print $2}')
+          WAREHOUSE_DIR="s3a://${LAKE_BUCKET}/delta"
+
           # Render seed.py inline (4-space indent matches the
           # placeholder's YAML literal-block indent in the manifest).
           SEED_PY_INDENTED=$(sed 's/^/    /' tests/data-authorization/seed/seed.py)
 
-          # Render the Job manifest; awk swaps the two placeholders.
+          # Render the Job manifest; awk swaps the three placeholders.
           awk \
             -v image="$IMAGE" \
+            -v warehouse="$WAREHOUSE_DIR" \
             -v seed_py="$SEED_PY_INDENTED" \
             '{
               if (/PLACEHOLDER_SEED_PY/) { print seed_py }
-              else { gsub(/PLACEHOLDER_HL7_TRANSFORMER_IMAGE/, image); print }
+              else {
+                gsub(/PLACEHOLDER_HL7_TRANSFORMER_IMAGE/, image)
+                gsub(/PLACEHOLDER_WAREHOUSE_DIR/, warehouse)
+                print
+              }
             }' \
             tests/data-authorization/seed/job.yaml > /tmp/seed-job.yaml
 

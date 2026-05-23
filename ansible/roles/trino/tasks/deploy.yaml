@@ -39,6 +39,11 @@
     sa_namespace: '{{ trino_namespace }}'
     sa_role_arn: '{{ lake_reader_role_arn }}'
 
+- name: Deploy cert-manager (required by the Trino TLS Certificate below)
+  ansible.builtin.include_role:
+    name: cert_manager
+  when: not aws_deployment
+
 - name: Set up Scout internal CA ClusterIssuer (idempotent)
   ansible.builtin.include_role:
     name: scout_common

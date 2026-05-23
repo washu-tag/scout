@@ -44,7 +44,9 @@ spec:
             # reads). saveAsTable needs to register the new table.
             - name: HIVE_METASTORE_URIS
               value: thrift://hive-metastore.scout-data:9083
-            # MinIO S3 endpoint inside scout-data namespace.
+            # MinIO S3 endpoint inside scout-data namespace — the
+            # tenant Service exposes port 80, mapped to the pod's
+            # port 9000.
             - name: S3_ENDPOINT
               value: http://minio.scout-data
             - name: AWS_ACCESS_KEY_ID
@@ -57,10 +59,17 @@ spec:
                 secretKeyRef:
                   name: lake-writer-creds
                   key: CONSOLE_SECRET_KEY
-            # Delta warehouse path — matches delta_lake_path used by
-            # the rest of Scout, see scout_common defaults.
+            # MinIO doesn't enforce region but the s3a credentials
+            # resolver needs it set to mint requests; matches the
+            # scout-common s3_region default + the spark-defaults
+            # template the extractor role renders in production.
+            - name: AWS_REGION
+              value: us-east-1
+            # Delta warehouse path; resolved to s3a://<lake_bucket>/delta
+            # by the workflow before apply since lake_bucket differs
+            # between production ("lake") and CI ("ci-lake").
             - name: SPARK_SQL_WAREHOUSE_DIR
-              value: s3a://lake/delta
+              value: PLACEHOLDER_WAREHOUSE_DIR
           volumeMounts:
             - name: seed-script
               mountPath: /seed
@@ -68,10 +77,10 @@ spec:
           resources:
             requests:
               cpu: 200m
-              memory: 1Gi
+              memory: 768Mi
             limits:
               cpu: 1
-              memory: 2Gi
+              memory: 1536Mi
       volumes:
         - name: seed-script
           configMap:
