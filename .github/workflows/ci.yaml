@@ -440,12 +440,19 @@ jobs:
           sudo -E kubectl rollout status statefulset/loki -n scout-monitoring --timeout=180s
           echo "=== All pods ==="
           sudo -E kubectl get pods -A
-      # Trino connectivity check
+      # Trino connectivity check. Auth (PASSWORD,JWT) is now required so
+      # the trino CLI's default http://localhost:8080 listener returns 403
+      # ("Authentication over HTTP is not enabled"). Hit /v1/info on the
+      # HTTPS listener instead — it's the same endpoint the kubelet
+      # readiness probe uses, and it requires no auth, so this still
+      # catches "coordinator process started but HTTPS not listening"
+      # regressions. The data-authorization-tests Job below exercises
+      # the full authenticated query path with a real JWT.
       - name: 'Trino connectivity check'
         shell: bash
         run: |
-          sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- trino \
-            --execute "SHOW CATALOGS; SHOW SCHEMAS FROM delta"
+          sudo -E kubectl exec -n scout-analytics deployment/trino-coordinator -- \
+            curl -sk -f https://localhost:8443/v1/info
       # Data authorization tests — ADR 0020 + 0021 + 0022 + 0023. Seeds a
       # synthetic delta.default.test_reports table, then exercises the
       # end-to-end RBAC pipeline (Keycloak admin -> SPI listener ->
