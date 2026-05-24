@@ -211,6 +211,17 @@ k3s_cluster:
     s3_opa_bundle_writer_secret: ci-opa-bundle-writer
     s3_opa_bundle_reader_secret: ci-opa-bundle-reader
 
+    # Single OPA replica in CI. Production runs two for availability,
+    # but in tests each replica polls MinIO independently on a 5–10s
+    # interval — so wait_for_bundle (Service-LB'd) can confirm pod A
+    # has the new bundle while Trino's next /rowFilters or /allow
+    # call lands on pod B with the older revision. That's the actual
+    # behavior in production too, just hidden by user-attribute
+    # changes happening on minute-to-hour scales rather than the
+    # sub-second cadence of these tests. Tests want determinism, prod
+    # wants HA — split the value.
+    opa_replicas: 1
+
     # Superset
     superset_secret: Y2ktc3VwZXJzZXQtc2VjcmV0LWtleS1mb3ItdGVzdGluZw==
 

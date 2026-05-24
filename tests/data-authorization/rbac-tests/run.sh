@@ -271,7 +271,7 @@ trino_query() {
 # succeeded unexpectedly.
 trino_query_expect_deny() {
     local sql=$1 user=$2
-    local token http_code response
+    local token http_code response next
     token=$(get_svc_token)
 
     response=$(curl -sS "${CURL_CA_OPTS[@]}" -X POST "$TRINO_URL/v1/statement" \
@@ -286,19 +286,24 @@ trino_query_expect_deny() {
     if [[ "$http_code" =~ ^4 || "$http_code" =~ ^5 ]]; then
         return 0
     fi
-    # Trino returns 200 with an error body when the query parses but
-    # access-control denies. Follow nextUri once to surface the error.
-    local next
-    next=$(echo "$response" | jq -r '.nextUri // empty')
-    if [[ -n "$next" ]]; then
+    # 200 OK on the POST is the normal case -- Trino doesn't decide
+    # access until the query has been planned, which happens on the
+    # second or later nextUri hop. Drain the chain looking for the
+    # `.error.message` Trino synthesizes when OPA denies. (Single-hop
+    # follow misses denials that surface after queued -> planning
+    # transitions.)
+    while true; do
+        if echo "$response" | jq -e '.error' >/dev/null 2>&1; then
+            return 0
+        fi
+        next=$(echo "$response" | jq -r '.nextUri // empty')
+        if [[ -z "$next" ]]; then
+            return 1
+        fi
         response=$(curl -sS "${CURL_CA_OPTS[@]}" "$next" \
             -H "Authorization: Bearer $token" \
             -H "X-Trino-User: $user")
-    fi
-    if echo "$response" | jq -e '.error' >/dev/null 2>&1; then
-        return 0
-    fi
-    return 1
+    done
 }
 
 # ---------------------------------------------------------------------------
