@@ -485,24 +485,24 @@ jobs:
           LAKE_BUCKET=$(grep '^    lake_bucket:' ansible/inventory.yaml | awk '{print $2}')
           WAREHOUSE_DIR="s3a://${LAKE_BUCKET}/delta"
 
-          # Render seed.py inline (4-space indent matches the
-          # placeholder's YAML literal-block indent in the manifest).
-          SEED_PY_INDENTED=$(sed 's/^/    /' tests/data-authorization/seed/seed.py)
-
-          # Render the Job manifest; awk swaps the three placeholders.
-          awk \
-            -v image="$IMAGE" \
-            -v warehouse="$WAREHOUSE_DIR" \
-            -v seed_py="$SEED_PY_INDENTED" \
-            '{
-              if (/PLACEHOLDER_SEED_PY/) { print seed_py }
-              else {
-                gsub(/PLACEHOLDER_HL7_TRANSFORMER_IMAGE/, image)
-                gsub(/PLACEHOLDER_WAREHOUSE_DIR/, warehouse)
-                print
-              }
-            }' \
-            tests/data-authorization/seed/job.yaml > /tmp/seed-job.yaml
+          # Render the Job manifest in Python. awk's `-v var=value` runs
+          # ANSI-C escape processing on the value -- so backslash escapes
+          # inside seed.py (e.g. `\n` in an f-string literal) get turned
+          # into real newlines, corrupting the YAML block-literal
+          # indentation. Python's str.replace does byte-for-byte
+          # substitution with no interpretation.
+          IMAGE="$IMAGE" WAREHOUSE_DIR="$WAREHOUSE_DIR" \
+            python3 << 'PYEOF' > /tmp/seed-job.yaml
+          import os, pathlib
+          seed = pathlib.Path('tests/data-authorization/seed/seed.py').read_text()
+          indented = '\n'.join('    ' + line for line in seed.splitlines())
+          template = pathlib.Path('tests/data-authorization/seed/job.yaml').read_text()
+          out = (template
+                 .replace('    PLACEHOLDER_SEED_PY', indented)
+                 .replace('PLACEHOLDER_HL7_TRANSFORMER_IMAGE', os.environ['IMAGE'])
+                 .replace('PLACEHOLDER_WAREHOUSE_DIR', os.environ['WAREHOUSE_DIR']))
+          print(out, end='')
+          PYEOF
 
           sudo -E kubectl apply -f /tmp/seed-job.yaml
           sudo -E kubectl wait --for=condition=complete --timeout=300s \
@@ -525,26 +525,25 @@ jobs:
           # secrets (Keycloak admin pw, superset_svc client secret —
           # both already in inventory.yaml and thus in the
           # already-rendered ansible/inventory.yaml).
-          RUN_SH_INDENTED=$(sed 's/^/    /' tests/data-authorization/rbac-tests/run.sh)
-
           KC_ADMIN_PW=$(grep '^    keycloak_bootstrap_admin_password:' \
             ansible/inventory.yaml | awk '{print $2}')
           SUPERSET_SVC_SECRET=$(grep '^    keycloak_superset_svc_client_secret:' \
             ansible/inventory.yaml | awk '{print $2}')
 
-          awk \
-            -v run_sh="$RUN_SH_INDENTED" \
-            -v kc_pw="$KC_ADMIN_PW" \
-            -v svc_secret="$SUPERSET_SVC_SECRET" \
-            '{
-              if (/PLACEHOLDER_RUN_SH/) { print run_sh }
-              else {
-                gsub(/PLACEHOLDER_KC_ADMIN_PASSWORD/, kc_pw)
-                gsub(/PLACEHOLDER_SUPERSET_SVC_CLIENT_SECRET/, svc_secret)
-                print
-              }
-            }' \
-            tests/data-authorization/rbac-tests/job.yaml > /tmp/rbac-tests-job.yaml
+          # See seed step above for why this uses Python instead of awk
+          # (escape-processing eats backslashes inside run.sh).
+          KC_ADMIN_PW="$KC_ADMIN_PW" SUPERSET_SVC_SECRET="$SUPERSET_SVC_SECRET" \
+            python3 << 'PYEOF' > /tmp/rbac-tests-job.yaml
+          import os, pathlib
+          run = pathlib.Path('tests/data-authorization/rbac-tests/run.sh').read_text()
+          indented = '\n'.join('    ' + line for line in run.splitlines())
+          template = pathlib.Path('tests/data-authorization/rbac-tests/job.yaml').read_text()
+          out = (template
+                 .replace('    PLACEHOLDER_RUN_SH', indented)
+                 .replace('PLACEHOLDER_KC_ADMIN_PASSWORD', os.environ['KC_ADMIN_PW'])
+                 .replace('PLACEHOLDER_SUPERSET_SVC_CLIENT_SECRET', os.environ['SUPERSET_SVC_SECRET']))
+          print(out, end='')
+          PYEOF
 
           sudo -E kubectl apply -f /tmp/rbac-tests-job.yaml
           sudo -E kubectl wait --for=condition=complete --timeout=300s \
