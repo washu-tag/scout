@@ -308,6 +308,11 @@ trino_query_expect_deny() {
 USER_ID=$(ensure_test_user)
 log "test user: $TEST_USER (id=$USER_ID)"
 
+# Bundle propagation can take ~10-15s on first event after a fresh
+# Keycloak start (the SPI's postInit walks the realm, debounces 1s,
+# uploads, then OPA pulls at next polling tick — 5-10s default).
+PROPAGATION_TIMEOUT=30
+
 # Look up scout-user group id and put the test user in it. The OPA
 # `user_enabled` gate requires membership in an approved group; without
 # this every scenario below would fail with /allow-denied even though
@@ -320,10 +325,16 @@ fi
 add_user_to_group "$USER_ID" "$SCOUT_USER_GROUP_ID"
 log "added $TEST_USER to scout-user (group id=$SCOUT_USER_GROUP_ID)"
 
-# Bundle propagation can take ~10-15s on first event after a fresh
-# Keycloak start (the SPI's postInit walks the realm, debounces 1s,
-# uploads, then OPA pulls at next polling tick — 5-10s default).
-PROPAGATION_TIMEOUT=30
+# Gate the scenarios on scout-user membership reaching OPA. Without
+# this each scenario's own wait_for_bundle only confirms its
+# attributes landed -- if the SPI happens to publish a bundle in the
+# narrow window between the GROUP_MEMBERSHIP event and the
+# subsequent UPDATE_USER event, OPA sees the new attrs against a
+# user record whose `groups` is still empty (or being repopulated),
+# the rego's user_in_approved_group check fails, and every query
+# below gets `Access Denied: Cannot execute query` even though the
+# attribute predicate has passed.
+wait_for_bundle '(.result.groups // []) | index("scout-user") != null' "$PROPAGATION_TIMEOUT"
 
 # --- Scenario 1: single facility filter -------------------------------------
 log "scenario 1: allowed_facilities=[ABCHOSP1] -> 3 rows"
