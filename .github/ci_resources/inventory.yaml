@@ -118,14 +118,17 @@ k3s_cluster:
     trino_worker_count: 1
     trino_worker_max_heap: 512M
     trino_coordinator_max_heap: 512M
-    # RW Trino kept enabled because the NetworkPolicy tests verify
-    # ingress restrictions to trino-rw — without the cluster running
-    # there's nothing to deny. Heap shrunk to the minimum that still
-    # passes Trino's startup checks; the only smoke-test traffic to
-    # trino-rw is the NetworkPolicy probes (HTTP /v1/info), no
-    # queries actually run against it.
-    trino_rw_coordinator_max_heap: 256M
-    trino_rw_worker_max_heap: 256M
+    # RW Trino disabled in CI. The single 4-CPU GitHub runner is at
+    # ~99% CPU allocation with the full Scout stack restored, and
+    # the trino-rw coordinator + worker (with jmx-exporter sidecars
+    # each) take ~300m+ of that. Nothing in smoke-test actually
+    # queries trino-rw -- the seed Job writes via PySpark, the
+    # data-authorization tests go through the main Trino HTTPS
+    # listener, and hl7-transformer isn't deployed here. The
+    # NetworkPolicy tests below that probe trino-rw are gated off
+    # in lockstep with this; production keeps both on, and dev04
+    # exercises the policy regression path.
+    trino_rw_enabled: false
 
     # Trino RBAC (ADR 0020 + 0021 + 0022 + 0023): the smoke-test data-authorization
     # Job seeds delta.default.test_reports with synthetic rows across
