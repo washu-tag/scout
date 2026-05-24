@@ -72,7 +72,11 @@ spec:
               readOnly: true
           resources:
             requests:
-              cpu: 200m
+              # 100m is enough scheduling-wise; the burst limit below
+              # lets PySpark consume more during the actual write.
+              # Sized for CI's 4-CPU runner; production has plenty
+              # of headroom either way.
+              cpu: 100m
               memory: 768Mi
             limits:
               cpu: 1
