@@ -414,18 +414,12 @@ jobs:
         shell: bash
         run: |
           cd ansible
-          # TEMP: trimmed playbook list to speed up data-authorization
-          # iteration. The full list is:
-          #   k3s traefik postgres valkey auth lake chatbot analytics
-          #   voila jupyter monitor launchpad
-          # Dropped: chatbot (open-webui+ollama+mcp-trino), voila, jupyter,
-          # monitor (prometheus+loki+grafana+alloy), launchpad. None of
-          # them are exercised by the data-authorization tests. Restore
-          # before merging this branch so smoke-test resumes full
-          # coverage (auth-curl-tests, network-policy-tests, and the
-          # prometheus/grafana/loki health checks are also disabled
-          # below while this list is trimmed).
-          for playbook in k3s traefik postgres valkey auth lake analytics; do
+          # analytics must come before voila: voila's deployment mounts
+          # the trino-tls Secret (Trino's TLS CA) and the analytics
+          # playbook is what cert-manager issues that cert under. With
+          # voila first the pod hangs on a missing-Secret mount until
+          # the 15m helm-install timeout fires.
+          for playbook in k3s traefik postgres valkey auth lake chatbot analytics voila jupyter monitor launchpad; do
             echo "=== Deploying $playbook ==="
             sudo -E /opt/pipx_bin/ansible-playbook -i inventory.yaml --diff "playbooks/${playbook}.yaml"
           done
@@ -438,10 +432,12 @@ jobs:
           echo "=== Checking Trino ==="
           sudo -E kubectl rollout status deployment/trino-coordinator -n scout-analytics --timeout=180s
           sudo -E kubectl rollout status deployment/trino-worker -n scout-analytics --timeout=180s
-          # TEMP: monitor playbook is skipped while we iterate on the
-          # data-authorization tests — restore the prometheus, grafana,
-          # and loki rollout checks below when the full playbook list
-          # comes back.
+          echo "=== Checking Prometheus ==="
+          sudo -E kubectl rollout status deployment/prometheus-server -n scout-monitoring --timeout=180s
+          echo "=== Checking Grafana ==="
+          sudo -E kubectl rollout status deployment/grafana -n scout-monitoring --timeout=180s
+          echo "=== Checking Loki ==="
+          sudo -E kubectl rollout status statefulset/loki -n scout-monitoring --timeout=180s
           echo "=== All pods ==="
           sudo -E kubectl get pods -A
       # Trino connectivity check. Auth (PASSWORD,JWT) is now required so
@@ -542,20 +538,11 @@ jobs:
         run: |
           sudo -E kubectl -n scout-analytics logs job/data-authz-tests --tail=500 || true
       # Auth tests — verify OAuth2 Proxy blocks unauthenticated access
-      # TEMP: auth-curl-tests probes endpoints for chatbot/voila/jupyter/
-      # monitor/launchpad — none deployed while we iterate on the
-      # data-authorization tests. Re-enable when the playbook list comes
-      # back, or split into a separate suite that runs against the full
-      # stack.
       - name: 'Auth curl tests'
-        if: false
         shell: bash
         run: bash tests/auth/auth-curl-tests.sh scout.test
-      # TEMP: NetworkPolicy tests verify trino-rw isolation, but trino-rw
-      # is disabled in CI (saves ~2 GiB to fit grafana). Re-enable
-      # alongside trino_rw_enabled in ci_resources/inventory.yaml.
+      # NetworkPolicy tests — verify trino-rw ingress restrictions
       - name: 'NetworkPolicy tests'
-        if: false
         shell: bash
         run: KUBECTL='sudo -E kubectl' bash tests/network/network-policy-tests.sh
       # Diagnostic logging on failure
