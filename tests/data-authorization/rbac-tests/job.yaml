@@ -7,29 +7,13 @@
 # is in-namespace (mounted for TLS verification of the Trino client).
 # Keycloak (scout-core) and MinIO (scout-data) are reached over their
 # Service FQDNs.
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: data-authz-test-script
-  namespace: scout-analytics
-data:
-  run.sh: |
-    PLACEHOLDER_RUN_SH
----
-# Mirror the Keycloak admin password from scout-core so the test pod
-# can authenticate to the admin REST API without touching the
-# keycloak-admin-secret directly (cross-namespace Secret access is
-# discouraged). Created by the workflow before applying the Job.
-apiVersion: v1
-kind: Secret
-metadata:
-  name: data-authz-test-creds
-  namespace: scout-analytics
-type: Opaque
-stringData:
-  KC_ADMIN_PASSWORD: PLACEHOLDER_KC_ADMIN_PASSWORD
-  SUPERSET_SVC_CLIENT_SECRET: PLACEHOLDER_SUPERSET_SVC_CLIENT_SECRET
+#
+# The companion `data-authz-test-script` ConfigMap (run.sh) and
+# `data-authz-test-creds` Secret (KC admin pw + superset_svc client
+# secret) are created by the CI workflow before this Job is applied --
+# `kubectl create configmap --from-file` / `--from-literal` keep that
+# rendering trivial and avoid the multi-line / backslash-escape
+# pitfalls a `data: { run.sh: | ... }` template would invite.
 ---
 apiVersion: batch/v1
 kind: Job

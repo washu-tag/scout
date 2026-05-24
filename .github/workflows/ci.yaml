@@ -464,14 +464,8 @@ jobs:
       # row filter + column mask). See tests/data-authorization/.
       - name: 'Data authorization tests - seed'
         shell: bash
-        env:
-          KC_ADMIN_PW: '${{ env.KEYCLOAK_ADMIN_PASSWORD }}'
         run: |
           set -euo pipefail
-          # Render the seed Job: substitute the seed.py contents (as a
-          # block-indented literal) and the hl7-transformer image name.
-          # Using yq would be tidier, but we already have sed/awk and
-          # this avoids adding a yq install step.
           IMAGE_TAG=$(cat extractor/hl7-transformer/VERSION 2>/dev/null \
             || grep '^version' extractor/hl7-transformer/build.gradle \
             | sed "s/.*['\"]\([^'\"]*\)['\"].*/\1/" \
@@ -485,26 +479,20 @@ jobs:
           LAKE_BUCKET=$(grep '^    lake_bucket:' ansible/inventory.yaml | awk '{print $2}')
           WAREHOUSE_DIR="s3a://${LAKE_BUCKET}/delta"
 
-          # Render the Job manifest in Python. awk's `-v var=value` runs
-          # ANSI-C escape processing on the value -- so backslash escapes
-          # inside seed.py (e.g. `\n` in an f-string literal) get turned
-          # into real newlines, corrupting the YAML block-literal
-          # indentation. Python's str.replace does byte-for-byte
-          # substitution with no interpretation.
-          IMAGE="$IMAGE" WAREHOUSE_DIR="$WAREHOUSE_DIR" \
-            python3 << 'PYEOF' > /tmp/seed-job.yaml
-          import os, pathlib
-          seed = pathlib.Path('tests/data-authorization/seed/seed.py').read_text()
-          indented = '\n'.join('    ' + line for line in seed.splitlines())
-          template = pathlib.Path('tests/data-authorization/seed/job.yaml').read_text()
-          out = (template
-                 .replace('    PLACEHOLDER_SEED_PY', indented)
-                 .replace('PLACEHOLDER_HL7_TRANSFORMER_IMAGE', os.environ['IMAGE'])
-                 .replace('PLACEHOLDER_WAREHOUSE_DIR', os.environ['WAREHOUSE_DIR']))
-          print(out, end='')
-          PYEOF
+          # ConfigMap carries the script verbatim -- kubectl handles
+          # multi-line file content correctly, so no template
+          # substitution needed for seed.py.
+          sudo -E kubectl create configmap data-authz-seed-script \
+            -n scout-data \
+            --from-file=seed.py=tests/data-authorization/seed/seed.py \
+            --dry-run=client -o yaml | sudo -E kubectl apply -f -
 
-          sudo -E kubectl apply -f /tmp/seed-job.yaml
+          # Job manifest only needs two single-line substitutions
+          # (image, warehouse dir) -- sed is sufficient and safe.
+          sed -e "s|PLACEHOLDER_HL7_TRANSFORMER_IMAGE|${IMAGE}|" \
+              -e "s|PLACEHOLDER_WAREHOUSE_DIR|${WAREHOUSE_DIR}|" \
+              tests/data-authorization/seed/job.yaml \
+            | sudo -E kubectl apply -f -
           sudo -E kubectl wait --for=condition=complete --timeout=300s \
             job/data-authz-seed -n scout-data &
           completion_pid=$!
@@ -521,31 +509,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Render run.sh as an indented literal + substitute the two
-          # secrets (Keycloak admin pw, superset_svc client secret —
-          # both already in inventory.yaml and thus in the
-          # already-rendered ansible/inventory.yaml).
           KC_ADMIN_PW=$(grep '^    keycloak_bootstrap_admin_password:' \
             ansible/inventory.yaml | awk '{print $2}')
           SUPERSET_SVC_SECRET=$(grep '^    keycloak_superset_svc_client_secret:' \
             ansible/inventory.yaml | awk '{print $2}')
 
-          # See seed step above for why this uses Python instead of awk
-          # (escape-processing eats backslashes inside run.sh).
-          KC_ADMIN_PW="$KC_ADMIN_PW" SUPERSET_SVC_SECRET="$SUPERSET_SVC_SECRET" \
-            python3 << 'PYEOF' > /tmp/rbac-tests-job.yaml
-          import os, pathlib
-          run = pathlib.Path('tests/data-authorization/rbac-tests/run.sh').read_text()
-          indented = '\n'.join('    ' + line for line in run.splitlines())
-          template = pathlib.Path('tests/data-authorization/rbac-tests/job.yaml').read_text()
-          out = (template
-                 .replace('    PLACEHOLDER_RUN_SH', indented)
-                 .replace('PLACEHOLDER_KC_ADMIN_PASSWORD', os.environ['KC_ADMIN_PW'])
-                 .replace('PLACEHOLDER_SUPERSET_SVC_CLIENT_SECRET', os.environ['SUPERSET_SVC_SECRET']))
-          print(out, end='')
-          PYEOF
+          # Script in a ConfigMap (kubectl handles file content
+          # correctly), secrets in a Secret. No template substitution
+          # needed — the Job manifest references both by name.
+          sudo -E kubectl create configmap data-authz-test-script \
+            -n scout-analytics \
+            --from-file=run.sh=tests/data-authorization/rbac-tests/run.sh \
+            --dry-run=client -o yaml | sudo -E kubectl apply -f -
 
-          sudo -E kubectl apply -f /tmp/rbac-tests-job.yaml
+          sudo -E kubectl create secret generic data-authz-test-creds \
+            -n scout-analytics \
+            --from-literal=KC_ADMIN_PASSWORD="$KC_ADMIN_PW" \
+            --from-literal=SUPERSET_SVC_CLIENT_SECRET="$SUPERSET_SVC_SECRET" \
+            --dry-run=client -o yaml | sudo -E kubectl apply -f -
+
+          sudo -E kubectl apply -f tests/data-authorization/rbac-tests/job.yaml
           sudo -E kubectl wait --for=condition=complete --timeout=300s \
             job/data-authz-tests -n scout-analytics &
           completion_pid=$!

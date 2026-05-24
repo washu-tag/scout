@@ -7,15 +7,11 @@
 # Service are in-namespace. Reuses the hl7-transformer image as the
 # Spark/Delta/Hive vehicle — same JARs the transformer's normal
 # ingest path uses, no per-test image to maintain.
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: data-authz-seed-script
-  namespace: scout-data
-data:
-  seed.py: |
-    PLACEHOLDER_SEED_PY
+#
+# The data-authz-seed-script ConfigMap is created separately by the
+# workflow via `kubectl create configmap --from-file=seed.py=...` --
+# kubectl handles arbitrary file content (including backslash escapes)
+# correctly, which a `seed.py: |` literal in this template would not.
 ---
 apiVersion: batch/v1
 kind: Job
