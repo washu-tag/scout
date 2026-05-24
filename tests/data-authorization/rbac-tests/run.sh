@@ -365,7 +365,7 @@ if [[ "$count" == "2" ]]; then ok "row count=2"; else fail "expected 2, got $cou
 # --- Scenario 4: unset facilities -> deny-all (1=0 clamp) -------------------
 log "scenario 4: no attributes -> deny-all rows"
 set_user_state "$USER_ID" true '{}'
-wait_for_bundle '.result.allowed_facilities // null | length // 0 == 0' "$PROPAGATION_TIMEOUT"
+wait_for_bundle '(.result.allowed_facilities // [] | length) == 0' "$PROPAGATION_TIMEOUT"
 count=$(trino_query "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
 if [[ "$count" == "0" ]]; then ok "row count=0 (1=0 clamp)"; else fail "expected 0, got $count"; fi
 
