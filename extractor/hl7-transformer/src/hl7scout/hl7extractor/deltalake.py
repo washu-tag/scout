@@ -470,9 +470,6 @@ def import_hl7_files_to_deltalake(
                         ("obr-22", "results_report_status_change_dt"),
                     )
                 ],
-                F.expr("CAST(datediff(YEAR, birth_date, requested_dt) AS INT)").alias(
-                    "patient_age"
-                ),
                 "source_file",
             )
             .join(report_df, "source_file", "left")

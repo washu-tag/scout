@@ -7,14 +7,23 @@
 
   // Require manual approval on the Dependency Dashboard before opening PRs.
   // This lets the dashboard list all available updates (visibility) without
-  // creating PR noise. CVE PRs bypass this via vulnerabilityAlerts below.
+  // creating PR noise. CVE PRs bypass this via vulnerabilityAlerts below,
+  // and patch updates bypass this via the packageRules entry below.
   "dependencyDashboardApproval": true,
 
-  // CVE PRs are created automatically (no dashboard approval needed)
+  // Wait 14 days after a release before considering an update. Lets upstream
+  // ship a follow-up patch for any regressions before we adopt the version,
+  // and pairs with the patch-auto-open rule below to keep that flow safe.
+  // Overridden to 0 for CVE alerts so security fixes aren't delayed.
+  "minimumReleaseAge": "14 days",
+
+  // CVE PRs are created automatically (no dashboard approval needed,
+  // no release-age delay)
   "vulnerabilityAlerts": {
     "enabled": true,
     "labels": ["dependencies", "security"],
-    "dependencyDashboardApproval": false
+    "dependencyDashboardApproval": false,
+    "minimumReleaseAge": "0 days"
   },
 
   // Dependency dashboard (GitHub issue) for overview of all detected dependencies
@@ -34,6 +43,14 @@
 
   // Remind reviewers about coupled dependencies
   "packageRules": [
+    // Patch updates bypass dashboard approval and get a PR opened directly.
+    // CI exercises every deployed service end-to-end, so green CI is a
+    // sufficient gate for patch-level changes. Minor/major still require
+    // dashboard approval (the global default).
+    {
+      "matchUpdateTypes": ["patch"],
+      "dependencyDashboardApproval": false
+    },
     // k3s uses non-standard versioning (v1.34.1+k3s1); regex versioning
     // keeps the +k3s suffix locked and tracks the build number
     {

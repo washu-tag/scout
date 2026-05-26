@@ -37,7 +37,6 @@ may not be directly mapped to HL7 fields.
 | `diagnostic_service_id`             | OBR-24           | string          | Yes      | Identifier for the diagnostic service.                                                                                                                                                                                     |
 | `modality`                          | Derived          | string          | Yes      | Modality of the exam (e.g., CT, MRI).                                                                                                                                                                                      |
 | `requested_dt`                      | OBR-6            | timestamp       | Yes      | Date and time the service was requested.                                                                                                                                                                                   |
-| `patient_age`                       | Derived          | integer         | Yes      | Patient age at time of report as calculated between `birth_date` and `requested_dt`.                                                                                                                                       |
 | `observation_dt`                    | OBR-7            | timestamp       | Yes      | Date and time the observation was made.                                                                                                                                                                                    |
 | `observation_end_dt`                | OBR-8            | timestamp       | Yes      | Date and time the observation ended.                                                                                                                                                                                       |
 | `full_ordering_provider`            | OBR-16           | array of struct | Yes      | Array of name + ID representations available in ordering provider field. See {ref}`Name + IDs <name_and_ids_ref>` for more detail.                                                                                         |
@@ -236,7 +235,8 @@ in the base report table. A row in the curated table looks exactly the same as a
 | `obr_2_placer_order_number` & `orc_2_placer_order_number` | Replaced with `placer_order_number`, containing the first non-empty value from the source columns                                                                                                                                                                                       |
 | `obr_3_filler_order_number` & `orc_3_filler_order_number` | Replaced with `accession_number` and `primary_study_identifier`, containing the first non-empty value from the source columns. For our data, `accession_number` and `primary_study_identifier` will be duplicates, but they exist as separate columns for sites where that is not true. |
 | `patient_ids`                                             | See note below about `primary_patient_identifier`                                                                                                                                                                                                                                       |
-| `patient_ids`                                             | See note below about `patient_mpi`                                                                                                                                                                                                                                                      |
+| `patient_mpi`                                             | See note below about `patient_mpi`                                                                                                                                                                                                                                                      |
+| `birth_date` & `observation_dt` or `requested_dt`         | Patient age at time of report. See note below about `patient_age`.                                                                                                                                                                                                                      |
 
 In practice, the Patient IDs available to Scout in the reports are rather messy and have some consistency problems. In the curated
 table, Scout persists the {ref}`patient_ids <patient_ids_ref>` column as-is, but it also derives a patient ID to store in
@@ -252,6 +252,12 @@ the `patient_mpi` column will be assigned the `mpi` for a 2.3 report, the availa
 for a 2.7 report. This gives us moderate confidence in an identifier that remains invariant for the patient over time, but it will not always
 be present (such as for 2.7 reports without an EMPI id). For an easier to use alternative, see
 {ref}`Longitudinal Patient ID Resolution <longitudinal_pat_id_ref>`.
+
+Scout derives a `patient_age` as the difference between `birth_date` and a chosen scan date proxy, because our source data does not have a clear
+field mapping to the date of the scan. We use `observation_dt` as this proxy with a fallback to `requested_dt`. There are a couple of data integrity
+checks for this process:
+1. For cases where the recorded `birth_date` is before 1905, we replace it with `NULL` in the curated table as it is almost certainly incorrect.
+2. For cases where the derived `patient_age` is 110 or above, we `NULL` out both `birth_date` and `patient_age` in the curated table for the same reason.
 
 (latest_table_ref)=
 ### reports_latest
