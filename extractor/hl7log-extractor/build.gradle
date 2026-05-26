@@ -34,6 +34,17 @@ ext['postgresql.version'] = '42.7.11'
 // netty-codec-http2, netty-codec-dns, and netty-transport-native-epoll.
 ext['netty.version'] = '4.1.133.Final'
 
+// TODO: Remove once Temporal ships a release that brings opentelemetry >= 1.62.0.
+// Pins the io.opentelemetry:* family (transitively from temporal-sdk) to 1.62.0
+// to address the opentelemetry-api vulnerability CVE-2026-45292. Imported via
+// the Spring dependency-management plugin so the BOM wins against Maven-style
+// nearest-version resolution (a plain platform() import loses to transitives).
+dependencyManagement {
+	imports {
+		mavenBom 'io.opentelemetry:opentelemetry-bom:1.62.0'
+	}
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'org.springframework:spring-aspects'
