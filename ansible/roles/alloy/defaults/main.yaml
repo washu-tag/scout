@@ -5,7 +5,12 @@
 # Helm configuration
 alloy_helm_repo_name: grafana
 alloy_helm_repo_url: https://grafana.github.io/helm-charts
-alloy_helm_timeout: 5m
+# DaemonSet rolls one pod at a time across the cluster's nodes with
+# the chart's default `maxUnavailable: 1`. 5m was tight on a 4-node
+# deployment once readiness gates kicked in (dev04 hit `context
+# deadline exceeded` and rolled back). 10m comfortably covers a
+# 4–6 node roll plus image pulls.
+alloy_helm_timeout: 10m
 
 # Loki write endpoint (DaemonSet ships logs here). loki-gateway is the
 # nginx fronting Loki and exposes port 80 (the underlying loki Service
