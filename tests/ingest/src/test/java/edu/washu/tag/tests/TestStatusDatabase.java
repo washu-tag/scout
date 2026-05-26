@@ -460,6 +460,13 @@ public class TestStatusDatabase extends BaseTest {
         final String date = "20260522";
         final String logPath = "/data/duplicate-key/" + date + ".log";
 
+        // Reset DB state for this log so re-runs against a live cluster still exercise the
+        // bug. Without this, a prior successful run leaves a real-S3-path row in hl7_files,
+        // and the bogus-path attempt would fail at the placeholder insert (constraint
+        // violation against the existing row) instead of persisting placeholders — masking
+        // the retry-collision bug we are checking for.
+        cleanupHl7FilesForLog(logPath, date);
+
         // First attempt: bogus hl7OutputPath causes the zip upload to fail. The activity's
         // catch block writes placeholder hl7_file_path rows before throwing.
         temporalClient.launchIngest(
@@ -478,6 +485,37 @@ public class TestStatusDatabase extends BaseTest {
 
         final Hl7FilesRow h0 = new Hl7FilesRow("2026/05/22/" + date + "_0.hl7", 0, date);
         runHl7FilesTest(new Hl7FileTableQuery(date), h0);
+    }
+
+    /**
+     * Removes all rows in {@value #TABLE_HL7_FILES}, {@value #TABLE_FILE_STATUSES}, and
+     * current_file_statuses that could have been created by a previous run of a test that
+     * ingests the given log file. Matches both the placeholder hl7 path format
+     * ({@code <logPath>_<messageNumber>}) and the S3 path format
+     * ({@code s3://.../<date>_<messageNumber>.hl7}).
+     */
+    private void cleanupHl7FilesForLog(String logPath, String date) {
+        final String placeholderPattern = logPath + "\\_%";
+        final String s3PathPattern = "%/" + date + "\\_%.hl7";
+        for (final String table : List.of("current_file_statuses", TABLE_FILE_STATUSES)) {
+            runDbUpdate(String.format(
+                "DELETE FROM %s WHERE file_path = '%s' OR file_path LIKE '%s' ESCAPE '\\' OR file_path LIKE '%s' ESCAPE '\\'",
+                table, logPath, placeholderPattern, s3PathPattern
+            ));
+        }
+        runDbUpdate(String.format(
+            "DELETE FROM %s WHERE log_file_path = '%s'",
+            TABLE_HL7_FILES, logPath
+        ));
+    }
+
+    private void runDbUpdate(String sql) {
+        try (final Connection connection = config.getPostgresConfig().getConnection()) {
+            logger.info("Issuing update: {}", sql);
+            connection.prepareStatement(sql).executeUpdate();
+        } catch (SQLException sqlException) {
+            throw new RuntimeException(sqlException);
+        }
     }
 
     private void runDbTest(SqlQuery query, Consumer<ResultSet> resultValidator) {
