@@ -47,7 +47,7 @@ Each impersonation-pattern client gets its own Keycloak service principal — `s
 | Listener | HTTPS on **8443** (TLS via cert-manager) for clients; HTTP on **8080** for worker↔coordinator (`internal-communication.shared-secret`) and Kubernetes probes | The trinodb/trino chart hard-codes the dual listener; HTTPS-only isn't a supported chart mode. JWT auth requires TLS. |
 | `http-server.authentication.type` | `PASSWORD,JWT` | PASSWORD validates the MCP's HTTP-Basic credential against `password.db` (bcrypt of `keycloak_openwebui_mcp_svc_client_secret`). JWT validates everything else via Keycloak's JWKS. |
 | `jwt.principal-field` | `preferred_username` | For service principals, Keycloak sets this to `service-account-<client-id>`. For end-user tokens, it's the user's Keycloak username. |
-| `jwt.user-mapping.pattern` | `(?:service-account-)?(.+)` | One regex handles both: `service-account-superset_svc` → `superset_svc`; `alice` → `alice`. Result becomes `identity.user`. |
+| `jwt.user-mapping.pattern` | `(?:service-account-)?(.+)` | Keycloak auto-names every service-account user `service-account-<clientId>` (not our choice); the optional-prefix strip normalizes that to the bare `<clientId>` while leaving end-user usernames untouched, so one `principal-field` serves both token shapes. `service-account-superset_svc` → `superset_svc`; `alice` → `alice`. |
 | `jwt.required-audience` | `trino` | Keycloak's `trino-audience` client scope (attached to every Trino-connecting client) injects `aud=trino`. Without the scope, Keycloak issues `aud=<client>` and Trino rejects with a sparse 401. |
 
 ### Per-client flow
@@ -140,7 +140,7 @@ The `trino` user no longer exists as a human-facing connection (saved Superset c
 
 Superset, JupyterHub, the MCP, and Voila each forward the user's Keycloak token to Trino on every query. No service principal, no `X-Trino-User`, no impersonation rule in OPA.
 
-**Rejected for Superset, Voila, and the MCP**: implementation cost vs. marginal security benefit. For Superset, a custom `DB_CONNECTION_MUTATOR` mints a `superset_svc` JWT and sets `X-Trino-User` to the logged-in user — equivalent authorization semantics to forwarding the user's Keycloak token, without per-user token-refresh lifecycle on long dashboard sessions or bespoke Flask-session-introspection. The "insider with namespace access steals a service-principal credential" threat is addressed by K8s controls (Secret AuthZ, rotation, NetworkPolicy on Trino), not per-call user tokens.
+**Rejected for Superset, Voila, and the MCP**: implementation cost vs. marginal security benefit. For Superset, a custom `DB_CONNECTION_MUTATOR` mints a `superset_svc` JWT and sets `X-Trino-User` to the logged-in user — equivalent authorization semantics to forwarding the user's Keycloak token, without per-user token-refresh lifecycle on long dashboard sessions or bespoke Flask-session-introspection. The "insider with namespace access steals a service-principal credential" threat is addressed by K8s controls (Kubernetes RBAC on the credential Secret, rotation, NetworkPolicy on Trino), not per-call user tokens.
 
 For the MCP, `tuannvm/mcp-trino` v4.x only supports HTTP Basic outbound — there's no JWT-pass-through code path in the upstream MCP. The shipped pattern (OIDC validation inbound + `X-Trino-User` outbound on a service-principal HTTP Basic channel) is functionally identical: the end-user identity reaches Trino, just via a header rather than as a forwarded JWT.
 
@@ -174,8 +174,8 @@ Instead of `superset_svc` + `openwebui_mcp_svc` + `voila_svc`, use one `trino_im
 |---|---|
 | User forges `X-Trino-User` to read another user's data | OPA `ImpersonateUser` rule restricts impersonation to service principals; users can't authenticate as one. |
 | Stolen end-user JWT | JWT expires (~5 min); refresh requires Keycloak session. Stolen JWT is bounded in time and traceable in OPA decision logs. |
-| Stolen service-principal JWT | NetworkPolicy on Trino restricts ingress; Secret AuthZ restricts which pods can read credentials. Compromise of a service-principal credential equals "impersonate any user from that pod." Per-principal isolation keeps blast radius client-scoped. |
-| MCP container compromise | Equivalent to service-principal compromise — attacker can connect as `openwebui_mcp_svc` and impersonate any user. NetworkPolicy on Trino + Secret AuthZ are the gates. |
+| Stolen service-principal credential | A leaked credential lets the holder authenticate as that principal and impersonate any user, so the controls aim to prevent and contain leaks: a NetworkPolicy limits which pods can reach Trino, and Kubernetes RBAC on the credential Secret limits which pods can read it. Per-principal credentials (not one shared impersonator) keep a compromise scoped to that single client. |
+| MCP container compromise | Equivalent to service-principal compromise — attacker can connect as `openwebui_mcp_svc` and impersonate any user. NetworkPolicy on Trino + Kubernetes RBAC on the credential Secret are the gates. |
 | Decision-log tampering | OPA decision logs ship to Loki via the existing log pipeline; Trino's query log captures `(principal, user)` pairs. Both stores are append-only from Trino/OPA's perspective. |
 
 ### Positive
