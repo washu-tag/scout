@@ -60,9 +60,10 @@ JupyterHub (JWT pass-through)
   notebook → scout_trino fetches the ACCESS token from the Hub API on demand
     (Hub's refresh_user refreshes it near expiry; refresh_token + client_secret never reach the pod)
        ↓
-  notebook code: trino.dbapi.connect(auth=JWTAuthentication(access_token))
+  notebook code: trino.dbapi.connect(auth=JWTAuthentication(access_token))   # token: aud=trino
        ↓
   Trino: principal=alice, user=alice → OPA evaluates against data.users["alice"]
+                                       impersonation: none (the JWT subject IS the user)
 
 Superset (JWT + impersonation)
 ──────────────────────────────
@@ -70,12 +71,12 @@ Superset (JWT + impersonation)
        ↓
   SQL Lab query → DB_CONNECTION_MUTATOR fires
        ↓
-  mutator mints superset_svc JWT (client_credentials, cached, refreshed before exp)
+  mutator mints superset_svc JWT (client_credentials; token: aud=trino; cached, re-minted before exp)
        ↓
   HTTP: Authorization: Bearer <superset_svc JWT>, X-Trino-User: alice
        ↓
   Trino: principal=superset_svc, user=alice → OPA evaluates against data.users["alice"]
-                                              (ImpersonateUser allow: superset_svc ∈ service principals)
+                                       impersonation: superset_svc ∈ trino_service_principals
 
 Voila (JWT + impersonation, with a header chain)
 ────────────────────────────────────────────────
@@ -87,20 +88,22 @@ Voila (JWT + impersonation, with a header chain)
        ↓
   playbook code: scout_trino.connect()
                    - decodes preferred_username from env token
-                   - mints voila_svc JWT (client_credentials)
+                   - mints voila_svc JWT (client_credentials; token: aud=trino; re-minted before exp)
                    - HTTP: Bearer <voila_svc JWT>, X-Trino-User: <user>
        ↓
   Trino: principal=voila_svc, user=alice → OPA evaluates against data.users["alice"]
+                                       impersonation: voila_svc ∈ trino_service_principals
 
 Open WebUI MCP (HTTP Basic + impersonation)
 ───────────────────────────────────────────
   user chats in OWUI → OWUI forwards user's OIDC token to MCP
        ↓
-  mcp-trino: oauth.enabled=true validates inbound token vs Keycloak (aud=mcp-trino)
+  mcp-trino: oauth.enabled=true validates inbound token vs Keycloak   # inbound token: aud=mcp-trino
        ↓ TRINO_IMPERSONATION_FIELD=username → reads preferred_username from validated token
   outbound to Trino: Authorization: Basic <openwebui_mcp_svc:password>, X-Trino-User: <user>
-       ↓
+       ↓ (HTTP Basic, not a JWT — Trino's aud=trino check doesn't apply to this leg)
   Trino: principal=openwebui_mcp_svc, user=alice → OPA evaluates against data.users["alice"]
+                                       impersonation: openwebui_mcp_svc ∈ trino_service_principals
 ```
 
 ### Token lifespans
@@ -111,7 +114,7 @@ Open WebUI MCP (HTTP Basic + impersonation)
 | MCP service-principal password | Static (rotated via Ansible) | N/A — bcrypted into `password.db` |
 | End-user access token (Jupyter, held Hub-side in `auth_state`) | Realm default (~5 min access, ~30 min refresh) | Hub's `refresh_user` refreshes via the refresh token; `scout_trino` re-fetches from the Hub API before expiry |
 
-Service-principal tokens are deliberately long-lived to cover a multi-hour notebook or dashboard session without per-call refresh round-trips. They never leave the pod that owns them (Kubernetes Secret + NetworkPolicy on Trino).
+Service-principal tokens are deliberately long-lived (~4 h) so token minting stays off the per-query hot path — the client helpers still re-mint them before expiry (see the table above), just on an hours cadence rather than per request. They never leave the pod that owns them (Kubernetes Secret + NetworkPolicy on Trino).
 
 ### Impersonation gate
 
