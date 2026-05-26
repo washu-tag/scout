@@ -23,7 +23,7 @@ import org.keycloak.util.JsonSerialization;
  *
  * <p>The {@code roots} declaration scopes atomic data-document swaps to
  * {@code data.users}, so this bundle doesn't collide with the static data
- * ({@code filtered_tables}, {@code view_only_tables}, etc.) rendered into
+ * ({@code filtered_tables}, {@code hidden_tables}, etc.) rendered into
  * OPA's ConfigMap by the Ansible role.
  */
 final class BundleAssembler {
