@@ -165,7 +165,7 @@
         {
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "editorMode": "code",
-          "expr": "max by(pod) (last_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Status Log\"` | json | unwrap bundles_scout_users_active_revision [5m]))",
+          "expr": "max by(pod) (last_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Status Log\"` | pattern `<_>\"active_revision\":\"<rev>\"<_>` | unwrap rev [5m]))",
           "legendFormat": "{{pod}}",
           "queryType": "range",
           "refId": "A"
