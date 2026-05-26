@@ -22,7 +22,7 @@ helm_chart_values_files: []
 # Extractors: hl7log_extractor_image_repository/tag and hl7_transformer_image_repository/tag (see roles/extractor/defaults/main.yaml)
 
 # JupyterHub singleuser image
-jupyter_singleuser_image_name: ghcr.io/washu-tag/scipy-notebook
+jupyter_singleuser_image_name: ghcr.io/washu-tag/scout-notebook
 jupyter_singleuser_image_tag: latest
 
 # Voila dashboard image

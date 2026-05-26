@@ -25,7 +25,7 @@ jobs:
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
       pyspark-notebook: ${{ steps.filter.outputs.pyspark-notebook }}
-      scipy-notebook: ${{ steps.filter.outputs.scipy-notebook }}
+      scout-notebook: ${{ steps.filter.outputs.scout-notebook }}
       launchpad: ${{ steps.filter.outputs.launchpad }}
       superset: ${{ steps.filter.outputs.superset }}
       keycloak: ${{ steps.filter.outputs.keycloak }}
@@ -45,8 +45,8 @@ jobs:
               - 'extractor/hl7-transformer/**'
             pyspark-notebook:
               - 'helm/jupyter/notebook/**'
-            scipy-notebook:
-              - 'helm/jupyter/notebook-scipy/**'
+            scout-notebook:
+              - 'helm/jupyter/scout-notebook/**'
             launchpad:
               - 'launchpad/**'
             superset:
@@ -88,8 +88,8 @@ jobs:
           - image-name: pyspark-notebook
             subproject: helm/jupyter/notebook
             allow-failure: true
-          - image-name: scipy-notebook
-            subproject: helm/jupyter/notebook-scipy
+          - image-name: scout-notebook
+            subproject: helm/jupyter/scout-notebook
             allow-failure: true
           - image-name: launchpad
             subproject: launchpad
@@ -383,11 +383,11 @@ jobs:
         with:
           subproject: helm/jupyter/notebook
           image-name: pyspark-notebook
-      - name: 'Push image to k3s - scipy-notebook'
+      - name: 'Push image to k3s - scout-notebook'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
-          subproject: helm/jupyter/notebook-scipy
-          image-name: scipy-notebook
+          subproject: helm/jupyter/scout-notebook
+          image-name: scout-notebook
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
@@ -501,11 +501,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: pyspark-notebook
-      - name: 'Push Image - scipy-notebook'
-        if: needs.changes.outputs.scipy-notebook == 'true'
+      - name: 'Push Image - scout-notebook'
+        if: needs.changes.outputs.scout-notebook == 'true'
         uses: ./.github/actions/docker-push
         with:
-          image-name: scipy-notebook
+          image-name: scout-notebook
       - name: 'Push Image - launchpad'
         if: needs.changes.outputs.launchpad == 'true'
         uses: ./.github/actions/docker-push
@@ -561,11 +561,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: pyspark-notebook
-      - name: 'Push Image - scipy-notebook'
-        if: needs.changes.outputs.scipy-notebook == 'true'
+      - name: 'Push Image - scout-notebook'
+        if: needs.changes.outputs.scout-notebook == 'true'
         uses: ./.github/actions/docker-push
         with:
-          image-name: scipy-notebook
+          image-name: scout-notebook
       - name: 'Push Image - hl7log-extractor'
         if: needs.changes.outputs.hl7log-extractor == 'true'
         uses: ./.github/actions/docker-push
