@@ -66,6 +66,9 @@
             'max_delay_seconds': opa_decision_log_max_delay_seconds,
           },
         },
+        'status': {
+          'console': true,
+        },
       } | to_nice_yaml(indent=2, width=200) }}
 
 - name: Create OPA policy + data + config ConfigMap
