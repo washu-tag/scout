@@ -2,7 +2,6 @@ package edu.washu.tag.keycloak.events;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import org.jboss.logging.Logger;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
 import org.keycloak.events.admin.AdminEvent;
@@ -32,8 +31,6 @@ import org.keycloak.models.UserModel;
  * admin events) are no-ops — they don't change RBAC-relevant state.
  */
 public class OpaUserBundlePublisherProvider implements EventListenerProvider {
-
-    private static final Logger log = Logger.getLogger(OpaUserBundlePublisherProvider.class);
 
     private final KeycloakSession session;
     private final OpaUserBundlePublisherProviderFactory factory;
@@ -111,22 +108,17 @@ public class OpaUserBundlePublisherProvider implements EventListenerProvider {
         List<String> groups = user.getGroupsStream()
                 .map(GroupModel::getName)
                 .collect(Collectors.toList());
-        factory.upsertUser(user.getUsername(), user.isEnabled(), groups, user.getAttributes());
+        factory.upsertUser(userId, user.getUsername(), user.isEnabled(), groups, user.getAttributes());
     }
 
     private void handleDelete(AdminEvent event, String userId) {
         // The user row is gone by the time DELETE fires, so we read the
         // username from the event's details map — Keycloak puts it there
         // specifically for this case. If it's missing (e.g., a transport
-        // that strips details), we have to log and skip: without a
-        // username key we can't remove the right entry from the snapshot.
+        // that strips details), the factory falls back to its
+        // userId->username map to resolve the entry to remove.
         String username = event.getDetails() != null ? event.getDetails().get("username") : null;
-        if (username == null) {
-            log.warnf("DELETE admin event for user %s has no username in details; cannot remove from OPA bundle",
-                    userId);
-            return;
-        }
-        factory.removeUser(username);
+        factory.removeUser(userId, username);
     }
 
     private static String extractUserId(String resourcePath) {

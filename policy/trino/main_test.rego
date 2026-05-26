@@ -668,6 +668,28 @@ test_phi_columns_unmasked_when_explicit_false if {
 		with data.masked_columns as fixture_masked_columns
 }
 
+test_phi_columns_masked_when_empty_list if {
+	# mask_phi_fields present but [] (e.g. an admin-API PUT that bypasses the
+	# user-profile options validation) must still mask — only an explicit
+	# ["false"] disables masking.
+	inp := batch_mask_input("alice", ["scout-user"], "delta", "default", "reports",
+		["patient_name"])
+	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
+	trino.batchColumnMasks == expected with input as inp
+		with trino.user_attrs as {"enabled": true, "groups": ["scout-user"], "mask_phi_fields": []}
+		with data.masked_columns as fixture_masked_columns
+}
+
+test_phi_columns_masked_when_value_not_false if {
+	# Any value other than "false" masks (fail-safe for a malformed attribute).
+	inp := batch_mask_input("alice", ["scout-user"], "delta", "default", "reports",
+		["patient_name"])
+	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
+	trino.batchColumnMasks == expected with input as inp
+		with trino.user_attrs as {"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["", "false"]}
+		with data.masked_columns as fixture_masked_columns
+}
+
 test_admin_phi_unmasked_when_explicit_false if {
 	# Admins use the same opt-in as users — set mask_phi_fields: "false"
 	inp := batch_mask_input("admin", ["scout-admin"], "delta", "default", "reports",

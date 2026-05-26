@@ -112,6 +112,13 @@ def connect_rw():
     There's no OPA on trino-rw, so this connection bypasses per-user
     RBAC; the surface is bounded by the playbook code, which only
     issues specific UPDATE/INSERT statements against the working table.
+
+    Falls back to user='anonymous' when no identity can be resolved.
+    trino-rw has no auth, so `user` is only an audit label, not a
+    credential — failing closed here would block a reviewer's annotation
+    save on a transient header-propagation hiccup, which is a worse
+    outcome than a less-precise audit entry. A missing forwarded token is
+    already logged at request time by scout_voila._scout_voila_get.
     """
     user = _user_from_access_token() or "anonymous"
     return trino.dbapi.connect(

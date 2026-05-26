@@ -204,6 +204,13 @@ remove_user_from_group() {
 # Poll OPA's data.users.<user> until the predicate returns success or
 # the timeout elapses. The predicate is a jq filter applied to the
 # user's record; success is jq returning non-null/non-false.
+#
+# Gotcha: when the user isn't in the bundle yet, OPA returns {} and
+# `.result` is null. A predicate that uses `// []` fallbacks (e.g.
+# `(.result.x // []) | length == 0`) would then be satisfied by the
+# ABSENT user, short-circuiting the wait before propagation actually
+# happened. Such predicates must lead with `.result != null and (...)`
+# so an empty/absent record never counts as ready.
 wait_for_bundle() {
     local predicate=$1 timeout=${2:-30}
     local end=$(( $(date +%s) + timeout ))
@@ -365,7 +372,7 @@ if [[ "$count" == "2" ]]; then ok "row count=2"; else fail "expected 2, got $cou
 # --- Scenario 4: unset facilities -> deny-all (1=0 clamp) -------------------
 log "scenario 4: no attributes -> deny-all rows"
 set_user_state "$USER_ID" true '{}'
-wait_for_bundle '(.result.allowed_facilities // [] | length) == 0' "$PROPAGATION_TIMEOUT"
+wait_for_bundle '.result != null and (.result.allowed_facilities // [] | length) == 0' "$PROPAGATION_TIMEOUT"
 count=$(trino_query "SELECT COUNT(*) AS c FROM test_reports" "$TEST_USER" | jq -r '.[0][0]')
 if [[ "$count" == "0" ]]; then ok "row count=0 (1=0 clamp)"; else fail "expected 0, got $count"; fi
 
@@ -376,12 +383,18 @@ wait_for_bundle '.result.mask_phi_fields[0] == "true"' "$PROPAGATION_TIMEOUT"
 masked=$(trino_query "SELECT patient_name FROM test_reports LIMIT 1" "$TEST_USER" | jq -r '.[0][0]')
 if [[ "$masked" == "[REDACTED]" ]]; then ok "patient_name=[REDACTED]"; else fail "expected [REDACTED], got: $masked"; fi
 
-# --- Scenario 6: direct SELECT on view-only mapping table denied ------------
-log "scenario 6: view-only table denied without bypass"
-if trino_query_expect_deny "SELECT * FROM reports_report_patient_mapping LIMIT 1" "$TEST_USER"; then
-    ok "view-only table denied"
+# --- Scenario 6: direct SELECT on hidden mapping table denied ---------------
+log "scenario 6: hidden table permission-denied without bypass"
+# reports_report_patient_mapping is seeded (seed.py) AND hardcoded as a
+# baseline hidden table in the rego. Because the table exists, a refusal here
+# is a genuine OPA permission denial, not an incidental TABLE_NOT_FOUND —
+# assert PERMISSION_DENIED specifically so the test can't pass for the wrong
+# reason. (Prior scenario-5 state leaves the user wildcard-but-no-bypass.)
+err=$(trino_query "SELECT * FROM reports_report_patient_mapping LIMIT 1" "$TEST_USER" 2>&1 || true)
+if echo "$err" | grep -qE "PERMISSION_DENIED|Access Denied"; then
+    ok "hidden table permission-denied without bypass"
 else
-    fail "view-only table query unexpectedly succeeded"
+    fail "expected PERMISSION_DENIED on hidden table, got: $err"
 fi
 
 # --- Scenario 7: bypass_hidden_tables unlocks ----------------------------
@@ -419,7 +432,7 @@ remove_user_from_group "$USER_ID" "$SCOUT_USER_GROUP_ID"
 # Bundle reflects the group change as an empty "groups" list (or one
 # without scout-user). The wait_for_bundle predicate succeeds when
 # scout-user is no longer present.
-wait_for_bundle '(.result.groups // []) | index("scout-user") == null' "$PROPAGATION_TIMEOUT"
+wait_for_bundle '.result != null and ((.result.groups // []) | index("scout-user") == null)' "$PROPAGATION_TIMEOUT"
 if trino_query_expect_deny "SELECT 1" "$TEST_USER"; then
     ok "user without scout-user denied"
 else

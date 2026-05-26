@@ -790,11 +790,12 @@
           "group": "scout",
           "multivalued": false
         },
-        {#- RBAC scoping attributes consumed by the Trino OPA policy via
-            http.send to the Keycloak admin API. Rendered from
-            `trino_attribute_filters` in scout_common/defaults so adding
-            a dimension is a one-line inventory edit. Admin-only view/edit
-            so only realm admins (site admins) can grant data-access
+        {#- RBAC scoping attributes consumed by the Trino OPA policy. They
+            reach OPA via the user-attribute bundle the OpaUserBundlePublisher
+            SPI publishes to MinIO (ADR 0021), not a per-query admin-API call.
+            Rendered from `trino_attribute_filters` in scout_common/defaults so
+            adding a dimension is a one-line inventory edit. Admin-only
+            view/edit so only realm admins (site admins) can grant data-access
             scopes. Per-attribute display_name / value_pattern / max_length
             overrides are honored; defaults fit alphanumeric category codes
             with a `*` wildcard. -#}
@@ -1020,28 +1021,6 @@
               "id.token.claim": "true",
               "access.token.claim": "true",
               "claim.name": "groups",
-              "jsonType.label": "String"
-            }
-          },
-          {#- Scout RBAC: surface the user's allowed_facilities attribute as a
-              JWT claim so the Trino audit event listener can derive the
-              tenant tag without a second Keycloak round-trip per query. OPA
-              fetches the same attribute via the admin API; this is purely
-              for the audit-side derivation. -#}
-          {
-            "name": "scout_allowed_facilities",
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-usermodel-attribute-mapper",
-            "consentRequired": false,
-            "config": {
-              "introspection.token.claim": "true",
-              "multivalued": "true",
-              "userinfo.token.claim": "true",
-              "user.attribute": "allowed_facilities",
-              "id.token.claim": "true",
-              "lightweight.claim": "false",
-              "access.token.claim": "true",
-              "claim.name": "scout_allowed_facilities",
               "jsonType.label": "String"
             }
           }

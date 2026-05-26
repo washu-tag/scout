@@ -52,6 +52,28 @@ def _get_token() -> str:
         return _mint_token()
 
 
+def _in_celery_task() -> bool:
+    """True when executing inside a Celery worker task.
+
+    Async SQL Lab, Alerts & Reports, and cache warm-up run queries in a
+    Celery worker with no Flask request context, but under override_user()
+    (see superset/sql_lab.py get_sql_results), so `username` here is the real
+    querying user and the connection should still impersonate.
+
+    Detected via Celery's task-local stack: `current_task` is a Proxy over
+    _task_stack.top, which is None outside a task -- so the `.request`
+    attribute access raises and we return False. Inside a task it resolves to
+    the running task whose `request.id` is set. (`current_task is None` is NOT
+    usable: the Proxy is never `is None`.)
+    """
+    try:
+        from celery import current_task
+
+        return current_task.request.id is not None
+    except Exception:
+        return False
+
+
 def DB_CONNECTION_MUTATOR(
     uri, params, username, security_manager, source
 ):  # noqa: N802
@@ -82,18 +104,24 @@ def DB_CONNECTION_MUTATOR(
     connect_args["auth"] = JWTAuthentication(_get_token())
     connect_args.setdefault("http_scheme", "https")
     connect_args.setdefault("verify", os.environ.get("TRINO_CA_CERT", True))
-    # Only set X-Trino-User when this connection is being made on behalf
-    # of an actual authenticated HTTP request (Superset UI, SQL Lab, API
-    # call, dashboard render). CLI/import contexts -- e.g. the
-    # scout-dashboards-import Job's `superset import-dashboards -u admin`
-    # -- have an app context but no request context, and the username
-    # they pass is the Superset-internal bootstrap admin which doesn't
-    # exist in OPA's data.users. Falling through here means trino-
-    # python-client uses the JWT's preferred_username, the Trino user-
-    # mapping strips `service-account-` to leave `superset_svc`, and
-    # OPA's is_system_identity rule passes. The import job needs to
-    # SHOW CATALOGS / SHOW TABLES to validate dataset definitions; the
-    # service-principal identity is the right one for that work.
-    if username and has_request_context():
+    # Set X-Trino-User to impersonate the end user in any *real-user* context:
+    #   - a Flask request (Superset UI, sync SQL Lab, API, dashboard render)
+    #   - a Celery task (async SQL Lab, Alerts & Reports, cache warm-up) --
+    #     these run under override_user(), so `username` is the real querying
+    #     user even though there's no request context.
+    #
+    # The one context we deliberately skip is the bare import CLI -- the
+    # scout-dashboards-import Job's `superset import-dashboards -u admin`,
+    # which is neither a request nor a Celery task. Its `username` is the
+    # Superset bootstrap admin, which doesn't exist in OPA's data.users;
+    # skipping impersonation lets the connection fall through to the JWT's
+    # own principal (Trino user-mapping strips `service-account-` to leave
+    # `superset_svc`, which OPA's is_system_identity rule allows) so the
+    # import's SHOW CATALOGS / SHOW TABLES dataset validation works.
+    #
+    # Gating on request-context alone would wrongly skip the Celery paths and
+    # clamp every async query to zero rows; gating on username alone can't
+    # tell the bootstrap admin apart from a real user named "admin".
+    if username and (has_request_context() or _in_celery_task()):
         connect_args["user"] = username
     return uri, params

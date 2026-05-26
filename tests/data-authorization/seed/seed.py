@@ -123,6 +123,32 @@ def main() -> None:
         "c"
     ]
     print(f"seeded delta.default.test_reports: {count} rows")
+
+    # reports_report_patient_mapping is a baseline hidden table in
+    # policy/trino/main.rego (denied for direct SELECT, bypassable via the
+    # bypass_hidden_tables attribute). The hidden-table scenarios assert a
+    # *permission* denial, so the table must actually exist — otherwise Trino
+    # raises TABLE_NOT_FOUND during analysis before the OPA SelectFromColumns
+    # check ever runs, and the test would pass for the wrong reason. Minimal
+    # schema: it only needs to exist and be selectable.
+    mapping_schema = StructType(
+        [
+            StructField("scout_patient_id", StringType(), nullable=False),
+            StructField("epic_mrn", StringType(), nullable=True),
+        ]
+    )
+    mapping_rows = [
+        ("scout-0001", "MRN0001"),
+        ("scout-0002", "MRN0002"),
+    ]
+    mapping_df = spark.createDataFrame(mapping_rows, mapping_schema)
+    mapping_df.write.format("delta").mode("overwrite").saveAsTable(
+        "default.reports_report_patient_mapping"
+    )
+    mapping_count = spark.sql(
+        "SELECT COUNT(*) AS c FROM default.reports_report_patient_mapping"
+    ).collect()[0]["c"]
+    print(f"seeded delta.default.reports_report_patient_mapping: {mapping_count} rows")
     spark.stop()
 
 

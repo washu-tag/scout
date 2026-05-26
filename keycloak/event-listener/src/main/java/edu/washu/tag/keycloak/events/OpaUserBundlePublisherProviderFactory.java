@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
@@ -71,6 +72,11 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
     private static final Logger log = Logger.getLogger(OpaUserBundlePublisherProviderFactory.class);
 
     private final ConcurrentHashMap<String, Map<String, Object>> users = new ConcurrentHashMap<>();
+    // userId -> last-known username. Keycloak admin UPDATE events don't carry
+    // the previous username, so without this we can't drop the stale entry
+    // when a user is renamed — the bundle would keep both names, and a later
+    // user recycling the old username would inherit the renamed user's attrs.
+    private final ConcurrentHashMap<String, String> userIdToUsername = new ConcurrentHashMap<>();
     private final AtomicReference<ScheduledFuture<?>> pendingPublish = new AtomicReference<>();
 
     private MinioBundleUploader uploader;
@@ -146,20 +152,41 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
 
     // === Mutation API (called from per-session provider) =================
 
-    void upsertUser(String username, boolean userEnabled, List<String> groups,
+    void upsertUser(String userId, String username, boolean userEnabled, List<String> groups,
                     Map<String, List<String>> attributes) {
         if (!enabled || username == null) {
             return;
+        }
+        // Rename detection: if this userId was last seen under a different
+        // username, drop the stale record before writing the new one.
+        if (userId != null) {
+            String previous = userIdToUsername.put(userId, username);
+            if (previous != null && !previous.equals(username)) {
+                users.remove(previous);
+            }
         }
         users.put(username, BundleAssembler.userPayload(userEnabled, groups, attributes));
         scheduleDebouncedPublish();
     }
 
-    void removeUser(String username) {
-        if (!enabled || username == null) {
+    void removeUser(String userId, String username) {
+        if (!enabled) {
             return;
         }
-        users.remove(username);
+        // Prefer the username carried by the DELETE event; fall back to the
+        // userId->username map when the event omits it (some transports strip
+        // event details), so the entry still gets removed.
+        String resolved = username;
+        if (userId != null) {
+            String mapped = userIdToUsername.remove(userId);
+            if (resolved == null) {
+                resolved = mapped;
+            }
+        }
+        if (resolved == null) {
+            return;
+        }
+        users.remove(resolved);
         scheduleDebouncedPublish();
     }
 
@@ -167,14 +194,44 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
         return enabled;
     }
 
+    // === Test seam (package-private) ======================================
+    // Lets OpaUserBundlePublisherProviderFactoryTest exercise upsertUser /
+    // removeUser without env vars or a live MinIO. Those methods gate on
+    // `enabled` and schedule a debounced publish, so a test needs both set;
+    // pass a Mockito mock scheduler so no real publish fires. The
+    // rename/remove bookkeeping mutates the in-memory maps synchronously
+    // before scheduling, which is what the tests assert on.
+    void enableForTest(ScheduledExecutorService testScheduler) {
+        this.enabled = true;
+        this.scheduler = testScheduler;
+        this.debounceMs = DEFAULT_DEBOUNCE_MS;
+    }
+
+    Map<String, Map<String, Object>> usersForTest() {
+        return users;
+    }
+
+    String mappedUsernameForTest(String userId) {
+        return userIdToUsername.get(userId);
+    }
+
     // === Internals ========================================================
 
     private void scheduleDebouncedPublish() {
-        // Coalesce a burst of admin events into one S3 PUT by canceling
-        // any pending publish and rescheduling. The scheduler is single-
-        // threaded, so the run() that actually fires is guaranteed to
-        // see the latest pendingPublish reference.
-        ScheduledFuture<?> next = scheduler.schedule(this::publishNow, debounceMs, TimeUnit.MILLISECONDS);
+        // Coalesce a burst of admin events into one S3 PUT.
+        schedulePublish(debounceMs);
+    }
+
+    private void schedulePublish(long delayMs) {
+        // Track the scheduled publish in pendingPublish (canceling any prior
+        // pending one) so it can be coalesced. The scheduler is single-
+        // threaded, so the run() that actually fires sees the latest
+        // pendingPublish reference. Both the debounce path and the
+        // failed-upload retry go through here — otherwise an untracked retry
+        // can't be canceled by a subsequent event, and a sustained MinIO
+        // outage with steady admin traffic accumulates a retry per failed
+        // publish that all fire after recovery.
+        ScheduledFuture<?> next = scheduler.schedule(this::publishNow, delayMs, TimeUnit.MILLISECONDS);
         ScheduledFuture<?> prev = pendingPublish.getAndSet(next);
         if (prev != null) {
             prev.cancel(false);
@@ -198,7 +255,7 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
             boolean ok = uploader.upload(body);
             if (!ok) {
                 log.warnf("OPA bundle publish failed; retrying in %dms", RETRY_DELAY_MS);
-                scheduler.schedule(this::publishNow, RETRY_DELAY_MS, TimeUnit.MILLISECONDS);
+                schedulePublish(RETRY_DELAY_MS);
             }
         } catch (Throwable t) {
             log.errorf(t, "OPA bundle assembly failed; %d users in snapshot", snapshot.size());
@@ -206,11 +263,18 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
     }
 
     private void seedFromKeycloak(KeycloakSessionFactory factory) {
+        // Only publish once a full realm walk has succeeded. A failed walk
+        // (realm not yet imported on a fresh deploy, transient DB error, or
+        // an Error like NoClassDefFoundError) must NOT publish — an empty or
+        // partial snapshot would drive OPA to deny every user until the next
+        // admin event happens to repopulate the map, and realm-import
+        // completion does not itself fire user-level admin events.
+        AtomicBoolean seeded = new AtomicBoolean(false);
         try {
             KeycloakModelUtils.runJobInTransaction(factory, session -> {
                 RealmModel realm = session.realms().getRealmByName(realmName);
                 if (realm == null) {
-                    log.warnf("OPA bundle seed: realm %s not found; will publish empty bundle", realmName);
+                    log.warnf("OPA bundle seed: realm %s not found; retrying in %dms", realmName, RETRY_DELAY_MS);
                     return;
                 }
                 // runJobInTransaction opens a fresh session but doesn't
@@ -225,6 +289,9 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
                     if (username == null) {
                         return;
                     }
+                    if (user.getId() != null) {
+                        userIdToUsername.put(user.getId(), username);
+                    }
                     List<String> groups = user.getGroupsStream()
                             .map(GroupModel::getName)
                             .collect(Collectors.toList());
@@ -233,14 +300,21 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
                     users.put(username, payload);
                 });
                 log.infof("OPA bundle seed: loaded %d users from realm %s", users.size(), realmName);
+                seeded.set(true);
             });
-        } catch (Exception e) {
-            log.errorf(e, "OPA bundle seed walk failed; publishing whatever map we have");
+        } catch (Throwable t) {
+            // Throwable, not Exception: a missing runtime dep raises
+            // NoClassDefFoundError (an Error), which a bare catch(Exception)
+            // would miss — same hardening as publishNow below.
+            log.errorf(t, "OPA bundle seed walk failed; retrying in %dms", RETRY_DELAY_MS);
         }
-        // Publish whatever state we have. If the walk failed, this is an
-        // empty bundle — OPA will deny-all until the next admin event
-        // populates the map.
-        publishNow();
+        if (seeded.get()) {
+            // A successful walk over a genuinely empty realm publishes an
+            // empty bundle, which is correct — there are no users to allow.
+            publishNow();
+        } else {
+            scheduler.schedule(() -> seedFromKeycloak(factory), RETRY_DELAY_MS, TimeUnit.MILLISECONDS);
+        }
     }
 
     private static String orDefault(String value, String fallback) {

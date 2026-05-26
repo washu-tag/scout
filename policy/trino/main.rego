@@ -398,12 +398,14 @@ masked_columns := {c | some c in data.masked_columns}
 
 # Keycloak returns user attribute values as arrays (multivalued by default).
 # `mask_phi_fields` is single-valued logically but lives in attributes[0].
-# Default-mask: unset, missing, or any value other than "false" -> mask.
-should_mask if {
-	val := object.get(user_attrs, "mask_phi_fields", ["true"])
-	count(val) > 0
-	val[0] != "false"
-}
+# Default-mask: PHI is masked unless the attribute is explicitly ["false"].
+# Unset, missing, empty list, or any other value masks (fail-safe for PHI).
+# We test the disable condition and negate it rather than testing val[0]
+# directly: a present-but-empty [] makes a positive val[0] check fail, which
+# would silently skip masking — the opposite of the fail-safe we want.
+should_mask if not phi_masking_disabled
+
+phi_masking_disabled if user_attrs.mask_phi_fields[0] == "false"
 
 # Mask expression dispatches on column type: varchar columns get the
 # literal '[REDACTED]' so the user sees something explicit was redacted;

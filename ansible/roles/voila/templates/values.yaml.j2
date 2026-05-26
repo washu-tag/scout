@@ -20,6 +20,13 @@ env:
   TRINO_CATALOG: "delta"
   TRINO_SCHEMA: "default"
   TRINO_CA_CERT: "/etc/trino-ca/ca.crt"
+  # Write path (reviewer annotations) consumed by scout_trino.connect_rw().
+  # Points at the unauthenticated trino-rw instance in the extractor
+  # namespace; explicit here so an inventory override of trino_rw_namespace /
+  # trino_rw_release_name reaches the kernel instead of the helper's
+  # hardcoded fallback.
+  TRINO_RW_HOST: "{{ trino_rw_endpoint_host }}"
+  TRINO_RW_PORT: "{{ trino_rw_endpoint_port }}"
   # Keycloak client_credentials grant for the voila_svc service principal —
   # mint the JWT once per ~4h lifetime, attach via JWTAuthentication.
   # Internal in-cluster URL so service-to-service token minting bypasses
