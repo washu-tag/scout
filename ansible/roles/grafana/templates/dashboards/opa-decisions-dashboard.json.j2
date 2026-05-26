@@ -165,7 +165,7 @@
         {
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "editorMode": "code",
-          "expr": "max by(pod) (last_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Status Log\"` | json | unwrap bundles_scout_users_active_revision [$__range]))",
+          "expr": "max by(pod) (last_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Status Log\"` | json | unwrap bundles_scout_users_active_revision [5m]))",
           "legendFormat": "{{pod}}",
           "queryType": "range",
           "refId": "A"
@@ -417,7 +417,7 @@
     },
     {
       "datasource": {"type": "loki", "uid": "loki_datasource_01"},
-      "description": "Raw decision log stream. Use Grafana's filter bar (or edit the LogQL expression) to scope by user, operation, or result. Decisions are batched by OPA's reporting plugin (5–30s) so live tail lags by that much.",
+      "description": "Every decision OPA evaluated, reformatted to a one-line summary: rule path / allow|deny / user / operation. Click a row to expand the full JSON input (input.action.resource for catalog/schema/table, bundle revision the decision saw, timing metrics, etc.). Logs are batched by OPA's reporting plugin (5–30s) so live tail lags that much.",
       "fieldConfig": {"defaults": {}, "overrides": []},
       "gridPos": {"h": 18, "w": 24, "x": 0, "y": 39},
       "id": 9,
@@ -425,7 +425,7 @@
         "dedupStrategy": "none",
         "enableInfiniteScrolling": false,
         "enableLogDetails": true,
-        "prettifyLogMessage": true,
+        "prettifyLogMessage": false,
         "showCommonLabels": false,
         "showControls": false,
         "showLabels": false,
@@ -439,12 +439,12 @@
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"`",
+          "expr": "{namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` | json user=\"input.context.identity.user\", operation=\"input.action.operation\", result=\"result\", path=\"path\" | label_format verdict=`{{ if eq .path \"trino/allow\" }}{{ if eq .result \"true\" }}ALLOW{{ else }}DENY{{ end }}{{ else if eq .path \"trino/rowFilters\" }}FILTER{{ else if eq .path \"trino/batchColumnMasks\" }}MASK{{ else if eq .path \"trino/batchMaskInput\" }}MASK{{ else }}?{{ end }}` | line_format `{{.verdict}}  user={{.user}}  op={{.operation}}`",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "All Decisions (raw)",
+      "title": "All Decisions",
       "type": "logs"
     }
   ],
