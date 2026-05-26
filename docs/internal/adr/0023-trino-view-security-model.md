@@ -20,7 +20,7 @@ This ADR specifies the view-security choices that make both work. The naïvely i
 **Views are created with `SECURITY DEFINER` (Trino's CREATE VIEW default). The OPA policy carves out three pieces to make this work:**
 
 1. **`view_owner_principals`** — a data set whose members (e.g. `trino`, the user `hl7-transformer` creates views as) bypass row-filter and column-mask evaluation. Without this, the view owner's underlying-table reads would be clamped to zero rows by the facility filter.
-2. **`hidden_tables`** — an inventory-driven list of tables that are denied for direct SELECT and hidden from `SHOW TABLES`. Includes `reports_report_patient_mapping` and similar join-target tables that lack a filterable column.
+2. **`hidden_tables`** — tables denied for direct SELECT and hidden from `SHOW TABLES`. The patient mapping pair (`reports_report_patient_mapping` + `_history`) is hardcoded as a baseline in `policy/trino/main.rego` because those tables are intrinsic to Scout's data lake shape; `trino_hidden_tables` in inventory unions site-specific additions on top.
 3. **`CreateViewWithSelectFromColumns`** allow rule — exempts the view owner from `hidden_table_blocked`, so DEFINER views' internal joins to `hidden_tables` succeed while direct invoker queries against those same tables are denied.
 
 The invoker's RBAC is still enforced because the views themselves are listed in `data.filtered_tables`. Row filters apply to the view's output (post-DEFINER materialization), not to the view owner's underlying reads.
@@ -60,7 +60,7 @@ Generate a `_epic_view_<user>` for each user with the join already filtered by t
 ### Positive
 
 - **The `_epic_view` family works under RBAC.** Users see Epic MRN resolution joined into their facility-scoped view rows. Direct queries against the mapping table fail (as intended).
-- **The policy data model is extensible.** `hidden_tables` is inventory-driven — adding another join target table to the deny list is one inventory edit, not a Rego change.
+- **The policy data model is extensible.** Additional join-target tables can be added to the deny list via `trino_hidden_tables` in inventory (unioned with the hardcoded patient-mapping baseline) — one inventory edit, not a Rego change.
 - **Column masks compose naturally.** Masks on report-table columns apply to view output (the invoker is the principal); masks on mapping-table columns don't propagate through the window function (the view owner reads raw rows).
 
 ### Negative
@@ -72,7 +72,7 @@ Generate a `_epic_view_<user>` for each user with the join already filtered by t
 
 - **View creation**: `hl7-transformer` issues `CREATE OR REPLACE VIEW … SECURITY DEFINER` against `trino-rw` (the only Trino instance that permits writes; per ADR 0019). The view's owner is `trino`, which is what the OPA policy uses as the `view_owner_principals` member.
 - **`view_owner_principals`** is inventory-driven (`trino_view_owner_principals`) and rendered into the OPA data document by the opa Ansible role. Default: `["trino"]`. Membership is checked in the row-filter and column-mask rules via the `is_view_owner` helper.
-- **`hidden_tables`** is inventory-driven (`trino_hidden_tables`) and rendered the same way. Default includes the patient-identifier join targets. Tables in the list are:
+- **`hidden_tables`** is split: the patient-mapping baseline is hardcoded in `policy/trino/main.rego` (`baseline_hidden_tables`), and `trino_hidden_tables` from inventory is unioned on top for site-specific additions. Tables in the unioned set are:
   - Denied for direct SELECT in the table-level `allow` rule (`hidden_table_blocked` check).
   - Hidden from `SHOW TABLES` by the same check.
   - Reachable via DEFINER views thanks to the `CreateViewWithSelectFromColumns` allow rule that exempts the view owner from `hidden_table_blocked`.

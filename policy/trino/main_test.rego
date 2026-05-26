@@ -105,27 +105,27 @@ test_missing_identity_denied if {
 
 test_user_select_on_delta_allowed if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
-	trino.allow with input as inp with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+	trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
 test_admin_select_on_delta_allowed if {
 	inp := select_input("admin", ["scout-admin"], "delta", "default", "reports")
-	trino.allow with input as inp with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+	trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
 test_information_schema_allowed if {
 	inp := select_input("alice", ["scout-user"], "delta", "information_schema", "tables")
-	trino.allow with input as inp with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+	trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
 test_system_catalog_allowed if {
 	inp := select_input("alice", ["scout-user"], "system", "runtime", "queries")
-	trino.allow with input as inp with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+	trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
 test_execute_query_no_resource_allowed if {
 	inp := execute_query_input("alice", ["scout-user"])
-	trino.allow with input as inp with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+	trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
 test_access_catalog_delta_allowed if {
@@ -133,7 +133,7 @@ test_access_catalog_delta_allowed if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "AccessCatalog", "resource": {"catalog": {"name": "delta"}}},
 	}
-	trino.allow with input as inp with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+	trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
 test_filter_catalogs_delta_allowed if {
@@ -144,7 +144,7 @@ test_filter_catalogs_delta_allowed if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "FilterCatalogs", "resource": {"catalog": {"name": "delta"}}},
 	}
-	trino.allow with input as inp with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+	trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
 test_filter_catalogs_system_allowed if {
@@ -152,7 +152,7 @@ test_filter_catalogs_system_allowed if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "FilterCatalogs", "resource": {"catalog": {"name": "system"}}},
 	}
-	trino.allow with input as inp with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+	trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
 test_filter_catalogs_unknown_denied if {
@@ -160,7 +160,7 @@ test_filter_catalogs_unknown_denied if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "FilterCatalogs", "resource": {"catalog": {"name": "iceberg"}}},
 	}
-	not trino.allow with input as inp with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+	not trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
 test_show_catalogs_no_resource_allowed if {
@@ -168,7 +168,7 @@ test_show_catalogs_no_resource_allowed if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "ShowCatalogs"},
 	}
-	trino.allow with input as inp with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+	trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
 test_show_tables_schema_allowed if {
@@ -176,7 +176,7 @@ test_show_tables_schema_allowed if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "ShowTables", "resource": {"schema": {"catalogName": "delta", "schemaName": "default"}}},
 	}
-	trino.allow with input as inp with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+	trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
 test_filter_schemas_allowed if {
@@ -184,7 +184,7 @@ test_filter_schemas_allowed if {
 		"context": {"identity": {"user": "alice", "groups": ["scout-user"]}},
 		"action": {"operation": "FilterSchemas", "resource": {"schema": {"catalogName": "delta", "schemaName": "default"}}},
 	}
-	trino.allow with input as inp with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+	trino.allow with input as inp with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 }
 
 # === View-only tables =========================================================
@@ -196,7 +196,7 @@ test_filter_schemas_allowed if {
 test_select_from_hidden_table_denied if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_report_patient_mapping")
 	not trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.hidden_tables as fixture_hidden_tables
 }
 
@@ -211,7 +211,7 @@ test_filter_tables_hides_hidden_table if {
 		},
 	}
 	not trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.hidden_tables as fixture_hidden_tables
 }
 
@@ -224,8 +224,28 @@ test_show_columns_on_hidden_table_denied if {
 		},
 	}
 	not trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.hidden_tables as fixture_hidden_tables
+}
+
+test_baseline_hidden_table_blocked_without_inventory if {
+	# Baseline (patient mapping) is hardcoded in policy/trino/main.rego;
+	# direct SELECT must be denied even when data.hidden_tables is empty
+	# (a partner deployment that hasn't added any site-specific entries).
+	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_report_patient_mapping")
+	not trino.allow with input as inp
+		with trino.user_attrs as {"enabled": true, "groups": ["scout-user"]}
+		with data.hidden_tables as []
+}
+
+test_inventory_hidden_table_blocked if {
+	# Inventory-added hidden tables are unioned on top of the baseline.
+	# A site-specific custom join table not in the baseline still gets
+	# blocked when listed in data.hidden_tables.
+	inp := select_input("alice", ["scout-user"], "delta", "default", "site_custom_join")
+	not trino.allow with input as inp
+		with trino.user_attrs as {"enabled": true, "groups": ["scout-user"]}
+		with data.hidden_tables as [{"catalog": "delta", "schema": "default", "table": "site_custom_join"}]
 }
 
 # === bypass_hidden_tables ==================================================
@@ -239,7 +259,7 @@ test_select_hidden_table_allowed_with_bypass if {
 	# reports_report_patient_mapping directly.
 	inp := select_input("admin", ["scout-admin"], "delta", "default", "reports_report_patient_mapping")
 	trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "bypass_hidden_tables": ["true"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "bypass_hidden_tables": ["true"]}
 		with data.hidden_tables as fixture_hidden_tables
 }
 
@@ -253,7 +273,7 @@ test_filter_tables_shows_hidden_table_with_bypass if {
 		},
 	}
 	trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "bypass_hidden_tables": ["true"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "bypass_hidden_tables": ["true"]}
 		with data.hidden_tables as fixture_hidden_tables
 }
 
@@ -262,7 +282,7 @@ test_bypass_false_does_not_unlock if {
 	# accidental string-typo bypass (e.g. ["yes"] or [""]).
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_report_patient_mapping")
 	not trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "bypass_hidden_tables": ["false"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "bypass_hidden_tables": ["false"]}
 		with data.hidden_tables as fixture_hidden_tables
 }
 
@@ -270,7 +290,7 @@ test_bypass_unset_does_not_unlock if {
 	# Default deny remains when the user just doesn't have the attribute.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_report_patient_mapping")
 	not trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.hidden_tables as fixture_hidden_tables
 }
 
@@ -279,7 +299,7 @@ test_bypass_only_unlocks_hidden_tables if {
 	# enabled gate still apply. Disabled user with bypass is still denied.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_report_patient_mapping")
 	not trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": false, "bypass_hidden_tables": ["true"]}
+		with trino.user_attrs as{"enabled": false, "bypass_hidden_tables": ["true"]}
 		with data.hidden_tables as fixture_hidden_tables
 }
 
@@ -288,7 +308,7 @@ test_non_hidden_table_still_allowed if {
 	# affect tables outside the list.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.hidden_tables as fixture_hidden_tables
 }
 
@@ -302,7 +322,7 @@ test_hidden_prefix_match_denies_direct_select if {
 	# `secrets_*` table, not just one named "secrets_".
 	inp := select_input("alice", ["scout-user"], "delta", "default", "secrets_pii")
 	not trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.hidden_tables as [{"catalog": "delta", "schema": "default", "table_prefix": "secrets_"}]
 }
 
@@ -311,7 +331,7 @@ test_hidden_prefix_match_does_not_overreach_to_other_schema if {
 	# a different schema should NOT be matched.
 	inp := select_input("alice", ["scout-user"], "delta", "audit", "secrets_pii")
 	trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.hidden_tables as [{"catalog": "delta", "schema": "default", "table_prefix": "secrets_"}]
 }
 
@@ -321,7 +341,7 @@ test_row_filter_emitted_via_prefix_match if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_curated")
 	expected := {{"expression": "sending_facility IN ('WUSM')"}}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as [{"catalog": "delta", "schema": "default", "table_prefix": "reports_"}]
 }
@@ -335,7 +355,7 @@ test_row_filter_not_emitted_for_hidden_table_even_if_prefix_matches if {
 	# latent footgun. Test the explicit guarantee.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_report_patient_mapping")
 	count(trino.rowFilters) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as [{"catalog": "delta", "schema": "default", "table_prefix": "reports_"}]
 		with data.hidden_tables as [{"catalog": "delta", "schema": "default", "table": "reports_report_patient_mapping"}]
@@ -346,7 +366,7 @@ test_row_filter_not_emitted_for_non_prefixed_table if {
 	# explicit entries.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "audit_log")
 	count(trino.rowFilters) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as [{"catalog": "delta", "schema": "default", "table_prefix": "reports_"}]
 }
@@ -364,7 +384,7 @@ test_create_view_with_select_bypasses_hidden_table_block if {
 		},
 	}
 	trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.hidden_tables as fixture_hidden_tables
 }
 
@@ -380,7 +400,7 @@ test_select_from_hidden_table_still_denied_for_invoker if {
 		},
 	}
 	not trino.allow with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.hidden_tables as fixture_hidden_tables
 }
 
@@ -390,7 +410,7 @@ test_no_attrs_emits_zero_row_clamp if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "1=0"}}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -399,7 +419,7 @@ test_single_facility_emits_in_clause if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "sending_facility IN ('WUSM')"}}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -408,7 +428,7 @@ test_multi_facility_emits_in_clause if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "sending_facility IN ('WUSM','BJH')"}}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM", "BJH"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM", "BJH"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -416,7 +436,7 @@ test_multi_facility_emits_in_clause if {
 test_wildcard_facility_emits_no_filter if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	count(trino.rowFilters) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["*"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["*"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -426,7 +446,7 @@ test_wildcard_mixed_with_codes_emits_no_filter if {
 	# in the presence of the wildcard.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	count(trino.rowFilters) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM", "*"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM", "*"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -437,7 +457,7 @@ test_admin_without_wildcard_gets_filter if {
 	inp := select_input("admin", ["scout-admin"], "delta", "default", "reports")
 	expected := {{"expression": "sending_facility IN ('WUSM')"}}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -446,7 +466,7 @@ test_admin_without_attrs_gets_zero_row_clamp if {
 	inp := select_input("admin", ["scout-admin"], "delta", "default", "reports")
 	expected := {{"expression": "1=0"}}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -457,7 +477,7 @@ test_injection_attempt_dropped if {
 	inp := select_input("mallory", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "sending_facility IN ('WUSM')"}}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM", "'); DROP TABLE reports; --"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM", "'); DROP TABLE reports; --"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -466,7 +486,7 @@ test_only_invalid_values_emits_zero_row_clamp if {
 	inp := select_input("mallory", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "1=0"}}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["bad with spaces", "$%^"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["bad with spaces", "$%^"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -477,7 +497,7 @@ test_only_invalid_values_emits_zero_row_clamp if {
 test_no_filter_on_information_schema if {
 	inp := select_input("alice", ["scout-user"], "delta", "information_schema", "tables")
 	count(trino.rowFilters) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -487,7 +507,7 @@ test_no_filter_on_unscoped_delta_table if {
 	# — even when the user has attributes that would otherwise filter.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "other_table")
 	count(trino.rowFilters) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -495,7 +515,7 @@ test_no_filter_on_unscoped_delta_table if {
 test_no_filter_on_system_catalog if {
 	inp := select_input("alice", ["scout-user"], "system", "runtime", "queries")
 	count(trino.rowFilters) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -514,7 +534,7 @@ test_two_attributes_emit_two_filters if {
 		{"expression": "modality IN ('CT')"},
 	}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"], "allowed_modalities": ["CT"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"], "allowed_modalities": ["CT"]}
 		with data.attribute_filters as fixture_two_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -525,7 +545,7 @@ test_wildcard_one_attribute_still_filters_other if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "modality IN ('CT','MR')"}}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["*"], "allowed_modalities": ["CT", "MR"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["*"], "allowed_modalities": ["CT", "MR"]}
 		with data.attribute_filters as fixture_two_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -541,7 +561,7 @@ test_missing_attribute_clamps_to_zero_rows if {
 		{"expression": "1=0"},
 	}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as fixture_two_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 }
@@ -557,7 +577,7 @@ test_view_owner_bypasses_row_filter if {
 	# attributes (which would normally trigger the 1=0 clamp).
 	inp := select_input("trino", [], "delta", "default", "reports")
 	count(trino.rowFilters) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 		with data.view_owner_principals as fixture_view_owner_principals
@@ -570,7 +590,7 @@ test_view_owner_bypasses_column_mask if {
 	inp := batch_mask_input("trino", [], "delta", "default", "reports",
 		["patient_name"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.masked_columns as fixture_masked_columns
 		with data.view_owner_principals as fixture_view_owner_principals
 }
@@ -581,7 +601,7 @@ test_non_view_owner_still_gets_row_filter if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "1=0"}}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.attribute_filters as fixture_attribute_filters
 		with data.filtered_tables as fixture_filtered_tables
 		with data.view_owner_principals as fixture_view_owner_principals
@@ -600,7 +620,7 @@ test_attribute_tables_override_scopes_filter if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {{"expression": "sending_facility IN ('WUSM')"}}
 	trino.rowFilters == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as override_filters
 		with data.filtered_tables as [{"catalog": "delta", "schema": "default", "table": "other"}]
 }
@@ -614,7 +634,7 @@ test_attribute_tables_override_skips_unscoped_table if {
 	}}
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports_dx")
 	count(trino.rowFilters) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
 		with data.attribute_filters as override_filters
 		with data.filtered_tables as [{"catalog": "delta", "schema": "default", "table": "reports_dx"}]
 }
@@ -627,7 +647,7 @@ test_phi_columns_masked_when_default_unset if {
 		["patient_name", "modality", "sending_facility"])
 	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -636,7 +656,7 @@ test_phi_columns_masked_when_explicit_true if {
 		["patient_name"])
 	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["true"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["true"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -644,7 +664,7 @@ test_phi_columns_unmasked_when_explicit_false if {
 	inp := batch_mask_input("alice", ["scout-user"], "delta", "default", "reports",
 		["patient_name", "full_patient_name", "zip_or_postal_code"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["false"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["false"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -653,7 +673,7 @@ test_admin_phi_unmasked_when_explicit_false if {
 	inp := batch_mask_input("admin", ["scout-admin"], "delta", "default", "reports",
 		["patient_name"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["false"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"], "mask_phi_fields": ["false"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -663,7 +683,7 @@ test_admin_phi_masked_when_default if {
 		["patient_name"])
 	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -675,7 +695,7 @@ test_multiple_phi_columns_in_batch_all_masked if {
 		{"index": 2, "viewExpression": {"expression": "'[REDACTED]'"}},
 	}
 	trino.batchColumnMasks == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -683,7 +703,7 @@ test_no_masked_columns_in_batch_emits_empty if {
 	inp := batch_mask_input("alice", ["scout-user"], "delta", "default", "reports",
 		["modality", "sending_facility"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -692,7 +712,7 @@ test_mask_only_in_delta_catalog if {
 	inp := batch_mask_input("alice", ["scout-user"], "system", "runtime", "queries",
 		["patient_name"])
 	count(trino.batchColumnMasks) == 0 with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -703,7 +723,7 @@ test_mask_applies_to_any_delta_table if {
 		["patient_name"])
 	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -719,7 +739,7 @@ test_complex_type_masked_with_null if {
 		[{"name": "full_patient_name", "type": complex_type}])
 	expected := {{"index": 0, "viewExpression": {"expression": "NULL"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -730,7 +750,7 @@ test_varchar_with_length_masked_with_redacted if {
 		[{"name": "patient_name", "type": "varchar(255)"}])
 	expected := {{"index": 0, "viewExpression": {"expression": "'[REDACTED]'"}}}
 	trino.batchColumnMasks == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -746,7 +766,7 @@ test_mixed_types_in_batch if {
 		{"index": 1, "viewExpression": {"expression": "NULL"}},
 	}
 	trino.batchColumnMasks == expected with input as inp
-		with data.approved_groups as ["scout-user"] with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
+		with trino.user_attrs as{"enabled": true, "groups": ["scout-user"]}
 		with data.masked_columns as fixture_masked_columns
 }
 
@@ -793,7 +813,7 @@ test_admin_cannot_impersonate if {
 
 test_user_attrs_reads_from_data_users if {
 	# The end-to-end rule: identity → data.users[user] → attrs map.
-	# Tests for downstream rules use `with data.approved_groups as ["scout-user"] with trino.user_attrs as{...}`
+	# Tests for downstream rules use `with trino.user_attrs as{...}`
 	# directly; this one nails down that the lookup path itself works.
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	expected := {"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}
@@ -823,7 +843,6 @@ test_enabled_user_in_bundle_can_select if {
 	inp := select_input("alice", ["scout-user"], "delta", "default", "reports")
 	trino.allow with input as inp
 		with data.users as {"alice": {"enabled": true, "groups": ["scout-user"], "allowed_facilities": ["WUSM"]}}
-		with data.approved_groups as ["scout-user"]
 }
 
 test_enabled_user_not_in_approved_group_denied if {
@@ -834,16 +853,14 @@ test_enabled_user_not_in_approved_group_denied if {
 	inp := select_input("federated", ["scout-user"], "delta", "default", "reports")
 	not trino.allow with input as inp
 		with data.users as {"federated": {"enabled": true, "groups": [], "allowed_facilities": ["WUSM"]}}
-		with data.approved_groups as ["scout-user"]
 }
 
 test_enabled_user_in_scout_admin_can_select if {
-	# scout-admin is also in data.approved_groups; a user in scout-admin
-	# but not scout-user is still approved.
+	# scout-admin is in the hardcoded approved_groups set in main.rego;
+	# a user in scout-admin but not scout-user is still approved.
 	inp := select_input("admin", ["scout-admin"], "delta", "default", "reports")
 	trino.allow with input as inp
 		with data.users as {"admin": {"enabled": true, "groups": ["scout-admin"], "allowed_facilities": ["*"]}}
-		with data.approved_groups as ["scout-user", "scout-admin"]
 }
 
 test_disabled_user_in_bundle_denied_at_allow if {

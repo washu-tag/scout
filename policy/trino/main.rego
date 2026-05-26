@@ -18,11 +18,12 @@ package trino
 #   data.filtered_tables       : [{catalog, schema, table|table_prefix}]
 #                                                                # static (inventory)
 #   data.hidden_tables      : [{catalog, schema, table|table_prefix}]
-#                                                                # static (inventory)
+#                                # site-specific additions only (inventory);
+#                                # baseline patient-mapping entries are
+#                                # hardcoded below in `baseline_hidden_tables`
 #   data.view_owner_principals : [identity_name]                 # static (inventory)
 #   data.attribute_filters     : {<attr_name>: {column, tables?}} # static (inventory)
 #   data.masked_columns        : [column_name]                   # static (inventory)
-#   data.approved_groups       : [group_name]                    # static (inventory)
 #   data.users.<username>      : {
 #                                  "enabled": bool,
 #                                  "groups": [group_name, ...],
@@ -78,22 +79,25 @@ is_system_identity if input.context.identity.user in trino_service_principals
 
 # `user_enabled` is the approval+enabled gate. True for system identities
 # (carve-out above) and for end-users whose bundle entry has both
-# enabled=true AND membership in one of the inventory-configured approval
-# groups (data.approved_groups, e.g. scout-user / scout-admin). The group
-# check exists because Keycloak federates from upstream IdPs — a user can
-# land in the realm with enabled=true purely from a successful upstream
-# OIDC login, before going through Scout's approval flow that adds them
-# to scout-user. The approved-group check is what catches that gap.
+# enabled=true AND membership in one of the approved groups below. The
+# group check exists because Keycloak federates from upstream IdPs — a
+# user can land in the realm with enabled=true purely from a successful
+# upstream OIDC login, before going through Scout's approval flow that
+# adds them to scout-user. The approved-group check catches that gap.
 # Absent / disabled / unapproved users fall through to the default false
 # and are denied at /allow before any row filter or mask runs.
-
-default approved_groups_set := set()
-
-approved_groups_set := {g | some g in data.approved_groups}
+#
+# `approved_groups` is hardcoded here because the same group names are
+# hardcoded in the Keycloak realm template
+# (ansible/roles/keycloak/templates/scout-realm.json.j2). Both sides are
+# managed by the same team; if the group set ever needs to expand it's
+# one rego edit + one realm-template edit, not worth the inventory
+# plumbing.
+approved_groups := {"scout-user", "scout-admin"}
 
 user_in_approved_group if {
 	some g in user_attrs.groups
-	g in approved_groups_set
+	g in approved_groups
 }
 
 default user_enabled := false
@@ -258,10 +262,33 @@ table_entry_matches(entry, in_table) if {
 	startswith(in_table.table, entry.table_prefix)
 }
 
-# True if the input table matches any entry in data.hidden_tables
-# (either shape — exact or prefix). Used both by hidden_table_blocked (the
-# /allow gate) and by attribute_scopes_table (to exclude these tables
-# from row-filter scoping; see the comment there).
+# Baseline hidden tables: the patient mapping pair written by the
+# hl7-transformer. Hardcoded here (not inventory-driven) because they're
+# intrinsic to Scout's data lake shape — every deployment has them, and
+# they carry cross-facility identifiers keyed on scout_patient_id rather
+# than sending_facility, so row filters can't constrain them. Direct
+# SELECT must be denied; removing the protection would be a security
+# regression. If the hl7-transformer renames these, update this list
+# (same-team coupling, same pattern as approved_groups above).
+#
+# data.hidden_tables (inventory) is unioned on top for site-specific
+# additions (e.g., a partner's custom cross-facility join table).
+baseline_hidden_tables := [
+	{"catalog": "delta", "schema": "default", "table": "reports_report_patient_mapping"},
+	{"catalog": "delta", "schema": "default", "table": "reports_report_patient_mapping_history"},
+]
+
+# True if the input table matches any baseline or inventory-added
+# hidden-table entry (either shape — exact or prefix). Used both by
+# hidden_table_blocked (the /allow gate) and by attribute_scopes_table
+# (to exclude these tables from row-filter scoping; see the comment there).
+# Two rules — `is_hidden_table` is the OR — so the baseline still applies
+# even if data.hidden_tables is undefined or empty in a given environment.
+is_hidden_table if {
+	some t in baseline_hidden_tables
+	table_entry_matches(t, input_table)
+}
+
 is_hidden_table if {
 	some t in data.hidden_tables
 	table_entry_matches(t, input_table)

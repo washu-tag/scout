@@ -20,7 +20,7 @@ The design question is **how OPA gets user attribute data**. Three families of s
 2. **All OPA replicas converge to the same state** without cross-replica coordination code.
 3. **Pod restarts recover without manual intervention** — new OPA replicas come up with full data before serving traffic.
 4. **Decisions don't depend on Keycloak availability**. A Keycloak outage should not degrade in-flight Trino authorization.
-5. **Minimal new image surface for partner sites.** Scout's air-gapped deployments require any new container image to be mirrored to the partner's registry, scanned, and patched on their cadence (ADR 0017). New images have a meaningful operational cost across deployments.
+5. **Minimize new operational surface.** Each new component is more code to audit, more dependencies to track for CVEs, and more pieces for Scout's deployment story to maintain across releases. Prefer solutions that reuse existing infrastructure over solutions that introduce new control planes.
 
 ## Decision
 
@@ -74,7 +74,7 @@ Drop the listener entirely. Live with a multi-minute TTL as the attribute-propag
 - **All replicas converge without cross-replica coordination.** Each OPA pod polls independently on its own clock; they reach the same `data.users` snapshot within one pull interval. No fan-out from the listener, no gossip protocol, no leader election.
 - **Cold start works correctly.** OPA's bundle plugin doesn't let the pod declare Ready until the first bundle load succeeds, so new replicas join the Service endpoints with full data already loaded. No init-container race window.
 - **Decisions survive Keycloak outages.** OPA serves the last-pulled bundle indefinitely from its on-disk cache. Stale-but-correct authorization continues during Keycloak maintenance windows.
-- **Air-gapped friendly.** Bundle storage is in-cluster MinIO. Nothing new for partners to mirror, scan, or patch.
+- **No new control-plane components.** Bundle storage is in-cluster MinIO, which Scout already operates. No additional services to deploy, monitor, or upgrade.
 
 ### Negative
 
@@ -94,7 +94,7 @@ bundle.tar.gz
     └── data.json      # { "alice": {...}, "bob": {...}, ... }
 ```
 
-`roots: ["users"]` declares ownership of the `data.users` subtree. OPA's bundle plugin uses `roots` to scope atomic swaps, so the user bundle doesn't collide with the static data (`filtered_tables`, `hidden_tables`, `attribute_filters`, `masked_columns`) rendered into OPA's ConfigMap by the Ansible role.
+`roots: ["users"]` scopes the atomic swap to `data.users` so the bundle doesn't collide with the static data (`filtered_tables`, `hidden_tables`, etc.) rendered into OPA's ConfigMap by the Ansible role.
 
 ### Per-user payload shape
 
@@ -108,62 +108,7 @@ bundle.tar.gz
 }
 ```
 
-User-profile attribute values mirror Keycloak's `Map<String, List<String>>` shape (multivalued by default), so the listener writes them verbatim — no per-key schema in two places. Two fields are synthesized from the user row rather than the attributes map: `enabled` is the bare bool from `UserModel.isEnabled()`, and `groups` is the list of group names from `UserModel.getGroupsStream()`. Both feed the policy's `user_enabled` gate (ADR 0020): the user must have `enabled: true` AND belong to a group named in `data.approved_groups`. A missing user entry resolves to the deny-all default in Rego; an explicit `enabled: false` (or `groups: []`) is preferred when an operator wants to observe state directly in OPA's data document while diagnosing "why can't alice query."
-
-The listener handles both `USER` and `GROUP_MEMBERSHIP` admin events: attribute changes fire as `USER` UPDATE, while add/remove from a group fires as `GROUP_MEMBERSHIP` CREATE/DELETE. Both paths re-snapshot the user with their current group list, so removing someone from `scout-user` propagates to OPA on the next bundle pull.
-
-### MinIO topology
-
-- Bucket: `opa-bundles`. Versioning enabled so a bad bundle can be rolled back by selecting a prior object version.
-- Two service accounts via the existing MinIO Ansible pattern (mirrors `s3_lake_reader` / `s3_lake_writer`):
-  - `opa-bundle-writer`: `PutObject` on `opa-bundles/scout/bundle.tar.gz` only. Mounted into the Keycloak pod via a Kubernetes Secret + envFrom.
-  - `opa-bundle-reader`: `GetObject` on `opa-bundles/scout/*`. Mounted into each OPA pod the same way.
-
-### Keycloak listener
-
-`OpaUserBundlePublisherProvider` lives in `keycloak/event-listener/`, alongside the existing `user-approval-email` listener (same JAR, same operator `additionalOptions` plumbing).
-
-- `postInit()` walks `session.users()` to build the initial in-memory `Map<String, UserAttrs>` and writes the first bundle to MinIO.
-- `onEvent(AdminEvent)` handles `USER` `UPDATE` / `CREATE` (refresh that user's entry from `session.users()`) and `DELETE` (remove from map). For DELETE, the username comes from `event.getDetails().get("username")` since the user row is already gone by the time the event fires.
-- Each event marks the bundle dirty and schedules a debounced write (1-second window). The debounce coalesces a burst of admin actions into one S3 PUT.
-- On debounce fire: take a copy of the map under a lock, render JSON, build the tarball in-memory, PUT to MinIO with `Content-Type: application/gzip`.
-
-Env vars threaded through the Keycloak operator's `additionalOptions`: MinIO endpoint URL, bucket name, object key, region, realm, access key, secret key (see `ansible/roles/keycloak/tasks/deploy.yaml`).
-
-### OPA configuration
-
-The OPA Helm values include `services` and `bundles` blocks:
-
-```yaml
-services:
-  minio:
-    url: http://minio.scout-data.svc:9000
-    credentials:
-      s3_signing:
-        environment_credentials: {}   # reader creds from mounted Secret env vars
-
-bundles:
-  scout-users:
-    service: minio
-    resource: opa-bundles/scout/bundle.tar.gz
-    polling:
-      min_delay_seconds: 5
-      max_delay_seconds: 10
-    persist: true
-```
-
-`persist: true` writes the last successfully loaded bundle to a Pod-local emptyDir so a restart during a MinIO outage doesn't drop OPA to deny-all.
-
-### Rego shape
-
-`policy/trino/main.rego` reads user attributes directly from `data.users`:
-
-```rego
-default user_attrs := {"enabled": false}
-user_attrs := data.users[input.context.identity.user] if identity_present
-```
-
-An `enabled` check gates the rules that consume `user_attrs`, so a disabled user gets deny-all even if their attributes are still in the bundle (covers the "DELETE event in flight" race). Service principals (`superset_svc`, `openwebui_mcp_svc`, `voila_svc`) aren't in `data.users` — the `is_system_identity` carve-out exempts them from the `user_enabled` gate.
+User-profile attribute values mirror Keycloak's `Map<String, List<String>>` shape so the listener writes them verbatim — no per-key schema in two places. `enabled` and `groups` are synthesized from the user row to feed the policy's `user_enabled` approval gate (ADR 0020). The listener handles both `USER` and `GROUP_MEMBERSHIP` admin events so adding/removing someone from `scout-user` propagates on the next bundle pull.
 
 ### Failure modes
 

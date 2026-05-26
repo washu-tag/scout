@@ -60,26 +60,22 @@ trino_view_owner_principals:
 trino_filtered_tables:
   - { catalog: delta, schema: default, table_prefix: '{{ report_delta_table_name }}' }
 
-# Tables denied for direct access. Users querying these by name get a
-# permission error, and the tables are hidden from SHOW TABLES output.
-# Intended for join-target tables (e.g. the patient mapping) where the
-# row filters can't reach — a user restricted to WUSM could otherwise
-# enumerate every patient identifier by selecting from the mapping
-# table directly.
+# Additional tables denied for direct access. Users querying these by
+# name get a permission error, and the tables are hidden from SHOW
+# TABLES output. The patient mapping pair written by the hl7-transformer
+# (reports_report_patient_mapping + _history) is hardcoded as a baseline
+# in policy/trino/main.rego — that's intrinsic to Scout's data lake
+# shape and can't be safely removed. This list is unioned on top for
+# site-specific cross-facility join tables.
 #
-# Default-locks the patient mapping pair (mapping + history) that the
-# hl7-transformer writes. Both carry cross-facility patient identifiers
-# (mpi, epic_mrn, scout_patient_id) keyed on scout_patient_id rather
-# than sending_facility, so row filters can't constrain them — direct
-# SELECT has to be denied. The `_epic_view` join views over these
-# tables keep working because the hl7-transformer creates them with
-# Trino's default SECURITY DEFINER (view's underlying reads aren't
+# Intended for join-target tables where the row filters can't reach
+# (e.g., tables keyed on scout_patient_id rather than sending_facility).
+# `_epic_view`-style join views over these tables keep working because
+# they're created SECURITY DEFINER (view's underlying reads aren't
 # re-checked against the invoker's permissions). Verify with
 # `SHOW CREATE VIEW <name>` before adding a new entry whose views
 # need to keep working.
-trino_hidden_tables:
-  - { catalog: delta, schema: default, table: reports_report_patient_mapping }
-  - { catalog: delta, schema: default, table: reports_report_patient_mapping_history }
+trino_hidden_tables: []
 
 # `trino_attribute_filters` lives in scout_common/defaults/main.yaml —
 # it's the single source of truth shared by the keycloak role (renders
@@ -100,19 +96,6 @@ trino_masked_columns:
   - patient_name
   - full_patient_name
   - zip_or_postal_code
-
-# Keycloak groups whose members count as "approved Scout users" for
-# the OPA user_enabled gate. A user must have enabled=true AND belong
-# to one of these groups for any /allow decision to fire (service
-# principals get a separate carve-out via is_system_identity). The
-# distinction matters because Keycloak federates from upstream IdPs:
-# a user can land in the realm with enabled=true purely from a
-# successful upstream OIDC login, before going through Scout's
-# approval flow that adds them to scout-user. The approved-group
-# check is what catches that gap.
-trino_approved_groups:
-  - scout-user
-  - scout-admin
 
 # MinIO bundle endpoint (ADR 0021). OPA's bundle plugin pulls
 # /opa-bundles/scout/bundle.tar.gz from MinIO every 5–10s; the bundle is
