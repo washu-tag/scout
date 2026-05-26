@@ -55,11 +55,12 @@ Each impersonation-pattern client gets its own Keycloak service principal — `s
 ```
 JupyterHub (JWT pass-through)
 ─────────────────────────────
-  user logs in → JupyterHub gets refresh_token via auth_state
+  user logs in via Keycloak OIDC → Hub stores auth_state {access, refresh} Hub-side
+       ↓ (kernel holds only JUPYTERHUB_API_TOKEN — no Keycloak token at spawn)
+  notebook → scout_trino fetches the ACCESS token from the Hub API on demand
+    (Hub's refresh_user refreshes it near expiry; refresh_token + client_secret never reach the pod)
        ↓
-  kernel spawn: auth_state token → kernel env
-       ↓
-  notebook code: trino.dbapi.connect(auth=JWTAuthentication(token))
+  notebook code: trino.dbapi.connect(auth=JWTAuthentication(access_token))
        ↓
   Trino: principal=alice, user=alice → OPA evaluates against data.users["alice"]
 
@@ -81,8 +82,8 @@ Voila (JWT + impersonation, with a header chain)
   user → oauth2-proxy (pass_access_token=true, set_xauthrequest=true)
        ↓ X-Auth-Request-Access-Token: <user OIDC token>
   Traefik forwardAuth → Voila pod
-       ↓ scout_voila monkey-patches TornadoVoilaHandler.get to capture header → contextvar
-  Voila spawns kernel → ScoutMappingKernelManager injects token into kernel env
+       ↓ scout_voila overrides Voila's GET handler → stashes token in a contextvar
+  Voila spawns kernel → ScoutMappingKernelManager (class config) reads contextvar → kernel env
        ↓
   playbook code: scout_trino.connect()
                    - decodes preferred_username from env token
@@ -108,7 +109,7 @@ Open WebUI MCP (HTTP Basic + impersonation)
 |---|---|---|
 | Service-principal access token (`superset_svc`, `voila_svc`) | 14400 s (~4 h) | Client helpers re-mint before exp via cached `client_credentials` |
 | MCP service-principal password | Static (rotated via Ansible) | N/A — bcrypted into `password.db` |
-| End-user JWT (Jupyter `auth_state`) | Realm default (~5 min access, ~30 min refresh) | JupyterHub refreshes via refresh token; kernel-side `scout_trino` retries on 401 |
+| End-user access token (Jupyter, held Hub-side in `auth_state`) | Realm default (~5 min access, ~30 min refresh) | Hub's `refresh_user` refreshes via the refresh token; `scout_trino` re-fetches from the Hub API before expiry |
 
 Service-principal tokens are deliberately long-lived to cover a multi-hour notebook or dashboard session without per-call refresh round-trips. They never leave the pod that owns them (Kubernetes Secret + NetworkPolicy on Trino).
 
@@ -124,6 +125,8 @@ allow if {
     input.context.identity.user in trino_service_principals
 }
 ```
+
+A principal is recognized as a service principal purely by membership in this hardcoded set — no attribute or group drives it. Each name is the bare client ID of a Keycloak `serviceAccountsEnabled` client: Keycloak names its service-account user `service-account-<clientId>`, and Trino's `jwt.user-mapping.pattern` strips the prefix so `identity.user` is `<clientId>`. The set is hardcoded for the same reason as `approved_groups` (ADR 0020) — the rego and the realm template are owned by the same team, so adding a principal is one rego edit plus one client.
 
 A regular user (JupyterHub JWT pass-through) attempting `X-Trino-User: bob` to escalate would fail this rule — their principal is `alice`, not a service principal. Combined with Keycloak's signing key (the only way to mint a JWT that survives JWKS validation), the only way to forge identity is to compromise a service-principal credential.
 
@@ -194,7 +197,7 @@ Instead of `superset_svc` + `openwebui_mcp_svc` + `voila_svc`, use one `trino_im
 - **Trino TLS**: cert-manager-issued PKCS12 keystore mounted into the coordinator. Internal CA bundle distributed to client namespaces via a Secret/ConfigMap; clients pass it as `verify=<ca-path>` to their HTTP libraries.
 - **Impersonation allowlist**: `trino_service_principals` in `policy/trino/main.rego` — the same set drives the `ImpersonateUser` allow rule and the `is_system_identity` carve-out from `user_enabled` (service principals aren't in `data.users`).
 - **Keycloak realm template** (`ansible/roles/keycloak/templates/scout-realm.json.j2`) renders the three service-principal clients with `serviceAccountsEnabled: true`, the `trino-audience` scope attached, and `access.token.lifespan = 14400`. Secrets live in inventory under `keycloak_<name>_svc_client_secret`.
-- **Voila kernel env propagation**: see the per-client diagram. The full chain — oauth2-proxy header → Tornado monkey-patch → contextvar → `ScoutMappingKernelManager` → kernel env — is the longest of the four flows but is unavoidable: Voila has no native session-token-to-kernel propagation.
+- **Voila kernel env propagation**: the kernel manager is swapped via config (`VoilaConfiguration.multi_kernel_manager_class`), but Voila exposes no equivalent hook for its GET handler, so `scout_voila` overrides the handler directly to stash the forwarded token in a contextvar the manager reads at spawn. Contained to one method; the no-header path logs and falls back to anonymous (zero rows).
 - **MCP inbound validation**: the MCP's `oauth.enabled = true` + `oauth.mode = native` config validates the Keycloak OIDC token on every inbound request; `TRINO_IMPERSONATION_FIELD = username` picks `preferred_username` and sets it as `X-Trino-User`.
 - **`trino-rw` is not in scope.** The write-enabled instance has no OPA, no JWT auth, no impersonation — gated by NetworkPolicy per ADR 0019 and accessed by the specific pods on its allowlist (`hl7-transformer` for view DDL, Voila for reviewer-annotation writeback).
 
