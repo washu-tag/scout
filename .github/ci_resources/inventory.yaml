@@ -89,7 +89,6 @@ k3s_cluster:
     hive_readonly_postgres_password: hivero123
     superset_postgres_user: superset
     superset_postgres_password: superset123
-    postgres_resources: {} # No resource requests/limits
     postgres_parameters: {} # Use PG defaults
     postgres_storage_size: 5Gi
 
@@ -98,16 +97,12 @@ k3s_cluster:
     elasticsearch_storage_size: 1Gi
 
     # Local paths
+    # base_dir is consumed by k3s as --default-local-storage-path for the
+    # local-path provisioner; the per-service *_dir variables that used to
+    # live here are dead since storage moved to dynamic provisioning
+    # (ADR 0004).
     base_dir: /var/lib
     scout_repo_dir: WORK_DIR
-    minio_dir: '{{ base_dir }}/minio'
-    cassandra_dir: '{{ base_dir }}/cassandra'
-    elasticsearch_dir: '{{ base_dir }}/elasticsearch'
-    postgres_dir: '{{ base_dir }}/postgres'
-    prometheus_dir: '{{ base_dir }}/prometheus'
-    loki_dir: '{{ base_dir }}/loki'
-    grafana_dir: '{{ base_dir }}/grafana'
-    jupyter_dir: '{{ base_dir }}/jupyter'
     extractor_data_dir: '{{ scout_repo_dir }}/tests/ingest/staging_test_data'
 
     # Object storage paths
@@ -152,17 +147,15 @@ k3s_cluster:
       - { catalog: delta, schema: default, table: test_reports }
     # Two-dimension fixture so multi-filter compositions are exercised:
     # allowed_facilities AND allowed_modalities both clamp rows.
+    # The hidden-tables / bypass scenarios (rbac-tests/run.sh scenarios 6+7)
+    # probe reports_report_patient_mapping, which is denied via the
+    # hardcoded baseline in policy/trino/main.rego — no trino_hidden_tables
+    # entry needed here.
     trino_attribute_filters:
       allowed_facilities:
         column: sending_facility
       allowed_modalities:
         column: modality
-    # Lock down the patient-mapping table for the hidden-tables / bypass tests.
-    # The transformer doesn't run in smoke-test so the table isn't
-    # created — the deny still applies (deny on missing table is
-    # still a deny, which is the correct safety posture).
-    trino_hidden_tables:
-      - { catalog: delta, schema: default, table: reports_report_patient_mapping }
 
     # Spark default of 200 shuffle partitions is far too many for CI's
     # small test data — each shuffle spawns 200 tasks, most processing

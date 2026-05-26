@@ -112,17 +112,18 @@ is also safe.
 
 ## CI inventory differences from production
 
-`.github/ci_resources/inventory.yaml` overrides three RBAC-related
+`.github/ci_resources/inventory.yaml` overrides two RBAC-related
 groups so the assertions work without running HL7 ingest:
 
-* `trino_filtered_tables`: `test_reports` only (production lists all
-  the `reports*` tables; the test fixture has only this one).
+* `trino_filtered_tables`: `test_reports` only (production prefix-
+  matches the `reports*` family; the test fixture has only this one).
 * `trino_attribute_filters`: `allowed_facilities` + `allowed_modalities`
-  (matches the default but explicit here so the multi-dimension
-  scenarios are exercised).
-* `trino_hidden_tables`: `reports_report_patient_mapping` (the
-  table itself isn't created in CI; the deny rule still fires on a
-  non-existent table, which is the correct safety posture).
+  (production default has only `allowed_facilities`; the extra dimension
+  here exercises multi-filter composition).
+
+The hidden-tables / bypass scenarios (6 + 7) probe
+`reports_report_patient_mapping`, which is denied via the hardcoded
+baseline in `policy/trino/main.rego` — no inventory entry needed.
 
 If you add a new RBAC dimension or move attributes around, mirror the
 change in the CI inventory.
