@@ -55,7 +55,7 @@
         {
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"[% trino_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` [$__range]))",
           "queryType": "instant",
           "refId": "A"
         }
@@ -96,7 +96,7 @@
         {
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"[% trino_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` [$__range]))",
           "queryType": "instant",
           "refId": "A"
         }
@@ -130,7 +130,7 @@
         {
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "editorMode": "code",
-          "expr": "count(sum by(user) (count_over_time({namespace=\"[% trino_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` | json user=\"input.context.identity.user\" | user != `` [$__range])))",
+          "expr": "count(sum by(user) (count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` | json user=\"input.context.identity.user\" | user != `` [$__range])))",
           "queryType": "instant",
           "refId": "A"
         }
@@ -165,7 +165,7 @@
         {
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "editorMode": "code",
-          "expr": "max by(pod) (last_over_time({namespace=\"[% trino_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Status Log\"` | json | unwrap bundles_scout_users_active_revision [$__range]))",
+          "expr": "max by(pod) (last_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Status Log\"` | json | unwrap bundles_scout_users_active_revision [$__range]))",
           "legendFormat": "{{pod}}",
           "queryType": "range",
           "refId": "A"
@@ -232,7 +232,7 @@
         {
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"[% trino_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":true` [$__interval]))",
+          "expr": "sum(count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":true` [$__interval]))",
           "legendFormat": "Allow",
           "queryType": "range",
           "refId": "A"
@@ -240,7 +240,7 @@
         {
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"[% trino_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` [$__interval]))",
+          "expr": "sum(count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` [$__interval]))",
           "legendFormat": "Deny",
           "queryType": "range",
           "refId": "B"
@@ -297,7 +297,7 @@
         {
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "editorMode": "code",
-          "expr": "topk(20, sum by(user) (count_over_time({namespace=\"[% trino_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` | json user=\"input.context.identity.user\" | user != `` [$__range])))",
+          "expr": "topk(20, sum by(user) (count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` | json user=\"input.context.identity.user\" | user != `` [$__range])))",
           "format": "table",
           "instant": true,
           "queryType": "instant",
@@ -356,7 +356,7 @@
         {
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "editorMode": "code",
-          "expr": "topk(20, sum by(operation) (count_over_time({namespace=\"[% trino_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` | json operation=\"input.action.operation\" | operation != `` [$__range])))",
+          "expr": "topk(20, sum by(operation) (count_over_time({namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` | json operation=\"input.action.operation\" | operation != `` [$__range])))",
           "format": "table",
           "instant": true,
           "queryType": "instant",
@@ -407,7 +407,7 @@
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{namespace=\"[% trino_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` | json user=\"input.context.identity.user\", operation=\"input.action.operation\", decision=\"decision_id\", path=\"path\" | line_format `[{{.path}}] user={{.user}} op={{.operation}} decision_id={{.decision}}`",
+          "expr": "{namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"` |= `\"result\":false` | json user=\"input.context.identity.user\", operation=\"input.action.operation\", decision=\"decision_id\", path=\"path\" | line_format `[{{.path}}] user={{.user}} op={{.operation}} decision_id={{.decision}}`",
           "queryType": "range",
           "refId": "A"
         }
@@ -439,7 +439,7 @@
           "datasource": {"type": "loki", "uid": "loki_datasource_01"},
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{namespace=\"[% trino_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"`",
+          "expr": "{namespace=\"[% opa_namespace %]\", pod=~\"opa-trino-.*\"} |= `\"msg\":\"Decision Log\"`",
           "queryType": "range",
           "refId": "A"
         }

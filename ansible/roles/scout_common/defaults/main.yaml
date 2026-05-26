@@ -117,6 +117,12 @@ trino_rw_namespace: '{{ scout_extractor_namespace }}'
 trino_rw_release_name: trino-rw
 trino_rw_endpoint_host: '{{ trino_rw_release_name }}.{{ trino_rw_namespace }}'
 trino_rw_endpoint_port: 8080
+# OPA enforces Trino's access-control policy. Deployed alongside Trino so
+# the query path stays in-cluster. Surfaced in scout_common so consumer
+# roles (grafana for the decision-log dashboard, future
+# NetworkPolicy/alerts) can reference it without depending on the opa
+# role being loaded.
+opa_namespace: '{{ trino_namespace }}'
 superset_namespace: '{{ scout_analytics_namespace }}'
 jupyter_namespace: '{{ scout_analytics_namespace }}'
 chatbot_namespace: '{{ scout_analytics_namespace }}'

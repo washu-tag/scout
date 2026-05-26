@@ -6,8 +6,9 @@
 # query path stays in-cluster (and so a single NetworkPolicy on OPA can
 # allow only the Trino coordinator).
 
-# Namespace: deploy alongside Trino.
-opa_namespace: '{{ trino_namespace }}'
+# opa_namespace is defined in scout_common/defaults/main.yaml so consumer
+# roles (grafana decision-log dashboard, etc.) can reference it without
+# loading the opa role.
 
 # Image tag pinned in group_vars/all/versions.yaml.
 opa_image: openpolicyagent/opa
