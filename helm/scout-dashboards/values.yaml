@@ -6,8 +6,8 @@ image:
   pullPolicy: IfNotPresent
 
 # Trino connection details that get baked into the Scout Data Lake database YAML.
-# Port + scheme default to the chart's pre-RBAC HTTP listener (8080/http);
-# RBAC-enabled deploys set port=8443 and scheme=https to hit the HTTPS
+# Port + scheme default to the chart's pre-AuthZ HTTP listener (8080/http);
+# AuthZ-enabled deploys set port=8443 and scheme=https to hit the HTTPS
 # listener (DB_CONNECTION_MUTATOR adds the JWT + CA verify on top).
 trino:
   user: admin
@@ -24,7 +24,7 @@ supersetRelease:
   valkeyAuthSecret: superset-valkey-auth # REDIS_PASSWORD
   # When set, the import Job mounts this Secret's `ca.crt` at /etc/trino-ca/
   # so DB_CONNECTION_MUTATOR can verify Trino's self-signed TLS cert during
-  # dataset validation. Leave empty for non-RBAC clusters.
+  # dataset validation. Leave empty for non-AuthZ clusters.
   trinoCaSecret: ''
 
 # Admin username dashboards are imported as. Must exist in Superset already

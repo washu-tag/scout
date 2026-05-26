@@ -105,7 +105,7 @@ def query(sql: str) -> pd.DataFrame:
 
     Each call fetches a fresh JWT (cached when still valid) and opens
     a new Trino connection — connection overhead is small and this
-    keeps the auth flow simple. RBAC (row filters, column masks) is
+    keeps the auth flow simple. AuthZ (row filters, column masks) is
     applied per query based on the calling user's Keycloak attributes.
     """
     conn = connect(

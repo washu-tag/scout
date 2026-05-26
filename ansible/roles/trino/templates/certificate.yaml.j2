@@ -28,7 +28,7 @@ spec:
     pkcs12:
       create: true
       passwordSecretRef:
-        name: trino-rbac-env
+        name: trino-authz-env
         key: KEYSTORE_PASSWORD
   issuerRef:
     name: scout-internal-ca

@@ -1,6 +1,6 @@
 # Data Authorization Integration Tests
 
-End-to-end tests for the RBAC pipeline introduced by ADRs 0020 and 0021:
+End-to-end tests for the AuthZ pipeline introduced by ADRs 0020 and 0021:
 
 ```
 Keycloak admin set user attribute
@@ -38,7 +38,7 @@ Two Kubernetes Jobs, scheduled in sequence:
      workflow inlines `seed.py` as a ConfigMap entry and substitutes
      the image tag)
 
-2. **`rbac-tests/`** — runs after the seed completes. Uses
+2. **`authz-tests/`** — runs after the seed completes. Uses
    `alpine/curl` + `jq` + `bash` to walk through 8 scenarios that
    each: set Keycloak user attributes, wait for OPA's `data.users` to
    reflect the change, issue a Trino query as that user, assert on
@@ -68,10 +68,10 @@ typical case completes in 5-10 s.
 ## Why a separate suite
 
 `tests/ingest` connects to Trino via Spark direct, bypassing Trino's
-OPA enforcement entirely. Adding RBAC tests there would mean adding a
+OPA enforcement entirely. Adding AuthZ tests there would mean adding a
 Trino-JDBC path to that suite plus all the JWT plumbing — possible but
 mixes two test surfaces. Keeping data authorization tests separate
-matches the way the RBAC pipeline is conceptually distinct from data
+matches the way the AuthZ pipeline is conceptually distinct from data
 correctness: ingest tests verify the data shape that lands in the
 lake; data-authorization tests verify the query layer correctly
 restricts who can see which rows.
@@ -95,13 +95,13 @@ kubectl wait --for=condition=complete --timeout=300s \
 # from inventory)
 KC_PW="<from inventory keycloak_bootstrap_admin_password>"
 SVC_SECRET="<from inventory keycloak_superset_svc_client_secret>"
-RUN_SH=$(sed 's/^/    /' tests/data-authorization/rbac-tests/run.sh)
+RUN_SH=$(sed 's/^/    /' tests/data-authorization/authz-tests/run.sh)
 awk -v run_sh="$RUN_SH" -v kc_pw="$KC_PW" -v svc_secret="$SVC_SECRET" \
     '{ if (/PLACEHOLDER_RUN_SH/) { print run_sh } \
        else { gsub(/PLACEHOLDER_KC_ADMIN_PASSWORD/, kc_pw); \
               gsub(/PLACEHOLDER_SUPERSET_SVC_CLIENT_SECRET/, svc_secret); \
               print } }' \
-    tests/data-authorization/rbac-tests/job.yaml | kubectl apply -f -
+    tests/data-authorization/authz-tests/job.yaml | kubectl apply -f -
 kubectl logs -f -n scout-analytics job/data-authz-tests
 ```
 
@@ -112,7 +112,7 @@ is also safe.
 
 ## CI inventory differences from production
 
-`.github/ci_resources/inventory.yaml` overrides two RBAC-related
+`.github/ci_resources/inventory.yaml` overrides two AuthZ-related
 groups so the assertions work without running HL7 ingest:
 
 * `trino_filtered_tables`: `test_reports` only (production prefix-
@@ -125,5 +125,5 @@ The hidden-tables / bypass scenarios (6 + 7) probe
 `reports_report_patient_mapping`, which is denied via the hardcoded
 baseline in `policy/trino/main.rego` — no inventory entry needed.
 
-If you add a new RBAC dimension or move attributes around, mirror the
+If you add a new AuthZ dimension or move attributes around, mirror the
 change in the CI inventory.

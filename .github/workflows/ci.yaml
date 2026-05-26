@@ -161,7 +161,7 @@ jobs:
           chmod +x /tmp/opa
           sudo mv /tmp/opa /usr/local/bin/opa
           opa version
-      - name: 'Unit tests: OPA policy (Trino RBAC)'
+      - name: 'Unit tests: OPA policy (Trino AuthZ)'
         shell: bash
         run: opa test policy/ -v
       - name: 'Molecule tests: postgres role'
@@ -455,7 +455,7 @@ jobs:
             curl -sk -f https://localhost:8443/v1/info
       # Data authorization tests — ADR 0020 + 0021 + 0022 + 0023. Seeds a
       # synthetic delta.default.test_reports table, then exercises the
-      # end-to-end RBAC pipeline (Keycloak admin -> SPI listener ->
+      # end-to-end AuthZ pipeline (Keycloak admin -> SPI listener ->
       # MinIO bundle -> OPA pull -> Trino JWT auth + impersonation ->
       # row filter + column mask). See tests/data-authorization/.
       - name: 'Derive hl7-transformer image version'
@@ -510,7 +510,7 @@ jobs:
           # references both by name -- no template substitution.
           sudo -E kubectl create configmap data-authz-test-script \
             -n scout-analytics \
-            --from-file=run.sh=tests/data-authorization/rbac-tests/run.sh \
+            --from-file=run.sh=tests/data-authorization/authz-tests/run.sh \
             --dry-run=client -o yaml | sudo -E kubectl apply -f -
 
           sudo -E kubectl create secret generic data-authz-test-creds \
@@ -519,7 +519,7 @@ jobs:
             --from-literal=SUPERSET_SVC_CLIENT_SECRET="$SUPERSET_SVC_SECRET" \
             --dry-run=client -o yaml | sudo -E kubectl apply -f -
 
-          sudo -E kubectl apply -f tests/data-authorization/rbac-tests/job.yaml
+          sudo -E kubectl apply -f tests/data-authorization/authz-tests/job.yaml
 
           KUBECTL='sudo -E kubectl' bash tests/data-authorization/wait-for-job.sh \
             scout-analytics data-authz-tests 300

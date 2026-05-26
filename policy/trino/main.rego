@@ -1,6 +1,6 @@
 package trino
 
-# Scout RBAC policy for Trino, evaluated by Trino's `opa` access-control plugin.
+# Scout AuthZ policy for Trino, evaluated by Trino's `opa` access-control plugin.
 #
 # Endpoints queried by Trino:
 #   POST /v1/data/trino/allow             -> bool       (is the operation permitted?)
@@ -113,7 +113,7 @@ user_enabled if {
 
 default allow := false
 
-# The set of catalogs Scout RBAC scopes. Other catalogs (system, jmx,
+# The set of catalogs Scout AuthZ scopes. Other catalogs (system, jmx,
 # information_schema) are handled separately so Trino UI / Superset
 # autocomplete can enumerate metadata.
 guarded_catalogs := {"delta"}
@@ -320,7 +320,7 @@ hidden_table_blocked if {
 # view, Trino evaluates the underlying-table reads as the view owner —
 # row filters and column masks scoped to the owner would clamp the
 # view's reads to zero rows. Owners listed here bypass row-filter and
-# column-mask rules; the invoker's RBAC is still enforced at the view
+# column-mask rules; the invoker's AuthZ is still enforced at the view
 # level (views are in filtered_tables).
 default view_owner_principals_set := set()
 view_owner_principals_set := {p | some p in data.view_owner_principals}

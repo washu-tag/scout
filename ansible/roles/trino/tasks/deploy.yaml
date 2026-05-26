@@ -50,7 +50,7 @@
     tasks_from: cluster_issuer_setup
   when: not aws_deployment
 
-- name: Create Trino RBAC env Secret (keystore password + internal shared secret)
+- name: Create Trino AuthZ env Secret (keystore password + internal shared secret)
   delegate_to: localhost
   no_log: true
   kubernetes.core.k8s:
@@ -60,7 +60,7 @@
       apiVersion: v1
       kind: Secret
       metadata:
-        name: trino-rbac-env
+        name: trino-authz-env
         namespace: '{{ trino_namespace }}'
       type: Opaque
       stringData:

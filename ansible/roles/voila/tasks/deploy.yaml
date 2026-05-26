@@ -43,7 +43,7 @@
   # X-Auth-Request-Access-Token header on each request came from
   # oauth2-proxy via Traefik. Without this NetworkPolicy, an in-cluster
   # pod could connect directly to Voila on :8866 and forge the header,
-  # bypassing the per-user RBAC. Egress is unrestricted (Voila needs
+  # bypassing the per-user AuthZ. Egress is unrestricted (Voila needs
   # to reach Keycloak + Trino + DNS).
   kubernetes.core.k8s:
     state: present

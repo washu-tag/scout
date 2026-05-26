@@ -3,7 +3,7 @@
 # Connection to Trino uses HTTP Basic auth as the service principal
 # `openwebui_mcp_svc` (rendered into Trino's password file at deploy time
 # via trino_password_authenticator_users — see roles/trino/tasks/deploy.yaml).
-# Per-chat-user RBAC is enforced via X-Trino-User impersonation: mcp-trino
+# Per-chat-user AuthZ is enforced via X-Trino-User impersonation: mcp-trino
 # reads the inbound OIDC user's preferred_username and sets the header on
 # the outbound Trino call. OPA's impersonation allow rule permits
 # openwebui_mcp_svc to impersonate any user (ADR 0022).

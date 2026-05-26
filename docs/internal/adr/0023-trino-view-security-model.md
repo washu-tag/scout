@@ -6,14 +6,14 @@
 
 ## Context
 
-Scout's silver layer includes a family of views (the `_epic_view` views: `reports_epic_view`, `reports_curated_epic_view`, `reports_latest_epic_view`, `reports_dx_epic_view`) that join the report tables to `reports_report_patient_mapping` to resolve Epic MRNs. These views are created by `hl7-transformer` against `trino-rw` (ADR 0019) and queried by users against the user-facing Trino under [ADR 0020](0020-trino-rbac-architecture.md)'s OPA policy.
+Scout's silver layer includes a family of views (the `_epic_view` views: `reports_epic_view`, `reports_curated_epic_view`, `reports_latest_epic_view`, `reports_dx_epic_view`) that join the report tables to `reports_report_patient_mapping` to resolve Epic MRNs. These views are created by `hl7-transformer` against `trino-rw` (ADR 0019) and queried by users against the user-facing Trino under [ADR 0020](0020-trino-authz-architecture.md)'s OPA policy.
 
 Two policy interactions make views non-trivial:
 
 - **The join target (`reports_report_patient_mapping`) lacks `sending_facility`.** It can't be row-filtered the same way as the report tables. A facility-restricted user querying it directly could enumerate every patient identifier in the system.
 - **Column masks on the join target's columns** (`m.mpi`, `m.epic_mrn`) would propagate through the views' window functions (`MAX(m.epic_mrn) OVER (PARTITION BY ...)`) and NULL out `resolved_epic_mrn` for every user — defeating the views' point.
 
-This ADR specifies the view-security choices that make both work. The naïvely intuitive answer (`SECURITY INVOKER`, so the user's RBAC applies) doesn't.
+This ADR specifies the view-security choices that make both work. The naïvely intuitive answer (`SECURITY INVOKER`, so the user's AuthZ applies) doesn't.
 
 ## Decision
 
@@ -23,11 +23,11 @@ This ADR specifies the view-security choices that make both work. The naïvely i
 2. **`hidden_tables`** — tables denied for direct SELECT and hidden from `SHOW TABLES`. The patient mapping pair (`reports_report_patient_mapping` + `_history`) is hardcoded as a baseline in `policy/trino/main.rego` because those tables are intrinsic to Scout's data lake shape; `trino_hidden_tables` in inventory unions site-specific additions on top.
 3. **`CreateViewWithSelectFromColumns`** allow rule — exempts the view owner from `hidden_table_blocked`, so DEFINER views' internal joins to `hidden_tables` succeed while direct invoker queries against those same tables are denied.
 
-The invoker's RBAC is still enforced because the views themselves are listed in `data.filtered_tables`. Row filters apply to the view's output (post-DEFINER materialization), not to the view owner's underlying reads.
+The invoker's AuthZ is still enforced because the views themselves are listed in `data.filtered_tables`. Row filters apply to the view's output (post-DEFINER materialization), not to the view owner's underlying reads.
 
 ### Trade-offs in one paragraph
 
-`SECURITY INVOKER` would be the natural-intuition choice — "let the invoker's permissions apply." It fails for two reasons. First, the `hidden_tables` deny on `reports_report_patient_mapping` propagates: the invoker can't query the mapping table directly *and* can't query a view that joins to it. Second, the column masks on `m.mpi`/`m.epic_mrn` propagate through the window function: every user's `resolved_epic_mrn` resolves to NULL because the underlying value got masked before the `MAX(...) OVER (...)` ran. DEFINER preserves both behaviors because the view owner sees raw rows from the join target *during materialization*, and the invoker's RBAC applies to the resulting view rows.
+`SECURITY INVOKER` would be the natural-intuition choice — "let the invoker's permissions apply." It fails for two reasons. First, the `hidden_tables` deny on `reports_report_patient_mapping` propagates: the invoker can't query the mapping table directly *and* can't query a view that joins to it. Second, the column masks on `m.mpi`/`m.epic_mrn` propagate through the window function: every user's `resolved_epic_mrn` resolves to NULL because the underlying value got masked before the `MAX(...) OVER (...)` ran. DEFINER preserves both behaviors because the view owner sees raw rows from the join target *during materialization*, and the invoker's AuthZ applies to the resulting view rows.
 
 ## Alternatives Considered
 
@@ -47,7 +47,7 @@ Materialize the `_epic_view` results into ordinary tables (refreshed on a schedu
 
 Drop the views. Have each client (Superset, notebooks, MCP) issue a multi-statement query that selects from `reports*` and joins to `reports_report_patient_mapping` in a second statement, with the mapping read scoped via a different mechanism (a Scout-side rewriter, or an admin-issued one-shot query).
 
-**Rejected**: pushes complexity into every client. The MCP can't do multi-statement reasoning over the policy easily; Superset SQL Lab users would have to write the join by hand; notebooks would each need a Scout-specific helper. The view is the right place to encapsulate the join, and DEFINER + carve-outs makes it work under RBAC.
+**Rejected**: pushes complexity into every client. The MCP can't do multi-statement reasoning over the policy easily; Superset SQL Lab users would have to write the join by hand; notebooks would each need a Scout-specific helper. The view is the right place to encapsulate the join, and DEFINER + carve-outs makes it work under AuthZ.
 
 ### Per-user precomputed views
 
@@ -59,13 +59,13 @@ Generate a `_epic_view_<user>` for each user with the join already filtered by t
 
 ### Positive
 
-- **The `_epic_view` family works under RBAC.** Users see Epic MRN resolution joined into their facility-scoped view rows. Direct queries against the mapping table fail (as intended).
+- **The `_epic_view` family works under AuthZ.** Users see Epic MRN resolution joined into their facility-scoped view rows. Direct queries against the mapping table fail (as intended).
 - **The policy data model is extensible.** Additional join-target tables can be added to the deny list via `trino_hidden_tables` in inventory (unioned with the hardcoded patient-mapping baseline) — one inventory edit, not a Rego change.
 - **Column masks compose naturally.** Masks on report-table columns apply to view output (the invoker is the principal); masks on mapping-table columns don't propagate through the window function (the view owner reads raw rows).
 
 ### Negative
 
-- **The DEFINER model is counterintuitive.** A future maintainer reading the OPA policy will see the `view_owner_principals` exemption, the `hidden_tables` deny, and the `CreateViewWithSelectFromColumns` allow rule and need this ADR to understand why all three exist. Without context, the policy looks like it's bypassing its own RBAC.
+- **The DEFINER model is counterintuitive.** A future maintainer reading the OPA policy will see the `view_owner_principals` exemption, the `hidden_tables` deny, and the `CreateViewWithSelectFromColumns` allow rule and need this ADR to understand why all three exist. Without context, the policy looks like it's bypassing its own AuthZ.
 - **The view owner has effective superuser read access.** Any pod that can authenticate to Trino as `trino` (currently only `hl7-transformer` via `trino-rw`) can read the mapping table in full. This is the cost of DEFINER and the reason `trino-rw` access is gated by NetworkPolicy in ADR 0019.
 
 ## Implementation Notes

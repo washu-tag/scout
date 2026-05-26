@@ -249,7 +249,7 @@ enable_playbooks: false
 # genuinely useful for non-GPU pods.
 enable_gpu_node_taint: true
 
-# Scout RBAC: maps Keycloak user attributes to the SQL columns the Trino
+# Scout AuthZ: maps Keycloak user attributes to the SQL columns the Trino
 # OPA policy filters on. Single source of truth consumed by two roles:
 #   - keycloak: renders one User Profile attribute per key here so each
 #     becomes editable in the Keycloak admin UI (admin-only view/edit).

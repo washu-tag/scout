@@ -6,7 +6,7 @@
 
 ## Context
 
-[ADR 0020](0020-trino-rbac-architecture.md) picks OPA as Trino's authorization engine and locks the per-user attribute model. For OPA to evaluate authorization against the actual end user, Trino has to:
+[ADR 0020](0020-trino-authz-architecture.md) picks OPA as Trino's authorization engine and locks the per-user attribute model. For OPA to evaluate authorization against the actual end user, Trino has to:
 
 1. Authenticate the connection cryptographically (no more hardcoded shared user).
 2. Carry the real end-user identity through to the access-control plugin — not the connection's service-account identity.
@@ -137,7 +137,7 @@ The `trino` user no longer exists as a human-facing connection (saved Superset c
 
 Superset, JupyterHub, the MCP, and Voila each forward the user's Keycloak token to Trino on every query. No service principal, no `X-Trino-User`, no impersonation rule in OPA.
 
-**Rejected for Superset, Voila, and the MCP**: implementation cost vs. marginal security benefit. For Superset, a custom `DB_CONNECTION_MUTATOR` mints a `superset_svc` JWT and sets `X-Trino-User` to the logged-in user — equivalent authorization semantics to forwarding the user's Keycloak token, without per-user token-refresh lifecycle on long dashboard sessions or bespoke Flask-session-introspection. The "insider with namespace access steals a service-principal credential" threat is addressed by K8s controls (Secret RBAC, rotation, NetworkPolicy on Trino), not per-call user tokens.
+**Rejected for Superset, Voila, and the MCP**: implementation cost vs. marginal security benefit. For Superset, a custom `DB_CONNECTION_MUTATOR` mints a `superset_svc` JWT and sets `X-Trino-User` to the logged-in user — equivalent authorization semantics to forwarding the user's Keycloak token, without per-user token-refresh lifecycle on long dashboard sessions or bespoke Flask-session-introspection. The "insider with namespace access steals a service-principal credential" threat is addressed by K8s controls (Secret AuthZ, rotation, NetworkPolicy on Trino), not per-call user tokens.
 
 For the MCP, `tuannvm/mcp-trino` v4.x only supports HTTP Basic outbound — there's no JWT-pass-through code path in the upstream MCP. The shipped pattern (OIDC validation inbound + `X-Trino-User` outbound on a service-principal HTTP Basic channel) is functionally identical: the end-user identity reaches Trino, just via a header rather than as a forwarded JWT.
 
@@ -171,8 +171,8 @@ Instead of `superset_svc` + `openwebui_mcp_svc` + `voila_svc`, use one `trino_im
 |---|---|
 | User forges `X-Trino-User` to read another user's data | OPA `ImpersonateUser` rule restricts impersonation to service principals; users can't authenticate as one. |
 | Stolen end-user JWT | JWT expires (~5 min); refresh requires Keycloak session. Stolen JWT is bounded in time and traceable in OPA decision logs. |
-| Stolen service-principal JWT | NetworkPolicy on Trino restricts ingress; Secret RBAC restricts which pods can read credentials. Compromise of a service-principal credential equals "impersonate any user from that pod." Per-principal isolation keeps blast radius client-scoped. |
-| MCP container compromise | Equivalent to service-principal compromise — attacker can connect as `openwebui_mcp_svc` and impersonate any user. NetworkPolicy on Trino + Secret RBAC are the gates. |
+| Stolen service-principal JWT | NetworkPolicy on Trino restricts ingress; Secret AuthZ restricts which pods can read credentials. Compromise of a service-principal credential equals "impersonate any user from that pod." Per-principal isolation keeps blast radius client-scoped. |
+| MCP container compromise | Equivalent to service-principal compromise — attacker can connect as `openwebui_mcp_svc` and impersonate any user. NetworkPolicy on Trino + Secret AuthZ are the gates. |
 | Decision-log tampering | OPA decision logs ship to Loki via the existing log pipeline; Trino's query log captures `(principal, user)` pairs. Both stores are append-only from Trino/OPA's perspective. |
 
 ### Positive
@@ -186,7 +186,7 @@ Instead of `superset_svc` + `openwebui_mcp_svc` + `voila_svc`, use one `trino_im
 
 - **Token-TTL-vs-query-duration is a configuration concern.** Trino validates JWTs at query submission; long-running notebook flows can outlive Keycloak's default 5-minute access-token TTL. Service-principal tokens are issued at 4 h to cover query duration; end-user JWT pass-through (Jupyter `auth_state`) refreshes via the refresh token between submissions.
 - **PASSWORD authenticator is extra surface for one client only.** `password.db` exists solely because `tuannvm/mcp-trino` doesn't support JWT outbound. If a custom MCP that supports JWT lands, PASSWORD goes away.
-- **Full-reinstall release.** RBAC ships as a single coordinated update; the shared `trino` user is removed from human-facing surfaces in the same release. Saved Superset connections, notebook configs, and dashboards that hardcoded it are migrated at the same time.
+- **Full-reinstall release.** AuthZ ships as a single coordinated update; the shared `trino` user is removed from human-facing surfaces in the same release. Saved Superset connections, notebook configs, and dashboards that hardcoded it are migrated at the same time.
 - **Token audience handling is a recurring gotcha.** Keycloak issues tokens with `aud=<client>` by default; misconfiguration of the `trino-audience` scope produces 401s with limited diagnostic information. Anyone adding a new Trino-connecting client has to remember to attach the scope.
 
 ## Implementation Notes

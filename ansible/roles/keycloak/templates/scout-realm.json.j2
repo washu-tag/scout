@@ -790,7 +790,7 @@
           "group": "scout",
           "multivalued": false
         },
-        {#- RBAC scoping attributes consumed by the Trino OPA policy. They
+        {#- AuthZ scoping attributes consumed by the Trino OPA policy. They
             reach OPA via the user-attribute bundle the OpaUserBundlePublisher
             SPI publishes to MinIO (ADR 0021), not a per-query admin-API call.
             Rendered from `trino_attribute_filters` in scout_common/defaults so
@@ -802,7 +802,7 @@
 {% for attr_name, attr_config in trino_attribute_filters.items() %}
         {
           "name": "{{ attr_name }}",
-          "displayName": "{{ attr_config.display_name | default('Scout RBAC — ' ~ attr_name) }}",
+          "displayName": "{{ attr_config.display_name | default('Scout AuthZ — ' ~ attr_name) }}",
           "permissions": {
             "view": ["admin"],
             "edit": ["admin"]
@@ -820,7 +820,7 @@
 {% endfor %}
         {
           "name": "mask_phi_fields",
-          "displayName": "Scout RBAC — mask PHI fields",
+          "displayName": "Scout AuthZ — mask PHI fields",
           "permissions": {
             "view": ["admin"],
             "edit": ["admin"]
@@ -841,7 +841,7 @@
             cross-facility introspection — set sparingly. -#}
         {
           "name": "bypass_hidden_tables",
-          "displayName": "Scout RBAC — bypass view-only table restrictions",
+          "displayName": "Scout AuthZ — bypass view-only table restrictions",
           "permissions": {
             "view": ["admin"],
             "edit": ["admin"]

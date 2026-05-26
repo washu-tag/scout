@@ -76,7 +76,7 @@ class BundleAssemblerTest {
     @Test
     void user_payload_excludes_keycloak_internal_attributes() {
         // Keycloak's user-profile system surfaces these as "attributes"
-        // alongside user-defined RBAC fields. Including them bloats the
+        // alongside user-defined AuthZ fields. Including them bloats the
         // bundle and could leak PII (email, names). The rego policy
         // doesn't read them, so they're explicitly filtered out.
         Map<String, List<String>> attrs = new LinkedHashMap<>();

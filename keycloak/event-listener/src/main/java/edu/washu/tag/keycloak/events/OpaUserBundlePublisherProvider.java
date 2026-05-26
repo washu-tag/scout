@@ -28,7 +28,7 @@ import org.keycloak.models.UserModel;
  *       — remove the user from the snapshot.</li>
  * </ul>
  * All other events (user-level login/logout/password-reset, non-USER
- * admin events) are no-ops — they don't change RBAC-relevant state.
+ * admin events) are no-ops — they don't change AuthZ-relevant state.
  */
 public class OpaUserBundlePublisherProvider implements EventListenerProvider {
 
@@ -43,7 +43,7 @@ public class OpaUserBundlePublisherProvider implements EventListenerProvider {
 
     @Override
     public void onEvent(Event event) {
-        // User-level events don't carry RBAC-relevant state changes.
+        // User-level events don't carry AuthZ-relevant state changes.
         // Attribute updates happen via the admin API and are handled
         // in the AdminEvent path below.
     }

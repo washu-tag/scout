@@ -355,7 +355,7 @@ singleuser:
       # Notebooks read the lake exclusively through Trino's HTTPS listener,
       # which enforces per-user row filters and column masks via OPA. The
       # earlier direct egress rules to MinIO (S3 reads) and Hive Metastore
-      # (metadata) bypassed RBAC and have been removed alongside the
+      # (metadata) bypassed AuthZ and have been removed alongside the
       # Spark-from-notebook removal.
       - to:
           - namespaceSelector:

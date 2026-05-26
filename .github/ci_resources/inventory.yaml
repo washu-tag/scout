@@ -137,7 +137,7 @@ k3s_cluster:
         memory: 1Gi
     trino_rw_jmx_enabled: false
 
-    # Trino RBAC (ADR 0020 + 0021 + 0022 + 0023): the smoke-test data-authorization
+    # Trino AuthZ (ADR 0020 + 0021 + 0022 + 0023): the smoke-test data-authorization
     # Job seeds delta.default.test_reports with synthetic rows across
     # facilities and modalities, then asserts row filtering + masking
     # behavior. Production filters reports/_curated/_latest/_dx; CI
@@ -147,7 +147,7 @@ k3s_cluster:
       - { catalog: delta, schema: default, table: test_reports }
     # Two-dimension fixture so multi-filter compositions are exercised:
     # allowed_facilities AND allowed_modalities both clamp rows.
-    # The hidden-tables / bypass scenarios (rbac-tests/run.sh scenarios 6+7)
+    # The hidden-tables / bypass scenarios (authz-tests/run.sh scenarios 6+7)
     # probe reports_report_patient_mapping, which is denied via the
     # hardcoded baseline in policy/trino/main.rego — no trino_hidden_tables
     # entry needed here.
@@ -169,8 +169,8 @@ k3s_cluster:
     # extractor at all, so this flag has no effect there.
     trino_view_enabled: false
 
-    # Trino RBAC secrets (ADR 0022). Required by the trino role's
-    # RBAC env Secret + bcrypt password.db. Production deployments set
+    # Trino AuthZ secrets (ADR 0022). Required by the trino role's
+    # AuthZ env Secret + bcrypt password.db. Production deployments set
     # these in scout-inventory; CI sets fixed test values so the
     # smoke-test deploy doesn't fail at template render.
     trino_internal_shared_secret: ci-trino-internal-shared-secret
@@ -204,7 +204,7 @@ k3s_cluster:
     keycloak_minio_client_secret: ci-secret-00000006
     keycloak_launchpad_client_secret: ci-secret-00000007
     keycloak_open_webui_client_secret: ci-secret-00000008
-    # Trino RBAC service principals (ADR 0022). Same client-credentials
+    # Trino AuthZ service principals (ADR 0022). Same client-credentials
     # pattern as the regular client secrets above; one per Trino-backed
     # surface that impersonates end users via X-Trino-User. The realm
     # template references all three unconditionally; without them defined

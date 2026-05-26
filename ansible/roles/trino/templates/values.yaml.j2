@@ -92,13 +92,13 @@ serviceAccount:
 {% else %}
 # Inject credentials Secrets:
 #   trino-s3:        S3_ACCESS_KEY, S3_SECRET_KEY (Delta connector)
-#   trino-rbac-env:  KEYSTORE_PASSWORD, INTERNAL_SHARED_SECRET (HTTPS + worker auth)
+#   trino-authz-env:  KEYSTORE_PASSWORD, INTERNAL_SHARED_SECRET (HTTPS + worker auth)
 # Both referenced from properties via Trino's ${ENV:VAR} substitution syntax.
 envFrom:
   - secretRef:
       name: trino-s3
   - secretRef:
-      name: trino-rbac-env
+      name: trino-authz-env
 {% endif %}
 
 # JMX exporter configuration for Prometheus metrics

@@ -2,7 +2,7 @@
 # Data authorization integration tests — ADR 0020 + 0021 + 0022 + 0023.
 #
 # Runs as a one-shot Kubernetes Job in scout-analytics inside CI's
-# smoke-test cluster. Exercises the end-to-end RBAC pipeline:
+# smoke-test cluster. Exercises the end-to-end AuthZ pipeline:
 #
 #   Keycloak admin API (set user attributes)
 #     -> OPA bundle publisher SPI (catches admin event)
@@ -57,7 +57,7 @@ SUPERSET_SVC_CLIENT_ID=${SUPERSET_SVC_CLIENT_ID:-superset_svc}
 SUPERSET_SVC_CLIENT_SECRET=${SUPERSET_SVC_CLIENT_SECRET:?missing}
 OPA_URL=${OPA_URL:-http://opa-trino.scout-analytics:8181}
 TRINO_URL=${TRINO_URL:-https://trino.scout-analytics:8443}
-TEST_USER=${TEST_USER:-rbac-ci-user}
+TEST_USER=${TEST_USER:-authz-ci-user}
 
 CURL_CA_OPTS=()
 if [[ -n "${TRINO_CA_BUNDLE:-}" ]]; then

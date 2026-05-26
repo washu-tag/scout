@@ -99,7 +99,7 @@ final class BundleAssembler {
             // Filter out Keycloak's internal attribute keys (username,
             // firstName, lastName, etc. — present in the attributes map
             // because Keycloak exposes them through the same accessor as
-            // user-defined RBAC attributes). Anything starting with "kc."
+            // user-defined AuthZ attributes). Anything starting with "kc."
             // is also internal. The rego policy only reads the explicitly
             // configured attribute names from data.attribute_filters and
             // mask_phi_fields, so over-including is harmless but bloats
@@ -124,7 +124,7 @@ final class BundleAssembler {
         }
         // Keycloak's user-profile system surfaces these as "attributes"
         // on top of the columns of the same name. Skip to keep the
-        // bundle focused on RBAC-relevant fields.
+        // bundle focused on AuthZ-relevant fields.
         return switch (key) {
             case "username", "email", "firstName", "lastName" -> true;
             default -> false;

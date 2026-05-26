@@ -26,12 +26,12 @@ opa_memory_limit: 256Mi
 # Trino service principals that own SECURITY DEFINER views. When an
 # invoker queries a view, Trino re-evaluates the view's underlying
 # reads against the view OWNER's identity — both /allow and /rowFilters
-# /batchColumnMasks. If the owner has restrictive RBAC attributes (or
+# /batchColumnMasks. If the owner has restrictive AuthZ attributes (or
 # none, like the default `trino` admin user), the underlying reads get
 # clamped to zero rows, breaking the view for every invoker.
 #
 # Owners listed here bypass row filters and column masks so the view
-# can materialize unrestricted; the invoker's RBAC is still applied at
+# can materialize unrestricted; the invoker's AuthZ is still applied at
 # the view level via filtered_tables (the views ARE listed above).
 # Defaults to the Trino password-auth admin (`trino`), which is what
 # hl7-transformer connects as when running CREATE VIEW.

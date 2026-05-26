@@ -65,7 +65,7 @@ def _user_from_access_token() -> str:
     # Decode preferred_username from the per-kernel access token env var.
     # No signature verification — the token was validated by oauth2-proxy's
     # Keycloak provider before the request reached Voila. The decoded value
-    # is used only for X-Trino-User; Trino + OPA enforce the actual RBAC.
+    # is used only for X-Trino-User; Trino + OPA enforce the actual AuthZ.
     access_token = os.environ.get("X_AUTH_REQUEST_ACCESS_TOKEN", "")
     if not access_token:
         return ""
@@ -110,7 +110,7 @@ def connect_rw():
     values-rw.yaml.j2). The `user` is set to the OIDC-authed user's
     preferred_username so trino-rw's query log records *who* wrote.
     There's no OPA on trino-rw, so this connection bypasses per-user
-    RBAC; the surface is bounded by the playbook code, which only
+    AuthZ; the surface is bounded by the playbook code, which only
     issues specific UPDATE/INSERT statements against the working table.
 
     Falls back to user='anonymous' when no identity can be resolved.
