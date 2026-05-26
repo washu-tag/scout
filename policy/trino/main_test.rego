@@ -31,7 +31,7 @@ fixture_hidden_tables := [{"catalog": "delta", "schema": "default", "table": "re
 
 # View-owner principals: identities whose underlying-table reads bypass
 # row filters and column masks (since they're materializing a DEFINER
-# view on behalf of an invoker whose RBAC applies at the view level).
+# view on behalf of an invoker whose AuthZ applies at the view level).
 fixture_view_owner_principals := ["trino"]
 
 fixture_masked_columns := ["patient_name", "full_patient_name", "zip_or_postal_code"]
@@ -568,7 +568,7 @@ test_missing_attribute_clamps_to_zero_rows if {
 
 # View-owner principals bypass row filters and column masks because
 # Trino re-evaluates the view's underlying reads against the view's
-# OWNER identity for SECURITY DEFINER views. The invoker's RBAC is
+# OWNER identity for SECURITY DEFINER views. The invoker's AuthZ is
 # still enforced at the view level (the view is itself in filtered_tables).
 
 test_view_owner_bypasses_row_filter if {

@@ -6,7 +6,7 @@
 
 ## Context
 
-Scout's user-facing Trino instance in the pre-RBAC state connects every caller as the hardcoded user `trino` — no row-level access control, no column masking, no notion of identity at the data layer. This was acceptable for a single-tenant deployment whose only access control was cluster-network membership. It is not acceptable as different user-types use the platform, with different IRB allowances. It also doesn't support multitenancy.
+Scout's user-facing Trino instance in the pre-AuthZ state connects every caller as the hardcoded user `trino` — no row-level access control, no column masking, no notion of identity at the data layer. This was acceptable for a single-tenant deployment whose only access control was cluster-network membership. It is not acceptable as different user-types use the platform, with different IRB allowances. It also doesn't support multitenancy.
 
 This ADR picks the authorization engine and the policy data model. The distribution of per-user attributes from Keycloak to OPA is covered by [ADR 0021](0021-opa-user-attribute-distribution.md). The authentication and identity-propagation pieces (JWT auth, `X-Trino-User` impersonation, per-client patterns) are covered by [ADR 0022](0022-trino-auth-and-impersonation.md). View security (the `SECURITY DEFINER` model, `view_owner_principals` exemption, `hidden_tables` join-target deny) is covered by [ADR 0023](0023-trino-view-security-model.md).
 
@@ -37,7 +37,7 @@ This ADR picks the authorization engine and the policy data model. The distribut
 |---|---|
 | Engine | OPA via `access-control.name=opa`. 2-replica `Deployment` in `scout-analytics`, exposed via ClusterIP `opa-trino.scout-analytics:8181`. Resource baseline ~100m CPU / 256 MiB per replica. |
 | Connector defense | `delta.security=READ_ONLY` retained at the connector as defense in depth; OPA is the primary gate. Combined with the metastore-level read-only PostgreSQL role and MinIO `s3_lake_reader` credentials, writes are blocked at three layers. |
-| Identity model | Per-user RBAC attributes are Keycloak User Profile entries stored as `Map<String, List<String>>`: `allowed_facilities` (multivalued, supports `*` wildcard) for row scoping; `mask_phi_fields` (multivalued, defaults to mask; `["false"]` opts out) for column masking. The policy is otherwise attribute-driven — no group check inside row-filter / column-mask logic — except for a single gate (see Approval gate row). |
+| Identity model | Per-user AuthZ attributes are Keycloak User Profile entries stored as `Map<String, List<String>>`: `allowed_facilities` (multivalued, supports `*` wildcard) for row scoping; `mask_phi_fields` (multivalued, defaults to mask; `["false"]` opts out) for column masking. The policy is otherwise attribute-driven — no group check inside row-filter / column-mask logic — except for a single gate (see Approval gate row). |
 | Approval gate | The `user_enabled` rule requires both (a) `enabled: true` on the user's bundle entry (from Keycloak's `UserModel.isEnabled()`) AND (b) membership in `scout-user` or `scout-admin`. The approved-group set is hardcoded in `policy/trino/main.rego` because the same group names are hardcoded in the Keycloak realm template (`ansible/roles/keycloak/templates/scout-realm.json.j2`) — same team, same change. The group check exists because Keycloak federates from upstream IdPs: a user can land in the realm with `enabled=true` purely from a successful upstream OIDC login, before going through Scout's approval flow that adds them to `scout-user`. Service principals (`superset_svc`, `openwebui_mcp_svc`, `voila_svc`) bypass the gate via the `is_system_identity` carve-out since they never appear in `data.users`. |
 | Policy data shape | `data.attribute_filters`: map of `keycloak_attribute → {column, optional tables_override}`. `data.filtered_tables`: shared list of tables every dimension applies to (with optional per-attribute override). `data.masked_columns`: list of columns masked when `mask_phi_fields` isn't `["false"]`. Adding a restriction dimension is one inventory edit; the rego doesn't change. The Keycloak realm template renders the corresponding User Profile attribute from the same map, so the two sides stay in lockstep. |
 | Attribute distribution | Keycloak SPI listener publishes user attributes as an OPA bundle to MinIO; OPA's native bundle plugin pulls every 5–10 s. The Rego policy reads `data.users[user]` directly — no `http.send`, no admin-API client at decision time. See [ADR 0021](0021-opa-user-attribute-distribution.md). |
@@ -79,9 +79,9 @@ JVM plugin that, given a username, fetches groups from Keycloak's admin API in r
 
 ### Extending OPA-enforced authorization to `trino-rw`
 
-Authenticate and authorize transformer DDL through Trino RBAC instead of the NetworkPolicy gate.
+Authenticate and authorize transformer DDL through Trino AuthZ instead of the NetworkPolicy gate.
 
-**Rejected**: `trino-rw` exists per ADR 0019 to receive transformer-issued view DDL plus the Voila playbook annotation writeback path. Its NetworkPolicy already restricts ingress to the `hl7-transformer` pod, the Voila pod, and Prometheus. There are no arbitrary user-facing queries against `trino-rw`. Adding RBAC there solves nothing and complicates the transformer's auth surface.
+**Rejected**: `trino-rw` exists per ADR 0019 to receive transformer-issued view DDL plus the Voila playbook annotation writeback path. Its NetworkPolicy already restricts ingress to the `hl7-transformer` pod, the Voila pod, and Prometheus. There are no arbitrary user-facing queries against `trino-rw`. Adding AuthZ there solves nothing and complicates the transformer's auth surface.
 
 ## Consequences
 
