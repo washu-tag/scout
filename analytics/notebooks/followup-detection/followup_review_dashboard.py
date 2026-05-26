@@ -140,8 +140,11 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
         schema = schema_default
         table = table_parts[0]
 
-    # Stratified sampling query using Trino SQL
-    # Note: Using CTE with ROW_NUMBER for stratified sampling
+    # Stratified sampling query using Trino SQL.
+    # human_* columns carry persisted reviewer annotations (written by the
+    # Export flow via trino-rw); they're selected here so the dashboard can
+    # rehydrate previously-reviewed state into the in-memory annotations
+    # dict on each fresh Voila kernel.
     query = f"""
     WITH categorized AS (
         SELECT
@@ -161,6 +164,9 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
             service_identifier,
             diagnoses,
             principal_result_interpreter,
+            human_ground_truth,
+            human_notes,
+            human_reviewed_at,
             CONCAT(
                 modality, '_',
                 CAST(followup_detected AS VARCHAR), '_',
@@ -196,7 +202,10 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
         service_name,
         service_identifier,
         diagnoses,
-        principal_result_interpreter
+        principal_result_interpreter,
+        human_ground_truth,
+        human_notes,
+        human_reviewed_at
     FROM categorized
     WHERE row_num <= {samples_per_category}
     """
@@ -605,6 +614,28 @@ def create_review_dashboard(
         "df": df.reset_index(drop=True),
         "ground_truth": annotations,  # Reference to global annotations dict
     }
+
+    # Rehydrate the annotations dict from persisted human_* columns. Each
+    # Voila session starts with a fresh kernel and an empty module-level
+    # `annotations`; without this, "previously-reviewed" metrics always
+    # show zero even when the underlying Delta table has rows with
+    # human_reviewed_at IS NOT NULL. Reset first so stale in-memory state
+    # from a prior dashboard creation doesn't bleed in.
+    annotations.clear()
+    if "human_reviewed_at" in state["df"].columns:
+        for i, row in state["df"].iterrows():
+            if pd.notna(row.get("human_reviewed_at")):
+                annotations[i] = {
+                    "ground_truth": (
+                        bool(row["human_ground_truth"])
+                        if pd.notna(row.get("human_ground_truth"))
+                        else None
+                    ),
+                    "notes": (
+                        row["human_notes"] if pd.notna(row.get("human_notes")) else ""
+                    ),
+                    "reviewed": True,
+                }
 
     # Get unique modalities, facilities, and radiologists for filters
     modalities = sorted([m for m in df["modality"].dropna().unique() if m])
