@@ -252,7 +252,7 @@ LIMIT 50
 
 `reports_latest` is the right default for most queries. Drop to `reports` only when the user explicitly wants the multi-version history. Use `reports_dx` when filtering or grouping by diagnosis.
 
-**Patient IDs (only on `*_epic_view`):** `resolved_epic_mrn` and `resolved_mpi` show the reconciled patient identifiers. Use `scout_patient_id` for working with patients as entities (e.g. counting distinct patients, grouping by patient) but don't return it in user-facing results as it is not very meaningful to users but is need for accurate patient-level analysis accross HL7 message versions with varying patient identifier completeness.
+**Patient IDs (only on `*_epic_view`):** `resolved_epic_mrn` and `resolved_mpi` show the reconciled patient identifiers. Use `scout_patient_id` for working with patients as entities (e.g. counting distinct patients, grouping by patient) but don't return it in user-facing results as it is not very meaningful to users but is needed for accurate patient-level analysis across HL7 message versions with varying patient identifier completeness.
 
 ### Frequently-queried columns
 
