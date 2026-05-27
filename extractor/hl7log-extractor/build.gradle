@@ -34,6 +34,10 @@ ext['postgresql.version'] = '42.7.11'
 // netty-codec-http2, netty-codec-dns, and netty-transport-native-epoll.
 ext['netty.version'] = '4.1.133.Final'
 
+// TODO: Remove once Spring Boot 3.5.x manages commons-lang3 >= 3.18.0.
+// Overrides the Spring Boot BOM's pinned 3.16.0 to address GHSA-j288-q9x7-2f5v.
+ext['commons-lang3.version'] = '3.18.0'
+
 // TODO: Remove once Temporal ships a release that brings opentelemetry >= 1.62.0.
 // Pins the io.opentelemetry:* family (transitively from temporal-sdk) to 1.62.0
 // to address the opentelemetry-api vulnerability CVE-2026-45292. Imported via
