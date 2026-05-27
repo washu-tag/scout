@@ -174,20 +174,6 @@
         ],
         "{{ keycloak_xnat_client_id }}": [
           {
-            "name": "xnat-admin",
-            "description": "Scout Admin Role for XNAT Client (cosmetic - not consumed by XNAT)",
-            "composite": false,
-            "clientRole": true,
-            "attributes": {}
-          },
-          {
-            "name": "xnat-user",
-            "description": "Scout User Role for XNAT Client (cosmetic - not consumed by XNAT)",
-            "composite": false,
-            "clientRole": true,
-            "attributes": {}
-          },
-          {
             "name": "xnat-access",
             "description": "Required for XNAT login. Mapped from the scout-user group; scout-xnat-auth-plugin enforces this on bearer-token API requests.",
             "composite": false,
@@ -228,9 +214,6 @@
           "{{ keycloak_open_webui_client_id }}": [
             "open-webui-admin"
           ],
-          "{{ keycloak_xnat_client_id }}": [
-            "xnat-admin"
-          ],
           "realm-management": [
             "realm-admin"
           ]
@@ -256,7 +239,6 @@
             "open-webui-user"
           ],
           "{{ keycloak_xnat_client_id }}": [
-            "xnat-user",
             "xnat-access"
           ]
         }
