@@ -83,6 +83,3 @@ NS=$(kubectl get pod -A -l app=jupyterhub --field-selector=status.phase=Running 
 POD=$(kubectl -n $NS get pod -l component=singleuser-server -o jsonpath='{.items[0].metadata.name}')
 kubectl -n $NS cp scout-xnatpy/scout_xnat $POD:/home/jovyan/scout_xnat -c notebook
 ```
-
-(`xnatpy` and `requests` are already in the JupyterHub singleuser
-image; no `pip install` needed.)
