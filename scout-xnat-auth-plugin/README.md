@@ -18,8 +18,7 @@ XNAT plugin that integrates XNAT into Scout's auth posture:
   `preferred_username`, `email`, names) and the required-role gate; it
   fails closed (401 on an unparseable token, 403 when the token lacks
   the required role). Provisions the matching XNAT user on first sight
-  via `UserProvisioningService`. See
-  `docs/internal/xnat-auth-header-trust-token-only-refactor.md`.
+  via `UserProvisioningService`.
 - **`BearerTokenFilter`** — validates Keycloak JWTs from
   `Authorization: Bearer …`, exchanges them via Keycloak's Standard
   Token Exchange V2 for an `xnat`-audience token, validates that, and
