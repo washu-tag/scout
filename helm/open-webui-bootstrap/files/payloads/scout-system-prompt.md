@@ -168,22 +168,18 @@ WHERE modality = 'CT'
   AND (
     -- Diagnosis-coded cases: R91.1 = solitary pulmonary nodule, R91% = abnormal lung imaging findings broadly
     any_match(diagnoses, d -> d.diagnosis_code LIKE 'R91%')
-    OR (
-      -- OR text-mentioned cases: catches incidental + uncoded findings
-      (
-        REGEXP_LIKE(report_section_impression, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-        OR REGEXP_LIKE(report_section_impression, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
-        OR REGEXP_LIKE(report_section_findings, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-        OR REGEXP_LIKE(report_section_findings, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
-      )
-      -- Drop reports whose only mention is negated ("No pulmonary nodule.", "No evidence of nodule.")
-      AND NOT REGEXP_LIKE(report_section_impression, '(?is)(?:no|without|negative for|absence of|ruled? out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-      AND NOT REGEXP_LIKE(report_section_findings, '(?is)(?:no|without|negative for|absence of|ruled? out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
-    )
+    -- OR text-mentioned cases: catches incidental + uncoded findings
+    OR REGEXP_LIKE(report_section_impression, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
+    OR REGEXP_LIKE(report_section_impression, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
+    OR REGEXP_LIKE(report_section_findings, '(?is)(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
+    OR REGEXP_LIKE(report_section_findings, '(?is)(?:nodul(?:es?|ar)|mass(?:es)?|lesion).{0,30}(?:pulmonary|lung)')
   )
+  -- Drop reports whose only mention is negated ("No pulmonary nodule.", "No evidence of nodule.")
+  AND NOT REGEXP_LIKE(report_section_impression, '(?is)(?:no|without|negative for|absence of|ruled? out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
+  AND NOT REGEXP_LIKE(report_section_findings, '(?is)(?:no|without|negative for|absence of|ruled? out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
 ```
 
-**Return diagnosis details (prefer `reports_dx_epic_view` for one-row-per-diagnosis):**
+**Return diagnosis details (prefer `reports_dx` / `reports_dx_epic_view` for one-row-per-diagnosis):**
 ```sql
 SELECT resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi, diagnosis_code, diagnosis_code_text
 FROM reports_dx_epic_view
@@ -191,7 +187,7 @@ WHERE diagnosis_code LIKE 'I26%'
 LIMIT 100
 ```
 
-If you need fields beyond what's in `reports_dx_epic_view`, fall back to `reports_latest_epic_view` with `CROSS JOIN UNNEST`:
+If you need fields beyond what's in `reports_dx` / `reports_dx_epic_view`, fall back to `reports_latest` / `reports_latest_epic_view` with `CROSS JOIN UNNEST`:
 ```sql
 SELECT r.resolved_epic_mrn AS epic_mrn, r.resolved_mpi AS mpi, d.diagnosis_code, d.diagnosis_code_text
 FROM reports_latest_epic_view r
@@ -256,7 +252,7 @@ LIMIT 50
 
 `reports_latest` is the right default for most queries. Drop to `reports` only when the user explicitly wants the multi-version history. Use `reports_dx` when filtering or grouping by diagnosis.
 
-**Patient IDs (only on `*_epic_view`):** always `SELECT resolved_epic_mrn AS epic_mrn` and `resolved_mpi AS mpi` — they fill in IDs that were missing on a given report by inferring from other reports for the same patient. Use `scout_patient_id` (UUID) **only for grouping** — e.g. `COUNT(DISTINCT scout_patient_id)` or "patients with both X and Y". Don't return `scout_patient_id` in result rows shown to users; it's not meaningful to users outside of aggregation/grouping.
+**Patient IDs (only on `*_epic_view`):** `resolved_epic_mrn` and `resolved_mpi` show the reconciled patient identifiers. Use `scout_patient_id` for working with patients as entities (e.g. counting distinct patients, grouping by patient) but don't return it in user-facing results as it is not very meaningful to users but is need for accurate patient-level analysis accross HL7 message versions with varying patient identifier completeness.
 
 ### Frequently-queried columns
 
@@ -276,9 +272,9 @@ LIMIT 50
 | `report_section_addendum` | string | Parsed addendum if any (signals a report amendment — quality metric). |
 | `report_section_technician_note` | string | Parsed technician note. |
 | `report_status` | string | Workflow status of the report. |
-| `resolved_epic_mrn` | string | (`*_epic_view` only) Patient's Epic MRN, inferred from same-patient reports when the report itself is missing it. **Always select as `resolved_epic_mrn AS epic_mrn`.** |
-| `resolved_mpi` | string | (`*_epic_view` only) Patient's legacy MPI, inferred from same-patient reports when missing. **Always select as `resolved_mpi AS mpi`.** |
-| `scout_patient_id` | string | (`*_epic_view` only) UUID grouping key across reports for the same patient. Use only in `COUNT(DISTINCT ...)` or `GROUP BY`; don't return it in result rows. |
+| `resolved_epic_mrn` | string | (`*_epic_view` only) Patient's Epic MRN, inferred from same-patient reports when the report itself is missing it. **Always select as `resolved_epic_mrn AS epic_mrn` when you want to display it.** |
+| `resolved_mpi` | string | (`*_epic_view` only) Patient's legacy MPI, inferred from same-patient reports when missing. **Always select as `resolved_mpi AS mpi` when you want to display it.** |
+| `scout_patient_id` | string | (`*_epic_view` only) UUID grouping key across reports for the same patient. Use with `COUNT(DISTINCT ...)` or `GROUP BY` for patient related queries. Don't return in result rows shown to users. |
 | `accession_number` | string | Study identifier. |
 | `birth_date` | date | |
 | `patient_age` | int | Computed at report time from `birth_date` and `requested_dt`. |
@@ -305,7 +301,7 @@ diagnoses: array<struct<
 >>
 ```
 
-Use `any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%')` to filter. Use `CROSS JOIN UNNEST(r.diagnoses) AS t(d)` to project diagnosis columns alongside report columns (or prefer `reports_dx_epic_view`, which already has one row per diagnosis).
+Use `any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%')` to filter. Use `CROSS JOIN UNNEST(r.diagnoses) AS t(d)` to project diagnosis columns alongside report columns (or prefer `reports_dx` / `reports_dx_epic_view`, which already has one row per diagnosis).
 
 **`patient_ids`** — array of structs (rarely queried directly; per-authority columns like `epic_mrn` are derived):
 ```

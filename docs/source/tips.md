@@ -48,7 +48,6 @@ This page provides helpful tips for using Scout services effectively.
   """, engine)
   ```
 - **Leverage convenience columns**: Use `resolved_epic_mrn` (or `resolved_mpi`) on the `_epic_view` views or dynamically-created ID columns instead of parsing `patient_ids` array
-- **Reuse query results**: Save the returned DataFrame to a variable and slice/filter that in-memory instead of re-issuing the SQL — each `pd.read_sql` call hits Trino again
 
 ### Installing Additional Packages
 

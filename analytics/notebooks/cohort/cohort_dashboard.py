@@ -582,7 +582,7 @@ def _create_search_form(container, config=None):
             if id_col is None:
                 upload_status.value = (
                     "<div style='font-size: 11px; color: #dc2626; margin-top: 4px;'>"
-                    "No epic_mrn or mpi column found in CSV"
+                    "No patient ID column found in CSV (looked for epic_mrn, mrn, mpi, patient_id, ...)"
                     "</div>"
                 )
                 return
@@ -686,7 +686,7 @@ def _create_search_form(container, config=None):
             ),
             widgets.HTML(
                 "<div style='font-size: 11px; color: #6b7280; margin-top: 4px;'>"
-                "CSV must have an <code>epic_mrn</code> or <code>mpi</code> column"
+                "CSV must have a patient ID column (e.g. <code>epic_mrn</code>, <code>mrn</code>, <code>mpi</code>, or <code>patient_id</code>)"
                 "</div>"
             ),
         ],
