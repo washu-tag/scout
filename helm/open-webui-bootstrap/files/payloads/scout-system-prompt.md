@@ -124,6 +124,14 @@ Apply the negation exclusion to **both sections** you searched, mirroring the po
 
 ## Example Queries
 
+**Patients per modality:**
+```sql
+SELECT modality, COUNT(DISTINCT scout_patient_id) AS patients
+FROM reports_latest_epic_view
+GROUP BY modality
+ORDER BY patients DESC
+```
+
 **Patients with pulmonary embolism in last year:**
 ```sql
 SELECT COUNT(DISTINCT scout_patient_id) as patient_count
@@ -192,64 +200,28 @@ WHERE d.diagnosis_code LIKE 'I26%' AND r.year >= 2024
 LIMIT 100
 ```
 
-**Patients with brain MRIs spanning 5+ years**
-Group by `scout_patient_id` to aggregate per patient.
+**Ischemic stroke patients with their prior imaging summarized:**
 ```sql
-SELECT
-  ANY_VALUE(resolved_epic_mrn) AS epic_mrn,
-  ANY_VALUE(resolved_mpi)      AS mpi,
-  COUNT(*) AS mri_count,
-  MIN(requested_dt) AS earliest,
-  MAX(requested_dt) AS latest,
-  date_diff('year', MIN(requested_dt), MAX(requested_dt)) AS years_span
-FROM reports_latest_epic_view
-WHERE modality = 'MR'
-  AND REGEXP_LIKE(service_name, '(?i)(brain|head)')
-GROUP BY scout_patient_id
-HAVING COUNT(*) >= 2
-   AND date_diff('year', MIN(requested_dt), MAX(requested_dt)) >= 5
-ORDER BY years_span DESC, mri_count DESC
-LIMIT 50
-```
-
-**Patients with 3+ chest CTs within any 18-month window AND at least one impression mentioning a nodule:**
-```sql
-WITH chest_cts AS (
-  SELECT scout_patient_id, requested_dt, report_section_impression,
-         resolved_epic_mrn, resolved_mpi
-  FROM reports_latest_epic_view
-  WHERE modality = 'CT'
-    AND REGEXP_LIKE(service_name, '(?i)(chest|thorax|lung)')
-),
-surveillance_bursts AS (
+WITH stroke_patients AS (
   SELECT scout_patient_id,
-         MIN(requested_dt) AS burst_first_ct,
-         MIN_BY(third_ct_dt, requested_dt) AS burst_third_ct
-  FROM (
-    SELECT scout_patient_id, requested_dt,
-           LEAD(requested_dt, 2) OVER (PARTITION BY scout_patient_id ORDER BY requested_dt) AS third_ct_dt
-    FROM chest_cts
-  )
-  WHERE date_diff('month', requested_dt, third_ct_dt) <= 18
+         MIN(requested_dt) AS first_stroke_dt
+  FROM reports_latest_epic_view
+  WHERE year >= YEAR(CURRENT_DATE) - 1
+    AND any_match(diagnoses, d -> d.diagnosis_code LIKE 'I63%')
   GROUP BY scout_patient_id
-),
-nodule_patients AS (
-  SELECT DISTINCT scout_patient_id
-  FROM chest_cts
-  WHERE REGEXP_LIKE(report_section_impression, '(?i)nodule')
 )
 SELECT
-  ANY_VALUE(c.resolved_epic_mrn) AS epic_mrn,
-  ANY_VALUE(c.resolved_mpi)      AS mpi,
-  COUNT(*) AS total_chest_cts,
-  COUNT(*) FILTER (WHERE REGEXP_LIKE(c.report_section_impression, '(?i)nodule')) AS nodule_mentions,
-  ANY_VALUE(s.burst_first_ct)    AS burst_first_ct,
-  ANY_VALUE(s.burst_third_ct)    AS burst_third_ct
-FROM chest_cts c
-JOIN surveillance_bursts s ON c.scout_patient_id = s.scout_patient_id
-JOIN nodule_patients n ON c.scout_patient_id = n.scout_patient_id
-GROUP BY c.scout_patient_id
-ORDER BY nodule_mentions DESC, total_chest_cts DESC
+  ANY_VALUE(r.resolved_epic_mrn) AS epic_mrn,
+  ANY_VALUE(r.resolved_mpi)      AS mpi,
+  COUNT(*) AS prior_reports,
+  MIN(r.requested_dt) AS earliest_imaging,
+  MAX(r.requested_dt) AS latest_imaging,
+  array_sort(array_agg(DISTINCT r.modality)) AS modalities
+FROM reports_latest_epic_view r
+JOIN stroke_patients sp ON r.scout_patient_id = sp.scout_patient_id
+WHERE r.requested_dt < sp.first_stroke_dt
+GROUP BY r.scout_patient_id
+ORDER BY prior_reports DESC
 LIMIT 50
 ```
 
