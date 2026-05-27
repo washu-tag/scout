@@ -27,9 +27,7 @@ config:
     # Emit the upstream access token from /oauth2/auth so Traefik's ForwardAuth
     # middleware can forward it. The access token (a signed Keycloak JWT) is the
     # single source of truth for services that trust oauth2-proxy as the
-    # identity source (eg. scout-xnat-auth-plugin's HeaderTrustFilter), so the
-    # X-Auth-Request-User/Email/Groups headers (set_xauthrequest) are no longer
-    # needed — see docs/internal/xnat-auth-header-trust-token-only-refactor.md.
+    # identity source (eg. scout-xnat-auth-plugin's HeaderTrustFilter).
     pass_access_token = true
 {% if oauth2_proxy_ssl_insecure_skip_verify | default(false) | bool %}
     ssl_insecure_skip_verify = true

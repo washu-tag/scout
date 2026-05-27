@@ -90,12 +90,6 @@
           address: '{{ oauth2_proxy_auth_url }}'
           trustForwardHeader: true
           authResponseHeaders:
-            # Forward only the upstream access token. It is the single source of
-            # truth for services that trust oauth2-proxy (eg. scout-xnat-auth-
-            # plugin's HeaderTrustFilter), which decodes sub / preferred_username
-            # / email / names / role claims directly from the JWT. The former
-            # User/Email/Groups fallback headers were dropped — see
-            # docs/internal/xnat-auth-header-trust-token-only-refactor.md.
             - X-Auth-Request-Access-Token
 
 - name: Install OAuth2 Proxy Error Middleware
