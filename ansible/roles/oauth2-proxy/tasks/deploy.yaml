@@ -90,16 +90,13 @@
           address: '{{ oauth2_proxy_auth_url }}'
           trustForwardHeader: true
           authResponseHeaders:
-            # Identity headers consumed by services that trust oauth2-proxy
-            # (eg. scout-xnat-auth-plugin's HeaderTrustFilter). The Access-Token
-            # header lets downstream services parse role / sub claims without
-            # an extra round-trip; the User/Email/Groups headers are useful
-            # fallbacks when a service can't or shouldn't decode the JWT.
+            # Forward only the upstream access token. It is the single source of
+            # truth for services that trust oauth2-proxy (eg. scout-xnat-auth-
+            # plugin's HeaderTrustFilter), which decodes sub / preferred_username
+            # / email / names / role claims directly from the JWT. The former
+            # User/Email/Groups fallback headers were dropped — see
+            # docs/internal/xnat-auth-header-trust-token-only-refactor.md.
             - X-Auth-Request-Access-Token
-            - X-Auth-Request-User
-            - X-Auth-Request-Email
-            - X-Auth-Request-Groups
-            - X-Auth-Request-Preferred-Username
 
 - name: Install OAuth2 Proxy Error Middleware
   kubernetes.core.k8s:

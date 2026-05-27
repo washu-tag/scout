@@ -12,9 +12,14 @@
 
 XNAT plugin that integrates XNAT into Scout's auth posture:
 
-- **`HeaderTrustFilter`** — trusts oauth2-proxy's `X-Auth-Request-*`
-  identity headers for browser-path traffic. Provisions the matching
-  XNAT user on first sight via `UserProvisioningService`.
+- **`HeaderTrustFilter`** — trusts a single forwarded access token
+  (`X-Auth-Request-Access-Token`, set by oauth2-proxy) for browser-path
+  traffic. The token is the sole source of identity (`sub`,
+  `preferred_username`, `email`, names) and the required-role gate; it
+  fails closed (401 on an unparseable token, 403 when the token lacks
+  the required role). Provisions the matching XNAT user on first sight
+  via `UserProvisioningService`. See
+  `docs/internal/xnat-auth-header-trust-token-only-refactor.md`.
 - **`BearerTokenFilter`** — validates Keycloak JWTs from
   `Authorization: Bearer …`, exchanges them via Keycloak's Standard
   Token Exchange V2 for an `xnat`-audience token, validates that, and
@@ -63,8 +68,5 @@ Properties consumed via Spring `@Value` and read from
 | `scout.keycloak.client_id` | `xnat` | STX target client |
 | `scout.keycloak.client_secret` | (empty) | STX client auth |
 | `scout.keycloak.required_role` | `xnat-access` | Required role on validated identity |
-| `scout.headers.user_header` | `X-Auth-Request-User` | oauth2-proxy preferred_username |
-| `scout.headers.email_header` | `X-Auth-Request-Email` | oauth2-proxy email |
-| `scout.headers.groups_header` | `X-Auth-Request-Groups` | oauth2-proxy groups |
-| `scout.headers.access_token_header` | `X-Auth-Request-Access-Token` | oauth2-proxy upstream JWT |
+| `scout.headers.access_token_header` | `X-Auth-Request-Access-Token` | oauth2-proxy upstream JWT (sole browser-path identity source) |
 | `scout.username_prefix` | `keycloak` | XNAT username = `<prefix>-<sub>` |

@@ -21,20 +21,27 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Trusts identity headers set by oauth2-proxy on browser-path traffic. Does
- * nothing on requests that lack the headers (in-cluster API traffic) — the
+ * Trusts the access token forwarded by oauth2-proxy on browser-path traffic.
+ * The token ({@code X-Auth-Request-Access-Token}) is the single source of
+ * truth for identity: {@code sub}, {@code preferred_username}, {@code email},
+ * names, and the role claims all come from its claims. Does nothing on
+ * requests that lack the token (in-cluster API traffic) — the
  * BearerTokenFilter handles those.
  *
- * Trusting headers is only safe because Traefik's ForwardAuth middleware
- * funnels all browser ingress traffic through oauth2-proxy first. In-cluster
- * traffic bypasses Traefik via Kubernetes service discovery and therefore
- * never carries these headers.
+ * Trusting the forwarded token without re-validating its signature is only
+ * safe because Traefik's ForwardAuth middleware funnels all browser ingress
+ * traffic through oauth2-proxy first. In-cluster traffic bypasses Traefik via
+ * Kubernetes service discovery and therefore never carries this header.
+ *
+ * Fail-closed: a present-but-unparseable token returns 401, and a parseable
+ * token that lacks the required role returns 403. See
+ * docs/internal/xnat-auth-header-trust-token-only-refactor.md for the
+ * rationale behind dropping the former User/Email/Groups header fallbacks.
  */
 @Slf4j
 @Component
@@ -64,64 +71,54 @@ public class HeaderTrustFilter extends OncePerRequestFilter {
             return;
         }
 
-        final String preferredUsername = request.getHeader(properties.getUserHeader());
-        if (StringUtils.isBlank(preferredUsername)) {
-            // Not an oauth2-proxy request; leave the chain alone.
+        final String accessToken = request.getHeader(properties.getAccessTokenHeader());
+        if (StringUtils.isBlank(accessToken)) {
+            // No forwarded access token; not an oauth2-proxy browser request.
+            // Leave the chain alone so the BearerTokenFilter / Spring's default
+            // path can handle it.
             chain.doFilter(request, response);
             return;
         }
 
-        final String email = request.getHeader(properties.getEmailHeader());
-        final String groupsHeader = request.getHeader(properties.getGroupsHeader());
-        final String accessToken = request.getHeader(properties.getAccessTokenHeader());
+        // The forwarded access token is the single source of truth for browser-
+        // path identity. No signature validation here — oauth2-proxy is the
+        // trust boundary, not the JWT itself. Fail closed if it won't parse.
+        final JWTClaimsSet claims;
+        try {
+            final JWT jwt = JWTParser.parse(accessToken);
+            claims = jwt.getJWTClaimsSet();
+        } catch (Exception e) {
+            log.warn("HeaderTrustFilter rejecting request: forwarded access token in {} is unparseable ({})",
+                    properties.getAccessTokenHeader(), e.getMessage());
+            SecurityContextHolder.clearContext();
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Scout auth: invalid access token");
+            return;
+        }
 
-        final List<String> groups = parseCommaList(groupsHeader);
+        final String sub = claims.getSubject();
+        final String preferredUsername = claimAsString(claims, "preferred_username");
+        final String email = claimAsString(claims, "email");
+        final String firstName = claimAsString(claims, "given_name");
+        final String lastName = claimAsString(claims, "family_name");
+
+        // The xnat-access gate is enforced solely from the token's role claims:
+        // client roles in resource_access.<client>.roles, plus realm roles in
+        // realm_access.roles. No group-name inference fallback.
         final List<String> roles = new ArrayList<>();
+        roles.addAll(extractClientRoles(claims, properties.getClientId()));
+        roles.addAll(extractRealmRoles(claims));
+        log.info("HeaderTrustFilter saw roles {} in access token for sub '{}'", roles, sub);
 
-        // Browser-path identity comes from the oauth2-proxy session. The user's
-        // client roles on the xnat client live in resource_access.<client>.roles
-        // inside the access token; we need to pull them out to enforce the
-        // xnat-access gate. No signature validation here — oauth2-proxy is the
-        // trust boundary, not the JWT itself.
-        String sub = null;
-        String firstName = null;
-        String lastName = null;
-        if (StringUtils.isNotBlank(accessToken)) {
-            try {
-                final JWT jwt = JWTParser.parse(accessToken);
-                final JWTClaimsSet claims = jwt.getJWTClaimsSet();
-                sub = claims.getSubject();
-                firstName = (String) claims.getClaim("given_name");
-                lastName = (String) claims.getClaim("family_name");
-                roles.addAll(extractClientRoles(claims, properties.getClientId()));
-                roles.addAll(extractRealmRoles(claims));
-            } catch (Exception e) {
-                log.warn("failed to parse forwarded access token; falling back to header-only identity", e);
-            }
-        }
-        if (StringUtils.isBlank(sub)) {
-            // Fallback when oauth2-proxy didn't forward the access token (or it
-            // was unparseable). Use preferred_username as the stable id; if the
-            // user's preferred_username changes in Keycloak, they'll show up as
-            // a new XNAT user — log noisily so it's findable.
-            log.info("no parseable access token in {}; using preferred_username '{}' as sub fallback",
-                    properties.getAccessTokenHeader(), preferredUsername);
-            sub = preferredUsername;
-        }
-
-        // Defense-in-depth role check: oauth2-proxy already enforces
-        // scout-user / scout-admin via the oauth2-proxy-user role gate, both of
-        // which transitively grant xnat-access. If the access token had the
-        // role claim we'll see it directly; otherwise infer from groups.
         if (!roles.contains(properties.getRequiredRole())) {
-            if (groups.contains("scout-user") || groups.contains("scout-admin")
-                    || groups.contains("/scout-user") || groups.contains("/scout-admin")) {
-                roles.add(properties.getRequiredRole());
-            }
+            log.warn("HeaderTrustFilter rejecting request: access token for sub '{}' lacks required role '{}' (saw {})",
+                    sub, properties.getRequiredRole(), roles);
+            SecurityContextHolder.clearContext();
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Scout auth: missing required role");
+            return;
         }
 
         final ScoutIdentity identity = new ScoutIdentity(
-                sub, preferredUsername, email, firstName, lastName, groups, roles);
+                sub, preferredUsername, email, firstName, lastName, Collections.emptyList(), roles);
         log.debug("HeaderTrustFilter authenticating {}", identity);
 
         try {
@@ -144,11 +141,12 @@ public class HeaderTrustFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-    static List<String> parseCommaList(String value) {
-        if (StringUtils.isBlank(value)) {
-            return Collections.emptyList();
+    private static String claimAsString(final JWTClaimsSet claims, final String name) {
+        try {
+            return claims.getStringClaim(name);
+        } catch (java.text.ParseException e) {
+            return null;
         }
-        return Arrays.asList(value.split("\\s*,\\s*"));
     }
 
     @SuppressWarnings("unchecked")
