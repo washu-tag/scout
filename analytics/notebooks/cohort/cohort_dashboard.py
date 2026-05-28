@@ -5,6 +5,7 @@ This module provides the main entry point for the cohort builder dashboard.
 All UI logic is contained here - the notebook just calls launch_cohort_builder().
 """
 
+import os
 import time
 import traceback
 import pandas as pd
@@ -37,20 +38,22 @@ from cohort_ui import (
 
 def generate_regex_with_ollama(
     user_query,
-    ollama_url="http://ollama:11434",
-    model="gpt-oss-120b-long:latest",
+    ollama_url=None,
+    model=None,
 ):
     """
     Generate regex patterns for radiology report text search using Ollama.
 
     Args:
         user_query: Natural language description of what to search for (e.g., "brain mets")
-        ollama_url: Ollama API endpoint
-        model: Model name to use
+        ollama_url: Ollama API endpoint (defaults to OLLAMA_URL env var)
+        model: Model name to use (defaults to OLLAMA_MODEL env var)
 
     Returns:
         Generated regex patterns (one per line) or error message
     """
+    ollama_url = ollama_url or os.environ["OLLAMA_URL"]
+    model = model or os.environ["OLLAMA_MODEL"]
     prompt = f"""Generate regex patterns to search radiology reports for: {user_query}
 
 Requirements:
@@ -287,8 +290,8 @@ def _create_search_form(container, config=None):
                     f"""
                 <div style='background: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 11px; font-family: monospace;'>
                     <div style='font-weight: 600; margin-bottom: 4px;'>Request Details:</div>
-                    <div><b>URL:</b> http://ollama:11434/api/generate</div>
-                    <div><b>Model:</b> gpt-oss-120b-long:latest</div>
+                    <div><b>URL:</b> {os.environ["OLLAMA_URL"]}/api/generate</div>
+                    <div><b>Model:</b> {os.environ["OLLAMA_MODEL"]}</div>
                     <div><b>Query:</b> {html_module.escape(query)}</div>
                 </div>
             """
@@ -538,8 +541,8 @@ def _create_search_form(container, config=None):
     # Patient ID filtering
     patient_ids_input = widgets.Textarea(
         value=config.get("patient_ids", ""),
-        placeholder="Paste Epic MRNs (one per line or comma-separated)",
-        description="Epic MRNs:",
+        placeholder="Paste patient MRNs (one per line or comma-separated)",
+        description="Patient MRNs:",
         layout=widgets.Layout(width="98%", height="80px"),
         style={"description_width": "100px"},
     )
@@ -564,33 +567,41 @@ def _create_search_form(container, config=None):
             content = bytes(uploaded["content"]).decode("utf-8")
             csv_df = pd.read_csv(io.StringIO(content))
 
-            # Look for epic_mrn column (case-insensitive)
-            mrn_col = None
-            for col in csv_df.columns:
-                if col.strip().lower() in ("epic_mrn", "mrn", "epicmrn", "patient_id"):
-                    mrn_col = col
-                    break
+            # Pick the first recognized patient-ID column (case-insensitive).
+            id_aliases = {
+                "epic_mrn",
+                "mrn",
+                "epicmrn",
+                "patient_id",
+                "mpi",
+                "resolved_mpi",
+                "resolved_epic_mrn",
+            }
+            id_col = next(
+                (c for c in csv_df.columns if c.strip().lower() in id_aliases),
+                None,
+            )
 
-            if mrn_col is None:
+            if id_col is None:
                 upload_status.value = (
                     "<div style='font-size: 11px; color: #dc2626; margin-top: 4px;'>"
-                    "No epic_mrn, mrn, or patient_id column found in CSV"
+                    "No patient ID column found in CSV (looked for epic_mrn, mrn, mpi, patient_id, ...)"
                     "</div>"
                 )
                 return
 
-            mrns = csv_df[mrn_col].dropna().astype(str).str.strip().tolist()
-            mrns = [m for m in mrns if m]
+            ids = csv_df[id_col].dropna().astype(str).str.strip().tolist()
+            ids = [v for v in ids if v]
 
             # Append to existing text
             existing = patient_ids_input.value.strip()
-            new_mrns = "\n".join(mrns)
+            new_ids = "\n".join(ids)
             patient_ids_input.value = (
-                f"{existing}\n{new_mrns}".strip() if existing else new_mrns
+                f"{existing}\n{new_ids}".strip() if existing else new_ids
             )
             upload_status.value = (
                 f"<div style='font-size: 11px; color: #10b981; margin-top: 4px;'>"
-                f"Loaded {len(mrns)} MRNs from CSV"
+                f"Loaded {len(ids)} IDs from CSV (col: {id_col})"
                 f"</div>"
             )
         except Exception as e:
@@ -678,7 +689,7 @@ def _create_search_form(container, config=None):
             ),
             widgets.HTML(
                 "<div style='font-size: 11px; color: #6b7280; margin-top: 4px;'>"
-                "CSV must have an <code>epic_mrn</code> column"
+                "CSV must have a patient ID column (e.g. <code>epic_mrn</code>, <code>mrn</code>, <code>mpi</code>, or <code>patient_id</code>)"
                 "</div>"
             ),
         ],
@@ -919,16 +930,7 @@ def _build_dashboard_ui(df, criteria_summary, config, sql, container, status_out
         }
 
         # Summary section - compact header showing only included count
-        unique_patients = (
-            df[["epic_mrn", "empi_mr"]]
-            .apply(
-                lambda row: (
-                    row["epic_mrn"] if pd.notna(row["epic_mrn"]) else row["empi_mr"]
-                ),
-                axis=1,
-            )
-            .nunique()
-        )
+        unique_patients = df["scout_patient_id"].nunique()
 
         # Get included count
         cohort_included_count = (

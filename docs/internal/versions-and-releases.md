@@ -455,6 +455,7 @@ This section documents all files containing version strings. The Release Workflo
 |------|-----------|
 | `extractor/hl7-transformer/VERSION` | `latest` |
 | `helm/jupyter/notebook/VERSION` | `latest` |
+| `helm/jupyter/scout-notebook/VERSION` | `latest` |
 
 ## Files NOT to Update
 

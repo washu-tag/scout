@@ -186,5 +186,8 @@ echo "VERSION files..."
 echo "$DOCKER_TAG" > "helm/jupyter/notebook/VERSION"
 echo "  - VERSION file: helm/jupyter/notebook/VERSION"
 
+echo "$DOCKER_TAG" > "helm/jupyter/scout-notebook/VERSION"
+echo "  - VERSION file: helm/jupyter/scout-notebook/VERSION"
+
 echo ""
 echo "Version update complete!"

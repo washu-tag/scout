@@ -100,7 +100,7 @@ The `publish` and `publish-demo` jobs require `scan-images` in their `needs:` ar
 
 All third-party action references are pinned to commit hashes (not tags) to prevent supply chain attacks. Dependabot's `github-actions` ecosystem in `dependabot.yml` keeps these pins current.
 
-**Images scanned**: `hl7log-extractor`, `hl7-transformer`, `pyspark-notebook`, `launchpad`, `superset`, `keycloak`.
+**Images scanned**: `hl7log-extractor`, `hl7-transformer`, `pyspark-notebook`, `scout-notebook`, `launchpad`, `superset`, `keycloak`.
 
 ### Semgrep
 
