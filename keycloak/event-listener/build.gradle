@@ -10,30 +10,50 @@ repositories {
     mavenCentral()
 }
 
+// Keycloak deps are declared compileOnly (they're provided by Keycloak at
+// runtime so we don't want to ship duplicates), but the unit tests need
+// those interfaces for compile + runtime — extending compileOnly into
+// the test classpath keeps the declaration single-source.
+configurations {
+    testImplementation.extendsFrom compileOnly
+}
+
 def kcVersion = "26.6.1"
 def jbossLoggingVersion = "3.6.1.Final"
 def checkstyleVersion = "10.21.2"
-// ADR 0021: OPA bundle publisher uses tar.gz as OPA's standard bundle
-// format. Commons Compress is ~700KB with no transitive deps; smaller
-// surface than adding an S3 client SDK on top. Not present on
-// Keycloak's classpath by default, so it ships into providers/ via
-// the copyRuntimeDeps task below.
 def commonsCompressVersion = "1.27.1"
-// JUnit + Mockito for unit tests covering the SigV4 signer and the
-// bundle assembler. Test scope only.
+// AWS SDK v2 for S3 PUT of the OPA bundle. Supports both static-key auth
+// (MinIO, via StaticCredentialsProvider) and IRSA (cloud-native AWS, via
+// DefaultCredentialsProvider's WebIdentityTokenFile path). The SDK shades
+// its internal Jackson under software.amazon.awssdk.thirdparty, so it
+// doesn't conflict with Keycloak's bundled Jackson.
+def awsSdkVersion = "2.31.0"
 def junitVersion = "5.11.4"
 def mockitoVersion = "5.14.2"
 
 dependencies {
-    implementation("org.keycloak:keycloak-core:${kcVersion}")
-    implementation("org.keycloak:keycloak-services:${kcVersion}")
-    implementation("org.keycloak:keycloak-server-spi:${kcVersion}")
-    implementation("org.jboss.logging:jboss-logging:${jbossLoggingVersion}")
+    // Provided by Keycloak at runtime — compileOnly so they don't ship into
+    // providers/ alongside our jar and risk classloader skew.
+    compileOnly("org.keycloak:keycloak-core:${kcVersion}")
+    compileOnly("org.keycloak:keycloak-services:${kcVersion}")
+    compileOnly("org.keycloak:keycloak-server-spi:${kcVersion}")
+    compileOnly("org.jboss.logging:jboss-logging:${jbossLoggingVersion}")
+
+    // Runtime deps that ship into Keycloak's providers/ directory via
+    // copyRuntimeDeps below.
     implementation("org.apache.commons:commons-compress:${commonsCompressVersion}")
-    // Jackson intentionally NOT declared here — it ships with Keycloak
-    // (used internally by org.keycloak.util.JsonSerialization). Adding
-    // a second copy would risk classloader version skew. Test-only
-    // jackson use is fine since tests run outside the Keycloak runtime.
+    implementation(platform("software.amazon.awssdk:bom:${awsSdkVersion}"))
+    // The SDK's s3 module transitively pulls netty-nio-client (the default
+    // async HTTP client) and apache-client. We use url-connection-client
+    // (sync, lightweight) — the listener PUTs at most once per debounce
+    // window, so sync is fine and we save ~5 MB of netty + httpclient jars
+    // in the Keycloak providers/ payload.
+    implementation("software.amazon.awssdk:s3") {
+        exclude group: "software.amazon.awssdk", module: "netty-nio-client"
+        exclude group: "software.amazon.awssdk", module: "apache-client"
+    }
+    implementation("software.amazon.awssdk:url-connection-client")
+
     compileOnly("org.projectlombok:lombok:1.18.38")
     annotationProcessor("org.projectlombok:lombok:1.18.38")
 
@@ -44,17 +64,14 @@ dependencies {
     testImplementation("com.fasterxml.jackson.core:jackson-databind:2.18.2")
 }
 
-// Copy commons-compress (the only declared `implementation` dep not
-// already on Keycloak's classpath) into build/libs/ so the Dockerfile's
-// `COPY .../build/libs/*.jar /opt/keycloak/providers/` step picks it up
-// alongside our own JAR. Without this, TarArchiveOutputStream throws
-// NoClassDefFoundError at runtime — and since that's an Error subclass,
-// not an Exception, the publisher's catch block doesn't see it and the
-// scheduler swallows the failure silently.
+// Copy all runtime-classpath deps (commons-compress + AWS SDK) into
+// build/libs/ so the Dockerfile's
+// `COPY .../build/libs/*.jar /opt/keycloak/providers/` step picks them up
+// alongside our own jar. Keycloak's own libs are compileOnly above, so
+// they don't end up here — no duplication.
 tasks.register('copyRuntimeDeps', Copy) {
     from configurations.runtimeClasspath
     into layout.buildDirectory.dir('libs')
-    include 'commons-compress-*.jar'
 }
 jar.finalizedBy(tasks.named('copyRuntimeDeps'))
 
