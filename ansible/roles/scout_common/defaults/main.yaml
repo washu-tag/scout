@@ -179,9 +179,12 @@ loki_chunks_bucket: loki-chunks
 loki_ruler_bucket: loki-ruler
 loki_admin_bucket: loki-admin
 # OPA bundle storage (ADR 0021). One object per Scout deployment:
-# opa-bundles/scout/bundle.tar.gz, replacing per-request Keycloak admin
-# API fetches with a periodic pull from MinIO.
+# {{ opa_bundles_bucket }}/{{ opa_bundle_object_key }}, replacing
+# per-request Keycloak admin API fetches with a periodic pull from MinIO.
+# Both the Keycloak SPI publisher and the OPA bundle plugin consume the
+# same two vars so the path stays in lockstep.
 opa_bundles_bucket: opa-bundles
+opa_bundle_object_key: scout/bundle.tar.gz
 
 # Service Account names
 lake_reader_service_account_name: lake-reader

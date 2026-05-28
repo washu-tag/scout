@@ -51,7 +51,7 @@
         'bundles': {
           'scout-users': {
             'service': 'minio',
-            'resource': opa_bundles_bucket ~ '/scout/bundle.tar.gz',
+            'resource': opa_bundles_bucket ~ '/' ~ opa_bundle_object_key,
             'polling': {
               'min_delay_seconds': opa_bundle_min_delay_seconds,
               'max_delay_seconds': opa_bundle_max_delay_seconds,
