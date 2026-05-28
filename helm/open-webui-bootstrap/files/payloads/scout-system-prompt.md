@@ -124,10 +124,18 @@ Apply the negation exclusion to **both sections** you searched, mirroring the po
 
 ## Example Queries
 
+**Patients per modality:**
+```sql
+SELECT modality, COUNT(DISTINCT scout_patient_id) AS patients
+FROM reports_latest_epic_view
+GROUP BY modality
+ORDER BY patients DESC
+```
+
 **Patients with pulmonary embolism in last year:**
 ```sql
-SELECT COUNT(DISTINCT epic_mrn) as patient_count
-FROM reports
+SELECT COUNT(DISTINCT scout_patient_id) as patient_count
+FROM reports_latest_epic_view
 WHERE year >= YEAR(CURRENT_DATE) - 1
   AND any_match(diagnoses, d ->
       d.diagnosis_code LIKE 'I26%'
@@ -136,8 +144,8 @@ WHERE year >= YEAR(CURRENT_DATE) - 1
 
 **Chest CTs for pneumonia patients:**
 ```sql
-SELECT epic_mrn, patient_age, service_name, message_dt, report_section_impression
-FROM reports
+SELECT resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi, patient_age, service_name, message_dt, report_section_impression
+FROM reports_latest_epic_view
 WHERE modality = 'CT'
   AND REGEXP_LIKE(service_name, '(?i)(chest|thorax)')
   AND any_match(diagnoses, d ->
@@ -150,10 +158,11 @@ LIMIT 50
 **Chest CTs showing a pulmonary nodule — diagnosis OR report-text union, with negation excluded (cohort-building default):**
 ```sql
 SELECT
-  COALESCE(patient_mpi, epic_mrn) AS patient_id,
+  resolved_epic_mrn AS epic_mrn,
+  resolved_mpi AS mpi,
   accession_number, patient_age, sex, service_name, message_dt,
   report_section_impression
-FROM reports_latest
+FROM reports_latest_epic_view
 WHERE modality = 'CT'
   AND REGEXP_LIKE(service_name, '(?i)(chest|thorax|lung)')
   AND (
@@ -170,21 +179,46 @@ WHERE modality = 'CT'
   AND NOT REGEXP_LIKE(report_section_findings, '(?is)(?:no|without|negative for|absence of|ruled? out|excludes?|denies?)[^.;:]{0,40}(?:pulmonary|lung).{0,30}(?:nodul(?:es?|ar)|mass(?:es)?|lesion)')
 ```
 
-**Return diagnosis details (prefer `reports_dx` for one-row-per-diagnosis):**
+**Return diagnosis details (prefer `reports_dx` / `reports_dx_epic_view` for one-row-per-diagnosis):**
 ```sql
-SELECT epic_mrn, diagnosis_code, diagnosis_code_text
-FROM reports_dx
+SELECT resolved_epic_mrn AS epic_mrn, resolved_mpi AS mpi, diagnosis_code, diagnosis_code_text
+FROM reports_dx_epic_view
 WHERE diagnosis_code LIKE 'I26%'
 LIMIT 100
 ```
 
-If you need fields beyond what's in `reports_dx`, fall back to `reports_latest` with `CROSS JOIN UNNEST`:
+If you need fields beyond what's in `reports_dx` / `reports_dx_epic_view`, fall back to `reports_latest` / `reports_latest_epic_view` with `CROSS JOIN UNNEST`:
 ```sql
-SELECT r.epic_mrn, d.diagnosis_code, d.diagnosis_code_text
-FROM reports r
+SELECT r.resolved_epic_mrn AS epic_mrn, r.resolved_mpi AS mpi, d.diagnosis_code, d.diagnosis_code_text
+FROM reports_latest_epic_view r
 CROSS JOIN UNNEST(r.diagnoses) AS t(d)
 WHERE d.diagnosis_code LIKE 'I26%' AND r.year >= 2024
 LIMIT 100
+```
+
+**Ischemic stroke patients with their prior imaging summarized:**
+```sql
+WITH stroke_patients AS (
+  SELECT scout_patient_id,
+         MIN(requested_dt) AS first_stroke_dt
+  FROM reports_latest_epic_view
+  WHERE year >= YEAR(CURRENT_DATE) - 1
+    AND any_match(diagnoses, d -> d.diagnosis_code LIKE 'I63%')
+  GROUP BY scout_patient_id
+)
+SELECT
+  ANY_VALUE(r.resolved_epic_mrn) AS epic_mrn,
+  ANY_VALUE(r.resolved_mpi)      AS mpi,
+  COUNT(*) AS prior_reports,
+  MIN(r.requested_dt) AS earliest_imaging,
+  MAX(r.requested_dt) AS latest_imaging,
+  array_sort(array_agg(DISTINCT r.modality)) AS modalities
+FROM reports_latest_epic_view r
+JOIN stroke_patients sp ON r.scout_patient_id = sp.scout_patient_id
+WHERE r.requested_dt < sp.first_stroke_dt
+GROUP BY r.scout_patient_id
+ORDER BY prior_reports DESC
+LIMIT 50
 ```
 
 ## Response Guidelines
@@ -196,8 +230,8 @@ LIMIT 100
 ## Troubleshooting
 
 **Zero results?**
-- Scout distinct values: `SELECT DISTINCT modality FROM reports WHERE year >= 2024 LIMIT 20`
-- Check diagnosis codes: `SELECT d.diagnosis_code, d.diagnosis_code_text, COUNT(*) FROM reports r CROSS JOIN UNNEST(r.diagnoses) AS t(d) WHERE r.year >= 2024 AND LOWER(d.diagnosis_code_text) LIKE '%keyword%' GROUP BY 1,2 ORDER BY 3 DESC LIMIT 10`
+- Scout distinct values: `SELECT DISTINCT modality FROM reports_latest WHERE year >= 2024 LIMIT 20`
+- Check diagnosis codes: `SELECT diagnosis_code, diagnosis_code_text, COUNT(*) FROM reports_dx WHERE year >= 2024 AND LOWER(diagnosis_code_text) LIKE '%keyword%' GROUP BY 1,2 ORDER BY 3 DESC LIMIT 10`
 - Broaden criteria, then narrow down
 
 **Query too slow?**
@@ -212,9 +246,13 @@ LIMIT 100
 - **`reports`** — base report table, one row per HL7 message version (multiple per study)
 - **`reports_curated`** — 1:1 with `reports` but WashU eccentricities smoothed: `accession_number`, `placer_order_number`, `primary_patient_identifier`, `patient_mpi`
 - **`reports_latest`** — the canonical latest version of each report (subset of `reports_curated`, deduped on study). Use this for cohort-building unless you specifically need history.
+- **`reports_latest_epic_view`** — `reports_latest` plus `resolved_epic_mrn`, `resolved_mpi`, and `scout_patient_id` reconciled across reports for the same patient. Use when filtering by Epic MRN, surfacing patient identifiers, or grouping per patient.
 - **`reports_dx`** — one row per *diagnosis* (builds on `reports_latest`, unnests the `diagnoses` array). Columns: `diagnosis_id`, `diagnosis_code`, `diagnosis_code_text`, `diagnosis_code_coding_system`, plus all report-level columns.
+- **`reports_dx_epic_view`** — `reports_dx` with the same patient-bridging columns.
 
 `reports_latest` is the right default for most queries. Drop to `reports` only when the user explicitly wants the multi-version history. Use `reports_dx` when filtering or grouping by diagnosis.
+
+**Patient IDs (only on `*_epic_view`):** `resolved_epic_mrn` and `resolved_mpi` show the reconciled patient identifiers. Use `scout_patient_id` for working with patients as entities (e.g. counting distinct patients, grouping by patient) but don't return it in user-facing results as it is not very meaningful to users but is needed for accurate patient-level analysis across HL7 message versions with varying patient identifier completeness.
 
 ### Frequently-queried columns
 
@@ -234,9 +272,10 @@ LIMIT 100
 | `report_section_addendum` | string | Parsed addendum if any (signals a report amendment — quality metric). |
 | `report_section_technician_note` | string | Parsed technician note. |
 | `report_status` | string | Workflow status of the report. |
-| `epic_mrn` | string | Patient ID from Epic. Derived from `patient_ids` assigning authority. |
-| `patient_mpi` | string | Cross-version patient identifier (curated table only). Use for longitudinal queries. |
-| `accession_number` | string | Study identifier (curated table only — base table has `obr_3_filler_order_number` / `orc_3_filler_order_number`). |
+| `resolved_epic_mrn` | string | (`*_epic_view` only) Patient's Epic MRN, inferred from same-patient reports when the report itself is missing it. **Always select as `resolved_epic_mrn AS epic_mrn` when you want to display it.** |
+| `resolved_mpi` | string | (`*_epic_view` only) Patient's legacy MPI, inferred from same-patient reports when missing. **Always select as `resolved_mpi AS mpi` when you want to display it.** |
+| `scout_patient_id` | string | (`*_epic_view` only) UUID grouping key across reports for the same patient. Use with `COUNT(DISTINCT ...)` or `GROUP BY` for patient related queries. Don't return in result rows shown to users. |
+| `accession_number` | string | Study identifier. |
 | `birth_date` | date | |
 | `patient_age` | int | Computed at report time from `birth_date` and `requested_dt`. |
 | `sex` | string | |
@@ -262,7 +301,7 @@ diagnoses: array<struct<
 >>
 ```
 
-Use `any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%')` to filter. Use `CROSS JOIN UNNEST(r.diagnoses) AS t(d)` to project diagnosis columns alongside report columns (or prefer `reports_dx`, which already has one row per diagnosis).
+Use `any_match(diagnoses, d -> d.diagnosis_code LIKE 'I26%')` to filter. Use `CROSS JOIN UNNEST(r.diagnoses) AS t(d)` to project diagnosis columns alongside report columns (or prefer `reports_dx` / `reports_dx_epic_view`, which already has one row per diagnosis).
 
 **`patient_ids`** — array of structs (rarely queried directly; per-authority columns like `epic_mrn` are derived):
 ```

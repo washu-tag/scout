@@ -57,7 +57,7 @@ The Chat service is configured with:
 [JupyterHub](https://jupyterhub.readthedocs.io/) provides an interface for power users to perform custom data analysis using Python code. Each user receives their own single-user [Jupyter notebook](https://jupyter.org/) environment with full access to data in the Scout data lake.
 
 **Key Features:**
-- Pre-installed [PySpark](https://spark.apache.org/docs/latest/api/python/index.html) for large-scale data processing
+- SQL access to the data lake via [Trino](https://trino.io/), with results loaded as pandas DataFrames
 - Example `Scout/Quickstart.ipynb` notebook with sample queries and analysis code for radiology reports
 - Export results to CSV, JSON, Parquet, or other formats
 - Create custom visualizations and statistical analyses

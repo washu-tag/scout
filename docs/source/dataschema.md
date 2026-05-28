@@ -179,14 +179,15 @@ root
 ```
 
 In this example, the report has two diagnosis codes, both of which are ICD-10 codes. The first code
-is I48.91 and the second is I50.9. An example spark query to filter an existing dataframe `df` for reports
-containing an ICD-10 diagnosis code of "I48.91" could look like:
+is I48.91 and the second is I50.9. An example Trino query to find reports containing an ICD-10
+diagnosis code of "I48.91" could look like:
 ```python
-from pyspark.sql import functions as F
-
-df.select("diagnoses").filter(
-    F.exists("diagnoses", lambda x: (x.diagnosis_code == "I48.91") & (x.diagnosis_code_coding_system == "I10"))
-)
+pd.read_sql("""
+    SELECT accession_number, diagnoses
+    FROM reports_latest_epic_view
+    WHERE any_match(diagnoses, x -> x.diagnosis_code = 'I48.91'
+                                AND x.diagnosis_code_coding_system = 'I10')
+""", engine)
 ```
 
 The `diagnoses_consolidated` column is provided as a semicolon-delimited string derived from the
@@ -329,11 +330,12 @@ All other usages of these views would access them as:
 
 As an example, a user could find all accession numbers for reports for patients with an EPIC MRN from a pre-specified list:
 ```python
-spark.sql(f"""
-  SELECT accession_number, epic_mrn, resolved_epic_mrn, scout_patient_id
-    FROM reports_curated_spark_epic_view
+pd.read_sql("""
+    SELECT accession_number, epic_mrn, resolved_epic_mrn, scout_patient_id
+    FROM reports_curated_epic_view
     WHERE resolved_epic_mrn IN ('E123456', 'E123457', 'E123458')
-""").orderBy("scout_patient_id").show(1000, False)
+    ORDER BY scout_patient_id
+""", engine)
 ```
 might return something like:
 ```

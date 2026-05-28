@@ -126,14 +126,23 @@ def add_epic_views(spark: SparkSession, source_table: str, mapping_table_name: s
     def view_sql(view_name):
         return f"""
             CREATE OR REPLACE VIEW {view_name} AS
-            SELECT
-                r.*,
-                m.scout_patient_id,
-                MAX(m.epic_mrn) OVER (PARTITION BY m.scout_patient_id) AS resolved_epic_mrn,
-                MAX(m.mpi)      OVER (PARTITION BY m.scout_patient_id) AS resolved_mpi
+            WITH patient_resolved AS (
+                SELECT scout_patient_id,
+                       MAX(epic_mrn) AS resolved_epic_mrn,
+                       MAX(mpi)      AS resolved_mpi
+                FROM {mapping_table_name}
+                WHERE consistent = true
+                GROUP BY scout_patient_id
+            )
+            SELECT r.*,
+                   m.scout_patient_id,
+                   p.resolved_epic_mrn,
+                   p.resolved_mpi
             FROM {source_table} r
             JOIN {mapping_table_name} m
                 ON r.primary_report_identifier = m.primary_report_identifier
+            JOIN patient_resolved p
+                ON m.scout_patient_id = p.scout_patient_id
             WHERE m.consistent = true
         """
 
