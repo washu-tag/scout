@@ -12,8 +12,8 @@ public record Hl7File(
     LocalDate date
 ) {
     private static final String UPSERT_ON_CONFLICT_SQL =
-         "ON CONFLICT (hl7_file_path) "
-            + "DO UPDATE SET log_file_path = EXCLUDED.log_file_path, message_number = EXCLUDED.message_number, date = EXCLUDED.date";
+         "ON CONFLICT (log_file_path, message_number) "
+            + "DO UPDATE SET hl7_file_path = EXCLUDED.hl7_file_path, date = EXCLUDED.date";
 
     /**
      * Gets the "ON CONFLICT" statement for upserting a record into the "hl7_file" table.
