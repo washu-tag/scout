@@ -58,7 +58,7 @@ The Chat service is configured with:
 
 **Key Features:**
 - SQL access to the data lake via [Trino](https://trino.io/), with results loaded as pandas DataFrames
-- Example `Scout/Quickstart.ipynb` notebook with sample queries and analysis code for radiology reports
+- Example `scout-samples/Quickstart.ipynb` notebook with sample queries and analysis code for radiology reports
 - Export results to CSV, JSON, Parquet, or other formats
 - Create custom visualizations and statistical analyses
 

@@ -34,7 +34,7 @@ Selecting **Chat** from the Launchpad provides an AI-powered interface for natur
 
 #### Scout Notebooks
 
-Selecting **Notebooks** from the Launchpad launches JupyterHub with notebooks that query the data lake through [Trino](https://trino.io/) for fully customizable data analysis. An example Jupyter notebook with sample code to access and analyze data is provided in `Scout/Quickstart.ipynb`. This notebook provides example code using pandas with SQL to search for reports, filter by various criteria, and export results to CSV files.
+Selecting **Notebooks** from the Launchpad launches JupyterHub with notebooks that query the data lake through [Trino](https://trino.io/) for fully customizable data analysis. An example Jupyter notebook with sample code to access and analyze data is provided in `scout-samples/Quickstart.ipynb`. This notebook provides example code using pandas with SQL to search for reports, filter by various criteria, and export results to CSV files.
 
 ![Scout Quickstart Notebook](images/ScoutQuickstartNotebook.png)
 

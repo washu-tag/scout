@@ -57,8 +57,8 @@ The base Jupyter environment includes Trino client, pandas, matplotlib, seaborn,
 # Create an environment with specific packages
 mamba create -n my-env python=3.11 ipykernel pytorch transformers scikit-learn -y
 
-# Or use the sample environment file (in ~/Scout/environment.yml)
-mamba env create -f ~/Scout/environment.yml
+# Or use the sample environment file (in ~/scout-samples/environment.yml)
+mamba env create -f ~/scout-samples/environment.yml
 ```
 
 Environments are stored on your persistent home directory (`/home/jovyan/.conda/envs/`) and survive server restarts. The `nb_conda_kernels` extension automatically discovers them as Jupyter kernels -- after creating an environment, refresh the launcher to see it.

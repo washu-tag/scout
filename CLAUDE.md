@@ -339,7 +339,7 @@ Services communicate via Kubernetes service names:
 
 ### Analyze Data in JupyterHub
 1. Access Scout Notebooks (JupyterHub)
-2. Open provided quickstart: `Scout/Quickstart.ipynb`
+2. Open provided quickstart: `scout-samples/Quickstart.ipynb`
 3. Use PySpark to query Delta Lake:
    ```python
    from pyspark.sql import SparkSession
