@@ -159,10 +159,16 @@ singleuser:
             # is actively imported, so HF_HOME has a stable target.
             mkdir -p /home/$NB_USER/models
 
-            # Surface the read-only Scout samples ConfigMap as ~/scout-samples. 
+            # Migrate any pre-existing real ~/Scout/ from the legacy first-spawn
+            # copy hook out of the way so the read-only symlink can take its place.
+            if [ -d /home/$NB_USER/Scout ] && [ ! -L /home/$NB_USER/Scout ]; then
+              mv /home/$NB_USER/Scout /home/$NB_USER/Scout.bak-$(date +%Y%m%d)
+            fi
+
+            # Surface the read-only Scout samples ConfigMap as ~/Scout.
             if [ -d /opt/scout/samples ]; then
-              ln -sfn /opt/scout/samples /home/$NB_USER/scout-samples
-              chown -h $NB_USER:$NB_GID /home/$NB_USER/scout-samples
+              ln -sfn /opt/scout/samples /home/$NB_USER/Scout
+              chown -h $NB_USER:$NB_GID /home/$NB_USER/Scout
             fi
   extraEnv:
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
