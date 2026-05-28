@@ -12,7 +12,7 @@ repositories {
 
 def kcVersion = "26.6.1"
 def jbossLoggingVersion = "3.6.1.Final"
-def checkstyleVersion = "10.21.2"
+def checkstyleVersion = "13.4.2"
 
 dependencies {
     implementation("org.keycloak:keycloak-core:${kcVersion}")
