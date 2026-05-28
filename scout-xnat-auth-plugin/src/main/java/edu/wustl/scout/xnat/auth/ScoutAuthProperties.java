@@ -29,6 +29,9 @@ public class ScoutAuthProperties {
     @Value("${scout.keycloak.required_role:xnat-access}")
     private String requiredRole;
 
+    @Value("${scout.keycloak.oauth2_proxy_client_id:oauth2-proxy}")
+    private String oauth2ProxyClientId;
+
     @Value("${scout.headers.access_token_header:X-Auth-Request-Access-Token}")
     private String accessTokenHeader;
 
@@ -41,6 +44,7 @@ public class ScoutAuthProperties {
     public String getClientId() { return clientId; }
     public String getClientSecret() { return clientSecret; }
     public String getRequiredRole() { return requiredRole; }
+    public String getOauth2ProxyClientId() { return oauth2ProxyClientId; }
     public String getAccessTokenHeader() { return accessTokenHeader; }
     public String getUsernamePrefix() { return usernamePrefix; }
 }

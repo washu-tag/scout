@@ -1,8 +1,6 @@
 package edu.wustl.scout.xnat.auth.security;
 
-import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.JWTParser;
 import edu.wustl.scout.xnat.auth.ScoutAuthProperties;
 import edu.wustl.scout.xnat.auth.model.ScoutIdentity;
 import edu.wustl.scout.xnat.auth.service.UserProvisioningService;
@@ -26,33 +24,43 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Trusts the access token forwarded by oauth2-proxy on browser-path traffic.
- * The token ({@code X-Auth-Request-Access-Token}) is the single source of
- * truth for identity: {@code sub}, {@code preferred_username}, {@code email},
- * names, and the role claims all come from its claims. Does nothing on
- * requests that lack the token (in-cluster API traffic) — the
- * BearerTokenFilter handles those.
+ * Authenticates browser-path traffic carrying the access token oauth2-proxy
+ * forwarded from its OIDC session ({@code X-Auth-Request-Access-Token}). The
+ * token is the single source of truth for identity ({@code sub},
+ * {@code preferred_username}, {@code email}, names) and roles
+ * ({@code resource_access.<clientId>.roles} + {@code realm_access.roles}).
  *
- * Trusting the forwarded token without re-validating its signature is only
- * safe because Traefik's ForwardAuth middleware funnels all browser ingress
- * traffic through oauth2-proxy first. In-cluster traffic bypasses Traefik via
- * Kubernetes service discovery and therefore never carries this header.
+ * <p>Cryptographic gate: the token is validated against Keycloak's JWKS
+ * (signature + issuer + expiry) and its {@code azp} must match the
+ * oauth2-proxy client. That gives us the same trust as the Bearer flow's
+ * incoming-token check, plus a binding to the OIDC client the token was
+ * issued for. We do not rely on the network shape (Traefik / ForwardAuth) as
+ * a trust boundary — defense in depth, not the primary check.
  *
- * Fail-closed: a present-but-unparseable token returns 401, and a parseable
- * token that lacks the required role returns 403. See
- * docs/internal/xnat-auth-header-trust-token-only-refactor.md for the
- * rationale behind dropping the former User/Email/Groups header fallbacks.
+ * <p>Does nothing on requests that lack the token (in-cluster API traffic)
+ * — the BearerTokenFilter handles those.
+ *
+ * <p>Status codes:
+ * <ul>
+ *   <li>401 — token present but fails sig/iss/exp, or {@code azp} doesn't
+ *       match the oauth2-proxy client.</li>
+ *   <li>403 — token validates but lacks the required role, or downstream
+ *       provisioning rejects the user.</li>
+ * </ul>
  */
 @Slf4j
 @Component
 public class HeaderTrustFilter extends OncePerRequestFilter {
 
     private final ScoutAuthProperties properties;
+    private final JwtValidator jwtValidator;
     private final UserProvisioningService provisioningService;
 
     public HeaderTrustFilter(final ScoutAuthProperties properties,
+                             final JwtValidator jwtValidator,
                              final UserProvisioningService provisioningService) {
         this.properties = properties;
+        this.jwtValidator = jwtValidator;
         this.provisioningService = provisioningService;
     }
 
@@ -80,18 +88,27 @@ public class HeaderTrustFilter extends OncePerRequestFilter {
             return;
         }
 
-        // The forwarded access token is the single source of truth for browser-
-        // path identity. No signature validation here — oauth2-proxy is the
-        // trust boundary, not the JWT itself. Fail closed if it won't parse.
         final JWTClaimsSet claims;
         try {
-            final JWT jwt = JWTParser.parse(accessToken);
-            claims = jwt.getJWTClaimsSet();
-        } catch (Exception e) {
-            log.warn("HeaderTrustFilter rejecting request: forwarded access token in {} is unparseable ({})",
+            claims = jwtValidator.validate(accessToken);
+        } catch (JwtValidator.InvalidJwtException e) {
+            log.warn("HeaderTrustFilter rejecting request: forwarded access token in {} is invalid ({})",
                     properties.getAccessTokenHeader(), e.getMessage());
             SecurityContextHolder.clearContext();
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Scout auth: invalid access token");
+            return;
+        }
+
+        // The token must have been issued to oauth2-proxy. Pinning azp is what
+        // makes this safe to trust as a browser-path token — any other client's
+        // token (eg. a Bearer-flow caller smuggling it into the header) is
+        // rejected here.
+        final String azp = claimAsString(claims, "azp");
+        if (!properties.getOauth2ProxyClientId().equals(azp)) {
+            log.warn("HeaderTrustFilter rejecting request: access token azp '{}' is not '{}'",
+                    azp, properties.getOauth2ProxyClientId());
+            SecurityContextHolder.clearContext();
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Scout auth: token not issued for browser flow");
             return;
         }
 
