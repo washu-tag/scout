@@ -1,8 +1,6 @@
 package edu.washu.tag.keycloak.events;
 
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,15 +24,14 @@ import org.keycloak.utils.StringUtil;
 
 /**
  * Owns the long-lived state for OPA bundle publishing: the in-memory user
- * snapshot, the debounce scheduler, and the MinIO uploader. Per ADR 0021,
- * this is the v2 follow-up to the cache-bust event listener — instead of
- * telling OPA "alice's cache entry is stale," we maintain an authoritative
- * snapshot and publish it as an OPA bundle on changes. OPA's native bundle
- * plugin handles distribution to all replicas.
+ * snapshot, the debounce scheduler, and the S3 uploader. Per ADR 0021,
+ * the listener maintains an authoritative snapshot of all Scout users'
+ * data-access attributes and publishes it as an OPA bundle on changes;
+ * OPA's native bundle plugin handles distribution to all replicas.
  *
  * <p>Lifecycle:
  * <ul>
- *   <li>{@link #init} reads MinIO config from env vars and constructs the
+ *   <li>{@link #init} reads S3 config from env vars and constructs the
  *       uploader. No I/O at this stage.</li>
  *   <li>{@link #postInit} walks the configured realm's users to populate
  *       the in-memory map and publishes the initial bundle. Runs once
@@ -92,37 +89,45 @@ public class OpaUserBundlePublisherProviderFactory implements EventListenerProvi
 
     @Override
     public void init(Config.Scope config) {
-        String endpoint = System.getenv(ENV_ENDPOINT);
         String bucket = System.getenv(ENV_BUCKET);
-        String accessKey = System.getenv(ENV_ACCESS_KEY);
-        String secretKey = System.getenv(ENV_SECRET_KEY);
-
-        if (StringUtil.isBlank(endpoint) || StringUtil.isBlank(bucket)
-                || StringUtil.isBlank(accessKey) || StringUtil.isBlank(secretKey)) {
-            log.infof("OPA bundle publisher disabled: one of %s/%s/%s/%s is unset",
-                    ENV_ENDPOINT, ENV_BUCKET, ENV_ACCESS_KEY, ENV_SECRET_KEY);
+        if (StringUtil.isBlank(bucket)) {
+            log.infof("OPA bundle publisher disabled: %s is unset", ENV_BUCKET);
             enabled = false;
             return;
         }
+
+        // Endpoint is optional: set for MinIO (where we override to the
+        // in-cluster service URL), unset for cloud-native AWS S3 (SDK
+        // uses the region-derived default endpoint).
+        String endpoint = System.getenv(ENV_ENDPOINT);
+        URI endpointUri = StringUtil.isBlank(endpoint) ? null : URI.create(endpoint);
+
+        // Static credentials are optional: when both are set we use them
+        // (the Ansible-provisioned MinIO service-account case); when
+        // either is blank we fall through to DefaultCredentialsProvider,
+        // which picks up IRSA via the web-identity-token-file path when
+        // running with an EKS IAM role.
+        String accessKey = System.getenv(ENV_ACCESS_KEY);
+        String secretKey = System.getenv(ENV_SECRET_KEY);
 
         String objectKey = orDefault(System.getenv(ENV_OBJECT_KEY), "scout/bundle.tar.gz");
         String region = orDefault(System.getenv(ENV_REGION), "us-east-1");
         realmName = orDefault(System.getenv(ENV_REALM), "scout");
         debounceMs = parseLong(System.getenv(ENV_DEBOUNCE_MS), DEFAULT_DEBOUNCE_MS);
 
-        HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(5))
-                .build();
-        uploader = new MinioBundleUploader(httpClient, URI.create(endpoint), bucket,
-                objectKey, accessKey, secretKey, region);
+        uploader = new MinioBundleUploader(endpointUri, bucket, objectKey,
+                accessKey, secretKey, region);
         scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "opa-bundle-publisher");
             t.setDaemon(true);
             return t;
         });
         enabled = true;
-        log.infof("OPA bundle publisher enabled: endpoint=%s bucket=%s object=%s realm=%s",
-                endpoint, bucket, objectKey, realmName);
+        String credMode = (StringUtil.isBlank(accessKey) || StringUtil.isBlank(secretKey))
+                ? "default-chain (e.g. IRSA)" : "static";
+        log.infof("OPA bundle publisher enabled: endpoint=%s bucket=%s object=%s realm=%s creds=%s",
+                StringUtil.isBlank(endpoint) ? "(SDK default)" : endpoint,
+                bucket, objectKey, realmName, credMode);
     }
 
     @Override
