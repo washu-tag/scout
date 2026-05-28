@@ -1,8 +1,10 @@
 ---
 # Defaults for keycloak role
 # User-configurable settings are in inventory.yaml
-
-keycloak_version: 26.6.1
+#
+# keycloak_version lives in group_vars/all/versions.yaml (single
+# source of truth, tracked by Renovate). Both this role and the
+# keycloak_operator_version derived value reference it from there.
 
 # Keycloak image
 keycloak_image_repository: ghcr.io/washu-tag/keycloak
@@ -52,5 +54,6 @@ keycloak_terms_localizations: {}
 
 # Token lifespan (in seconds) — should match oauth2_proxy_cookie_expire
 keycloak_token_lifespan: 28800
+
 keycloak_temporal_token_lifespan: '{{ keycloak_token_lifespan }}'
 keycloak_minio_token_lifespan: '{{ keycloak_token_lifespan }}'

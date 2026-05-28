@@ -2,6 +2,13 @@
     "enabled": true,
     "realm": "{{ keycloak_realm_name }}",
     "displayName": "{{ keycloak_realm_name | capitalize }}",
+    {#- userProfileEnabled gates whether keycloak-config-cli imports the
+        userProfile block below. Without this realm attribute, the importer
+        logs "skipping profile import" and the userProfile section is
+        silently ignored. -#}
+    "attributes": {
+      "userProfileEnabled": "true"
+    },
     "eventsEnabled": true,
     "adminEventsEnabled": true,
     "adminEventsDetailsEnabled": true,
@@ -29,8 +36,18 @@
     },
     "eventsListeners": [
       "user-approval-email",
+      "opa-user-bundle-publisher",
       "jboss-logging"
     ],
+    {#- adminEventsEnabled drives admin-event delivery to listeners. The
+        opa-user-bundle-publisher listener (ADR 0021) consumes USER admin
+        events (CREATE, UPDATE, DELETE) to keep its in-memory snapshot
+        in sync and republishes the OPA bundle to MinIO on every change.
+        adminEventsDetailsEnabled exposes event.getDetails(), which the
+        listener reads on DELETE to recover the deleted user's username
+        (the user row itself is gone by event-fire time). -#}
+    "adminEventsEnabled": true,
+    "adminEventsDetailsEnabled": true,
     "smtpServer": {
       "debug": "{{ keycloak_smtp_debug }}",
       "replyToDisplayName": "{{ keycloak_smtp_reply_to_display_name }}",
@@ -279,6 +296,12 @@
         "webOrigins": [
           "https://jupyter.{{ server_hostname }}"
         ],
+        {#- trino-audience scope adds aud=trino to access tokens so notebooks
+            can forward the user's JupyterHub token directly to Trino (JWT
+            pass-through, ADR 0022). The notebook pod never holds the token
+            long-term — the scout_trino helper fetches a current value from
+            the Hub via JUPYTERHUB_API_TOKEN (Hub refreshes via auth_state
+            on demand), so realm-default access-token TTL is fine. -#}
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -286,7 +309,8 @@
           "roles",
           "basic",
           "email",
-          "microprofile-jwt"
+          "microprofile-jwt",
+          "trino-audience"
         ],
         "optionalClientScopes": [
           "address",
@@ -457,6 +481,67 @@
         "webOrigins": [
           "https://chat.{{ server_hostname }}"
         ],
+        {#- mcp-trino-audience adds aud=mcp-trino to access tokens so the
+            MCP server (tuannvm/mcp-trino) can validate them and impersonate
+            the chat user on the outbound Trino call (ADR 0022).
+
+            "roles" is intentionally absent from defaultClientScopes here.
+            Keycloak's built-in roles scope carries an audience-resolve
+            protocol mapper that adds an `aud` entry for every client the
+            user has any role in — for an admin user that swelled the
+            token to 9 audiences (mcp-trino, oauth2-proxy, realm-management,
+            launchpad, superset, jupyterhub, grafana, account, temporal),
+            so a stolen OWUI token had implicit grants against half the
+            cluster including realm-management. OWUI uses the `groups`
+            claim (via microprofile-jwt) for role mapping and doesn't
+            consume realm_access.roles, so dropping the scope here is
+            safe for OWUI's own auth flow while tightening downstream
+            (mcp-trino) trust. -#}
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "mcp-trino-audience"
+        ],
+        "optionalClientScopes": [
+          "address",
+          "phone",
+          "organization",
+          "offline_access",
+        ]
+      },
+      {#- ADR 0021: OPA no longer queries Keycloak's admin API at
+          decision time. Per-user attributes flow Keycloak →
+          OpaUserBundlePublisher SPI → MinIO bundle → OPA pods. The
+          `opa-keycloak-reader` client + its `view-users` role-mapping
+          have been removed. The SPI runs inside the Keycloak pod, so
+          it doesn't need a client_credentials grant — it reads from
+          the live `session.users()` API directly.
+
+          Service principals for the three Trino client surfaces. Each
+          authenticates to Trino via client_credentials and impersonates
+          the end user via X-Trino-User. Token lifespan is 4h so
+          long-running notebook/dashboard queries don't expire mid-
+          session (per-user offboarding still propagates within seconds
+          via the OPA bundle pull — see ADR 0021). -#}
+      {
+        "name": "superset_svc",
+        "description": "Service principal for Superset connecting to Trino (impersonates the logged-in user via X-Trino-User)",
+        "enabled": true,
+        "clientId": "superset_svc",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_superset_svc_client_secret }}",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect",
+        "attributes": {
+          "access.token.lifespan": "14400"
+        },
         "defaultClientScopes": [
           "web-origins",
           "acr",
@@ -464,13 +549,60 @@
           "roles",
           "basic",
           "email",
-          "microprofile-jwt"
-        ],
-        "optionalClientScopes": [
-          "address",
-          "phone",
-          "organization",
-          "offline_access",
+          "microprofile-jwt",
+          "trino-audience"
+        ]
+      },
+      {
+        "name": "openwebui_mcp_svc",
+        "description": "Service principal for the Open WebUI Trino MCP sidecar (validates inbound Keycloak OIDC token, sets X-Trino-User to its preferred_username claim)",
+        "enabled": true,
+        "clientId": "openwebui_mcp_svc",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_openwebui_mcp_svc_client_secret }}",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect",
+        "attributes": {
+          "access.token.lifespan": "14400"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "trino-audience"
+        ]
+      },
+      {
+        "name": "voila_svc",
+        "description": "Service principal for Voila playbooks impersonating the OIDC-authenticated user via X-Trino-User",
+        "enabled": true,
+        "clientId": "voila_svc",
+        "clientAuthenticatorType": "client-secret",
+        "secret": "{{ keycloak_voila_svc_client_secret }}",
+        "serviceAccountsEnabled": true,
+        "standardFlowEnabled": false,
+        "directAccessGrantsEnabled": false,
+        "publicClient": false,
+        "protocol": "openid-connect",
+        "attributes": {
+          "access.token.lifespan": "14400"
+        },
+        "defaultClientScopes": [
+          "web-origins",
+          "acr",
+          "profile",
+          "roles",
+          "basic",
+          "email",
+          "microprofile-jwt",
+          "trino-audience"
         ]
       }
     ],
@@ -657,6 +789,70 @@
           },
           "group": "scout",
           "multivalued": false
+        },
+        {#- AuthZ scoping attributes consumed by the Trino OPA policy. They
+            reach OPA via the user-attribute bundle the OpaUserBundlePublisher
+            SPI publishes to MinIO (ADR 0021), not a per-query admin-API call.
+            Rendered from `trino_attribute_filters` in scout_common/defaults so
+            adding a dimension is a one-line inventory edit. Admin-only
+            view/edit so only realm admins (site admins) can grant data-access
+            scopes. Per-attribute display_name / value_pattern / max_length
+            overrides are honored; defaults fit alphanumeric category codes
+            with a `*` wildcard. -#}
+{% for attr_name, attr_config in trino_attribute_filters.items() %}
+        {
+          "name": "{{ attr_name }}",
+          "displayName": "{{ attr_config.display_name | default('Scout AuthZ — ' ~ attr_name) }}",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": true,
+          "validations": {
+            "length": {"max": {{ attr_config.max_length | default(64) }}},
+            "pattern": {
+              "pattern": "{{ attr_config.value_pattern | default('^([A-Za-z0-9_-]+|\\\\*)$') }}",
+              "error-message": "{{ attr_config.value_pattern_error | default('Use an alphanumeric code (letters, digits, hyphen, underscore) or the * wildcard for all values.') }}"
+            }
+          }
+        },
+{% endfor %}
+        {
+          "name": "mask_phi_fields",
+          "displayName": "Scout AuthZ — mask PHI fields",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": false,
+          "validations": {
+            "options": {
+              "options": ["true", "false"]
+            }
+          }
+        },
+        {#- Per-user escape hatch for the data.hidden_tables block.
+            Defaults to "false" (or absent) -> table-level deny applies.
+            "true" means: this user is exempt from hidden_table_blocked and
+            can SELECT join-target tables (e.g. patient mapping) directly.
+            Intended for site operators who legitimately need full
+            cross-facility introspection — set sparingly. -#}
+        {
+          "name": "bypass_hidden_tables",
+          "displayName": "Scout AuthZ — bypass view-only table restrictions",
+          "permissions": {
+            "view": ["admin"],
+            "edit": ["admin"]
+          },
+          "group": "scout",
+          "multivalued": false,
+          "validations": {
+            "options": {
+              "options": ["true", "false"]
+            }
+          }
         }
       ],
       "groups": [
@@ -708,6 +904,66 @@
               "access.token.claim": "true",
               "claim.name": "policy",
               "jsonType.label": "String"
+            }
+          }
+        ]
+      },
+      {#- Adds aud=trino to access tokens for clients that call the Trino
+          service. Trino's JWT authenticator validates required-audience=trino;
+          tokens lacking this claim are rejected with 401. -#}
+      {
+        "name": "trino-audience",
+        "description": "Adds aud=trino to access tokens for clients calling Trino",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "false",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "trino-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "trino",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
+            }
+          }
+        ]
+      },
+      {#- Adds aud=mcp-trino to access tokens for the Open WebUI client.
+          The MCP Trino tool server (tuannvm/mcp-trino) validates inbound
+          tokens against this audience to authenticate the chat user
+          before impersonating them on the outbound Trino call. Without
+          this mapper Keycloak doesn't put a deterministic aud on OWUI
+          tokens, so oauth-mcp-proxy's audience check fails silently and
+          the user context never makes it to the impersonation path —
+          every chat query then hits Trino as the service account with
+          no row-filter attributes, and returns zero rows. -#}
+      {
+        "name": "mcp-trino-audience",
+        "description": "Adds aud=mcp-trino to access tokens for Open WebUI users querying via the MCP tool",
+        "protocol": "openid-connect",
+        "attributes": {
+          "include.in.token.scope": "false",
+          "display.on.consent.screen": "false"
+        },
+        "protocolMappers": [
+          {
+            "name": "mcp-trino-audience-mapper",
+            "protocol": "openid-connect",
+            "protocolMapper": "oidc-audience-mapper",
+            "consentRequired": false,
+            "config": {
+              "included.custom.audience": "mcp-trino",
+              "id.token.claim": "false",
+              "access.token.claim": "true",
+              "introspection.token.claim": "true",
+              "lightweight.claim": "false"
             }
           }
         ]
@@ -771,4 +1027,8 @@
         ]
       }
     ]
+    {#- ADR 0021: the `service-account-opa-keycloak-reader` user is
+        no longer needed. The OPA bundle publisher SPI runs inside
+        the Keycloak pod and reads users via the in-process
+        `session.users()` API — no admin REST token, no role grant. -#}
   }
