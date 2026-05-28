@@ -186,6 +186,9 @@ singleuser:
     TRINO_USER: '{{ trino_user }}'
     TRINO_CATALOG: 'delta'
     TRINO_SCHEMA: 'default'
+    # Ollama service for LLM calls from notebooks
+    OLLAMA_URL: 'http://ollama.{{ chatbot_namespace }}:11434'
+    OLLAMA_MODEL: '{{ ollama_default_model }}'
   extraFiles:
     jupyter-server-config:
       mountPath: /etc/jupyter/jupyter_server_config.py
