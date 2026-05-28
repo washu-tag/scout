@@ -893,6 +893,31 @@ In air-gapped environments, users cannot install extensions anyway due to lack o
 Even with the Extension Manager disabled, users with terminal access can still run `jupyter labextension` commands. However, in air-gapped environments, these commands will fail due to lack of internet connectivity. The Extension Manager setting primarily controls the UI, not a comprehensive security lockdown.
 :::
 
+#### XNAT (Keycloak client only)
+
+Scout does not yet deploy XNAT itself, but the Keycloak realm provisions an XNAT client (with token-exchange wiring for the `scout-xnat-auth-plugin`) so that XNAT can be brought up later without re-importing the realm. As a result, one XNAT-related secret is required by the standard Scout install:
+
+```yaml
+# Required — Keycloak install will fail without it
+keycloak_xnat_client_secret: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      ...encrypted...
+```
+
+The remaining XNAT variables have sane defaults and only need to be set if you want to override them:
+
+```yaml
+# Keycloak clientId for the XNAT client (default: xnat)
+keycloak_xnat_client_id: xnat
+
+# Namespace where XNAT will be deployed. Used by the JupyterHub network
+# policy to allow notebook egress to XNAT for scout-xnatpy / scout_xnat
+# (default: xnat)
+xnat_namespace: xnat
+```
+
+`xnat_namespace` is independent of the six consolidated `scout_*_namespace` variables — XNAT runs in its own namespace.
+
 ### Namespace Customization
 
 Scout uses 6 consolidated namespaces to organize services by function. Default namespaces are defined in `roles/scout_common/defaults/main.yaml`. Override them if needed:
