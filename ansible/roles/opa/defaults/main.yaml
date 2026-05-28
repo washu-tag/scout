@@ -99,8 +99,9 @@ trino_masked_columns:
   - zip_or_postal_code
 
 # MinIO bundle endpoint (ADR 0021). OPA's bundle plugin pulls
-# /opa-bundles/scout/bundle.tar.gz from MinIO every 5–10s; the bundle is
-# published by the Keycloak SPI listener (OpaUserBundlePublisherProvider).
+# the object at <opa_bundles_bucket>/<opa_bundle_object_key> from MinIO
+# every 5–10s; the bundle is published by the Keycloak SPI listener
+# (OpaUserBundlePublisherProvider).
 # Headless service explicitly chosen so DNS resolves to all MinIO pods —
 # Helm tenant's primary Service ("minio.<ns>") isn't named consistently
 # across our environments, but "-hl" is set by the operator.

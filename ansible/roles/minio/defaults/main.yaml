@@ -116,7 +116,7 @@ minio_policies:
       - s3:PutObject
       - s3:GetBucketLocation
     resources:
-      - 'arn:aws:s3:::{{ opa_bundles_bucket }}/scout/bundle.tar.gz'
+      - 'arn:aws:s3:::{{ opa_bundles_bucket }}/{{ opa_bundle_object_key }}'
     user: '{{ s3_opa_bundle_writer }}'
   - name: opa-bundle-r
     actions:
