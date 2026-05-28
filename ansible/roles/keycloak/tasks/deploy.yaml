@@ -194,7 +194,7 @@
       - name: opa-bundle-s3-bucket
         value: '{{ opa_bundles_bucket }}'
       - name: opa-bundle-s3-object-key
-        value: 'scout/bundle.tar.gz'
+        value: '{{ opa_bundle_object_key }}'
       - name: opa-bundle-s3-region
         value: '{{ s3_region }}'
       - name: opa-bundle-realm
