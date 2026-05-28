@@ -131,23 +131,8 @@ singleuser:
       value: present
       effect: NoSchedule
   cmd: null
-  initContainers:
-    - name: spark-config-setup
-      image: '{{ jupyter_singleuser_image_name }}:{{ jupyter_singleuser_image_tag }}'
-      command: ["/bin/sh", "-c"]
-      args:
-        - |
-          # Copy original ConfigMap to writable location
-          # The initContainer does not have the necessary env vars to make the needed updates,
-          # so we just copy the original file here and make updates in the postStart hook
-          cp /mnt/spark-config-original/spark-defaults.conf /mnt/spark-config/spark-defaults.conf
-      volumeMounts:
-        - name: spark-defaults
-          mountPath: /mnt/spark-config-original
-          readOnly: true
-        - name: spark-config-writable
-          mountPath: /mnt/spark-config
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
+  initContainers:
     - name: staging-ca-setup
       image: '{{ jupyter_singleuser_image_name }}:{{ jupyter_singleuser_image_tag }}'
       command: ["/bin/sh", "-c"]
@@ -170,24 +155,20 @@ singleuser:
           - '/bin/sh'
           - '-c'
           - |
-            # Append Spark memory settings based on profile environment variables
-            if [ -n "$SPARK_DRIVER_MEMORY" ]; then
-              echo "spark.driver.memory $SPARK_DRIVER_MEMORY" >> /usr/local/spark/conf/spark-defaults.conf
-            fi
-            if [ -n "$SPARK_EXECUTOR_MEMORY" ]; then
-              echo "spark.executor.memory $SPARK_EXECUTOR_MEMORY" >> /usr/local/spark/conf/spark-defaults.conf
+            # HuggingFace cache dir kept regardless of whether transformers
+            # is actively imported, so HF_HOME has a stable target.
+            mkdir -p /home/$NB_USER/models
+
+            # Migrate any pre-existing real ~/Scout/ from the legacy first-spawn
+            # copy hook out of the way so the read-only symlink can take its place.
+            if [ -d /home/$NB_USER/Scout ] && [ ! -L /home/$NB_USER/Scout ]; then
+              mv /home/$NB_USER/Scout /home/$NB_USER/Scout.bak-$(date +%Y%m%d)
             fi
 
-            # Copy Scout quickstart samples on first login
-            FLAG_FILE=/home/$NB_USER/.scout_quickstart
-            if [ ! -f $FLAG_FILE ]; then
-              mkdir -p /home/$NB_USER/models
-              if [ -d /opt/scout/samples ]; then
-                mkdir -p /home/$NB_USER/Scout &&
-                cp -rL /opt/scout/samples/* /home/$NB_USER/Scout/ &&
-                chown -R $NB_USER:$NB_GID /home/$NB_USER/Scout
-              fi
-              touch $FLAG_FILE
+            # Surface the read-only Scout samples ConfigMap as ~/Scout.
+            if [ -d /opt/scout/samples ]; then
+              ln -sfn /opt/scout/samples /home/$NB_USER/Scout
+              chown -h $NB_USER:$NB_GID /home/$NB_USER/Scout
             fi
   extraEnv:
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
@@ -209,6 +190,9 @@ singleuser:
     TRINO_USER: '{{ trino_user }}'
     TRINO_CATALOG: 'delta'
     TRINO_SCHEMA: 'default'
+    # Ollama service for LLM calls from notebooks
+    OLLAMA_URL: 'http://ollama.{{ chatbot_namespace }}:11434'
+    OLLAMA_MODEL: '{{ ollama_default_model }}'
   extraFiles:
     jupyter-server-config:
       mountPath: /etc/jupyter/jupyter_server_config.py
@@ -265,13 +249,6 @@ singleuser:
 {% endif %}
       subPath: '{username}'
     extraVolumes:
-      spark-defaults:
-        name: spark-defaults
-        configMap:
-          name: {{ jupyter_spark_defaults_configmap_name }}
-      spark-config-writable:
-        name: spark-config-writable
-        emptyDir: {}
       jupyterlab-custom-css:
         name: jupyterlab-custom-css
         configMap:
@@ -295,10 +272,6 @@ singleuser:
         emptyDir: {}
 {% endif %}
     extraVolumeMounts:
-      spark-defaults:
-        name: spark-config-writable
-        mountPath: /usr/local/spark/conf/spark-defaults.conf
-        subPath: spark-defaults.conf
       jupyterlab-custom-css:
         name: jupyterlab-custom-css
         mountPath: /home/jovyan/.jupyter/custom/custom.css
@@ -328,16 +301,6 @@ singleuser:
         ports:
           - port: 9000
 {% endif %}
-      # Allow access to Hive Metastore (readonly) for metadata queries
-      - to:
-          - namespaceSelector:
-              matchLabels:
-                kubernetes.io/metadata.name: '{{ hive_namespace }}'
-            podSelector:
-              matchLabels:
-                app.kubernetes.io/instance: '{{ hive_metastore_instance_readonly }}'
-        ports:
-          - port: 9083
       # Allow access to Ollama for AI model inference
       - to:
           - namespaceSelector:

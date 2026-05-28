@@ -18,6 +18,8 @@ env:
   TRINO_USER: "{{ trino_user }}"
   TRINO_CATALOG: "delta"
   TRINO_SCHEMA: "default"
+  OLLAMA_URL: "http://ollama.{{ chatbot_namespace }}:11434"
+  OLLAMA_MODEL: "{{ ollama_default_model }}"
 
 ingress:
   enabled: true
