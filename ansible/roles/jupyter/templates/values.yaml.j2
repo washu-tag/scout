@@ -155,16 +155,14 @@ singleuser:
           - '/bin/sh'
           - '-c'
           - |
-            # Copy Scout quickstart samples on first login
-            FLAG_FILE=/home/$NB_USER/.scout_quickstart
-            if [ ! -f $FLAG_FILE ]; then
-              mkdir -p /home/$NB_USER/models
-              if [ -d /opt/scout/samples ]; then
-                mkdir -p /home/$NB_USER/Scout &&
-                cp -rL /opt/scout/samples/* /home/$NB_USER/Scout/ &&
-                chown -R $NB_USER:$NB_GID /home/$NB_USER/Scout
-              fi
-              touch $FLAG_FILE
+            # HuggingFace cache dir kept regardless of whether transformers
+            # is actively imported, so HF_HOME has a stable target.
+            mkdir -p /home/$NB_USER/models
+
+            # Surface the read-only Scout samples ConfigMap as ~/scout-samples. 
+            if [ -d /opt/scout/samples ]; then
+              ln -sfn /opt/scout/samples /home/$NB_USER/scout-samples
+              chown -h $NB_USER:$NB_GID /home/$NB_USER/scout-samples
             fi
   extraEnv:
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
