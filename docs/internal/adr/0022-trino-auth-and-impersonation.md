@@ -87,7 +87,9 @@ Voila (JWT + impersonation, with a header chain)
   Voila spawns kernel → ScoutMappingKernelManager (class config) reads contextvar → kernel env
        ↓
   playbook code: scout_trino.connect()
-                   - decodes preferred_username from env token
+                   - extracts preferred_username from the captured user token
+                     (used as a username source only — not sent to Trino, not
+                     validated server-side; revocation enforced via OPA bundle)
                    - mints voila_svc JWT (client_credentials; token: aud=trino; re-minted before exp)
                    - HTTP: Bearer <voila_svc JWT>, X-Trino-User: <user>
        ↓
@@ -191,7 +193,7 @@ Instead of `superset_svc` + `openwebui_mcp_svc` + `voila_svc`, use one `trino_im
 ### Negative
 
 - **Token-TTL-vs-query-duration is a configuration concern.** Trino validates JWTs at query submission; long-running notebook flows can outlive Keycloak's default 5-minute access-token TTL. Service-principal tokens are issued at 4 h to cover query duration; end-user JWT pass-through (Jupyter `auth_state`) refreshes via the refresh token between submissions.
-- **PASSWORD authenticator is extra surface for one client only.** `password.db` exists solely because `tuannvm/mcp-trino` doesn't support JWT outbound. If a custom MCP that supports JWT lands, PASSWORD goes away.
+- **PASSWORD authenticator is extra surface for one client only, and likely interim.** `password.db` exists solely because `tuannvm/mcp-trino` doesn't support JWT outbound. The third-party MCP is likely to be replaced with a bespoke OWUI tool that sends a JWT to Trino the same way Superset and Voila do — when that lands, the `PASSWORD` authenticator, `password.db`, and the `openwebui_mcp_svc` static password all go away.
 - **Full-reinstall release.** AuthZ ships as a single coordinated update; the shared `trino` user is removed from human-facing surfaces in the same release. Saved Superset connections, notebook configs, and dashboards that hardcoded it are migrated at the same time.
 - **Token audience handling is a recurring gotcha.** Keycloak issues tokens with `aud=<client>` by default; misconfiguration of the `trino-audience` scope produces 401s with limited diagnostic information. Anyone adding a new Trino-connecting client has to remember to attach the scope.
 
@@ -200,13 +202,13 @@ Instead of `superset_svc` + `openwebui_mcp_svc` + `voila_svc`, use one `trino_im
 - **Trino TLS**: cert-manager-issued PKCS12 keystore mounted into the coordinator. Internal CA bundle distributed to client namespaces via a Secret/ConfigMap; clients pass it as `verify=<ca-path>` to their HTTP libraries.
 - **Impersonation allowlist**: `trino_service_principals` in `policy/trino/main.rego` — the same set drives the `ImpersonateUser` allow rule and the `is_system_identity` carve-out from `user_enabled` (service principals aren't in `data.users`).
 - **Keycloak realm template** (`ansible/roles/keycloak/templates/scout-realm.json.j2`) renders the three service-principal clients with `serviceAccountsEnabled: true`, the `trino-audience` scope attached, and `access.token.lifespan = 14400`. Secrets live in inventory under `keycloak_<name>_svc_client_secret`.
-- **Voila kernel env propagation**: the kernel manager is swapped via config (`VoilaConfiguration.multi_kernel_manager_class`), but Voila exposes no equivalent hook for its GET handler, so `scout_voila` overrides the handler directly to stash the forwarded token in a contextvar the manager reads at spawn. Contained to one method; the no-header path logs and falls back to anonymous (zero rows).
+- **Voila kernel env propagation**: the kernel manager is swapped via config (`VoilaConfiguration.multi_kernel_manager_class`), but Voila exposes no equivalent hook for its GET handler, so `scout_voila` overrides the handler directly to stash the forwarded token in a contextvar the manager reads at spawn. Contained to one method; the no-header path logs and falls back to anonymous (zero rows). The captured user token's only purpose inside the kernel is to extract the `preferred_username` claim — it is never sent to Trino, never validated server-side at query time, and never used as an auth credential. Revocation is enforced dynamically via the OPA bundle (5–15s propagation per ADR 0021), so a kernel holding a stale user token can't extend a revoked user's access.
 - **MCP inbound validation**: the MCP's `oauth.enabled = true` + `oauth.mode = native` config validates the Keycloak OIDC token on every inbound request; `TRINO_IMPERSONATION_FIELD = username` picks `preferred_username` and sets it as `X-Trino-User`.
 - **`trino-rw` is not in scope.** The write-enabled instance has no OPA, no JWT auth, no impersonation — gated by NetworkPolicy per ADR 0019 and accessed by the specific pods on its allowlist (`hl7-transformer` for view DDL, Voila for reviewer-annotation writeback).
 
 ## Future Considerations
 
-- **Custom MCP supporting JWT outbound** — drops `PASSWORD`, `password.db`, and the `openwebui_mcp_svc` password.
+- **Bespoke OWUI tool replacing `tuannvm/mcp-trino`** — in-house OWUI tool sends a JWT to Trino directly, matching the JWT-with-impersonation pattern used by Superset and Voila. Drops the `PASSWORD` authenticator, `password.db`, and the `openwebui_mcp_svc` static password — all interim accommodations for the third-party MCP's HTTP-Basic-only outbound.
 - **Trino event-listener tenant-tagged audit stream** — emit a Loki stream with a `tenant` label derived from the user's `allowed_facilities` attribute (single facility → that facility code; multi-valued → `multi`; wildcard → `all`; empty → `none`). OPA decision logs cover per-query attribution today; this would add a Trino-side audit channel.
 - **JupyterHub kernel-side `scout_trino` as an installed package** rather than a samples copy — version-pinned, ships updates independently of singleuser image rebuilds.
 
