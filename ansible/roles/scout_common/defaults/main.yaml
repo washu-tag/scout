@@ -97,6 +97,11 @@ launchpad_namespace: '{{ scout_core_namespace }}'
 
 # Data layer
 minio_tenant_namespace: '{{ scout_data_namespace }}'
+# Shared by every component that addresses the MinIO tenant by DNS
+# (Trino S3A connector, the Keycloak OpaUserBundlePublisher SPI, OPA's
+# bundle plugin) — kept in scout_common so cross-role consumers see one
+# source of truth.
+minio_tenant_name: scout
 hive_namespace: '{{ scout_data_namespace }}'
 dcm4chee_namespace: '{{ scout_data_namespace }}'
 orthanc_namespace: '{{ scout_data_namespace }}'
@@ -158,11 +163,19 @@ s3_username: minio
 s3_lake_reader: lake-reader
 s3_lake_writer: lake-writer
 s3_loki_writer: loki-writer
+# OPA bundle credentials — writer is the Keycloak-side SPI's MinIO
+# service account (ADR 0021). Reader is set up by the OPA foundation
+# slice when OPA itself lands.
+s3_opa_bundle_writer: opa-bundle-writer
 lake_bucket: lake
 scratch_bucket: scratch
 loki_chunks_bucket: loki-chunks
 loki_ruler_bucket: loki-ruler
 loki_admin_bucket: loki-admin
+# OPA user-attribute bundle (ADR 0021): Keycloak SPI publishes here,
+# OPA's bundle plugin pulls from here.
+opa_bundles_bucket: opa-bundles
+opa_bundle_object_key: scout/bundle.tar.gz
 
 # Service Account names
 lake_reader_service_account_name: lake-reader
@@ -231,6 +244,23 @@ enable_playbooks: false
 # for small/dev clusters where the GPU node's spare capacity is
 # genuinely useful for non-GPU pods.
 enable_gpu_node_taint: true
+
+# Scout AuthZ: maps Keycloak user attributes to the SQL columns the Trino
+# OPA policy filters on. Single source of truth consumed by two roles:
+#   - keycloak: renders one User Profile attribute per key here so each
+#     becomes editable in the Keycloak admin UI (admin-only view/edit).
+#   - opa: renders the same map into data.attribute_filters so the
+#     policy emits `column IN ('v1','v2')` filters for tables in
+#     trino_filtered_tables. Wildcard `*` disables that filter.
+#
+# Adding a new restriction dimension is one inventory edit — both
+# Keycloak and OPA pick it up on next deploy. Optional per-attribute
+# overrides for display name / validation pattern live alongside
+# `column`, see ansible/roles/keycloak/templates/scout-realm.json.j2
+# for the rendered shape.
+trino_attribute_filters:
+  allowed_facilities:
+    column: sending_facility
 
 # Superset dashboard bundles to install. Built-in bundles: core, quality,
 # followup. Override in inventory to add more (e.g. [core, quality]).

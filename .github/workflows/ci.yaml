@@ -127,6 +127,9 @@ jobs:
       - name: 'Unit tests: hl7log-extractor'
         shell: bash
         run: cd extractor/hl7log-extractor && ./gradlew test
+      - name: 'Unit tests: keycloak event-listener'
+        shell: bash
+        run: cd keycloak/event-listener && ./gradlew test
   ansible-and-python-tests:
     runs-on: ubuntu-latest
     permissions:

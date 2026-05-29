@@ -68,6 +68,35 @@
       "prBodyNotes": [
         "**Reminder:** Check that the pinned `cass_operator_version` supports this Cassandra version. See [K8ssandra release notes](https://github.com/k8ssandra/cass-operator/releases)."
       ]
+    },
+    // Keycloak SPI compatibility: Scout's custom event listeners
+    // (opa-user-bundle-publisher, user-approval-email) and required
+    // action (ScoutTermsRequiredAction) all implement `@SpiType
+    // internal` SPIs, which Keycloak's KC-SERVICES0047 warning flags
+    // as "may change without notice." Stability is high in practice
+    // but breaks have happened at major-version boundaries (notably
+    // 23.x → 24.x added KeycloakSessionFactory to init()). Validate
+    // the listener compiles + the integration tests pass before
+    // merging Keycloak upgrades. See ADR 0021 for the SPI surface.
+    //
+    // Group the Keycloak server with keycloak-config-cli (adorsys)
+    // because the cli's tag bundles a Keycloak-compat version
+    // (e.g. `6.5.0-26.5.4`) that needs to track the server. They
+    // drift today -- 26.6.1 server, 26.5.4 cli-compat -- because
+    // adorsys doesn't publish a tag per Keycloak point release.
+    // Grouping puts both bumps in one PR so the reviewer can check
+    // the compat suffix without bouncing between two PRs.
+    {
+      "matchDepNames": [
+        "quay.io/keycloak/keycloak",
+        "quay.io/keycloak/keycloak-operator",
+        "adorsys/keycloak-config-cli"
+      ],
+      "groupName": "Keycloak server + config-cli",
+      "prBodyNotes": [
+        "**SPI compatibility reminder:** Validate the custom SPIs in `keycloak/event-listener/` still compile and the integration tests pass against the new Keycloak version. The eventsListener and required-action SPIs are marked internal (KC-SERVICES0047) and have had compatibility breaks at major-version boundaries. Affected providers: `opa-user-bundle-publisher` (ADR 0021), `user-approval-email`, `ScoutTermsRequiredAction`.",
+        "**Version-coupling reminder:** When the Keycloak server bumps, `keycloak_config_cli_image_tag` should also bump to a tag whose Keycloak-compat suffix matches. E.g. server `26.7.0` → cli tag `*-26.7.0`. Adorsys publishes tags at https://hub.docker.com/r/adorsys/keycloak-config-cli/tags — pick the highest cli version with a matching Keycloak-compat tail. If no matching cli tag exists yet, hold the server bump until one is published; otherwise realm imports may fail on schema-mismatch."
+      ]
     }
   ],
 
@@ -84,6 +113,28 @@
         //   some_version: ~1.2.3
         "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+(?:registryUrl=(?<registryUrl>[^\\s]+)\\s+)?depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\n[a-z0-9_]+(?:_version|_tag|_image_tag):\\s*[~']?(?<currentValue>[^\\s']+)"
       ]
+    },
+    // Keycloak version is also baked into two non-yaml files that need
+    // to bump in lockstep with versions.yaml: `keycloak/VERSION` (CI
+    // image-tag derivation -- ghcr.io/washu-tag/keycloak:<this>) and
+    // `keycloak/Dockerfile` FROM lines (the upstream base image used
+    // for the multi-stage build). Renovate groups updates by depName,
+    // so the three managers' matches surface as a single PR per
+    // Keycloak release.
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["keycloak/VERSION"],
+      "matchStrings": ["^(?<currentValue>\\d[\\d\\.]*)\\s*$"],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "quay.io/keycloak/keycloak"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["keycloak/Dockerfile"],
+      "matchStrings": [
+        "FROM\\s+(?<depName>quay\\.io/keycloak/keycloak):(?<currentValue>[\\d\\.]+)"
+      ],
+      "datasourceTemplate": "docker"
     }
   ]
 }
