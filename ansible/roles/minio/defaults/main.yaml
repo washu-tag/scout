@@ -1,8 +1,9 @@
 ---
 # Default values for MinIO deployment
 
-# Namespace configuration
-minio_tenant_name: scout
+# minio_tenant_name moved to scout_common/defaults/main.yaml so
+# cross-namespace consumers (Keycloak listener, OPA — ADR 0021) can
+# reference it without depending on this role's defaults being loaded.
 
 # Storage configuration
 minio_storage_size: 10Gi

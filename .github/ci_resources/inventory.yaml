@@ -67,6 +67,7 @@ k3s_cluster:
     s3_lake_writer_secret: lakewriter123
     s3_loki_writer: loki-writer
     s3_loki_writer_secret: lokiwriter123
+    s3_opa_bundle_writer_secret: opabundlewriter123
 
     # Monitor config
     prometheus_storage_size: 1Gi
@@ -152,6 +153,14 @@ k3s_cluster:
     keycloak_minio_client_secret: ci-secret-00000006
     keycloak_launchpad_client_secret: ci-secret-00000007
     keycloak_open_webui_client_secret: ci-secret-00000008
+    # Trino AuthZ service principals (ADR 0022). Same client-credentials
+    # pattern as the regular client secrets above; one per Trino-backed
+    # surface that impersonates end users via X-Trino-User. The realm
+    # template references all three unconditionally; without them defined
+    # the realm import fails to render.
+    keycloak_superset_svc_client_secret: ci-secret-svc-superset
+    keycloak_openwebui_mcp_svc_client_secret: ci-secret-svc-mcp
+    keycloak_voila_svc_client_secret: ci-secret-svc-voila
 
     # Superset
     superset_secret: Y2ktc3VwZXJzZXQtc2VjcmV0LWtleS1mb3ItdGVzdGluZw==
