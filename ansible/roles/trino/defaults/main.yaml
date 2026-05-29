@@ -7,6 +7,18 @@ trino_helm_repo_name: trino
 trino_helm_repo_url: https://trinodb.github.io/charts
 trino_helm_chart_name: trino
 
+# Trino AuthZ / TLS / OPA configuration (ADR 0020 authorization, ADR 0022 auth).
+# JWT auth requires TLS — Trino terminates HTTPS directly using a cert from
+# the Scout internal CA (cert-manager); the chart's HTTP listener is disabled.
+# The user-facing Service port (`trino_https_port`) is defined in
+# scout_common/defaults/main.yaml so consumer roles can reference it without
+# loading the trino role.
+trino_keystore_password: trinokeystorepass # protects the in-pod keystore; not a network secret
+
+trino_keycloak_jwks_url: 'http://keycloak-service.{{ keycloak_namespace }}:8080/realms/{{ keycloak_realm_name }}/protocol/openid-connect/certs'
+trino_keycloak_required_audience: trino
+trino_opa_endpoint: 'http://opa-trino.{{ trino_namespace }}:8181'
+
 # Resource sizing - users should override these in inventory
 # Worker count
 trino_worker_count: 2 # Number of worker replicas

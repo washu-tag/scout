@@ -49,6 +49,12 @@ minio_buckets:
   - name: '{{ loki_admin_bucket }}'
   - name: '{{ lake_bucket }}'
   - name: '{{ scratch_bucket }}'
+  # Versioning enabled so a corrupt bundle PUT can be rolled back to a
+  # prior object version. Per ADR 0021 — the OPA bundle is the only
+  # bucket that needs versioning today; existing buckets stay
+  # unversioned to avoid the storage overhead on large objects.
+  - name: '{{ opa_bundles_bucket }}'
+    versioned: true
 
 # S3 User credentials
 minio_users:
@@ -58,12 +64,18 @@ minio_users:
     secret_key: '{{ s3_lake_writer_secret }}'
   - access_key: '{{ s3_loki_writer }}'
     secret_key: '{{ s3_loki_writer_secret }}'
+  - access_key: '{{ s3_opa_bundle_writer }}'
+    secret_key: '{{ s3_opa_bundle_writer_secret }}'
+  - access_key: '{{ s3_opa_bundle_reader }}'
+    secret_key: '{{ s3_opa_bundle_reader_secret }}'
 
 # User mapping
 minio_credentials:
   - name: '{{ s3_lake_reader }}-creds'
   - name: '{{ s3_lake_writer }}-creds'
   - name: '{{ s3_loki_writer }}-creds'
+  - name: '{{ s3_opa_bundle_writer }}-creds'
+  - name: '{{ s3_opa_bundle_reader }}-creds'
 
 # IAM Policy definitions
 minio_policies:
@@ -96,6 +108,25 @@ minio_policies:
       - 'arn:aws:s3:::{{ loki_admin_bucket }}'
       - 'arn:aws:s3:::{{ loki_admin_bucket }}/*'
     user: '{{ s3_loki_writer }}'
+  # ADR 0021: OPA bundle distribution. Writer is the Keycloak SPI
+  # listener (publishes user-attribute bundle on admin events);
+  # reader is each OPA pod (bundle plugin polls for changes).
+  - name: opa-bundle-w
+    actions:
+      - s3:PutObject
+      - s3:GetBucketLocation
+    resources:
+      - 'arn:aws:s3:::{{ opa_bundles_bucket }}/{{ opa_bundle_object_key }}'
+    user: '{{ s3_opa_bundle_writer }}'
+  - name: opa-bundle-r
+    actions:
+      - s3:GetObject
+      - s3:GetBucketLocation
+      - s3:ListBucket
+    resources:
+      - 'arn:aws:s3:::{{ opa_bundles_bucket }}'
+      - 'arn:aws:s3:::{{ opa_bundles_bucket }}/scout/*'
+    user: '{{ s3_opa_bundle_reader }}'
 
 # OIDC configuration
 minio_oidc_enabled: true

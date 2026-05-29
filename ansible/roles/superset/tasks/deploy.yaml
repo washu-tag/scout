@@ -144,5 +144,11 @@
       trino:
         user: '{{ trino_user }}'
         namespace: '{{ trino_namespace }}'
+        port: '{{ trino_https_port }}'
+        scheme: https
       bundles:
         enabled: '{{ scout_dashboard_bundles }}'
+      supersetRelease:
+        # cert-manager-issued Trino TLS bundle. The import Job mounts this
+        # to verify Trino's self-signed cert during dataset validation.
+        trinoCaSecret: trino-tls
