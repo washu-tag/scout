@@ -24,7 +24,6 @@ jobs:
       ci: ${{ steps.filter.outputs.ci }}
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
-      pyspark-notebook: ${{ steps.filter.outputs.pyspark-notebook }}
       scout-notebook: ${{ steps.filter.outputs.scout-notebook }}
       launchpad: ${{ steps.filter.outputs.launchpad }}
       superset: ${{ steps.filter.outputs.superset }}
@@ -43,8 +42,6 @@ jobs:
               - 'linting_java_checkstyle.xml'
             hl7-transformer:
               - 'extractor/hl7-transformer/**'
-            pyspark-notebook:
-              - 'helm/jupyter/notebook/**'
             scout-notebook:
               - 'helm/jupyter/scout-notebook/**'
             launchpad:
@@ -84,9 +81,6 @@ jobs:
             subproject: extractor/hl7log-extractor
           - image-name: hl7-transformer
             subproject: extractor/hl7-transformer
-            allow-failure: true
-          - image-name: pyspark-notebook
-            subproject: helm/jupyter/notebook
             allow-failure: true
           - image-name: scout-notebook
             subproject: helm/jupyter/scout-notebook
@@ -381,11 +375,6 @@ jobs:
         with:
           subproject: launchpad
           image-name: launchpad
-      - name: 'Push image to k3s - pyspark-notebook'
-        uses: ./.github/actions/k3s-image-import-or-pull
-        with:
-          subproject: helm/jupyter/notebook
-          image-name: pyspark-notebook
       - name: 'Push image to k3s - scout-notebook'
         uses: ./.github/actions/k3s-image-import-or-pull
         with:
@@ -499,11 +488,6 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: hl7-transformer
-      - name: 'Push Image - pyspark-notebook'
-        if: needs.changes.outputs.pyspark-notebook == 'true'
-        uses: ./.github/actions/docker-push
-        with:
-          image-name: pyspark-notebook
       - name: 'Push Image - scout-notebook'
         if: needs.changes.outputs.scout-notebook == 'true'
         uses: ./.github/actions/docker-push
@@ -559,11 +543,6 @@ jobs:
 
           echo "Disk space after cleanup:"
           df -h
-      - name: 'Push Image - pyspark-notebook'
-        if: needs.changes.outputs.pyspark-notebook == 'true'
-        uses: ./.github/actions/docker-push
-        with:
-          image-name: pyspark-notebook
       - name: 'Push Image - scout-notebook'
         if: needs.changes.outputs.scout-notebook == 'true'
         uses: ./.github/actions/docker-push
