@@ -127,6 +127,9 @@ superset_namespace: '{{ scout_analytics_namespace }}'
 jupyter_namespace: '{{ scout_analytics_namespace }}'
 chatbot_namespace: '{{ scout_analytics_namespace }}'
 
+# Default Ollama model used by Scout services
+ollama_default_model: 'gemma4-31b-long:latest'
+
 # Operators
 cnpg_operator_namespace: '{{ scout_operators_namespace }}'
 minio_operator_namespace: '{{ scout_operators_namespace }}'

@@ -12,9 +12,9 @@ jupyter_hub_storage_size: 1Gi
 jupyter_singleuser_storage_size: 10Gi
 
 # Ephemeral storage limit for singleuser pods
-# Prevents notebook scratch data (pip caches, conda envs, temp files) from
-# filling the node's disk (/var/lib/rancher). Users who need more scratch
-# space should write to their home directory (persistent storage) instead.
+# Caps temp/scratch usage so a runaway notebook can't fill the node's disk
+# (/var/lib/rancher). When exceeded, the pod is evicted. Users who need more
+# scratch space should write to their home directory (persistent storage).
 jupyter_singleuser_ephemeral_storage_limit: 10Gi
 
 # Storage class for JupyterHub database

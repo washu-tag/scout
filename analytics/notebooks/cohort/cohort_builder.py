@@ -271,15 +271,15 @@ def build_cohort_query(config):
     if config.get("patient_ids"):
         raw = config["patient_ids"].strip()
         if raw:
-            # Support comma-separated, newline-separated, or mixed
             ids = [m.strip() for m in re.split(r"[,\n]+", raw) if m.strip()]
             if ids:
                 ids_str = "', '".join(ids)
-                conditions.append(f"epic_mrn IN ('{ids_str}')")
-                criteria_summary.append(f"Patient list: {len(ids)} Epic MRNs")
-
-    # Ensure we have patient ID
-    conditions.append("(epic_mrn IS NOT NULL OR empi_mr IS NOT NULL)")
+                conditions.append(
+                    f"(resolved_epic_mrn IN ('{ids_str}') "
+                    f"OR resolved_mpi IN ('{ids_str}') "
+                    f"OR scout_patient_id IN ('{ids_str}'))"
+                )
+                criteria_summary.append(f"Patient list: {len(ids)} IDs")
 
     # Build WHERE clause
     where_clause = " AND ".join(conditions) if conditions else "1=1"
@@ -297,8 +297,9 @@ def build_cohort_query(config):
     sql = f"""
     SELECT DISTINCT
         accession_number,
-        epic_mrn,
-        empi_mr,
+        scout_patient_id,
+        resolved_epic_mrn AS epic_mrn,
+        resolved_mpi      AS mpi,
         patient_age,
         sex,
         race,
@@ -311,7 +312,7 @@ def build_cohort_query(config):
         diagnoses,
         sending_facility,
         message_dt
-    FROM {TRINO_CATALOG}.{TRINO_SCHEMA}.reports_latest
+    FROM {TRINO_CATALOG}.{TRINO_SCHEMA}.reports_latest_epic_view
     WHERE {where_clause}
     ORDER BY message_dt DESC
     {limit_clause}
@@ -644,8 +645,9 @@ def export_cohort(df, annotations, include_report_text=False):
     export_df = df[
         [
             "accession_number",
+            "scout_patient_id",
             "epic_mrn",
-            "empi_mr",
+            "mpi",
             "patient_age",
             "sex",
             "race",

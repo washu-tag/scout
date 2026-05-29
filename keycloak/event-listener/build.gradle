@@ -20,7 +20,7 @@ configurations {
 
 def kcVersion = "26.6.1"
 def jbossLoggingVersion = "3.6.1.Final"
-def checkstyleVersion = "10.21.2"
+def checkstyleVersion = "13.4.2"
 def commonsCompressVersion = "1.27.1"
 // AWS SDK v2 for S3 PUT of the OPA bundle. Supports both static-key auth
 // (MinIO, via StaticCredentialsProvider) and IRSA (cloud-native AWS, via

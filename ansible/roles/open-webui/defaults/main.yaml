@@ -213,7 +213,7 @@ open_webui_enable_arena_models: false
 # first impression. The default `gemma4-31b-long` is resident, dense, no thinking-
 # step latency, and fast enough for most asks; users can pick gpt-oss-120b-long
 # (cohort building) or qwen3.6-35b-long (thinking-mode analysis) per chat.
-open_webui_default_model_id: 'gemma4-31b-long:latest'
+open_webui_default_model_id: '{{ ollama_default_model }}'
 
 # Model used for OWUI's auxiliary tasks (chat title generation, follow-up
 # question suggestions, tag generation, web-search/RAG query refinement).
@@ -225,7 +225,7 @@ open_webui_default_model_id: 'gemma4-31b-long:latest'
 # VRAM. MUST match the `name` of a resident scout_models entry exactly — the
 # raw `gemma4:31b` would be a different Ollama model loaded into a separate
 # VRAM slot.
-open_webui_task_model_id: 'gemma4-31b-long:latest'
+open_webui_task_model_id: '{{ ollama_default_model }}'
 
 # ----------------------------------------------------------------------------
 # Admin bootstrap

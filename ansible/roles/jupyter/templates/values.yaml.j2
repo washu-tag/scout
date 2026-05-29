@@ -160,6 +160,7 @@ singleuser:
   initContainers:{% if not (_package_proxy_needs_staging_cert | default(false) | bool) %} []{% endif %}
 
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
+  initContainers:
     - name: staging-ca-setup
       image: '{{ scout_notebook_image_name }}:{{ scout_notebook_image_tag }}'
       command: ["/bin/sh", "-c"]
@@ -195,16 +196,20 @@ singleuser:
           - '/bin/sh'
           - '-c'
           - |
-            # Copy Scout quickstart samples on first login
-            FLAG_FILE=/home/$NB_USER/.scout_quickstart
-            if [ ! -f $FLAG_FILE ]; then
-              mkdir -p /home/$NB_USER/models
-              if [ -d /opt/scout/samples ]; then
-                mkdir -p /home/$NB_USER/Scout &&
-                cp -rL /opt/scout/samples/* /home/$NB_USER/Scout/ &&
-                chown -R $NB_USER:$NB_GID /home/$NB_USER/Scout
-              fi
-              touch $FLAG_FILE
+            # HuggingFace cache dir kept regardless of whether transformers
+            # is actively imported, so HF_HOME has a stable target.
+            mkdir -p /home/$NB_USER/models
+
+            # Migrate any pre-existing real ~/Scout/ from the legacy first-spawn
+            # copy hook out of the way so the read-only symlink can take its place.
+            if [ -d /home/$NB_USER/Scout ] && [ ! -L /home/$NB_USER/Scout ]; then
+              mv /home/$NB_USER/Scout /home/$NB_USER/Scout.bak-$(date +%Y%m%d)
+            fi
+
+            # Surface the read-only Scout samples ConfigMap as ~/Scout.
+            if [ -d /opt/scout/samples ]; then
+              ln -sfn /opt/scout/samples /home/$NB_USER/Scout
+              chown -h $NB_USER:$NB_GID /home/$NB_USER/Scout
             fi
   extraEnv:
 {% if _package_proxy_needs_staging_cert | default(false) | bool %}
@@ -238,6 +243,9 @@ singleuser:
     TRINO_CATALOG: 'delta'
     TRINO_SCHEMA: 'default'
     TRINO_CA_CERT: '/etc/trino-ca/ca.crt'
+    # Ollama service for LLM calls from notebooks
+    OLLAMA_URL: 'http://ollama.{{ chatbot_namespace }}:11434'
+    OLLAMA_MODEL: '{{ ollama_default_model }}'
   extraFiles:
     jupyter-server-config:
       mountPath: /etc/jupyter/jupyter_server_config.py
