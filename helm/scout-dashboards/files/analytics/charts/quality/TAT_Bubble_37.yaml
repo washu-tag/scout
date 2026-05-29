@@ -1,0 +1,86 @@
+slice_name: TAT vs Volume by Modality
+description: One bubble per modality. X = report volume, Y = median TAT (hours),
+  bubble size = P95 TAT. Larger bubbles indicate more variable turn-around.
+certified_by: null
+certification_details: null
+viz_type: bubble_v2
+params:
+  datasource: 1__table
+  viz_type: bubble_v2
+  slice_id: 37
+  entity: modality
+  x:
+    aggregate: null
+    column: null
+    datasourceWarning: false
+    expressionType: SQL
+    hasCustomLabel: true
+    label: Reports
+    optionName: metric_bubble_x_volume_v2
+    sqlExpression: COUNT(*)
+  y:
+    aggregate: null
+    column: null
+    datasourceWarning: false
+    expressionType: SQL
+    hasCustomLabel: true
+    label: Median TAT (hours)
+    optionName: metric_bubble_y_median_tat
+    sqlExpression: APPROX_PERCENTILE(date_diff('minute', requested_dt, message_dt) / 60.0,
+      0.5)
+  size:
+    aggregate: null
+    column: null
+    datasourceWarning: false
+    expressionType: SQL
+    hasCustomLabel: true
+    label: P95 TAT (hours)
+    optionName: metric_bubble_size_p95_tat
+    sqlExpression: APPROX_PERCENTILE(date_diff('minute', requested_dt, message_dt) / 60.0,
+      0.95)
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+    - clause: WHERE
+      subject: modality
+      operator: NOT IN
+      operatorId: NOT_IN
+      comparator:
+        - null
+        - ''
+      expressionType: SIMPLE
+    - clause: WHERE
+      expressionType: SQL
+      sqlExpression: requested_dt IS NOT NULL AND message_dt IS
+        NOT NULL AND message_dt > requested_dt
+      filterOptionName: filter_tat_valid_bubble
+  row_limit: 50
+  order_desc: true
+  color_scheme: presetColors
+  show_legend: true
+  legendType: scroll
+  legendOrientation: top
+  max_bubble_size: '50'
+  x_axis_label: Reports
+  x_axis_title_margin: 30
+  y_axis_label: Median TAT (hours)
+  y_axis_title_margin: 30
+  y_axis_title_position: Left
+  x_axis_format: SMART_NUMBER
+  y_axis_format: ',.1f'
+  truncateXAxis: false
+  truncateYAxis: false
+  show_value: false
+  tooltipSizeFormat: ',.1f'
+  extra_form_data: {}
+  dashboards:
+    - 2
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: ec81c48b-8550-45f1-afcc-16ae0f6494f9
+version: 1.0.0
+dataset_uuid: 14cdaed5-905e-499a-b020-13e1b54097c8

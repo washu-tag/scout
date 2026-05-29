@@ -1,6 +1,5 @@
-from typing import Optional
-
 from delta import DeltaTable
+from temporalio import activity
 
 from .derivativetable import DerivativeTable
 from .sparkutils import (
@@ -8,9 +7,13 @@ from .sparkutils import (
     merge_df_into_dt_on_column,
     empty_string_coalesce,
     create_table_from_df,
+    extract_from_anticipated_column,
 )
 
 from pyspark.sql import functions as F, Column, DataFrame
+
+UNREASONABLE_AGE_THRESHOLD = 109
+UNREASONABLE_DOB_THRESHOLD = "1905-01-01"
 
 
 def curated_table(base_report_table_name: str) -> DerivativeTable:
@@ -72,23 +75,12 @@ def curate_silver_table(batch_df, spark, table_name):
     if filtered_df is None:
         return
 
-    def extract_patient_id(
-        id_column: str, df: DataFrame, extraction: Optional[Column] = None
-    ) -> Column:
-        if extraction is None:
-            extraction = F.col(id_column)
-        if id_column in df.columns:
-            return F.when(
-                F.col(id_column).isNotNull(),
-                extraction,
-            )
-        else:  # particular patient id may not have been seen yet
-            return F.lit(None)
-
     def extract_labeled_patient_id(id_column: str, df: DataFrame) -> Column:
-        return extract_patient_id(
+        return extract_from_anticipated_column(
             id_column, df, F.concat_ws("_", F.lit(id_column), F.col(id_column))
         )
+
+    unreasonable_age_for_scans = F.col("patient_age") > UNREASONABLE_AGE_THRESHOLD
 
     curated_df = (
         filtered_df.withColumnRenamed("source_file", "primary_report_identifier")
@@ -121,24 +113,44 @@ def curate_silver_table(batch_df, spark, table_name):
                 .otherwise(extract_labeled_patient_id("mpi", filtered_df)),
                 "patient_mpi": F.when(
                     F.col("version_id") == "2.7",
-                    extract_patient_id("empi_mr", filtered_df),
+                    extract_from_anticipated_column("empi_mr", filtered_df),
                 )
                 .when(
                     F.col("version_id") == "2.4",
                     F.coalesce(
                         *[
-                            extract_patient_id(f"{authority}_ee", filtered_df)
+                            extract_from_anticipated_column(
+                                f"{authority}_ee", filtered_df
+                            )
                             for authority in ["bjh", "bjwc", "slch"]
                         ]
                     ),
                 )
                 .otherwise(F.col("mpi")),
+                "scan_date_proxy": F.coalesce(
+                    F.col("observation_dt"), F.col("requested_dt")
+                ),
+                "birth_date": F.when(
+                    F.col("birth_date") > UNREASONABLE_DOB_THRESHOLD,
+                    F.col("birth_date"),
+                ).otherwise(F.lit(None)),
             }
         )
         .withColumns(
             {
                 "accession_number": F.col("filler_order_number"),
                 "primary_study_identifier": F.col("filler_order_number"),
+                "patient_age": F.expr(
+                    "CAST(datediff(YEAR, birth_date, scan_date_proxy) AS INT)"
+                ),
+            }
+        )
+        .withColumns(
+            {
+                col: F.when(unreasonable_age_for_scans, F.lit(None)).otherwise(
+                    F.col(col)
+                )
+                for col in ["patient_age", "birth_date"]
             }
         )
         .drop(
@@ -147,8 +159,22 @@ def curate_silver_table(batch_df, spark, table_name):
             "orc_3_filler_order_number",
             "obr_3_filler_order_number",
             "filler_order_number",
+            "scan_date_proxy",
         )
     )
+
+    batch_count = filtered_df.count()
+    curated_df = curated_df.filter(
+        (F.col("accession_number").isNotNull())
+        & (F.trim(F.col("accession_number")) != "")
+    )
+    dropped_reports = batch_count - curated_df.count()
+    if dropped_reports > 0:
+        activity.logger.warn(
+            "Dropped %d reports from %s because we could not compute an accession number",
+            dropped_reports,
+            table_name,
+        )
 
     # Update existing curated table or create it if it does not yet exist
     if spark.catalog.tableExists(table_name):

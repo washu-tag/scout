@@ -180,6 +180,8 @@ gpu_workers:
 
 The NVIDIA GPU Operator will be automatically deployed on these nodes.
 
+By default, every host in `gpu_workers` is tainted with `nvidia.com/gpu=present:NoSchedule` so the node stays reserved for workloads that need it (Ollama, Jupyter singleuser) and cluster-wide storage that spans every node by design (MinIO). Set `enable_gpu_node_taint: false` in `k3s_cluster.vars` to disable — useful for small or dev clusters where the GPU node's spare capacity should be available to general workloads.
+
 ### MinIO Hosts Group
 
 Nodes where MinIO object storage will run. MinIO requires direct disk access:
@@ -562,9 +564,6 @@ jupyter_profiles:
               cpu_limit: 8
               mem_guarantee: '16G'
               mem_limit: '32G'
-              environment:
-                SPARK_DRIVER_MEMORY: "8g"
-                SPARK_EXECUTOR_MEMORY: "8g"
               extra_resource_guarantees:
                 nvidia.com/gpu: '1'
               extra_resource_limits:
@@ -576,9 +575,6 @@ jupyter_profiles:
               cpu_limit: 16
               mem_guarantee: '32G'
               mem_limit: '64G'
-              environment:
-                SPARK_DRIVER_MEMORY: "16g"
-                SPARK_EXECUTOR_MEMORY: "16g"
               extra_resource_guarantees:
                 nvidia.com/gpu: '1'
               extra_resource_limits:
@@ -760,6 +756,30 @@ grafana_smtp_from_name: 'Scout Alerts'
 grafana_smtp_skip_verify: false
 grafana_email_recipients: ['admin@example.com']
 ```
+
+#### Superset Dashboards
+
+Scout ships its Superset dashboards via a separate Helm chart
+(`helm/scout-dashboards/`). The Scout main dashboard is always installed;
+two additional dashboards are opt-in per inventory.
+
+```yaml
+# Built-in dashboard bundles to install. The Scout core dashboard always
+# ships. Add bundle names to install more.
+#   core      - Scout main dashboard (default)
+#   quality   - Quality & TAT dashboard
+#   followup  - Follow-up Detection dashboard
+scout_dashboard_bundles:
+  - core
+  - quality
+  - followup
+```
+
+Removing a bundle stops **new** installs from receiving its assets, but
+**does not** delete already-imported assets from existing Superset
+installations (the import Job is one-way; drop unwanted assets via the
+Superset UI). For site-specific dashboards see the README in
+`helm/scout-dashboards/`.
 
 #### Ollama Models
 

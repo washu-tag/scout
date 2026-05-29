@@ -5,6 +5,30 @@
   ansible.builtin.set_fact:
     trino_helm_chart_values: "{{ lookup('template', 'values.yaml.j2') | from_yaml }}"
 
+- name: Ensure Trino namespace exists
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: namespace
+  vars:
+    ns: '{{ trino_namespace }}'
+  when: not aws_deployment
+
+- name: Create S3 credentials Secret for Trino
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: trino-s3
+        namespace: '{{ trino_namespace }}'
+      stringData:
+        S3_ACCESS_KEY: '{{ s3_lake_reader }}'
+        S3_SECRET_KEY: '{{ s3_lake_reader_secret }}'
+  environment: '{{ cluster_k8s_environment }}'
+  no_log: true
+  when: not aws_deployment
+
 - name: Create lake-reader ServiceAccount for Trino
   when: aws_deployment
   ansible.builtin.include_role:

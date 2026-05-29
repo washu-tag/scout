@@ -15,6 +15,7 @@ spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog
 spark.hadoop.fs.s3a.path.style.access {{ 'true' if not aws_deployment else 'false' }}
 spark.hadoop.hive.metastore.uris {{ spark_hive_metastore_uri | default(hive_metastore_endpoint_readonly) }}
 spark.sql.warehouse.dir {{ delta_lake_path }}
+spark.sql.shuffle.partitions {{ spark_sql_shuffle_partitions | default(200) }}
 spark.driver.extraJavaOptions -Divy.cache.dir=/tmp -Divy.home=/tmp
 spark.executor.memory {{ spark_memory | default('1G') }}
 spark.driver.memory {{ spark_memory | default('1G') }}

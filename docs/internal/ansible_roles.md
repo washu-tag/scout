@@ -125,7 +125,7 @@ Used by: Staging node deployment alongside Harbor (ADR 0017)
 
 ### jupyter
 
-Deploys JupyterHub for interactive data analysis with PySpark support.
+Deploys JupyterHub for interactive data analysis.
 
 #### Server Culling Configuration
 

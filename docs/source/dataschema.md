@@ -37,7 +37,6 @@ may not be directly mapped to HL7 fields.
 | `diagnostic_service_id`             | OBR-24           | string          | Yes      | Identifier for the diagnostic service.                                                                                                                                                                                     |
 | `modality`                          | Derived          | string          | Yes      | Modality of the exam (e.g., CT, MRI).                                                                                                                                                                                      |
 | `requested_dt`                      | OBR-6            | timestamp       | Yes      | Date and time the service was requested.                                                                                                                                                                                   |
-| `patient_age`                       | Derived          | integer         | Yes      | Patient age at time of report as calculated between `birth_date` and `requested_dt`.                                                                                                                                       |
 | `observation_dt`                    | OBR-7            | timestamp       | Yes      | Date and time the observation was made.                                                                                                                                                                                    |
 | `observation_end_dt`                | OBR-8            | timestamp       | Yes      | Date and time the observation ended.                                                                                                                                                                                       |
 | `full_ordering_provider`            | OBR-16           | array of struct | Yes      | Array of name + ID representations available in ordering provider field. See {ref}`Name + IDs <name_and_ids_ref>` for more detail.                                                                                         |
@@ -180,14 +179,15 @@ root
 ```
 
 In this example, the report has two diagnosis codes, both of which are ICD-10 codes. The first code
-is I48.91 and the second is I50.9. An example spark query to filter an existing dataframe `df` for reports
-containing an ICD-10 diagnosis code of "I48.91" could look like:
+is I48.91 and the second is I50.9. An example Trino query to find reports containing an ICD-10
+diagnosis code of "I48.91" could look like:
 ```python
-from pyspark.sql import functions as F
-
-df.select("diagnoses").filter(
-    F.exists("diagnoses", lambda x: (x.diagnosis_code == "I48.91") & (x.diagnosis_code_coding_system == "I10"))
-)
+pd.read_sql("""
+    SELECT accession_number, diagnoses
+    FROM reports_latest_epic_view
+    WHERE any_match(diagnoses, x -> x.diagnosis_code = 'I48.91'
+                                AND x.diagnosis_code_coding_system = 'I10')
+""", engine)
 ```
 
 The `diagnoses_consolidated` column is provided as a semicolon-delimited string derived from the
@@ -235,7 +235,8 @@ in the base report table. A row in the curated table looks exactly the same as a
 | `obr_2_placer_order_number` & `orc_2_placer_order_number` | Replaced with `placer_order_number`, containing the first non-empty value from the source columns                                                                                                                                                                                       |
 | `obr_3_filler_order_number` & `orc_3_filler_order_number` | Replaced with `accession_number` and `primary_study_identifier`, containing the first non-empty value from the source columns. For our data, `accession_number` and `primary_study_identifier` will be duplicates, but they exist as separate columns for sites where that is not true. |
 | `patient_ids`                                             | See note below about `primary_patient_identifier`                                                                                                                                                                                                                                       |
-| `patient_ids`                                             | See note below about `patient_mpi`                                                                                                                                                                                                                                                      |
+| `patient_mpi`                                             | See note below about `patient_mpi`                                                                                                                                                                                                                                                      |
+| `birth_date` & `observation_dt` or `requested_dt`         | Patient age at time of report. See note below about `patient_age`.                                                                                                                                                                                                                      |
 
 In practice, the Patient IDs available to Scout in the reports are rather messy and have some consistency problems. In the curated
 table, Scout persists the {ref}`patient_ids <patient_ids_ref>` column as-is, but it also derives a patient ID to store in
@@ -249,7 +250,14 @@ From some manual inspection of the data, the "EE" identifier type patient IDs in
 2.3 MPI. Given the 2.3 MPI <-> 2.7 EMPI_MR link, this gives a reasonably reliable way to identify a patient for any version of HL7. As such,
 the `patient_mpi` column will be assigned the `mpi` for a 2.3 report, the available "EE" identifier for a 2.4 report, and the EMPI_MR identifier
 for a 2.7 report. This gives us moderate confidence in an identifier that remains invariant for the patient over time, but it will not always
-be present (such as for 2.7 reports without an EMPI id).
+be present (such as for 2.7 reports without an EMPI id). For an easier to use alternative, see
+{ref}`Longitudinal Patient ID Resolution <longitudinal_pat_id_ref>`.
+
+Scout derives a `patient_age` as the difference between `birth_date` and a chosen scan date proxy, because our source data does not have a clear
+field mapping to the date of the scan. We use `observation_dt` as this proxy with a fallback to `requested_dt`. There are a couple of data integrity
+checks for this process:
+1. For cases where the recorded `birth_date` is before 1905, we replace it with `NULL` in the curated table as it is almost certainly incorrect.
+2. For cases where the derived `patient_age` is 110 or above, we `NULL` out both `birth_date` and `patient_age` in the curated table for the same reason.
 
 (latest_table_ref)=
 ### reports_latest
@@ -278,3 +286,70 @@ ID for the report and an index starting from 0 per report, separated by an under
 the latest table with new diagnostic information may overwrite and/or delete rows in this table when looking by id. Additionally,
 each row contains a diagnosis with the columns `diagnosis_code`, `diagnosis_code_text`, and `diagnosis_code_coding_system`, matching
 the earlier structs.
+
+(mapping_ref)=
+### reports_report_patient_mapping
+
+Each report in the curated table gets a corresponding mapping entry in `reports_report_patient_mapping` with the following schema:
+
+| column                    | description                                                                                                               |
+|---------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| scout_patient_id          | Reconciled ID to provide to the end user via join.                                                                        |
+| primary_report_identifier | ID used to match to curated report table. Foreign key for `primary_report_identifier` in curated table.                   |
+| mpi                       | Legacy MPI from any possible source, direct or inferred.                                                                  |
+| epic_mrn                  | EPIC MRN for the patient, direct or inferred.                                                                             |
+| consistent                | Boolean defining if the IDs connected to the patient are transitively consistent. Set to true unless specified otherwise. |
+
+The consistent flag allows Scout to detect scenarios where the particular arrangement of patient IDs implies a patient has multiple
+IDs in a given form. To avoid these invalid IDs implying an incorrect patient-report relationship, all rows for such a patient
+are marked inconsistent to exclude them from analysis.
+
+(longitudinal_pat_id_ref)=
+## Longitudinal Patient ID Resolution
+
+Various use cases require a user be able to identify a particular patient's reports over time in the delta lake.
+This need is complicated by the fact that the form of patient IDs available in the underlying reports has changed
+twice, so a given patient may have reports with three distinct sets of IDs. Scout provides a view for each of the
+downstream tables above to join to {ref}`reports_report_patient_mapping <mapping_ref>` which provide the same columns
+as the particular table in addition to some columns to help identify the patient for the report:
+- scout_patient_id: a Scout-specific randomly generated UUID that will be the same for reports where Scout has inferred the reports belong to the same patient
+- resolved_epic_mrn: the EPIC MRN for the patient, either included directly in the report, or derived from a report associated to the same patient. May be `NULL` if no reports for a patient have an EPIC MRN.
+- resolved_mpi: the legacy MPI for the patient, either included directly in the report, or derived from a report associated to the same patient. May be `NULL` if no reports for a patient have a legacy MPI.
+
+Reports with a `consistent` value of `FALSE` will be excluded from these views. Because these views are stored differently
+in the underlying technologies in Scout, they have slightly different names depending on how they are accessed. When reading
+from these views in Pyspark, they have the names:
+- reports_curated_spark_epic_view
+- reports_latest_spark_epic_view
+- reports_dx_spark_epic_view
+
+All other usages of these views would access them as:
+- reports_curated_epic_view
+- reports_latest_epic_view
+- reports_dx_epic_view
+
+As an example, a user could find all accession numbers for reports for patients with an EPIC MRN from a pre-specified list:
+```python
+pd.read_sql("""
+    SELECT accession_number, epic_mrn, resolved_epic_mrn, scout_patient_id
+    FROM reports_curated_epic_view
+    WHERE resolved_epic_mrn IN ('E123456', 'E123457', 'E123458')
+    ORDER BY scout_patient_id
+""", engine)
+```
+might return something like:
+```
++----------------+--------+-----------------+------------------------------------+
+|accession_number|epic_mrn|resolved_epic_mrn|scout_patient_id                    |
++----------------+--------+-----------------+------------------------------------+
+|A151050         |E123456 |E123456          |0d9868ed-5189-466c-b2c8-3d4c6128f2ec|
+|A151051         |E123456 |E123456          |0d9868ed-5189-466c-b2c8-3d4c6128f2ec|
+|A151052         |E123457 |E123457          |4355e112-54c9-4046-a2b3-cc23de79b8b9|
+|A151053         |NULL    |E123457          |4355e112-54c9-4046-a2b3-cc23de79b8b9|
+|A151054         |E123457 |E123457          |4355e112-54c9-4046-a2b3-cc23de79b8b9|
+|A151055         |NULL    |E123457          |4355e112-54c9-4046-a2b3-cc23de79b8b9|
+|A151056         |E123457 |E123457          |4355e112-54c9-4046-a2b3-cc23de79b8b9|
++----------------+--------+-----------------+------------------------------------+
+```
+Note that the example includes no reports for an EPIC MRN of `E123458`, which could happen if that patient ID has been
+determined to be "inconsistent".

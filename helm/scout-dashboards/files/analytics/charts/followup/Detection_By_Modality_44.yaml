@@ -1,0 +1,44 @@
+slice_name: Volume by Modality
+description: Donut showing total report volume per imaging modality.
+certified_by: null
+certification_details: null
+viz_type: pie
+params:
+  datasource: 3__table
+  viz_type: pie
+  slice_id: 44
+  groupby:
+    - modality
+  metric: count
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+  row_limit: 50
+  sort_by_metric: true
+  color_scheme: presetColors
+  show_labels_threshold: 1
+  show_legend: true
+  legendType: scroll
+  legendOrientation: top
+  label_type: key_value_percent
+  number_format: SMART_NUMBER
+  date_format: smart_date
+  show_labels: true
+  labels_outside: true
+  label_line: true
+  show_total: true
+  outerRadius: 70
+  donut: true
+  innerRadius: 30
+  extra_form_data: {}
+  dashboards:
+    - 3
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: 1714458c-d2a7-4315-8b9c-131a10a13e44
+version: 1.0.0
+dataset_uuid: cf33626a-2b35-423b-9a9d-7d8e62a6b021

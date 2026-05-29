@@ -7,9 +7,14 @@
     that:
       - open_webui_postgres_password is defined
       - open_webui_postgres_password | length > 0
+      - open_webui_secret_key is defined
+      - open_webui_secret_key | length > 0
+      - open_webui_bootstrap_password is defined
+      - open_webui_bootstrap_password | length > 0
     fail_msg: >
-      open_webui_postgres_password is required but not set.
-      Please set it in your inventory.yaml (use vault encryption).
+      open_webui_postgres_password, open_webui_secret_key, and
+      open_webui_bootstrap_password are all required. Set them in your
+      inventory.yaml (use vault encryption).
       Example: openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh
     quiet: true
 
@@ -126,15 +131,22 @@
     - ollama_nfs_path is defined
     - ollama_nfs_path | length > 0
 
-# Ensure Scout base model is in ollama_models list if Scout model creation is enabled
-- name: Add Scout base model to ollama_models if needed
+# Ensure all Scout base models are in ollama_models list if Scout model creation is enabled
+- name: Add Scout base models to ollama_models
   ansible.builtin.set_fact:
-    ollama_models: '{{ (ollama_models | default([])) | union([scout_base_model]) }}'
-  when:
-    - scout_model_create | bool
-    - scout_base_model not in (ollama_models | default([]))
+    ollama_models: "{{ (ollama_models | default([])) | union(scout_models | map(attribute='base') | list) }}"
+  when: scout_model_create | bool
 
 # Pull Ollama models and create Scout model (combined into single job)
 - name: Pull Ollama models
   ansible.builtin.include_tasks: pull_models.yaml
   when: ollama_models is defined and ollama_models | length > 0
+
+# Deploy the open-webui-bootstrap Helm chart. Its post-install/post-upgrade
+# Job mints an admin JWT against OWUI's in-cluster Service and pushes filter
+# functions, custom models, and PersistentConfig (tool servers, RAG template,
+# DEFAULT_MODELS, TASK_MODEL) via the REST API — see helm/open-webui-bootstrap/
+# and configure_admin.yaml for details.
+- name: Bootstrap Open WebUI admin + push declarative config
+  ansible.builtin.include_tasks: configure_admin.yaml
+  when: open_webui_admin_setup_enabled | bool

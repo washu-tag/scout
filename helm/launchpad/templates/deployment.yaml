@@ -71,6 +71,14 @@ spec:
               value: {{ .Values.enableChat | quote }}
             - name: ENABLE_PLAYBOOKS
               value: {{ .Values.enablePlaybooks | quote }}
+            {{- if .Values.scoutEnv }}
+            - name: SCOUT_ENV
+              value: {{ .Values.scoutEnv | quote }}
+            {{- end }}
+            {{- if .Values.deployerName }}
+            - name: DEPLOYER_NAME
+              value: {{ .Values.deployerName | quote }}
+            {{- end }}
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

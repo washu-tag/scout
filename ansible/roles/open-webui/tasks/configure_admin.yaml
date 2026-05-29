@@ -1,0 +1,79 @@
+---
+# Deploy the open-webui-bootstrap Helm chart. The chart runs a post-install/
+# post-upgrade Job in the OWUI namespace that:
+#   1. Migrates the bootstrap user's bcrypt hash to match the derived password.
+#   2. Mints an admin JWT via /signin or (on fresh DB) /signup.
+#   3. Re-pushes env-var-seeded PersistentConfig (tool servers, RAG template,
+#      DEFAULT_MODELS, TASK_MODEL) — OWUI is seed-only for these otherwise.
+#   4. Creates/updates filter functions + sets valves + toggles global/active.
+#   5. Creates/updates custom Scout Explorer models + hide-base overrides.
+#
+# All payload rendering happens inside the chart (configmap.yaml template
+# transforms `filterFunctions`/`scoutModels` raw inventory shapes into the
+# JSON keys bootstrap.py consumes; files/payloads/* are globbed into separate
+# CM keys). Ansible's job here is to pass inventory values through; under Flux
+# the same value shapes go in a HelmRelease spec, with `dependsOn` ordering
+# this release after the OWUI HelmRelease.
+
+# The bootstrap Job reuses OWUI's own container image so the password-migration
+# step's `import open_webui.internal.db` resolves against the same SQLAlchemy
+# models + bcrypt version the running Pod uses. Rather than pin the tag in two
+# places (and risk drift), discover the running OWUI image at deploy time and
+# pass it through. Renovate bumps `open_webui_helm_chart_version` →  chart
+# appVersion changes → next deploy's `kubectl wait` sees the new image →
+# bootstrap Job picks it up automatically.
+- name: 'Discover running Open WebUI image (for bootstrap Job ORM/bcrypt lockstep)'
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: '{{ chatbot_namespace }}'
+    label_selectors:
+      - app.kubernetes.io/name=open-webui
+  register: _owui_pods
+
+- name: 'Set bootstrap image fact'
+  ansible.builtin.set_fact:
+    _owui_bootstrap_image: >-
+      {{ (_owui_pods.resources[0].spec.containers
+          | selectattr('name', 'equalto', 'open-webui')
+          | map(attribute='image')
+          | list
+          | first) }}
+  failed_when: _owui_bootstrap_image | length == 0
+
+- name: 'Deploy open-webui-bootstrap Helm chart (post-install/upgrade Job)'
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: open-webui-bootstrap
+    helm_chart_ref: '{{ open_webui_bootstrap_helm_chart_ref }}'
+    helm_chart_namespace: '{{ chatbot_namespace }}'
+    helm_chart_values:
+      image:
+        ref: '{{ _owui_bootstrap_image }}'
+      owuiBaseUrl: 'http://open-webui.{{ chatbot_namespace }}:80'
+      bootstrap:
+        email: '{{ open_webui_bootstrap_email }}'
+        name: '{{ open_webui_bootstrap_name }}'
+      # secretName is left at the chart default (open-webui-secrets) — the
+      # open-webui role creates that Secret in create_secret.yaml before this
+      # Helm install runs.
+      persistentConfig:
+        tool_server_connections: '{{ tool_server_connections | default([]) }}'
+        default_model_id: '{{ open_webui_default_model_id | default("") }}'
+        task_model_id: '{{ open_webui_task_model_id | default("") }}'
+      filterFunctions: '{{ open_webui_filter_functions | default([]) }}'
+      scoutModels: '{{ scout_models | default([]) }}'
+      scoutDefaults:
+        systemPromptFile: '{{ open_webui_scout_system_prompt_file }}'
+        profileImageFile: scout-logo-128.png.b64
+        toolIds: '{{ open_webui_scout_tool_ids }}'
+        suggestionPrompts: '{{ open_webui_scout_default_suggestion_prompts }}'
+        capabilities: '{{ open_webui_scout_default_capabilities }}'
+        builtinTools: '{{ open_webui_scout_default_builtin_tools }}'
+        functionCalling: '{{ open_webui_scout_default_function_calling }}'
+        reasoningEffort: '{{ open_webui_scout_default_reasoning_effort }}'
+        keepAliveResident: '{{ open_webui_scout_keep_alive_resident }}'
+        keepAliveCold: '{{ open_webui_scout_keep_alive_cold_load }}'
+        hideBaseModels: '{{ open_webui_hide_base_models | default(true) | bool }}'

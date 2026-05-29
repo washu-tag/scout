@@ -1,0 +1,32 @@
+slice_name: HL7 messages
+description: Raw count of HL7 report messages ingested, including every amendment
+  and version. Sits next to the "Count" tile (unique exams) so the operator can
+  see raw throughput vs deduplicated exam scale.
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  datasource: 6__table
+  viz_type: big_number_total
+  slice_id: 23
+  metric: count
+  adhoc_filters:
+    - clause: WHERE
+      subject: message_dt
+      operator: TEMPORAL_RANGE
+      comparator: No filter
+      expressionType: SIMPLE
+  subheader: HL7 messages (all versions)
+  header_font_size: 0.4
+  subheader_font_size: 0.15
+  y_axis_format: SMART_NUMBER
+  time_format: smart_date
+  extra_form_data: {}
+  dashboards:
+    - 1
+  annotation_layers: []
+query_context: null
+cache_timeout: null
+uuid: c3b8d5f1-7a2e-4c9d-8e6f-1a3b5c7d9e2f
+version: 1.0.0
+dataset_uuid: a7e9c2b4-5f3d-4a6e-9b1c-8d7f2e4a6c9b

@@ -25,6 +25,7 @@ jobs:
       hl7log-extractor: ${{ steps.filter.outputs.hl7log-extractor }}
       hl7-transformer: ${{ steps.filter.outputs.hl7-transformer }}
       pyspark-notebook: ${{ steps.filter.outputs.pyspark-notebook }}
+      scout-notebook: ${{ steps.filter.outputs.scout-notebook }}
       launchpad: ${{ steps.filter.outputs.launchpad }}
       superset: ${{ steps.filter.outputs.superset }}
       keycloak: ${{ steps.filter.outputs.keycloak }}
@@ -44,6 +45,8 @@ jobs:
               - 'extractor/hl7-transformer/**'
             pyspark-notebook:
               - 'helm/jupyter/notebook/**'
+            scout-notebook:
+              - 'helm/jupyter/scout-notebook/**'
             launchpad:
               - 'launchpad/**'
             superset:
@@ -84,6 +87,9 @@ jobs:
             allow-failure: true
           - image-name: pyspark-notebook
             subproject: helm/jupyter/notebook
+            allow-failure: true
+          - image-name: scout-notebook
+            subproject: helm/jupyter/scout-notebook
             allow-failure: true
           - image-name: launchpad
             subproject: launchpad
@@ -138,10 +144,13 @@ jobs:
         run: cd ansible && pytest tests/unit/filter_plugins/ -v
       - name: 'Unit tests: Open WebUI link sanitizer filter'
         shell: bash
-        run: cd ansible/roles/open-webui/files && pytest test_link_sanitizer_filter.py -v
+        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_link_sanitizer_filter.py -v
       - name: 'Unit tests: Open WebUI context summarization filter'
         shell: bash
-        run: cd ansible/roles/open-webui/files && pytest test_context_summarization_filter.py -v
+        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_context_summarization_filter.py -v
+      - name: 'Unit tests: Open WebUI tool result attribute migrator filter'
+        shell: bash
+        run: cd helm/open-webui-bootstrap && PYTHONPATH=files/payloads pytest tests/test_tool_result_attr_filter.py -v
       - name: 'Unit tests: verify-node'
         shell: bash
         run: cd verify-node && pytest tests/ -v
@@ -219,7 +228,7 @@ jobs:
         run: |
           cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -260,9 +269,9 @@ jobs:
           cp .github/ci_resources/test_config_template.json tests/ingest/src/test/resources/config/local.json
           sed -i "s:WORK_DIR:$(pwd):" .github/ci_resources/tests-job.yaml
           sudo -E kubectl apply -f .github/ci_resources/tests-job.yaml
-          sudo -E kubectl wait --for=condition=complete --timeout=900s job/ci-tests -n scout-extractor &
+          sudo -E kubectl wait --for=condition=complete --timeout=1800s job/ci-tests -n scout-extractor &
           completion_pid=$!
-          sudo -E kubectl wait --for=condition=failed --timeout=900s job/ci-tests -n scout-extractor && exit 1 &
+          sudo -E kubectl wait --for=condition=failed --timeout=1800s job/ci-tests -n scout-extractor && exit 1 &
           failure_pid=$!
           wait -n $completion_pid $failure_pid
       - name: Test Logs
@@ -271,7 +280,7 @@ jobs:
         run: |
           sudo -E kubectl -n scout-extractor logs job/ci-tests
       - name: Test Summary
-        uses: test-summary/action@31493c76ec9e7aa675f1585d3ed6f1da69269a86 # v2.4
+        uses: test-summary/action@37b508cfee6d4d080eedd00b5bb240a6a784a6a5 # v2.6
         if: always()
         with:
           paths: 'tests/ingest/**/TEST-*.xml'
@@ -348,7 +357,7 @@ jobs:
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/k3s.yaml
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -374,6 +383,11 @@ jobs:
         with:
           subproject: helm/jupyter/notebook
           image-name: pyspark-notebook
+      - name: 'Push image to k3s - scout-notebook'
+        uses: ./.github/actions/k3s-image-import-or-pull
+        with:
+          subproject: helm/jupyter/scout-notebook
+          image-name: scout-notebook
       - name: 'Install helm and helm diff'
         shell: bash
         run: cd ansible && sudo -E /opt/pipx_bin/ansible-playbook -v -i inventory.yaml --diff playbooks/helm.yaml
@@ -415,6 +429,10 @@ jobs:
       - name: 'Auth curl tests'
         shell: bash
         run: bash tests/auth/auth-curl-tests.sh scout.test
+      # NetworkPolicy tests — verify trino-rw ingress restrictions
+      - name: 'NetworkPolicy tests'
+        shell: bash
+        run: KUBECTL='sudo -E kubectl' bash tests/network/network-policy-tests.sh
       # Diagnostic logging on failure
       - name: 'Debug - pod status'
         if: failure()
@@ -446,7 +464,7 @@ jobs:
       - name: Checkout GitHub Action
         uses: actions/checkout@v6
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -483,6 +501,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: pyspark-notebook
+      - name: 'Push Image - scout-notebook'
+        if: needs.changes.outputs.scout-notebook == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: scout-notebook
       - name: 'Push Image - launchpad'
         if: needs.changes.outputs.launchpad == 'true'
         uses: ./.github/actions/docker-push
@@ -511,7 +534,7 @@ jobs:
       - name: Checkout GitHub Action
         uses: actions/checkout@v6
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ${{ ENV.REGISTRY }}
           username: ${{ github.actor }}
@@ -538,6 +561,11 @@ jobs:
         uses: ./.github/actions/docker-push
         with:
           image-name: pyspark-notebook
+      - name: 'Push Image - scout-notebook'
+        if: needs.changes.outputs.scout-notebook == 'true'
+        uses: ./.github/actions/docker-push
+        with:
+          image-name: scout-notebook
       - name: 'Push Image - hl7log-extractor'
         if: needs.changes.outputs.hl7log-extractor == 'true'
         uses: ./.github/actions/docker-push

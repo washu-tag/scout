@@ -15,58 +15,6 @@
   vars:
     ns: '{{ superset_namespace }}'
 
-- name: Build dashboard ConfigMap data
-  delegate_to: localhost
-  block:
-    - name: Find all analytics YAML files
-      ansible.builtin.find:
-        paths: '{{ superset_analytics_dir }}'
-        recurse: true
-        file_type: file
-        patterns:
-          - '*.yaml'
-          - '*.yaml.j2'
-      register: analytics_files
-
-    - name: Build ConfigMap data and items list
-      no_log: true
-      vars:
-        analytics_root: '{{ (superset_analytics_dir | realpath) }}'
-        is_template: '{{ item.path.endswith(".j2") }}'
-        file_basename: '{{ (item.path | basename | regex_replace("\.j2$", "")) }}'
-        file_content: '{{ lookup("template" if is_template else "file", item.path) }}'
-        file_mount_path: '{{ ((item.path | realpath) | regex_replace("^" ~ analytics_root ~ "/", "analytics/") | regex_replace("\.j2$", "")) }}'
-      ansible.builtin.set_fact:
-        superset_dashboard_data: >-
-          {{
-            superset_dashboard_data | default({}) |
-            combine({ file_basename: file_content })
-          }}
-        superset_dashboard_items: >-
-          {{
-            superset_dashboard_items | default([]) + [
-              {
-                'key': file_basename,
-                'path': file_mount_path
-              }
-            ]
-          }}
-      loop: '{{ analytics_files.files }}'
-      loop_control:
-        label: '{{ (item.path | realpath) | regex_replace("^" ~ analytics_root ~ "/", "") }}'
-
-- name: Create ConfigMap for datasource and dashboard yaml
-  no_log: true
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: dashboard-config
-        namespace: '{{ superset_namespace }}'
-      data: '{{ superset_dashboard_data | default({}) }}'
-
 - name: Create ConfigMap with Scout logo and favicon for Superset branding
   delegate_to: localhost
   no_log: true
@@ -150,3 +98,51 @@
     helm_repo_url: '{{ superset_helm_repo_url }}'
     helm_chart_timeout: '{{ superset_helm_timeout }}'
     helm_chart_values: '{{ superset_helm_chart_values }}'
+
+# One-time migration: prior versions of this role created dashboard-config
+# directly via kubernetes.core.k8s, so it lacks Helm ownership annotations.
+# Helm 3 refuses to manage such a resource, so we delete it here when it has
+# no Helm release annotation. Once the scout-dashboards chart has installed
+# this ConfigMap once, this task becomes a no-op.
+- name: Detect legacy unmanaged dashboard-config ConfigMap
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    name: dashboard-config
+    namespace: '{{ superset_namespace }}'
+  register: legacy_dashboard_config
+
+- name: Remove legacy unmanaged dashboard-config (scout-dashboards chart will recreate)
+  when:
+    - legacy_dashboard_config.resources | length > 0
+    - "'meta.helm.sh/release-name' not in (legacy_dashboard_config.resources[0].metadata.annotations | default({}))"
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: ConfigMap
+    name: dashboard-config
+    namespace: '{{ superset_namespace }}'
+
+# Deploy dashboards via a separate Helm release. The chart owns the
+# dashboard-config ConfigMap and an import Job whose pod template carries a
+# checksum/config annotation tied to the rendered ConfigMap. Any analytics
+# YAML edit or family toggle change changes the hash, Helm replaces the Job
+# (per before-hook-creation delete policy), and the import re-runs. No
+# Ansible-side change detection.
+- name: Deploy scout-dashboards chart
+  ansible.builtin.include_role:
+    name: scout_common
+    tasks_from: deploy_helm_chart
+  vars:
+    helm_chart_name: scout-dashboards
+    helm_chart_ref: '{{ scout_dashboards_helm_chart_ref }}'
+    helm_chart_namespace: '{{ superset_namespace }}'
+    helm_chart_values:
+      image:
+        repository: '{{ superset_image_repository }}'
+        tag: '{{ superset_image_tag }}'
+      trino:
+        user: '{{ trino_user }}'
+        namespace: '{{ trino_namespace }}'
+      bundles:
+        enabled: '{{ scout_dashboard_bundles }}'

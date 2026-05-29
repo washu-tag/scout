@@ -7,7 +7,7 @@ Usage in Voila (recommended - instant page load):
     # Shows landing page immediately with "Launch Dashboard" button
     # User clicks button to load data (fast with Trino) and show dashboard
     create_landing_page(
-        table_name="default.latest_reports",
+        table_name="default.reports_followup",
         samples_per_category=50
     )
 
@@ -16,7 +16,7 @@ Usage in Jupyter Notebook:
 
     # Option 1: Load from Trino automatically with stratified sampling
     create_review_dashboard(
-        table_name="default.latest_reports",
+        table_name="default.reports_followup",
         samples_per_category=50,  # Samples per modality/detection/confidence combo
         report_col='report_text'
     )
@@ -50,6 +50,22 @@ def normalize_text(text):
     return _normalized_cache[text]
 
 
+def safe_get(row, key, default="N/A"):
+    """row.get(key, default) but None/NaN scalars also fall back to default."""
+    if key not in row:
+        return default
+    value = row[key]
+    if value is None:
+        return default
+    try:
+        if pd.isna(value):
+            return default
+    except (TypeError, ValueError):
+        # pd.isna on arrays/structs (e.g. diagnoses) raises — keep value as-is.
+        pass
+    return value
+
+
 def get_darker_shade(hex_color):
     """Get darker shade of a color."""
     hex_color = hex_color.lstrip("#")
@@ -77,7 +93,7 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
     Parameters
     ----------
     table_name : str
-        Delta table name (e.g., "default.latest_reports")
+        Delta table name (e.g., "default.reports_followup")
     samples_per_category : int
         Number of samples per modality/detection/confidence category
     report_col : str
@@ -135,7 +151,7 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
     query = f"""
     WITH categorized AS (
         SELECT
-            obr_3_filler_order_number,
+            accession_number,
             message_dt,
             modality,
             followup_detected,
@@ -162,14 +178,16 @@ def _load_from_trino(table_name, samples_per_category, report_col, status_output
                     CAST(followup_detected AS VARCHAR), '_',
                     COALESCE(followup_confidence, 'null')
                 )
-                ORDER BY message_dt DESC, obr_3_filler_order_number
+                ORDER BY message_dt DESC, accession_number
             ) AS row_num
         FROM {catalog}.{schema}.{table}
         WHERE followup_processed_at IS NOT NULL
           AND modality IS NOT NULL
+          AND followup_detected IS NOT NULL
+          AND followup_confidence IS NOT NULL
     )
     SELECT
-        obr_3_filler_order_number,
+        accession_number,
         message_dt,
         modality,
         followup_detected,
@@ -261,7 +279,7 @@ def highlight_snippet_in_text(report_text, snippet, color="#FFC107"):
 
 
 def create_landing_page(
-    table_name="default.latest_reports",
+    table_name="default.reports_followup",
     samples_per_category=50,
     report_col="report_text",
 ):
@@ -271,7 +289,7 @@ def create_landing_page(
 
     Parameters
     ----------
-    table_name : str, default="default.latest_reports"
+    table_name : str, default="default.reports_followup"
         Delta table to load from
     samples_per_category : int, default=50
         Number of samples per category
@@ -499,7 +517,7 @@ def create_review_dashboard(
     df : pd.DataFrame, optional
         Pre-loaded Pandas DataFrame with required columns. If provided, table_name is ignored.
     table_name : str, optional
-        Delta table name to load from via Trino (e.g., "default.latest_reports").
+        Delta table name to load from via Trino (e.g., "default.reports_followup").
         If provided and df is None, loads stratified sample using Trino query.
     samples_per_category : int, default=50
         Number of samples per modality/detection/confidence category.
@@ -507,7 +525,7 @@ def create_review_dashboard(
         Column name containing the report text.
 
     Required columns in df:
-        obr_3_filler_order_number (accession), message_dt, modality,
+        accession_number (accession), message_dt, modality,
         followup_detected, followup_confidence, followup_snippet, followup_finding,
         report_text (or specified report_col), patient_age, sex, race,
         sending_facility, diagnoses (optional), service_name, service_identifier,
@@ -529,16 +547,54 @@ def create_review_dashboard(
     # Load from Trino if table_name provided
     if df is None and table_name is not None:
         # Load data (when called from landing page, this happens on button click)
-        df = _load_from_trino(
-            table_name, samples_per_category, report_col, status_output=None
-        )
+        try:
+            df = _load_from_trino(
+                table_name, samples_per_category, report_col, status_output=None
+            )
+        except Exception as e:
+            # Friendly message when the working table hasn't been created yet —
+            # e.g., a reviewer opens the playbook before the pipeline notebook
+            # has run on a fresh cluster. Trino raises with "does not exist" or
+            # error_name=TABLE_NOT_FOUND in the message.
+            err_text = str(e).lower()
+            is_missing_table = (
+                "does not exist" in err_text or "table_not_found" in err_text
+            )
+            if not is_missing_table:
+                raise
+            display(
+                widgets.HTML(
+                    f"""
+                <div style="padding:24px;border:1px solid #f59e0b;border-radius:8px;
+                            background:#fffbeb;color:#92400e;max-width:720px;
+                            margin:24px auto;font-family:'Inter',-apple-system,sans-serif;
+                            line-height:1.55;">
+                    <h3 style="margin:0 0 12px 0;color:#92400e;">
+                        Follow-up classifier hasn't run yet
+                    </h3>
+                    <p style="margin:0 0 10px 0;">
+                        This dashboard reads from
+                        <code style="background:#fef3c7;padding:1px 6px;border-radius:3px;">{html_lib.escape(table_name)}</code>,
+                        but that table doesn't exist in the lake yet.
+                    </p>
+                    <p style="margin:0 0 6px 0;"><strong>To populate it:</strong></p>
+                    <ol style="margin:0;padding-left:22px;">
+                        <li>In JupyterHub, open the <strong>Follow-Up Detection</strong> pipeline notebook.</li>
+                        <li>Run cells in order through the <strong>Full pipeline</strong> section.</li>
+                        <li>Refresh this page when the pipeline finishes.</li>
+                    </ol>
+                </div>
+                """
+                )
+            )
+            return
 
     elif df is None:
         raise ValueError("Either 'df' or 'table_name' must be provided")
 
     # Validate required columns
     required_cols = [
-        "obr_3_filler_order_number",
+        "accession_number",
         "followup_detected",
         "followup_confidence",
         "followup_snippet",
@@ -901,12 +957,12 @@ def create_review_dashboard(
             row = state["df"].iloc[idx]
 
             # Get demographics with safe handling
-            accession = row.get("obr_3_filler_order_number", "N/A")
-            age = row.get("patient_age", "N/A")
-            sex = row.get("sex", "N/A")
-            race = row.get("race", "N/A")
-            facility = row.get("sending_facility", "N/A")
-            modality = row.get("modality", "N/A")
+            accession = safe_get(row, "accession_number")
+            age = safe_get(row, "patient_age")
+            sex = safe_get(row, "sex")
+            race = safe_get(row, "race")
+            facility = safe_get(row, "sending_facility")
+            modality = safe_get(row, "modality")
 
             # Get diagnoses if available
             diagnoses_str = ""
@@ -942,7 +998,7 @@ def create_review_dashboard(
                         {'FOLLOW-UP' if row['followup_detected'] else 'NO FOLLOW-UP'}
                     </div>
                     <div style='background: {'#FF9800' if row['followup_confidence'] == 'high' else '#2196F3'}; color: white; padding: 4px 10px; border-radius: 3px; font-weight: 600; font-size: 10px;'>
-                        {row['followup_confidence'].upper()} CONF
+                        {(row['followup_confidence'] or 'unknown').upper()} CONF
                     </div>
                     <div style='font-size: 11px; opacity: 0.9;'>Acc: {accession}</div>
                 </div>
@@ -987,15 +1043,15 @@ def create_review_dashboard(
         )
 
         # Get patient demographics
-        age = row.get("patient_age", "N/A")
-        sex = row.get("sex", "N/A")
-        race = row.get("race", "N/A")
+        age = safe_get(row, "patient_age")
+        sex = safe_get(row, "sex")
+        race = safe_get(row, "race")
 
         # Get exam information
-        facility = row.get("sending_facility", "N/A")
-        modality = row.get("modality", "N/A")
-        service_name = row.get("service_name", "N/A")
-        service_identifier = row.get("service_identifier", "N/A")
+        facility = safe_get(row, "sending_facility")
+        modality = safe_get(row, "modality")
+        service_name = safe_get(row, "service_name")
+        service_identifier = safe_get(row, "service_identifier")
 
         # Get diagnoses
         diagnoses_str = ""
@@ -1336,10 +1392,7 @@ def create_review_dashboard(
         # Search for matching accession in filtered indices
         for i, idx in enumerate(state["filtered_indices"]):
             row = state["df"].iloc[idx]
-            if (
-                str(row.get("obr_3_filler_order_number", "")).strip()
-                == target_accession
-            ):
+            if str(row.get("accession_number", "")).strip() == target_accession:
                 state["current_pos"] = i
                 render_report()
                 return
@@ -1347,10 +1400,7 @@ def create_review_dashboard(
         # If not found in filtered view, search entire dataset
         for idx in range(len(state["df"])):
             row = state["df"].iloc[idx]
-            if (
-                str(row.get("obr_3_filler_order_number", "")).strip()
-                == target_accession
-            ):
+            if str(row.get("accession_number", "")).strip() == target_accession:
                 # Update filters to show this report
                 modality_filter.value = (
                     row.get("modality", "all")
@@ -1424,9 +1474,7 @@ def create_review_dashboard(
                     row = state["df"].iloc[idx]
                     ann_data.append(
                         {
-                            "obr_3_filler_order_number": row.get(
-                                "obr_3_filler_order_number"
-                            ),
+                            "accession_number": row.get("accession_number"),
                             "model_followup_detected": row["followup_detected"],
                             "model_confidence": row["followup_confidence"],
                             "model_snippet": row["followup_snippet"],
@@ -1459,11 +1507,19 @@ def create_review_dashboard(
                 if a.get("reviewed") and a.get("ground_truth") is None
             )
 
-            # Export to CSV with timestamp
+            # Export to CSV with timestamp.
+            # Voilà mounts each notebook directory read-only, so we cannot write
+            # CSV next to the notebook. Use the canonical writable exports dir
+            # (sibling mount). Fall back to CWD for environments without it.
             from datetime import datetime
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_path = f"followup_annotations_{timestamp}.csv"
+            export_dir = "/home/jovyan/notebooks/exports"
+            if not os.path.isdir(export_dir) or not os.access(export_dir, os.W_OK):
+                export_dir = os.getcwd()
+            output_path = os.path.join(
+                export_dir, f"followup_annotations_{timestamp}.csv"
+            )
 
             with annotation_status:
                 annotation_status.clear_output(wait=True)
@@ -1474,7 +1530,14 @@ def create_review_dashboard(
             if IPython.get_ipython() is not None:
                 IPython.get_ipython().kernel.do_one_iteration()
 
-            ann_df.to_csv(output_path, index=False)
+            try:
+                ann_df.to_csv(output_path, index=False)
+            except OSError as e:
+                with annotation_status:
+                    annotation_status.clear_output(wait=True)
+                    print(f"❌ CSV write failed: {e}")
+                    print(f"   (target: {output_path})")
+                return
 
             # Try to write to Delta table using Spark (required for MERGE operations)
             # Note: Trino doesn't support UPDATE/MERGE on Delta tables, only Spark does
@@ -1512,7 +1575,7 @@ def create_review_dashboard(
 
                 schema = StructType(
                     [
-                        StructField("obr_3_filler_order_number", StringType(), True),
+                        StructField("accession_number", StringType(), True),
                         StructField("model_followup_detected", BooleanType(), True),
                         StructField("model_confidence", StringType(), True),
                         StructField("model_snippet", StringType(), True),
@@ -1526,12 +1589,32 @@ def create_review_dashboard(
                 # Create temp view for MERGE
                 spark_df.createOrReplaceTempView("human_annotations")
 
-                # MERGE into reports
+                # MERGE annotations back into the same table the dashboard loaded.
+                merge_target = table_name or "default.reports_followup"
+
+                # Ensure the reviewer-annotation columns exist on the target.
+                # Delta's spark.databricks.delta.schema.autoMerge.enabled only
+                # adds columns when MERGE has an INSERT clause — our UPDATE-only
+                # MERGE rejects unknown target columns at parse time. So add
+                # them up front, idempotently.
+                existing_cols = set(spark.table(merge_target).columns)
+                needed_cols = [
+                    ("human_ground_truth", "BOOLEAN"),
+                    ("human_notes", "STRING"),
+                    ("human_reviewed_at", "TIMESTAMP"),
+                ]
+                missing_cols = [
+                    (n, t) for n, t in needed_cols if n not in existing_cols
+                ]
+                if missing_cols:
+                    cols_clause = ", ".join(f"{n} {t}" for n, t in missing_cols)
+                    spark.sql(f"ALTER TABLE {merge_target} ADD COLUMNS ({cols_clause})")
+
                 spark.sql(
-                    """
-                    MERGE INTO reports AS target
+                    f"""
+                    MERGE INTO {merge_target} AS target
                     USING human_annotations AS source
-                    ON target.obr_3_filler_order_number = source.obr_3_filler_order_number
+                    ON target.accession_number = source.accession_number
                     WHEN MATCHED THEN UPDATE SET
                         target.human_ground_truth = source.human_ground_truth,
                         target.human_notes = source.human_notes,

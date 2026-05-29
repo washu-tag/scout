@@ -29,7 +29,7 @@ harbor_registry_proxies:
     project_name: ghcr-proxy
   - public_registry: quay.io
     registry_name: quay
-    registry_type: quay
+    registry_type: docker-registry
     registry_url: https://quay.io
     project_name: quay-proxy
   - public_registry: cr.k8ssandra.io

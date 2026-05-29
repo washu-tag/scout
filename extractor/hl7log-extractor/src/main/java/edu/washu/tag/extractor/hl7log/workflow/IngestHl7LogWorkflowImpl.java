@@ -150,7 +150,8 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                 hl7ManifestFileOutput.manifestFilePath(),
                 null,
                 input.reportTableName(),
-                input.deltaIngestTimeout()
+                input.deltaIngestTimeout(),
+                input.createMapping()
             )
         );
         // Wait for child workflow to start
@@ -174,6 +175,7 @@ public class IngestHl7LogWorkflowImpl implements IngestHl7LogWorkflow {
                     input.splitAndUploadConcurrency(),
                     input.reportTableName(),
                     input.deltaIngestTimeout(),
+                    input.createMapping(),
                     nextContinued
                 )
             );

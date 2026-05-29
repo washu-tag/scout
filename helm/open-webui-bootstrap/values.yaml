@@ -1,0 +1,91 @@
+# Image — must match OWUI's deployed image. The bootstrap Job reuses OWUI's
+# own container so the password-migration step can `import open_webui.internal.db`
+# and `open_webui.models.auths` (same modules the app uses), and so the Python
+# version + bcrypt version are guaranteed to match.
+#
+# Scout deployments overwrite `image.ref` with whatever image is actually
+# running on the OWUI Pod (discovered post-`helm install` in configure_admin.yaml),
+# so the bootstrap Job stays in lockstep with the upstream chart's appVersion
+# without needing a separate pin. Standalone chart users should override
+# `image.ref` to match their OWUI deployment.
+image:
+  ref: 'ghcr.io/open-webui/open-webui:0.9.5'
+  pullPolicy: IfNotPresent
+
+# In-cluster URL for OWUI. Bypasses Traefik (no oauth2-proxy gate) so the
+# minted Bearer JWT is the only credential needed. The upstream OWUI chart
+# exposes the Service on port 80 (forwarding to pod port 8080) — point at
+# the Service port, not the pod port.
+owuiBaseUrl: http://open-webui:80
+
+bootstrap:
+  email: scout-deploy@scout-deploy.local
+  name: Scout Deploy Bot
+
+# Name of the Secret holding all sensitive env vars consumed by the Job.
+# Mounted via envFrom so every key becomes an env var on the container —
+# matches the upstream OWUI chart's `extraEnvFrom` pattern. Default is the
+# Secret Scout's open-webui role creates; it must contain at least
+# BOOTSTRAP_PASSWORD (signin), DATABASE_URL (password-migration step), and
+# WEBUI_SECRET_KEY (required at module-load time when bootstrap.py imports
+# open_webui.internal.db; open_webui.config raises on its absence). Other
+# keys in the Secret (OAUTH_CLIENT_SECRET, REDIS_URL) are mounted too and
+# ignored by the script — harmless.
+secretName: open-webui-secrets
+
+# Job behavior. backoffLimit=1 because retries don't help: if bootstrap fails
+# it's because OWUI is unreachable or config is malformed, and retrying won't
+# fix either. ttlSecondsAfterFinished cleans the Pod after an hour so kubectl
+# get pods stays tidy.
+backoffLimit: 1
+ttlSecondsAfterFinished: 3600
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1
+    memory: 512Mi
+
+# --- PAYLOADS — raw inventory shapes, rendered into ConfigMap JSON by the
+# chart's configmap.yaml template. Files referenced from these (filter source
+# code via source_file, system prompt + profile image via scoutDefaults) live
+# in this chart's files/payloads/ directory and are auto-included as separate
+# ConfigMap keys.
+
+# PersistentConfig fields re-pushed on every run (OWUI is seed-only otherwise).
+persistentConfig:
+  tool_server_connections: []
+  default_model_id: ''
+  task_model_id: ''
+
+# OWUI Functions (filter / pipe / action). Each entry mirrors the inventory
+# shape: id, name, description, source_file (a filename in files/payloads/),
+# enable_global, enable_active, valves. The chart transforms these into
+# bootstrap-ready filter payloads (`source_file` → `content_file`, defaulting
+# of optional fields). Empty list = skip filter seeding.
+filterFunctions: []
+
+# Scout custom models, raw inventory shape: name, base, num_ctx, num_keep,
+# num_predict, preload (default true), ui: {id?, name, description?, ...}.
+# Without `ui:`, an entry is left as a plain Ollama tag. The chart emits one
+# Scout Explorer entry per ui block and a hide-base override per raw Ollama
+# tag (unless scoutDefaults.hideBaseModels is false or base == id).
+scoutModels: []
+
+# Defaults applied to every Scout Explorer model. Per-entry `ui:` overrides
+# always win. Mirrors the open_webui_scout_default_* role variables that
+# Ansible passes through.
+scoutDefaults:
+  systemPromptFile: scout-system-prompt.md
+  profileImageFile: scout-logo-128.png.b64
+  toolIds: []
+  suggestionPrompts: []
+  capabilities: {}
+  builtinTools: {}
+  functionCalling: native
+  reasoningEffort: high
+  keepAliveResident: '-1'
+  keepAliveCold: '5m'
+  hideBaseModels: true

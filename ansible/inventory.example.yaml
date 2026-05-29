@@ -227,6 +227,12 @@ k3s_cluster:
     #---------------------------------------------------------------------------
     k3s_token: $(openssl rand -hex 16 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
 
+    # GPU node taint - on by default. Taints every host in `gpu_workers`
+    # with `nvidia.com/gpu=present:NoSchedule`. Disable on small/dev
+    # clusters where the GPU node's spare capacity is needed for non-GPU
+    # pods.
+    # enable_gpu_node_taint: false
+
     # CoreDNS custom DNS configuration (see docs/source/technical/inventory.md)
     # When air_gapped: true, CoreDNS automatically gets deny-all + cluster.local blocks
     #
@@ -554,6 +560,11 @@ k3s_cluster:
       limits:
         cpu: 2
         memory: 8Gi
+    # Superset dashboard bundles to install. Built-in bundles: core (Scout
+    # main dashboard), quality (Quality & TAT dashboard), followup (Follow-up
+    # Detection dashboard). Removing a bundle later won't remove already-
+    # imported assets — drop them via the Superset UI if needed.
+    # scout_dashboard_bundles: [core, quality, followup]
 
     #---------------------------------------------------------------------------
     # Hive Metastore
@@ -614,6 +625,7 @@ k3s_cluster:
     # enable_chat: true
     open_webui_postgres_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     open_webui_secret_key: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
+    open_webui_bootstrap_password: $(openssl rand -hex 32 | ansible-vault encrypt_string --vault-password-file vault/pwd.sh)
     ollama_resources:
       requests:
         cpu: 4
@@ -628,6 +640,33 @@ k3s_cluster:
       limits:
         cpu: 4
         memory: 4Gi
+    # Scout custom models. Defaults ship gemma4-31b-long (default + task model),
+    # qwen3.6-35b-long (thinking-mode), and gpt-oss-120b-long (large, cold-load),
+    # each with a `ui:` block that produces a Scout Explorer entry in the
+    # OWUI picker. Override here to add bases, change context windows, or
+    # customize per-model UI fields. See ansible/roles/open-webui/defaults/main.yaml
+    # for the complete schema.
+    #
+    # scout_models:
+    #   - base: gemma4:31b
+    #     name: gemma4-31b-long:latest
+    #     num_ctx: 131072
+    #     num_keep: 32768
+    #     num_predict: -1
+    #     preload: true
+    #     ui:
+    #       name: 'Scout Explorer'
+    #       description: 'Intelligent data exploration'
+    #       # Optional per-model overrides — fall back to open_webui_scout_default_*:
+    #       # tool_ids: ['server:mcp:scout-db']
+    #       # function_calling: native
+    #       # reasoning_effort: high
+    #       # keep_alive: '-1'
+    # open_webui_default_model_id: 'gemma4-31b-long:latest'
+    # open_webui_task_model_id: 'gemma4-31b-long:latest'
+    # Override the Link Sanitizer's allowlist (comma-separated). Defaults to
+    # server_hostname; URLs to other domains in LLM responses get stripped.
+    # open_webui_link_sanitizer_internal_domains: 'example.com,trusted.partner.com'
 
     #---------------------------------------------------------------------------
     # Playbooks (Voilà)

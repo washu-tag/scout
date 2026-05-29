@@ -128,7 +128,7 @@ The Delta Lake silver layer contains a `reports` table with HL7 radiology report
 - **Patient IDs**: `patient_ids` (array of structs), `epic_mrn`, and dynamically-created ID columns per assigning authority
 - **Orders**: `orc_2_placer_order_number`, `obr_2_placer_order_number`, `orc_3_filler_order_number`, `obr_3_filler_order_number`
 - **Service**: `service_identifier`, `service_name`, `service_coding_system`, `diagnostic_service_id`, `modality` (derived)
-- **Timing**: `requested_dt`, `observation_dt`, `observation_end_dt`, `results_report_status_change_dt`, `patient_age` (derived)
+- **Timing**: `requested_dt`, `observation_dt`, `observation_end_dt`, `results_report_status_change_dt`
 - **Personnel**: `principal_result_interpreter`, `assistant_result_interpreter`, `technician` (arrays)
 - **Report Content**: `report_text` (full), `report_status`, `study_instance_uid`
 - **Parsed Sections**: `report_section_addendum`, `report_section_findings`, `report_section_impression`, `report_section_technician_note`
@@ -532,10 +532,11 @@ ADRs in `docs/internal/adr/` document significant architectural decisions. Consu
 - **Operator-managed**: PostgreSQL (CloudNativePG), Cassandra (K8ssandra), Elasticsearch (ECK)
 
 ### Common Modification Patterns
-- **Add HL7 field**: Update `extractor/hl7-transformer/` parser, update `docs/source/dataschema.md`
+- **Add HL7 field**: Update `extractor/hl7-transformer/` parser, update `docs/source/dataschema.md`, and update the "Tables & Columns Reference" section in `helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md` so the Scout Explorer model sees the new field (OWUI's RAG auto-injection is bypassed under native function-calling, so schema docs are inlined into the prompt instead of attached as knowledge)
 - **Modify workflow**: Edit TypeScript in `orchestrator/`, redeploy extractor role
 - **Adjust resources**: Override in `inventory.yaml` (JVM heap, CPU, memory, storage)
-- **Add dashboard**: Create in Grafana UI, export JSON to `ansible/roles/grafana/files/dashboards/`
+- **Add a Grafana dashboard**: Create in Grafana UI, export JSON to `ansible/roles/grafana/files/dashboards/`
+- **Add a Superset dashboard, chart, or dataset**: Export the asset YAML from Superset and drop it into `helm/scout-dashboards/files/analytics/<charts|dashboards|datasets/Scout_Data_Lake>/<bundle>/`. New bundles also need their name added to `scout_dashboard_bundles` in inventory. See `helm/scout-dashboards/README.md` for the bundle layout and how to host site-specific dashboards.
 - **Update dependency versions**: Edit `ansible/group_vars/all/versions.yaml`, redeploy component
 - **Release new Scout version**: See `docs/internal/versions-and-releases.md` for complete checklist of files to update
 - **Configure namespaces**: Override namespace variables in `inventory.yaml`

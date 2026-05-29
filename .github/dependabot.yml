@@ -10,3 +10,13 @@ updates:
       github-actions:
         patterns:
           - '*'
+
+  # Gradle: security PRs only (open-pull-requests-limit: 0 disables routine
+  # version updates but still allows security updates), per ADR 0015.
+  # Requires resolved deps in the GitHub dependency graph — see
+  # .github/workflows/gradle-dependency-submission.yaml.
+  - package-ecosystem: 'gradle'
+    directory: '/extractor/hl7log-extractor'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 0

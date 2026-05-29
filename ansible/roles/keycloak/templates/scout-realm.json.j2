@@ -246,6 +246,9 @@
         "webOrigins": [
           "{{ oauth2_proxy_base_url }}"
         ],
+        "attributes": {
+          "post.logout.redirect.uris": "https://{{ server_hostname }}"
+        },
         "defaultClientScopes": [
           "web-origins",
           "acr",

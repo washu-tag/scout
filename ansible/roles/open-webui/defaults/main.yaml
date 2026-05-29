@@ -8,6 +8,11 @@ open_webui_helm_repo_url: https://helm.openwebui.com/
 open_webui_helm_chart_name: open-webui
 open_webui_helm_release_name: open-webui
 
+# Local Helm chart for the post-deploy bootstrap Job (admin user, filter
+# functions, custom models, PersistentConfig re-push). Override to point at
+# a fork or alternate path.
+open_webui_bootstrap_helm_chart_ref: '{{ scout_repo_dir }}/helm/open-webui-bootstrap'
+
 # Component names
 ollama_name: ollama
 open_webui_name: open-webui
@@ -32,14 +37,51 @@ ollama_nfs_mount_path: /nfs/ollama
 staging_ollama_namespace: '{{ package_download_namespace }}'
 
 # Scout custom model configuration
-scout_base_model: gpt-oss:120b
-scout_model_name: gpt-oss-120b-long:latest
-scout_model_num_predict: -1 # Unlimited token generation
-scout_model_num_ctx: 131072 # 128K context window
-scout_model_num_keep: 32768 # Keep 32K tokens in memory
-scout_model_create: true # Set to false to skip Scout model creation
-# List of Ollama models to pull automatically (see https://ollama.com/library)
-# `scout_base_model` will be included by default
+# Each entry creates a Modelfile-based variant on top of `base` with extended-context
+# parameters baked in. Required because Ollama's runtime default num_ctx is 4096
+# regardless of the model's native max, which silently truncates long inputs.
+# All `base` models are added to `ollama_models` automatically for pull.
+#
+# `preload`: whether the values.yaml lifecycle postStart hook warms the model
+# into VRAM at pod start. Set false for models that should cold-load on demand
+# (e.g., when total resident weights+KV would exceed GPU memory). Default: true.
+#
+# Entries with a `ui:` block also get a customized OWUI "Scout Explorer" model
+# created by the bootstrap Job (system prompt, tool refs, suggestion prompts,
+# capability flags). Entries without `ui:` remain plain Ollama tags —
+# selectable in the picker but without Scout Explorer dressing.
+scout_models:
+  - base: gemma4:31b
+    name: gemma4-31b-long:latest
+    num_ctx: 262144 # 256K context window
+    num_keep: 65536 # Keep 64K tokens in memory
+    num_predict: -1 # Unlimited token generation
+    preload: true # Resident — small enough to keep warm; serves as default and task model
+    ui:
+      name: 'Scout Explorer (Gemma 4 31B)'
+      description: 'Recommended. Fast and reliable for cohort queries, filters, and free-text searches. Best general-purpose option for Scout.'
+  - base: qwen3.6:35b
+    name: qwen3.6-35b-long:latest
+    num_ctx: 262144
+    num_keep: 65536
+    num_predict: -1
+    preload: false # Cold-load — thinking-mode model used selectively for analytical / multi-step queries
+    ui:
+      name: 'Scout Explorer (Qwen 3.6 35B)'
+      description: 'Reasoning-focused alternative. Thinks step-by-step on every question — pick when you want to see explicit reasoning. Slower first response.'
+  - base: gpt-oss:120b
+    name: gpt-oss-120b-long:latest
+    num_ctx: 131072
+    num_keep: 32768
+    num_predict: -1
+    preload: false # Cold-load — large weights, used only when explicitly selected
+    ui:
+      name: 'Scout Explorer (GPT-OSS 120B)'
+      description: 'Largest alternative. Broadest medical knowledge — pick for nuanced free-text searches or edge cases the recommended model misses. Slower first response.'
+scout_model_create: true # Set to false to skip Scout model creation entirely
+
+# List of additional Ollama models to pull (see https://ollama.com/library)
+# Bases from `scout_models` are added automatically.
 ollama_models: []
 
 open_webui_storage_size: 2Gi
@@ -100,3 +142,264 @@ open_webui_resources_default:
 # that the user's browser then fetches, leaking data to attacker-controlled servers.
 # See: https://developer.nvidia.com/blog/practical-llm-security-advice-from-the-nvidia-ai-red-team/
 open_webui_csp_enabled: true
+
+# ----------------------------------------------------------------------------
+# Declarative Open WebUI configuration
+# ----------------------------------------------------------------------------
+# These settings move admin-UI clickthrough config into Helm/Ansible. OWUI
+# stores most of them as PersistentConfig in the `config` table of its
+# Postgres DB. Naively, env-var changes after first launch would be silent
+# no-ops because the admin UI is authoritative thereafter.
+#
+# To work around that, the bootstrap Job re-pushes the three inventory-tunable
+# fields through OWUI's REST API on every deploy:
+#   - tool_server_connections   → POST /api/v1/configs/tool_servers
+#   - open_webui_default_model_id  → POST /api/v1/configs/models
+#   - open_webui_task_model_id     → POST /api/v1/tasks/config/update
+# So these ARE fully declarative — change inventory, re-run make install-chat,
+# done. No SQL surgery on the `config` table needed.
+#
+# RAG_TEMPLATE is intentionally NOT pushed: Scout Explorer models run with
+# function_calling: native, which bypasses OWUI's RAG auto-injection path.
+# The schema/charting instructions that RAG would otherwise carry are inlined
+# into the system prompt (helm/open-webui-bootstrap/files/payloads/scout-system-prompt.md)
+# instead.
+#
+# Genuinely seed-only (we set once at first launch and don't expect to change):
+#   - ENABLE_EVALUATION_ARENA_MODELS, ENABLE_SIGNUP, ENABLE_LOGIN_FORM,
+#     ENABLE_COMMUNITY_SHARING (scout-fixed false), WEBUI_URL (derived from
+#     server_hostname — DNS/TLS rotation has bigger fish to fry first)
+# OAuth fields are env-only (ENABLE_OAUTH_PERSISTENT_CONFIG=false skips
+# loading them from the config table).
+
+# Trino MCP tool server — registered automatically as an Open WebUI external tool
+# so users don't have to add it via Admin → Settings → Integrations.
+# Override `tool_server_connections: []` to skip registration (e.g., environments
+# without MCP Trino deployed).
+mcp_trino_url: 'http://mcp-trino.{{ scout_analytics_namespace }}:8080/mcp'
+mcp_trino_tool_id: 'scout-db'
+tool_server_connections:
+  - type: mcp # OWUI defaults to 'openapi'; MCP servers must declare explicitly
+    url: '{{ mcp_trino_url }}'
+    # `path`, `key`, `auth_type`, and `config` are all REQUIRED dict keys on
+    # OWUI's ToolServerConnection Pydantic model (Optional[X] without default
+    # = required-but-nullable in Pydantic v2). Missing any of them causes
+    # GET /api/v1/configs/tool_servers to return 500 because the response
+    # serializer validates against the model — that breaks the admin
+    # Integrations page. The runtime hot path uses .get() with defaults so
+    # the MCP tool itself works regardless, but the admin UI doesn't.
+    path: '' # openapi-spec path; meaningless for MCP but required by the model
+    key: null # API key for openapi/oauth tool servers; null for MCP-anonymous
+    auth_type: none
+    config:
+      enable: true
+    info:
+      id: '{{ mcp_trino_tool_id }}' # Referenced from models as `server:mcp:{id}`
+      name: 'Trino MCP'
+      description: 'Query Scout Delta Lake with Trino'
+
+# Disable Arena Model evaluation feature (per README post-deploy step 7)
+open_webui_enable_arena_models: false
+
+# Default selected model in the picker for new chats. MUST match an Ollama tag
+# exactly — point this at whichever Scout Explorer variant should be the default
+# first impression. The default `gemma4-31b-long` is resident, dense, no thinking-
+# step latency, and fast enough for most asks; users can pick gpt-oss-120b-long
+# (cohort building) or qwen3.6-35b-long (thinking-mode analysis) per chat.
+open_webui_default_model_id: '{{ ollama_default_model }}'
+
+# Model used for OWUI's auxiliary tasks (chat title generation, follow-up
+# question suggestions, tag generation, web-search/RAG query refinement).
+# Without this, OWUI uses whichever Scout Explorer the user selected — which
+# means a 5-word title generation can trigger a slow cold-load of gpt-oss-120b
+# or an unnecessary thinking-mode roundtrip through qwen3.6.
+#
+# Pick a model that's already preloaded (preload: true) so task gen reuses
+# VRAM. MUST match the `name` of a resident scout_models entry exactly — the
+# raw `gemma4:31b` would be a different Ollama model loaded into a separate
+# VRAM slot.
+open_webui_task_model_id: '{{ ollama_default_model }}'
+
+# ----------------------------------------------------------------------------
+# Admin bootstrap
+# ----------------------------------------------------------------------------
+# We mint an admin session JWT by calling OWUI's /signup endpoint (when the DB
+# is empty) or /signin (on subsequent runs) through the in-cluster Service.
+# `ENABLE_INITIAL_ADMIN_SIGNUP=true` lets /signup create the very first user
+# as admin even when ENABLE_SIGNUP is false; once any user exists the endpoint
+# self-blocks via the `has_users or not ENABLE_INITIAL_ADMIN_SIGNUP` check in
+# OWUI's auths router (signup handler in backend/open_webui/routers/auths.py),
+# so the env var is safe to leave on permanently.
+#
+# `.local` is reserved (RFC 6762, mDNS) — guaranteed not to collide with a
+# real public domain and passes email-validator's strict checks if upstream
+# OWUI ever tightens its Pydantic EmailStr validation. The address is never
+# delivered to — only used as a primary key in OWUI's auth table.
+open_webui_bootstrap_email: 'scout-deploy@scout-deploy.local'
+open_webui_bootstrap_name: 'Scout Deploy Bot'
+
+# Bootstrap admin password. Vault-encrypt in inventory.yaml. To rotate,
+# update the inventory value and re-run make install-chat — the bootstrap
+# Job's migration step rewrites the stored bcrypt hash to match before
+# attempting /signin, so no manual cleanup is needed.
+# (no default — required in inventory; deploy.yaml asserts presence)
+
+# Set to false to skip post-deploy admin configuration entirely.
+open_webui_admin_setup_enabled: true
+
+# Internal domain(s) for the Link Sanitizer filter. Comma-separated. URLs
+# matching these domains are kept; all other external URLs in LLM responses
+# are stripped to prevent PHI exfiltration via clicked links. See ADR 0010.
+open_webui_link_sanitizer_internal_domains: '{{ server_hostname }}'
+
+# Filter functions seeded into Open WebUI on every deploy. Each entry maps to
+# one Function in OWUI Admin → Functions. The role reads `source_file` from
+# its files/ directory, creates/updates the function, sets valves, and
+# toggles state to match `enable_global` and `enable_active`. Note that this
+# re-asserts state every deploy — if an operator disables a filter in the UI
+# to debug, the next `make install-chat` re-enables it. To temporarily disable
+# the re-assert, set `enable_active: false` (and/or `enable_global: false`)
+# on the entry in inventory.
+open_webui_filter_functions:
+  - id: link_sanitizer_filter
+    name: Link Sanitizer Filter
+    description: Removes external URLs from LLM responses to prevent data exfiltration (ADR 0010).
+    source_file: link_sanitizer_filter.py
+    enable_global: true
+    enable_active: true
+    valves:
+      internal_domains: '{{ open_webui_link_sanitizer_internal_domains }}'
+  - id: context_summarization_filter
+    name: Context Summarization Filter
+    description: Summarizes older conversation history when approaching context limits (ADR 0014).
+    source_file: context_summarization_filter.py
+    enable_global: true
+    enable_active: true
+    valves:
+      token_threshold: 100000
+      messages_to_keep: 10
+      min_messages_to_keep: 2
+      tool_result_token_threshold: 500
+      ollama_url: 'http://ollama:11434'
+      summarizer_model: ''
+  # Diagnostic workaround for OWUI 0.9.5: the new body-content path for tool
+  # results doesn't render in the chat UI's Output panel even though the body
+  # is in storage. This filter rewrites the body back to a `result="..."`
+  # attribute on the opening <details> tag, hitting ToolCallDisplay.svelte's
+  # legacy fallback (`decode(attributes?.result ?? '')`). Remove or set
+  # `enable_active: false` once the upstream display bug is fixed.
+  - id: tool_result_attr_filter
+    name: Tool Result Body→Attribute Migrator
+    description: Diagnostic — rewrites OWUI 0.9.5 tool_calls body-content back to legacy result="..." attribute.
+    source_file: tool_result_attr_filter.py
+    enable_global: true
+    enable_active: true
+    valves:
+      debug_logging: false
+
+# ----------------------------------------------------------------------------
+# Scout Explorer custom model UI config
+# ----------------------------------------------------------------------------
+# Shared settings for every scout_models entry that opts into UI customization
+# via a `ui:` sub-block. The role builds an OWUI ModelForm payload combining
+# these shared defaults with each entry's per-model overrides, then POSTs
+# /api/v1/models/create or /model/update.
+#
+# A scout_models entry with NO `ui:` block is left as a plain Ollama model
+# (still selectable but without Scout Explorer system prompt / tools / display
+# name / advanced params).
+open_webui_scout_system_prompt_file: scout-system-prompt.md
+open_webui_scout_tool_ids:
+  - 'server:mcp:{{ mcp_trino_tool_id }}'
+open_webui_scout_default_reasoning_effort: high
+open_webui_scout_default_function_calling: native
+# keep_alive defaults are derived from each scout_models entry's `preload`:
+#   preload: true  → '-1' (resident)
+#   preload: false → '5m' (cold-load, unloads on idle)
+open_webui_scout_keep_alive_resident: '-1'
+open_webui_scout_keep_alive_cold_load: '5m'
+
+# Hide each scout_models entry's raw base Ollama tag (e.g., gemma4:31b) from
+# the model picker so users only see the customized Scout Explorer entries
+# (built on the long-context Modelfile derivations). Implemented by creating
+# a custom model row with id=base, base_model_id=null, is_active=false; OWUI's
+# merge logic removes it from the picker. Set false to keep raw bases visible
+# (e.g., for debugging or to let users compare raw vs Scout-configured behavior).
+open_webui_hide_base_models: true
+
+# Default suggestion prompt cards shown when starting a new chat with a Scout
+# Explorer model. Each entry is {content, title: [short, subtitle]} per OWUI's
+# ModelMeta schema.
+#
+# Prompts are grounded in the Scout report schema (docs/source/dataschema.md)
+# and span the axes radiology researchers and ops actually query:
+#   - Cohort identification via free-text search of `report_section_impression`
+#     (the canonical NLP-on-radiology use case — see literature on incidental
+#     pulmonary nodule cohorts).
+#   - TAT analysis via `requested_dt` → `results_report_status_change_dt`
+#     (per memory: requested_dt is more reliably populated than observation_dt).
+#   - Modality utilization trends via `modality` + time bucketing.
+#   - Quality metrics via `report_section_addendum`.
+#   - Demographic slices via `patient_age` + `modality`.
+open_webui_scout_default_suggestion_prompts:
+  - title: ['Pulmonary nodule cohort', 'Chest CT findings']
+    content: 'Find chest CTs showing a pulmonary nodule.'
+  - title: ['Turnaround time', 'Order to final report']
+    content: "What's the typical turnaround time from order to final report, by modality?"
+  - title: ['Exam volume trends', 'Monthly, by modality']
+    content: 'How has exam volume changed over time, by modality?'
+  - title: ['Report addendum rate', 'Quality signal']
+    content: 'How often are reports amended with an addendum, by modality?'
+  - title: ['Pediatric CT', 'Patients under 18']
+    content: 'How many pediatric CT exams have we done, broken down by year?'
+  - title: ['Ischemic vs hemorrhagic stroke', 'Stroke comparison']
+    content: 'How many reports mention ischemic stroke versus hemorrhagic stroke?'
+  - title: ['Long-term neuroimaging', 'Patients with multi-year history']
+    content: 'How many patients have brain MRI reports spanning more than five years?'
+  - title: ['Dementia progression imaging', 'Repeat brain MRI']
+    content: 'How many patients have more than one brain MRI report mentioning dementia?'
+
+# Default profile image (avatar): the bootstrap chart embeds
+# helm/open-webui-bootstrap/files/payloads/scout-logo-128.png.b64 as a data
+# URL on every Scout Explorer entry. To swap the logo, replace that file
+# (pre-encoded base64, ~24 KB, source docs/diagrams/logos/scout.png resized
+# to 128×128). Per-model overrides still work via scout_models[].ui.profile_image_url.
+
+# Default capability flags. OWUI's DEFAULT_CAPABILITIES has everything `true`,
+# but a few are unsafe for Scout's air-gapped + PHI-handling deployment:
+#   - web_search:        needs internet; LLM-crafted queries can exfiltrate PHI
+#   - image_generation:  needs internet (DALL-E etc.) and same exfil risk
+#   - code_interpreter:  arbitrary code execution can exfiltrate or escape
+#   - terminal:          shell access — same risks, broader blast radius
+#   - vision:            unused by Scout (no images in the data)
+# Capabilities not listed here keep their OWUI default (true): file_context,
+# file_upload, citations, status_updates.
+open_webui_scout_default_capabilities:
+  vision: false
+  web_search: false
+  image_generation: false
+  code_interpreter: false
+  terminal: false
+
+# Builtin tools (OWUI 0.9.x) — per-category enable/disable for the helper
+# functions OWUI auto-injects into a model's tool list under native function-
+# calling (time, knowledge, chats, memory, web_search, image_generation,
+# code_interpreter, notes, channels, tasks, automations, calendar). Different
+# from `capabilities`: capabilities are coarse master toggles also consulted
+# by UI/permissions; builtinTools is the granular per-tool switch for the
+# auto-injection path in utils/tools.py:get_builtin_tools().
+#
+# All categories default true upstream. Disable the ones that need outbound
+# internet (won't work air-gapped) and the ones that would inject empty/risky
+# tools given Scout's setup: knowledge (no knowledge collections attached —
+# schema docs are inlined into the system prompt), code_interpreter (already
+# capability-blocked; defensive redundant gate).
+# Leave the rest at default — `time` and `tasks` are useful; `chats` and
+# `memory` are gated further by env/permission and have local-only effect;
+# `notes`/`channels`/`automations`/`calendar` are gated by ENABLE_X envs
+# that default off in Scout's Helm values.
+open_webui_scout_default_builtin_tools:
+  web_search: false # requires internet
+  image_generation: false # requires internet (DALL-E etc.)
+  code_interpreter: false # arbitrary code execution; already blocked via capabilities, kept here for defense in depth
+  knowledge: false # no knowledge collections attached; would inject empty discovery tools

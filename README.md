@@ -1,6 +1,6 @@
-# Scout - Radiology Report Explorer
+# Scout - Medical Data Intelligence Platform
 
-A distributed data analytics platform for intelligent, intuitive exploration of HL7 radiology reports. Scout processes large volumes of HL7 messages into a Delta Lake, making them accessible through interactive analytics and notebooks.
+A distributed data analytics platform for intelligent, intuitive exploration of clinical data with a focus on radiology reports. Scout processes large volumes of HL7 messages into a Delta Lake, making them accessible through interactive analytics and notebooks.
 
 ## Quick Links
 
