@@ -135,7 +135,7 @@ dcm4chee_arc_version: 5.34.0
 # renovate: datasource=docker depName=dcm4che/postgres-dcm4chee versioning=loose
 dcm4chee_db_version: 17.4-34
 # renovate: datasource=docker depName=dcm4che/slapd-dcm4chee versioning=loose
-dcm4chee_ldap_version: 2.6.8-34.0
+dcm4chee_ldap_version: 2.6.10-35.0
 
 # Medical Imaging - Orthanc
 # orthanc_version is set to "latest" (not a pinned version); not monitored by Renovate
