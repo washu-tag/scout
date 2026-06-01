@@ -33,7 +33,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
  * URL-connection HTTP client is sync, which is fine because the listener
  * issues at most one PUT per debounce window.
  */
-final class MinioBundleUploader {
+final class MinioBundleUploader implements AutoCloseable {
 
     private static final Logger log = Logger.getLogger(MinioBundleUploader.class);
 
@@ -99,5 +99,15 @@ final class MinioBundleUploader {
     private static boolean hasStaticKeys(String accessKey, String secretKey) {
         return accessKey != null && !accessKey.isBlank()
                 && secretKey != null && !secretKey.isBlank();
+    }
+
+    /**
+     * Closes the underlying {@link S3Client}, releasing the SDK's HTTP
+     * connection pool and any other AWS-SDK-internal resources. Safe to
+     * call multiple times — {@code S3Client.close()} is idempotent.
+     */
+    @Override
+    public void close() {
+        s3.close();
     }
 }
